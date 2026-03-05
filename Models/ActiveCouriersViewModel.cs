@@ -16,4 +16,6 @@ public class ActiveCouriersViewModel
     public DateTime? DGLicenseExpiry { get; init; }
 
     public bool IsActive { get; init; }
+
+    public string VehicleType { get; init; }
 }

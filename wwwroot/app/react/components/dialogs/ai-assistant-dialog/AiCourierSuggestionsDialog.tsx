@@ -87,11 +87,13 @@ export const AiCourierSuggestionsDialog: React.FC<AiCourierSuggestionsDialogProp
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: {
-                    maxHeight: '80vh',
-                    display: 'flex',
-                    flexDirection: 'column',
+            slotProps={{
+                paper: {
+                    sx: {
+                        maxHeight: '80vh',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    },
                 },
             }}
         >

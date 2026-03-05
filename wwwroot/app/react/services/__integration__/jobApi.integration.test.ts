@@ -8,7 +8,7 @@
 import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { jobApi } from '../jobApi';
-import { mockRelatedJobs } from '../../__testUtils__/msw/handlers';
+import { mockRelatedJobs, mockClientSuggestions, mockVehicleSizes } from '../../__testUtils__/msw/handlers';
 
 describe('jobApi integration', () => {
     describe('getRelatedJobsMultiSelectList', () => {
@@ -269,6 +269,160 @@ describe('jobApi integration', () => {
             ).rejects.toMatchObject({
                 status: 500,
             });
+        });
+    });
+
+    describe('quickCreateJob', () => {
+        it('creates a job and returns new job ID', async () => {
+            const result = await jobApi.quickCreateJob({
+                clientId: 10,
+                deliverToContact: 'Jane Doe',
+                podName: 'Pod1',
+                pickUpAddress: {} as any,
+                deliveryAddress: {} as any,
+                date: '2026-03-05T00:00:00-05:00',
+                fromContactName: 'John Smith',
+                refA: '',
+                refB: '',
+                deliveryNotes: '',
+                pickupNotes: '',
+                jobNotes: '',
+                van: false,
+                truck: false,
+                pedal: false,
+                attention: false,
+                vanOk: false,
+                reprice: false,
+                void: false,
+                done: false,
+                charge: 50.0,
+                fromLat: 40.7128,
+                fromLong: -74.006,
+                toLat: 34.0522,
+                toLong: -118.2437,
+                speedId: 1,
+                vehicleId: 2,
+            });
+
+            expect(result).toBe(12345);
+        });
+
+        it('sends CSRF header', async () => {
+            let capturedCsrfHeader: string | null = null;
+
+            server.use(
+                http.post('*/job/QuickCreateJob', async ({ request }) => {
+                    capturedCsrfHeader = request.headers.get('X-Requested-With');
+                    return HttpResponse.json(1);
+                })
+            );
+
+            await jobApi.quickCreateJob({ clientId: 1 } as any);
+
+            expect(capturedCsrfHeader).toBe('XMLHttpRequest');
+        });
+
+        it('handles validation error', async () => {
+            server.use(
+                http.post('*/job/QuickCreateJob', () => {
+                    return HttpResponse.json(
+                        { message: 'Client ID is required' },
+                        { status: 400 }
+                    );
+                })
+            );
+
+            await expect(
+                jobApi.quickCreateJob({ clientId: 0 } as any)
+            ).rejects.toMatchObject({ status: 400 });
+        });
+    });
+
+    describe('searchActiveClients', () => {
+        it('searches clients with correct parameter', async () => {
+            let capturedUrl = '';
+
+            server.use(
+                http.get('*/home/ActiveClients', ({ request }) => {
+                    capturedUrl = request.url;
+                    return HttpResponse.json(mockClientSuggestions);
+                })
+            );
+
+            const result = await jobApi.searchActiveClients('Acme');
+
+            expect(capturedUrl).toContain('searchText=Acme');
+            expect(result).toHaveLength(2);
+            expect(result[0]).toMatchObject({ id: 10, text: 'Acme Corp' });
+        });
+
+        it('returns empty array when no matches', async () => {
+            server.use(
+                http.get('*/home/ActiveClients', () => {
+                    return HttpResponse.json([]);
+                })
+            );
+
+            const result = await jobApi.searchActiveClients('ZZZ');
+            expect(result).toHaveLength(0);
+        });
+    });
+
+    describe('getVehicleSizes', () => {
+        it('returns list of vehicle sizes', async () => {
+            const result = await jobApi.getVehicleSizes();
+
+            expect(result).toHaveLength(3);
+            expect(result[0]).toMatchObject({ id: 1, text: 'Car' });
+            expect(result[2]).toMatchObject({ id: 3, text: 'Truck' });
+        });
+
+        it('handles server error', async () => {
+            server.use(
+                http.get('*/courier/GetVehicleSizes', () => {
+                    return new HttpResponse('Server error', { status: 500 });
+                })
+            );
+
+            await expect(jobApi.getVehicleSizes()).rejects.toMatchObject({ status: 500 });
+        });
+    });
+
+    describe('allocateJobToCourier', () => {
+        it('sends correct allocation data with CSRF header', async () => {
+            let capturedBody: unknown = null;
+            let capturedCsrfHeader: string | null = null;
+
+            server.use(
+                http.post('*/job/Allocate', async ({ request }) => {
+                    capturedCsrfHeader = request.headers.get('X-Requested-With');
+                    capturedBody = await request.json();
+                    return new HttpResponse(null, { status: 200 });
+                })
+            );
+
+            await jobApi.allocateJobToCourier(42, [999]);
+
+            expect(capturedCsrfHeader).toBe('XMLHttpRequest');
+            expect(capturedBody).toMatchObject({
+                courierId: 42,
+                jobIds: [999],
+            });
+        });
+
+        it('handles courier offline error', async () => {
+            server.use(
+                http.post('*/job/Allocate', () => {
+                    return HttpResponse.json(
+                        { message: 'Courier is offline' },
+                        { status: 400 }
+                    );
+                })
+            );
+
+            await expect(
+                jobApi.allocateJobToCourier(42, [999])
+            ).rejects.toMatchObject({ status: 400 });
         });
     });
 });

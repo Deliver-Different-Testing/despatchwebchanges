@@ -93,14 +93,16 @@ export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
                 onClose={onClose}
                 maxWidth="md"
                 fullWidth
-                PaperProps={{
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 3,
-                        overflow: 'hidden',
-                        minWidth: { xs: '95%', sm: '90%', md: 800 },
-                        maxWidth: 900,
-                        width: '80%',
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: {
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                            minWidth: { xs: '95%', sm: '90%', md: 800 },
+                            maxWidth: 900,
+                            width: '80%',
+                        },
                     },
                 }}
             >

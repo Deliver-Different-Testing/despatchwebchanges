@@ -220,13 +220,15 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                elevation: 24,
-                sx: {
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    minWidth: 480,
-                    maxWidth: 600,
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        minWidth: 480,
+                        maxWidth: 600,
+                    },
                 },
             }}
         >

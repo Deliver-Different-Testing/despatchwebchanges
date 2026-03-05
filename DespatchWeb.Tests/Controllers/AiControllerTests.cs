@@ -13,10 +13,10 @@ namespace DespatchWeb.Tests.Controllers;
 public class AiControllerTests
 {
     private readonly Mock<IAiAssistantService> _assistantServiceMock = new();
-    private readonly Mock<IAiSummarizationService> _summarizationServiceMock = new();
     private readonly Mock<IAiRateLimiter> _rateLimiterMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
     private readonly AnthropicSettings _settingsValue = new() { EnableAiFeatures = true };
+    private readonly Mock<IAiSummarizationService> _summarizationServiceMock = new();
+    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
 
     public AiControllerTests()
     {
@@ -29,12 +29,27 @@ public class AiControllerTests
             .Returns(Task.CompletedTask);
     }
 
-    private AiController CreateController(AnthropicSettings settings = null) => new(
+    private AiController CreateController(AnthropicSettings? settings = null) => new(
         _assistantServiceMock.Object,
         _summarizationServiceMock.Object,
         _rateLimiterMock.Object,
         _tenantInfoMock.Object,
         Options.Create(settings ?? _settingsValue));
+
+    #region Helper Methods
+
+    private static AiChatRequest CreateValidChatRequest()
+    {
+        return new AiChatRequest
+        {
+            Messages =
+            [
+                new AiChatMessage { Role = "user", Content = "How many active jobs?" }
+            ]
+        };
+    }
+
+    #endregion
 
     #region Chat
 
@@ -686,7 +701,8 @@ public class AiControllerTests
             {
                 Summary = "1. John - closest. 2. Jane - lowest load.",
                 Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 40 },
-                Couriers = [
+                Couriers =
+                [
                     new SuggestedCourier { CourierId = 10, Code = "C10", FirstName = "John" },
                     new SuggestedCourier { CourierId = 11, Code = "C11", FirstName = "Jane" }
                 ]
@@ -742,21 +758,6 @@ public class AiControllerTests
 
         var statusResult = result as ObjectResult;
         statusResult!.StatusCode.Should().Be(499);
-    }
-
-    #endregion
-
-    #region Helper Methods
-
-    private static AiChatRequest CreateValidChatRequest()
-    {
-        return new AiChatRequest
-        {
-            Messages =
-            [
-                new AiChatMessage { Role = "user", Content = "How many active jobs?" }
-            ]
-        };
     }
 
     #endregion

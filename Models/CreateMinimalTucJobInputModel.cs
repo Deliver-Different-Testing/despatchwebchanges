@@ -3,13 +3,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DespatchWeb.Models;
 
-public class CreateMinimalTucJobResponse
-{
-    public bool Success { get; init; }
-    public int? JobId { get; init; }
-    public string Message { get; init; }
-}
-
 public class CreateMinimalTucJobInputModel
 {
     [Required] public string JobNumber { get; init; }
@@ -23,7 +16,7 @@ public class CreateMinimalTucJobInputModel
     [Required] public int ClientId { get; init; }
 
     public int? AgentCourierId { get; init; }
-    
+
     [Required] public int SpeedId { get; init; }
 
     [Required] public decimal Amount { get; init; }
@@ -64,13 +57,7 @@ public class CreateMinimalTucJobInputModel
 
     public string JobNotificationMobile { get; init; }
 
-    public string ToAddressCode { get; init; }
-
-    public string FromAddressCode { get; init; }
-
     public bool Hold { get; init; } = false;
-
-    public decimal? AgentAmount { get; init; }
 
     public decimal? FuelSurchargeAmount { get; init; }
 
@@ -85,21 +72,17 @@ public class CreateMinimalTucJobInputModel
     public decimal? DeliveryLongitude { get; init; }
 
     public DateTime? Pickup { get; init; }
-    
+
     public bool? PrivateRes { get; init; }
 
-    public DateTime? TruckStartTime { get; init; }
-
-
     public int? TotalPallets { get; init; }
-
 
     public decimal? DryIceWeight { get; init; }
 
     public decimal? Cubic { get; init; }
-    
+
     public int? DgClass { get; init; }
-    
+
     public int? AccessorialChargeGroupId { get; init; }
 
     public DateTime? DeliverByDateTime { get; init; }
@@ -111,7 +94,7 @@ public class CreateMinimalTucJobInputModel
     public string RecurringDays { get; init; }
 
     public string RecurringFrequency { get; init; }
-    
+
     public int? RecurringInitialDays { get; init; }
 
     public string CubicList { get; init; }
@@ -119,6 +102,6 @@ public class CreateMinimalTucJobInputModel
     public string WeightList { get; init; }
 
     public string BarcodeList { get; init; }
-    
+
     public string RecurringName { get; init; }
 }

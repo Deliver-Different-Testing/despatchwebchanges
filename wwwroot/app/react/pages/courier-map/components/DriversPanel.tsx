@@ -157,24 +157,26 @@ export function DriversPanel({
                         value={searchInputValue}
                         onChange={(e) => onSearchChange(e.target.value)}
                         aria-label="Search drivers"
-                        InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Search fontSize="small" sx={{ color: 'text.secondary' }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: searchInputValue ? (
-                                <InputAdornment position="end">
-                                    <IconButton
-                                        size="small"
-                                        onClick={() => onSearchChange('')}
-                                        aria-label="Clear search"
-                                        edge="end"
-                                    >
-                                        <Close fontSize="small" />
-                                    </IconButton>
-                                </InputAdornment>
-                            ) : null,
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Search fontSize="small" sx={{ color: 'text.secondary' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: searchInputValue ? (
+                                    <InputAdornment position="end">
+                                        <IconButton
+                                            size="small"
+                                            onClick={() => onSearchChange('')}
+                                            aria-label="Clear search"
+                                            edge="end"
+                                        >
+                                            <Close fontSize="small" />
+                                        </IconButton>
+                                    </InputAdornment>
+                                ) : null,
+                            },
                         }}
                         sx={{
                             '& .MuiOutlinedInput-root': {

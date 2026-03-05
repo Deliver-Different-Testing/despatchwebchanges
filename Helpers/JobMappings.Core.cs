@@ -186,23 +186,23 @@ public static partial class JobMappings
         FromContactName = j.PickupFromContact,
         BookingContactEmail = j.Contact != null ? j.Contact.UcctEmail : null,
         FromContactNumber =
-            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+            j.PickupFromPhone != null && j.PickupFromPhone != ""
                 ? j.PickupFromPhone
-                : (j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != "")
+                : j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != ""
                     ? j.Contact.UcctDirectDial
-                    : (j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != "")
+                    : j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != ""
                         ? j.Contact.UcctMobile
-                        : (j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != "")
+                        : j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != ""
                             ? j.UcjbClient.UcclPhone
                             : null,
         FromContactNumberSource =
-            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+            j.PickupFromPhone != null && j.PickupFromPhone != ""
                 ? "Job"
-                : (j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != "")
+                : j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != ""
                     ? "Direct Line"
-                    : (j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != "")
+                    : j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != ""
                         ? "Mobile"
-                        : (j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != "")
+                        : j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != ""
                             ? "Company"
                             : null,
 

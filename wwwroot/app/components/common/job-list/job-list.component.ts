@@ -1,5 +1,12 @@
 ﻿import "./job-list.styles.less";
-import {IAddressViewModel, IAssignedFlight, IDispatchJob, ISuggestion} from "../../../interfaces/job.interface";
+import {
+    IAddressViewModel,
+    IAiCourierSuggestion,
+    IAssignedFlight,
+    IDispatchJob,
+    ISuggestion
+} from "../../../interfaces/job.interface";
+import {isAiEnabled} from "../../../functions/aiSettings";
 import BaseController from "../../base-controller";
 import dayjs from "dayjs";
 import JobCategory from "./enums/jobCategory";
@@ -23,6 +30,7 @@ class JobsListController extends BaseController {
         'toastrService',
         '$document',
         '$mdDialog',
+        '$http',
         'APP_CONFIG',
         '$timeout',
         '$interval',
@@ -129,6 +137,7 @@ class JobsListController extends BaseController {
         private toastrService: ToastrService,
         private $document: angular.IDocumentService,
         private $mdDialog: angular.material.IDialogService,
+        private $http: angular.IHttpService,
         appConfig: IAppConfig,
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
@@ -822,6 +831,9 @@ class JobsListController extends BaseController {
         if (!this.allowDispatch) return;
         job.showCourierSearch = true;
 
+        // Fire-and-forget: start fetching AI suggestions so they're cached by the time dropdown opens
+        this.getAiCourierSuggestions(job);
+
         this.registerTimeout(() => {
             const inputField = angular.element(`input[name="courierSearch_${job.id}"]`);
             if (inputField.length > 0) {
@@ -918,8 +930,39 @@ class JobsListController extends BaseController {
         return `Last updated: ${dayjs().format('h:mm A')}`;
     }
 
+    private async getAiCourierSuggestions(job: IDispatchJob): Promise<IAiCourierSuggestion[]> {
+        if (!isAiEnabled()) return [];
+        if (job._aiCourierSuggestions) return job._aiCourierSuggestions;
+
+        job._aiSuggestionsLoading = true;
+        try {
+            const response = await this.$http.post<{
+                couriers: { courierId: number; code: string; firstName: string }[];
+            }>('/Ai/SuggestCouriers', null, { params: { jobId: job.id } });
+
+            job._aiCourierSuggestions = response.data.couriers.map(c => ({
+                id: c.courierId,
+                text: `${c.code} - ${c.firstName}`,
+                isAiSuggestion: true
+            }));
+            return job._aiCourierSuggestions;
+        } catch {
+            return [];
+        } finally {
+            job._aiSuggestionsLoading = false;
+            this.applyScope();
+        }
+    }
+
     async performCourierSearch(searchText: string, job?: IDispatchJob): Promise<ISuggestion[]> {
-        if (!searchText) return [];
+        if (!searchText || searchText.trim() === '') {
+            // No text typed — return AI suggestions if available
+            if (job) {
+                const aiSuggestions = await this.getAiCourierSuggestions(job);
+                if (aiSuggestions.length > 0) return aiSuggestions;
+            }
+            return [];
+        }
 
         try {
             // Check if this is a DG job
@@ -949,6 +992,17 @@ class JobsListController extends BaseController {
 
                 // Return exact matches if found, otherwise return all results
                 return exactMatches.length > 0 ? exactMatches : results;
+            }
+
+            // Prepend matching AI suggestions to regular results
+            if (isAiEnabled() && job?._aiCourierSuggestions?.length) {
+                const lowerSearch = searchText.toLowerCase();
+                const matchingAi = job._aiCourierSuggestions.filter(
+                    s => s.text.toLowerCase().includes(lowerSearch)
+                );
+                const regularIds = new Set(results.map(r => r.id));
+                const uniqueAi = matchingAi.filter(s => !regularIds.has(s.id));
+                return [...uniqueAi, ...results];
             }
 
             return results;
@@ -988,7 +1042,7 @@ class JobsListController extends BaseController {
     }
 
     shouldShowPriorityColumn(job: IDispatchJob): boolean {
-        return !!(job.toAirportId || job.fromAirportId);
+        return !!(job.toAirportId || job.fromAirportId || this.isChilledJob(job));
     }
 
     private loadColumnWidths(): void {

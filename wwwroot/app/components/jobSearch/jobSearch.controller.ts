@@ -621,7 +621,7 @@ class JobSearchController extends BaseController {
             await this.refreshData();
 
             // Then load the new job
-            await this.selectJobDetail(newJobId);
+            if (newJobId) await this.selectJobDetail(newJobId);
             console.log('Dialog closed!');
         } catch (error) {
             console.error('Error in createNewJob:', error);

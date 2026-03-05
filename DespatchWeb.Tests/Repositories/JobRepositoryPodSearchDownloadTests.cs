@@ -20,6 +20,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
 
     public JobRepositoryPodSearchDownloadTests()
     {
@@ -64,7 +65,8 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock.Object,
+        _createJobServiceMock.Object
     );
 
     private DespatchContext CreateContext() => new(_contextOptions);
@@ -73,7 +75,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_ReturnsLiveAndArchivedJobs()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15)),
@@ -111,7 +113,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_DateFilter_FiltersCorrectly()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-JAN", new DateTime(2024, 1, 15)),
@@ -145,7 +147,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_ClientFilter_FiltersCorrectly()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "CLIENT1-JOB", new DateTime(2024, 1, 15), clientId: 100),
@@ -177,7 +179,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_CourierFilter_FiltersCorrectly()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "COURIER1-JOB", new DateTime(2024, 1, 15), courierId: 10),
@@ -209,7 +211,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_SpeedFilter_FiltersCorrectly()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "SPEED1-JOB", new DateTime(2024, 1, 15), speedId: 1),
@@ -241,7 +243,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_JobNumberSearch_FiltersCorrectly()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "ABC-001", new DateTime(2024, 1, 15)),
@@ -273,7 +275,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_ParentChildJobs_ReturnsAllJobsToMatchSearchBehavior()
     {
         // Arrange - Parent job 1 has child job 2
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "PARENT-001", new DateTime(2024, 1, 15), parentId: 1), // Parent (self-reference)
@@ -307,7 +309,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_ResultsSortedByJobNumber()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "C-JOB", new DateTime(2024, 1, 15)),
@@ -338,7 +340,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_IsArchivedFlag_SetCorrectly()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15)));
             context.TucJobArchives.Add(CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15)));
@@ -370,7 +372,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_EmptyFilters_ReturnsAllJobsInDateRange()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15)));
             context.TucJobArchives.Add(CreateArchivedJob(101, "JOB-002", new DateTime(2024, 1, 15)));
@@ -398,7 +400,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesPodName()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), podName: "John Smith"),
@@ -431,7 +433,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesContactPhone()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), contactPhone: "0412345678"),
@@ -464,7 +466,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesPickupFromPhone()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-AAA", new DateTime(2024, 1, 15), pickupFromPhone: "0312345678"),
@@ -496,7 +498,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesDeliverToPhone()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), deliverToPhone: "0712345678"),
@@ -529,7 +531,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesProofOfDeliveryEmail()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), podEmail: "john@example.com"),
@@ -562,7 +564,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesProofOfDeliveryMobile()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), podMobile: "0400111222"),
@@ -595,7 +597,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesTrackingEmail()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), trackingEmail: "tracking@company.com"),
@@ -628,7 +630,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesTrackingMobile()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15), trackingMobile: "0422111222"),
@@ -661,7 +663,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     public async Task PodSearchDownloadAsync_WildcardSearch_SearchesArchivedJobFields()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobArchives.AddRange(
                 CreateArchivedJob(1, "ARCH-001", new DateTime(2024, 1, 15), podName: "John Smith", contactPhone: "0412345678"),

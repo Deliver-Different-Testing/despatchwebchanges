@@ -42,23 +42,19 @@ public class RateJobService(
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
           
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
-            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails.FromId));
-            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ToId));
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
+            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
-            {
                 await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
-            }
             else
-            {
                 Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                     jobDetails.JobId,
                     rateResult?.Rate ?? 0);
-            }
         }
         catch (Exception ex)
         {
@@ -77,9 +73,9 @@ public class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
 
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(
@@ -146,11 +142,11 @@ public class RateJobService(
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
             
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
-            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails.FromId));
-            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ToId));
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
+            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 }) return rateResult.Rate;
@@ -180,9 +176,9 @@ public class RateJobService(
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
             
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SpeedId));
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails.ClientId));
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails.SizeId));
+            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
 
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(

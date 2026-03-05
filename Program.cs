@@ -159,6 +159,7 @@ builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
 builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 builder.Services.AddScoped<ISplitJobService, SplitJobService>();
+builder.Services.AddScoped<ICreateJobService, CreateJobService>();
 builder.Services.AddScoped<IPodReportService, PodReportService>();
 builder.Services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();
 builder.Services.AddScoped<IAccessorialChargeService, AccessorialChargeService>();
@@ -328,10 +329,7 @@ app.Use(async (context, next) =>
         "form-action 'self';";
 
     // Only upgrade insecure requests in production
-    if (!app.Environment.IsDevelopment())
-    {
-        csp += " upgrade-insecure-requests;";
-    }
+    if (!app.Environment.IsDevelopment()) csp += " upgrade-insecure-requests;";
 
     headers.ContentSecurityPolicy = csp;
 

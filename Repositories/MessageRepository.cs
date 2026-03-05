@@ -156,14 +156,9 @@ public class MessageRepository(
         };
 
         if (request.SendToCourierId.HasValue)
-        {
             await HandleCourierMessageAsync(message, request.SendToCourierId.Value, request.MessageType, isUsTenant,
                 currentDate.Date);
-        }
-        else if (request.SendToStaffId.HasValue)
-        {
-            HandleStaffMessage(message, request.SendToStaffId.Value);
-        }
+        else if (request.SendToStaffId.HasValue) HandleStaffMessage(message, request.SendToStaffId.Value);
 
         await Context.TucManualMessages.AddAsync(message);
         await Context.SaveChangesAsync();

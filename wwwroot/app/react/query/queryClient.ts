@@ -57,6 +57,13 @@ export const queryKeys = {
     timeZones: {
         all: ['timeZones'] as const,
     },
+    clients: {
+        all: ['clients'] as const,
+        search: (searchText: string) => ['clients', 'search', searchText] as const,
+    },
+    vehicles: {
+        all: ['vehicles'] as const,
+    },
     jobs: {
         all: ['jobs'] as const,
         related: (jobId: number, isArchived: boolean) =>

@@ -305,7 +305,7 @@ describe('CourierMapPage Type Definitions', () => {
     describe('UseCourierMapReturn', () => {
         it('should have correct structure', () => {
             const returnValue: UseCourierMapReturn = {
-                mapContainerRef: {current: null},
+                mapContainerRef: {current: null as HTMLDivElement | null},
                 isInitialized: true,
                 updateCouriers: jest.fn(),
                 centerOnCourier: jest.fn(),

@@ -498,12 +498,14 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 onClose={onClose}
                 maxWidth="md"
                 fullWidth
-                PaperProps={{
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        maxHeight: '90vh',
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: {
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            maxHeight: '90vh',
+                        },
                     },
                 }}
             >

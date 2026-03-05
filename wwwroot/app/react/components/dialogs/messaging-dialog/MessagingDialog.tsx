@@ -21,15 +21,12 @@ import {
     Avatar,
     Badge,
     CircularProgress,
-    Divider,
     Chip,
-    Menu,
     MenuItem,
     Select,
     FormControl,
     Checkbox,
     InputAdornment,
-    Paper,
 } from '@mui/material';
 import {
     Close as CloseIcon,
@@ -82,9 +79,7 @@ interface MessagingDialogState {
 
 export class MessagingDialog extends React.Component<MessagingDialogProps, MessagingDialogState> {
     private messagesEndRef = React.createRef<HTMLDivElement>();
-    private conversationRefreshInterval: NodeJS.Timeout | null = null;
-    private messageRefreshInterval: NodeJS.Timeout | null = null;
-
+    
     constructor(props: MessagingDialogProps) {
         super(props);
         this.state = {
@@ -107,18 +102,20 @@ export class MessagingDialog extends React.Component<MessagingDialogProps, Messa
                 open={open}
                 onClose={onClose}
                 maxWidth={false}
-                PaperProps={{
-                    sx: {
-                        width: '90vw',
-                        maxWidth: 1100,
-                        height: '80vh',
-                        maxHeight: 800,
-                        minWidth: 700,
-                        minHeight: 500,
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
+                slotProps={{
+                    paper: {
+                        sx: {
+                            width: '90vw',
+                            maxWidth: 1100,
+                            height: '80vh',
+                            maxHeight: 800,
+                            minWidth: 700,
+                            minHeight: 500,
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                        },
                     },
                 }}
             >
@@ -137,7 +134,7 @@ export class MessagingDialog extends React.Component<MessagingDialogProps, Messa
 interface MessagingDialogContentProps extends MessagingDialogProps {
     state: MessagingDialogState;
     setState: (updates: Partial<MessagingDialogState>) => void;
-    messagesEndRef: React.RefObject<HTMLDivElement>;
+    messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
 function MessagingDialogContent({
@@ -182,8 +179,9 @@ function MessagingDialogContent({
     // Load initial data
     React.useEffect(() => {
         if (open) {
-            loadConversations();
-            loadQuickResponses();
+            loadConversations().then(_ => {
+                return loadQuickResponses();
+            });
         }
     }, [open, loadConversations, loadQuickResponses]);
 
@@ -746,7 +744,7 @@ interface ChatPanelProps {
     onRefreshMessages: () => void;
     onToggleQuickResponses: () => void;
     onSelectQuickResponse: (response: QuickResponse) => void;
-    messagesEndRef: React.RefObject<HTMLDivElement>;
+    messagesEndRef: React.RefObject<HTMLDivElement | null>;
 }
 
 function ChatPanel({
@@ -1107,19 +1105,21 @@ function NewChatView({
                     value={searchTerm}
                     onChange={(e) => onSearch(e.target.value)}
                     size="small"
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon color="action" />
-                            </InputAdornment>
-                        ),
-                        endAdornment: searchTerm && (
-                            <InputAdornment position="end">
-                                <IconButton size="small" onClick={onClearSearch}>
-                                    <CloseIcon fontSize="small" />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
+                    slotProps={{
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon color="action" />
+                                </InputAdornment>
+                            ),
+                            endAdornment: searchTerm && (
+                                <InputAdornment position="end">
+                                    <IconButton size="small" onClick={onClearSearch}>
+                                        <CloseIcon fontSize="small" />
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        },
                     }}
                     sx={{
                         '& .MuiOutlinedInput-root': {

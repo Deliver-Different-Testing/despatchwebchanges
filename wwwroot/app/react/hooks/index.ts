@@ -8,7 +8,7 @@
 export {useCourierSearch, useTimeZoneOptions} from './useCourierApi';
 
 // Job API hooks
-export {useRelatedJobs} from './useJobApi';
+export {useRelatedJobs, useClientSearch, useVehicleSizes} from './useJobApi';
 
 // Address API hooks
 export {useAddressSearch, useLocationDetails, useHereMapsApiKey} from './useAddressApi';

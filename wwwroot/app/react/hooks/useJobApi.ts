@@ -8,7 +8,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {jobApi} from '../services/jobApi';
-import {RelatedJobDto} from '../interfaces';
+import {RelatedJobDto, Suggestion} from '../interfaces';
 
 /**
  * Hook to load related jobs for multi-select void operation
@@ -37,5 +37,33 @@ export function useRelatedJobs(
         queryFn: () => jobApi.getRelatedJobsMultiSelectList(jobId, isArchived),
         enabled: (options?.enabled ?? true) && jobId > 0,
         staleTime: 30 * 1000,
+    });
+}
+
+/**
+ * Hook to search for active clients
+ */
+export function useClientSearch(
+    searchText: string,
+    options?: { enabled?: boolean }
+) {
+    return useQuery<Suggestion[], Error>({
+        queryKey: queryKeys.clients.search(searchText),
+        queryFn: () => jobApi.searchActiveClients(searchText),
+        enabled: searchText.length >= 3 && (options?.enabled ?? true),
+        staleTime: 30 * 1000,
+    });
+}
+
+/**
+ * Hook to load available vehicle sizes
+ */
+export function useVehicleSizes(options?: { enabled?: boolean }) {
+    return useQuery<Suggestion[], Error>({
+        queryKey: queryKeys.vehicles.all,
+        queryFn: () => jobApi.getVehicleSizes(),
+        enabled: options?.enabled ?? true,
+        staleTime: 5 * 60 * 1000,
+        gcTime: 30 * 60 * 1000,
     });
 }

@@ -227,9 +227,11 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             onClose={onClose}
             maxWidth="md"
             fullWidth
-            PaperProps={{
-                elevation: 24,
-                sx: { borderRadius: 3, overflow: 'hidden' },
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: { borderRadius: 3, overflow: 'hidden' },
+                },
             }}
         >
             {/* Header */}
@@ -681,8 +683,10 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         fullWidth
                                         required
                                         placeholder="e.g., Installation Services"
-                                        InputProps={{
-                                            sx: { borderRadius: 2 },
+                                        slotProps={{
+                                            input: {
+                                                sx: { borderRadius: 2 },
+                                            },
                                         }}
                                     />
 
@@ -696,13 +700,15 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             inputProps={{ min: 0, step: 0.01 }}
                                             placeholder="0.00"
                                             helperText="Optional"
-                                            InputProps={{
-                                                startAdornment: (
-                                                    <InputAdornment position="start">
-                                                        <MoneyIcon color="action" fontSize="small" />
-                                                    </InputAdornment>
-                                                ),
-                                                sx: { borderRadius: 2 },
+                                            slotProps={{
+                                                input: {
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <MoneyIcon color="action" fontSize="small" />
+                                                        </InputAdornment>
+                                                    ),
+                                                    sx: { borderRadius: 2 },
+                                                },
                                             }}
                                         />
                                         <TextField
@@ -714,13 +720,15 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             required
                                             inputProps={{ min: 0, step: 0.01 }}
                                             placeholder="0.00"
-                                            InputProps={{
-                                                startAdornment: (
-                                                    <InputAdornment position="start">
-                                                        <MoneyIcon color="action" fontSize="small" />
-                                                    </InputAdornment>
-                                                ),
-                                                sx: { borderRadius: 2 },
+                                            slotProps={{
+                                                input: {
+                                                    startAdornment: (
+                                                        <InputAdornment position="start">
+                                                            <MoneyIcon color="action" fontSize="small" />
+                                                        </InputAdornment>
+                                                    ),
+                                                    sx: { borderRadius: 2 },
+                                                },
                                             }}
                                         />
                                     </Stack>

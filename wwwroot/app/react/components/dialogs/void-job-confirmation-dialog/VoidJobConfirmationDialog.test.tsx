@@ -243,7 +243,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -255,7 +255,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -271,7 +271,7 @@ describe('VoidJobConfirmationDialog', () => {
             });
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             expect(screen.getByText('Loading related jobs...')).toBeInTheDocument();
@@ -281,7 +281,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -295,7 +295,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -307,7 +307,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -327,7 +327,7 @@ describe('VoidJobConfirmationDialog', () => {
             const textarea = screen.getByLabelText(/Reason for voiding/);
             await userEvent.type(textarea, 'Test reason');
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -349,7 +349,7 @@ describe('VoidJobConfirmationDialog', () => {
             const textarea = screen.getByLabelText(/Reason for voiding/);
             await userEvent.type(textarea, 'Multi-void reason');
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -381,7 +381,7 @@ describe('VoidJobConfirmationDialog', () => {
             const textarea = screen.getByLabelText(/Reason for voiding/);
             await userEvent.type(textarea, 'Test');
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -405,7 +405,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             // Wait for related jobs to load
@@ -426,7 +426,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             // Wait for related jobs to load
@@ -448,7 +448,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps();
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -500,7 +500,7 @@ describe('VoidJobConfirmationDialog', () => {
             });
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -587,7 +587,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps({job: archivedJob});
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -601,7 +601,7 @@ describe('VoidJobConfirmationDialog', () => {
             const props = createMockProps({job: mockBulkJob});
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -620,7 +620,7 @@ describe('VoidJobConfirmationDialog', () => {
             });
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {
@@ -638,7 +638,7 @@ describe('VoidJobConfirmationDialog', () => {
             });
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('checkbox');
+            const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
             await waitFor(() => {

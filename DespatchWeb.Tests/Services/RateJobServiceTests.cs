@@ -87,7 +87,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "ClientId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "FromId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("FromId"));
     }
 
     [Fact]
@@ -111,7 +111,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "ToId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ToId"));
     }
 
     [Fact]
@@ -123,7 +123,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SpeedId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SizeId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
     }
 
     #endregion
@@ -161,7 +161,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobUsAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SpeedId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
     }
 
     [Fact]
@@ -173,7 +173,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobUsAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "ClientId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public class RateJobServiceTests
         var act = () => service.RateJobUsAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SizeId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
     }
 
     #endregion
@@ -465,7 +465,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "ClientId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
     }
 
     [Fact]
@@ -477,7 +477,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "FromId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("FromId"));
     }
 
     [Fact]
@@ -489,7 +489,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "ToId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ToId"));
     }
 
     [Fact]
@@ -501,7 +501,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SpeedId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
     }
 
     [Fact]
@@ -513,7 +513,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateNzAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SizeId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
     }
 
     #endregion
@@ -539,7 +539,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateUsAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SpeedId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
     }
 
     [Fact]
@@ -551,7 +551,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateUsAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "ClientId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
     }
 
     [Fact]
@@ -563,7 +563,7 @@ public class RateJobServiceTests
         var act = () => service.GetJobRateUsAsync(jobDetails);
 
         await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "SizeId");
+            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
     }
 
     [Fact]

@@ -132,15 +132,15 @@ public static partial class JobMappings
 
         FromContactName = j.PickupFromContact ?? Defaults.NotApplicable,
         FromContactNumber =
-            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+            j.PickupFromPhone != null && j.PickupFromPhone != ""
                 ? j.PickupFromPhone
-                : (j.Client != null && j.Client.UcclPhone != null && j.Client.UcclPhone != "")
+                : j.Client != null && j.Client.UcclPhone != null && j.Client.UcclPhone != ""
                     ? j.Client.UcclPhone
                     : null,
         FromContactNumberSource =
-            (j.PickupFromPhone != null && j.PickupFromPhone != "")
+            j.PickupFromPhone != null && j.PickupFromPhone != ""
                 ? "Job"
-                : (j.Client != null && j.Client.UcclPhone != null && j.Client.UcclPhone != "")
+                : j.Client != null && j.Client.UcclPhone != null && j.Client.UcclPhone != ""
                     ? "Company"
                     : null,
 

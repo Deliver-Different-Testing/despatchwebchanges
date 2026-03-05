@@ -480,6 +480,10 @@ export interface IMultiSuggestion extends ISuggestion {
     selected: boolean;
 }
 
+export interface IAiCourierSuggestion extends ISuggestion {
+    isAiSuggestion: boolean;
+}
+
 export interface IAirlineSuggestion extends ISuggestion {
     fullAirlineName: string;
 }
@@ -794,6 +798,8 @@ export interface IDispatchJob {
     _followupDateString?: string;
     _pickUpTimeZoneStr?: string;
     _deliveryTimeZoneStr?: string;
+    _aiCourierSuggestions?: IAiCourierSuggestion[];
+    _aiSuggestionsLoading?: boolean;
 }
 
 export interface IDispatchJobDto {

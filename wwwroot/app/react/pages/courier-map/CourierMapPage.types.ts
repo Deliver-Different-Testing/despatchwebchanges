@@ -93,7 +93,7 @@ export interface MapControlsProps {
  */
 export interface UseCourierMapReturn {
     /** Reference to attach to the map container div */
-    mapContainerRef: React.RefObject<HTMLDivElement>;
+    mapContainerRef: React.RefObject<HTMLDivElement | null>;
     /** Whether the map is initialized */
     isInitialized: boolean;
     /** Update courier markers on the map */

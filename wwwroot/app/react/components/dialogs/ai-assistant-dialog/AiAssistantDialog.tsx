@@ -266,12 +266,14 @@ export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: {
-                    height: '70vh',
-                    maxHeight: 640,
-                    display: 'flex',
-                    flexDirection: 'column',
+            slotProps={{
+                paper: {
+                    sx: {
+                        height: '70vh',
+                        maxHeight: 640,
+                        display: 'flex',
+                        flexDirection: 'column',
+                    },
                 },
             }}
         >
@@ -354,35 +356,37 @@ export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
                     multiline
                     maxRows={3}
                     disabled={isLoading || isConversationFull}
-                    InputProps={{
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                {isLoading ? (
-                                    <Tooltip title="Stop generating">
-                                        <IconButton
-                                            size="small"
-                                            onClick={cancelResponse}
-                                            color="error"
-                                        >
-                                            <StopIcon fontSize="small" />
-                                        </IconButton>
-                                    </Tooltip>
-                                ) : (
-                                    <Tooltip title="Send (Enter)">
-                                        <span>
+                    slotProps={{
+                        input: {
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    {isLoading ? (
+                                        <Tooltip title="Stop generating">
                                             <IconButton
                                                 size="small"
-                                                onClick={handleSend}
-                                                disabled={!inputValue.trim()}
-                                                color="info"
+                                                onClick={cancelResponse}
+                                                color="error"
                                             >
-                                                <SendIcon fontSize="small" />
+                                                <StopIcon fontSize="small" />
                                             </IconButton>
-                                        </span>
-                                    </Tooltip>
-                                )}
-                            </InputAdornment>
-                        ),
+                                        </Tooltip>
+                                    ) : (
+                                        <Tooltip title="Send (Enter)">
+                                            <span>
+                                                <IconButton
+                                                    size="small"
+                                                    onClick={handleSend}
+                                                    disabled={!inputValue.trim()}
+                                                    color="info"
+                                                >
+                                                    <SendIcon fontSize="small" />
+                                                </IconButton>
+                                            </span>
+                                        </Tooltip>
+                                    )}
+                                </InputAdornment>
+                            ),
+                        },
                     }}
                 />
             </Box>

@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -18,6 +19,30 @@ public class TaskRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService) : BaseRepository(contextFactory), ITaskRepository
 {
+    private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Web", "Email", "Text"
+    };
+
+    private static readonly Expression<Func<TucEvent, TaskViewModel>> TaskMapping = e => new TaskViewModel
+    {
+        Id = e.UcevId,
+        Assignee = e.UcevStaffIdinNavigation != null
+            ? new Suggestion
+            {
+                Id = e.UcevStaffIdinNavigation.UcstId,
+                Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+            }
+            : null,
+        Description = e.UcevNotes,
+        JobId = e.UcevJobId ?? 0,
+        Closed = e.UcevClosed,
+        DueDate = e.UcevDueTime,
+        Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
+        EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
+        JobNumber = e.UcevJob.UcjbNumber
+    };
+
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
         var tenantTimeZone = infoService.GetTenantTimeZone();
@@ -49,36 +74,6 @@ public class TaskRepository(
             JobNumber = task.JobNumber
         }).ToList();
     }
-
-    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
-        DateTime today)
-    {
-        query = query
-            .OrderByDescending(e =>
-                e.UcevDueTime.Date < today.Date ||
-                (e.UcevDueTime.Date == today.Date &&
-                 e.UcevDueTime.TimeOfDay < today.TimeOfDay &&
-                 !e.UcevClosed)
-            );
-
-        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy)) return query;
-
-        var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
-
-        return filters.OrderBy.ToLowerInvariant() switch
-        {
-            _ =>
-                ApplyDateTimeOrder(query, isDescending, today)
-        };
-    }
-
-    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending,
-        DateTime today) =>
-        isDescending
-            ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
-                .ThenByDescending(e => e.UcevDueTime)
-            : query.OrderByDescending(e => e.UcevDueTime.Date < today)
-                .ThenBy(e => e.UcevDueTime);
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
@@ -125,7 +120,7 @@ public class TaskRepository(
     public async Task UpdateEventDateAsync(int eventId, DateTimeOffset date)
     {
         await using var transaction = await Context.Database.BeginTransactionAsync();
-    
+
         try
         {
             var existingEvent = await Context.TucEvents
@@ -133,9 +128,9 @@ public class TaskRepository(
                 .Select(e => new { e.UcevDueTime })
                 .AsNoTracking()
                 .FirstOrDefaultAsync();
-        
+
             ArgumentNullException.ThrowIfNull(existingEvent);
-        
+
             // Only update if the value changed
             if (existingEvent.UcevDueTime != date.DateTime)
             {
@@ -153,7 +148,7 @@ public class TaskRepository(
                     date.DateTime.ToString("O")
                 );
             }
-        
+
             await transaction.CommitAsync();
         }
         catch
@@ -167,7 +162,7 @@ public class TaskRepository(
     public async Task UpdateEventTimeAsync(int eventId, DateTimeOffset time)
     {
         await using var transaction = await Context.Database.BeginTransactionAsync();
-    
+
         try
         {
             var existingEvent = await Context.TucEvents
@@ -195,7 +190,7 @@ public class TaskRepository(
                     time.DateTime.ToString("O")
                 );
             }
-        
+
             await transaction.CommitAsync();
         }
         catch
@@ -208,7 +203,7 @@ public class TaskRepository(
     public async Task ReassignEventToUserAsync(int eventId, int staffId)
     {
         await using var transaction = await Context.Database.BeginTransactionAsync();
-    
+
         try
         {
             var existingEvent = await Context.TucEvents
@@ -236,7 +231,7 @@ public class TaskRepository(
                     staffId.ToString()
                 );
             }
-        
+
             await transaction.CommitAsync();
         }
         catch
@@ -361,6 +356,93 @@ public class TaskRepository(
         return staff;
     }
 
+    public async Task AddEventAsync(
+        int jobId,
+        string notes,
+        int eventType,
+        DateTimeOffset? dueDate = null,
+        int? lateTime = null,
+        DateTimeOffset? etaTime = null,
+        bool close = false
+    )
+    {
+        var staffInfoTask = infoService.GetStaffInfoAsync();
+        var jobTask = Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new JobEventDto
+            {
+                UcjbNumber = j.UcjbNumber,
+                UcjbClientId = j.UcjbClientId,
+                UcjbContact = j.UcjbContact,
+                UcjbCourierId = j.UcjbCourierId,
+                UcjbSpeed = j.UcjbSpeed
+            })
+            .FirstOrDefaultAsync();
+
+        await Task.WhenAll(staffInfoTask, jobTask);
+
+        var staffInfo = await staffInfoTask;
+        var job = await jobTask;
+
+        ArgumentNullException.ThrowIfNull(job);
+
+        var currentDate = infoService.GetCurrentTenantTime();
+
+        await InsertEventAsync(
+            jobNo: job.UcjbNumber,
+            clientId: job.UcjbClientId ?? 0,
+            contact: job.UcjbContact,
+            date: currentDate,
+            time: currentDate,
+            type: eventType,
+            lateTime: lateTime,
+            etaTime: etaTime,
+            staffIdIn: staffInfo.Id,
+            staffIdOut: null,
+            responseTime: null,
+            notes: notes,
+            pageCourier: false,
+            closed: close,
+            originator: staffInfo.Id,
+            description: notes,
+            courierId: job.UcjbCourierId,
+            jobId: jobId,
+            despatcher: staffInfo.Text,
+            jobType: job.UcjbSpeed,
+            dueTime: dueDate
+        );
+    }
+
+    private static IQueryable<TucEvent> ApplyOrdering(IQueryable<TucEvent> query, TaskTableFiltersRequest filters,
+        DateTime today)
+    {
+        query = query
+            .OrderByDescending(e =>
+                e.UcevDueTime.Date < today.Date ||
+                (e.UcevDueTime.Date == today.Date &&
+                 e.UcevDueTime.TimeOfDay < today.TimeOfDay &&
+                 !e.UcevClosed)
+            );
+
+        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy)) return query;
+
+        var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
+
+        return filters.OrderBy.ToLowerInvariant() switch
+        {
+            _ =>
+                ApplyDateTimeOrder(query, isDescending, today)
+        };
+    }
+
+    private static IQueryable<TucEvent> ApplyDateTimeOrder(IQueryable<TucEvent> query, bool isDescending,
+        DateTime today) =>
+        isDescending
+            ? query.OrderByDescending(e => e.UcevDueTime.Date < today.Date)
+                .ThenByDescending(e => e.UcevDueTime)
+            : query.OrderByDescending(e => e.UcevDueTime.Date < today)
+                .ThenBy(e => e.UcevDueTime);
+
     private static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,
         TaskTableFiltersRequest filters
@@ -430,68 +512,6 @@ public class TaskRepository(
         return query;
     }
 
-    public async Task AddEventAsync(
-        int jobId,
-        string notes,
-        int eventType,
-        DateTimeOffset? dueDate = null,
-        int? lateTime = null,
-        DateTimeOffset? etaTime = null,
-        bool close = false
-    )
-    {
-        var staffInfoTask = infoService.GetStaffInfoAsync();
-        var jobTask = Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => new JobEventDto
-            {
-                UcjbNumber = j.UcjbNumber,
-                UcjbClientId = j.UcjbClientId,
-                UcjbContact = j.UcjbContact,
-                UcjbCourierId = j.UcjbCourierId,
-                UcjbSpeed = j.UcjbSpeed
-            })
-            .FirstOrDefaultAsync();
-
-        await Task.WhenAll(staffInfoTask, jobTask);
-
-        var staffInfo = await staffInfoTask;
-        var job = await jobTask;
-
-        ArgumentNullException.ThrowIfNull(job);
-
-        var currentDate = infoService.GetCurrentTenantTime();
-
-        await InsertEventAsync(
-            jobNo: job.UcjbNumber,
-            clientId: job.UcjbClientId ?? 0,
-            contact: job.UcjbContact,
-            date: currentDate,
-            time: currentDate,
-            type: eventType,
-            lateTime: lateTime,
-            etaTime: etaTime,
-            staffIdIn: staffInfo.Id,
-            staffIdOut: null,
-            responseTime: null,
-            notes: notes,
-            pageCourier: false,
-            closed: close,
-            originator: staffInfo.Id,
-            description: notes,
-            courierId: job.UcjbCourierId,
-            jobId: jobId,
-            despatcher: staffInfo.Text,
-            jobType: job.UcjbSpeed,
-            dueTime: dueDate
-        );
-    }
-
-    private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "Web", "Email", "Text"
-    };
-
     private async Task InsertEventAsync(
         string jobNo,
         int clientId,
@@ -539,7 +559,8 @@ public class TaskRepository(
                 automaticResponse = type switch
                 {
                     (int)EventType.LatePickUp => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.PickupType),
-                    (int)EventType.LateDelivery => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.DeliveryType),
+                    (int)EventType.LateDelivery => AutoResponseTypes.Contains(
+                        jobContactInfo.ContactJobType.DeliveryType),
                     _ => false
                 };
             }
@@ -584,25 +605,6 @@ public class TaskRepository(
         await Context.AddAsync(newEvent);
         await Context.SaveChangesAsync();
     }
-
-    private static readonly Expression<Func<TucEvent, TaskViewModel>> TaskMapping = e => new TaskViewModel
-    {
-        Id = e.UcevId,
-        Assignee = e.UcevStaffIdinNavigation != null
-            ? new Suggestion
-            {
-                Id = e.UcevStaffIdinNavigation.UcstId,
-                Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
-            }
-            : null,
-        Description = e.UcevNotes,
-        JobId = e.UcevJobId ?? 0,
-        Closed = e.UcevClosed,
-        DueDate = e.UcevDueTime,
-        Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
-        EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
-        JobNumber = e.UcevJob.UcjbNumber
-    };
 
     private async Task CreateEventAuditRecord(int eventId, int staffIdId, TucEventChangeType changeType,
         string columnName, dynamic oldValue, dynamic newValue)

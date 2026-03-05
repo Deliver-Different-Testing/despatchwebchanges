@@ -302,13 +302,15 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                elevation: 24,
-                sx: {
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                    minWidth: 500,
-                    maxWidth: 600,
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        minWidth: 500,
+                        maxWidth: 600,
+                    },
                 },
             }}
         >
@@ -385,21 +387,23 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         }}
                         onChange={(_, value) => handleCourierSelect(value)}
                         isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={(params) => (
+                        renderInput={({InputProps: autoInputProps, ...params}) => (
                             <TextField
                                 {...params}
                                 label="Search driver..."
                                 placeholder="Type at least 2 characters"
                                 error={!!validationErrors.courier}
                                 helperText={validationErrors.courier}
-                                InputProps={{
-                                    ...params.InputProps,
-                                    endAdornment: (
-                                        <>
-                                            {isSearchingCouriers ? <CircularProgress size={20} /> : null}
-                                            {params.InputProps.endAdornment}
-                                        </>
-                                    ),
+                                slotProps={{
+                                    input: {
+                                        ...autoInputProps,
+                                        endAdornment: (
+                                            <>
+                                                {isSearchingCouriers ? <CircularProgress size={20} /> : null}
+                                                {autoInputProps.endAdornment}
+                                            </>
+                                        ),
+                                    },
                                 }}
                             />
                         )}
@@ -496,7 +500,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                             onChange={(e) => setStartTime(e.target.value)}
                             error={!!validationErrors.startTime}
                             helperText={validationErrors.startTime}
-                            InputLabelProps={{shrink: true}}
+                            slotProps={{inputLabel: {shrink: true}}}
                             fullWidth
                         />
                         <TextField
@@ -506,7 +510,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                             onChange={(e) => setEndTime(e.target.value)}
                             error={!!validationErrors.endTime}
                             helperText={validationErrors.endTime}
-                            InputLabelProps={{shrink: true}}
+                            slotProps={{inputLabel: {shrink: true}}}
                             fullWidth
                         />
                     </Box>

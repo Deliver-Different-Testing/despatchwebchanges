@@ -2,6 +2,43 @@
  * Job-related interfaces for React components
  */
 
+import {AddressViewModel} from './address';
+
+export interface Suggestion {
+    id: number;
+    text: string;
+}
+
+export interface CreateJobRequest {
+    clientId: number;
+    deliverToContact: string;
+    podName: string;
+    pickUpAddress: AddressViewModel;
+    deliveryAddress: AddressViewModel;
+    date: string;
+    fromContactName: string;
+    refA: string;
+    refB: string;
+    deliveryNotes: string;
+    pickupNotes: string;
+    jobNotes: string;
+    van: boolean;
+    truck: boolean;
+    pedal: boolean;
+    attention: boolean;
+    vanOk: boolean;
+    reprice: boolean;
+    void: boolean;
+    done: boolean;
+    charge: number;
+    fromLat: number;
+    fromLong: number;
+    toLat: number;
+    toLong: number;
+    speedId: number;
+    vehicleId: number;
+}
+
 export interface RelatedJobDto {
     id: number;
     text: string;

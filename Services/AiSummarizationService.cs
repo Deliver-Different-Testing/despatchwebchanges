@@ -246,7 +246,7 @@ public class AiSummarizationService(
 
         foreach (var task in tasks.OrderBy(t => t.DueDate))
         {
-            var status = task.Closed ? "CLOSED" : (task.DueDate < now ? "OVERDUE" : "OPEN");
+            var status = task.Closed ? "CLOSED" : task.DueDate < now ? "OVERDUE" : "OPEN";
             var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
             var assignee = task.Assignee?.Text ?? "Unassigned";
             sb.AppendLine($"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
@@ -454,7 +454,7 @@ public class AiSummarizationService(
 
         var summaryResult = await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
 
-        var courierList = (potentialCouriers ?? new List<PotentialCouriersViewModel>())
+        var courierList = (potentialCouriers ?? [])
             .Take(10)
             .Select(c => new SuggestedCourier
             {

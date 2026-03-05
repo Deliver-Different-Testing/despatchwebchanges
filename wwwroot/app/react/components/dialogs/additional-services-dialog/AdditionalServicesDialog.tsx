@@ -242,12 +242,14 @@ export class AdditionalServicesDialog extends React.Component<
                 onClose={onClose}
                 maxWidth="md"
                 fullWidth
-                PaperProps={{
-                    elevation: 24,
-                    sx: {
-                        borderRadius: 2,
-                        overflow: 'hidden',
-                        minWidth: 600,
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: {
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                            minWidth: 600,
+                        },
                     },
                 }}
             >

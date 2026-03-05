@@ -254,12 +254,14 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
             onClose={onClose}
             maxWidth="sm"
             fullWidth
-            PaperProps={{
-                sx: {
-                    borderRadius: 3,
-                    overflow: 'hidden',
-                    minWidth: {xs: 'auto', sm: 500},
-                    maxWidth: 700,
+            slotProps={{
+                paper: {
+                    sx: {
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                        minWidth: {xs: 'auto', sm: 500},
+                        maxWidth: 700,
+                    },
                 },
             }}
         >

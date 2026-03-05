@@ -58,7 +58,7 @@ export { driverManagementHandlers } from './driverManagementHandlers';
 // Re-export mock data for test assertions
 export { mockRecentConversations, mockChatMessages, mockQuickResponses, mockContactOptions } from './messagingHandlers';
 export { mockLocationResults, mockLookupResponse } from './addressHandlers';
-export { mockRelatedJobs } from './jobHandlers';
+export { mockRelatedJobs, mockClientSuggestions, mockVehicleSizes } from './jobHandlers';
 export { mockCourierSuggestions, mockCourierLocations, mockClearListEnvelope, mockTimeZoneOptions } from './courierHandlers';
 export { mockTaskApiResponses, mockStaffSuggestions, mockEventTypeSuggestions, mockDeliveryJourneyDtos } from './taskHandlers';
 export { mockJobNoteDtos, mockNoteTypes } from './noteHandlers';

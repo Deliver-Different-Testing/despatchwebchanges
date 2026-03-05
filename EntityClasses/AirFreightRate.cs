@@ -57,6 +57,8 @@ public partial class AirFreightRate
 
     public int? AccessorialChargeGroupId { get; set; }
 
+    public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
+
     public virtual ExtraCharge ExtraCharge { get; set; }
 
     public virtual ICollection<FlightZoneCombo> FlightZoneCombos { get; set; } = new List<FlightZoneCombo>();

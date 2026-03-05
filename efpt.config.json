@@ -1,5 +1,5 @@
 ﻿{
-   "CodeGenerationMode": 4,
+   "CodeGenerationMode": 6,
    "ContextClassName": "DespatchContext",
    "ContextNamespace": null,
    "FilterSchemas": false,
@@ -18,6 +18,18 @@
    "SingularRules": null,
    "T4TemplatePath": null,
    "Tables": [
+      {
+         "Name": "[dbo].[AccessorialChargeGroupMembers]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AccessorialChargeGroups]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[AccessorialCharges]",
+         "ObjectType": 0
+      },
       {
          "Name": "[dbo].[AgentVehicles]",
          "ObjectType": 0
@@ -56,6 +68,10 @@
       },
       {
          "Name": "[dbo].[FlightZoneCombos]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[JobAccessorialCharges]",
          "ObjectType": 0
       },
       {
@@ -183,11 +199,19 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblJobDefault]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblJobLeaveNotHome]",
          "ObjectType": 0
       },
       {
          "Name": "[dbo].[tblJobRelationshipType]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tblPickUpDeliveryLocation]",
          "ObjectType": 0
       },
       {
@@ -371,6 +395,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[UnitTypes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[UserQuickResponses]",
          "ObjectType": 0
       },
@@ -423,6 +451,10 @@
          "ObjectType": 3
       },
       {
+         "Name": "[dbo].[tblReference]",
+         "ObjectType": 3
+      },
+      {
          "Name": "[dbo].[UTL_qryContact_Lookup]",
          "ObjectType": 3
       },
@@ -435,6 +467,10 @@
          "ObjectType": 1
       },
       {
+         "Name": "[dbo].[DD_stpBulkScheduleJob_Insert]",
+         "ObjectType": 1
+      },
+      {
          "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
          "ObjectType": 1
       },
@@ -443,7 +479,7 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DD_stpJob_InsertExcelerator]",
+         "Name": "[dbo].[DD_stpJob_Excelerator_Insert]",
          "ObjectType": 1
       },
       {
@@ -500,6 +536,10 @@
       },
       {
          "Name": "[dbo].[REP_qryPerformance_Summary_PerformanceSpend]",
+         "ObjectType": 1
+      },
+      {
+         "Name": "[dbo].[sp_AddJobAccessorial]",
          "ObjectType": 1
       },
       {

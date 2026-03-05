@@ -24,4 +24,6 @@ public partial class PricingBreakdownArchive
     public decimal? Charged { get; set; }
 
     public decimal? CostAmount { get; set; }
+
+    public bool IsAccessorial { get; set; }
 }

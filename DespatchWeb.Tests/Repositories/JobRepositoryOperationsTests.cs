@@ -24,6 +24,7 @@ public class JobRepositoryOperationsTests : IDisposable
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
 
     public JobRepositoryOperationsTests()
     {
@@ -70,7 +71,8 @@ public class JobRepositoryOperationsTests : IDisposable
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
-        _clearListEnvelopeServiceMock.Object
+        _clearListEnvelopeServiceMock.Object,
+        _createJobServiceMock.Object
     );
 
     #region IsJobParentAsync Tests
@@ -79,7 +81,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsJobParentAsync_WithChildJob_ReturnsTrue()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TucJobs.Add(CreateJob(100, "PARENT"));
         context.TucJobs.Add(CreateJobWithParent(101, "CHILD", 100));
         await context.SaveChangesAsync();
@@ -97,7 +99,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsJobParentAsync_WithParentJob_ReturnsFalse()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TucJobs.Add(CreateJob(100, "PARENT"));
         await context.SaveChangesAsync();
 
@@ -114,7 +116,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsJobParentAsync_WithBookingChild_ReturnsTrue()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TucJobBookings.Add(new TucJobBooking
         {
             UcbkId = 200,
@@ -136,7 +138,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsJobParentAsync_WithBookingWithoutParent_ReturnsFalse()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TucJobBookings.Add(new TucJobBooking
         {
             UcbkId = 200,
@@ -170,7 +172,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsJobParentAsync_PrefersLiveJobOverBooking()
     {
         // Arrange - live job exists with no parent
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TucJobs.Add(CreateJob(100, "LIVE-JOB"));
         await context.SaveChangesAsync();
 
@@ -191,7 +193,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsBulkJobParent_WithParentId_ReturnsTrue()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TblBulkJobs.Add(new TblBulkJob
         {
             BulkJobId = 200,
@@ -215,7 +217,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsBulkJobParent_WithBulkParentId_ReturnsTrue()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TblBulkJobs.Add(new TblBulkJob
         {
             BulkJobId = 200,
@@ -239,7 +241,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task IsBulkJobParent_WithNoParent_ReturnsFalse()
     {
         // Arrange
-        using var context = CreateContext();
+        await using var context = CreateContext();
         context.TblBulkJobs.Add(new TblBulkJob
         {
             BulkJobId = 200,
@@ -279,7 +281,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task UpdateJobVoidStatusAsync_WithActiveJobs_SetsVoidAndStatus()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateJob(100, "JOB001"),
@@ -294,7 +296,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.UpdateJobVoidStatusAsync([100, 101]);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobs
             .Where(j => new[] { 100, 101 }.Contains(j.UcjbId))
             .ToListAsync();
@@ -308,7 +310,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task UpdateJobVoidStatusAsync_WithArchivedJobs_SetsVoidAndStatus()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobArchives.AddRange(
                 CreateArchivedJob(100, "ARCH001"),
@@ -323,7 +325,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.UpdateJobVoidStatusAsync([100, 101]);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobArchives
             .Where(j => new[] { 100, 101 }.Contains(j.UcjbId))
             .ToListAsync();
@@ -337,7 +339,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task UpdateJobVoidStatusAsync_WithMixedActiveAndArchived_VoidsBoth()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJob(100, "ACTIVE"));
             context.TucJobArchives.Add(CreateArchivedJob(101, "ARCHIVED"));
@@ -350,7 +352,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.UpdateJobVoidStatusAsync([100, 101]);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var activeJob = await verifyContext.TucJobs.FindAsync(100);
         var archivedJob = await verifyContext.TucJobArchives.FindAsync(101);
 
@@ -388,7 +390,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task SimpleRepriceJobManualAsync_WithRegularJob_UpdatesPriceAndMarksManual()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJobWithAmounts(100, "JOB001", amount: 50m));
             await context.SaveChangesAsync();
@@ -401,7 +403,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobs.FindAsync(100);
         job!.UcjbAmount.Should().Be(150m);
         job.RatedManually.Should().BeTrue();
@@ -411,7 +413,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task SimpleRepriceJobManualAsync_WithArchivedJob_UpdatesPriceInArchive()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobArchives.Add(new TucJobArchive
             {
@@ -430,7 +432,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobArchives.FindAsync(100);
         job!.UcjbAmount.Should().Be(200m);
         job.RatedManually.Should().BeTrue();
@@ -440,7 +442,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task SimpleRepriceJobManualAsync_WithBulkJob_UpdatesAmount()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TblBulkJobs.Add(new TblBulkJob
             {
@@ -460,7 +462,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var job = await verifyContext.TblBulkJobs.FindAsync(300);
         job!.Amount.Should().Be(250m);
     }
@@ -469,7 +471,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task SimpleRepriceJobManualAsync_WithPrebookJob_UpdatesAmountAndMarksManual()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobBookings.Add(new TucJobBooking
             {
@@ -488,7 +490,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobBookings.FindAsync(400);
         job!.UcbkAmount.Should().Be(180m);
         job.RatedManually.Should().BeTrue();
@@ -517,7 +519,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task AssignCourierToJobAsync_WithValidJobs_UpdatesCourierAndStatus()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJob(100, "JOB001"));
             context.TucJobs.Add(CreateJob(101, "JOB002"));
@@ -533,7 +535,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.AssignCourierToJobAsync([100, 101], courierId: 5);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobs
             .Where(j => new[] { 100, 101 }.Contains(j.UcjbId))
             .ToListAsync();
@@ -548,7 +550,7 @@ public class JobRepositoryOperationsTests : IDisposable
     {
         // Arrange
         var dispatchTime = new DateTime(2025, 6, 15, 10, 30, 0);
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJob(100, "JOB001"));
             await context.SaveChangesAsync();
@@ -561,7 +563,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.AssignCourierToJobAsync([100], courierId: 3);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FindAsync(100);
         updatedJob!.UcjbDispDate.Should().Be(dispatchTime);
         updatedJob.UcjbDispTime.Should().Be(dispatchTime);
@@ -571,7 +573,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task AssignCourierToJobAsync_DoesNotDowngradeStatus()
     {
         // Arrange - job already has status > 0
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             var seedJob = CreateJob(100, "JOB001");
             seedJob.UcjbStatus = (int)JobStatus.Dispatched; // Status > 0
@@ -585,7 +587,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.AssignCourierToJobAsync([100], courierId: 5);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var verifiedJob = await verifyContext.TucJobs.FindAsync(100);
         verifiedJob!.UcjbStatus.Should().Be((int)JobStatus.Dispatched); // Should keep existing status
     }
@@ -594,7 +596,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task AssignCourierToJobAsync_SetsStatusToDispatchedWhenBelow1()
     {
         // Arrange - job has status < 1 (not yet dispatched)
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             var seedJob = CreateJob(100, "JOB001");
             seedJob.UcjbStatus = 0;
@@ -608,7 +610,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.AssignCourierToJobAsync([100], courierId: 5);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var verifiedJob = await verifyContext.TucJobs.FindAsync(100);
         verifiedJob!.UcjbStatus.Should().Be((int)JobStatus.Dispatched);
     }
@@ -635,7 +637,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task AssignCourierToJobAsync_ClearsFirstDriverCourierId()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             var seedJob = CreateJob(100, "JOB001");
             seedJob.FdcourierId = 99;
@@ -650,7 +652,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.AssignCourierToJobAsync([100], courierId: 5);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FindAsync(100);
         updatedJob!.FdcourierId.Should().BeNull();
         updatedJob.DesCheck.Should().BeFalse();
@@ -660,7 +662,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task AssignCourierToJobAsync_SetsInternalStatusToAwaitingPod()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             var seedJob = CreateJob(100, "JOB001");
             seedJob.InternalStatus = 0;
@@ -674,7 +676,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.AssignCourierToJobAsync([100], courierId: 5);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FindAsync(100);
         updatedJob!.InternalStatus.Should().Be((int)InternalJobStatus.AwaitingPod);
     }
@@ -687,7 +689,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task SimpleRepriceJobManualAsync_RegularJob_FallsBackToArchive()
     {
         // Arrange - job exists only in archive, not in live table
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobArchives.Add(new TucJobArchive
             {
@@ -706,7 +708,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var archivedJob = await verifyContext.TucJobArchives.FindAsync(500);
         archivedJob!.UcjbAmount.Should().Be(300m);
         archivedJob.RatedManually.Should().BeTrue();
@@ -716,7 +718,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task SimpleRepriceJobManualAsync_RegularJob_PrefersLiveOverArchive()
     {
         // Arrange - same ID in both tables (shouldn't happen but tests priority)
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJobWithAmounts(600, "LIVE-JOB", amount: 50m));
             await context.SaveChangesAsync();
@@ -729,7 +731,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var liveJob = await verifyContext.TucJobs.FindAsync(600);
         liveJob!.UcjbAmount.Should().Be(999m);
         liveJob.RatedManually.Should().BeTrue();
@@ -743,7 +745,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task UpdateJobVoidStatusAsync_PreservesOtherJobFields()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             var seedJob = CreateJobWithAmounts(100, "JOB001", amount: 500m, rawBase: 400m, fuel: 100m);
             context.TucJobs.Add(seedJob);
@@ -756,7 +758,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.UpdateJobVoidStatusAsync([100]);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var voidedJob = await verifyContext.TucJobs.FindAsync(100);
         voidedJob!.UcjbVoid.Should().BeTrue();
         voidedJob.UcjbStatus.Should().Be(1000);
@@ -768,7 +770,7 @@ public class JobRepositoryOperationsTests : IDisposable
     public async Task UpdateJobVoidStatusAsync_OnlyUpdatesSpecifiedJobs()
     {
         // Arrange
-        using (var context = CreateContext())
+        await using (var context = CreateContext())
         {
             context.TucJobs.AddRange(
                 CreateJob(100, "JOB001"),
@@ -784,7 +786,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await repository.UpdateJobVoidStatusAsync([100, 101]);
 
         // Assert
-        using var verifyContext = CreateContext();
+        await using var verifyContext = CreateContext();
         var job100 = await verifyContext.TucJobs.FindAsync(100);
         var job101 = await verifyContext.TucJobs.FindAsync(101);
         var job102 = await verifyContext.TucJobs.FindAsync(102);

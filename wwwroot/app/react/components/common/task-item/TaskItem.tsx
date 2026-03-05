@@ -567,12 +567,14 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                             placeholder="Search staff..."
                             value={staffSearchText}
                             onChange={this.handleStaffSearchChange}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{fontSize: 18, color: '#64748b'}} />
-                                    </InputAdornment>
-                                ),
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon sx={{fontSize: 18, color: '#64748b'}} />
+                                        </InputAdornment>
+                                    ),
+                                },
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {

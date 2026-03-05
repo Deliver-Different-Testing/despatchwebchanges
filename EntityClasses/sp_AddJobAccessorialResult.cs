@@ -6,7 +6,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace DespatchWeb.EntityClasses
 {
-    public partial class DD_stpJob_InsertExceleratorResult
+    public partial class sp_AddJobAccessorialResult
     {
+        [Column("CalculatedAmount", TypeName = "decimal(10,2)")]
+        public decimal? CalculatedAmount { get; set; }
+        [Column("NewJobTotal", TypeName = "decimal(10,2)")]
+        public decimal? NewJobTotal { get; set; }
     }
 }

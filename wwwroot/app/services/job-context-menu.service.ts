@@ -16,6 +16,7 @@ import {EditAddressDialogService} from "../components/dialogs/edit-address-dialo
 import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import {JobStatus} from "../enums/job-status.enum";
 import {markdownToSafeHtml} from "../functions/markdownToHtml";
+import {isAiEnabled} from "../functions/aiSettings";
 import angular from 'angular';
 
 class JobContextMenuService implements angular.IServiceProvider {
@@ -124,12 +125,14 @@ class JobContextMenuService implements angular.IServiceProvider {
                 hasBottomDivider: false,
             });
 
-            menuOptions.push({
-                text: "AI Late Alert Analysis",
-                icon: "auto_awesome",
-                click: () => this.showAiLateAlertAnalysis(job),
-                hasBottomDivider: true,
-            });
+            if (isAiEnabled()) {
+                menuOptions.push({
+                    text: "AI Late Alert Analysis",
+                    icon: "auto_awesome",
+                    click: () => this.showAiLateAlertAnalysis(job),
+                    hasBottomDivider: true,
+                });
+            }
         }
 
         // Reprice Job / Price Breakdown
@@ -161,7 +164,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         menuOptions.push({
             text: "Add Task - Other",
             icon: "add",
-            click: (_$itemScope: any, $event: MouseEvent) =>
+            click: (_$itemScope: any, _$event: MouseEvent) =>
                 this.addEventOtherAction(job, callbacks.onRefresh),
             hasBottomDivider: true,
         });
@@ -202,14 +205,6 @@ class JobContextMenuService implements angular.IServiceProvider {
                 hasBottomDivider: true,
             });
         }
-
-        // AI Courier Suggestions
-        menuOptions.push({
-            text: "AI Suggest Couriers",
-            icon: "auto_awesome",
-            click: () => this.showAiCourierSuggestions(job, callbacks),
-            hasBottomDivider: true,
-        });
 
         // Set First Job
         menuOptions.push({
@@ -569,12 +564,26 @@ class JobContextMenuService implements angular.IServiceProvider {
                 return;
             }
 
+            // Show loading spinner while API call is in progress
+            this.$mdDialog.show({
+                template: `
+                    <md-dialog aria-label="Splitting job" style="max-width: 250px;">
+                        <md-dialog-content style="padding: 24px; text-align: center;">
+                            <md-progress-circular md-mode="indeterminate" md-diameter="48" class="md-primary"></md-progress-circular>
+                            <p style="margin-top: 16px; margin-bottom: 0;">Splitting job...</p>
+                        </md-dialog-content>
+                    </md-dialog>`,
+                clickOutsideToClose: false,
+                escapeToClose: false,
+            });
+
             // Single API call to split job with meeting point
             await this.DispatchData.splitJob(
                 job.id,
                 meetingPointAddress
             );
 
+            this.$mdDialog.hide();
             this.toastrService.showSuccessToast("Job Successfully Split");
             console.log("Job splitting complete!");
 
@@ -582,6 +591,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 await onRefresh();
             }
         } catch (error) {
+            this.$mdDialog.hide();
             if (error) {
                 console.error("Splitting job failed:", error);
                 this.toastrService.showErrorToast("Error splitting job");
@@ -769,24 +779,6 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    private async showAiCourierSuggestions(job: IDispatchJob, callbacks: any): Promise<void> {
-        if (!job?.id) return;
-        try {
-            await this.ensureAiAssistantLoaded();
-            await (window as any).ReactAiAssistant.showCourierSuggestions(
-                job.id,
-                job.jobNo,
-                async (courierId: number) => {
-                    await this.DispatchData.allocateJobs(courierId, [job.id]);
-                    this.toastrService.showSuccessToast(`Job ${job.jobNo} assigned successfully`);
-                },
-                () => callbacks.onRefresh?.()
-            );
-        } catch (error: any) {
-            console.error("AI courier suggestions error:", error);
-            this.toastrService.showErrorToast(error?.message || "Failed to get courier suggestions");
-        }
-    }
 }
 
 export default JobContextMenuService;

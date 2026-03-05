@@ -1118,7 +1118,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Verify both flight segments were added to the change tracker
         var addedFlightRecords = _context.ChangeTracker.Entries<TucJobNationwide>()
-            .Where(e => e.State == EntityState.Added || e.State == EntityState.Unchanged)
+            .Where(e => e.State is EntityState.Added or EntityState.Unchanged)
             .Select(e => e.Entity)
             .Where(f => f.UcnwJobId == 100)
             .ToList();
@@ -1512,7 +1512,7 @@ public class NationwideJobRepositoryTests : IDisposable
         }
 
         var addedFlightRecords = _context.ChangeTracker.Entries<TucJobNationwide>()
-            .Where(e => e.State == EntityState.Added || e.State == EntityState.Unchanged)
+            .Where(e => e.State is EntityState.Added or EntityState.Unchanged)
             .Select(e => e.Entity)
             .Where(f => f.UcnwJobId == 100)
             .ToList();
@@ -2216,7 +2216,7 @@ public class NationwideJobRepositoryTests : IDisposable
 
         // Assert - Verify each segment has correct ETD/ETA in change tracker
         var addedFlightRecords = _context.ChangeTracker.Entries<TucJobNationwide>()
-            .Where(e => e.State == EntityState.Added || e.State == EntityState.Unchanged)
+            .Where(e => e.State is EntityState.Added or EntityState.Unchanged)
             .Select(e => e.Entity)
             .Where(f => f.UcnwJobId == 100)
             .OrderBy(f => f.UcnwLegNumber)
