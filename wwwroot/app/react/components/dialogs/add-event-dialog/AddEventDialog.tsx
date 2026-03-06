@@ -325,7 +325,7 @@ export class AddEventDialog extends React.Component<AddEventDialogProps, AddEven
                                     value={notes}
                                     onChange={this.handleNotesChange}
                                     disabled={isSubmitting}
-                                    inputProps={{ maxLength: 150 }}
+                                    slotProps={{htmlInput: {maxLength: 150}}}
                                     helperText={`${notes.length}/150 characters`}
                                     sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                                 />

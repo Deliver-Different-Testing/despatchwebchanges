@@ -5,46 +5,46 @@
  * Supports creating new note types inline and displays note metadata.
  */
 
-import React, {useState, useEffect, useMemo} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Checkbox,
-    FormControlLabel,
     Alert,
+    alpha,
+    Box,
+    Button,
+    Checkbox,
     CircularProgress,
     Collapse,
-    Paper,
+    Dialog,
+    DialogActions,
+    DialogContent,
     Divider,
-    alpha,
+    FormControl,
+    FormControlLabel,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    TextField,
+    Typography,
 } from '@mui/material';
 import {
-    Close as CloseIcon,
-    StickyNote2 as NoteIcon,
     AddCircle as AddCircleIcon,
-    ExpandMore as ExpandMoreIcon,
+    Close as CloseIcon,
     ExpandLess as ExpandLessIcon,
+    ExpandMore as ExpandMoreIcon,
+    Info as InfoIcon,
+    NoteAlt as NoteAltIcon,
+    Person as PersonIcon,
+    PriorityHigh as PriorityHighIcon,
+    Save as SaveIcon,
+    Schedule as ScheduleIcon,
+    StickyNote2 as NoteIcon,
+    Update as UpdateIcon,
     Visibility as VisibilityIcon,
     Warning as WarningIcon,
-    PriorityHigh as PriorityHighIcon,
-    Person as PersonIcon,
-    Schedule as ScheduleIcon,
-    Update as UpdateIcon,
-    Info as InfoIcon,
-    Save as SaveIcon,
-    NoteAlt as NoteAltIcon,
 } from '@mui/icons-material';
-import {NoteType, CreateNoteRequest, UpdateNoteRequest} from '../../../interfaces';
+import {CreateNoteRequest, NoteType, UpdateNoteRequest} from '../../../interfaces';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {NoteManagementDialogProps} from "./types";
 import {useNoteHistory} from '../../../hooks/useNotesApi';
@@ -419,7 +419,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 size="small"
                                 multiline
                                 rows={2}
-                                inputProps={{maxLength: MAX_DESCRIPTION_LENGTH}}
+                                slotProps={{htmlInput: {maxLength: MAX_DESCRIPTION_LENGTH}}}
                                 helperText={`${newNoteTypeDescription.length}/${MAX_DESCRIPTION_LENGTH}`}
                                 placeholder="Provide a brief explanation of when to use this note type"
                                 sx={{mb: 2}}
@@ -489,7 +489,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                         multiline
                         rows={5}
                         required
-                        inputProps={{maxLength: MAX_NOTE_LENGTH}}
+                        slotProps={{htmlInput: {maxLength: MAX_NOTE_LENGTH}}}
                         helperText={`${noteText.length}/${MAX_NOTE_LENGTH} characters`}
                         placeholder="Enter your note content here..."
                         sx={{mb: 2}}

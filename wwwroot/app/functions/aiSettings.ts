@@ -35,6 +35,13 @@ export function isAiEnabled(): boolean {
     return stored === null ? true : stored === 'true';
 }
 
+/** Returns true unless the server has explicitly disabled AI features.
+ *  Unlike isAiEnabled(), this ignores the user's per-account preference
+ *  so that the settings toggle remains visible for users to change. */
+export function isAiServerEnabled(): boolean {
+    return _serverEnabled !== false;
+}
+
 export function setAiEnabled(enabled: boolean): void {
     localStorage.setItem(STORAGE_KEY, String(enabled));
 }

@@ -5,15 +5,18 @@
  * Displays revenue, cost, and profit calculations with CRUD operations.
  */
 
-import React, {useState, useMemo, useEffect} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
+    alpha,
     Box,
+    Button,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    IconButton,
+    InputAdornment,
     Paper,
     Stack,
     Table,
@@ -23,24 +26,21 @@ import {
     TableHead,
     TableRow,
     TextField,
-    Chip,
-    CircularProgress,
-    alpha,
-    InputAdornment,
+    Typography,
 } from '@mui/material';
 import {
-    Close as CloseIcon,
-    ReceiptLong as ReceiptLongIcon,
-    TrendingUp as TrendingUpIcon,
     AccountBalanceWallet as WalletIcon,
-    Savings as SavingsIcon,
     Add as AddIcon,
-    Edit as EditIcon,
-    Delete as DeleteIcon,
-    Inventory2 as InventoryIcon,
-    Work as WorkIcon,
-    CheckCircle as CheckCircleIcon,
     AttachMoney as MoneyIcon,
+    CheckCircle as CheckCircleIcon,
+    Close as CloseIcon,
+    Delete as DeleteIcon,
+    Edit as EditIcon,
+    Inventory2 as InventoryIcon,
+    ReceiptLong as ReceiptLongIcon,
+    Savings as SavingsIcon,
+    TrendingUp as TrendingUpIcon,
+    Work as WorkIcon,
 } from '@mui/icons-material';
 
 export interface PriceBreakdown {
@@ -697,10 +697,10 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             value={formAmount}
                                             onChange={(e) => setFormAmount(e.target.value ? parseFloat(e.target.value) : '')}
                                             fullWidth
-                                            inputProps={{ min: 0, step: 0.01 }}
                                             placeholder="0.00"
                                             helperText="Optional"
                                             slotProps={{
+                                                htmlInput: {min: 0, step: 0.01},
                                                 input: {
                                                     startAdornment: (
                                                         <InputAdornment position="start">
@@ -718,9 +718,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             onChange={(e) => setFormCostAmount(e.target.value ? parseFloat(e.target.value) : '')}
                                             fullWidth
                                             required
-                                            inputProps={{ min: 0, step: 0.01 }}
                                             placeholder="0.00"
                                             slotProps={{
+                                                htmlInput: {min: 0, step: 0.01},
                                                 input: {
                                                     startAdornment: (
                                                         <InputAdornment position="start">

@@ -227,10 +227,10 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                                     sx={{p: 0, mr: 1.5}}
                                 />
                                 <ListItemText
-                                    primaryTypographyProps={{
+                                    slotProps={{primary: {
                                         variant: 'body2',
                                         fontWeight: view.selected ? 500 : 400,
-                                    }}
+                                    }}}
                                 >
                                     {view.name}
                                 </ListItemText>
@@ -346,11 +346,11 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                                 )}
                             </ListItemIcon>
                             <ListItemText
-                                primaryTypographyProps={{
+                                slotProps={{primary: {
                                     variant: 'body2',
                                     fontWeight: isActive ? 600 : 400,
                                     color: isActive ? 'primary.main' : 'text.primary',
-                                }}
+                                }}}
                             >
                                 {layout.name}
                             </ListItemText>

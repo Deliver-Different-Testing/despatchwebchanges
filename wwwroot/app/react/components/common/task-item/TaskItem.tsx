@@ -245,6 +245,13 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
         this.setState({staffSearchText: event.target.value});
     };
 
+    private getStatusBorderColor = (theme: any): string => {
+        const {task} = this.props;
+        if (task.closed) return theme.palette.success.main;
+        if (this.isOverdue) return theme.palette.error.main;
+        return theme.palette.primary.main;
+    };
+
     render(): React.ReactNode {
         const {task} = this.props;
         const {popoverType, anchorEl, selectedDate, loadingStaff, isCompleting, staffSearchText} = this.state;
@@ -258,7 +265,6 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                 <Box
                 onClick={this.handleTaskClick}
                 sx={(theme) => ({
-                    position: 'relative',
                     display: 'flex',
                     alignItems: 'flex-start',
                     padding: '12px 16px',
@@ -267,32 +273,23 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                     margin: '0 0 1px 0',
                     backgroundColor: task.closed ? '#f8fafc' : '#ffffff',
                     border: '1px solid #e2e8f0',
+                    borderLeft: `4px solid ${this.getStatusBorderColor(theme)}`,
                     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                     transition: 'all 150ms ease',
                     cursor: config.onTaskClick ? 'pointer' : 'default',
+                    opacity: task.closed ? 0.55 : 1,
                     '&:hover': config.onTaskClick ? {
+                        transform: 'translateY(-1px)',
                         backgroundColor: '#f8fafc',
                         borderColor: '#cbd5e1',
-                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04)',
+                        borderLeftColor: this.getStatusBorderColor(theme),
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                         '& .task-title': {
                             color: theme.palette.primary.main,
                         },
                     } : {},
                 })}
             >
-                {/* Priority Indicator */}
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        left: 0,
-                        top: 12,
-                        bottom: 12,
-                        width: 3,
-                        borderRadius: '0 2px 2px 0',
-                        backgroundColor: this.getPriorityColor(task.priority),
-                        opacity: task.closed ? 0.4 : 1,
-                    }}
-                />
 
                 {/* Checkbox */}
                 {config.allowCompletion !== false && (
@@ -326,7 +323,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                             variant="subtitle1"
                             sx={{
                                 fontWeight: 600,
-                                fontSize: '14px',
+                                fontSize: '15px',
                                 lineHeight: 1.3,
                                 color: '#1e293b',
                                 textDecoration: task.closed ? 'line-through' : 'none',
@@ -388,8 +385,8 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                                 onClick={this.openAssigneePopover}
                                 startIcon={<PersonIcon sx={{fontSize: 14}} />}
                                 sx={{
-                                    height: 28,
-                                    padding: '4px 12px',
+                                    height: 24,
+                                    padding: '2px 10px',
                                     borderRadius: '9999px',
                                     backgroundColor: '#f1f5f9',
                                     border: '1px solid #e2e8f0',
@@ -598,7 +595,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                                 >
                                     <ListItemText
                                         primary={staff.text}
-                                        primaryTypographyProps={{fontSize: '13px'}}
+                                        slotProps={{primary: {fontSize: '13px'}}}
                                     />
                                 </ListItemButton>
                             ))}

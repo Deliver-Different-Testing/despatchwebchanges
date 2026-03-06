@@ -161,7 +161,9 @@ public partial class JobRepository
 
             case JobProperty.BookedTime:
                 var bookedTime = DateTimeOffset.Parse(value).DateTime;
-                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbDate, bookedTime));
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.UcjbDate, bookedTime)
+                    .SetProperty(j => j.UcjbTime, bookedTime));
                 break;
 
             case JobProperty.FollowupTime:
@@ -621,7 +623,9 @@ public partial class JobRepository
                 archive.DeliverByTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.BookedTime:
-                archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
+                var archivedBookedTime = DateTimeOffset.Parse(value).DateTime;
+                archive.UcjbDate = archivedBookedTime;
+                archive.UcjbTime = archivedBookedTime;
                 break;
             case JobProperty.Barcode:
                 archive.Barcode = value[..Math.Min(value.Length, 20)];

@@ -7,33 +7,28 @@
 
 import React from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
+    alpha,
     Box,
-    TextField,
-    Switch,
-    FormControlLabel,
+    Button,
     Checkbox,
+    Chip,
     CircularProgress,
-    Paper,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    FormControlLabel,
+    IconButton,
     List,
     ListItem,
     ListItemButton,
     ListItemIcon,
     ListItemText,
-    Chip,
-    alpha,
+    Paper,
+    Switch,
+    TextField,
+    Typography,
 } from '@mui/material';
-import {
-    Close as CloseIcon,
-    Delete as DeleteIcon,
-    Warning as WarningIcon,
-    Info as InfoIcon,
-} from '@mui/icons-material';
+import {Close as CloseIcon, Delete as DeleteIcon, Info as InfoIcon, Warning as WarningIcon,} from '@mui/icons-material';
 import {RelatedJob, VoidJobDialogJob, VoidJobResult} from '../../../interfaces';
 
 // Re-export types for backward compatibility
@@ -329,7 +324,7 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
                         value={voidReasonText}
                         onChange={this.handleReasonChange}
                         disabled={isSubmitting}
-                        inputProps={{maxLength: 500}}
+                        slotProps={{htmlInput: {maxLength: 500}}}
                         helperText={`${voidReasonText.length}/500 characters`}
                         sx={{
                             '& .MuiOutlinedInput-root': {
@@ -469,7 +464,7 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
                                                     </ListItemIcon>
                                                     <ListItemText
                                                         primary={relatedJob.text}
-                                                        primaryTypographyProps={{variant: 'body2'}}
+                                                        slotProps={{primary: {variant: 'body2'}}}
                                                     />
                                                     {relatedJob.id === job.id && (
                                                         <Chip
