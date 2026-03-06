@@ -13,6 +13,7 @@ import {EditAddressDialog, EditAddressDialogProps} from './EditAddressDialog';
 import {
     EditAddressDialogViewModel,
     HereMapsLocationResult,
+    HereMapsLookupResponse,
 } from '../../../interfaces';
 
 // Mock the React Query hooks
@@ -158,6 +159,69 @@ const nzAddress: EditAddressDialogViewModel = {
     latitude: -36.8485,
     longitude: 174.7633,
     fullAddress: 'Sky Tower, Level 50, 1 Victoria Street West, Auckland CBD, Auckland 1010',
+};
+
+const sampleNzAddressResults: HereMapsLocationResult[] = [
+    {
+        title: '10 Queen Street, Auckland CBD, Auckland 1010',
+        id: 'here:af:address:nz1',
+        resultType: 'houseNumber',
+        address: {
+            label: '10 Queen Street, Auckland CBD, Auckland 1010',
+            countryCode: 'NZL',
+            countryName: 'New Zealand',
+            district: 'Auckland CBD',
+            city: 'Auckland',
+            street: 'Queen Street',
+            postalCode: '1010',
+            houseNumber: '10',
+        },
+        position: {lat: -36.8485, lng: 174.7633},
+        access: [{lat: -36.8485, lng: 174.7633}],
+    },
+];
+
+const usLookupResponse: HereMapsLookupResponse = {
+    title: '123 Main Street',
+    id: 'here:af:address:123',
+    address: {
+        label: '123 Main Street, New York, NY 10001',
+        countryCode: 'USA',
+        countryName: 'United States',
+        stateCode: 'NY',
+        state: 'New York',
+        city: 'New York',
+        street: 'Main Street',
+        postalCode: '10001',
+        houseNumber: '123',
+    },
+    position: {lat: 40.7128, lng: -74.006},
+};
+
+const usLookupResponseWithStreetInfo: HereMapsLookupResponse = {
+    ...usLookupResponse,
+    streetInfo: [{
+        baseName: 'Main',
+        streetType: 'Street',
+        streetTypePrecedes: false,
+        prefix: 'North',
+    }],
+};
+
+const nzLookupResponse: HereMapsLookupResponse = {
+    title: 'Queen Street Building',
+    id: 'here:af:address:nz1',
+    address: {
+        label: '10 Queen Street, Auckland CBD, Auckland 1010',
+        countryCode: 'NZL',
+        countryName: 'New Zealand',
+        district: 'Auckland CBD',
+        city: 'Auckland',
+        street: 'Queen Street',
+        postalCode: '1010',
+        houseNumber: '10',
+    },
+    position: {lat: -36.8485, lng: 174.7633},
 };
 
 describe('EditAddressDialog', () => {
@@ -456,6 +520,183 @@ describe('EditAddressDialog', () => {
 
             // The placeholder text should indicate minimum characters
             expect(screen.getByPlaceholderText(/Type at least 3 characters/)).toBeInTheDocument();
+        });
+    });
+
+    describe('Address Selection Field Population', () => {
+        it('populates US form fields when selecting an address from search results', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({isUsTenant: true});
+            renderWithProviders(props);
+
+            // Open autocomplete and select an address
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // Wait for async lookup to complete and fields to populate
+            await waitFor(() => {
+                expect(mockAddressApi.getLocationDetailsById).toHaveBeenCalledWith('here:af:address:123');
+            });
+
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('123 Main Street');
+                expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
+                expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('Main Street');
+                expect((screen.getByLabelText(/ZIP Code/) as HTMLInputElement).value).toBe('10001');
+            });
+
+            // Check coordinates
+            expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
+            expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
+        });
+
+        it('populates NZ form fields when selecting an address from search results', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleNzAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(nzLookupResponse);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({isUsTenant: false});
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '10 Queen');
+
+            const option = await screen.findByRole('option', {
+                name: /10 Queen Street, Auckland/,
+            });
+            await user.click(option);
+
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Queen Street Building');
+                expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('10');
+                expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('Queen Street');
+                expect((screen.getByLabelText(/Suburb/) as HTMLInputElement).value).toBe('Auckland CBD');
+                expect((screen.getByLabelText(/Post Code/) as HTMLInputElement).value).toBe('1010');
+            });
+        });
+
+        it('formats street name from streetInfo when available', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponseWithStreetInfo);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({isUsTenant: true});
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // streetInfo: prefix 'North' + baseName 'Main' + streetType 'Street' (not preceding)
+            // Expected: 'North Main Street'
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('North Main Street');
+            });
+        });
+
+        it('clears unit and notes fields when selecting an address', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({isUsTenant: true});
+            renderWithProviders(props);
+
+            // Pre-fill fields that handleAddressFieldsFromLookup clears
+            fireEvent.change(screen.getByLabelText(/Unit\/Suite/), {target: {value: 'Suite 200'}});
+            fireEvent.change(screen.getByLabelText(/Additional Notes/), {target: {value: 'Old delivery notes'}});
+
+            expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('Suite 200');
+            expect((screen.getByLabelText(/Additional Notes/) as HTMLInputElement).value).toBe('Old delivery notes');
+
+            // Select a new address
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // Fields that handleAddressFieldsFromLookup clears should be empty
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('');
+            });
+            expect((screen.getByLabelText(/Additional Notes/) as HTMLInputElement).value).toBe('');
+        });
+
+        it('shows error toast when address lookup fails', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockRejectedValue(new Error('Network error'));
+
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            const props = createDefaultProps({showToast});
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith('Error processing selected address.', 'error');
+            });
+        });
+
+        it('uses basic coordinates when detailed lookup returns null', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(null as any);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // Should fall back to basic position from the search result
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
+                expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
+            });
+
+            // Form fields should NOT be populated (no detailed lookup)
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
         });
     });
 

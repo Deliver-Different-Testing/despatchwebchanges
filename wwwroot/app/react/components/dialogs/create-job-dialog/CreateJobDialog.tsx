@@ -5,47 +5,47 @@
  * Allows users to create a new job with client, addresses, contacts, vehicle, speed, and optional courier dispatch.
  */
 
-import React, {useState, useCallback, useEffect} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
     Autocomplete,
-    Paper,
+    Box,
+    Button,
     CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    IconButton,
+    Paper,
+    TextField,
+    Typography,
 } from '@mui/material';
 import {
-    Close as CloseIcon,
     AddBusiness as AddBusinessIcon,
-    Person as PersonIcon,
-    LocationOn as LocationIcon,
+    Close as CloseIcon,
     ContactPhone as ContactIcon,
-    DirectionsCar as VehicleIcon,
     Description as RefIcon,
+    DirectionsCar as VehicleIcon,
+    LocationOn as LocationIcon,
     Notes as NotesIcon,
+    Person as PersonIcon,
 } from '@mui/icons-material';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import type {CourierSuggestion} from '../../../interfaces';
 import {
     AddressViewModel,
+    CreateJobRequest,
     HereMapsLocationResult,
     HereMapsLookupResponse,
     Suggestion,
-    CreateJobRequest,
 } from '../../../interfaces';
 import {useAddressSearch, useClientSearch, useCourierSearch, useSpeedList, useVehicleSizes} from '../../../hooks';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
-import {formatDateForApi, getIanaTimezone, dayjs} from '../../../utils/dateUtils';
+import {dayjs, formatDateForApi, getIanaTimezone} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
 import type {Dayjs} from 'dayjs';
-import type {CourierSuggestion} from '../../../interfaces';
 
 // Section wrapper component for consistent styling
 const FormSection: React.FC<{
@@ -497,7 +497,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             required
                             error={touched && (!charge || parseFloat(charge) <= 0)}
                             helperText={touched && (!charge || parseFloat(charge) <= 0) ? 'Charge must be greater than 0.' : ''}
-                            inputProps={{step: '0.01', min: '0.01'}}
+                            slotProps={{htmlInput: {step: '0.01', min: '0.01'}}}
                         />
                     </Box>
                     <Box sx={{display: 'flex', gap: 2}}>
@@ -723,14 +723,14 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             label="Reference A"
                             value={refA}
                             onChange={(e) => setRefA(e.target.value)}
-                            inputProps={{maxLength: 20}}
+                            slotProps={{htmlInput: {maxLength: 20}}}
                         />
                         <TextField
                             sx={{flex: 1}}
                             label="Reference B"
                             value={refB}
                             onChange={(e) => setRefB(e.target.value)}
-                            inputProps={{maxLength: 20}}
+                            slotProps={{htmlInput: {maxLength: 20}}}
                         />
                     </Box>
                 </FormSection>
@@ -745,7 +745,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(e) => setJobNotes(e.target.value)}
                             multiline
                             rows={3}
-                            inputProps={{maxLength: 150}}
+                            slotProps={{htmlInput: {maxLength: 150}}}
                         />
                         <TextField
                             sx={{flex: 1}}
@@ -754,7 +754,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(e) => setPickupNotes(e.target.value)}
                             multiline
                             rows={3}
-                            inputProps={{maxLength: 150}}
+                            slotProps={{htmlInput: {maxLength: 150}}}
                         />
                         <TextField
                             sx={{flex: 1}}
@@ -763,7 +763,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(e) => setDeliveryNotes(e.target.value)}
                             multiline
                             rows={3}
-                            inputProps={{maxLength: 150}}
+                            slotProps={{htmlInput: {maxLength: 150}}}
                         />
                     </Box>
                 </FormSection>

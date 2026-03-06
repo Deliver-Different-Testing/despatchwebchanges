@@ -6,41 +6,41 @@
  * Supports both US and NZ address formats with interactive HERE Maps integration.
  */
 
-import React, {useState, useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
+    alpha,
     Autocomplete,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Paper,
+    Box,
+    Button,
     CircularProgress,
     Collapse,
-    alpha,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    FormControl,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    TextField,
+    Typography,
 } from '@mui/material';
 import {
     Close as CloseIcon,
-    LocationOn as LocationIcon,
-    Search as SearchIcon,
-    Save as SaveIcon,
-    LocalShipping as ShippingIcon,
-    ExpandMore as ExpandMoreIcon,
     ExpandLess as ExpandLessIcon,
+    ExpandMore as ExpandMoreIcon,
+    LocalShipping as ShippingIcon,
+    LocationOn as LocationIcon,
     Map as MapIcon,
+    Save as SaveIcon,
+    Search as SearchIcon,
 } from '@mui/icons-material';
 import {
     EditAddressDialogViewModel,
-    ShipmentDetails,
     HereMapsLocationResult,
     HereMapsLookupResponse,
+    ShipmentDetails,
 } from '../../../interfaces';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
 import {addressApi} from '../../../services/addressApi';
@@ -117,6 +117,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     const mapInstanceRef = useRef<any>(null);
     const platformRef = useRef<any>(null);
     const markerRef = useRef<any>(null);
+    const handleMapClickRef = useRef<(lat: number, lng: number) => Promise<void>>(undefined);
 
     // React Query hooks
     const {data: addressOptions = [], isFetching: isSearchingAddresses} = useAddressSearch(
@@ -182,7 +183,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     evt.currentPointer.viewportX,
                     evt.currentPointer.viewportY
                 );
-                await handleMapClick(coord.lat, coord.lng);
+                await handleMapClickRef.current?.(coord.lat, coord.lng);
             });
 
             // Handle window resize
@@ -198,7 +199,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             console.error('[EditAddressDialog] Error initializing HERE Maps:', error);
             showToast('Error loading map. Please try again.', 'error');
         }
-    }, [open, hereMapsApiKey, latitude, longitude]);
+    }, [open, hereMapsApiKey]);
 
     // Cleanup map on dialog close
     useEffect(() => {
@@ -289,70 +290,6 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         mapInstanceRef.current.setZoom(SELECTED_ZOOM);
     }, []);
 
-    // Handle map click - reverse geocode and update address
-    const handleMapClick = useCallback(async (lat: number, lng: number) => {
-        setLatitude(lat);
-        setLongitude(lng);
-        addMarker(lat, lng);
-
-        try {
-            setIsLoadingAddress(true);
-            const results = await addressApi.fetchNearestAddress(lat, lng);
-
-            if (results && results.length > 0) {
-                const location = results[0];
-                setAddressSearchText(location.address.label);
-
-                // Get detailed location info
-                if (location.id) {
-                    const detailedLocation = await addressApi.getLocationDetailsById(location.id);
-                    if (detailedLocation) {
-                        handleAddressFieldsFromLookup(detailedLocation);
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('[EditAddressDialog] Error fetching nearest address:', error);
-            showToast('Error retrieving address information.', 'error');
-        } finally {
-            setIsLoadingAddress(false);
-        }
-    }, [addMarker, showToast]);
-
-    // Handle address selection from autocomplete
-    const handleAddressSelect = useCallback(async (location: HereMapsLocationResult | null) => {
-        if (!location) return;
-
-        try {
-            setIsLoadingAddress(true);
-            setAddressSearchText(location.address.label);
-
-            // Get detailed location info
-            const detailedLocation = await addressApi.getLocationDetailsById(location.id);
-
-            if (detailedLocation) {
-                handleAddressFieldsFromLookup(detailedLocation);
-
-                // Update map
-                const lat = detailedLocation.position.lat;
-                const lng = detailedLocation.position.lng;
-                setLatitude(lat);
-                setLongitude(lng);
-                addMarker(lat, lng);
-            } else {
-                // Use basic location info
-                setLatitude(location.position.lat);
-                setLongitude(location.position.lng);
-                addMarker(location.position.lat, location.position.lng);
-            }
-        } catch (error) {
-            console.error('[EditAddressDialog] Error processing selected address:', error);
-            showToast('Error processing selected address.', 'error');
-        } finally {
-            setIsLoadingAddress(false);
-        }
-    }, [addMarker, showToast]);
-
     // Map HERE Maps lookup response to form fields
     const handleAddressFieldsFromLookup = useCallback((location: HereMapsLookupResponse) => {
         const address = location.address;
@@ -431,6 +368,70 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         setLatitude(location.position.lat);
         setLongitude(location.position.lng);
     }, [isUsTenant]);
+
+    // Handle map click - reverse geocode and update address
+    handleMapClickRef.current = useCallback(async (lat: number, lng: number) => {
+        setLatitude(lat);
+        setLongitude(lng);
+        addMarker(lat, lng);
+
+        try {
+            setIsLoadingAddress(true);
+            const results = await addressApi.fetchNearestAddress(lat, lng);
+
+            if (results && results.length > 0) {
+                const location = results[0];
+                setAddressSearchText(location.address.label);
+
+                // Get detailed location info
+                if (location.id) {
+                    const detailedLocation = await addressApi.getLocationDetailsById(location.id);
+                    if (detailedLocation) {
+                        handleAddressFieldsFromLookup(detailedLocation);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[EditAddressDialog] Error fetching nearest address:', error);
+            showToast('Error retrieving address information.', 'error');
+        } finally {
+            setIsLoadingAddress(false);
+        }
+    }, [addMarker, handleAddressFieldsFromLookup, showToast]);
+
+    // Handle address selection from autocomplete
+    const handleAddressSelect = useCallback(async (location: HereMapsLocationResult | null) => {
+        if (!location) return;
+
+        try {
+            setIsLoadingAddress(true);
+            setAddressSearchText(location.address.label);
+
+            // Get detailed location info
+            const detailedLocation = await addressApi.getLocationDetailsById(location.id);
+
+            if (detailedLocation) {
+                handleAddressFieldsFromLookup(detailedLocation);
+
+                // Update map
+                const lat = detailedLocation.position.lat;
+                const lng = detailedLocation.position.lng;
+                setLatitude(lat);
+                setLongitude(lng);
+                addMarker(lat, lng);
+            } else {
+                // Use basic location info
+                setLatitude(location.position.lat);
+                setLongitude(location.position.lng);
+                addMarker(location.position.lat, location.position.lng);
+            }
+        } catch (error) {
+            console.error('[EditAddressDialog] Error processing selected address:', error);
+            showToast('Error processing selected address.', 'error');
+        } finally {
+            setIsLoadingAddress(false);
+        }
+    }, [addMarker, handleAddressFieldsFromLookup, showToast]);
 
     // Construct full address from form fields
     const constructFullAddress = useCallback((): string => {
@@ -757,7 +758,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 disabled={isLoadingAddress}
                                 required
                                 sx={{flex: '0 0 auto', maxWidth: 120}}
-                                inputProps={{pattern: '[0-9]{5}(-[0-9]{4})?'}}
+                                slotProps={{htmlInput: {pattern: '[0-9]{5}(-[0-9]{4})?'}}}
                             />
                         </Box>
                     )}
@@ -791,7 +792,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                 disabled={isLoadingAddress}
                                 required
                                 sx={{flex: '0 0 auto', maxWidth: 110}}
-                                inputProps={{pattern: '[0-9]{4}'}}
+                                slotProps={{htmlInput: {pattern: '[0-9]{4}'}}}
                             />
                         </Box>
                     )}
@@ -819,7 +820,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             value={latitude ?? ''}
                             onChange={(e) => setLatitude(e.target.value ? parseFloat(e.target.value) : undefined)}
                             disabled={isLoadingAddress}
-                            inputProps={{step: 'any'}}
+                            slotProps={{htmlInput: {step: 'any'}}}
                             sx={{flex: 1}}
                         />
                         <TextField
@@ -828,7 +829,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             value={longitude ?? ''}
                             onChange={(e) => setLongitude(e.target.value ? parseFloat(e.target.value) : undefined)}
                             disabled={isLoadingAddress}
-                            inputProps={{step: 'any'}}
+                            slotProps={{htmlInput: {step: 'any'}}}
                             sx={{flex: 1}}
                         />
                     </Box>
@@ -891,7 +892,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         type="number"
                                         value={weight ?? ''}
                                         onChange={(e) => setWeight(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        inputProps={{min: 0, step: 0.1}}
+                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
                                         fullWidth
                                     />
                                     <TextField
@@ -899,7 +900,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         type="number"
                                         value={quantity ?? ''}
                                         onChange={(e) => setQuantity(e.target.value ? parseInt(e.target.value) : undefined)}
-                                        inputProps={{min: 1}}
+                                        slotProps={{htmlInput: {min: 1}}}
                                         fullWidth
                                     />
                                 </Box>
@@ -911,7 +912,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         type="number"
                                         value={length ?? ''}
                                         onChange={(e) => setLength(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        inputProps={{min: 0, step: 0.1}}
+                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
                                         fullWidth
                                     />
                                     <TextField
@@ -919,7 +920,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         type="number"
                                         value={depth ?? ''}
                                         onChange={(e) => setDepth(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        inputProps={{min: 0, step: 0.1}}
+                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
                                         fullWidth
                                     />
                                     <TextField
@@ -927,7 +928,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                         type="number"
                                         value={height ?? ''}
                                         onChange={(e) => setHeight(e.target.value ? parseFloat(e.target.value) : undefined)}
-                                        inputProps={{min: 0, step: 0.1}}
+                                        slotProps={{htmlInput: {min: 0, step: 0.1}}}
                                         fullWidth
                                     />
                                 </Box>
@@ -940,7 +941,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                                     placeholder="Additional notes or special instructions..."
                                     multiline
                                     rows={3}
-                                    inputProps={{maxLength: 150}}
+                                    slotProps={{htmlInput: {maxLength: 150}}}
                                     fullWidth
                                 />
                             </Box>

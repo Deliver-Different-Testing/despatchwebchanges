@@ -276,9 +276,9 @@ function reactAppShellDirective(
                     console.log('[ReactAppShellDirective] Mounted successfully');
 
                     // Fetch server-side AI feature flag so isAiEnabled() reflects it
-                    initAiSettings().catch(() => {/* non-fatal */});
+                    await initAiSettings().catch(() => {/* non-fatal */});
 
-                    // Set up toolbar actions
+                    // Set up toolbar actions (after AI flag is resolved)
                     updateToolbarActions();
 
                     // Listen for state changes

@@ -3,9 +3,8 @@ import {ISuggestion} from "../../../interfaces/job.interface";
 import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
-import {IAppConfig} from "../../../interfaces/app-config.interface";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
-import {isAiEnabled} from "../../../functions/aiSettings";
+import {isAiEnabled, isAiServerEnabled} from "../../../functions/aiSettings";
 import angular from 'angular';
 
 // Type declaration for the React dialog on window
@@ -25,17 +24,11 @@ declare global {
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
     static $inject = [
-        "$mdDialog",
-        "$document",
-        'APP_CONFIG',
         '$ocLazyLoad',
         '$http',
     ];
 
     constructor(
-        private $mdDialog: angular.material.IDialogService,
-        private $document: angular.IDocumentService,
-        private appConfig: IAppConfig,
         private $ocLazyLoad: oc.ILazyLoad,
         private $http: angular.IHttpService,
     ) {
@@ -78,7 +71,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
         return this;
     }
 
-    async openSettingsDialog($event: MouseEvent, appPage: AppPage, currentLayoutName: string,
+    async openSettingsDialog(_$event: MouseEvent, appPage: AppPage, currentLayoutName: string,
                              boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion,
                              selectedDriverLocationRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
         try {
@@ -97,7 +90,9 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                     title = "Dashboard Settings";
             }
 
-            const isValidPage = appPage === AppPage.Dispatch || appPage === AppPage.Domestic || appPage === AppPage.JobSearch;
+            const isValidPage = appPage === AppPage.Dispatch 
+                || appPage === AppPage.Domestic 
+                || appPage === AppPage.JobSearch;
             const canShowDashboards = isValidPage && !isDefaultLayout(currentLayoutName);
 
             console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
@@ -107,7 +102,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
                 showDriverLocationRefresh: appPage === AppPage.Dispatch,
                 showDashboards: canShowDashboards,
-                showAiToggle: true
+                showAiToggle: isAiServerEnabled()
             };
 
             if (!selectedRefreshInterval) {
@@ -142,6 +137,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 console.debug('User closed dialog');
                 return;
             }
+            
             console.error('DashboardSettingsDialogService: Error in openSettingsDialog', error);
             throw error;
         }

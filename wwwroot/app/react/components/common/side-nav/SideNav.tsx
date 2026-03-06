@@ -222,10 +222,10 @@ export class SideNav extends React.Component<SideNavProps> {
                                     </ListItemIcon>
                                     <ListItemText
                                         primary={item.label}
-                                        primaryTypographyProps={{
+                                        slotProps={{primary: {
                                             fontWeight: isActive ? 600 : 400,
                                             color: isActive ? 'primary.main' : 'text.primary',
-                                        }}
+                                        }}}
                                     />
                                 </ListItemButton>
                             </ListItem>

@@ -203,13 +203,7 @@ public class CreateJobService(
         if (!resolved.JobTypeId.HasValue && resolved.SpeedId.HasValue && !resolved.IsBulkSchedule) resolved.JobTypeId = resolved.SpeedId;
 
         // Address type resolution
-        resolved.AddressType = ParseAddressType(data.ToAddressType);
-
-        // Leave not home resolution
-        resolved.LeaveNotHomeId = ParseLeaveNotHome(data);
-
-        // Return job
-        resolved.ReturnJob = ParseReturnJob(data);
+        resolved.AddressType = ParseAddressType(data.ToAddressType); 
 
         // POD type
         resolved.ProofOfDelivery = ParseProofOfDelivery(data);
@@ -236,15 +230,6 @@ public class CreateJobService(
             _ => int.TryParse(toAddressType, out var val) ? val : null
         };
     }
-
-    private static int? ParseLeaveNotHome(CreateMinimalTucJobInputModel data)
-    {
-        // leaveNotHome parameter is not directly on the input model (passed as null from JobRepository),
-        // but PrivateRes maps to leave-not-home behavior
-        return null; // Will be set by client defaults if applicable
-    }
-
-    private static bool? ParseReturnJob(CreateMinimalTucJobInputModel data) => null; // Set by client defaults
 
     private static bool? ParseProofOfDelivery(CreateMinimalTucJobInputModel data)
     {
@@ -395,12 +380,11 @@ public class CreateJobService(
             .Where(s => s.SettingId == 1)
             .Select(s => new { s.InternetJobChargeType, s.InternetJobStaffId })
             .FirstOrDefaultAsync(ct);
-
-        if (settings != null)
-        {
-            resolved.ChargeType = settings.InternetJobChargeType;
-            resolved.OperatorId = settings.InternetJobStaffId;
-        }
+      
+        if(settings is null) return;
+        
+        resolved.ChargeType = settings.InternetJobChargeType;
+        resolved.OperatorId = settings.InternetJobStaffId;
     }
 
     /// <summary>

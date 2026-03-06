@@ -951,12 +951,13 @@ class JobDetailController extends BaseController {
     }
 
     async editBookedDate($event: MouseEvent, job: IJob): Promise<void> {
-        await this.showEditDateDialog(
+        await this.showEditDateAndTimeDialog(
             $event,
             job,
             "Booked Date",
             JobProperty.BookedTime,
-            job.createdDate
+            job.booked,
+            job.pickUpTimeZone
         );
     }
 

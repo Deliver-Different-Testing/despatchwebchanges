@@ -293,7 +293,7 @@ class RouterConfig {
                 <md-content class="md-dense task-dashboard-view">
                     <react-app-shell
                         title="Task Dashboard"
-                        layout="layouts"
+                        layouts="layouts"
                         current-layout-name="currentLayoutName"
                         on-save-layout="saveLayout()"
                         on-load-layout="loadLayout(index)"

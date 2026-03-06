@@ -36,7 +36,7 @@ export const DaysOfWeekHelpers = {
     } as Record<DaysOfWeek, string>,
 
     bitwiseToArray(bitmap: DaysOfWeek | number): DaysOfWeek[] {
-        return this.allDays.filter(day => (bitmap & day) === day);
+        return this.allDays.filter((day: DaysOfWeek | number) => (bitmap & day) === day);
     },
 
     arrayToBitwise(days: DaysOfWeek[]): DaysOfWeek {
@@ -51,6 +51,6 @@ export const DaysOfWeekHelpers = {
         const days = this.bitwiseToArray(bitmap);
         if (days.length === 0) return 'None';
         if (days.length === 7) return 'Every day';
-        return days.map(d => this.dayLabels[d]).join(', ');
+        return days.map((d) => this.dayLabels[d as DaysOfWeek]).join(', ');
     }
 };

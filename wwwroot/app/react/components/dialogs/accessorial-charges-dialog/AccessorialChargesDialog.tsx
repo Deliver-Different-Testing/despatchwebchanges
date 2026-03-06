@@ -8,14 +8,17 @@
 
 import React from 'react';
 import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    Chip,
-    IconButton,
-    Typography,
     Box,
+    Button,
+    Checkbox,
+    Chip,
+    CircularProgress,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    Divider,
+    IconButton,
+    Paper,
     Table,
     TableBody,
     TableCell,
@@ -23,28 +26,25 @@ import {
     TableFooter,
     TableHead,
     TableRow,
-    Checkbox,
-    Paper,
     TextField,
-    CircularProgress,
-    Divider,
+    Typography,
 } from '@mui/material';
 import {
     Close as CloseIcon,
-    Refresh as RefreshIcon,
     Delete as DeleteIcon,
     Lock as LockIcon,
-    Save as SaveIcon,
     Receipt as ReceiptIcon,
+    Refresh as RefreshIcon,
+    Save as SaveIcon,
 } from '@mui/icons-material';
 import {
     AccessorialChargeDto,
-    JobAccessorialChargeDto,
-    JobAccessorialChargeUpdateRequest,
     AccessorialChargesDialogProps,
     JobAccessorialChargeCreateRequest,
+    JobAccessorialChargeDto,
+    JobAccessorialChargeUpdateRequest,
 } from './types';
-import { accessorialChargesApi } from '../../../services/accessorialChargesApi';
+import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
 
 interface AppliedRowState {
     inputValue: string;
@@ -858,7 +858,7 @@ export class AccessorialChargesDialog extends React.Component<
                                                                                 onBlur={() => this.handleAppliedInputBlur(charge.jobAccessorialChargeId, charge.minimumQuantity)}
                                                                                 sx={{ width: 90 }}
                                                                                 disabled={row.isSaving || row.isDeleting || this.isAutoPopulated(charge)}
-                                                                                inputProps={charge.minimumQuantity != null ? { min: charge.minimumQuantity } : undefined}
+                                                                                slotProps={charge.minimumQuantity != null ? {htmlInput: {min: charge.minimumQuantity}} : undefined}
                                                                             />
                                                                             {charge.unitTypeName && (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1075,7 +1075,7 @@ export class AccessorialChargesDialog extends React.Component<
                                                                                 onBlur={() => this.handleAvailableInputBlur(charge.accessorialChargeId)}
                                                                                 sx={{ width: 90 }}
                                                                                 disabled={!isSelected || isAddingCharges || this.isAutoPopulated(charge)}
-                                                                                inputProps={charge.minimumQuantity != null ? { min: charge.minimumQuantity } : undefined}
+                                                                                slotProps={charge.minimumQuantity != null ? {htmlInput: {min: charge.minimumQuantity}} : undefined}
                                                                                 error={isSelected && missingInputIds.has(charge.accessorialChargeId)}
                                                                                 helperText={isSelected && missingInputIds.has(charge.accessorialChargeId) ? 'Required' : undefined}
                                                                             />

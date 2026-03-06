@@ -230,7 +230,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     sx={{
                         width: 250,
                         '& .MuiOutlinedInput-root': {
-                            bgcolor: 'white',
+                            bgcolor: 'background.paper',
                         },
                     }}
                     slotProps={{
@@ -270,7 +270,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             textTransform: 'none',
                             '&.Mui-selected': {
                                 bgcolor: 'success.main',
-                                color: 'white',
+                                color: 'success.contrastText',
                                 '&:hover': {
                                     bgcolor: 'success.dark',
                                 },
@@ -286,7 +286,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             textTransform: 'none',
                             '&.Mui-selected': {
                                 bgcolor: 'grey.600',
-                                color: 'white',
+                                color: 'secondary.contrastText',
                                 '&:hover': {
                                     bgcolor: 'grey.700',
                                 },
@@ -308,7 +308,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             disabled={isLoading}
                             size="small"
                             sx={{
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 border: 1,
                                 borderColor: 'divider',
                                 '&:hover': {bgcolor: 'grey.100'},
@@ -331,7 +331,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             disabled={isLoading || isExporting}
                             size="small"
                             sx={{
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 border: 1,
                                 borderColor: 'divider',
                                 '&:hover': {bgcolor: 'grey.100'},
@@ -366,7 +366,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                         onChange={handleSpeedChange}
                         label="Speed"
                         disabled={isLoading}
-                        sx={{bgcolor: 'white'}}
+                        sx={{bgcolor: 'background.paper'}}
                     >
                         <MenuItem value="">
                             <em>All</em>
@@ -396,7 +396,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             label="Courier"
                             sx={{
                                 '& .MuiOutlinedInput-root': {
-                                    bgcolor: 'white',
+                                    bgcolor: 'background.paper',
                                 },
                             }}
                             slotProps={{
@@ -434,7 +434,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                     fontSize: 12,
                                     '&.Mui-selected': {
                                         bgcolor: 'primary.main',
-                                        color: 'white',
+                                        color: 'primary.contrastText',
                                         '&:hover': {
                                             bgcolor: 'primary.dark',
                                         },
@@ -455,7 +455,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             disabled={isLoading}
                             size="small"
                             sx={{
-                                bgcolor: 'white',
+                                bgcolor: 'background.paper',
                                 border: 1,
                                 borderColor: 'divider',
                                 '&:hover': {bgcolor: 'error.50'},
