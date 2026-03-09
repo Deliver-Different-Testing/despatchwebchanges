@@ -88,6 +88,21 @@ public class AccessorialChargeController(IAccessorialChargeService accessorialCh
         }
     }
 
+    [HttpGet("GetPortions")]
+    public async Task<IActionResult> GetPortions(int parentJobId)
+    {
+        try
+        {
+            var portions = await accessorialChargeService.GetPortionJobsAsync(parentJobId);
+            return Json(portions);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error in {Controller}.{Action}", nameof(AccessorialChargeController), nameof(GetPortions));
+            return StatusCode(500, ex.Message);
+        }
+    }
+
     [HttpDelete("Delete")]
     public async Task<IActionResult> Delete(int jobAccessorialChargeId)
     {

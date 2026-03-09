@@ -11,6 +11,7 @@ import {
     JobAccessorialChargeDto,
     JobAccessorialChargeCreateRequest,
     JobAccessorialChargeUpdateRequest,
+    PortionJobInfo,
 } from '../components/dialogs/accessorial-charges-dialog/types';
 
 class AccessorialChargesApiService {
@@ -65,6 +66,10 @@ class AccessorialChargesApiService {
      */
     async getJobAmount(jobId: number): Promise<number> {
         return apiClient.get<number>('AccessorialCharge/JobAmount', { jobId });
+    }
+
+    async getPortionJobs(parentJobId: number): Promise<PortionJobInfo[]> {
+        return apiClient.get<PortionJobInfo[]>('AccessorialCharge/GetPortions', { parentJobId });
     }
 }
 

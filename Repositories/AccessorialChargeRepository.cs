@@ -129,4 +129,24 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.UcjbAmount ?? 0m)
             .FirstOrDefaultAsync();
+
+    public async Task<List<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId)
+    {
+        var labels = new[] { "Pickup", "Flight", "Delivery" };
+        var children = await Context.TucJobs
+            .AsNoTracking()
+            .Where(j => j.ParentId == parentJobId)
+            .OrderBy(j => j.UcjbId)
+            .Select(j => new { j.UcjbId, j.AccessorialChargeGroupId })
+            .ToListAsync();
+
+        return children
+            .Select((j, i) => new PortionJobInfoDto
+            {
+                JobId = j.UcjbId,
+                Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
+                AccessorialChargeGroupId = j.AccessorialChargeGroupId,
+            })
+            .ToList();
+    }
 }

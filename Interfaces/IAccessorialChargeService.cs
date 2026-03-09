@@ -12,4 +12,5 @@ public interface IAccessorialChargeService
     Task<JobAccessorialChargeDto> UpdateChargeAsync(int jobAccessorialChargeId, JobAccessorialChargeUpdateRequest request);
     Task DeleteChargeAsync(int jobAccessorialChargeId);
     Task<decimal> GetJobAmountAsync(int jobId);
+    Task<List<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId);
 }

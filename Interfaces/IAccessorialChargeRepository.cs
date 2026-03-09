@@ -13,4 +13,5 @@ public interface IAccessorialChargeRepository
     Task UpdateChargeAsync(int jobAccessorialChargeId, decimal calculatedAmount, decimal? overrideAmount, decimal? inputValue, int itemCount, string notes, string userName);
     Task DeleteChargeAsync(int jobAccessorialChargeId);
     Task<decimal> GetJobAmountAsync(int jobId);
+    Task<List<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId);
 }

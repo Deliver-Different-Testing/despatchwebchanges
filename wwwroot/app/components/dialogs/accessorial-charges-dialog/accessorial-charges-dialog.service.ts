@@ -2,6 +2,12 @@ import { IDispatchJob, IJob } from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
 
+interface PortionJobInfo {
+    jobId: number;
+    label: string;
+    accessorialChargeGroupId?: number;
+}
+
 // Type declaration for the React dialog on window
 declare global {
     interface Window {
@@ -13,6 +19,7 @@ declare global {
                     amount?: number;
                     weight?: number;
                     quantity?: number;
+                    portionJobs?: PortionJobInfo[];
                 };
                 toastService?: {
                     showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
@@ -67,8 +74,18 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
 
     async showAccessorialChargesDialog($event: MouseEvent, job: IJob | IDispatchJob): Promise<void> {
         const groupId = job.accessorialChargeGroupId;
-        if (!groupId) {
-            console.debug('[AccessorialChargesDialogService] Job has no accessorialChargeGroupId — skipping.');
+
+        // Fetch portion jobs (child Pickup/Flight/Delivery jobs) for this job
+        let portionJobs: PortionJobInfo[] = [];
+        try {
+            const resp = await this.$http.get<PortionJobInfo[]>(`/AccessorialCharge/GetPortions?parentJobId=${job.id ?? 0}`);
+            portionJobs = resp.data ?? [];
+        } catch {
+            // Non-fatal — continue without portions
+        }
+
+        if (!groupId && portionJobs.length === 0) {
+            console.debug('[AccessorialChargesDialogService] Job has no accessorialChargeGroupId and no portion jobs — skipping.');
             return;
         }
 
@@ -98,10 +115,11 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
             await window.ReactAccessorialChargesDialog.open({
                 job: {
                     id: job.id ?? 0,
-                    accessorialChargeGroupId: groupId,
+                    accessorialChargeGroupId: groupId ?? 0,
                     amount: (job as any).amount,
                     weight: (job as any).weight,
                     quantity: (job as any).quantity,
+                    portionJobs: portionJobs.length > 0 ? portionJobs : undefined,
                 },
                 toastService,
             });
