@@ -6,6 +6,9 @@
 
 import '@testing-library/jest-dom';
 
+// Increase default test timeout for CI environments (slow kubernetes pods)
+jest.setTimeout(30000);
+
 // Mock window.matchMedia for MUI components
 Object.defineProperty(window, 'matchMedia', {
     writable: true,

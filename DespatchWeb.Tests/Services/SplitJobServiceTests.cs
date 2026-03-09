@@ -62,10 +62,6 @@ public class SplitJobServiceTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
 
-        // Default speed lookup — returns a valid speed for any ID
-        _jobRepositoryMock.Setup(x => x.GetSpeedSuggestionBySpeedIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(new Suggestion { Id = 1, Text = "Standard" });
-
         // Default CreateMinimalTucJobAsync — inserts a TucJob into the shared DB
         // so the service can load it back with FirstOrDefaultAsync.
         _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
@@ -92,7 +88,7 @@ public class SplitJobServiceTests : IDisposable
 
     private void SeedLookupData()
     {
-        // Relationship types required by GetRelationshipTypeIdsAsync
+        // Relationship types required by the combined lookups query
         _seedContext.TblJobRelationshipTypes.AddRange(
             new TblJobRelationshipType
             {
@@ -117,10 +113,81 @@ public class SplitJobServiceTests : IDisposable
                 ShortName = "SC"
             });
 
+        // TucJobType required so UcjbSpeedNavigation is populated via Include (1B optimisation)
+        _seedContext.TucJobTypeGroupings.Add(new TucJobTypeGrouping
+        {
+            GroupingId = 1,
+            GroupingName = "Default",
+            RatingEnabled = false
+        });
+
+        _seedContext.TucJobTypes.Add(new TucJobType
+        {
+            UcjtId = 1,
+            UcjtName = "Standard",
+            SystemName = "Standard",
+            WebServiceEntry = true,
+            UcjtBaseRate = 0,
+            UcjtUnitRate = 0,
+            GroupingId = 1,
+            ShowPhotosWhenChild = true,
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // TblSettings required as anchor for 1A combined lookups query.
+        // ParentJobCourierId left null — no courier override in tests.
+        _seedContext.TblSettings.Add(new TblSetting
+        {
+            SettingId = 1,
+            InternetJobChargeType = 3,
+            InternetJobStaffId = 42,
+            SystemName = "Test",
+            Version = "1.0",
+            ApplicationName = "Test",
+            AdminEmail = "test@test.com",
+            ReportUserName = "test",
+            ReportPassword = "test",
+            ReportDomain = "test",
+            DefaultDateRange = "30",
+            EnquiryEmail = "test@test.com",
+            Smtpserver = "localhost",
+            ContactUsEmailSubject = "Test",
+            NewsImageDirectory = "/img",
+            StaffImageDirectory = "/img",
+            CommunicationFileDirectory = "/files",
+            JoinOurTeamEmail = "test@test.com",
+            JoinOurTeamSubject = "Test",
+            JobFeedbackSubject = "Test",
+            InternetJobEmailSubject = "Test",
+            InternetJobPoaemail = "test@test.com",
+            InternetJobPoaemailSubject = "Test",
+            ToolTipImageDirectory = "/img",
+            InternetRoot = "http://test",
+            InternetClientDetailsEmail = "test@test.com",
+            InternetClientDetailsSubject = "Test",
+            JoinOurTeamReplyFromEmail = "test@test.com",
+            JoinOurTeamReplySubject = "Test",
+            JoinOurTeamReplyMessage = "Test",
+            JobDetailsReplyFromEmail = "test@test.com",
+            TrackAndTrackReplyFromEmail = "test@test.com",
+            PpdDescription = "Test",
+            PpdAppliedDescription = "Test",
+            UncheckDirectEmailMessage = "Test",
+            UncheckDirectEmailSubject = "Test",
+            UncheckDirectEmailReply = "test@test.com",
+            FaxHeadLogo = [],
+            FaxHeadLogoSmall = [],
+            LetterHeadLogo = [],
+            Created = DateTime.Now,
+            CreatedBy = "Test",
+            LastModified = DateTime.Now,
+            LastModifiedBy = "Test"
+        });
+
         _seedContext.SaveChanges();
-        // Note: TblSettings and TucCourier are NOT seeded here because they have
-        // dozens of NOT NULL columns that make seeding impractical. Without settings,
-        // GetParentJobCourierIdAsync returns null, which the service handles gracefully.
     }
 
     private SplitJobService CreateService() => new(
@@ -210,11 +277,9 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_NullSpeed_ThrowsArgumentNullException()
     {
+        // UcjbSpeed = null means UcjbSpeedNavigation won't be populated via Include,
+        // so the 1B optimisation produces a null validSpeed → ArgumentNullException
         SeedJob(configure: j => j.UcjbSpeed = null);
-
-        // GetValidSpeedIdAsync returns null when speedId is null
-        _jobRepositoryMock.Setup(x => x.GetSpeedSuggestionBySpeedIdAsync(It.IsAny<int>()))
-            .ReturnsAsync((Suggestion)null!);
 
         var service = CreateService();
 

@@ -42,11 +42,40 @@ public class SplitJobService(
             Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
                 jobId, userName);
 
-            // Get relationship type IDs
-            var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context);
+            // 1A: Combine initial lookups into a single projected query (saves 2 roundtrips).
+            // Extract IQueryable references to avoid capturing the disposable context in the lambda.
+            var couriers = context.TucCouriers;
+            var relTypes = context.TblJobRelationshipTypes;
+            var nationwides = context.TucJobNationwides;
 
-            // Get parent job courier ID from settings
-            var parentJobCourierId = await GetParentJobCourierIdAsync(context);
+            var lookups = await context.TblSettings.AsNoTracking()
+                .Where(s => s.SettingId == 1)
+                .Select(s => new
+                {
+                    ParentJobCourierId = s.ParentJobCourierId != null
+                        && couriers.Any(c => c.UccrId == s.ParentJobCourierId)
+                        ? s.ParentJobCourierId : null,
+                    SplitParentRelTypeId = relTypes
+                        .Where(r => r.SystemName == "SplitParent")
+                        .Select(r => (int?)r.JobRelationshipTypeId).FirstOrDefault(),
+                    SplitChildRelTypeId = relTypes
+                        .Where(r => r.SystemName == "SplitChild")
+                        .Select(r => (int?)r.JobRelationshipTypeId).FirstOrDefault(),
+                    HasFlightAssigned = nationwides.Any(n => n.UcnwJobId == jobId)
+                }).FirstOrDefaultAsync();
+
+            var parentRelTypeId = lookups?.SplitParentRelTypeId
+                                  ?? throw new InvalidOperationException(
+                                      $"Job relationship type '{ParentSystemName}' not found");
+
+            var childRelTypeId = lookups.SplitChildRelTypeId
+                                 ?? throw new InvalidOperationException(
+                                     $"Job relationship type '{ChildSystemName}' not found");
+
+            var parentJobCourierId = lookups.ParentJobCourierId;
+
+            if (lookups.HasFlightAssigned)
+                throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
 
             // Load the job with related data
             var job = await context.TucJobs
@@ -55,14 +84,10 @@ public class SplitJobService(
                           .FirstOrDefaultAsync(j => j.UcjbId == jobId)
                       ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-            // Validate the job can be split - only restriction is flight assignment
-            var hasFlightAssigned = await context.TucJobNationwides
-                .AnyAsync(n => n.UcnwJobId == jobId);
-            if (hasFlightAssigned)
-                throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
-
-            // Validate and get a valid speed ID
-            var validSpeed = await GetValidSpeedIdAsync(jobRepository, job.UcjbSpeed);
+            // 1B: Use already-loaded speed navigation property (saves 1 roundtrip)
+            var validSpeed = job.UcjbSpeedNavigation != null
+                ? new Suggestion { Id = job.UcjbSpeedNavigation.UcjtId, Text = job.UcjbSpeedNavigation.UcjtName }
+                : null;
             ArgumentNullException.ThrowIfNull(validSpeed);
 
             // Generate child job numbers using letter suffixes
@@ -93,10 +118,13 @@ public class SplitJobService(
             if (!deliveryResult.Success)
                 throw new InvalidOperationException($"Failed to create delivery job: {deliveryResult.Message}");
 
-            // Load created jobs into context for updating remaining fields
-            var pickupJob = await context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == pickupResult.JobId)
+            // 1D: Load both created child jobs in one query (saves 1 roundtrip)
+            var createdJobIds = new[] { pickupResult.JobId!.Value, deliveryResult.JobId!.Value };
+            var createdJobs = await context.TucJobs
+                .Where(j => createdJobIds.AsEnumerable().Contains(j.UcjbId)).ToListAsync();
+            var pickupJob = createdJobs.FirstOrDefault(j => j.UcjbId == pickupResult.JobId)
                 ?? throw new InvalidOperationException($"Failed to load created pickup job {pickupResult.JobId}");
-            var deliveryJob = await context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == deliveryResult.JobId)
+            var deliveryJob = createdJobs.FirstOrDefault(j => j.UcjbId == deliveryResult.JobId)
                 ?? throw new InvalidOperationException($"Failed to load created delivery job {deliveryResult.JobId}");
 
             // Update pickup job fields not handled by the stored procedure
@@ -260,15 +288,15 @@ public class SplitJobService(
             deliveryJob.DeliveryLatitude = job.DeliveryLatitude;
             deliveryJob.DeliveryLongitude = job.DeliveryLongitude;
 
-            await context.SaveChangesAsync();
-
-            // Create notes for the split jobs
+            // 1E: Add notes to context before SaveChanges so everything persists in one batch (saves 1 roundtrip)
             var staffId = tenantInfoService.GetStaffId();
-            await CreateSplitJobNotesAsync(context, currentTenantTime, pickupJob.UcjbId, deliveryJob.UcjbId,
+            AddSplitJobNotes(context, currentTenantTime, pickupJob.UcjbId, deliveryJob.UcjbId,
                 job.UcjbNotes, staffId);
 
-            // Re-rate the split jobs
-            await ReRateSplitJobsAsync(context, jobId);
+            await context.SaveChangesAsync();
+
+            // 1F: Pass already-known values to avoid re-querying the parent job (saves 1 roundtrip)
+            await ReRateSplitJobsAsync(context, jobId, job.UcjbAmount ?? 0m, rootParentId);
 
             // Consolidate MARS information
             await ConsolidateMarsInformationAsync(context, jobId, userName);
@@ -289,40 +317,6 @@ public class SplitJobService(
             Log.Error(ex, "Error splitting job {JobId}", jobId);
             throw;
         }
-    }
-
-    private static async Task<(int ParentRelTypeId, int ChildRelTypeId)> GetRelationshipTypeIdsAsync(
-        DespatchContext context)
-    {
-        var relTypes = await context.TblJobRelationshipTypes
-            .AsNoTracking()
-            .Where(r => r.SystemName == ParentSystemName || r.SystemName == ChildSystemName)
-            .Select(r => new { r.SystemName, r.JobRelationshipTypeId })
-            .ToListAsync();
-
-        var parentRelType = relTypes.FirstOrDefault(r => r.SystemName == ParentSystemName)
-                            ?? throw new InvalidOperationException(
-                                $"Job relationship type '{ParentSystemName}' not found");
-
-        var childRelType = relTypes.FirstOrDefault(r => r.SystemName == ChildSystemName)
-                           ?? throw new InvalidOperationException(
-                               $"Job relationship type '{ChildSystemName}' not found");
-
-        return (parentRelType.JobRelationshipTypeId, childRelType.JobRelationshipTypeId);
-    }
-
-    private static async Task<int?> GetParentJobCourierIdAsync(DespatchContext context) =>
-        await context.TblSettings
-            .AsNoTracking()
-            .Where(s => s.SettingId == 1 && s.ParentJobCourierId != null
-                        && context.TucCouriers.Any(c => c.UccrId == s.ParentJobCourierId))
-            .Select(s => s.ParentJobCourierId)
-            .FirstOrDefaultAsync();
-
-    private static async Task<Suggestion> GetValidSpeedIdAsync(IJobRepository jobRepository, int? speedId)
-    {
-        if (!speedId.HasValue) return null;
-        return await jobRepository.GetSpeedSuggestionBySpeedIdAsync(speedId.Value);
     }
 
     /// <summary>
@@ -352,21 +346,29 @@ public class SplitJobService(
         // Find root parent ID - use existing RootParentId if present, otherwise this job is the root
         var rootParentId = job.RootParentId ?? job.UcjbId;
 
-        // Get the main job number from the root parent
+        // 1C: Combine root parent number + child count into a single projected query
         string mainJobNumber;
+        int existingChildCount;
         if (rootParentId == job.UcjbId)
+        {
             mainJobNumber = job.UcjbNumber;
-        else
-            mainJobNumber = await context.TucJobs
+            existingChildCount = await context.TucJobs
                 .AsNoTracking()
+                .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId);
+        }
+        else
+        {
+            var data = await context.TucJobs.AsNoTracking()
                 .Where(j => j.UcjbId == rootParentId)
-                .Select(j => j.UcjbNumber)
-                .FirstOrDefaultAsync() ?? job.UcjbNumber;
+                .Select(j => new
+                {
+                    MainJobNumber = j.UcjbNumber,
+                    ExistingChildCount = context.TucJobs.Count(c => c.RootParentId == rootParentId && c.UcjbId != rootParentId)
+                }).FirstOrDefaultAsync();
 
-        // Count all existing descendants under the root (excluding the root itself)
-        var existingChildCount = await context.TucJobs
-            .AsNoTracking()
-            .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId);
+            mainJobNumber = data?.MainJobNumber ?? job.UcjbNumber;
+            existingChildCount = data?.ExistingChildCount ?? 0;
+        }
 
         // Generate letter suffixes for the two new jobs
         var pickupSuffix = GetLetterSuffix(existingChildCount);
@@ -465,31 +467,16 @@ public class SplitJobService(
             TenantCurrentTime = currentTenantTime
         };
 
-    private async Task ReRateSplitJobsAsync(DespatchContext context, int parentJobId)
+    private async Task ReRateSplitJobsAsync(DespatchContext context, int parentJobId,
+        decimal parentAmount, int rootParentId)
     {
         try
         {
-            // Get parent job amount and root parent ID
-            var parentJob = await context.TucJobs
-                .AsNoTracking()
-                .Where(j => j.UcjbId == parentJobId)
-                .Select(j => new { j.UcjbAmount, j.RootParentId })
-                .FirstOrDefaultAsync();
-
-            if (parentJob == null)
-            {
-                Log.Warning("Parent job {ParentJobId} not found for re-rating.", parentJobId);
-                return;
-            }
-
-            var parentAmount = parentJob.UcjbAmount ?? 0m;
             if (parentAmount == 0m)
             {
                 Log.Information("Parent job {ParentJobId} has zero amount. Skipping re-rate.", parentJobId);
                 return;
             }
-
-            var rootParentId = parentJob.RootParentId ?? parentJobId;
 
             // Get all non-void child jobs under RootParentID, ordered by Sequence
             var jobIdsToRate = await context.TucJobs
@@ -595,7 +582,7 @@ public class SplitJobService(
             .Where(j => j.RootParentId == jobId)
             .ExecuteUpdateAsync(j => j.SetProperty(x => x.DisplayInDespatch, true));
 
-    private static async Task CreateSplitJobNotesAsync(
+    private static void AddSplitJobNotes(
         DespatchContext context,
         DateTime currentTenantTime,
         int pickupJobId,
@@ -605,25 +592,22 @@ public class SplitJobService(
     {
         var parentNotesText = string.IsNullOrWhiteSpace(parentNotes) ? string.Empty : $"  {parentNotes}";
 
-        var pickupNote = new TucNote
-        {
-            JobId = pickupJobId,
-            NoteTypeId = (int)NoteType.InternalNote,
-            NoteText = $"SPLIT Part 1 of 2. {parentNotesText}",
-            CreatedBy = staffId,
-            CreatedDate = currentTenantTime
-        };
-
-        var deliveryNote = new TucNote
-        {
-            JobId = deliveryJobId,
-            NoteTypeId = (int)NoteType.InternalNote,
-            NoteText = $"SPLIT Part 2 of 2. {parentNotesText}",
-            CreatedBy = staffId,
-            CreatedDate = currentTenantTime
-        };
-
-        await context.TucNotes.AddRangeAsync(pickupNote, deliveryNote);
-        await context.SaveChangesAsync();
+        context.TucNotes.AddRange(
+            new TucNote
+            {
+                JobId = pickupJobId,
+                NoteTypeId = (int)NoteType.InternalNote,
+                NoteText = $"SPLIT Part 1 of 2. {parentNotesText}",
+                CreatedBy = staffId,
+                CreatedDate = currentTenantTime
+            },
+            new TucNote
+            {
+                JobId = deliveryJobId,
+                NoteTypeId = (int)NoteType.InternalNote,
+                NoteText = $"SPLIT Part 2 of 2. {parentNotesText}",
+                CreatedBy = staffId,
+                CreatedDate = currentTenantTime
+            });
     }
 }
