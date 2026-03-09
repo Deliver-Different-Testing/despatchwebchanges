@@ -12,12 +12,9 @@ import {
     Typography,
 } from '@mui/material';
 import dayjs from 'dayjs';
-import duration from 'dayjs/plugin/duration';
 import {formatMins} from '../../../../functions/formatDates';
 import type {DriverViewModel, IOpenJobResponse, TableSort, ViewJob,} from '../OverviewPage.interfaces';
 import {ContactID} from "../../../../contants";
-
-dayjs.extend(duration);
 
 const OPEN_JOBS_VIEW_MODE_KEY = `openJobsViewMode_${ContactID}`;
 const OPEN_JOBS_LIMIT_KEY = `openJobsTableViewLimit${ContactID}`;
@@ -63,7 +60,7 @@ function getTimeSinceLastCompleted(lastCompletedTime: string): number {
     if (lastCompletedTime === 'N/A') return 0;
     const lastCompleted = dayjs(lastCompletedTime, 'HH:mm');
     const now = dayjs();
-    return Math.round(dayjs.duration(now.diff(lastCompleted)).asMinutes());
+    return Math.round(now.diff(lastCompleted, 'minute'));
 }
 
 export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoading}) => {
