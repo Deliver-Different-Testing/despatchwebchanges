@@ -43,6 +43,7 @@ import {
     JobAccessorialChargeCreateRequest,
     JobAccessorialChargeDto,
     JobAccessorialChargeUpdateRequest,
+    PortionJobInfo,
 } from './types';
 import {accessorialChargesApi} from '../../../services/accessorialChargesApi';
 
@@ -67,6 +68,7 @@ interface DialogState {
     isLoadingAvailable: boolean;
     isLoadingApplied: boolean;
     isAddingCharges: boolean;
+    activePortionJobId: number | null;
 }
 
 export class AccessorialChargesDialog extends React.Component<
@@ -96,13 +98,30 @@ export class AccessorialChargesDialog extends React.Component<
             isLoadingAvailable: false,
             isLoadingApplied: false,
             isAddingCharges: false,
+            activePortionJobId: null,
         };
+    }
+
+    private getActiveJobId(): number {
+        const { job } = this.props;
+        const { activePortionJobId } = this.state;
+        return activePortionJobId ?? job?.id ?? 0;
+    }
+
+    private getActiveGroupId(): number {
+        const { job } = this.props;
+        const { activePortionJobId } = this.state;
+        if (activePortionJobId && job?.portionJobs) {
+            const portion = job.portionJobs.find((p: PortionJobInfo) => p.jobId === activePortionJobId);
+            if (portion?.accessorialChargeGroupId) return portion.accessorialChargeGroupId;
+        }
+        return job?.accessorialChargeGroupId ?? 0;
     }
 
     componentDidUpdate(prevProps: AccessorialChargesDialogProps, prevState: DialogState): void {
         if (this.props.open && !prevProps.open) {
-            this.reset();
-            this.loadAll();
+            const firstPortionJobId = this.props.job?.portionJobs?.[0]?.jobId ?? null;
+            this.reset(firstPortionJobId, () => this.loadAll());
         }
         if (prevState.appliedRowState !== this.state.appliedRowState) {
             const hasDirtyRows = Object.values(this.state.appliedRowState).some(r => r.isDirty);
@@ -114,11 +133,12 @@ export class AccessorialChargesDialog extends React.Component<
 
     componentDidMount(): void {
         if (this.props.open) {
-            this.loadAll();
+            const firstPortionJobId = this.props.job?.portionJobs?.[0]?.jobId ?? null;
+            this.reset(firstPortionJobId, () => this.loadAll());
         }
     }
 
-    private reset(): void {
+    private reset(activePortionJobId: number | null = null, callback?: () => void): void {
         this.initialAppliedCharges = null;
         this.liveJobAmount = null;
         this.setState({
@@ -132,15 +152,35 @@ export class AccessorialChargesDialog extends React.Component<
             isLoadingAvailable: false,
             isLoadingApplied: false,
             isAddingCharges: false,
-        });
+            activePortionJobId,
+        }, callback);
     }
 
+    private handlePortionTabClick = (jobId: number): void => {
+        if (jobId === this.state.activePortionJobId) return;
+        this.initialAppliedCharges = null;
+        this.liveJobAmount = null;
+        this.setState({
+            availableCharges: [],
+            appliedCharges: [],
+            appliedRowState: {},
+            selectedIds: new Set(),
+            availableInputMap: {},
+            availableNotesMap: {},
+            missingInputIds: new Set(),
+            isLoadingAvailable: false,
+            isLoadingApplied: false,
+            isAddingCharges: false,
+            activePortionJobId: jobId,
+        }, () => { this.loadAll(); });
+    };
+
     private async loadAll(): Promise<JobAccessorialChargeDto[]> {
-        const { job } = this.props;
+        const activeJobId = this.getActiveJobId();
         const [available, applied, liveAmount] = await Promise.all([
             this.loadAvailableCharges(),
             this.loadAppliedCharges(),
-            job ? accessorialChargesApi.getJobAmount(job.id).catch(() => null) : Promise.resolve(null),
+            activeJobId ? accessorialChargesApi.getJobAmount(activeJobId).catch(() => null) : Promise.resolve(null),
         ]);
         // Only set once per session (same principle as initialAppliedCharges).
         // Mid-session adds/delete update ucjbAmount via triggers, but the delta-based
@@ -216,12 +256,13 @@ export class AccessorialChargesDialog extends React.Component<
     }
 
     private loadAppliedCharges = async (): Promise<JobAccessorialChargeDto[] | null> => {
-        const { job, showToast } = this.props;
-        if (!job) return null;
+        const { showToast } = this.props;
+        const activeJobId = this.getActiveJobId();
+        if (!activeJobId) return null;
 
         this.setState({ isLoadingApplied: true });
         try {
-            const charges = await accessorialChargesApi.getAppliedCharges(job.id);
+            const charges = await accessorialChargesApi.getAppliedCharges(activeJobId);
             const rowState: Record<number, AppliedRowState> = {};
             for (const c of charges) {
                 rowState[c.jobAccessorialChargeId] = {
@@ -248,13 +289,15 @@ export class AccessorialChargesDialog extends React.Component<
 
     private loadAvailableCharges = async (): Promise<AccessorialChargeDto[] | null> => {
         const { job, showToast } = this.props;
-        if (!job) return null;
+        const activeJobId = this.getActiveJobId();
+        const activeGroupId = this.getActiveGroupId();
+        if (!activeJobId || !activeGroupId) return null;
 
         this.setState({ isLoadingAvailable: true });
         try {
             const charges = await accessorialChargesApi.getAvailableCharges(
-                job.accessorialChargeGroupId,
-                job.id
+                activeGroupId,
+                activeJobId
             );
             const autoInputMap: Record<number, string> = {};
             for (const c of charges) {
@@ -262,9 +305,9 @@ export class AccessorialChargesDialog extends React.Component<
                     autoInputMap[c.accessorialChargeId] = String(c.minimumQuantity);
                 }
                 if (c.unitTypeName === 'Pounds' || c.unitTypeName === 'Kilograms') {
-                    if (job.weight != null) autoInputMap[c.accessorialChargeId] = String(job.weight);
+                    if (job?.weight != null) autoInputMap[c.accessorialChargeId] = String(job.weight);
                 } else if (c.unitTypeName === 'Quantity') {
-                    if (job.quantity != null) autoInputMap[c.accessorialChargeId] = String(job.quantity);
+                    if (job?.quantity != null) autoInputMap[c.accessorialChargeId] = String(job.quantity);
                 }
             }
             this.setState(prev => ({
@@ -280,9 +323,8 @@ export class AccessorialChargesDialog extends React.Component<
         }
     };
 
-    private handleRefresh = async (): Promise<void> => {
-        this.reset();
-        await this.loadAll();
+    private handleRefresh = (): void => {
+        this.reset(this.state.activePortionJobId, () => this.loadAll());
     };
 
     // ── Applied row handlers ──────────────────────────────────────────────────
@@ -441,9 +483,10 @@ export class AccessorialChargesDialog extends React.Component<
     };
 
     private handleAddSelected = async (): Promise<void> => {
-        const { job, showToast } = this.props;
+        const { showToast } = this.props;
         const { availableCharges, selectedIds, availableInputMap, availableNotesMap } = this.state;
-        if (!job || selectedIds.size === 0) return;
+        const activeJobId = this.getActiveJobId();
+        if (!activeJobId || selectedIds.size === 0) return;
 
         const selectedCharges = availableCharges.filter(c => selectedIds.has(c.accessorialChargeId));
 
@@ -472,7 +515,7 @@ export class AccessorialChargesDialog extends React.Component<
 
         this.setState({ isAddingCharges: true });
         try {
-            await accessorialChargesApi.addCharges(job.id, toAdd);
+            await accessorialChargesApi.addCharges(activeJobId, toAdd);
             this.setState({ selectedIds: new Set(), availableInputMap: {}, availableNotesMap: {}, isAddingCharges: false });
             showToast(`${toAdd.length} charge(s) added.`, 'success');
             const applied = await this.loadAll();
@@ -688,7 +731,7 @@ export class AccessorialChargesDialog extends React.Component<
     // ── Render ────────────────────────────────────────────────────────────────
 
     render(): React.ReactNode {
-        const { open, onClose } = this.props;
+        const { open, onClose, job } = this.props;
         const {
             appliedCharges,
             appliedRowState,
@@ -700,7 +743,9 @@ export class AccessorialChargesDialog extends React.Component<
             isLoadingAvailable,
             isLoadingApplied,
             isAddingCharges,
+            activePortionJobId,
         } = this.state;
+        const portionJobs = job?.portionJobs ?? [];
 
         const isLoading = isLoadingAvailable || isLoadingApplied;
 
@@ -763,6 +808,31 @@ export class AccessorialChargesDialog extends React.Component<
                         <CloseIcon />
                     </IconButton>
                 </Box>
+
+                {/* Portion job tabs */}
+                {portionJobs.length > 0 && (
+                    <Box sx={{ display: 'flex', borderBottom: '2px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
+                        {portionJobs.map((portion: PortionJobInfo) => (
+                            <Button
+                                key={portion.jobId}
+                                onClick={() => this.handlePortionTabClick(portion.jobId)}
+                                variant={activePortionJobId === portion.jobId ? 'contained' : 'outlined'}
+                                disabled={isLoadingAvailable || isLoadingApplied}
+                                sx={{
+                                    borderRadius: 0,
+                                    flex: 1,
+                                    fontWeight: 600,
+                                    borderTop: 'none',
+                                    borderLeft: 'none',
+                                    borderRight: 'none',
+                                    borderBottom: 'none',
+                                }}
+                            >
+                                {portion.label}
+                            </Button>
+                        ))}
+                    </Box>
+                )}
 
                 <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
                     {isLoading ? (

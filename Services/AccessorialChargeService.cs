@@ -110,6 +110,9 @@ public class AccessorialChargeService(
     public Task<decimal> GetJobAmountAsync(int jobId)
         => repository.GetJobAmountAsync(jobId);
 
+    public Task<List<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId)
+        => repository.GetPortionJobsAsync(parentJobId);
+
     /// <summary>
     /// Mirrors booking's JobAccessorialChargeService.Recalculate().
     /// </summary>

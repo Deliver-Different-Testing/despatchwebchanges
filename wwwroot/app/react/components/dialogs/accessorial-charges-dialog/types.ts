@@ -64,12 +64,19 @@ export interface JobAccessorialChargeUpdateRequest {
     overrideAmount?: number;
 }
 
+export interface PortionJobInfo {
+    jobId: number;
+    label: string;
+    accessorialChargeGroupId?: number;
+}
+
 export interface AccessorialChargesJob {
     id: number;
     accessorialChargeGroupId: number;
     amount?: number;
     weight?: number;
     quantity?: number;
+    portionJobs?: PortionJobInfo[];
 }
 
 export interface AccessorialChargesDialogProps {

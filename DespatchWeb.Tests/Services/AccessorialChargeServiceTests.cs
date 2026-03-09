@@ -332,4 +332,26 @@ public class AccessorialChargeServiceTests
     }
 
     #endregion
+
+    #region GetPortionJobsAsync
+
+    [Fact]
+    public async Task GetPortionJobsAsync_DelegatesToRepository()
+    {
+        var expected = new List<PortionJobInfoDto>
+        {
+            new() { JobId = 101, Label = "Pickup", AccessorialChargeGroupId = 5 },
+            new() { JobId = 102, Label = "Flight", AccessorialChargeGroupId = 6 },
+        };
+        _repositoryMock
+            .Setup(r => r.GetPortionJobsAsync(200))
+            .ReturnsAsync(expected);
+
+        var result = await CreateService().GetPortionJobsAsync(200);
+
+        result.Should().BeEquivalentTo(expected);
+        _repositoryMock.Verify(r => r.GetPortionJobsAsync(200), Times.Once);
+    }
+
+    #endregion
 }
