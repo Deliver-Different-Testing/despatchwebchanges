@@ -452,10 +452,11 @@ describe('TaskItem', () => {
         });
 
         it('shows loading spinner while loading staff', async () => {
+            let resolveStaff!: (value: any[]) => void;
+            const staffPromise = new Promise<any[]>(resolve => { resolveStaff = resolve; });
+
             const services = createMockServices();
-            services.dispatchService.getActiveStaff.mockImplementation(
-                () => new Promise(resolve => setTimeout(() => resolve([]), 100))
-            );
+            services.dispatchService.getActiveStaff.mockReturnValue(staffPromise);
             const props = createDefaultProps({
                 tasksService: services.tasksService,
                 dispatchService: services.dispatchService,
@@ -466,6 +467,12 @@ describe('TaskItem', () => {
             await userEvent.click(assigneeButton!);
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+            // Resolve to avoid act() warnings from dangling promise
+            resolveStaff([]);
+            await waitFor(() => {
+                expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+            });
         });
     });
 

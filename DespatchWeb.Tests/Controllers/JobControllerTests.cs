@@ -1363,7 +1363,7 @@ public class JobControllerTests
         var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
         var status = _backgroundTaskTracker.GetStatus(taskId);
         status.Should().NotBeNull();
-        status!.Status.Should().Be("Failed");
+        status.Status.Should().Be("Failed");
         status.ErrorMessage.Should().Contain("Job not found");
 
         // Restore environment
@@ -1482,7 +1482,7 @@ public class JobControllerTests
     }
 
     [Fact]
-    public void SplitJobStatus_UnknownTaskId_ReturnsNotFound()
+    public void SplitJobStatus_UnknownTaskId_ReturnsPending()
     {
         // Arrange
         var controller = CreateController();
@@ -1491,7 +1491,12 @@ public class JobControllerTests
         var result = controller.SplitJobStatus("unknown-task-id");
 
         // Assert
-        result.Should().BeOfType<NotFoundObjectResult>();
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var value = okResult.Value;
+        var status = value?.GetType().GetProperty("status")?.GetValue(value) as string;
+        var errorMessage = value?.GetType().GetProperty("errorMessage")?.GetValue(value) as string;
+        status.Should().Be("Pending");
+        errorMessage.Should().BeNull();
     }
 
     #endregion
@@ -3298,9 +3303,8 @@ public class JobControllerTests
 
     #region Helper Methods
 
-    private static DispatchJobViewModel CreateTestDispatchJob(int id, string jobNumber)
-    {
-        return new DispatchJobViewModel
+    private static DispatchJobViewModel CreateTestDispatchJob(int id, string jobNumber) =>
+        new()
         {
             Id = id,
             JobNo = jobNumber,
@@ -3308,7 +3312,6 @@ public class JobControllerTests
             From = "123 Test St",
             ToAddress = "456 Delivery Ave"
         };
-    }
 
     #endregion
 }

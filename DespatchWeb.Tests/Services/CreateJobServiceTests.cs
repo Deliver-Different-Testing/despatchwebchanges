@@ -1104,6 +1104,26 @@ public class CreateJobServiceTests : IDisposable
         args[66].Should().Be(1, "loggedInContactId should match input");
     }
 
+    [Fact]
+    public async Task CreateJobAsync_NormalJob_SeedsJobNumberOutputParameter()
+    {
+        var service = CreateServiceWithMockedProcs(out var mockProcs);
+        SetupExceleratorInsert(mockProcs);
+        var input = CreateInput();
+
+        await service.CreateJobAsync(input);
+
+        var args = mockProcs.Invocations
+            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
+            .Arguments;
+
+        // jobNumber OutputParameter is at index 71 (one after jobID at 70)
+        var jobNumberParam = args[ExceleratorJobIdArgIndex + 1] as OutputParameter<string>;
+        jobNumberParam.Should().NotBeNull();
+        jobNumberParam!._value.Should().Be("JOB-001",
+            "the pre-generated job number from input should be seeded into the OutputParameter so the SP receives it as input");
+    }
+
     #endregion
 
     #region Stored Procedure Error Handling Tests

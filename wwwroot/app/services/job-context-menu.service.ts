@@ -539,6 +539,20 @@ class JobContextMenuService implements angular.IServiceProvider {
     ) {
         if (!job) return;
 
+        if (job.isArchived) {
+            await this.$mdDialog.show(
+                this.$mdDialog
+                    .alert()
+                    .parent(this.$document.parent())
+                    .clickOutsideToClose(true)
+                    .title("Unable to split job")
+                    .textContent("Splitting archived jobs is not currently supported.")
+                    .ariaLabel("Alert")
+                    .ok("OK")
+            );
+            return;
+        }
+
         const hasChildren = job._groupChildren && job._groupChildren.length > 0;
         if (!job.allowSplit || hasChildren) {
             const reason = hasChildren
@@ -645,7 +659,12 @@ class JobContextMenuService implements angular.IServiceProvider {
                 }
             } catch (error) {
                 console.error("Error polling split job status:", error);
-                this.toastrService.showErrorToast("Error checking split job status");
+                // Retry on transient errors instead of giving up immediately
+                if (attempt < maxAttempts - 1) {
+                    this.pollSplitJobStatus(taskId, jobNo, onRefresh, attempt + 1);
+                } else {
+                    this.toastrService.showErrorToast("Error checking split job status");
+                }
             }
         }, 1000);
     }

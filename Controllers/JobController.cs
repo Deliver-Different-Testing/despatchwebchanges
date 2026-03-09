@@ -1152,10 +1152,7 @@ public class JobController(
     public IActionResult SplitJobStatus([FromQuery] string taskId)
     {
         var status = backgroundTaskTracker.GetStatus(taskId);
-        if (status == null)
-            return NotFound(new { error = "Task not found" });
-
-        return Ok(new { status = status.Status, errorMessage = status.ErrorMessage });
+        return Ok(status == null ? new { status = "Pending", errorMessage = (string)null } : new { status = status.Status, errorMessage = status.ErrorMessage });
     }
 
     [HttpPost]
