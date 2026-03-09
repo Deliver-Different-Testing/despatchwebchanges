@@ -506,7 +506,7 @@ public class CreateJobService(
         var toAddress = data.ToAddress;
 
         var jobIdOutput = new OutputParameter<int?>();
-        var jobNumberOutput = new OutputParameter<string>();
+        var jobNumberOutput = new OutputParameter<string> { _value = data.JobNumber };
         var amountOutput = new OutputParameter<decimal?> { _value = data.Amount };
         var poaOutput = new OutputParameter<bool?>();
 

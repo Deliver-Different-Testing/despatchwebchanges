@@ -268,6 +268,11 @@ describe('JobContextMenuService', () => {
         ): Promise<void> => {
             if (!job) return;
 
+            if (job.isArchived) {
+                await mockMdDialogSplit.show(mockMdDialogSplit.alert());
+                return;
+            }
+
             const hasChildren = (job as any)._groupChildren && (job as any)._groupChildren.length > 0;
             if (!(job as any).allowSplit || hasChildren) {
                 await mockMdDialogSplit.show(mockMdDialogSplit.alert());
@@ -320,7 +325,9 @@ describe('JobContextMenuService', () => {
         const pollSplitJobStatus = async (
             taskId: string,
             jobNo: string,
-            onRefresh?: () => void | Promise<void>
+            onRefresh?: () => void | Promise<void>,
+            attempt: number = 0,
+            maxAttempts: number = 30
         ): Promise<void> => {
             try {
                 const result = await mockDispatchDataSplit.getSplitJobStatus(taskId);
@@ -336,7 +343,12 @@ describe('JobContextMenuService', () => {
                     );
                 }
             } catch (error) {
-                mockToastrService.showErrorToast("Error checking split job status");
+                // Retry on transient errors instead of giving up immediately
+                if (attempt < maxAttempts - 1) {
+                    await pollSplitJobStatus(taskId, jobNo, onRefresh, attempt + 1, maxAttempts);
+                } else {
+                    mockToastrService.showErrorToast("Error checking split job status");
+                }
             }
         };
 
@@ -384,6 +396,19 @@ describe('JobContextMenuService', () => {
             await splitJobAction(job);
 
             expect(mockMdDialogSplit.alert).toHaveBeenCalled();
+            expect(mockDispatchDataSplit.splitJob).not.toHaveBeenCalled();
+        });
+
+        it('should show alert dialog if job is archived', async () => {
+            const job = createMockJob({
+                allowSplit: true,
+                isArchived: true,
+            } as any);
+
+            await splitJobAction(job);
+
+            expect(mockMdDialogSplit.alert).toHaveBeenCalled();
+            expect(mockMdDialogSplit.show).toHaveBeenCalledTimes(1);
             expect(mockDispatchDataSplit.splitJob).not.toHaveBeenCalled();
         });
 
@@ -631,6 +656,40 @@ describe('JobContextMenuService', () => {
             await splitJobAction(job, onRefresh);
 
             expect(onRefresh).not.toHaveBeenCalled();
+        });
+
+        it('should retry polling on transient error and succeed on next attempt', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus
+                .mockRejectedValueOnce(new Error('Network error'))
+                .mockResolvedValueOnce({ status: 'Completed', errorMessage: null });
+
+            await splitJobAction(job);
+
+            expect(mockDispatchDataSplit.getSplitJobStatus).toHaveBeenCalledTimes(2);
+            expect(mockToastrService.showSuccessToast).toHaveBeenCalled();
+            expect(mockToastrService.showErrorToast).not.toHaveBeenCalled();
+        });
+
+        it('should show error toast only after all retries are exhausted', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus.mockRejectedValue(new Error('Network error'));
+
+            // Use a small maxAttempts via the poll helper directly
+            await pollSplitJobStatus('test-task-id', (job as any).jobNo, undefined, 0, 3);
+
+            expect(mockDispatchDataSplit.getSplitJobStatus).toHaveBeenCalledTimes(3);
+            expect(mockToastrService.showErrorToast).toHaveBeenCalledWith("Error checking split job status");
         });
     });
 
