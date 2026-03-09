@@ -90,11 +90,9 @@ public class CreateJobService(
 
             var resolved = new ResolvedJobData();
 
-            await ResolveInputValuesAsync(context, data, resolved, cancellationToken);
-            await ApplyClientDefaultsAsync(context, data, resolved, cancellationToken);
+            await ResolveInitialDataAsync(context, data, resolved, cancellationToken);
             await ResolveContactAsync(context, data, resolved, cancellationToken);
             ApplyNullFallbackDefaults(data, resolved);
-            await LoadSettingsAsync(context, resolved, cancellationToken);
 
             var validationError = await ValidateAsync(context, data, resolved, cancellationToken);
             if (validationError != null)
@@ -115,9 +113,11 @@ public class CreateJobService(
     }
 
     /// <summary>
-    /// Parse @Type → TypeID, look up client, detect bulk schedule, resolve speed/job type.
+    /// 2G: Combined client + defaults + settings lookup (saves 2 roundtrips per call).
+    /// Parses Type, looks up client with defaults and settings in a single projected query,
+    /// then handles bulk schedule detection and speed/job type resolution separately (conditional).
     /// </summary>
-    private static async Task ResolveInputValuesAsync(
+    private static async Task ResolveInitialDataAsync(
         DespatchContext context,
         CreateMinimalTucJobInputModel data,
         ResolvedJobData resolved,
@@ -131,13 +131,31 @@ public class CreateJobService(
             _ => 1
         };
 
-        // Client lookup from the table entity (TucClient is the actual table; TblClient is a view)
+        // Parse input-derived values BEFORE defaults (so ??= in defaults respects input precedence)
+        resolved.AddressType = ParseAddressType(data.ToAddressType);
+        resolved.ProofOfDelivery = ParseProofOfDelivery(data);
+        resolved.ProofOfDeliveryEmail = data.JobNotificationEmail;
+        resolved.ProofOfDeliveryMobile = data.JobNotificationMobile;
+
+        if (!string.IsNullOrWhiteSpace(data.JobNotificationType))
+            resolved.ProofOfDeliveryType = data.JobNotificationType.ToUpperInvariant() switch
+            {
+                "EMAIL" => 1,
+                "SMS" => 2,
+                "BOTH" => 3,
+                _ => null
+            };
+
+        // Combined client + defaults + settings query (single roundtrip).
+        // Uses LEFT JOIN for defaults and scalar subqueries for settings to avoid SQL APPLY.
         if (data.ClientId > 0)
         {
-            var client = await context.TucClients
-                .AsNoTracking()
-                .Where(c => c.UcclId == data.ClientId)
-                .Select(c => new
+            var initialData = await (
+                from c in context.TucClients.AsNoTracking()
+                where c.UcclId == data.ClientId
+                join d in context.TblJobDefaults.AsNoTracking() on c.UcclCode equals d.Code into defaults
+                from d in defaults.DefaultIfEmpty()
+                select new
                 {
                     ClientId = c.UcclId,
                     c.UcclGroupId,
@@ -147,21 +165,88 @@ public class CreateJobService(
                     c.ReferenceAmessage,
                     c.ReferenceBmandatory,
                     c.ReferenceBdefineList,
-                    c.ReferenceBmessage
-                })
+                    c.ReferenceBmessage,
+                    // Defaults (null when no matching row via LEFT JOIN)
+                    HasDefaults = d != null,
+                    DefaultContact = d!.Contact,
+                    DefaultContactId = d.ContactId,
+                    DefaultJobTypeId = d.JobTypeId,
+                    DefaultDeliverToPrivateBusiness = d.DeliverToPrivateBusiness,
+                    DefaultClientReferenceA = d.ClientReferenceA,
+                    DefaultClientReferenceB = d.ClientReferenceB,
+                    DefaultSize = d.Size,
+                    DefaultWeight = d.Weight,
+                    DefaultQuantity = d.Quantity,
+                    DefaultCourierNotes = d.CourierNotes,
+                    DefaultClientNotes = d.ClientNotes,
+                    DefaultPickUpFrom = d.PickUpFrom,
+                    DefaultDeliverToLeaveId = d.DeliverToLeaveId,
+                    DefaultProofOfDelivery = d.ProofOfDelivery,
+                    DefaultProofOfDeliveryEmail = d.ProofOfDeliveryEmail,
+                    DefaultProofOfDeliveryMobile = d.ProofOfDeliveryMobile,
+                    DefaultRtnJob = d.RtnJob,
+                    DefaultType = d.Type,
+                    // Settings as scalar subqueries
+                    InternetJobChargeType = context.TblSettings
+                        .Where(s => s.SettingId == 1).Select(s => s.InternetJobChargeType).FirstOrDefault(),
+                    InternetJobStaffId = context.TblSettings
+                        .Where(s => s.SettingId == 1).Select(s => s.InternetJobStaffId).FirstOrDefault()
+                }).FirstOrDefaultAsync(ct);
+
+            if (initialData != null)
+            {
+                resolved.ClientId = initialData.ClientId;
+                resolved.ClientGroupId = initialData.UcclGroupId;
+                resolved.ClientCode = initialData.UcclCode;
+                resolved.ReferenceAmandatory = initialData.ReferenceAmandatory;
+                resolved.ReferenceAdefineList = initialData.ReferenceAdefineList;
+                resolved.ReferenceAmessage = initialData.ReferenceAmessage;
+                resolved.ReferenceBmandatory = initialData.ReferenceBmandatory;
+                resolved.ReferenceBdefineList = initialData.ReferenceBdefineList;
+                resolved.ReferenceBmessage = initialData.ReferenceBmessage;
+
+                // Apply client defaults (LEFT JOIN — fields are null when no defaults row)
+                if (initialData.HasDefaults)
+                {
+                    resolved.Contact ??= initialData.DefaultContact;
+                    resolved.ContactId ??= initialData.DefaultContactId;
+                    resolved.JobTypeId ??= initialData.DefaultJobTypeId;
+                    resolved.DeliverToPrivateBusiness ??= initialData.DefaultDeliverToPrivateBusiness;
+                    resolved.ClientReferenceA ??= initialData.DefaultClientReferenceA;
+                    resolved.ClientReferenceB ??= initialData.DefaultClientReferenceB;
+                    resolved.Size ??= initialData.DefaultSize;
+                    resolved.Weight ??= (decimal?)initialData.DefaultWeight;
+                    resolved.Quantity ??= initialData.DefaultQuantity;
+                    resolved.CourierNotes ??= initialData.DefaultCourierNotes;
+                    resolved.ClientNotes ??= initialData.DefaultClientNotes;
+                    resolved.PickUpFrom ??= initialData.DefaultPickUpFrom;
+                    resolved.DeliverToLeaveId ??= initialData.DefaultDeliverToLeaveId;
+                    resolved.ProofOfDelivery ??= initialData.DefaultProofOfDelivery is > 0;
+                    resolved.ProofOfDeliveryEmail ??= initialData.DefaultProofOfDeliveryEmail;
+                    resolved.ProofOfDeliveryMobile ??= initialData.DefaultProofOfDeliveryMobile;
+                    resolved.ReturnJob ??= initialData.DefaultRtnJob;
+
+                    if (string.IsNullOrWhiteSpace(data.Type) && initialData.DefaultType.HasValue)
+                        resolved.TypeId = initialData.DefaultType.Value;
+                }
+
+                // Apply settings (scalar subqueries)
+                resolved.ChargeType = initialData.InternetJobChargeType;
+                resolved.OperatorId = initialData.InternetJobStaffId;
+            }
+        }
+        else
+        {
+            // No client — still need settings
+            var settings = await context.TblSettings.AsNoTracking()
+                .Where(s => s.SettingId == 1)
+                .Select(s => new { s.InternetJobChargeType, s.InternetJobStaffId })
                 .FirstOrDefaultAsync(ct);
 
-            if (client != null)
+            if (settings != null)
             {
-                resolved.ClientId = client.ClientId;
-                resolved.ClientGroupId = client.UcclGroupId;
-                resolved.ClientCode = client.UcclCode;
-                resolved.ReferenceAmandatory = client.ReferenceAmandatory;
-                resolved.ReferenceAdefineList = client.ReferenceAdefineList;
-                resolved.ReferenceAmessage = client.ReferenceAmessage;
-                resolved.ReferenceBmandatory = client.ReferenceBmandatory;
-                resolved.ReferenceBdefineList = client.ReferenceBdefineList;
-                resolved.ReferenceBmessage = client.ReferenceBmessage;
+                resolved.ChargeType = settings.InternetJobChargeType;
+                resolved.OperatorId = settings.InternetJobStaffId;
             }
         }
 
@@ -200,24 +285,8 @@ public class CreateJobService(
         }
 
         // If we have a SpeedId but no JobTypeId resolved yet, use SpeedId directly as job type ID
-        if (!resolved.JobTypeId.HasValue && resolved.SpeedId.HasValue && !resolved.IsBulkSchedule) resolved.JobTypeId = resolved.SpeedId;
-
-        // Address type resolution
-        resolved.AddressType = ParseAddressType(data.ToAddressType); 
-
-        // POD type
-        resolved.ProofOfDelivery = ParseProofOfDelivery(data);
-        resolved.ProofOfDeliveryEmail = data.JobNotificationEmail;
-        resolved.ProofOfDeliveryMobile = data.JobNotificationMobile;
-
-        if (!string.IsNullOrWhiteSpace(data.JobNotificationType))
-            resolved.ProofOfDeliveryType = data.JobNotificationType.ToUpperInvariant() switch
-            {
-                "EMAIL" => 1,
-                "SMS" => 2,
-                "BOTH" => 3,
-                _ => null
-            };
+        if (!resolved.JobTypeId.HasValue && resolved.SpeedId.HasValue && !resolved.IsBulkSchedule)
+            resolved.JobTypeId = resolved.SpeedId;
     }
 
     private static int? ParseAddressType(string toAddressType)
@@ -235,47 +304,6 @@ public class CreateJobService(
     {
         if (!string.IsNullOrWhiteSpace(data.JobNotificationType)) return true;
         return null; // Set by client defaults
-    }
-
-    /// <summary>
-    /// Query TblJobDefault joined on client Code, apply ISNULL coalescing.
-    /// </summary>
-    private static async Task ApplyClientDefaultsAsync(
-        DespatchContext context,
-        CreateMinimalTucJobInputModel data,
-        ResolvedJobData resolved,
-        CancellationToken ct)
-    {
-        if (string.IsNullOrWhiteSpace(resolved.ClientCode)) return;
-
-        var defaults = await context.TblJobDefaults
-            .AsNoTracking()
-            .Where(d => d.Code == resolved.ClientCode)
-            .FirstOrDefaultAsync(ct);
-
-        if (defaults == null) return;
-
-        // Apply ISNULL coalescing — input values take precedence, defaults fill gaps
-        resolved.Contact ??= defaults.Contact;
-        resolved.ContactId ??= defaults.ContactId;
-        resolved.JobTypeId ??= defaults.JobTypeId;
-        resolved.DeliverToPrivateBusiness ??= defaults.DeliverToPrivateBusiness;
-        resolved.ClientReferenceA ??= defaults.ClientReferenceA;
-        resolved.ClientReferenceB ??= defaults.ClientReferenceB;
-        resolved.Size ??= defaults.Size;
-        resolved.Weight ??= (decimal?)defaults.Weight;
-        resolved.Quantity ??= defaults.Quantity;
-        resolved.CourierNotes ??= defaults.CourierNotes;
-        resolved.ClientNotes ??= defaults.ClientNotes;
-        resolved.PickUpFrom ??= defaults.PickUpFrom;
-        resolved.DeliverToLeaveId ??= defaults.DeliverToLeaveId;
-        resolved.ProofOfDelivery ??= defaults.ProofOfDelivery is > 0;
-        resolved.ProofOfDeliveryEmail ??= defaults.ProofOfDeliveryEmail;
-        resolved.ProofOfDeliveryMobile ??= defaults.ProofOfDeliveryMobile;
-        resolved.ReturnJob ??= defaults.RtnJob;
-
-        // Type from defaults if not already resolved from input
-        if (string.IsNullOrWhiteSpace(data.Type) && defaults.Type.HasValue) resolved.TypeId = defaults.Type.Value;
     }
 
     /// <summary>
@@ -368,26 +396,6 @@ public class CreateJobService(
     }
 
     /// <summary>
-    /// Get InternetJobChargeType and InternetJobStaffId from TblSettings.
-    /// </summary>
-    private static async Task LoadSettingsAsync(
-        DespatchContext context,
-        ResolvedJobData resolved,
-        CancellationToken ct)
-    {
-        var settings = await context.TblSettings
-            .AsNoTracking()
-            .Where(s => s.SettingId == 1)
-            .Select(s => new { s.InternetJobChargeType, s.InternetJobStaffId })
-            .FirstOrDefaultAsync(ct);
-      
-        if(settings is null) return;
-        
-        resolved.ChargeType = settings.InternetJobChargeType;
-        resolved.OperatorId = settings.InternetJobStaffId;
-    }
-
-    /// <summary>
     /// Validate client, speed, bookedBy, addresses, type, weight, quantity, references.
     /// Returns null if valid, or the error message string.
     /// </summary>
@@ -431,36 +439,31 @@ public class CreateJobService(
                 ? resolved.ReferenceAmessage
                 : "Reference A is required.";
 
-        // Reference A defined list check
-        if (resolved.ReferenceAdefineList && !string.IsNullOrWhiteSpace(resolved.ClientReferenceA))
-        {
-            var validRefA = await context.TblReferences
-                .AsNoTracking()
-                .AnyAsync(r => r.ClientId == resolved.ClientId
-                               && r.Grouping == "A"
-                               && r.Name == resolved.ClientReferenceA, ct);
-
-            if (!validRefA)
-                return $"Reference A '{resolved.ClientReferenceA}' is not in the defined list.";
-        }
-
-        // Reference B validation (mandatory check)
+        // Reference B validation (mandatory check) — checked before defined list queries
         if (resolved.ReferenceBmandatory && string.IsNullOrWhiteSpace(resolved.ClientReferenceB))
             return !string.IsNullOrWhiteSpace(resolved.ReferenceBmessage)
                 ? resolved.ReferenceBmessage
                 : "Reference B is required.";
 
-        // Reference B defined list check
-        if (!resolved.ReferenceBdefineList || string.IsNullOrWhiteSpace(resolved.ClientReferenceB))
-            return null; // Valid
-        
-        var validRefB = await context.TblReferences
-            .AsNoTracking()
-            .AnyAsync(r => r.ClientId == resolved.ClientId
-                           && r.Grouping == "B"
-                           && r.Name == resolved.ClientReferenceB, ct);
+        // 2I: Combine reference A + B defined list validation into one query (saves 0-1 roundtrip)
+        var needRefA = resolved.ReferenceAdefineList && !string.IsNullOrWhiteSpace(resolved.ClientReferenceA);
+        var needRefB = resolved.ReferenceBdefineList && !string.IsNullOrWhiteSpace(resolved.ClientReferenceB);
 
-        return !validRefB ? $"Reference B '{resolved.ClientReferenceB}' is not in the defined list." : null; // Valid
+        if (!needRefA && !needRefB) return null; // Valid
+        var matchedGroups = await context.TblReferences.AsNoTracking()
+            .Where(r => r.ClientId == resolved.ClientId && (
+                (r.Grouping == "A" && r.Name == resolved.ClientReferenceA) ||
+                (r.Grouping == "B" && r.Name == resolved.ClientReferenceB)))
+            .Select(r => r.Grouping).ToListAsync(ct);
+
+        // Return errors in same order (A before B) for consistent behaviour
+        if (needRefA && !matchedGroups.Contains("A"))
+            return $"Reference A '{resolved.ClientReferenceA}' is not in the defined list.";
+
+        if (needRefB && !matchedGroups.Contains("B"))
+            return $"Reference B '{resolved.ClientReferenceB}' is not in the defined list.";
+
+        return null; // Valid
     }
 
     /// <summary>
@@ -486,6 +489,7 @@ public class CreateJobService(
             if (input[i] == '1')
                 bitmask |= 1 << i;
         }
+
         return bitmask;
     }
 
