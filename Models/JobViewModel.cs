@@ -6,10 +6,10 @@ namespace DespatchWeb.Models;
 
 public class JobViewModel : DispatchJobViewModel
 {
-    public bool Van { get; set; }
+    public new bool Van { get; set; }
     public bool? VanOk { get; set; }
     public bool? Void { get; set; }
-    public bool? Truck { get; set; }
+    public new bool? Truck { get; set; }
     public bool? Reprice { get; set; }
     public bool? Attention { get; set; }
     public string SpeedName { get; set; }

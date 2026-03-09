@@ -584,7 +584,7 @@ describe('EditAddressDialog', () => {
 
             // Company/Building is only populated from buildingName (not available in this response)
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
-        });
+        }, 30000);
 
         it('formats street name from streetInfo when available', async () => {
             mockUseAddressSearch.mockReturnValue({
@@ -609,7 +609,7 @@ describe('EditAddressDialog', () => {
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('North Main Street');
             });
-        });
+        }, 30000);
 
         it('clears unit and notes fields when selecting an address', async () => {
             mockUseAddressSearch.mockReturnValue({

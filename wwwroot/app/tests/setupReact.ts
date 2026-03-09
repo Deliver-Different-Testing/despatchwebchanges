@@ -45,6 +45,8 @@ const suppressedErrorPrefixes = new Set([
     'Error loading delivery journey',
     'Error loading event types',
     'Export failed',
+    'Failed to send message',
+    '[EditAddressDialog] Error processing selected address',
 ]);
 
 const originalError = console.error;

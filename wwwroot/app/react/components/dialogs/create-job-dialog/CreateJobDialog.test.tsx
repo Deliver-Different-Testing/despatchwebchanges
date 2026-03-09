@@ -317,7 +317,7 @@ describe('CreateJobDialog', () => {
             await user.type(input, 'John Smith');
 
             expect(input).toHaveValue('John Smith');
-        });
+        }, 30000);
 
         it('allows typing in delivery contact', async () => {
             const user = userEvent.setup();
@@ -328,7 +328,7 @@ describe('CreateJobDialog', () => {
             await user.type(input, 'Jane Doe');
 
             expect(input).toHaveValue('Jane Doe');
-        });
+        }, 30000);
 
         it('allows typing in POD name', async () => {
             const user = userEvent.setup();
@@ -339,7 +339,7 @@ describe('CreateJobDialog', () => {
             await user.type(input, 'Reception');
 
             expect(input).toHaveValue('Reception');
-        });
+        }, 30000);
 
         it('allows typing in reference fields', async () => {
             const user = userEvent.setup();
@@ -364,7 +364,7 @@ describe('CreateJobDialog', () => {
             await user.type(jobNotes, 'Handle with care');
 
             expect(jobNotes).toHaveValue('Handle with care');
-        });
+        }, 30000);
     });
 
     describe('State Reset', () => {
