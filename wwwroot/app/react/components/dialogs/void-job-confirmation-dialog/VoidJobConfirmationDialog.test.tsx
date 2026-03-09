@@ -262,17 +262,25 @@ describe('VoidJobConfirmationDialog', () => {
         });
 
         it('should display loading state while fetching related jobs', async () => {
+            let resolveLoad!: (value: RelatedJob[]) => void;
+            const loadPromise = new Promise<RelatedJob[]>(resolve => {
+                resolveLoad = resolve;
+            });
+
             const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockImplementation(
-                    () => new Promise(resolve => setTimeout(() => resolve(mockRelatedJobs), 100))
-                ),
+                onLoadRelatedJobs: jest.fn().mockReturnValue(loadPromise),
             });
             renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            expect(screen.getByText('Loading related jobs...')).toBeInTheDocument();
+            expect(await screen.findByText('Loading related jobs...')).toBeInTheDocument();
+
+            // Resolve the pending promise to avoid act() warnings
+            await act(async () => {
+                resolveLoad(mockRelatedJobs);
+            });
         });
 
         it('should display related jobs after loading', async () => {

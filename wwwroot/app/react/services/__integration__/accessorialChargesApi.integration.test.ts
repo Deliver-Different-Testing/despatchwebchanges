@@ -5,7 +5,7 @@
  * Verifies correct endpoint URLs, request parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/setupIntegration';
+import { server } from '../../__testUtils__/msw/server';
 import { http, HttpResponse } from 'msw';
 import { accessorialChargesApi } from '../accessorialChargesApi';
 import { mockAvailableCharges, mockAppliedCharges, mockJobAmount } from '../../__testUtils__/msw/handlers';

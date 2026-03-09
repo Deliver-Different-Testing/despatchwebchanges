@@ -284,7 +284,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
-    <None Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.template.html" />
     <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\css\udispatch.less" />
   </ItemGroup>
@@ -334,7 +333,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\interfaces\IInterCourierData.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
@@ -365,7 +363,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\map-dialog\map-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\NationwideBoxes.ts" />

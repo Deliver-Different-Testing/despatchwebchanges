@@ -12,7 +12,7 @@ public static partial class JobMappings
     /// <summary>
     /// SQL Server minimum datetime value for safe date operations.
     /// </summary>
-    internal static readonly DateTime SqlMinDateTime = new(1753, 1, 1);
+    private static readonly DateTime SqlMinDateTime = new(1753, 1, 1);
 
     /// <summary>
     /// Default string values used across mappings for consistent null handling.
