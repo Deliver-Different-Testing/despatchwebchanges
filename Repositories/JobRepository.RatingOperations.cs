@@ -602,17 +602,13 @@ public partial class JobRepository
         await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
     }
 
-    private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress)
-    {
-        var hasMatchingAirport = await Context.TucJobs
+    private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress) =>
+        await Context.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Where(j => Context.TblAirports
                 .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2)))
             .AnyAsync();
-
-        return hasMatchingAirport;
-    }
 
     /// <summary>
     /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.

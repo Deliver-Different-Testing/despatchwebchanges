@@ -66,7 +66,6 @@ public class JobControllerTests
             _dispatchJobServiceMock.Object,
             _deliveryJourneyServiceMock.Object,
             _pricingPermissionServiceMock.Object,
-            _splitJobServiceMock.Object,
             _podReportServiceMock.Object,
             _backgroundTaskTracker,
             _serviceScopeFactoryMock.Object);

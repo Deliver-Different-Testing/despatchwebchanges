@@ -40,7 +40,6 @@ public class JobController(
     IDispatchJobService dispatchJobService,
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
-    ISplitJobService splitJobService,
     IPodReportService podReportService,
     BackgroundTaskTracker backgroundTaskTracker,
     IServiceScopeFactory serviceScopeFactory
