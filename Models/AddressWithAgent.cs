@@ -15,18 +15,6 @@ public class AddressWithAgent
     public string AirportCode { get; init; }
 
     /// <summary>
-    /// Property identifier
-    /// E.g. Urgent Couriers
-    /// </summary>
-    public string CompanyName { get; init; }
-
-    /// <summary>
-    /// Property identifier
-    /// E.g. Unit 1, Level 10, Panasonic House
-    /// </summary>
-    public string BuildingName { get; init; }
-
-    /// <summary>
     /// Street number and name
     /// </summary>
     [Required]
@@ -45,17 +33,6 @@ public class AddressWithAgent
     public string State { get; init; }
 
     /// <summary>
-    /// String:10, zip code
-    /// </summary>
-    public string ZipCode { get; init; }
-
-    /// <summary>
-    /// ISO Alpha 2 country code.
-    /// E.g. NZ, AU, US, GB, CN, CA
-    /// </summary>
-    public string CountryCode { get; init; } = "US";
-
-    /// <summary>
     /// Please pass this if you can, it helps with address accuracy
     /// </summary>
     public decimal? Latitude { get; init; }
@@ -71,22 +48,7 @@ public class AddressWithAgent
     public decimal? Distance { get; init; }
 
     /// <summary>
-    ///  Distance from address to airport via roads
-    /// </summary>
-    public decimal? RoadDistance { get; init; }
-
-    /// <summary>
     /// Agent who services this airport
     /// </summary>
     public int AgentId { get; init; }
-
-    /// <summary>
-    /// Name of Agent who services this airport
-    /// </summary>
-    public string AgentName { get; init; }
-
-    /// <summary>
-    /// Max Kms of Agent before using km rate from depot to pickup/dest
-    /// </summary>
-    public int? MaxKms { get; init; }
 }

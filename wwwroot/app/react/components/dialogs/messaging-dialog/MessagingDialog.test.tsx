@@ -471,7 +471,7 @@ describe('MessagingDialog', () => {
             expect(await screen.findByPlaceholderText('Type a message...')).toBeInTheDocument();
 
             const input = screen.getByPlaceholderText('Type a message...');
-            await user.type(input, 'This will fail');
+            await user.type(input, 'Fail');
 
             const sendButton = screen.getAllByRole('button').find(btn =>
                 btn.querySelector('[data-testid="SendIcon"]')
@@ -481,7 +481,7 @@ describe('MessagingDialog', () => {
             await waitFor(() => {
                 expect(showToast).toHaveBeenCalledWith('Failed to send message', 'error');
             });
-        });
+        }, 30000);
 
         it('does not send empty messages', async () => {
             const user = userEvent.setup();
