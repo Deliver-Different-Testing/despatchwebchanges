@@ -88,12 +88,7 @@ test:frontend:unit:
   extends: .frontend-base
   allow_failure: false
   script:
-    - |
-      if [ -n "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME" ]; then
-        npm test -- --ci --bail --changedSince=origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME
-      else
-        npm test -- --ci --bail
-      fi
+    - npm test -- --ci
 
 # Coverage job only runs on merge to protected branches
 test:frontend:coverage:
@@ -116,9 +111,8 @@ test:frontend:coverage:
       - npm-staging
   before_script:
     - npm ci --cache .npm --prefer-offline
-  parallel: 2
   script:
-    - npm test -- --ci --bail --coverage --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL
+    - npm test -- --ci --coverage
   artifacts:
     when: always
     reports:

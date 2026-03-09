@@ -17,11 +17,8 @@ const config: Config = {
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
-        '^.+\\.(ts|tsx)$': ['@swc/jest', {
-            jsc: {
-                parser: {syntax: 'typescript', tsx: true},
-                transform: {react: {runtime: 'automatic'}},
-            },
+        '^.+\\.(ts|tsx)$': ['ts-jest', {
+            tsconfig: 'tsconfig.test.json',
         }],
         // Transform ESM modules from MSW dependencies
         '^.+\\.m?js$': 'babel-jest',
@@ -52,7 +49,7 @@ const config: Config = {
     ],
 
     // Performance optimizations
-    maxWorkers: process.env.CI ? 2 : '50%',
+    maxWorkers: '50%',
     cache: true,
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,

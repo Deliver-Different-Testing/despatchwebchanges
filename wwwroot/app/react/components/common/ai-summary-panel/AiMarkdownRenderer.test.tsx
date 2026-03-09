@@ -1,7 +1,7 @@
 /**
  * AiMarkdownRenderer Component Tests
  *
- * Verifies the markdown renderer passes content through ReactMarkdown
+ * Verifies the Markdown renderer passes content through ReactMarkdown
  * with the correct plugins and custom MUI component overrides.
  */
 
