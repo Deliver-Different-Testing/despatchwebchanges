@@ -42,11 +42,11 @@ public class SplitJobService(
             Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
                 jobId, userName);
 
-            // 1A: Combine initial lookups into a single projected query (saves 2 roundtrips).
+            // 1A: Combine initial lookups into a single projected query (saves 2 roundups).
             // Extract IQueryable references to avoid capturing the disposable context in the lambda.
             var couriers = context.TucCouriers;
             var relTypes = context.TblJobRelationshipTypes;
-            var nationwides = context.TucJobNationwides;
+            var nationWide = context.TucJobNationwides;
 
             var lookups = await context.TblSettings.AsNoTracking()
                 .Where(s => s.SettingId == 1)
@@ -61,7 +61,7 @@ public class SplitJobService(
                     SplitChildRelTypeId = relTypes
                         .Where(r => r.SystemName == "SplitChild")
                         .Select(r => (int?)r.JobRelationshipTypeId).FirstOrDefault(),
-                    HasFlightAssigned = nationwides.Any(n => n.UcnwJobId == jobId)
+                    HasFlightAssigned = nationWide.Any(n => n.UcnwJobId == jobId)
                 }).FirstOrDefaultAsync();
 
             var parentRelTypeId = lookups?.SplitParentRelTypeId

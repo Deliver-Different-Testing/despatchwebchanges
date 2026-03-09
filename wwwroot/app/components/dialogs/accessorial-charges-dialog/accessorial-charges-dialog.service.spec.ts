@@ -15,7 +15,12 @@ import AccessorialChargesDialogService from './accessorial-charges-dialog.servic
 // ---------------------------------------------------------------------------
 
 const createMockHttp = (manifestData: Record<string, string> = {}) => ({
-    get: jest.fn().mockResolvedValue({ data: manifestData }),
+    get: jest.fn().mockImplementation((url: string) => {
+        if (url.includes('GetPortions')) {
+            return Promise.resolve({ data: [] });
+        }
+        return Promise.resolve({ data: manifestData });
+    }),
 });
 
 const createMockOcLazyLoad = () => ({
@@ -174,7 +179,7 @@ describe('AccessorialChargesDialogService', () => {
         it('should skip loading when ReactAccessorialChargesDialog is already on window', async () => {
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
 
-            expect(mockHttp.get).not.toHaveBeenCalled();
+            expect(mockHttp.get).not.toHaveBeenCalledWith('dist/manifest.json');
             expect(mockOcLazyLoad.load).not.toHaveBeenCalled();
         });
 
@@ -182,7 +187,7 @@ describe('AccessorialChargesDialogService', () => {
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
             await service.showAccessorialChargesDialog(mockEvent, createMockJob() as any);
 
-            expect(mockHttp.get).not.toHaveBeenCalled();
+            expect(mockHttp.get).not.toHaveBeenCalledWith('dist/manifest.json');
             expect(mockOcLazyLoad.load).not.toHaveBeenCalled();
         });
     });
