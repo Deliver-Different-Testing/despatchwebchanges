@@ -5,16 +5,14 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAddressDialog, EditAddressDialogProps} from './EditAddressDialog';
-import {
-    EditAddressDialogViewModel,
-    HereMapsLocationResult,
-    HereMapsLookupResponse,
-} from '../../../interfaces';
+import {EditAddressDialogViewModel, HereMapsLocationResult, HereMapsLookupResponse,} from '../../../interfaces';
+import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
+import {addressApi} from '../../../services/addressApi';
 
 // Mock the React Query hooks
 jest.mock('../../../hooks', () => ({
@@ -29,9 +27,6 @@ jest.mock('../../../services/addressApi', () => ({
         fetchNearestAddress: jest.fn(),
     },
 }));
-
-import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
-import {addressApi} from '../../../services/addressApi';
 
 const mockUseAddressSearch = useAddressSearch as jest.MockedFunction<typeof useAddressSearch>;
 const mockUseHereMapsApiKey = useHereMapsApiKey as jest.MockedFunction<typeof useHereMapsApiKey>;
@@ -322,11 +317,11 @@ describe('EditAddressDialog', () => {
             expect(screen.getByLabelText(/Unit\/Suite/)).toBeInTheDocument();
         });
 
-        it('shows Additional Notes label for US tenant', () => {
+        it('shows Country label for US tenant', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            expect(screen.getByLabelText(/Additional Notes/)).toBeInTheDocument();
+            expect(screen.getByLabelText(/Country/)).toBeInTheDocument();
         });
 
         it('shows state dropdown for US tenant', () => {
@@ -356,11 +351,11 @@ describe('EditAddressDialog', () => {
             expect(screen.getByLabelText(/Unit\/Flat\/Suite/)).toBeInTheDocument();
         });
 
-        it('shows Address Extras label for NZ tenant', () => {
+        it('shows Country label for NZ tenant', () => {
             const props = createDefaultProps({isUsTenant: false});
             renderWithProviders(props);
 
-            expect(screen.getByLabelText(/Address Extras/)).toBeInTheDocument();
+            expect(screen.getByLabelText(/Country/)).toBeInTheDocument();
         });
     });
 
@@ -491,9 +486,7 @@ describe('EditAddressDialog', () => {
             const searchInput = screen.getByLabelText(/Search Address/);
             await user.type(searchInput, '123 Main');
 
-            await waitFor(() => {
-                expect(screen.getByText('123 Main Street, New York, NY 10001')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('123 Main Street, New York, NY 10001')).toBeInTheDocument();
         });
 
         it('shows loading state while searching', async () => {
@@ -549,11 +542,13 @@ describe('EditAddressDialog', () => {
             });
 
             await waitFor(() => {
-                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('123 Main Street');
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
                 expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('Main Street');
                 expect((screen.getByLabelText(/ZIP Code/) as HTMLInputElement).value).toBe('10001');
             });
+
+            // Company/Building is only populated from buildingName (not available in this response)
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
 
             // Check coordinates
             expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
@@ -581,12 +576,14 @@ describe('EditAddressDialog', () => {
             await user.click(option);
 
             await waitFor(() => {
-                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Queen Street Building');
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('10');
                 expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('Queen Street');
                 expect((screen.getByLabelText(/Suburb/) as HTMLInputElement).value).toBe('Auckland CBD');
                 expect((screen.getByLabelText(/Post Code/) as HTMLInputElement).value).toBe('1010');
             });
+
+            // Company/Building is only populated from buildingName (not available in this response)
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
         });
 
         it('formats street name from streetInfo when available', async () => {
@@ -626,12 +623,9 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            // Pre-fill fields that handleAddressFieldsFromLookup clears
+            // Pre-fill Unit/Suite (which handleAddressFieldsFromLookup clears)
             fireEvent.change(screen.getByLabelText(/Unit\/Suite/), {target: {value: 'Suite 200'}});
-            fireEvent.change(screen.getByLabelText(/Additional Notes/), {target: {value: 'Old delivery notes'}});
-
             expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('Suite 200');
-            expect((screen.getByLabelText(/Additional Notes/) as HTMLInputElement).value).toBe('Old delivery notes');
 
             // Select a new address
             const searchInput = screen.getByLabelText(/Search Address/);
@@ -640,11 +634,13 @@ describe('EditAddressDialog', () => {
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Fields that handleAddressFieldsFromLookup clears should be empty
+            // Unit/Suite should be cleared by handleAddressFieldsFromLookup
             await waitFor(() => {
                 expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('');
             });
-            expect((screen.getByLabelText(/Additional Notes/) as HTMLInputElement).value).toBe('');
+
+            // Country should be populated from the lookup response
+            expect((screen.getByLabelText(/Country/) as HTMLInputElement).value).toBe('United States');
         });
 
         it('shows error toast when address lookup fails', async () => {
@@ -701,21 +697,18 @@ describe('EditAddressDialog', () => {
     });
 
     describe('Form Validation', () => {
-        it('shows error for missing Company/Building field', async () => {
+        it('shows error for missing city', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            // Fill in other required fields but leave addressLine1 empty
+            // Fill in other required fields but leave city empty
             fireEvent.change(screen.getByLabelText(/Street Name/), {target: {value: 'Main Street'}});
-            fireEvent.change(screen.getByLabelText(/City/), {target: {value: 'New York'}});
             fireEvent.change(screen.getByLabelText(/ZIP Code/), {target: {value: '10001'}});
 
             await user.click(screen.getByRole('button', {name: /Save/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText(/Company\/Building\/Complex is required/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/City is required/)).toBeInTheDocument();
         });
 
         it('shows error for missing street name', async () => {
@@ -730,9 +723,7 @@ describe('EditAddressDialog', () => {
 
             await user.click(screen.getByRole('button', {name: /Save/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText(/Street name is required/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Street name is required/)).toBeInTheDocument();
         });
     });
 

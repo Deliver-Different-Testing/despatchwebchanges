@@ -3,17 +3,17 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {
+    Layout,
+    LayoutsMenu,
     MessagesButton,
     RefreshButton,
     SettingsButton,
-    ViewsMenu,
-    LayoutsMenu,
     ToolbarIconButton,
     View,
-    Layout,
+    ViewsMenu,
 } from './ToolbarActions';
 
 const theme = createTheme();
@@ -173,9 +173,7 @@ describe('ViewsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByText('Clear Selection')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Clear Selection')).toBeInTheDocument();
     });
 
     it('should call onClearAll when Clear Selection is clicked', async () => {
@@ -209,9 +207,7 @@ describe('ViewsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByText('No views available')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('No views available')).toBeInTheDocument();
     });
 
     it('should show "No views available" when views is null', async () => {
@@ -219,9 +215,7 @@ describe('ViewsMenu', () => {
 
         fireEvent.click(screen.getByRole('button'));
 
-        await waitFor(() => {
-            expect(screen.getByText('No views available')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('No views available')).toBeInTheDocument();
     });
 
     it('should show loading spinner when loading', () => {

@@ -2,13 +2,15 @@
  * Messaging API Service Tests
  */
 
-import { MessagingApiService, messagingApi } from './messagingApi';
-import { apiClient } from './apiClient';
-import { createMockApiError } from '../__testUtils__';
-import {
-    OtherMessagePartyType,
-    MessageDeliveryType,
-} from '../components/dialogs/messaging-dialog/types';
+import {messagingApi, MessagingApiService} from './messagingApi';
+import {apiClient} from './apiClient';
+import {createMockApiError} from '../__testUtils__';
+import {MessageDeliveryType, OtherMessagePartyType,} from '../components/dialogs/messaging-dialog/types';
+
+// Mock the messaging dialog module to avoid window.angular dependency
+jest.mock('../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
+    openMessagingDialog: jest.fn(),
+}));
 
 // Mock the apiClient
 jest.mock('./apiClient', () => ({

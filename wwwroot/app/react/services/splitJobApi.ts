@@ -16,13 +16,28 @@ export interface SplitJobRequest {
     meetingPointAddress: AddressViewModel;
 }
 
+export interface SplitJobResponse {
+    taskId: string;
+}
+
+export interface SplitJobStatusResponse {
+    status: 'Running' | 'Completed' | 'Failed';
+    errorMessage: string | null;
+}
+
 /**
  * Split a job into multiple child jobs with a specified meeting point.
- * This is a combined operation that creates both child jobs with the
- * meeting point address already set, re-rates them, and finalizes the split.
+ * Returns a taskId for polling the background operation status.
  */
-export async function splitJob(request: SplitJobRequest): Promise<void> {
-    await apiClient.post<void>('job/splitJob', request);
+export async function splitJob(request: SplitJobRequest): Promise<SplitJobResponse> {
+    return apiClient.post<SplitJobResponse>('job/splitJob', request);
+}
+
+/**
+ * Poll the status of a background split job operation.
+ */
+export async function getSplitJobStatus(taskId: string): Promise<SplitJobStatusResponse> {
+    return apiClient.get<SplitJobStatusResponse>('job/splitJobStatus', { taskId });
 }
 
 /**
@@ -45,6 +60,7 @@ export async function unSplitJob(jobId: number): Promise<string> {
 
 export const splitJobApi = {
     splitJob,
+    getSplitJobStatus,
     restoreSplitJobs,
     unSplitJob,
 };

@@ -5,7 +5,7 @@ import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import {IDispatchJob, IJobSearchResult, ISuggestion} from "../../interfaces/job.interface";
-import {Coordinates} from "../overview/overview.interfaces";
+import {Coordinates} from "../../interfaces/coordinates.interface";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID, TimeZone} from "../../contants";

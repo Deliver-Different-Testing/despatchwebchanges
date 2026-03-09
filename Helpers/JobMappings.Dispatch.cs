@@ -154,7 +154,7 @@ public static partial class JobMappings
             AccessorialChargeGroupId = j.AccessorialChargeGroupId,
             Amount = j.UcjbAmount,
             Weight = j.UcjbWeight,
-            Quantity = j.UcjbQty,
+            Quantity = j.UcjbQty
         };
 
     public static Expression<Func<TucJob, DispatchJobViewModel>> PodSearchMapping(bool isUsCustomer) =>

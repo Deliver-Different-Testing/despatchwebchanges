@@ -3,12 +3,12 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import dayjs from 'dayjs';
-import { FlightDetailsDialog } from './FlightDetailsDialog';
-import { FlightData, FlightSegmentData } from './types';
+import {FlightDetailsDialog} from './FlightDetailsDialog';
+import {FlightData, FlightSegmentData} from './types';
 
 // Create a theme for testing
 const theme = createTheme();
@@ -348,9 +348,7 @@ describe('FlightDetailsDialog', () => {
             await user.click(screen.getByRole('tab', { name: /Segment 2/i }));
 
             // Wait for segment 2 duration (4h 00m = 240 minutes)
-            await waitFor(() => {
-                expect(screen.getByText('4h 00m')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('4h 00m')).toBeInTheDocument();
         });
     });
 

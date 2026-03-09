@@ -593,39 +593,61 @@ class JobContextMenuService implements angular.IServiceProvider {
                 return;
             }
 
-            // Show loading spinner while API call is in progress
-            this.$mdDialog.show({
-                template: `
-                    <md-dialog aria-label="Splitting job" style="max-width: 250px;">
-                        <md-dialog-content style="padding: 24px; text-align: center;">
-                            <md-progress-circular md-mode="indeterminate" md-diameter="48" class="md-primary"></md-progress-circular>
-                            <p style="margin-top: 16px; margin-bottom: 0;">Splitting job...</p>
-                        </md-dialog-content>
-                    </md-dialog>`,
-                clickOutsideToClose: false,
-                escapeToClose: false,
-            });
+            // Fire API call and get taskId back immediately
+            this.toastrService.showInfoToast(`Splitting job ${job.jobNo}...`);
 
-            // Single API call to split job with meeting point
-            await this.DispatchData.splitJob(
+            const { taskId } = await this.DispatchData.splitJob(
                 job.id,
                 meetingPointAddress
             );
 
-            this.$mdDialog.hide();
-            this.toastrService.showSuccessToast("Job Successfully Split");
-            console.log("Job splitting complete!");
-
-            if (onRefresh) {
-                await onRefresh();
-            }
+            // Poll for completion in the background
+            this.pollSplitJobStatus(taskId, job.jobNo, onRefresh);
         } catch (error) {
-            this.$mdDialog.hide();
             if (error) {
                 console.error("Splitting job failed:", error);
                 this.toastrService.showErrorToast("Error splitting job");
             }
         }
+    }
+
+    private pollSplitJobStatus(
+        taskId: string,
+        jobNo: string,
+        onRefresh: () => void | Promise<void>,
+        attempt: number = 0
+    ): void {
+        const maxAttempts = 30;
+
+        if (attempt >= maxAttempts) {
+            this.toastrService.showWarningToast(
+                `Split job ${jobNo} is taking longer than expected. Please refresh manually.`
+            );
+            return;
+        }
+
+        setTimeout(async () => {
+            try {
+                const result = await this.DispatchData.getSplitJobStatus(taskId);
+
+                if (result.status === "Completed") {
+                    this.toastrService.showSuccessToast(`Job ${jobNo} successfully split`);
+                    if (onRefresh) {
+                        await onRefresh();
+                    }
+                } else if (result.status === "Failed") {
+                    this.toastrService.showErrorToast(
+                        result.errorMessage || "Error splitting job"
+                    );
+                } else {
+                    // Still running — poll again
+                    this.pollSplitJobStatus(taskId, jobNo, onRefresh, attempt + 1);
+                }
+            } catch (error) {
+                console.error("Error polling split job status:", error);
+                this.toastrService.showErrorToast("Error checking split job status");
+            }
+        }, 1000);
     }
 
     private async setFirstJobAction(

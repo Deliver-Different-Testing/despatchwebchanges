@@ -3,10 +3,10 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
-import {PodPhoto, PodPhotoViewerProps } from "./pod-photo-viewer.types";
+import {createTheme, ThemeProvider} from '@mui/material';
+import {PodPhoto, PodPhotoViewerProps} from "./pod-photo-viewer.types";
 import PodPhotoViewer from "./PodPhotoViewer";
 
 // Mock the dateUtils module
@@ -240,9 +240,7 @@ describe('PodPhotoViewer', () => {
 
             fireEvent.keyDown(window, {key: 'ArrowRight'});
 
-            await waitFor(() => {
-                expect(screen.getByAltText('POD 2')).toBeInTheDocument();
-            });
+            expect(await screen.findByAltText('POD 2')).toBeInTheDocument();
         });
 
         it('should navigate to previous photo with ArrowLeft key', async () => {
@@ -251,9 +249,7 @@ describe('PodPhotoViewer', () => {
 
             fireEvent.keyDown(window, {key: 'ArrowLeft'});
 
-            await waitFor(() => {
-                expect(screen.getByAltText('POD 1')).toBeInTheDocument();
-            });
+            expect(await screen.findByAltText('POD 1')).toBeInTheDocument();
         });
 
         it('should close dialog with Escape key', async () => {

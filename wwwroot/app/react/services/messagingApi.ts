@@ -5,17 +5,17 @@
  * Used by the messaging-dialog for real-time messaging.
  */
 
-import { apiClient } from './apiClient';
+import {apiClient} from './apiClient';
 import {
     ChatMessage,
+    MessageContactOption,
+    OtherMessagePartyType,
+    QuickResponse,
     RecentConversation,
+    SaveQuickResponseRequest,
     SendMessageRequest,
     SendMultipleMessageRequest,
-    SaveQuickResponseRequest,
-    MessageContactOption,
-    QuickResponse,
-    OtherMessagePartyType,
-} from '../components/dialogs/messaging-dialog/types';
+} from '../components/dialogs/messaging-dialog';
 
 /**
  * Messaging API Service Class

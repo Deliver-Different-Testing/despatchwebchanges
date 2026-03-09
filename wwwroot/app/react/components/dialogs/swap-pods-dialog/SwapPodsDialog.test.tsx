@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, act} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {SwapPodsDialog, SwapPodsDialogProps} from './SwapPodsDialog';
 
 const theme = createTheme();
@@ -132,7 +132,7 @@ describe('SwapPodsDialog', () => {
             const input = screen.getByLabelText(/Second job number/i);
             await userEvent.type(input, 'JOB-999');
             await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-            await waitFor(() => expect(screen.getByText(/not eligible/i)).toBeInTheDocument());
+            expect(await screen.findByText(/not eligible/i)).toBeInTheDocument();
             await userEvent.type(input, '1');
             expect(screen.queryByText(/not eligible/i)).not.toBeInTheDocument();
         });
@@ -154,9 +154,7 @@ describe('SwapPodsDialog', () => {
             renderWithTheme(<SwapPodsDialog {...props} />);
             await userEvent.type(screen.getByLabelText(/Second job number/i), 'JOB-002');
             await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-            await waitFor(() => {
-                expect(screen.getByRole('button', {name: /confirm swap/i})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /confirm swap/i})).toBeInTheDocument();
         });
 
         it('should show an inline error when validation returns false', async () => {
@@ -164,9 +162,7 @@ describe('SwapPodsDialog', () => {
             renderWithTheme(<SwapPodsDialog {...props} />);
             await userEvent.type(screen.getByLabelText(/Second job number/i), 'JOB-999');
             await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-            await waitFor(() => {
-                expect(screen.getByText(/not eligible/i)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/not eligible/i)).toBeInTheDocument();
         });
 
         it('should remain on phase 1 when validation returns false', async () => {
@@ -174,7 +170,7 @@ describe('SwapPodsDialog', () => {
             renderWithTheme(<SwapPodsDialog {...props} />);
             await userEvent.type(screen.getByLabelText(/Second job number/i), 'JOB-999');
             await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-            await waitFor(() => expect(screen.getByText(/not eligible/i)).toBeInTheDocument());
+            expect(await screen.findByText(/not eligible/i)).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /confirm swap/i})).not.toBeInTheDocument();
         });
 
@@ -185,9 +181,7 @@ describe('SwapPodsDialog', () => {
             renderWithTheme(<SwapPodsDialog {...props} />);
             await userEvent.type(screen.getByLabelText(/Second job number/i), 'JOB-002');
             await userEvent.click(screen.getByRole('button', {name: /validate/i}));
-            await waitFor(() => {
-                expect(screen.getByText(/failed to validate/i)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/failed to validate/i)).toBeInTheDocument();
         });
     });
 

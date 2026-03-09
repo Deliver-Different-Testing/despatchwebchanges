@@ -5,7 +5,7 @@
 import React from 'react';
 import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {StickyNotes} from './StickyNotes';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
@@ -100,9 +100,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             expect(screen.getByText('This is a client note')).toBeInTheDocument();
             expect(screen.getByText('Important internal note')).toBeInTheDocument();
@@ -112,9 +110,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Internal appears twice (2 internal notes)
             const internalNotes = screen.getAllByText('Internal');
@@ -126,9 +122,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             expect(screen.getByText('Jan 15, 2025 9:00 AM')).toBeInTheDocument();
         });
@@ -138,9 +132,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('No Notes')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No Notes')).toBeInTheDocument();
 
             expect(screen.getByText('No notes available for this job')).toBeInTheDocument();
         });
@@ -149,9 +141,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps({jobId: undefined});
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('No Notes')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No Notes')).toBeInTheDocument();
 
             expect(mockedNotesApi.getJobNotes).not.toHaveBeenCalled();
         });
@@ -173,9 +163,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Find the filter button by looking for the category icon
             const buttons = screen.getAllByRole('button');
@@ -187,9 +175,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Find button containing category icon
             const categoryIcon = screen.getByText('category');
@@ -197,9 +183,7 @@ describe('StickyNotes', () => {
             expect(filterButton).toBeInTheDocument();
             await user.click(filterButton!);
 
-            await waitFor(() => {
-                expect(screen.getByText('All Categories')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('All Categories')).toBeInTheDocument();
         });
 
         it('shows note categories in menu', async () => {
@@ -207,9 +191,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             const categoryIcon = screen.getByText('category');
             const filterButton = categoryIcon.closest('button');
@@ -229,27 +211,21 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Open menu and select "Client" category
             const categoryIcon = screen.getByText('category');
             const filterButton = categoryIcon.closest('button');
             await user.click(filterButton!);
 
-            await waitFor(() => {
-                expect(screen.getByRole('menu')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('menu')).toBeInTheDocument();
 
             const menu = screen.getByRole('menu');
             const clientMenuItem = within(menu).getByText('Client');
             await user.click(clientMenuItem);
 
             // Should only show client note
-            await waitFor(() => {
-                expect(screen.getByText('This is a client note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is a client note')).toBeInTheDocument();
             expect(screen.queryByText('This is an internal note')).not.toBeInTheDocument();
         });
 
@@ -258,26 +234,20 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Open menu and select "Client" category
             const categoryIcon = screen.getByText('category');
             const filterButton = categoryIcon.closest('button');
             await user.click(filterButton!);
 
-            await waitFor(() => {
-                expect(screen.getByRole('menu')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('menu')).toBeInTheDocument();
 
             const menu = screen.getByRole('menu');
             await user.click(within(menu).getByText('Client'));
 
             // Should show filter indicator in header
-            await waitFor(() => {
-                expect(screen.getByText('- Client')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('- Client')).toBeInTheDocument();
         });
     });
 
@@ -286,9 +256,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Find the add note button by its icon
             const addIcon = screen.getByText('note_add');
@@ -300,9 +268,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             const addIcon = screen.getByText('note_add');
             const addButton = addIcon.closest('button');
@@ -316,9 +282,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Clear the mock to track new calls
             mockedNotesApi.getJobNotes.mockClear();
@@ -340,9 +304,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             await user.click(screen.getByText('This is an internal note'));
 
@@ -354,9 +316,7 @@ describe('StickyNotes', () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Clear the mock to track new calls
             mockedNotesApi.getJobNotes.mockClear();
@@ -380,9 +340,7 @@ describe('StickyNotes', () => {
 
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             // Find delete buttons by icon text
             const deleteIcons = screen.getAllByText('delete');
@@ -404,9 +362,7 @@ describe('StickyNotes', () => {
 
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             const deleteIcons = screen.getAllByText('delete');
             const deleteButton = deleteIcons[0].closest('button');
@@ -426,9 +382,7 @@ describe('StickyNotes', () => {
 
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('This is an internal note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             const deleteIcons = screen.getAllByText('delete');
             const deleteButton = deleteIcons[0].closest('button');
@@ -447,18 +401,14 @@ describe('StickyNotes', () => {
             const props = createDefaultProps({isUsCustomer: true});
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Notes')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Notes')).toBeInTheDocument();
         });
 
         it('renders with NZ theme when isUsCustomer is false', async () => {
             const props = createDefaultProps({isUsCustomer: false});
             renderWithProviders(<StickyNotes {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Notes')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Notes')).toBeInTheDocument();
         });
     });
 

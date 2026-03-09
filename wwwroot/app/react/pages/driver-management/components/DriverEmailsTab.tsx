@@ -15,7 +15,7 @@ import {
 import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks';
 import {DriverEmail, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, toolbarOutlinedButtonSx, toolbarIconButtonSx, getFleetChipSx} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, toolbarButtonSx, toolbarIconButtonSx, getFleetChipSx} from './shared';
 
 interface DriverEmailsTabProps {
     showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
@@ -118,10 +118,11 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
                     <>
                         <Button
                             size="small"
-                            variant="outlined"
+                            variant="contained"
+                            color="primary"
                             startIcon={<EmailIcon />}
                             onClick={handleComposeEmail}
-                            sx={toolbarOutlinedButtonSx}
+                            sx={toolbarButtonSx}
                         >
                             Compose Email {selectedIds.size > 0 && `(${selectedIds.size})`}
                         </Button>

@@ -8,7 +8,7 @@ import userEvent from '@testing-library/user-event';
 import {RecurringJobsContextMenu, RecurringJobsContextMenuProps} from './RecurringJobsContextMenu';
 import {renderWithTheme, createProps} from '../../../__testUtils__';
 import {PrebookListModel} from '../../../interfaces';
-import {AddressViewModel} from '../../../interfaces/address';
+import {AddressViewModel} from '../../../interfaces';
 
 const mockAddress: AddressViewModel = {
     addressLine1: 'Test Company',
@@ -138,7 +138,7 @@ describe('RecurringJobsContextMenu', () => {
 
         it('calls onClose before checking job when job is null', async () => {
             // This tests the edge case where job becomes null during click
-            // In practice this shouldn't happen but we test the code path
+            // In practice this shouldn't happen, but we test the code path
             const user = userEvent.setup();
             const onAddPickupStop = jest.fn();
             const onClose = jest.fn();

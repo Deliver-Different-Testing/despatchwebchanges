@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material';
-import {ToastProvider, useToast, toastService} from './toastService';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {ToastProvider, toastService, useToast} from './toastService';
 
 const theme = createTheme();
 
@@ -70,9 +70,7 @@ describe('ToastProvider', () => {
 
             fireEvent.click(screen.getByText('Show Toast'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Success message')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Success message')).toBeInTheDocument();
         });
 
         it('should display success alert with correct severity', async () => {
@@ -93,9 +91,7 @@ describe('ToastProvider', () => {
 
             fireEvent.click(screen.getByText('Show Toast'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Warning message')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Warning message')).toBeInTheDocument();
         });
 
         it('should display warning alert with correct severity', async () => {
@@ -116,9 +112,7 @@ describe('ToastProvider', () => {
 
             fireEvent.click(screen.getByText('Show Toast'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Error message')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Error message')).toBeInTheDocument();
         });
 
         it('should display error alert with correct severity', async () => {
@@ -139,9 +133,7 @@ describe('ToastProvider', () => {
 
             fireEvent.click(screen.getByText('Show Toast'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Info message')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Info message')).toBeInTheDocument();
         });
 
         it('should display info alert with correct severity', async () => {
@@ -162,9 +154,7 @@ describe('ToastProvider', () => {
 
             fireEvent.click(screen.getByText('Show Toast'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Custom message')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Custom message')).toBeInTheDocument();
         });
     });
 
@@ -174,9 +164,7 @@ describe('ToastProvider', () => {
 
             fireEvent.click(screen.getByText('Show Toast'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Success message')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Success message')).toBeInTheDocument();
 
             // Find and click the close button
             const closeButton = screen.getByRole('button', {name: /close/i});

@@ -1,16 +1,18 @@
-import type { JestConfigWithTsJest } from 'ts-jest';
+import type {Config} from 'jest';
 
-const config: JestConfigWithTsJest = {
-    preset: 'ts-jest',
+const config: Config = {
     testEnvironment: 'jsdom',
     roots: ['<rootDir>/wwwroot'],
     testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
-        '^.+\\.(ts|tsx)$': ['ts-jest', {
-            tsconfig: 'tsconfig.test.json',
-        }]
+        '^.+\\.(ts|tsx)$': ['@swc/jest', {
+            jsc: {
+                parser: {syntax: 'typescript', tsx: true},
+                transform: {react: {runtime: 'automatic'}},
+            },
+        }],
     },
 
     moduleNameMapper: {
@@ -46,7 +48,7 @@ const config: JestConfigWithTsJest = {
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/', '/__integration__/'],
 
     // Performance optimizations
-    maxWorkers: '50%',
+    maxWorkers: process.env.CI ? 2 : '50%',
     cache: true,
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
@@ -54,8 +56,8 @@ const config: JestConfigWithTsJest = {
     // Reduce memory usage and improve GC
     workerIdleMemoryLimit: '512MB',
 
-    // Fail fast on hung tests
-    testTimeout: 30000,
+    // Fail fast on hung tests (type-check CI job catches real issues)
+    testTimeout: 10000,
 
     // Use modern fake timers for better async handling
     fakeTimers: {

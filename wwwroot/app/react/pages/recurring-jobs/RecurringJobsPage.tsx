@@ -218,9 +218,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 <Toolbar
                     variant="dense"
                     sx={{
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        minHeight: 48,
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        minHeight: 44,
                     }}
                 >
                     <TuneIcon sx={{mr: 1}} />
@@ -259,9 +261,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 <Toolbar
                     variant="dense"
                     sx={{
-                        bgcolor: 'primary.main',
-                        color: 'primary.contrastText',
-                        minHeight: 48,
+                        bgcolor: 'background.paper',
+                        color: 'text.primary',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        minHeight: 44,
                         flexShrink: 0,
                     }}
                 >

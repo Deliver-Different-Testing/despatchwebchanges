@@ -5,13 +5,16 @@
  * Verifies correct endpoint URLs, request parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/server';
-import { http, HttpResponse } from 'msw';
-import { messagingApi } from '../messagingApi';
-import {
-    mockChatMessages,
-} from '../../__testUtils__/msw/handlers';
-import { OtherMessagePartyType, MessageDeliveryType } from '../../components/dialogs/messaging-dialog';
+// Mock the messaging dialog module to avoid window.angular dependency
+jest.mock('../../components/dialogs/messaging-dialog/messaging-dialog-react.module', () => ({
+    openMessagingDialog: jest.fn(),
+}));
+
+import {server} from '../../__testUtils__/msw/server';
+import {http, HttpResponse} from 'msw';
+import {messagingApi} from '../messagingApi';
+import {mockChatMessages,} from '../../__testUtils__/msw/handlers';
+import {MessageDeliveryType, OtherMessagePartyType} from '../../components/dialogs/messaging-dialog';
 
 describe('messagingApi integration', () => {
     describe('getRecentList', () => {

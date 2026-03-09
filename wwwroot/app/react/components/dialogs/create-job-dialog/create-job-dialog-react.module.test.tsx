@@ -4,11 +4,6 @@
  * Tests for the module's open() method and window global registration.
  */
 
-// Mock angular on window before importing the module
-(window as any).angular = {
-    module: jest.fn(() => ({})),
-};
-
 // Track render calls across test runs
 const mockRender = jest.fn();
 
@@ -30,8 +25,13 @@ jest.mock('../../../query', () => ({
     ReactQueryProvider: ({children}: any) => children,
 }));
 
-// Import the module after mocks are set up
-import {openCreateJobDialog} from './create-job-dialog-react.module';
+// Use require() instead of import so that window.angular is set before module evaluation
+let openCreateJobDialog: typeof import('./create-job-dialog-react.module').openCreateJobDialog;
+
+beforeAll(() => {
+    (window as any).angular = {module: jest.fn(() => ({}))};
+    openCreateJobDialog = require('./create-job-dialog-react.module').openCreateJobDialog;
+});
 
 describe('CreateJobDialogReactModule', () => {
     beforeEach(() => {

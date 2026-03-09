@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {CourierMapPage} from './CourierMapPage';
 import type {CourierMapPageProps} from './CourierMapPage.types';
 import * as courierApi from '../../services/courierApi';
@@ -117,9 +117,7 @@ describe('CourierMapPage Component', () => {
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Active Drivers/i)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Drivers/i)).toBeInTheDocument();
         });
 
         it('renders map controls', () => {
@@ -217,7 +215,7 @@ describe('CourierMapPage Component', () => {
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
 
-            const searchInput = screen.getByPlaceholderText(/search drivers/i);
+            const searchInput = screen.getByPlaceholderText(/search by name or code/i);
 
             fireEvent.change(searchInput, {target: {value: 'John'}});
 
@@ -279,10 +277,8 @@ describe('CourierMapPage Component', () => {
             const props = createDefaultProps();
             renderWithProviders(<CourierMapPage {...props} />);
 
-            await waitFor(() => {
-                // Wait for couriers to load
-                expect(screen.getByText(/John Smith/i)).toBeInTheDocument();
-            });
+            // Wait for couriers to load
+            expect(await screen.findByText(/John Smith/i)).toBeInTheDocument();
 
             // Click on a driver in the list
             fireEvent.click(screen.getByText(/John Smith/i));

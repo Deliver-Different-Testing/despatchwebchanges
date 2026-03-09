@@ -12,17 +12,17 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material';
-import { AiCourierSuggestionsDialog } from './AiCourierSuggestionsDialog';
-import type { AiCourierSuggestionResponse } from '../../../services/aiAssistantApi';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {AiCourierSuggestionsDialog} from './AiCourierSuggestionsDialog';
+import type {AiCourierSuggestionResponse} from '../../../services/aiAssistantApi';
+import {suggestCouriers} from '../../../services/aiAssistantApi';
 
 // Mock the API module
 jest.mock('../../../services/aiAssistantApi', () => ({
     suggestCouriers: jest.fn(),
 }));
 
-import { suggestCouriers } from '../../../services/aiAssistantApi';
 const mockSuggestCouriers = suggestCouriers as jest.MockedFunction<typeof suggestCouriers>;
 
 const theme = createTheme();
@@ -89,9 +89,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Quick Assign')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Quick Assign')).toBeInTheDocument();
 
             // Find the X button in the header (first close icon button)
             const closeButtons = screen.getAllByRole('button');
@@ -110,9 +108,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Quick Assign')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Quick Assign')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Close'));
             expect(defaultProps.onClose).toHaveBeenCalled();
@@ -147,9 +143,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
 
             expect(screen.getByTestId('react-markdown')).toHaveTextContent('Top Pick');
         });
@@ -160,9 +154,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('John')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('John')).toBeInTheDocument();
 
             expect(screen.getByText('Jane')).toBeInTheDocument();
             expect(screen.getByText('Bob')).toBeInTheDocument();
@@ -177,9 +169,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Quick Assign')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Quick Assign')).toBeInTheDocument();
 
             const assignButtons = screen.getAllByText('Assign');
             expect(assignButtons).toHaveLength(3);
@@ -191,9 +181,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Quick Assign')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Quick Assign')).toBeInTheDocument();
         });
     });
 
@@ -209,9 +197,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
 
             expect(screen.getByText(/No matched couriers available/)).toBeInTheDocument();
             expect(screen.queryByText('Quick Assign')).not.toBeInTheDocument();
@@ -228,11 +214,9 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toHaveTextContent(
-                    'Driver analysis without matched couriers'
-                );
-            });
+            expect(await screen.findByTestId('react-markdown')).toHaveTextContent(
+                'Driver analysis without matched couriers'
+            );
         });
     });
 
@@ -244,9 +228,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Network timeout')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Network timeout')).toBeInTheDocument();
         });
 
         it('shows Retry button on error', async () => {
@@ -256,9 +238,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Retry')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Retry')).toBeInTheDocument();
         });
 
         it('retries fetch when Retry button is clicked', async () => {
@@ -270,15 +250,11 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Retry')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Retry')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Retry'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Quick Assign')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Quick Assign')).toBeInTheDocument();
 
             expect(mockSuggestCouriers).toHaveBeenCalledTimes(2);
         });
@@ -293,9 +269,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} onAssign={onAssign} />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             // Click first Assign button (John, courierId: 10)
             fireEvent.click(screen.getAllByText('Assign')[0]);
@@ -313,15 +287,11 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} onAssign={onAssign} />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             fireEvent.click(screen.getAllByText('Assign')[0]);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Assigned to John/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Assigned to John/)).toBeInTheDocument();
 
             expect(screen.getByText(/J100 has been dispatched/)).toBeInTheDocument();
         });
@@ -340,9 +310,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} onAssign={onAssign} />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             fireEvent.click(screen.getAllByText('Assign')[0]);
 
@@ -375,15 +343,11 @@ describe('AiCourierSuggestionsDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             fireEvent.click(screen.getAllByText('Assign')[0]);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Assigned to John/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Assigned to John/)).toBeInTheDocument();
 
             // Fast-forward the auto-close timer
             act(() => {
@@ -401,15 +365,11 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} onAssign={onAssign} />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             fireEvent.click(screen.getAllByText('Assign')[0]);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Assigned to John/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Assigned to John/)).toBeInTheDocument();
 
             // The Close button in DialogActions should not be present during assigned state
             expect(screen.queryByText('Close')).not.toBeInTheDocument();
@@ -425,15 +385,11 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} onAssign={onAssign} />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             fireEvent.click(screen.getAllByText('Assign')[0]);
 
-            await waitFor(() => {
-                expect(screen.getByText('Allocation failed')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Allocation failed')).toBeInTheDocument();
         });
 
         it('re-enables Assign buttons after assignment error', async () => {
@@ -444,9 +400,7 @@ describe('AiCourierSuggestionsDialog', () => {
                 <AiCourierSuggestionsDialog {...defaultProps} onAssign={onAssign} />
             );
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Assign')).toHaveLength(3);
-            });
+            expect(await screen.findAllByText('Assign')).toHaveLength(3);
 
             fireEvent.click(screen.getAllByText('Assign')[0]);
 

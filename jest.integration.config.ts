@@ -1,4 +1,4 @@
-import type { JestConfigWithTsJest } from 'ts-jest';
+import type {Config} from 'jest';
 
 /**
  * Jest Configuration for Integration Tests
@@ -6,8 +6,7 @@ import type { JestConfigWithTsJest } from 'ts-jest';
  * Uses jest-fixed-jsdom for MSW 2.x compatibility.
  * This environment provides proper fetch API support required by MSW.
  */
-const config: JestConfigWithTsJest = {
-    preset: 'ts-jest',
+const config: Config = {
     // Use jest-fixed-jsdom which includes fetch API polyfills for MSW 2.x
     testEnvironment: 'jest-fixed-jsdom',
     roots: ['<rootDir>/wwwroot'],
@@ -18,8 +17,11 @@ const config: JestConfigWithTsJest = {
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
-        '^.+\\.(ts|tsx)$': ['ts-jest', {
-            tsconfig: 'tsconfig.test.json',
+        '^.+\\.(ts|tsx)$': ['@swc/jest', {
+            jsc: {
+                parser: {syntax: 'typescript', tsx: true},
+                transform: {react: {runtime: 'automatic'}},
+            },
         }],
         // Transform ESM modules from MSW dependencies
         '^.+\\.m?js$': 'babel-jest',
@@ -50,12 +52,12 @@ const config: JestConfigWithTsJest = {
     ],
 
     // Performance optimizations
-    maxWorkers: '50%',
+    maxWorkers: process.env.CI ? 2 : '50%',
     cache: true,
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
 
-    // Increase timeout for integration tests
+    // Integration tests need longer timeouts
     testTimeout: 30000,
 };
 

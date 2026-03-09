@@ -5,9 +5,11 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using DespatchWeb.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace DespatchWeb.Tests.Controllers;
@@ -34,6 +36,8 @@ public class JobControllerTests
     private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
     private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
     private readonly Mock<IPodReportService> _podReportServiceMock = new();
+    private readonly BackgroundTaskTracker _backgroundTaskTracker = new();
+    private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock = new();
 
     public JobControllerTests()
     {
@@ -63,7 +67,47 @@ public class JobControllerTests
             _deliveryJourneyServiceMock.Object,
             _pricingPermissionServiceMock.Object,
             _splitJobServiceMock.Object,
-            _podReportServiceMock.Object);
+            _podReportServiceMock.Object,
+            _backgroundTaskTracker,
+            _serviceScopeFactoryMock.Object);
+    }
+
+    /// <summary>
+    /// Creates a controller with HttpContext and scoped service factory configured
+    /// for background split job execution.
+    /// </summary>
+    private JobController CreateControllerForSplitJob()
+    {
+        var mockScope = new Mock<IServiceScope>();
+        var mockServiceProvider = new Mock<IServiceProvider>();
+        mockServiceProvider.Setup(x => x.GetService(typeof(IHttpContextAccessor)))
+            .Returns(new HttpContextAccessor());
+        mockServiceProvider.Setup(x => x.GetService(typeof(ISplitJobService)))
+            .Returns(_splitJobServiceMock.Object);
+        mockScope.Setup(x => x.ServiceProvider).Returns(mockServiceProvider.Object);
+        _serviceScopeFactoryMock.Setup(x => x.CreateScope()).Returns(mockScope.Object);
+
+        var controller = CreateController();
+        controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+        };
+        return controller;
+    }
+
+    /// <summary>
+    /// Extracts the taskId from the SplitJob response and waits for the background task to finish.
+    /// </summary>
+    private async Task WaitForSplitJobBackground(IActionResult result)
+    {
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
+
+        for (var i = 0; i < 200; i++)
+        {
+            if (_backgroundTaskTracker.GetStatus(taskId)?.Status != "Running") break;
+            await Task.Delay(50);
+        }
     }
 
     #endregion
@@ -1131,13 +1175,13 @@ public class JobControllerTests
         _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>()))
             .ReturnsAsync((1, 2));
 
-        var controller = CreateController();
+        var controller = CreateControllerForSplitJob();
 
         // Act
         var result = await controller.SplitJob(request);
 
-        // Assert
-        result.Should().BeOfType<OkResult>();
+        // Assert - SplitJob now returns OkObjectResult with a background taskId
+        result.Should().BeOfType<OkObjectResult>();
     }
 
     [Fact]
@@ -1173,10 +1217,11 @@ public class JobControllerTests
                 It.IsAny<AddressViewModel>()))
             .ReturnsAsync((10, 11));
 
-        var controller = CreateController();
+        var controller = CreateControllerForSplitJob();
 
-        // Act
-        await controller.SplitJob(request);
+        // Act - SplitJob now runs in background; wait for it to complete
+        var result = await controller.SplitJob(request);
+        await WaitForSplitJobBackground(result);
 
         // Assert - Verify service is called with correct parameters (no suburb ID)
         _splitJobServiceMock.Verify(x => x.SplitJobAsync(
@@ -1192,9 +1237,97 @@ public class JobControllerTests
     }
 
     [Fact]
-    public async Task SplitJob_ServiceException_Returns500()
+    public async Task SplitJob_ValidRequest_ReturnsTaskId()
     {
         // Arrange
+        var meetingPointAddress = new AddressViewModel(
+            addressLine1: "123 Meeting St",
+            addressLine2: string.Empty,
+            addressLine3: string.Empty,
+            addressLine4: string.Empty,
+            addressLine5: "Auckland",
+            addressLine6: string.Empty,
+            addressLine7: "1010",
+            addressLine8: string.Empty)
+        {
+            Latitude = -36.8485m,
+            Longitude = 174.7633m
+        };
+
+        var request = new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = meetingPointAddress
+        };
+        var staffInfo = new Suggestion { Id = 1, Text = "John Doe" };
+
+        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
+            .ReturnsAsync(staffInfo);
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>()))
+            .ReturnsAsync((1, 2));
+
+        var controller = CreateControllerForSplitJob();
+
+        // Act
+        var result = await controller.SplitJob(request);
+
+        // Assert - Response contains a non-empty taskId
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
+        taskId.Should().NotBeNullOrEmpty();
+    }
+
+    [Fact]
+    public async Task SplitJob_ValidRequest_BackgroundTaskCompletes()
+    {
+        // Arrange
+        var meetingPointAddress = new AddressViewModel(
+            addressLine1: "123 Meeting St",
+            addressLine2: string.Empty,
+            addressLine3: string.Empty,
+            addressLine4: string.Empty,
+            addressLine5: "Auckland",
+            addressLine6: string.Empty,
+            addressLine7: "1010",
+            addressLine8: string.Empty)
+        {
+            Latitude = -36.8485m,
+            Longitude = 174.7633m
+        };
+
+        var request = new SplitJobRequest
+        {
+            JobId = 1,
+            MeetingPointAddress = meetingPointAddress
+        };
+        var staffInfo = new Suggestion { Id = 1, Text = "John Doe" };
+
+        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
+            .ReturnsAsync(staffInfo);
+        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>()))
+            .ReturnsAsync((1, 2));
+
+        var controller = CreateControllerForSplitJob();
+
+        // Act
+        var result = await controller.SplitJob(request);
+        await WaitForSplitJobBackground(result);
+
+        // Assert - Background task status should be Completed
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
+        var status = _backgroundTaskTracker.GetStatus(taskId);
+        status.Should().NotBeNull();
+        status!.Status.Should().Be("Completed");
+        status.ErrorMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task SplitJob_ServiceException_SetsBackgroundTaskFailed()
+    {
+        // Arrange
+        var previousEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Development");
         var meetingPointAddress = new AddressViewModel(
             addressLine1: "Error Address",
             addressLine2: string.Empty,
@@ -1220,14 +1353,22 @@ public class JobControllerTests
                 It.IsAny<AddressViewModel>()))
             .ThrowsAsync(new InvalidOperationException("Job not found"));
 
-        var controller = CreateController();
+        var controller = CreateControllerForSplitJob();
 
-        // Act
+        // Act - Controller returns 200 with taskId; error is tracked in background
         var result = await controller.SplitJob(request);
+        await WaitForSplitJobBackground(result);
 
-        // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        // Assert - Background task should have Failed status with error message
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
+        var status = _backgroundTaskTracker.GetStatus(taskId);
+        status.Should().NotBeNull();
+        status!.Status.Should().Be("Failed");
+        status.ErrorMessage.Should().Contain("Job not found");
+
+        // Restore environment
+        Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", previousEnv);
     }
 
     [Fact]
@@ -1265,10 +1406,11 @@ public class JobControllerTests
             .Callback<int, string, AddressViewModel>((_, _, addr) => capturedAddress = addr)
             .ReturnsAsync((1, 2));
 
-        var controller = CreateController();
+        var controller = CreateControllerForSplitJob();
 
-        // Act
-        await controller.SplitJob(request);
+        // Act - SplitJob now runs in background; wait for it to complete
+        var result = await controller.SplitJob(request);
+        await WaitForSplitJobBackground(result);
 
         // Assert - All address fields should be passed
         capturedAddress.Should().NotBeNull();
@@ -1282,6 +1424,75 @@ public class JobControllerTests
         capturedAddress.AddressLine8.Should().Be("Near the park");
         capturedAddress.Latitude.Should().Be(-36.8485m);
         capturedAddress.Longitude.Should().Be(174.7633m);
+    }
+
+    #endregion
+
+    #region SplitJobStatus Tests
+
+    [Fact]
+    public void SplitJobStatus_CompletedTask_ReturnsCompletedStatus()
+    {
+        // Arrange
+        var taskId = _backgroundTaskTracker.CreateTask();
+        _backgroundTaskTracker.SetCompleted(taskId);
+        var controller = CreateController();
+
+        // Act
+        var result = controller.SplitJobStatus(taskId);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var status = (string)okResult.Value!.GetType().GetProperty("status")!.GetValue(okResult.Value)!;
+        status.Should().Be("Completed");
+    }
+
+    [Fact]
+    public void SplitJobStatus_RunningTask_ReturnsRunningStatus()
+    {
+        // Arrange
+        var taskId = _backgroundTaskTracker.CreateTask();
+        var controller = CreateController();
+
+        // Act
+        var result = controller.SplitJobStatus(taskId);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var status = (string)okResult.Value!.GetType().GetProperty("status")!.GetValue(okResult.Value)!;
+        status.Should().Be("Running");
+    }
+
+    [Fact]
+    public void SplitJobStatus_FailedTask_ReturnsErrorMessage()
+    {
+        // Arrange
+        var taskId = _backgroundTaskTracker.CreateTask();
+        _backgroundTaskTracker.SetFailed(taskId, "Something went wrong");
+        var controller = CreateController();
+
+        // Act
+        var result = controller.SplitJobStatus(taskId);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var status = (string)okResult.Value!.GetType().GetProperty("status")!.GetValue(okResult.Value)!;
+        var errorMessage = (string?)okResult.Value!.GetType().GetProperty("errorMessage")!.GetValue(okResult.Value);
+        status.Should().Be("Failed");
+        errorMessage.Should().Be("Something went wrong");
+    }
+
+    [Fact]
+    public void SplitJobStatus_UnknownTaskId_ReturnsNotFound()
+    {
+        // Arrange
+        var controller = CreateController();
+
+        // Act
+        var result = controller.SplitJobStatus("unknown-task-id");
+
+        // Assert
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     #endregion

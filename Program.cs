@@ -159,6 +159,7 @@ builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
 builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
 builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
 builder.Services.AddScoped<ISplitJobService, SplitJobService>();
+builder.Services.AddSingleton<BackgroundTaskTracker>();
 builder.Services.AddScoped<ICreateJobService, CreateJobService>();
 builder.Services.AddScoped<IPodReportService, PodReportService>();
 builder.Services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();

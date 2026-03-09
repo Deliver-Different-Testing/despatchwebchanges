@@ -18,5 +18,11 @@ Object.defineProperty(window, 'history', {
     writable: true
 });
 
+// Global variables declared in cshtml templates at runtime
+// Must be defined before modules that use them at top-level scope
+(global as any).ContactID = 0;
+(global as any).FirstName = 'Test';
+(global as any).TimeZone = 'Europe/London';
+
 // Global test utilities
 export {};

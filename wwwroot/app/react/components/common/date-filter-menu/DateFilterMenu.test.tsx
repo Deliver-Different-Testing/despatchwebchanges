@@ -3,14 +3,14 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
-import {DateFilterMenu, DateFilterData} from './DateFilterMenu';
+import {DateFilterData, DateFilterMenu} from './DateFilterMenu';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -55,9 +55,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Date Filter')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Date Filter')).toBeInTheDocument();
         });
 
         it('should render All Time option', async () => {
@@ -65,9 +63,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('All Time')).toBeInTheDocument();
-            });
+            expect(await screen.findByLabelText('All Time')).toBeInTheDocument();
         });
 
         it('should render Time Range option', async () => {
@@ -75,9 +71,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Time Range')).toBeInTheDocument();
-            });
+            expect(await screen.findByLabelText('Time Range')).toBeInTheDocument();
         });
 
         it('should render Custom Dates option', async () => {
@@ -85,9 +79,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Custom Dates')).toBeInTheDocument();
-            });
+            expect(await screen.findByLabelText('Custom Dates')).toBeInTheDocument();
         });
 
         it('should render Today option', async () => {
@@ -95,9 +87,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Today')).toBeInTheDocument();
-            });
+            expect(await screen.findByLabelText('Today')).toBeInTheDocument();
         });
 
         it('should render Reset button', async () => {
@@ -105,9 +95,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Reset')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Reset')).toBeInTheDocument();
         });
 
         it('should render Apply button', async () => {
@@ -115,9 +103,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Apply')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Apply')).toBeInTheDocument();
         });
     });
 
@@ -138,9 +124,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Custom Dates')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Custom Dates')).toBeInTheDocument();
 
             // Get the label element and click on it to select the radio
             const customDatesLabel = screen.getByText('Custom Dates').closest('label');
@@ -162,17 +146,13 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Time Range')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Time Range')).toBeInTheDocument();
 
             // Click on the label text to select the radio (MUI handles this correctly)
             fireEvent.click(screen.getByText('Time Range'));
 
-            await waitFor(() => {
-                // Duration dropdown should appear - look for the select element
-                expect(screen.getByRole('combobox')).toBeInTheDocument();
-            });
+            // Duration dropdown should appear - look for the select element
+            expect(await screen.findByRole('combobox')).toBeInTheDocument();
         });
     });
 
@@ -233,9 +213,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Today')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Today')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Today'));
 
@@ -254,9 +232,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Date Filter')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Date Filter')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Apply'));
 
@@ -304,9 +280,7 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                expect(screen.getByText('Custom Dates')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Custom Dates')).toBeInTheDocument();
 
             // Click on the label text to select the radio (MUI handles this correctly)
             fireEvent.click(screen.getByText('Custom Dates'));

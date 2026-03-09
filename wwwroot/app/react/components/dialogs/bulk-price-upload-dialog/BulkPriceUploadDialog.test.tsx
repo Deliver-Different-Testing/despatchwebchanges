@@ -3,11 +3,11 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
-import { BulkPriceUploadDialog } from './BulkPriceUploadDialog';
-import { BulkPricePreviewResponse } from './types';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {BulkPriceUploadDialog} from './BulkPriceUploadDialog';
+import {BulkPricePreviewResponse} from './types';
 
 const theme = createTheme();
 
@@ -108,9 +108,7 @@ describe('BulkPriceUploadDialog', () => {
             await userEvent.upload(input, file);
 
             // Should transition to mode-select state
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
 
         it('should accept XLS files', async () => {
@@ -122,9 +120,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await userEvent.upload(input, file);
 
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
 
         it('should accept XLSX files', async () => {
@@ -136,9 +132,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await userEvent.upload(input, file);
 
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
 
         it('should show error for invalid file types', async () => {
@@ -151,9 +145,7 @@ describe('BulkPriceUploadDialog', () => {
             // Use fireEvent.change to simulate file selection with invalid file
             fireEvent.change(input, { target: { files: [file] } });
 
-            await waitFor(() => {
-                expect(screen.getByText(/Invalid file format/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Invalid file format/)).toBeInTheDocument();
 
             // Should still be in upload state (not transition to mode-select)
             expect(screen.getByText('Drop your file here')).toBeInTheDocument();
@@ -168,9 +160,7 @@ describe('BulkPriceUploadDialog', () => {
 
             await userEvent.upload(input, file);
 
-            await waitFor(() => {
-                expect(screen.getByText('my-prices.csv')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('my-prices.csv')).toBeInTheDocument();
         });
     });
 
@@ -179,9 +169,7 @@ describe('BulkPriceUploadDialog', () => {
             const file = createMockFile();
             const input = document.querySelector('input[type="file"]') as HTMLInputElement;
             await userEvent.upload(input, file);
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         };
 
         it('should display three pricing mode options', async () => {
@@ -262,9 +250,7 @@ describe('BulkPriceUploadDialog', () => {
             const file = createMockFile();
             const input = document.querySelector('input[type="file"]') as HTMLInputElement;
             await userEvent.upload(input, file);
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         };
 
         it('should call onSubmit with file and selected mode when clicking apply', async () => {
@@ -342,9 +328,7 @@ describe('BulkPriceUploadDialog', () => {
             const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
             await userEvent.click(applyButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
     });
 
@@ -356,16 +340,12 @@ describe('BulkPriceUploadDialog', () => {
             const input = document.querySelector('input[type="file"]') as HTMLInputElement;
             await userEvent.upload(input, file);
 
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
 
             const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
             await userEvent.click(applyButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('Prices Updated')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Prices Updated')).toBeInTheDocument();
         };
 
         it('should display success header', async () => {
@@ -430,9 +410,7 @@ describe('BulkPriceUploadDialog', () => {
             const searchInput = screen.getByPlaceholderText('Search by job number...');
             await userEvent.type(searchInput, 'JOB-001');
 
-            await waitFor(() => {
-                expect(screen.getByText('1 of 2 jobs')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('1 of 2 jobs')).toBeInTheDocument();
         });
 
         it('should show empty state when no results match search', async () => {
@@ -442,9 +420,7 @@ describe('BulkPriceUploadDialog', () => {
             const searchInput = screen.getByPlaceholderText('Search by job number...');
             await userEvent.type(searchInput, 'NONEXISTENT');
 
-            await waitFor(() => {
-                expect(screen.getByText('No jobs match your search')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No jobs match your search')).toBeInTheDocument();
         });
 
         it('should display Done button in results state', async () => {
@@ -502,9 +478,7 @@ describe('BulkPriceUploadDialog', () => {
             const input = document.querySelector('input[type="file"]') as HTMLInputElement;
             await userEvent.upload(input, file);
 
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
 
             // Close and reopen
             rerender(
@@ -564,9 +538,7 @@ describe('BulkPriceUploadDialog', () => {
                 },
             });
 
-            await waitFor(() => {
-                expect(screen.getByText('How should prices be applied?')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('How should prices be applied?')).toBeInTheDocument();
         });
     });
 });

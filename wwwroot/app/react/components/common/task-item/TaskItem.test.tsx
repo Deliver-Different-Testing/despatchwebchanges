@@ -5,7 +5,7 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
@@ -307,9 +307,7 @@ describe('TaskItem', () => {
             await userEvent.click(dateButton!);
 
             // DateCalendar should be visible in the popover
-            await waitFor(() => {
-                expect(screen.getByRole('grid')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('grid')).toBeInTheDocument();
         });
 
         it('calls tasksService.updateTaskDate when a new date is selected', async () => {
@@ -320,9 +318,7 @@ describe('TaskItem', () => {
             await userEvent.click(dateButton!);
 
             // Wait for calendar to open
-            await waitFor(() => {
-                expect(screen.getByRole('grid')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('grid')).toBeInTheDocument();
 
             // Click on a day (day 20)
             const day20 = screen.getByRole('gridcell', {name: '20'});
@@ -340,9 +336,7 @@ describe('TaskItem', () => {
             const dateButton = screen.getByText(/Jan 15, 2025/).closest('button');
             await userEvent.click(dateButton!);
 
-            await waitFor(() => {
-                expect(screen.getByRole('grid')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('grid')).toBeInTheDocument();
 
             const day20 = screen.getByRole('gridcell', {name: '20'});
             await userEvent.click(day20);
@@ -362,9 +356,7 @@ describe('TaskItem', () => {
             await userEvent.click(timeButton!);
 
             // TimeClock should be visible in the popover
-            await waitFor(() => {
-                expect(screen.getByRole('listbox')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('listbox')).toBeInTheDocument();
         });
     });
 
@@ -401,9 +393,7 @@ describe('TaskItem', () => {
             const assigneeButton = screen.getByText('John Doe').closest('button');
             await userEvent.click(assigneeButton!);
 
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
             await userEvent.click(screen.getByText('Jane Smith'));
 
@@ -419,9 +409,7 @@ describe('TaskItem', () => {
             const assigneeButton = screen.getByText('John Doe').closest('button');
             await userEvent.click(assigneeButton!);
 
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
             await userEvent.click(screen.getByText('Jane Smith'));
 
@@ -437,9 +425,7 @@ describe('TaskItem', () => {
             const assigneeButton = screen.getByText('John Doe').closest('button');
             await userEvent.click(assigneeButton!);
 
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
             const searchInput = screen.getByPlaceholderText('Search staff...');
             await userEvent.type(searchInput, 'Jane');
@@ -457,16 +443,12 @@ describe('TaskItem', () => {
             const assigneeButton = screen.getByText('John Doe').closest('button');
             await userEvent.click(assigneeButton!);
 
-            await waitFor(() => {
-                expect(screen.getByText('Jane Smith')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
             const searchInput = screen.getByPlaceholderText('Search staff...');
             await userEvent.type(searchInput, 'xyz');
 
-            await waitFor(() => {
-                expect(screen.getByText('No staff found')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No staff found')).toBeInTheDocument();
         });
 
         it('shows loading spinner while loading staff', async () => {

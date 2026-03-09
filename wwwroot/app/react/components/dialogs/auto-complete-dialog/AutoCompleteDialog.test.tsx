@@ -5,8 +5,8 @@
 import React from 'react';
 import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {AutoCompleteDialog, Suggestion, AutoCompleteDialogProps} from './AutoCompleteDialog';
-import {renderWithTheme, createProps} from '../../../__testUtils__';
+import {AutoCompleteDialog, AutoCompleteDialogProps, Suggestion} from './AutoCompleteDialog';
+import {createProps, renderWithTheme} from '../../../__testUtils__';
 
 const mockSuggestions: Suggestion[] = [
     {id: 1, text: 'John Smith'},
@@ -173,9 +173,7 @@ describe('AutoCompleteDialog', () => {
             const input = screen.getByPlaceholderText('Search for a courier...');
             await user.type(input, 'john');
 
-            await waitFor(() => {
-                expect(screen.getByRole('progressbar')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('progressbar')).toBeInTheDocument();
 
             resolveSearch!([]);
         });
@@ -192,9 +190,7 @@ describe('AutoCompleteDialog', () => {
             // Open the listbox
             await user.click(input);
 
-            await waitFor(() => {
-                expect(screen.getByText(/no select courier matching/i)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/no select courier matching/i)).toBeInTheDocument();
         });
     });
 

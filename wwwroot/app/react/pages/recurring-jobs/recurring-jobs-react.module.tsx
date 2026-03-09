@@ -12,13 +12,11 @@ import {RecurringJobsPage} from './RecurringJobsPage';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
 import {MountRecurringJobsConfig} from "../../interfaces";
-import angular from 'angular';
 
 let recurringJobsRoot: Root | null = null;
 let recurringJobsContainer: HTMLElement | null = null;
 
 // Store config for refresh functionality
-let currentConfig: MountRecurringJobsConfig | null = null;
 let refreshCallback: (() => void) | null = null;
 
 /**
@@ -49,7 +47,6 @@ export function mountRecurringJobsPage(
     }
 
     recurringJobsContainer = container;
-    currentConfig = config;
 
     // Create new root if needed
     if (!recurringJobsRoot) {

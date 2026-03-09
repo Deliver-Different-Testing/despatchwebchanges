@@ -3,14 +3,14 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
-import { EditDateTimeDialog } from './EditDateTimeDialog';
-import { EditDateTimeDialogProps } from './types';
+import {EditDateTimeDialog} from './EditDateTimeDialog';
+import {EditDateTimeDialogProps} from './types';
 
 // Create a theme for testing
 const theme = createTheme();
@@ -563,9 +563,7 @@ describe('EditDateTimeDialog', () => {
             await user.click(screen.getByRole('button', { name: /Save/i }));
 
             // The save button text should change to "Saving..."
-            await waitFor(() => {
-                expect(screen.getByText('Saving...')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Saving...')).toBeInTheDocument();
         });
     });
 });

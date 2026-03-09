@@ -2,16 +2,10 @@
  * Messaging Hooks Tests
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
-import { messagingApi } from '../../../services/messagingApi';
-import {
-    useConversations,
-    useMessages,
-    useQuickResponses,
-    useContactSearch,
-    useAutoRefresh,
-} from './useMessaging';
-import { OtherMessagePartyType, DEFAULT_QUICK_RESPONSES } from './types';
+import {act, renderHook, waitFor} from '@testing-library/react';
+import {messagingApi} from '../../../services/messagingApi';
+import {useAutoRefresh, useContactSearch, useConversations, useMessages, useQuickResponses,} from './useMessaging';
+import {DEFAULT_QUICK_RESPONSES, OtherMessagePartyType} from './types';
 
 // Mock the messagingApi
 jest.mock('../../../services/messagingApi', () => ({
@@ -408,7 +402,7 @@ describe('useContactSearch', () => {
         const { result } = renderHook(() => useContactSearch());
 
         await act(async () => {
-            result.current.search('');
+            await result.current.search('');
         });
 
         expect(result.current.results).toEqual([]);
@@ -421,7 +415,7 @@ describe('useContactSearch', () => {
         const { result } = renderHook(() => useContactSearch());
 
         await act(async () => {
-            result.current.search('john');
+            await result.current.search('john');
         });
 
         expect(result.current.searchTerm).toBe('john');
@@ -441,7 +435,7 @@ describe('useContactSearch', () => {
         const { result } = renderHook(() => useContactSearch());
 
         await act(async () => {
-            result.current.search('test');
+            await result.current.search('test');
         });
 
         act(() => {

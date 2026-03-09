@@ -25,7 +25,6 @@ import {
 } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { Dayjs } from 'dayjs';
@@ -92,14 +91,14 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
 
     // Handle date-only change (preserves existing time)
     const handleDateChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue && newValue.isValid()) {
+        if (newValue && !isNaN(newValue.year()) && !isNaN(newValue.month()) && !isNaN(newValue.date())) {
             setDateTime(prev => prev.year(newValue.year()).month(newValue.month()).date(newValue.date()));
         }
     }, []);
 
     // Handle time-only change (preserves existing date)
     const handleTimeChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue && newValue.isValid()) {
+        if (newValue && !isNaN(newValue.hour()) && !isNaN(newValue.minute())) {
             setDateTime(prev => prev.hour(newValue.hour()).minute(newValue.minute()).second(0));
         }
     }, []);
@@ -160,22 +159,12 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             slotProps: {
                 textField: {
                     fullWidth: true,
-                    autoFocus: true,
                     sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
                 },
             },
         };
 
-        if (showDate && showTime) {
-            return (
-                <DateTimePicker
-                    {...commonProps}
-                    label="Date & Time"
-                    ampm={false}
-                    format="YYYY-MM-DD HH:mm"
-                />
-            );
-        } else if (showDate && !showTime) {
+        if (showDate && !showTime) {
             return (
                 <DatePicker
                     {...commonProps}
@@ -190,6 +179,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                     label="Time (24-hour)"
                     ampm={false}
                     format="HH:mm"
+                    timeSteps={{ minutes: 1 }}
                 />
             );
         }
@@ -275,7 +265,6 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         slotProps={{
                                             textField: {
                                                 fullWidth: true,
-                                                autoFocus: true,
                                                 sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
                                             },
                                         }}
@@ -287,6 +276,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         label="Time (24-hour)"
                                         ampm={false}
                                         format="HH:mm"
+                                        timeSteps={{ minutes: 1 }}
                                         slotProps={{
                                             textField: {
                                                 fullWidth: true,

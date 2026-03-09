@@ -3,10 +3,10 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, act} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
-import {VoidJobConfirmationDialog, VoidJobDialogJob, RelatedJob} from './VoidJobConfirmationDialog';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {RelatedJob, VoidJobConfirmationDialog, VoidJobDialogJob} from './VoidJobConfirmationDialog';
 
 const theme = createTheme();
 
@@ -246,9 +246,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('Related Jobs')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Related Jobs')).toBeInTheDocument();
         });
 
         it('should load related jobs when switching to multi-void mode', async () => {
@@ -298,9 +296,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('current')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('current')).toBeInTheDocument();
         });
 
         it('should display selection count', async () => {
@@ -310,9 +306,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('1 of 3 jobs selected')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
         });
 
         it('should disable confirm when no jobs are selected', async () => {
@@ -352,9 +346,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-001')).toBeInTheDocument();
 
             const confirmButton = screen.getByRole('button', {name: /void 2 jobs/i});
             await userEvent.click(confirmButton);
@@ -384,9 +376,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-001')).toBeInTheDocument();
 
             const confirmButton = screen.getByRole('button', {name: /void 2 jobs/i});
             await userEvent.click(confirmButton);
@@ -409,17 +399,13 @@ describe('VoidJobConfirmationDialog', () => {
             await userEvent.click(toggle);
 
             // Wait for related jobs to load
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001 - Main Job')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-001 - Main Job')).toBeInTheDocument();
 
             // Click Select All button (exact match)
             const selectAllButton = screen.getByRole('button', {name: 'Select All'});
             await userEvent.click(selectAllButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('3 of 3 jobs selected')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('3 of 3 jobs selected')).toBeInTheDocument();
         });
 
         it('should deselect all jobs when Deselect All is clicked', async () => {
@@ -430,16 +416,12 @@ describe('VoidJobConfirmationDialog', () => {
             await userEvent.click(toggle);
 
             // Wait for related jobs to load
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001 - Main Job')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-001 - Main Job')).toBeInTheDocument();
 
             const deselectAllButton = screen.getByRole('button', {name: 'Deselect All'});
             await userEvent.click(deselectAllButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('0 of 3 jobs selected')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('0 of 3 jobs selected')).toBeInTheDocument();
         });
     });
 
@@ -451,17 +433,13 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('JOB-002 - Related Pickup')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('JOB-002 - Related Pickup')).toBeInTheDocument();
 
             // Click on the unselected job
             const jobItem = screen.getByText('JOB-002 - Related Pickup');
             await userEvent.click(jobItem);
 
-            await waitFor(() => {
-                expect(screen.getByText('2 of 3 jobs selected')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('2 of 3 jobs selected')).toBeInTheDocument();
         });
     });
 
@@ -503,9 +481,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getByText('No related jobs found.')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No related jobs found.')).toBeInTheDocument();
         });
     });
 
@@ -623,9 +599,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Bulk')).toHaveLength(2);
-            });
+            expect(await screen.findAllByText('Bulk')).toHaveLength(2);
         });
 
         it('should show Archived chip for archived related jobs', async () => {
@@ -641,9 +615,7 @@ describe('VoidJobConfirmationDialog', () => {
             const toggle = screen.getByRole('switch');
             await userEvent.click(toggle);
 
-            await waitFor(() => {
-                expect(screen.getAllByText('Archived')).toHaveLength(2);
-            });
+            expect(await screen.findAllByText('Archived')).toHaveLength(2);
         });
     });
 });

@@ -260,6 +260,14 @@ class RouterConfig {
     private configureOverviewState(): this {
         this.$stateProvider.state("overview", {
             url: "/overview",
+            template: `
+                <md-content class="md-dense" style="height: 100%;">
+                    <react-app-shell title="Overview Dashboard"></react-app-shell>
+                    <div class="scrollable-container" style="height: calc(100vh - 64px); overflow: auto;">
+                        <div id="react-overview"></div>
+                    </div>
+                </md-content>
+            `,
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
                     try {
@@ -268,20 +276,49 @@ class RouterConfig {
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for overview state, using fallback names');
                         return {
-                            'overview.js': 'overview.js',
-                            'overview.css': 'overview.css'
+                            'vendor-react.js': 'vendor-react.js',
+                            'overviewReact.js': 'overviewReact.js'
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
-                        getAssetPath('overview.js'),
-                        getAssetPath('overview.css')
-                    ]);
+                    // Load vendor-react first (React, ReactDOM)
+                    await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    // Then load the overview React module
+                    return $ocLazyLoad.load(getAssetPath('overviewReact.js'));
                 }]
             },
-            template: '<overview-component></overview-component>'
+            controller: ['$scope', 'toastrService', 'APP_CONFIG', 'navigationService',
+                function (
+                    $scope: angular.IScope,
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m?: string) => void;
+                        showInfoToast: (m: string) => void;
+                    },
+                    appConfig: { US_Customer: boolean },
+                    navigationService: { openJobDetail: (jobId: number) => void }
+                ) {
+                    const showToast = {
+                        showSuccessToast: (m: string) => toastrService.showSuccessToast(m),
+                        showWarningToast: (m: string) => toastrService.showWarningToast(m),
+                        showErrorToast: (m?: string) => toastrService.showErrorToast(m),
+                        showInfoToast: (m: string) => toastrService.showInfoToast(m),
+                    };
+
+                    (window as any).ReactOverview.mount('react-overview', {
+                        showToast,
+                        isUsCustomer: appConfig.US_Customer,
+                        onOpenJobDetail: (jobId: number) => navigationService.openJobDetail(jobId),
+                    });
+
+                    $scope.$on('$destroy', () => {
+                        (window as any).ReactOverview.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }

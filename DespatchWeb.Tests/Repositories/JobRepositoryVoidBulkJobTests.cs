@@ -110,7 +110,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null, Amount = 100.50m, CourierPayment = 50.25m },
             new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 75.00m, CourierPayment = 37.50m },
-            new() { BulkJobId = 3, ParentBulkJobId = 1, Amount = 25.00m, CourierPayment = 12.50m },
+            new() { BulkJobId = 3, ParentBulkJobId = 1, Amount = 25.00m, CourierPayment = 12.50m }
         };
 
         var request = new VoidBulkJobRequest
@@ -139,7 +139,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null, Amount = 100.50m, CourierPayment = 50.25m },
             new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 75.00m, CourierPayment = 37.50m },
-            new() { BulkJobId = 3, ParentBulkJobId = null, Amount = 200.00m, CourierPayment = 100.00m }, // Unrelated
+            new() { BulkJobId = 3, ParentBulkJobId = null, Amount = 200.00m, CourierPayment = 100.00m } // Unrelated
         };
 
         var request = new VoidBulkJobRequest
@@ -180,7 +180,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null, Amount = 100.50m, CourierPayment = 50.25m },
             new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 75.00m, CourierPayment = 37.50m },
-            new() { BulkJobId = 3, ParentBulkJobId = 1, Amount = 25.00m, CourierPayment = 12.50m },
+            new() { BulkJobId = 3, ParentBulkJobId = 1, Amount = 25.00m, CourierPayment = 12.50m }
         };
 
         var request = new VoidBulkJobRequest
@@ -206,7 +206,7 @@ public class JobRepositoryVoidBulkJobTests
         var allJobs = new List<TestBulkJob>
         {
             new() { BulkJobId = 1, ParentBulkJobId = null, Amount = null, CourierPayment = null },
-            new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 50.00m, CourierPayment = null },
+            new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 50.00m, CourierPayment = null }
         };
 
         var request = new VoidBulkJobRequest
@@ -233,7 +233,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null, Amount = 100.00m, CourierPayment = 50.00m },
             new() { BulkJobId = 2, ParentBulkJobId = 1, Amount = 75.00m, CourierPayment = 37.50m },
-            new() { BulkJobId = 3, ParentBulkJobId = 1, Amount = 25.00m, CourierPayment = 12.50m },
+            new() { BulkJobId = 3, ParentBulkJobId = 1, Amount = 25.00m, CourierPayment = 12.50m }
         };
 
         var request = new VoidBulkJobRequest
@@ -279,7 +279,7 @@ public class JobRepositoryVoidBulkJobTests
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
             new() { BulkJobId = 3, ParentBulkJobId = 1 },
-            new() { BulkJobId = 4, ParentBulkJobId = null }, // Unrelated job
+            new() { BulkJobId = 4, ParentBulkJobId = null } // Unrelated job
         };
 
         var request = new VoidBulkJobRequest
@@ -304,7 +304,7 @@ public class JobRepositoryVoidBulkJobTests
         var allJobs = new List<TestBulkJob>
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
-            new() { BulkJobId = 2, ParentBulkJobId = null }, // Unrelated job
+            new() { BulkJobId = 2, ParentBulkJobId = null } // Unrelated job
         };
 
         var request = new VoidBulkJobRequest
@@ -330,7 +330,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
-            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 }
         };
 
         var request = new VoidBulkJobRequest
@@ -357,7 +357,7 @@ public class JobRepositoryVoidBulkJobTests
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
             new() { BulkJobId = 3, ParentBulkJobId = 1 },
-            new() { BulkJobId = 4, ParentBulkJobId = null }, // Unrelated job
+            new() { BulkJobId = 4, ParentBulkJobId = null } // Unrelated job
         };
 
         var request = new VoidBulkJobRequest
@@ -383,7 +383,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
-            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 }
         };
 
         var request = new VoidBulkJobRequest
@@ -408,7 +408,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
-            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 }
         };
 
         var request = new VoidBulkJobRequest
@@ -434,7 +434,7 @@ public class JobRepositoryVoidBulkJobTests
         var allJobs = new List<TestBulkJob>
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
-            new() { BulkJobId = 2, ParentBulkJobId = 1 },
+            new() { BulkJobId = 2, ParentBulkJobId = 1 }
         };
 
         var request = new VoidBulkJobRequest
@@ -494,7 +494,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
-            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 }
         };
 
         // Act
@@ -512,7 +512,7 @@ public class JobRepositoryVoidBulkJobTests
         var allJobs = new List<TestBulkJob>
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
-            new() { BulkJobId = 2, ParentBulkJobId = null },
+            new() { BulkJobId = 2, ParentBulkJobId = null }
         };
 
         // Act
@@ -531,7 +531,7 @@ public class JobRepositoryVoidBulkJobTests
         {
             new() { BulkJobId = 1, ParentBulkJobId = null },
             new() { BulkJobId = 2, ParentBulkJobId = 1 },
-            new() { BulkJobId = 3, ParentBulkJobId = 1 },
+            new() { BulkJobId = 3, ParentBulkJobId = 1 }
         };
 
         // Act - Getting children of a child job (which has no children)
@@ -552,7 +552,7 @@ public class JobRepositoryVoidBulkJobTests
             new() { BulkJobId = 2, ParentBulkJobId = 1 },     // Child 1
             new() { BulkJobId = 3, ParentBulkJobId = 1 },     // Child 2
             new() { BulkJobId = 10, ParentBulkJobId = null },  // Another parent
-            new() { BulkJobId = 11, ParentBulkJobId = 10 },   // Unrelated child
+            new() { BulkJobId = 11, ParentBulkJobId = 10 } // Unrelated child
         };
 
         // Act

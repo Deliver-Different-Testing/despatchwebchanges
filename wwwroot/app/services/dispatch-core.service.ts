@@ -528,13 +528,21 @@ class DispatchCoreService implements angular.IServiceProvider {
     async splitJob(
         jobId: number,
         meetingPointAddress: IAddressViewModel
-    ): Promise<void> {
+    ): Promise<{ taskId: string }> {
         const data = {
             jobId,
             meetingPointAddress
         };
 
-        await this.$http.post(`job/splitJob`, data);
+        const response = await this.$http.post<{ taskId: string }>(`job/splitJob`, data);
+        return response.data;
+    }
+
+    async getSplitJobStatus(taskId: string): Promise<{ status: string; errorMessage: string | null }> {
+        const response = await this.$http.get<{ status: string; errorMessage: string | null }>(`job/splitJobStatus`, {
+            params: { taskId }
+        });
+        return response.data;
     }
 
     async updatePODDetail(data: UpdatePodDetailsRequest): Promise<void> {

@@ -399,7 +399,7 @@ public class JobReportService(
         var str = value.ToString();
         if (string.IsNullOrEmpty(str)) return string.Empty;
 
-        var escaped = str.Replace("\"", "\"\"").Replace("\n", "\\n").Replace("\r", "");
+        var escaped = str.Replace("\"", "\"\"").Replace("\n", "\\n").Replace("\r", string.Empty);
 
         return escaped.Contains('"') || escaped.Contains(',')
             ? $"\"{escaped}\""
