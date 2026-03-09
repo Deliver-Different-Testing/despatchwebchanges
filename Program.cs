@@ -229,6 +229,7 @@ builder.Services.AddSession(options =>
 
 
 var app = builder.Build();
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
 app.MapHealthChecks("/healthz", new HealthCheckOptions
 {
     ResponseWriter = async (context, report) =>
