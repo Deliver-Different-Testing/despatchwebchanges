@@ -64,7 +64,6 @@ export interface EditAddressDialogProps {
 }
 
 interface ValidationErrors {
-    addressLine1?: string;
     addressLine4?: string;
     addressLine5?: string;
     addressLine6?: string;
@@ -294,8 +293,8 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     const handleAddressFieldsFromLookup = useCallback((location: HereMapsLookupResponse) => {
         const address = location.address;
 
-        // Line 1: Company/Building
-        setAddressLine1(location.title || location.mapReferences?.pointAddress?.buildingName || '');
+        // Line 1: Company/Building (only use actual building name, not the full address title)
+        setAddressLine1(location.mapReferences?.pointAddress?.buildingName || '');
 
         // Line 2: Unit/Suite - not directly available
         setAddressLine2('');
@@ -361,8 +360,8 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             setAddressLine7(address.postalCode || '');
         }
 
-        // Line 8: Additional notes - typically empty from lookup
-        setAddressLine8('');
+        // Line 8: Country
+        setAddressLine8(address.countryName || '');
 
         // Update coordinates
         setLatitude(location.position.lat);
@@ -407,20 +406,25 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             setIsLoadingAddress(true);
             setAddressSearchText(location.address.label);
 
-            // Get detailed location info
-            const detailedLocation = await addressApi.getLocationDetailsById(location.id);
+            // Get detailed location info (some results like localities may not have an id)
+            if (location.id) {
+                const detailedLocation = await addressApi.getLocationDetailsById(location.id);
 
-            if (detailedLocation) {
-                handleAddressFieldsFromLookup(detailedLocation);
+                if (detailedLocation) {
+                    handleAddressFieldsFromLookup(detailedLocation);
 
-                // Update map
-                const lat = detailedLocation.position.lat;
-                const lng = detailedLocation.position.lng;
-                setLatitude(lat);
-                setLongitude(lng);
-                addMarker(lat, lng);
-            } else {
-                // Use basic location info
+                    // Update map
+                    const lat = detailedLocation.position.lat;
+                    const lng = detailedLocation.position.lng;
+                    setLatitude(lat);
+                    setLongitude(lng);
+                    addMarker(lat, lng);
+                    return;
+                }
+            }
+
+            // Use basic location info when no id or lookup returned null
+            if (location.position) {
                 setLatitude(location.position.lat);
                 setLongitude(location.position.lng);
                 addMarker(location.position.lat, location.position.lng);
@@ -453,10 +457,6 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     const validateForm = useCallback((): boolean => {
         const errors: ValidationErrors = {};
 
-        if (!addressLine1) {
-            errors.addressLine1 = 'Company/Building/Complex is required';
-        }
-
         if (!addressLine4) {
             errors.addressLine4 = 'Street name is required';
         }
@@ -482,7 +482,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
         setValidationErrors(errors);
         return Object.keys(errors).length === 0;
-    }, [addressLine1, addressLine4, addressLine5, addressLine6, addressLine7, stateAbbreviation, isUsTenant]);
+    }, [addressLine4, addressLine5, addressLine6, addressLine7, stateAbbreviation, isUsTenant]);
 
     // Handle save
     const handleSave = async () => {
@@ -686,10 +686,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         label="Company/Building/Complex"
                         value={addressLine1}
                         onChange={(e) => setAddressLine1(e.target.value)}
-                        error={!!validationErrors.addressLine1}
-                        helperText={validationErrors.addressLine1}
                         fullWidth
-                        required
                         disabled={isLoadingAddress}
                         sx={{mb: 2}}
                     />
@@ -797,16 +794,11 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         </Box>
                     )}
 
-                    {/* Line 8: Additional Notes */}
+                    {/* Line 8: Country */}
                     <TextField
-                        label={isUsTenant ? 'Additional Notes' : 'Address Extras'}
+                        label="Country"
                         value={addressLine8}
                         onChange={(e) => setAddressLine8(e.target.value)}
-                        placeholder={
-                            isUsTenant
-                                ? 'Gate code, delivery instructions, etc.'
-                                : 'Rural delivery, additional directions, etc.'
-                        }
                         disabled={isLoadingAddress}
                         fullWidth
                         sx={{mb: 2}}

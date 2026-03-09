@@ -3,17 +3,12 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import dayjs from 'dayjs';
-import { FlightAgentConfirmationDialog } from './FlightAgentConfirmationDialog';
-import {
-    FlightViewModel,
-    FlightSegment,
-    AgentSuggestion,
-    FlightCargoProcessing
-} from './types';
+import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
+import {AgentSuggestion, FlightCargoProcessing, FlightSegment, FlightViewModel} from './types';
 
 // Create a theme for testing
 const theme = createTheme();
@@ -192,9 +187,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Cargo Facility')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Cargo Facility')).toBeInTheDocument();
         });
 
         it('displays processing time section', async () => {
@@ -206,9 +199,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Processing Time')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Processing Time')).toBeInTheDocument();
         });
 
         it('displays package ready section', async () => {
@@ -220,9 +211,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Package Ready')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Package Ready')).toBeInTheDocument();
         });
 
         it('displays cargo hours after calculation', async () => {
@@ -234,10 +223,8 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                // Cargo hours format: "06:00 - 22:00"
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            // Cargo hours format: "06:00 - 22:00"
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
         });
 
         it('displays processing time after calculation', async () => {
@@ -249,9 +236,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('90 min')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('90 min')).toBeInTheDocument();
         });
     });
 
@@ -508,9 +493,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText(/Package Available After Cargo Hours/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Package Available After Cargo Hours/)).toBeInTheDocument();
         });
 
         it('provides option to set next morning time', async () => {
@@ -531,9 +514,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText(/Set to.*Cargo Opens/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Set to.*Cargo Opens/)).toBeInTheDocument();
         });
 
         it('provides baggage carousel option when package after hours', async () => {
@@ -554,9 +535,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Baggage Carousel')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Baggage Carousel')).toBeInTheDocument();
         });
     });
 
@@ -583,9 +562,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
             expect(screen.queryByText(/Package Available After Cargo Hours/)).not.toBeInTheDocument();
         });
@@ -703,9 +680,7 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             // Wait for cargo calculation to complete
-            await waitFor(() => {
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
             // Click confirm
             await user.click(screen.getByText('Confirm Assignment'));
@@ -749,9 +724,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
             await user.click(screen.getByText('Confirm Assignment'));
 
@@ -783,10 +756,8 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                // Should display fallback text instead of "Invalid Date"
-                expect(screen.getByText('--:-- - --:--')).toBeInTheDocument();
-            });
+            // Should display fallback text instead of "Invalid Date"
+            expect(await screen.findByText('--:-- - --:--')).toBeInTheDocument();
         });
 
         it('displays formatted time when cargo times are valid', async () => {
@@ -806,10 +777,8 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                // Should display properly formatted times
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            // Should display properly formatted times
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
         });
 
         it('handles cargo times with timezone offset correctly', async () => {
@@ -832,9 +801,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('07:00 - 23:00')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('07:00 - 23:00')).toBeInTheDocument();
         });
     });
 
@@ -859,9 +826,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
             await user.click(screen.getByText('Confirm Assignment'));
 
@@ -891,9 +856,7 @@ describe('FlightAgentConfirmationDialog', () => {
                 />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('06:00 - 22:00')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('06:00 - 22:00')).toBeInTheDocument();
 
             await user.click(screen.getByText('Confirm Assignment'));
 

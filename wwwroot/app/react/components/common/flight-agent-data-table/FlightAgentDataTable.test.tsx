@@ -4,12 +4,14 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
-import { FlightAgentDataTable } from './FlightAgentDataTable';
-import { FlightAgentDataTableProps, FlightOption, AgentOption, FlightSegment } from './types';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {FlightAgentDataTable} from './FlightAgentDataTable';
+import {AgentOption, FlightAgentDataTableProps, FlightOption, FlightSegment} from './types';
 import dayjs from 'dayjs';
+import {openFlightDetailsDialog} from '../../dialogs/flight-details-dialog';
+import {openAgentInfoDialog} from '../../dialogs/agent-info-dialog';
 
 // Mock the dialog modules
 jest.mock('../../dialogs/flight-details-dialog', () => ({
@@ -19,9 +21,6 @@ jest.mock('../../dialogs/flight-details-dialog', () => ({
 jest.mock('../../dialogs/agent-info-dialog', () => ({
     openAgentInfoDialog: jest.fn().mockResolvedValue(undefined),
 }));
-
-import { openFlightDetailsDialog } from '../../dialogs/flight-details-dialog';
-import { openAgentInfoDialog } from '../../dialogs/agent-info-dialog';
 
 const theme = createTheme();
 
@@ -621,9 +620,7 @@ describe('FlightAgentDataTable', () => {
             await userEvent.click(departureButton!);
 
             // Menu should open with airport options
-            await waitFor(() => {
-                expect(screen.getByText('LAX - Los Angeles')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('LAX - Los Angeles')).toBeInTheDocument();
         });
     });
 });

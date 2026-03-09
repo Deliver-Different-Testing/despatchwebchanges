@@ -3,11 +3,15 @@
  * Covers the markJobMissing method, Missing status menu option, and splitJobAction flow
  */
 
-import { JobStatus } from '../enums/job-status.enum';
-import { JobProperty } from '../enums/job-property.enum';
-import { IDispatchJob } from '../interfaces/job.interface';
-import { AppPage } from '../enums/app-pages.enum';
-import * as aiSettings from '../functions/aiSettings';
+import {JobStatus} from '../enums/job-status.enum';
+import {JobProperty} from '../enums/job-property.enum';
+import {IDispatchJob} from '../interfaces/job.interface';
+import {isAiEnabled} from '../functions/aiSettings';
+
+jest.mock('../functions/aiSettings', () => ({
+    ...jest.requireActual('../functions/aiSettings'),
+    isAiEnabled: jest.fn(),
+}));
 
 describe('JobContextMenuService', () => {
     // Mock services
@@ -19,11 +23,7 @@ describe('JobContextMenuService', () => {
         showSuccessToast: jest.Mock;
         showErrorToast: jest.Mock;
         showWarningToast: jest.Mock;
-    };
-    let mockMdDialog: {
-        show: jest.Mock;
-        confirm: jest.Mock;
-        alert: jest.Mock;
+        showInfoToast: jest.Mock;
     };
 
     // Helper to create a minimal mock IDispatchJob
@@ -80,12 +80,11 @@ describe('JobContextMenuService', () => {
             showSuccessToast: jest.fn(),
             showErrorToast: jest.fn(),
             showWarningToast: jest.fn(),
+            showInfoToast: jest.fn(),
         };
-        mockMdDialog = {
-            show: jest.fn(),
-            confirm: jest.fn().mockReturnThis(),
-            alert: jest.fn().mockReturnThis(),
-        };
+        jest.fn();
+        jest.fn().mockReturnThis();
+        jest.fn().mockReturnThis();
     });
 
     describe('markJobMissing', () => {
@@ -232,6 +231,7 @@ describe('JobContextMenuService', () => {
         };
         let mockDispatchDataSplit: {
             splitJob: jest.Mock;
+            getSplitJobStatus: jest.Mock;
         };
         let mockEditAddressDialogService: {
             openEditAddressDialog: jest.Mock;
@@ -258,6 +258,9 @@ describe('JobContextMenuService', () => {
          * Mirrors the splitJobAction logic from job-context-menu.service.ts.
          * This follows the project's established test pattern of creating simplified
          * functions that reproduce the service's control flow against mocked dependencies.
+         *
+         * Updated for fire-and-poll pattern: splitJob returns { taskId } immediately,
+         * then pollSplitJobStatus polls for completion.
          */
         const splitJobAction = async (
             job: IDispatchJob | null,
@@ -296,32 +299,44 @@ describe('JobContextMenuService', () => {
                     return;
                 }
 
-                // Show loading spinner (fire-and-forget — NOT awaited)
-                mockMdDialogSplit.show({
-                    template: `
-                        <md-dialog aria-label="Splitting job" style="max-width: 250px;">
-                            <md-dialog-content style="padding: 24px; text-align: center;">
-                                <md-progress-circular md-mode="indeterminate" md-diameter="48" class="md-primary"></md-progress-circular>
-                                <p style="margin-top: 16px; margin-bottom: 0;">Splitting job...</p>
-                            </md-dialog-content>
-                        </md-dialog>`,
-                    clickOutsideToClose: false,
-                    escapeToClose: false,
-                });
+                // Fire API call and get taskId back immediately
+                mockToastrService.showInfoToast(`Splitting job ${(job as any).jobNo}...`);
 
-                await mockDispatchDataSplit.splitJob(job.id, meetingPointAddress);
+                const { taskId } = await mockDispatchDataSplit.splitJob(job.id, meetingPointAddress);
 
-                mockMdDialogSplit.hide();
-                mockToastrService.showSuccessToast("Job Successfully Split");
-
-                if (onRefresh) {
-                    await onRefresh();
-                }
+                // Poll for completion (simplified for testing — calls once)
+                await pollSplitJobStatus(taskId, (job as any).jobNo, onRefresh);
             } catch (error) {
-                mockMdDialogSplit.hide();
                 if (error) {
                     mockToastrService.showErrorToast("Error splitting job");
                 }
+            }
+        };
+
+        /**
+         * Simplified poll helper for testing. In the real service this uses
+         * setTimeout recursion; here we call it directly for synchronous testing.
+         */
+        const pollSplitJobStatus = async (
+            taskId: string,
+            jobNo: string,
+            onRefresh?: () => void | Promise<void>
+        ): Promise<void> => {
+            try {
+                const result = await mockDispatchDataSplit.getSplitJobStatus(taskId);
+
+                if (result.status === "Completed") {
+                    mockToastrService.showSuccessToast(`Job ${jobNo} successfully split`);
+                    if (onRefresh) {
+                        await onRefresh();
+                    }
+                } else if (result.status === "Failed") {
+                    mockToastrService.showErrorToast(
+                        result.errorMessage || "Error splitting job"
+                    );
+                }
+            } catch (error) {
+                mockToastrService.showErrorToast("Error checking split job status");
             }
         };
 
@@ -333,7 +348,8 @@ describe('JobContextMenuService', () => {
                 hide: jest.fn(),
             };
             mockDispatchDataSplit = {
-                splitJob: jest.fn().mockResolvedValue(undefined),
+                splitJob: jest.fn().mockResolvedValue({ taskId: 'test-task-id' }),
+                getSplitJobStatus: jest.fn().mockResolvedValue({ status: 'Completed', errorMessage: null }),
             };
             mockEditAddressDialogService = {
                 openEditAddressDialog: jest.fn(),
@@ -452,11 +468,12 @@ describe('JobContextMenuService', () => {
             expect(mockDispatchDataSplit.splitJob).not.toHaveBeenCalled();
         });
 
-        // --- Loading spinner tests ---
+        // --- Info toast & fire tests ---
 
-        it('should show loading spinner with non-closeable config before API call', async () => {
+        it('should show info toast before firing API call', async () => {
             const address = createMockAddress();
             const job = createMockJob({
+                jobNo: 'J-100',
                 allowSplit: true,
                 deliveryAddress: { fullAddress: '456 Rd' },
             } as any);
@@ -464,31 +481,7 @@ describe('JobContextMenuService', () => {
 
             await splitJobAction(job);
 
-            // show() is called twice: once for confirm dialog, once for spinner
-            expect(mockMdDialogSplit.show).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    template: expect.stringContaining('md-progress-circular'),
-                    clickOutsideToClose: false,
-                    escapeToClose: false,
-                })
-            );
-        });
-
-        it('should show spinner with "Splitting job..." message', async () => {
-            const address = createMockAddress();
-            const job = createMockJob({
-                allowSplit: true,
-                deliveryAddress: { fullAddress: '456 Rd' },
-            } as any);
-            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
-
-            await splitJobAction(job);
-
-            expect(mockMdDialogSplit.show).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    template: expect.stringContaining('Splitting job...'),
-                })
-            );
+            expect(mockToastrService.showInfoToast).toHaveBeenCalledWith('Splitting job J-100...');
         });
 
         // --- API call & success path tests ---
@@ -507,7 +500,7 @@ describe('JobContextMenuService', () => {
             expect(mockDispatchDataSplit.splitJob).toHaveBeenCalledWith(789, address);
         });
 
-        it('should hide loading dialog on success', async () => {
+        it('should poll status after receiving taskId', async () => {
             const address = createMockAddress();
             const job = createMockJob({
                 allowSplit: true,
@@ -517,23 +510,25 @@ describe('JobContextMenuService', () => {
 
             await splitJobAction(job);
 
-            expect(mockMdDialogSplit.hide).toHaveBeenCalled();
+            expect(mockDispatchDataSplit.getSplitJobStatus).toHaveBeenCalledWith('test-task-id');
         });
 
-        it('should show success toast after API completes', async () => {
+        it('should show success toast when polling returns Completed', async () => {
             const address = createMockAddress();
             const job = createMockJob({
+                jobNo: 'J-200',
                 allowSplit: true,
                 deliveryAddress: { fullAddress: '456 Rd' },
             } as any);
             mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus.mockResolvedValue({ status: 'Completed', errorMessage: null });
 
             await splitJobAction(job);
 
-            expect(mockToastrService.showSuccessToast).toHaveBeenCalledWith("Job Successfully Split");
+            expect(mockToastrService.showSuccessToast).toHaveBeenCalledWith('Job J-200 successfully split');
         });
 
-        it('should call onRefresh callback after successful split', async () => {
+        it('should call onRefresh callback after successful poll', async () => {
             const address = createMockAddress();
             const job = createMockJob({
                 allowSplit: true,
@@ -560,21 +555,7 @@ describe('JobContextMenuService', () => {
 
         // --- Error path tests ---
 
-        it('should hide loading dialog on API error', async () => {
-            const address = createMockAddress();
-            const job = createMockJob({
-                allowSplit: true,
-                deliveryAddress: { fullAddress: '456 Rd' },
-            } as any);
-            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
-            mockDispatchDataSplit.splitJob.mockRejectedValue(new Error('Server error'));
-
-            await splitJobAction(job);
-
-            expect(mockMdDialogSplit.hide).toHaveBeenCalled();
-        });
-
-        it('should show error toast on API failure', async () => {
+        it('should show error toast on API failure (splitJob rejects)', async () => {
             const address = createMockAddress();
             const job = createMockJob({
                 allowSplit: true,
@@ -611,6 +592,41 @@ describe('JobContextMenuService', () => {
             const onRefresh = jest.fn();
             mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
             mockDispatchDataSplit.splitJob.mockRejectedValue(new Error('Server error'));
+
+            await splitJobAction(job, onRefresh);
+
+            expect(onRefresh).not.toHaveBeenCalled();
+        });
+
+        it('should show error toast with message when polling returns Failed', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus.mockResolvedValue({
+                status: 'Failed',
+                errorMessage: 'Job already split',
+            });
+
+            await splitJobAction(job);
+
+            expect(mockToastrService.showErrorToast).toHaveBeenCalledWith('Job already split');
+        });
+
+        it('should not call onRefresh when polling returns Failed', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            const onRefresh = jest.fn();
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus.mockResolvedValue({
+                status: 'Failed',
+                errorMessage: 'Job already split',
+            });
 
             await splitJobAction(job, onRefresh);
 
@@ -793,13 +809,13 @@ describe('JobContextMenuService', () => {
         });
 
         it('should include AI Late Alert Analysis when isAiEnabled returns true', () => {
-            jest.spyOn(aiSettings, 'isAiEnabled').mockReturnValue(true);
-            expect(aiSettings.isAiEnabled()).toBe(true);
+            jest.mocked(isAiEnabled).mockReturnValue(true);
+            expect(isAiEnabled()).toBe(true);
         });
 
         it('should exclude AI Late Alert Analysis when isAiEnabled returns false', () => {
-            jest.spyOn(aiSettings, 'isAiEnabled').mockReturnValue(false);
-            expect(aiSettings.isAiEnabled()).toBe(false);
+            jest.mocked(isAiEnabled).mockReturnValue(false);
+            expect(isAiEnabled()).toBe(false);
         });
     });
 });

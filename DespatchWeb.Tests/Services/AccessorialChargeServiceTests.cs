@@ -36,7 +36,7 @@ public class AccessorialChargeServiceTests
         request ??= new JobAccessorialChargeUpdateRequest
         {
             InputValue = existing.InputValue,
-            ItemCount = existing.ItemCount,
+            ItemCount = existing.ItemCount
         };
 
         _repositoryMock
@@ -93,7 +93,7 @@ public class AccessorialChargeServiceTests
             ChargeType = "per_unit",
             RatePerUnit = 10m,
             FreeAllowance = 2m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 5m, ItemCount = 1 });
@@ -109,7 +109,7 @@ public class AccessorialChargeServiceTests
             ChargeType = "per_unit",
             RatePerUnit = 10m,
             FreeAllowance = 10m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 3m, ItemCount = 1 });
@@ -128,7 +128,7 @@ public class AccessorialChargeServiceTests
             UnitTypeName = "Hour",
             FreeAllowance = 30m,
             FreeAllowanceUnitTypeName = "Minute",
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 2m, ItemCount = 1 });
@@ -147,7 +147,7 @@ public class AccessorialChargeServiceTests
             UnitTypeName = "Minute",
             FreeAllowance = 1m,
             FreeAllowanceUnitTypeName = "Hour",
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 90m, ItemCount = 1 });
@@ -163,7 +163,7 @@ public class AccessorialChargeServiceTests
             ChargeType = "per_unit",
             RatePerUnit = 10m,
             MinimumQuantity = 3m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1m, ItemCount = 1 });
@@ -182,7 +182,7 @@ public class AccessorialChargeServiceTests
         {
             ChargeType = "percentage",
             PercentageRate = 10m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1000m, ItemCount = 1 });
@@ -197,7 +197,7 @@ public class AccessorialChargeServiceTests
         {
             ChargeType = "percentage",
             PercentageRate = 8.5m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 200m, ItemCount = 1 });
@@ -231,7 +231,7 @@ public class AccessorialChargeServiceTests
             ChargeType = "flat",
             BaseRate = 5m,
             MinimumCharge = 10m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac);
@@ -247,7 +247,7 @@ public class AccessorialChargeServiceTests
             ChargeType = "per_unit",
             RatePerUnit = 100m,
             MaximumCharge = 500m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 10m, ItemCount = 1 });
@@ -264,7 +264,7 @@ public class AccessorialChargeServiceTests
             BaseRate = 50m,
             MinimumCharge = 10m,
             MaximumCharge = 100m,
-            ItemCount = 1,
+            ItemCount = 1
         };
 
         var result = await CallUpdate(jac);
@@ -287,7 +287,7 @@ public class AccessorialChargeServiceTests
         var charges = new List<JobAccessorialChargeCreateRequest>
         {
             new() { AccessorialChargeId = 1, ItemCount = 1 },
-            new() { AccessorialChargeId = 2, ItemCount = 1 },
+            new() { AccessorialChargeId = 2, ItemCount = 1 }
         };
 
         await CreateService().AddChargesAsync(500, charges);

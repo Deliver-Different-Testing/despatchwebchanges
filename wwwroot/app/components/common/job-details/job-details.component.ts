@@ -333,7 +333,7 @@ class JobDetailController extends BaseController {
 
             // Re-render AI panel if it was already open (e.g. after job refresh)
             if (this.showAiPanel) {
-                this.renderAiSummaryPanel();
+                await this.renderAiSummaryPanel();
             }
 
             if (this.job?.completedTime && !this.isRecurringJob) {

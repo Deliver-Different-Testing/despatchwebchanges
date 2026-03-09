@@ -5,24 +5,19 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAfterhoursDialog, EditAfterhoursDialogProps} from './EditAfterhoursDialog';
-import {
-    AfterHoursCourierSchedule,
-    CourierSuggestion,
-    TimeZoneOption,
-} from '../../../interfaces';
+import {AfterHoursCourierSchedule, CourierSuggestion, TimeZoneOption,} from '../../../interfaces';
+import {useCourierSearch, useTimeZoneOptions} from '../../../hooks';
 
 // Mock the React Query hooks
 jest.mock('../../../hooks', () => ({
     useCourierSearch: jest.fn(),
     useTimeZoneOptions: jest.fn(),
 }));
-
-import {useCourierSearch, useTimeZoneOptions} from '../../../hooks';
 
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 const mockUseTimeZoneOptions = useTimeZoneOptions as jest.MockedFunction<typeof useTimeZoneOptions>;
@@ -233,9 +228,7 @@ describe('EditAfterhoursDialog', () => {
             const searchInput = screen.getByLabelText('Search driver...');
             await user.type(searchInput, 'John');
 
-            await waitFor(() => {
-                expect(screen.getByText('JohnD (John Doe)')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('JohnD (John Doe)')).toBeInTheDocument();
         });
 
         it('shows loading state while searching', async () => {
@@ -283,9 +276,7 @@ describe('EditAfterhoursDialog', () => {
             fireEvent.change(startTimeInput, {target: {value: '09:00'}});
             fireEvent.change(endTimeInput, {target: {value: '17:00'}});
 
-            await waitFor(() => {
-                expect(screen.getByText('8h 00m')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('8h 00m')).toBeInTheDocument();
         });
 
         it('calculates duration for overnight shift', async () => {
@@ -298,9 +289,7 @@ describe('EditAfterhoursDialog', () => {
             fireEvent.change(startTimeInput, {target: {value: '22:00'}});
             fireEvent.change(endTimeInput, {target: {value: '06:00'}});
 
-            await waitFor(() => {
-                expect(screen.getByText('8h 00m')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('8h 00m')).toBeInTheDocument();
         });
 
         it('shows next day warning for overnight shift', async () => {
@@ -312,9 +301,7 @@ describe('EditAfterhoursDialog', () => {
             });
             renderWithProviders(props);
 
-            await waitFor(() => {
-                expect(screen.getByText(/spans across midnight/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/spans across midnight/)).toBeInTheDocument();
         });
     });
 

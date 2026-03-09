@@ -143,7 +143,7 @@ public class SplitJobServiceTests : IDisposable
         Longitude = 174.76m
     };
 
-    private TucJob SeedJob(int jobId = 100, string jobNumber = "JOB-100", Action<TucJob>? configure = null)
+    private void SeedJob(int jobId = 100, string jobNumber = "JOB-100", Action<TucJob>? configure = null)
     {
         var job = new TucJob
         {
@@ -158,13 +158,12 @@ public class SplitJobServiceTests : IDisposable
             PickupAddressLine1 = "1 Pickup St",
             PickupAddressLine5 = "Auckland",
             DeliveryAddressLine1 = "99 Delivery Ave",
-            DeliveryAddressLine5 = "Wellington",
+            DeliveryAddressLine5 = "Wellington"
         };
 
         configure?.Invoke(job);
         _seedContext.TucJobs.Add(job);
         _seedContext.SaveChanges();
-        return job;
     }
 
     #endregion
@@ -185,7 +184,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_JobWithFlightAssignment_ThrowsInvalidOperationException()
     {
-        SeedJob(100);
+        SeedJob();
         _seedContext.TucJobNationwides.Add(new TucJobNationwide
         {
             UcnwJobId = 100,
@@ -198,7 +197,7 @@ public class SplitJobServiceTests : IDisposable
             UcnwAirportOnly = false,
             UcnwLegNumber = 1
         });
-        _seedContext.SaveChanges();
+        await _seedContext.SaveChangesAsync();
 
         var service = CreateService();
 
@@ -211,7 +210,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_NullSpeed_ThrowsArgumentNullException()
     {
-        SeedJob(100, configure: j => j.UcjbSpeed = null);
+        SeedJob(configure: j => j.UcjbSpeed = null);
 
         // GetValidSpeedIdAsync returns null when speedId is null
         _jobRepositoryMock.Setup(x => x.GetSpeedSuggestionBySpeedIdAsync(It.IsAny<int>()))
@@ -227,7 +226,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_PickupCreationFails_ThrowsInvalidOperationException()
     {
-        SeedJob(100);
+        SeedJob();
         _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
                 It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CreateMinimalTucJobResponse
@@ -251,7 +250,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_ValidJob_ReturnsBothJobIds()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -264,7 +263,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_CallsCreateMinimalTucJobAsync_Twice()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -277,7 +276,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_SetsParentJobRelationshipType()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -292,7 +291,7 @@ public class SplitJobServiceTests : IDisposable
     public async Task SplitJobAsync_ReplacesParentJobCourier()
     {
         // Without a parent courier setting, the parent job courier becomes null
-        SeedJob(100, configure: j => j.UcjbCourierId = 5);
+        SeedJob(configure: j => j.UcjbCourierId = 5);
         var service = CreateService();
 
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -309,7 +308,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_PickupJobDeliveryAddress_IsMeetingPoint()
     {
-        SeedJob(100);
+        SeedJob();
         var meetingPoint = CreateMeetingPointAddress();
         var service = CreateService();
 
@@ -327,7 +326,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_PickupJobPickupAddress_IsOriginalPickup()
     {
-        SeedJob(100, configure: j =>
+        SeedJob(configure: j =>
         {
             j.PickupAddressLine1 = "1 Pickup St";
             j.PickUpLatitude = -36.80m;
@@ -346,7 +345,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_DeliveryJobPickupAddress_IsMeetingPoint()
     {
-        SeedJob(100);
+        SeedJob();
         var meetingPoint = CreateMeetingPointAddress();
         var service = CreateService();
 
@@ -364,7 +363,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_DeliveryJobDeliveryAddress_IsOriginalDelivery()
     {
-        SeedJob(100, configure: j =>
+        SeedJob(configure: j =>
         {
             j.DeliveryAddressLine1 = "99 Delivery Ave";
             j.DeliveryLatitude = -41.28m;
@@ -387,7 +386,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_PickupJobInheritsCourierFromOriginal()
     {
-        SeedJob(100, configure: j => j.UcjbCourierId = 42);
+        SeedJob(configure: j => j.UcjbCourierId = 42);
         var service = CreateService();
 
         var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -401,7 +400,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_DeliveryJobHasNoCourier()
     {
-        SeedJob(100, configure: j => j.UcjbCourierId = 42);
+        SeedJob(configure: j => j.UcjbCourierId = 42);
         var service = CreateService();
 
         var (_, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -419,7 +418,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_ChildJobs_HaveCorrectSequenceNumbers()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -435,7 +434,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_ChildJobs_HaveChildRelationshipType()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -452,7 +451,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_ChildJobs_PointBackToParent()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -470,7 +469,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_ChildJobs_AreNotVoidOrDone()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -492,7 +491,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_CreatesInternalNotesForBothJobs()
     {
-        SeedJob(100);
+        SeedJob();
         var service = CreateService();
 
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -511,7 +510,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_IncludesParentNotesInChildNotes()
     {
-        SeedJob(100, configure: j => j.UcjbNotes = "Handle with care");
+        SeedJob(configure: j => j.UcjbNotes = "Handle with care");
         var service = CreateService();
 
         var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
@@ -564,7 +563,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_PickupInputUsesOriginalPickupAsFrom()
     {
-        SeedJob(100, configure: j =>
+        SeedJob(configure: j =>
         {
             j.PickupAddressLine1 = "1 Origin St";
             j.PickUpLatitude = -36.80m;
@@ -599,7 +598,7 @@ public class SplitJobServiceTests : IDisposable
     [Fact]
     public async Task SplitJobAsync_DeliveryInputUsesMeetingPointAsFrom()
     {
-        SeedJob(100, configure: j =>
+        SeedJob(configure: j =>
         {
             j.DeliveryAddressLine1 = "99 Destination Ave";
             j.DeliveryLatitude = -41.28m;

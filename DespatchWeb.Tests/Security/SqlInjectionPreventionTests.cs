@@ -20,10 +20,7 @@ public class SqlInjectionPreventionTests
             BindingFlags.NonPublic | BindingFlags.Static)!;
     }
 
-    private bool InvokeIsValidWhereCondition(string condition)
-    {
-        return (bool)_isValidWhereConditionMethod.Invoke(null, [condition])!;
-    }
+    private bool InvokeIsValidWhereCondition(string condition) => (bool)_isValidWhereConditionMethod.Invoke(null, [condition])!;
 
     #region Valid Conditions - Should Pass
 
@@ -364,7 +361,7 @@ public class SqlInjectionPreventionTests
         var validConditions = new[]
         {
             "ProductDescription LIKE '%dropdown%'",  // Contains "drop" but not as word
-            "Updatedby = 'john'",  // Contains "update" as substring
+            "Updatedby = 'john'" // Contains "update" as substring
             // Note: This might still fail depending on implementation strictness
         };
 

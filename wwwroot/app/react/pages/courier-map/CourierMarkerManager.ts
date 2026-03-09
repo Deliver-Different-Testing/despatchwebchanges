@@ -2,7 +2,12 @@
  * CourierMarkerManager
  *
  * Manages courier markers on the HERE map with efficient batch operations,
- * icon caching, and position threshold checks.
+ * icon caching, position threshold checks, and status-based coloring.
+ *
+ * Markers are colored by driver status:
+ *   - Red pill:  has overdue jobs (needs attention)
+ *   - Blue pill: has active jobs (working normally)
+ *   - Slate pill: no jobs (idle/available)
  */
 
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
@@ -12,7 +17,10 @@ import {
     MARKER_LABEL_MAX_LENGTH,
     POSITION_THRESHOLD,
     DRIVER_FOCUS_ZOOM,
+    MARKER_COLORS,
+    getDriverStatus,
 } from './CourierMapPage.types';
+import type { DriverStatus } from './CourierMapPage.types';
 
 declare const H: any;
 
@@ -54,7 +62,6 @@ export class CourierMarkerManager {
                 }
                 this.courierMarkers.delete(id);
             });
-            // Batch remove
             if (markersToRemove.length > 0) {
                 this.markerGroup.removeObjects(markersToRemove);
             }
@@ -80,7 +87,6 @@ export class CourierMarkerManager {
                 );
 
                 if (posChanged) {
-                    // Update position
                     existing.marker.setGeometry({
                         lat: courier.latitude,
                         lng: courier.longitude,
@@ -89,22 +95,26 @@ export class CourierMarkerManager {
                     existing.lng = courier.longitude!;
                 }
 
-                // Update label if changed
+                // Update icon if label or status changed
                 const newLabel = this.getMarkerLabel(courier);
-                if (existing.name !== newLabel) {
-                    const icon = this.getOrCreateIcon(newLabel);
+                const newStatus = getDriverStatus(courier);
+                if (existing.name !== newLabel || existing.status !== newStatus) {
+                    const icon = this.getOrCreateIcon(newLabel, newStatus);
                     existing.marker.setIcon(icon);
                     existing.name = newLabel;
+                    existing.status = newStatus;
                 }
             } else {
                 // Create new marker
                 const marker = this.createCourierMarker(courier);
+                const status = getDriverStatus(courier);
                 markersToAdd.push(marker);
 
                 this.courierMarkers.set(courier.courierId, {
                     courierId: courier.courierId,
                     marker: marker,
                     name: this.getMarkerLabel(courier),
+                    status,
                     lat: courier.latitude!,
                     lng: courier.longitude!,
                 });
@@ -124,7 +134,6 @@ export class CourierMarkerManager {
         if (!driver.latitude || !driver.longitude) return;
 
         this.map.setCenter({ lat: driver.latitude, lng: driver.longitude });
-        // Only zoom in if current zoom is too far out
         const currentZoom = this.map.getZoom();
         if (currentZoom < DRIVER_FOCUS_ZOOM) {
             this.map.setZoom(DRIVER_FOCUS_ZOOM);
@@ -162,7 +171,7 @@ export class CourierMarkerManager {
         this.iconCache.clear();
     }
 
-    // Private methods
+    // ── Private ──────────────────────────────
 
     private hasPositionChanged(
         oldLat: number,
@@ -180,37 +189,36 @@ export class CourierMarkerManager {
         if (this.isUsCustomer) {
             return driver.courierName || '';
         } else {
-            // NZ: prefer code, fallback to name
             return driver.code || driver.courierName || '';
         }
     }
 
-    private getOrCreateIcon(name: string): any {
+    private getOrCreateIcon(name: string, status: DriverStatus): any {
         const displayName =
             name.length > MARKER_LABEL_MAX_LENGTH
                 ? name.substring(0, MARKER_LABEL_MAX_LENGTH - 2) + '..'
                 : name;
 
-        // Check cache first
-        if (this.iconCache.has(displayName)) {
-            return this.iconCache.get(displayName);
+        // Cache key includes status so color changes are reflected
+        const cacheKey = `${displayName}_${status}`;
+
+        if (this.iconCache.has(cacheKey)) {
+            return this.iconCache.get(cacheKey);
         }
 
-        // Create new icon
-        const svgMarkup = this.createFlagSvg(displayName);
+        const svgMarkup = this.createPillSvg(displayName, status);
         const icon = new H.map.Icon(svgMarkup, {
-            anchor: { x: 12, y: 36 },
+            anchor: { x: 14, y: 40 },
         });
 
-        // Cache it (limit cache size to prevent memory issues)
+        // Evict oldest entry if cache is full
         if (this.iconCache.size >= ICON_CACHE_LIMIT) {
-            // Remove oldest entry
             const firstKey = this.iconCache.keys().next().value;
             if (firstKey) {
                 this.iconCache.delete(firstKey);
             }
         }
-        this.iconCache.set(displayName, icon);
+        this.iconCache.set(cacheKey, icon);
 
         return icon;
     }
@@ -218,25 +226,32 @@ export class CourierMarkerManager {
     private createCourierMarker(driver: IAvailableCourierPosition): any {
         const point = new H.geo.Point(driver.latitude, driver.longitude);
         const label = this.getMarkerLabel(driver);
-        const icon = this.getOrCreateIcon(label);
+        const status = getDriverStatus(driver);
+        const icon = this.getOrCreateIcon(label, status);
         const marker = new H.map.Marker(point, { icon, data: driver });
 
         return marker;
     }
 
-    private createFlagSvg(displayName: string): string {
-        // Escape HTML entities in the name
+    /**
+     * Creates a modern pill-shaped SVG marker with status-based coloring
+     * and a subtle pin stem anchoring it to the map.
+     */
+    private createPillSvg(displayName: string, status: DriverStatus): string {
+        const colors = MARKER_COLORS[status];
+
         const escapedName = displayName
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;');
 
-        return `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="44" viewBox="0 0 100 44">
-            <rect x="10" y="0" width="3" height="44" fill="#1565C0"/>
-            <rect x="13" y="2" width="82" height="24" rx="3" ry="3" fill="#2196F3"/>
-            <rect x="13" y="2" width="82" height="24" rx="3" ry="3" fill="none" stroke="#1565C0" stroke-width="1"/>
-            <text x="54" y="18" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="white" text-anchor="middle">${escapedName}</text>
+        return `<svg xmlns="http://www.w3.org/2000/svg" width="108" height="42" viewBox="0 0 108 42">
+            <line x1="14" y1="42" x2="14" y2="29" stroke="${colors.border}" stroke-width="2.5" stroke-linecap="round"/>
+            <rect x="1" y="2" width="104" height="26" rx="13" fill="rgba(0,0,0,0.1)"/>
+            <rect x="0" y="0" width="104" height="26" rx="13" fill="${colors.bg}"/>
+            <rect x="0" y="0" width="104" height="26" rx="13" fill="none" stroke="${colors.border}" stroke-width="0.75" opacity="0.5"/>
+            <text x="52" y="17" font-family="Roboto,Arial,sans-serif" font-size="11" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedName}</text>
         </svg>`;
     }
 }

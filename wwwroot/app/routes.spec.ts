@@ -274,7 +274,8 @@ describe('RouterConfig', () => {
         it('should configure overview state', () => {
             const state = registeredStates.get('overview');
             expect(state.url).toBe('/overview');
-            expect(state.template).toBe('<overview-component></overview-component>');
+            expect(state.template).toContain('react-app-shell');
+            expect(state.template).toContain('react-overview');
         });
 
         it('should configure taskDashboard state', () => {

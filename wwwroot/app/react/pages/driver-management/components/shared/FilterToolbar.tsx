@@ -11,7 +11,7 @@ export const FilterToolbar: React.FC<FilterToolbarProps> = ({actions, children})
     <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
         <Toolbar
             variant="dense"
-            sx={{bgcolor: 'primary.main', color: 'primary.contrastText', minHeight: 40}}
+            sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
         >
             <TuneIcon sx={{mr: 1, fontSize: 20}} />
             <Typography variant="subtitle2">Filters</Typography>

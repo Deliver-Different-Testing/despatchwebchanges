@@ -5,12 +5,12 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import {TaskHistory} from './TaskHistory';
-import {DeliveryJourney, TaskHistoryProps, DensityMode} from './TaskHistory.interfaces';
+import {DeliveryJourney, DensityMode, TaskHistoryProps} from './TaskHistory.interfaces';
 
 // Mock the date utilities
 jest.mock('../../../utils/dateUtils', () => ({
@@ -134,9 +134,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             expect(screen.getByText('Dispatched to Courier')).toBeInTheDocument();
             expect(screen.getByText('Out for Delivery')).toBeInTheDocument();
@@ -147,9 +145,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             expect(screen.getByText(/Jan 15, 2025 9:00 AM/)).toBeInTheDocument();
         });
@@ -158,9 +154,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             expect(screen.getByText('priority')).toBeInTheDocument();
             expect(screen.getByText('express')).toBeInTheDocument();
@@ -170,9 +164,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             expect(screen.getByText('Customer requested express delivery')).toBeInTheDocument();
         });
@@ -185,9 +177,7 @@ describe('TaskHistory', () => {
             });
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('No Journey Events')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No Journey Events')).toBeInTheDocument();
 
             expect(screen.getByText('No delivery journey events found for this job.')).toBeInTheDocument();
         });
@@ -198,9 +188,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Find the density toggle button by its tooltip
             const buttons = screen.getAllByRole('button');
@@ -211,9 +199,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Find refresh button
             const buttons = screen.getAllByRole('button');
@@ -227,9 +213,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Find and click the density toggle button (first button in header)
             const buttons = screen.getAllByRole('button');
@@ -252,9 +236,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Find and click the refresh button (second button in header)
             const buttons = screen.getAllByRole('button');
@@ -269,9 +251,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Clear the mock to track new calls
             (props.dispatchService.getDeliveryJourney as jest.Mock).mockClear();
@@ -296,9 +276,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Click on an event
             await user.click(screen.getByText('Order Received'));
@@ -312,9 +290,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps({isUsCustomer: true});
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Component should render with blue theme
             expect(screen.getByText('Order Received')).toBeInTheDocument();
@@ -324,9 +300,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps({isUsCustomer: false});
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Component should render with yellow theme
             expect(screen.getByText('Order Received')).toBeInTheDocument();
@@ -373,9 +347,7 @@ describe('TaskHistory', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // All events should be rendered
             expect(screen.getByText('Order Received')).toBeInTheDocument(); // completed
@@ -391,9 +363,7 @@ describe('TaskHistory', () => {
             });
             renderWithProviders(<TaskHistory {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Order Received')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
         });
     });
 });

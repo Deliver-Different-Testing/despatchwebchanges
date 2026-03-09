@@ -215,12 +215,14 @@ describe('CourierMapPage Type Definitions', () => {
                 courierId: 123,
                 marker: {},
                 name: 'John Smith',
+                status: 'active',
                 lat: 40.7128,
                 lng: -74.006,
             };
 
             expect(marker.courierId).toBe(123);
             expect(marker.name).toBe('John Smith');
+            expect(marker.status).toBe('active');
             expect(marker.lat).toBe(40.7128);
             expect(marker.lng).toBe(-74.006);
         });

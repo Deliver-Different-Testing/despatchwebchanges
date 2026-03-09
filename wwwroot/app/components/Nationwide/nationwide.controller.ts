@@ -13,7 +13,7 @@ import {
     IJobQueryParams,
     ISuggestion
 } from "../../interfaces/job.interface";
-import {Coordinates} from "../overview/overview.interfaces";
+import {Coordinates} from "../../interfaces/coordinates.interface";
 import {
     AssignFlightToJobRequest,
     IFlightSegment,

@@ -3,9 +3,9 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, act} from '@testing-library/react';
+import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {NoteManagementDialog} from './NoteManagementDialog';
 import {NoteManagementDialogProps} from './types';
@@ -111,9 +111,7 @@ describe('NoteManagementDialog', () => {
                 renderWithTheme(<NoteManagementDialog {...props} />);
             });
 
-            await waitFor(() => {
-                expect(screen.getByText('Edit Note')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Edit Note')).toBeInTheDocument();
         });
 
         it('should load note types on open', async () => {
@@ -133,9 +131,7 @@ describe('NoteManagementDialog', () => {
                 renderWithTheme(<NoteManagementDialog {...props} />);
             });
 
-            await waitFor(() => {
-                expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
-            });
+            expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
         });
 
         it('should display metadata section for existing notes', async () => {
@@ -176,9 +172,7 @@ describe('NoteManagementDialog', () => {
             });
 
             // Wait for the select to be rendered
-            await waitFor(() => {
-                expect(screen.getByRole('combobox')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('combobox')).toBeInTheDocument();
 
             // Open dropdown and select public type
             const selectButton = screen.getByRole('combobox');
@@ -191,9 +185,7 @@ describe('NoteManagementDialog', () => {
                 await userEvent.click(customerOption);
             });
 
-            await waitFor(() => {
-                expect(screen.getByText(/public note that will be visible to clients/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/public note that will be visible to clients/)).toBeInTheDocument();
         });
 
         it('should toggle description visibility', async () => {
@@ -202,18 +194,14 @@ describe('NoteManagementDialog', () => {
                 renderWithTheme(<NoteManagementDialog {...props} />);
             });
 
-            await waitFor(() => {
-                expect(screen.getByText('View Description')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('View Description')).toBeInTheDocument();
 
             const toggleButton = screen.getByText('View Description');
             await act(async () => {
                 await userEvent.click(toggleButton);
             });
 
-            await waitFor(() => {
-                expect(screen.getByText('General notes')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('General notes')).toBeInTheDocument();
         });
     });
 
@@ -229,9 +217,7 @@ describe('NoteManagementDialog', () => {
             });
 
             // Wait for dialog content to render
-            await waitFor(() => {
-                expect(screen.getByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-            });
+            expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
 
             const textarea = screen.getByPlaceholderText('Enter your note content here...');
             await act(async () => {
@@ -251,9 +237,7 @@ describe('NoteManagementDialog', () => {
                 expect(props.onLoadNoteTypes).toHaveBeenCalled();
             });
 
-            await waitFor(() => {
-                expect(screen.getByText('0/1000 characters')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('0/1000 characters')).toBeInTheDocument();
         });
 
         it('should toggle important flag', async () => {
@@ -302,19 +286,14 @@ describe('NoteManagementDialog', () => {
             });
 
             // Wait for textarea to be available
-            await waitFor(() => {
-                expect(screen.getByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-            });
+            expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
 
             const textarea = screen.getByPlaceholderText('Enter your note content here...');
             await act(async () => {
                 await userEvent.type(textarea, 'Valid note content');
             });
 
-            await waitFor(() => {
-                const saveButton = screen.getByRole('button', {name: /save note/i});
-                expect(saveButton).toBeEnabled();
-            });
+            expect(await screen.findByRole('button', {name: /save note/i})).toBeEnabled();
         });
     });
 
@@ -330,9 +309,7 @@ describe('NoteManagementDialog', () => {
             });
 
             // Wait for textarea to be available
-            await waitFor(() => {
-                expect(screen.getByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-            });
+            expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
 
             const textarea = screen.getByPlaceholderText('Enter your note content here...');
             await act(async () => {
@@ -361,9 +338,7 @@ describe('NoteManagementDialog', () => {
             });
 
             // Wait for form to be populated with existing note data
-            await waitFor(() => {
-                expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
-            });
+            expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
 
             const textarea = screen.getByDisplayValue('This is an existing note');
             await act(async () => {
@@ -398,9 +373,7 @@ describe('NoteManagementDialog', () => {
             });
 
             // Wait for form to be populated
-            await waitFor(() => {
-                expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
-            });
+            expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
 
             const saveButton = screen.getByRole('button', {name: /save note/i});
             await act(async () => {

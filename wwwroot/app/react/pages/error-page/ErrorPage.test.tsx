@@ -5,7 +5,7 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material';
-import {ErrorPage, ErrorType} from './ErrorPage';
+import {ErrorPage} from './ErrorPage';
 
 const theme = createTheme();
 

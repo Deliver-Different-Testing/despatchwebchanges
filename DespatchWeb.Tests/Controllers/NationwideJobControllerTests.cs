@@ -44,7 +44,7 @@ public class NationwideJobControllerTests
         var expectedFlights = new List<FlightViewModel>
         {
             CreateTestFlight("NZ", "123", "AKL", "SYD"),
-            CreateTestFlight("QF", "456", "AKL", "SYD"),
+            CreateTestFlight("QF", "456", "AKL", "SYD")
         };
 
         _flightServiceMock.Setup(x => x.GetFlightsAsync(
@@ -96,7 +96,7 @@ public class NationwideJobControllerTests
 
         var expectedFlights = new List<FlightViewModel>
         {
-            CreateTestFlight("QF", "789", "AKL", "SYD"),
+            CreateTestFlight("QF", "789", "AKL", "SYD")
         };
 
         _flightServiceMock.Setup(x => x.GetFlightsAsync(
@@ -309,7 +309,7 @@ public class NationwideJobControllerTests
         {
             CreateTestFlight("NZ", "1", "AKL", "SYD"),
             CreateTestFlight("QF", "2", "AKL", "SYD"),
-            CreateTestFlight("AA", "3", "AKL", "SYD"),
+            CreateTestFlight("AA", "3", "AKL", "SYD")
         };
 
         _flightServiceMock.Setup(x => x.GetFlightsAsync(
@@ -409,7 +409,7 @@ public class NationwideJobControllerTests
                     DepartureAirportFsCode = departure,
                     ArrivalAirportFsCode = arrival,
                     DepartureTime = DateTimeOffset.Now.AddHours(3),
-                    ArrivalTime = DateTimeOffset.Now.AddHours(6),
+                    ArrivalTime = DateTimeOffset.Now.AddHours(6)
                 }
             ]
         };

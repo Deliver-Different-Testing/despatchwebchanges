@@ -681,7 +681,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onInputChange={(_, value) => setVehicleSearchText(value)}
                             onChange={(_, value) => setSelectedVehicle(value)}
                             isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({InputProps: autoInputProps, ...params}) => (
+                            renderInput={(params) => (
                                 <TextField
                                     {...params}
                                     label="Vehicle"
@@ -701,7 +701,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onInputChange={(_, value) => setSpeedSearchText(value)}
                             onChange={(_, value) => setSelectedSpeed(value)}
                             isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({InputProps: autoInputProps, ...params}) => (
+                            renderInput={(params) => (
                                 <TextField
                                     {...params}
                                     label="Speed"

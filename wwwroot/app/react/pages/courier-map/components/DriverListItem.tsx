@@ -1,8 +1,8 @@
 /**
  * DriverListItem Component
  *
- * Individual driver row in the drivers panel with avatar,
- * name, code, and job count. Built with MUI components.
+ * Individual driver row with status-colored left accent, tinted avatar,
+ * overdue badges, vehicle type, and hover-reveal locate action.
  */
 
 import React from 'react';
@@ -14,13 +14,20 @@ import {
     ListItemAvatar,
     ListItemText,
     Typography,
+    alpha,
+    useTheme,
 } from '@mui/material';
-import { NearMe, WorkOutline } from '@mui/icons-material';
+import { NearMe, WorkOutline, WarningAmberRounded } from '@mui/icons-material';
 import type { DriverListItemProps } from '../CourierMapPage.types';
-import { AVATAR_COLORS } from '../CourierMapPage.types';
+import { getDriverStatus } from '../CourierMapPage.types';
+import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
+import type { Theme } from '@mui/material';
 
-function getDriverColor(courierId: number): string {
-    return AVATAR_COLORS[courierId % AVATAR_COLORS.length];
+function getStatusColor(driver: IAvailableCourierPosition, theme: Theme): string {
+    const status = getDriverStatus(driver);
+    if (status === 'overdue') return theme.palette.error.main;
+    if (status === 'active') return theme.palette.primary.main;
+    return theme.palette.success.main;
 }
 
 function getDriverInitials(name: string | undefined): string {
@@ -33,18 +40,25 @@ function getDriverInitials(name: string | undefined): string {
 }
 
 export function DriverListItem({ driver, onClick }: DriverListItemProps) {
-    const avatarColor = getDriverColor(driver.courierId);
+    const theme = useTheme();
+    const statusColor = getStatusColor(driver, theme);
     const initials = getDriverInitials(driver.courierName);
+    const hasOverdue = driver.overDueJobs > 0;
 
     return (
         <ListItemButton
             onClick={onClick}
             sx={{
+                borderLeft: `3px solid ${statusColor}`,
                 mx: 1,
-                borderRadius: 2.5,
-                py: 1,
+                borderRadius: '0 10px 10px 0',
+                py: 0.875,
                 px: 1.5,
-                gap: 1.5,
+                gap: 1.25,
+                transition: 'all 150ms cubic-bezier(0.2, 0, 0, 1)',
+                '&:hover': {
+                    bgcolor: alpha(statusColor, 0.06),
+                },
                 '&:hover .locate-icon': {
                     opacity: 1,
                     transform: 'translateX(0)',
@@ -54,12 +68,14 @@ export function DriverListItem({ driver, onClick }: DriverListItemProps) {
             <ListItemAvatar sx={{ minWidth: 0 }}>
                 <Avatar
                     sx={{
-                        bgcolor: avatarColor,
-                        width: 40,
-                        height: 40,
+                        bgcolor: alpha(statusColor, 0.1),
+                        color: statusColor,
+                        width: 38,
+                        height: 38,
                         fontSize: 13,
-                        fontWeight: 600,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        fontWeight: 700,
+                        border: `2px solid ${alpha(statusColor, 0.25)}`,
+                        transition: 'all 150ms ease',
                     }}
                 >
                     {initials}
@@ -72,47 +88,94 @@ export function DriverListItem({ driver, onClick }: DriverListItemProps) {
                     <Typography
                         variant="body2"
                         sx={{
-                            fontWeight: 500,
+                            fontWeight: 600,
                             color: 'text.primary',
                             whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            lineHeight: 1.25,
+                            lineHeight: 1.3,
+                            fontSize: 13,
                         }}
                     >
                         {driver.courierName}
                     </Typography>
                 }
                 secondary={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            mt: 0.375,
+                            flexWrap: 'wrap',
+                        }}
+                    >
                         {driver.code && (
                             <Chip
                                 label={driver.code}
                                 size="small"
-                                color="primary"
                                 variant="outlined"
                                 sx={{
-                                    height: 20,
-                                    fontSize: 11,
-                                    fontWeight: 600,
-                                    '& .MuiChip-label': { px: 0.75 },
+                                    height: 18,
+                                    fontSize: 10,
+                                    fontWeight: 700,
+                                    letterSpacing: '0.02em',
+                                    borderColor: alpha(statusColor, 0.3),
+                                    color: statusColor,
+                                    '& .MuiChip-label': { px: 0.625 },
                                 }}
                             />
                         )}
+
                         {driver.totalJobs > 0 && (
                             <Box
                                 sx={{
-                                    display: 'flex',
+                                    display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: 0.375,
+                                    gap: 0.25,
                                     color: 'text.secondary',
                                 }}
                             >
-                                <WorkOutline sx={{ fontSize: 14 }} />
-                                <Typography variant="caption" sx={{ fontSize: 11 }}>
-                                    {driver.totalJobs} {driver.totalJobs === 1 ? 'job' : 'jobs'}
+                                <WorkOutline sx={{ fontSize: 12 }} />
+                                <Typography
+                                    component="span"
+                                    sx={{ fontSize: 11, lineHeight: 1 }}
+                                >
+                                    {driver.totalJobs}
                                 </Typography>
                             </Box>
+                        )}
+
+                        {hasOverdue && (
+                            <Box
+                                sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 0.25,
+                                    color: 'error.main',
+                                }}
+                            >
+                                <WarningAmberRounded sx={{ fontSize: 12 }} />
+                                <Typography
+                                    component="span"
+                                    sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1 }}
+                                >
+                                    {driver.overDueJobs} late
+                                </Typography>
+                            </Box>
+                        )}
+
+                        {driver.vehicleType && (
+                            <Typography
+                                component="span"
+                                sx={{
+                                    fontSize: 10,
+                                    color: 'text.disabled',
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {driver.vehicleType}
+                            </Typography>
                         )}
                     </Box>
                 }
@@ -121,7 +184,7 @@ export function DriverListItem({ driver, onClick }: DriverListItemProps) {
             <NearMe
                 className="locate-icon"
                 sx={{
-                    fontSize: 18,
+                    fontSize: 16,
                     color: 'primary.main',
                     opacity: 0,
                     transform: 'translateX(-4px)',

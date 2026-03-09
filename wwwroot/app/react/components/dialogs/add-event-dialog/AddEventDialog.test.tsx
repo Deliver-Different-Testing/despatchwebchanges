@@ -3,12 +3,12 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ThemeProvider, createTheme } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { AddEventDialog, AddEventJob, EventType } from './AddEventDialog';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {AddEventDialog, AddEventJob, EventType} from './AddEventDialog';
 
 const theme = createTheme();
 
@@ -54,9 +54,7 @@ describe('AddEventDialog', () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByRole('dialog')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Add Task')).toBeInTheDocument();
         });
 
@@ -78,27 +76,21 @@ describe('AddEventDialog', () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByDisplayValue('JOB-001')).toBeInTheDocument();
-            });
+            expect(await screen.findByDisplayValue('JOB-001')).toBeInTheDocument();
         });
 
         it('displays client field', async () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByDisplayValue('Test Client')).toBeInTheDocument();
-            });
+            expect(await screen.findByDisplayValue('Test Client')).toBeInTheDocument();
         });
 
         it('displays Cancel and Save buttons', async () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /cancel/i})).toBeInTheDocument();
             expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
         });
     });
@@ -174,9 +166,7 @@ describe('AddEventDialog', () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /cancel/i})).toBeInTheDocument();
 
             await user.click(screen.getByRole('button', { name: /cancel/i }));
 
@@ -220,9 +210,7 @@ describe('AddEventDialog', () => {
                 </ThemeProvider>
             );
 
-            await waitFor(() => {
-                expect(screen.getByRole('combobox')).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('combobox')).toBeInTheDocument();
         });
     });
 });

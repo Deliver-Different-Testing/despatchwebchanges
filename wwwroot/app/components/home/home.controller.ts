@@ -26,7 +26,7 @@ import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-fi
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
-import {Coordinates} from "../overview/overview.interfaces";
+import {Coordinates} from "../../interfaces/coordinates.interface";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ContactID, FirstName} from "../../contants";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";

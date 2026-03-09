@@ -5,7 +5,7 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -171,9 +171,7 @@ describe('TaskDashboardPage', () => {
             expect(screen.getByRole('button', {name: /Calendar/i})).toBeInTheDocument();
 
             // Should show stat card buttons
-            await waitFor(() => {
-                expect(screen.getByRole('button', {name: /ACTIVE: 2/})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /ACTIVE: 2/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /OVERDUE: 1/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /TODO: 1/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /DONE: 1/})).toBeInTheDocument();
@@ -197,9 +195,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
             expect(screen.getByText('Future email reminder')).toBeInTheDocument();
         });
 
@@ -209,18 +205,14 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('No tasks match your filters')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No tasks match your filters')).toBeInTheDocument();
         });
 
         it('renders the inline filter bar with search and dropdowns', async () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByRole('textbox', {name: /Search/i})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('textbox', {name: /Search/i})).toBeInTheDocument();
 
             // Check for Staff and Task Type filter labels
             expect(screen.getAllByText('Staff').length).toBeGreaterThan(0);
@@ -231,9 +223,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Delivery Journey/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Delivery Journey/)).toBeInTheDocument();
         });
     });
 
@@ -242,9 +232,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
 
             // Default filter is "Active" which shows non-closed tasks
             // Task 1 is overdue, Task 2 is tomorrow
@@ -259,16 +247,12 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByRole('button', {name: /DONE:/})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /DONE:/})).toBeInTheDocument();
 
             // Click on "Done" stat card
             await user.click(screen.getByRole('button', {name: /DONE:/}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Completed')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Completed')).toBeInTheDocument();
             expect(screen.getByText('Completed task')).toBeInTheDocument();
         });
     });
@@ -278,10 +262,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                // 2 active tasks (1 overdue + 1 todo), 1 done
-                expect(screen.getByRole('button', {name: /ACTIVE: 2/})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /ACTIVE: 2/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /OVERDUE: 1/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /TODO: 1/})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /DONE: 1/})).toBeInTheDocument();
@@ -292,16 +273,12 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
 
             // Click on "Todo" stat card
             await user.click(screen.getByRole('button', {name: /TODO:/}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Future email reminder')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Future email reminder')).toBeInTheDocument();
             // Overdue task should not be visible
             expect(screen.queryByText('Overdue follow up call')).not.toBeInTheDocument();
         });
@@ -311,16 +288,12 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
 
             // Click on "Overdue" stat card
             await user.click(screen.getByRole('button', {name: /OVERDUE:/}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
             // Future task should not be visible
             expect(screen.queryByText('Future email reminder')).not.toBeInTheDocument();
         });
@@ -330,16 +303,12 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
 
             // Click on "Done" stat card
             await user.click(screen.getByRole('button', {name: /DONE:/}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Completed task')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Completed task')).toBeInTheDocument();
             // Active tasks should not be visible
             expect(screen.queryByText('Overdue follow up call')).not.toBeInTheDocument();
             expect(screen.queryByText('Future email reminder')).not.toBeInTheDocument();
@@ -351,10 +320,8 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                // Should show the task list header
-                expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
-            });
+            // Should show the task list header
+            expect(await screen.findByText(/Tasks \(/)).toBeInTheDocument();
         });
 
         it('switches to calendar view when Calendar button is clicked', async () => {
@@ -362,9 +329,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Tasks \(/)).toBeInTheDocument();
 
             // Click the Calendar toggle button
             await user.click(screen.getByRole('button', {name: /Calendar/i}));
@@ -380,9 +345,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Tasks \(/)).toBeInTheDocument();
 
             await user.click(screen.getByRole('button', {name: /Calendar/i}));
 
@@ -415,9 +378,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByRole('textbox', {name: /Search/i})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('textbox', {name: /Search/i})).toBeInTheDocument();
 
             const searchInput = screen.getByRole('textbox', {name: /Search/i});
             await user.type(searchInput, 'follow up');
@@ -456,9 +417,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
 
             // Click on the first task
             await user.click(screen.getByText('Overdue follow up call'));
@@ -471,9 +430,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue follow up call')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
 
             // Initially no job selected
             expect(screen.getByText(/Delivery Journey$/)).toBeInTheDocument();
@@ -481,9 +438,7 @@ describe('TaskDashboardPage', () => {
             // Click on a task
             await user.click(screen.getByText('Overdue follow up call'));
 
-            await waitFor(() => {
-                expect(screen.getByText(/Delivery Journey for Job JOB-100/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Delivery Journey for Job JOB-100/)).toBeInTheDocument();
         });
     });
 
@@ -544,9 +499,7 @@ describe('TaskDashboardPage', () => {
             renderWithProviders(<TaskDashboardPage {...props} />);
 
             // Should not crash, component should still render
-            await waitFor(() => {
-                expect(screen.getByRole('button', {name: /List/i})).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('button', {name: /List/i})).toBeInTheDocument();
         });
     });
 
@@ -555,11 +508,9 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                // Default filter is "All" which shows active (non-closed) tasks
-                // We have 2 active tasks
-                expect(screen.getByText('Tasks (2)')).toBeInTheDocument();
-            });
+            // Default filter is "All" which shows active (non-closed) tasks
+            // We have 2 active tasks
+            expect(await screen.findByText('Tasks (2)')).toBeInTheDocument();
         });
 
         it('updates task count when filter changes', async () => {
@@ -567,16 +518,12 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText('Tasks (2)')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Tasks (2)')).toBeInTheDocument();
 
             // Switch to Done filter
             await user.click(screen.getByRole('button', {name: /DONE:/}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Tasks (1)')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Tasks (1)')).toBeInTheDocument();
         });
     });
 
@@ -598,9 +545,7 @@ describe('TaskDashboardPage', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskDashboardPage {...props} />);
 
-            await waitFor(() => {
-                expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(/Tasks \(/)).toBeInTheDocument();
 
             // Switch to calendar view
             await user.click(screen.getByRole('button', {name: /Calendar/i}));

@@ -66,7 +66,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast}) =
         <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
             <Toolbar
                 variant="dense"
-                sx={{bgcolor: 'primary.main', color: 'primary.contrastText', minHeight: 40}}
+                sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
             >
                 <Box sx={{mr: 1, display: 'flex', alignItems: 'center', '& .MuiSvgIcon-root': {fontSize: 20, color: 'inherit'}}}>{icon}</Box>
                 <Typography variant="subtitle2">{title}</Typography>
@@ -83,7 +83,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast}) =
             <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
                 <Toolbar
                     variant="dense"
-                    sx={{bgcolor: 'primary.main', color: 'primary.contrastText', minHeight: 40}}
+                    sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
                 >
                     <SearchIcon sx={{mr: 1, fontSize: 20}} />
                     <Typography variant="subtitle2">Driver Search</Typography>
@@ -117,7 +117,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast}) =
                 <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
                     <Toolbar
                         variant="dense"
-                        sx={{bgcolor: 'primary.main', color: 'primary.contrastText', minHeight: 44, gap: 2}}
+                        sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44, gap: 2}}
                     >
                         <BadgeIcon sx={{fontSize: 20}} />
                         <Typography variant="subtitle2" sx={{fontWeight: 600}}>

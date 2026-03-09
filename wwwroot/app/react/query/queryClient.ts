@@ -124,6 +124,15 @@ export const queryKeys = {
         eventTypes: ['tasks', 'eventTypes'] as const,
         deliveryJourney: (jobId: number) => ['tasks', 'deliveryJourney', jobId] as const,
     },
+    overview: {
+        all: ['overview'] as const,
+        jobs: (params: unknown) => ['overview', 'jobs', params] as const,
+        regions: ['overview', 'regions'] as const,
+        speeds: ['overview', 'speeds'] as const,
+        stats: ['overview', 'stats'] as const,
+        openJobs: (params: unknown) => ['overview', 'openJobs', params] as const,
+        parentJobMap: (jobId: number) => ['overview', 'parentJobMap', jobId] as const,
+    },
     driverManagement: {
         all: ['driverManagement'] as const,
         searchCouriers: (searchTerm: string) =>

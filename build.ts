@@ -11,7 +11,6 @@ type EntryPointName =
     | 'app'
     | 'home'
     | 'nationwide'
-    | 'overview'
     | 'jobSearch'
     | 'taskDashboardReact'
     | 'driverManagementReact'
@@ -37,7 +36,8 @@ type EntryPointName =
     | 'sendPodDialogReact'
     | 'aiAssistantDialogReact'
     | 'createJobDialogReact'
-    | 'swapPodsDialogReact';
+    | 'swapPodsDialogReact'
+    | 'overviewReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -54,7 +54,6 @@ const entryPoints: EntryPoints = {
     app: path.join(rootDir, "wwwroot/app/app.ts"),
     home: path.join(rootDir, "wwwroot/app/components/home/home.module.ts"),
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
-    overview: path.join(rootDir, "wwwroot/app/components/overview/overview.module.ts"),
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
 
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
@@ -82,6 +81,7 @@ const entryPoints: EntryPoints = {
     aiAssistantDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/ai-assistant-dialog/ai-assistant-dialog-react.module.tsx"),
     createJobDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/create-job-dialog/create-job-dialog-react.module.tsx"),
     swapPodsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module.tsx"),
+    overviewReact: path.join(rootDir, "wwwroot/app/react/pages/overview/overview-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)

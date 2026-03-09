@@ -25,9 +25,9 @@ import {
 } from '@mui/icons-material';
 import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks';
 import {AfterHoursCourierScheduleItem, AfterHoursFilter, PaginatedRequest} from '../../../interfaces';
-import {AfterHoursCourierSchedule} from '../../../interfaces/afterhours';
+import {AfterHoursCourierSchedule} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarOutlinedButtonSx, toolbarIconButtonSx, getDayChipColor} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getDayChipColor} from './shared';
 import dayjs from 'dayjs';
 
 interface AfterHoursTabProps {
@@ -211,10 +211,11 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                     <>
                         <Button
                             size="small"
-                            variant="outlined"
+                            variant="contained"
+                            color="primary"
                             startIcon={<AddIcon />}
                             onClick={handleCreateSchedule}
-                            sx={toolbarOutlinedButtonSx}
+                            sx={toolbarButtonSx}
                         >
                             Add Schedule
                         </Button>

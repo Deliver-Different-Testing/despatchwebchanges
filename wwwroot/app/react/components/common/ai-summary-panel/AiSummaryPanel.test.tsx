@@ -13,10 +13,10 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material';
-import { AiSummaryPanel } from './AiSummaryPanel';
-import type { AiSummaryResponse } from '../../../services/aiAssistantApi';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material';
+import {AiSummaryPanel} from './AiSummaryPanel';
+import type {AiSummaryResponse} from '../../../services/aiAssistantApi';
 
 const theme = createTheme();
 
@@ -84,9 +84,7 @@ describe('AiSummaryPanel', () => {
                 expect(mockFetch).toHaveBeenCalledTimes(1);
             });
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toHaveTextContent('Generated summary');
-            });
+            expect(await screen.findByTestId('react-markdown')).toHaveTextContent('Generated summary');
         });
 
         it('does not re-fetch when collapsing and re-expanding', async () => {
@@ -97,9 +95,7 @@ describe('AiSummaryPanel', () => {
 
             // Expand
             fireEvent.click(screen.getByText('Test'));
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
 
             // Collapse
             fireEvent.click(screen.getByText('Test'));
@@ -122,9 +118,7 @@ describe('AiSummaryPanel', () => {
                 expect(mockFetch).toHaveBeenCalledTimes(1);
             });
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toHaveTextContent('Auto-fetched summary');
-            });
+            expect(await screen.findByTestId('react-markdown')).toHaveTextContent('Auto-fetched summary');
         });
     });
 
@@ -153,9 +147,7 @@ describe('AiSummaryPanel', () => {
                 <AiSummaryPanel title="Test" fetchSummary={neverResolve} autoFetch />
             );
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Stop generating')).toBeInTheDocument();
-            });
+            expect(await screen.findByLabelText('Stop generating')).toBeInTheDocument();
         });
     });
 
@@ -166,9 +158,7 @@ describe('AiSummaryPanel', () => {
                 <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('Network timeout')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Network timeout')).toBeInTheDocument();
         });
     });
 
@@ -179,9 +169,7 @@ describe('AiSummaryPanel', () => {
                 <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
             );
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
 
             expect(screen.getByLabelText('Copy to clipboard')).toBeInTheDocument();
         });
@@ -198,9 +186,7 @@ describe('AiSummaryPanel', () => {
                 <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
             );
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
 
             fireEvent.click(screen.getByLabelText('Copy to clipboard'));
 
@@ -224,9 +210,7 @@ describe('AiSummaryPanel', () => {
                 <AiSummaryPanel title="Test" fetchSummary={controlledFetch} autoFetch />
             );
 
-            await waitFor(() => {
-                expect(screen.getByLabelText('Stop generating')).toBeInTheDocument();
-            });
+            expect(await screen.findByLabelText('Stop generating')).toBeInTheDocument();
 
             fireEvent.click(screen.getByLabelText('Stop generating'));
 
@@ -244,9 +228,7 @@ describe('AiSummaryPanel', () => {
                 <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
             );
 
-            await waitFor(() => {
-                expect(screen.getByTestId('react-markdown')).toBeInTheDocument();
-            });
+            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
 
             // Should show "just now" since it was just generated
             expect(screen.getByText('just now')).toBeInTheDocument();

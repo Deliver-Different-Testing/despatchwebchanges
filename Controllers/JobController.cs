@@ -15,9 +15,11 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using EventType = DespatchWeb.Enums.EventType;
 
@@ -39,7 +41,9 @@ public class JobController(
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
     ISplitJobService splitJobService,
-    IPodReportService podReportService
+    IPodReportService podReportService,
+    BackgroundTaskTracker backgroundTaskTracker,
+    IServiceScopeFactory serviceScopeFactory
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -609,7 +613,7 @@ public class JobController(
 
             // Flatten any semicolon/comma-separated entries into individual addresses
             var allRecipients = request.Recipients
-                .SelectMany(r => r.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries))
+                .SelectMany(r => r.Split([';', ','], StringSplitOptions.RemoveEmptyEntries))
                 .Select(r => r.Trim())
                 .Where(r => !string.IsNullOrEmpty(r))
                 .Distinct()
@@ -622,14 +626,10 @@ public class JobController(
             var validRecipients = new List<string>();
             foreach (var recipient in allRecipients)
             {
-                if (System.Net.Mail.MailAddress.TryCreate(recipient, out _))
-                {
+                if (MailAddress.TryCreate(recipient, out _))
                     validRecipients.Add(recipient);
-                }
                 else
-                {
                     Log.Warning("Skipping invalid email address '{Address}' for job {JobId}", recipient, request.JobId);
-                }
             }
 
             if (validRecipients.Count == 0)
@@ -1085,18 +1085,78 @@ public class JobController(
     {
         try
         {
+            // Capture HttpContext-dependent values before returning
+            var claimsPrincipal = HttpContext.User.Clone();
             var staffInfo = await infoService.GetStaffInfoAsync();
-            await splitJobService.SplitJobAsync(
-                request.JobId,
-                staffInfo.Text,
-                request.MeetingPointAddress);
-            return Ok();
+            var staffName = staffInfo.Text;
+            var syntheticContext = new DefaultHttpContext { User = claimsPrincipal };
+
+            var taskId = backgroundTaskTracker.CreateTask();
+
+            // Suppress ExecutionContext flow so the background task starts with a clean
+            // AsyncLocal state — prevents the request thread's HttpContext cleanup from
+            // racing with our synthetic context setup via the shared AsyncLocal holder.
+            using (System.Threading.ExecutionContext.SuppressFlow())
+            {
+                _ = Task.Run(async () =>
+                {
+                    var completed = false;
+                    try
+                    {
+                        Log.Information("Background split job starting for JobId {JobId}", request.JobId);
+
+                        using var scope = serviceScopeFactory.CreateScope();
+
+                        // Set synthetic HttpContext on the singleton accessor for this execution context
+                        scope.ServiceProvider
+                            .GetRequiredService<IHttpContextAccessor>()
+                            .HttpContext = syntheticContext;
+
+                        var scopedSplitJobService = scope.ServiceProvider.GetRequiredService<ISplitJobService>();
+                        await scopedSplitJobService.SplitJobAsync(
+                            request.JobId,
+                            staffName,
+                            request.MeetingPointAddress);
+
+                        backgroundTaskTracker.SetCompleted(taskId);
+                        completed = true;
+                        Log.Information("Background split job completed for JobId {JobId}", request.JobId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error(ex, "Background split job failed for JobId {JobId}: {Message}",
+                            request.JobId, ex.Message);
+                        backgroundTaskTracker.SetFailed(taskId, ErrorMessageStringFormatter.Format(ex));
+                        completed = true;
+                    }
+                    finally
+                    {
+                        // Safety net: if neither SetCompleted nor SetFailed was called, mark as failed
+                        if (!completed)
+                        {
+                            backgroundTaskTracker.SetFailed(taskId, "Background task terminated unexpectedly");
+                        }
+                    }
+                });
+            }
+
+            return Ok(new { taskId });
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}", ErrorMessageStringFormatter.Format(e));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
+    }
+
+    [HttpGet]
+    public IActionResult SplitJobStatus([FromQuery] string taskId)
+    {
+        var status = backgroundTaskTracker.GetStatus(taskId);
+        if (status == null)
+            return NotFound(new { error = "Task not found" });
+
+        return Ok(new { status = status.Status, errorMessage = status.ErrorMessage });
     }
 
     [HttpPost]

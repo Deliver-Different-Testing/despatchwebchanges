@@ -380,6 +380,6 @@ public static partial class JobMappings
             : null,
         IsFlightAssigned = j.TucJobNationwides.Any(),
 
-        CustomJobName = j.CustomJobName,
+        CustomJobName = j.CustomJobName
     };
 }

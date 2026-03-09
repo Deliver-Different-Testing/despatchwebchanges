@@ -24,7 +24,6 @@ import {
     IDeliveryJourney,
     IDeliveryJourneyDto
 } from "../react/components/common/task-history/TaskHistory.interfaces";
-import {IOpenJobResponse, IOpenJobResponseDto} from "../components/overview/overview.interfaces";
 import {timezoneShortFilter} from "../filters";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
@@ -178,17 +177,5 @@ export function transformDeliveryJourneyDTO(dto: IDeliveryJourneyDto): IDelivery
         date: formatDateFromApi(dto.date),
         status: dto.status as IDeliveryJourney['status'],
         _dateStr: formatInfoLogDateTimeString(dto.date)
-    }
-}
-
-
-export function transformOpenJobResponseDto(dto: IOpenJobResponseDto): IOpenJobResponse {
-    return {
-        ...dto,
-        deliveryTime: dto.deliveryTime ? formatDateFromApi(dto.deliveryTime) : undefined,
-        pickupTime: dto.pickupTime ? formatDateFromApi(dto.pickupTime) : undefined,
-        lastCompleted: dto.lastCompleted ? formatDateFromApi(dto.lastCompleted) : undefined,
-        _pickUpTimeStr: dto.pickupTime ? formatLongDateTime(dto.pickupTime) : undefined,
-        _deliveryTimeStr: dto.deliveryTime ? formatLongDateTime(dto.deliveryTime) : undefined,
     }
 }

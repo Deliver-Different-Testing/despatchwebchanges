@@ -280,6 +280,7 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning-dialog.template.html" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\react\services\api.ts" />
+      <_ContentIncludedByDefault Remove="wwwroot\app\components\common\data-table\data-table.interfaces.ts"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
@@ -372,12 +373,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\open-jobs\open-jobs.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\overview.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\overview.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\overview.module.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\overview.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\overview\services\overview-filters.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\contants.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />
@@ -443,7 +438,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\app\components\dialogs\event-group-dialog\" />
-    <Folder Include="wwwroot\app\react\pages\task-dashboard\components\" />
     <Folder Include="wwwroot\dist\" />
   </ItemGroup>
 </Project>

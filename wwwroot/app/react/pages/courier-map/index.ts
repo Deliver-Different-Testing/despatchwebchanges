@@ -19,6 +19,7 @@ export type {
     MapControlsProps,
     UseCourierMapReturn,
     RegionalBounds,
+    DriverStatus,
 } from './CourierMapPage.types';
 export {
     US_BOUNDS,
@@ -32,4 +33,6 @@ export {
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
     AVATAR_COLORS,
+    MARKER_COLORS,
+    getDriverStatus,
 } from './CourierMapPage.types';

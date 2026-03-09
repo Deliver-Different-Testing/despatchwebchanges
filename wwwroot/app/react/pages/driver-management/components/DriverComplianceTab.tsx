@@ -29,7 +29,7 @@ import {driverManagementApi} from '../../../services/driverManagementApi';
 import {summarizeCompliance} from '../../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../../components/common/ai-summary-panel/AiSummaryPanel';
 import {isAiEnabled} from '../../../../functions/aiSettings';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarOutlinedButtonSx, toolbarIconButtonSx, getComplianceTypeColor} from './shared';
+import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getComplianceTypeColor} from './shared';
 import dayjs from 'dayjs';
 
 interface DriverComplianceTabProps {
@@ -173,10 +173,11 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
                     <>
                         <Button
                             size="small"
-                            variant="outlined"
+                            variant="contained"
+                            color="primary"
                             startIcon={<SendIcon />}
                             onClick={handleOpenBulkDialog}
-                            sx={toolbarOutlinedButtonSx}
+                            sx={toolbarButtonSx}
                         >
                             Send Reminders
                         </Button>

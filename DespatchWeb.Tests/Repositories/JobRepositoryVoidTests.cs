@@ -91,7 +91,7 @@ public class JobRepositoryVoidTests
             new() { Id = 2, ParentId = 1 },     // Child 1
             new() { Id = 3, ParentId = 1 },     // Child 2
             new() { Id = 4, ParentId = 1 },     // Child 3
-            new() { Id = 5, ParentId = null },  // Unrelated job
+            new() { Id = 5, ParentId = null } // Unrelated job
         };
 
         var request = new VoidJobRequest
@@ -116,7 +116,7 @@ public class JobRepositoryVoidTests
         var allJobs = new List<TestJob>
         {
             new() { Id = 1, ParentId = null },  // Standalone job
-            new() { Id = 2, ParentId = null },  // Another standalone job
+            new() { Id = 2, ParentId = null } // Another standalone job
         };
 
         var request = new VoidJobRequest
@@ -142,7 +142,7 @@ public class JobRepositoryVoidTests
         {
             new() { Id = 1, ParentId = null },  // Parent job
             new() { Id = 2, ParentId = 1 },     // Child 1 (target)
-            new() { Id = 3, ParentId = 1 },     // Child 2 (sibling)
+            new() { Id = 3, ParentId = 1 } // Child 2 (sibling)
         };
 
         var request = new VoidJobRequest
@@ -172,7 +172,7 @@ public class JobRepositoryVoidTests
         {
             new() { Id = 1, ParentId = null },  // Parent job
             new() { Id = 2, ParentId = 1 },     // Child 1
-            new() { Id = 3, ParentId = 1 },     // Child 2
+            new() { Id = 3, ParentId = 1 } // Child 2
         };
 
         var request = new VoidJobRequest
@@ -198,7 +198,7 @@ public class JobRepositoryVoidTests
             new() { Id = 1, ParentId = null },  // Parent job
             new() { Id = 2, ParentId = 1 },     // Child 1 (target)
             new() { Id = 3, ParentId = 1 },     // Child 2 (sibling)
-            new() { Id = 4, ParentId = 1 },     // Child 3 (sibling)
+            new() { Id = 4, ParentId = 1 } // Child 3 (sibling)
         };
 
         var request = new VoidJobRequest
@@ -228,7 +228,7 @@ public class JobRepositoryVoidTests
             new() { Id = 1, ParentId = null },
             new() { Id = 2, ParentId = 1 },
             new() { Id = 3, ParentId = 1 },
-            new() { Id = 4, ParentId = 1 },
+            new() { Id = 4, ParentId = 1 }
         };
 
         var request = new VoidJobRequest
@@ -254,7 +254,7 @@ public class JobRepositoryVoidTests
         var allJobs = new List<TestJob>
         {
             new() { Id = 1, ParentId = null },
-            new() { Id = 2, ParentId = 1 },
+            new() { Id = 2, ParentId = 1 }
         };
 
         var request = new VoidJobRequest
@@ -279,7 +279,7 @@ public class JobRepositoryVoidTests
         var allJobs = new List<TestJob>
         {
             new() { Id = 1, ParentId = null },
-            new() { Id = 2, ParentId = 1 },
+            new() { Id = 2, ParentId = 1 }
         };
 
         var request = new VoidJobRequest
@@ -337,7 +337,7 @@ public class JobRepositoryVoidTests
         // Arrange
         var allJobs = new List<TestJob>
         {
-            new() { Id = 1, ParentId = null },
+            new() { Id = 1, ParentId = null }
         };
 
         var request = new VoidJobRequest
@@ -366,7 +366,7 @@ public class JobRepositoryVoidTests
         {
             new() { Id = 1, ParentId = null },
             new() { Id = 2, ParentId = 1 },
-            new() { Id = 3, ParentId = 1 },
+            new() { Id = 3, ParentId = 1 }
         };
 
         // Act
@@ -384,7 +384,7 @@ public class JobRepositoryVoidTests
         var allJobs = new List<TestJob>
         {
             new() { Id = 1, ParentId = null },
-            new() { Id = 2, ParentId = null },
+            new() { Id = 2, ParentId = null }
         };
 
         // Act
@@ -403,7 +403,7 @@ public class JobRepositoryVoidTests
         {
             new() { Id = 1, ParentId = null },
             new() { Id = 2, ParentId = 1 },
-            new() { Id = 3, ParentId = 1 },
+            new() { Id = 3, ParentId = 1 }
         };
 
         // Act - Getting children of a child job (which has no children)

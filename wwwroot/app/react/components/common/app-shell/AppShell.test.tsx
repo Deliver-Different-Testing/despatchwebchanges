@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent, waitFor, act} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material';
 import {AppShell} from './AppShell';
 
 const theme = createTheme();
@@ -77,9 +77,7 @@ describe('AppShell', () => {
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('John Doe')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('John Doe')).toBeInTheDocument();
         });
 
         it('should close SideNav after mouse leaves with delay', async () => {
@@ -126,9 +124,7 @@ describe('AppShell', () => {
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('John Doe')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('John Doe')).toBeInTheDocument();
 
             const drawer = document.querySelector('.MuiDrawer-paper');
             if (drawer) {
@@ -160,9 +156,7 @@ describe('AppShell', () => {
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('Tasks')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Tasks')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Tasks'));
 
@@ -191,9 +185,7 @@ describe('AppShell', () => {
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('Domestic')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Domestic')).toBeInTheDocument();
         });
 
         it('should show Nationwide label for non-US customers in SideNav', async () => {
@@ -202,9 +194,7 @@ describe('AppShell', () => {
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('Nationwide')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Nationwide')).toBeInTheDocument();
         });
     });
 
@@ -232,9 +222,7 @@ describe('AppShell', () => {
             const avatarButton = screen.getByRole('button', {name: /navigation menu/i});
             fireEvent.mouseEnter(avatarButton);
 
-            await waitFor(() => {
-                expect(screen.getByText('Custom Company')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Custom Company')).toBeInTheDocument();
         });
     });
 });

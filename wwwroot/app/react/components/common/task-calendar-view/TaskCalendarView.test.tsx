@@ -5,7 +5,7 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
 import weekday from 'dayjs/plugin/weekday';
@@ -152,9 +152,7 @@ describe('TaskCalendarView', () => {
             await user.click(screen.getByRole('button', {name: /month view/i}));
 
             const currentMonth = dayjs().format('MMMM YYYY');
-            await waitFor(() => {
-                expect(screen.getByText(currentMonth)).toBeInTheDocument();
-            });
+            expect(await screen.findByText(currentMonth)).toBeInTheDocument();
         });
     });
 
@@ -297,10 +295,8 @@ describe('TaskCalendarView', () => {
             await user.click(screen.getByRole('button', {name: /week view/i}));
 
             // Week view should show day column headers
-            await waitFor(() => {
-                // Check that time slots are rendered (confirms week view is active)
-                expect(screen.getByText('12 AM')).toBeInTheDocument();
-            });
+            // Check that time slots are rendered (confirms week view is active)
+            expect(await screen.findByText('12 AM')).toBeInTheDocument();
         });
     });
 
@@ -333,9 +329,7 @@ describe('TaskCalendarView', () => {
 
             await user.click(screen.getByRole('button', {name: /day view/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Overdue Tasks (1)')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Overdue Tasks (1)')).toBeInTheDocument();
         });
 
         it('does not show overdue sidebar for completed overdue tasks', async () => {

@@ -19,6 +19,7 @@ import { agentHandlers } from './agentHandlers';
 import { nationwideHandlers } from './nationwideHandlers';
 import { bulkPriceHandlers } from './bulkPriceHandlers';
 import { driverManagementHandlers } from './driverManagementHandlers';
+import { overviewHandlers } from './overviewHandlers';
 
 export const handlers = [
     ...messagingHandlers,
@@ -36,6 +37,7 @@ export const handlers = [
     ...nationwideHandlers,
     ...bulkPriceHandlers,
     ...driverManagementHandlers,
+    ...overviewHandlers,
 ];
 
 // Re-export individual handler arrays for selective use
@@ -54,6 +56,7 @@ export { agentHandlers } from './agentHandlers';
 export { nationwideHandlers } from './nationwideHandlers';
 export { bulkPriceHandlers } from './bulkPriceHandlers';
 export { driverManagementHandlers } from './driverManagementHandlers';
+export { overviewHandlers } from './overviewHandlers';
 
 // Re-export mock data for test assertions
 export { mockRecentConversations, mockChatMessages, mockQuickResponses, mockContactOptions } from './messagingHandlers';
@@ -70,3 +73,4 @@ export { mockAgentInfo } from './agentHandlers';
 export { mockFlightCargoProcessingDto, mockFlightViewModelDtos } from './nationwideHandlers';
 export { mockBulkPricePreviewResponse } from './bulkPriceHandlers';
 export { mockFleetOptions, mockCourierSearchResults, mockCourierDetails, mockTodayActiveDrivers, mockComplianceList, mockAfterHoursSchedule, mockDriverEmails, mockDriverEarnings } from './driverManagementHandlers';
+export { mockOverviewStats, mockOverviewRegions, mockOverviewSpeeds, mockOverviewJobsResponse, mockOverviewParentJobs, mockOpenJobDtos, mockMapConfig } from './overviewHandlers';

@@ -3,10 +3,10 @@
  */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
+import {screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CreateJobDialog, CreateJobDialogProps} from './CreateJobDialog';
-import {renderWithAllProviders, createProps} from '../../../__testUtils__';
+import {createProps, renderWithAllProviders} from '../../../__testUtils__';
 
 // Mock the hooks to avoid React Query dependencies
 jest.mock('../../../hooks', () => ({
@@ -231,9 +231,7 @@ describe('CreateJobDialog', () => {
 
             await user.click(screen.getByRole('button', {name: /create job/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Client is required.')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Client is required.')).toBeInTheDocument();
         });
 
         it('shows charge validation error after submit attempt', async () => {
@@ -243,9 +241,7 @@ describe('CreateJobDialog', () => {
 
             await user.click(screen.getByRole('button', {name: /create job/i}));
 
-            await waitFor(() => {
-                expect(screen.getByText('Charge must be greater than 0.')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('Charge must be greater than 0.')).toBeInTheDocument();
         });
 
         it('shows address required errors after submit attempt', async () => {

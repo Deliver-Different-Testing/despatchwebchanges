@@ -44,7 +44,7 @@ public class CourierReportService(
         ["Logout Time"] = x => x.LogoutTime.HasValue ? x.LogoutTime.Value.ToString("HH:mm:ss") : string.Empty,
         ["Duration"] = x => FormatCsvField(x.Duration),
         ["Deliveries"] = x => x.Deliveries.ToString(),
-        ["Status"] = x => FormatCsvField(x.Status),
+        ["Status"] = x => FormatCsvField(x.Status)
     };
 
     #endregion
@@ -77,7 +77,7 @@ public class CourierReportService(
         ["Item/Number"] = x => FormatCsvField(x.ItemNumber),
         ["Expiry Date"] = x => x.ExpiryDate.HasValue ? x.ExpiryDate.Value.ToString("dd/MM/yyyy") : string.Empty,
         ["Status"] = x => FormatCsvField(x.Status),
-        ["Days Until Expiry"] = x => FormatCsvField(x.DaysUntilExpiry),
+        ["Days Until Expiry"] = x => FormatCsvField(x.DaysUntilExpiry)
     };
 
     #endregion
@@ -109,7 +109,7 @@ public class CourierReportService(
         ["Days"] = x => x.Days != null ? FormatCsvField(string.Join(", ", x.Days)) : string.Empty,
         ["Start Time"] = x => x.StartTime.HasValue ? x.StartTime.Value.ToString("HH:mm") : string.Empty,
         ["End Time"] = x => x.EndTime.HasValue ? x.EndTime.Value.ToString("HH:mm") : string.Empty,
-        ["Duration"] = x => FormatCsvField(x.Duration),
+        ["Duration"] = x => FormatCsvField(x.Duration)
     };
 
     #endregion
@@ -139,7 +139,7 @@ public class CourierReportService(
         ["Name"] = x => FormatCsvField(x.Name),
         ["Email"] = x => FormatCsvField(x.Email),
         ["Phone"] = x => FormatCsvField(x.Phone),
-        ["Fleet"] = x => FormatCsvField(x.Fleet),
+        ["Fleet"] = x => FormatCsvField(x.Fleet)
     };
 
     #endregion
@@ -169,7 +169,7 @@ public class CourierReportService(
         ["Hours Logged"] = x => x.HoursLogged.ToString("F1"),
         ["Deliveries"] = x => x.Deliveries.ToString(),
         ["Earnings"] = x => x.Earnings.ToString("F2"),
-        ["Hourly Rate"] = x => x.HourlyRate.ToString("F2"),
+        ["Hourly Rate"] = x => x.HourlyRate.ToString("F2")
     };
 
     #endregion

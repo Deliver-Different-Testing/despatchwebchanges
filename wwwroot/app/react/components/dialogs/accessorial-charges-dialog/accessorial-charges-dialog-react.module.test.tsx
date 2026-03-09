@@ -5,11 +5,6 @@
  * before opening the dialog.
  */
 
-// Mock angular on window before importing the module
-(window as any).angular = {
-    module: jest.fn(() => ({})),
-};
-
 // Mock React DOM to prevent actual rendering
 jest.mock('react-dom/client', () => ({
     createRoot: jest.fn(() => ({
@@ -28,8 +23,13 @@ jest.mock('../../../query', () => ({
     ReactQueryProvider: ({ children }: any) => children,
 }));
 
-// Import the module after mocks are set up
-import { openAccessorialChargesDialog } from './accessorial-charges-dialog-react.module';
+// Use require() instead of import so that window.angular is set before module evaluation
+let openAccessorialChargesDialog: typeof import('./accessorial-charges-dialog-react.module').openAccessorialChargesDialog;
+
+beforeAll(() => {
+    (window as any).angular = {module: jest.fn(() => ({}))};
+    openAccessorialChargesDialog = require('./accessorial-charges-dialog-react.module').openAccessorialChargesDialog;
+});
 
 describe('AccessorialChargesDialogManager', () => {
     beforeEach(() => {

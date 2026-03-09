@@ -10,12 +10,36 @@ import React from "react";
 export type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 
 /**
+ * Driver status based on workload
+ */
+export type DriverStatus = 'overdue' | 'active' | 'idle';
+
+/**
+ * Determines a driver's status from their job data
+ */
+export function getDriverStatus(driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition): DriverStatus {
+    if (driver.overDueJobs > 0) return 'overdue';
+    if (driver.totalJobs > 0) return 'active';
+    return 'idle';
+}
+
+/**
+ * Color definitions for status-based map markers
+ */
+export const MARKER_COLORS: Record<DriverStatus, { bg: string; border: string; text: string }> = {
+    overdue: { bg: '#dc2626', border: '#991b1b', text: '#ffffff' },
+    active:  { bg: '#2563eb', border: '#1e40af', text: '#ffffff' },
+    idle:    { bg: '#475569', border: '#334155', text: '#ffffff' },
+};
+
+/**
  * Internal marker tracking state
  */
 export interface CourierMarker {
     courierId: number;
     marker: any;
     name: string;
+    status: DriverStatus;
     lat: number;
     lng: number;
 }

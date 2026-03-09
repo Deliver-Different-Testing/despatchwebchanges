@@ -269,7 +269,7 @@ public class CreateJobService(
         resolved.ClientNotes ??= defaults.ClientNotes;
         resolved.PickUpFrom ??= defaults.PickUpFrom;
         resolved.DeliverToLeaveId ??= defaults.DeliverToLeaveId;
-        resolved.ProofOfDelivery ??= defaults.ProofOfDelivery.HasValue && defaults.ProofOfDelivery > 0;
+        resolved.ProofOfDelivery ??= defaults.ProofOfDelivery is > 0;
         resolved.ProofOfDeliveryEmail ??= defaults.ProofOfDeliveryEmail;
         resolved.ProofOfDeliveryMobile ??= defaults.ProofOfDeliveryMobile;
         resolved.ReturnJob ??= defaults.RtnJob;
@@ -503,7 +503,7 @@ public class CreateJobService(
 
         var jobIdOutput = new OutputParameter<int?>();
         var jobNumberOutput = new OutputParameter<string>();
-        var amountOutput = new OutputParameter<decimal?>();
+        var amountOutput = new OutputParameter<decimal?> { _value = data.Amount };
         var poaOutput = new OutputParameter<bool?>();
 
         await context.Procedures.DD_stpJob_Excelerator_InsertAsync(

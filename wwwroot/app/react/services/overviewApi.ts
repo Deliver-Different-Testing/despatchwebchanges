@@ -1,0 +1,104 @@
+/**
+ * Overview API Service
+ *
+ * Axios-based API service replacing the AngularJS OverviewService.
+ */
+
+import {apiClient, RequestOptions} from './apiClient';
+import {formatDateForApiWithTzs} from '../../functions/formatDates';
+import {formatLongDateTime} from '../../functions/formatDates';
+import type {
+    OverviewQueryParams,
+    OverviewStatsViewModel,
+    PaginatedResponse,
+    OverviewTableParentJob,
+    ISuggestion,
+    MapConfig,
+    IOpenJobResponseDto,
+    IOpenJobResponse,
+} from '../pages/overview/OverviewPage.interfaces';
+
+async function getAllJobs(
+    params: OverviewQueryParams,
+    options?: RequestOptions,
+): Promise<PaginatedResponse<OverviewTableParentJob>> {
+    return apiClient.get<PaginatedResponse<OverviewTableParentJob>>(
+        '/overview',
+        {
+            statusGroup: params.statusGroup,
+            page: params.page,
+            limit: params.limit,
+            search: params.search || undefined,
+            startDate: params.startDate ? formatDateForApiWithTzs(params.startDate) : undefined,
+            endDate: params.endDate ? formatDateForApiWithTzs(params.endDate) : undefined,
+            orderBy: params.orderBy || 'jobName',
+            orderDirection: params.orderDirection,
+            regions: params.regions,
+            speeds: params.speeds,
+            couriers: params.couriers,
+        } as Record<string, unknown>,
+        options,
+    );
+}
+
+async function getAllRegions(options?: RequestOptions): Promise<ISuggestion[]> {
+    return apiClient.get<ISuggestion[]>('/overview/GetAllRegions', undefined, options);
+}
+
+async function getAllSpeeds(options?: RequestOptions): Promise<ISuggestion[]> {
+    return apiClient.get<ISuggestion[]>('/overview/GetAllSpeeds', undefined, options);
+}
+
+async function getStats(options?: RequestOptions): Promise<OverviewStatsViewModel> {
+    return apiClient.get<OverviewStatsViewModel>('/overview/GetStats', undefined, options);
+}
+
+async function getParentJobMap(jobId: number, options?: RequestOptions): Promise<MapConfig> {
+    return apiClient.get<MapConfig>('/overview/GetParentJobMap', {jobId} as Record<string, unknown>, options);
+}
+
+async function getOpenJobs(
+    params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers'>,
+    options?: RequestOptions,
+): Promise<IOpenJobResponse[]> {
+    const dtos = await apiClient.get<IOpenJobResponseDto[]>(
+        '/overview/GetOpenJobs',
+        {
+            startDate: params.startDate ? formatDateForApiWithTzs(params.startDate) : undefined,
+            endDate: params.endDate ? formatDateForApiWithTzs(params.endDate) : undefined,
+            regions: params.regions,
+            speeds: params.speeds,
+            couriers: params.couriers,
+        } as Record<string, unknown>,
+        options,
+    );
+
+    return dtos.map((dto) => ({
+        ...dto,
+        _pickUpTimeStr: dto.pickupTime ? formatLongDateTime(dto.pickupTime) : undefined,
+        _deliveryTimeStr: dto.deliveryTime ? formatLongDateTime(dto.deliveryTime) : undefined,
+    }));
+}
+
+async function searchCouriers(
+    searchText: string,
+    options?: RequestOptions,
+): Promise<ISuggestion[]> {
+    return apiClient.get<ISuggestion[]>(
+        '/courier/AllActiveSearch',
+        {search: searchText} as Record<string, unknown>,
+        options,
+    );
+}
+
+export const overviewApi = {
+    getAllJobs,
+    getAllRegions,
+    getAllSpeeds,
+    getStats,
+    getParentJobMap,
+    getOpenJobs,
+    searchCouriers,
+};
+
+export default overviewApi;
