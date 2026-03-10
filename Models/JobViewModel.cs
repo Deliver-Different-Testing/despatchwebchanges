@@ -85,6 +85,10 @@ public class JobViewModel : DispatchJobViewModel
     public bool DeliverToPrivateRes { get; set; }
     public Suggestion BookingSource { get; set; }
 
+    // Arrival times
+    public DateTimeOffset? PickupArrivalTime { get; set; }
+    public DateTimeOffset? DeliveryArrivalTime { get; set; }
+
     // Flight detail card
     public bool IsFlightAssigned { get; set; }
 }

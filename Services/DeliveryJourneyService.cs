@@ -126,7 +126,6 @@ public partial class DeliveryJourneyService(
         int jobId,
         bool isLiveJob)
     {
-        var timezone = infoService.GetTenantTimeZone();
         var isUsCustomer = infoService.IsUsTenant();
         var dateFormat = isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm";
 
@@ -159,15 +158,15 @@ public partial class DeliveryJourneyService(
                     : "Note added by System",
                 Icon = "sticky_note_2",
                 Description = n.NoteText,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate, timezone),
+                Date = infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate),
                 Tags = new[]
                 {
                     "Note",
                     !string.IsNullOrEmpty(n.CreatedByFirstName)
-                        ? $"Created by {n.CreatedByFirstName} {n.CreatedByLastName} on {n.CreatedDate.ToString(dateFormat)}"
+                        ? $"Created by {n.CreatedByFirstName} {n.CreatedByLastName} on {infoService.ConvertUtcToTenantTimeZone(n.CreatedDate).ToString(dateFormat)}"
                         : null,
                     !string.IsNullOrEmpty(n.UpdatedByFirstName) && n.UpdatedDate.HasValue
-                        ? $"Updated by {n.UpdatedByFirstName} {n.UpdatedByLastName} on {n.UpdatedDate.Value.ToString(dateFormat)}"
+                        ? $"Updated by {n.UpdatedByFirstName} {n.UpdatedByLastName} on {infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate.Value).ToString(dateFormat)}"
                         : null
                 }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
             }).ToList();
@@ -193,17 +192,15 @@ public partial class DeliveryJourneyService(
             Title = "Note added by System",
             Icon = "sticky_note_2",
             Description = n.NoteText,
-            Date = n.UpdatedDate.HasValue || n.CreatedDate.HasValue
-                ? TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate.Value, timezone)
-                : TimeZoneHelper.SetDateTimeWithTimeZone(DateTime.MinValue, timezone),
+            Date = infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue),
             Tags = new[]
             {
                 "Note",
                 n.CreatedDate.HasValue
-                    ? $"Created on {n.CreatedDate.Value.ToString(dateFormat)}"
+                    ? $"Created on {infoService.ConvertUtcToTenantTimeZone(n.CreatedDate.Value).ToString(dateFormat)}"
                     : null,
                 n.UpdatedDate.HasValue
-                    ? $"Updated on {n.UpdatedDate.Value.ToString(dateFormat)}"
+                    ? $"Updated on {infoService.ConvertUtcToTenantTimeZone(n.UpdatedDate.Value).ToString(dateFormat)}"
                     : null
             }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
         }).ToList();

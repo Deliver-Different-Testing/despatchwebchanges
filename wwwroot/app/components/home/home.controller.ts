@@ -20,7 +20,6 @@ import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interfa
 import BaseController from "../base-controller";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
-import {EditAddressDialogService} from "../dialogs/edit-address-dialog/edit-address-dialog.service";
 import {AppPage} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
@@ -31,7 +30,6 @@ import JobContextMenuService from "../../services/job-context-menu.service";
 import {ContactID, FirstName} from "../../contants";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
-import NavigationService from "../../services/navigation.service";
 import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
 import TruckCourierStatusDialogService
@@ -70,11 +68,9 @@ class HomeController extends BaseController {
         '$mdSidenav',
         '$stateParams',
         'accessorialChargesDialogService',
-        'editAddressDialogService',
         'jobFileUploadDialogService',
         'interCourierChargeDialogService',
         'jobContextMenuService',
-        'navigationService',
         'truckCourierStatusDialogService',
         'jobAddStopService',
         'messagingDialogService',
@@ -206,11 +202,9 @@ class HomeController extends BaseController {
         private $mdSidenav: angular.material.ISidenavService,
         private $stateParams: angular.ui.IStateParamsService,
         private accessorialChargesDialog: AccessorialChargesDialogService,
-        private editAddressDialog: EditAddressDialogService,
         private jobFileUploadDialog: JobFileUploadDialogService,
         private interCourierChargeDialog: InterCourierChargeDialogService,
         private jobContextMenuService: JobContextMenuService,
-        private navigationService: NavigationService,
         private truckCourierStatusDialog: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
         private messagingDialog: MessagingDialogService,
@@ -1047,7 +1041,7 @@ class HomeController extends BaseController {
         await this.DispatchData.reAssignJobs([firstJobId]);
     }
 
-    async otherEventForm($event: MouseEvent, job: IDispatchJob): Promise<void> {
+    async otherEventForm(_$event: MouseEvent, job: IDispatchJob): Promise<void> {
         await openAddEventDialog({
             job: {
                 id: job.id,

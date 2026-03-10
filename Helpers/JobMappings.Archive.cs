@@ -289,7 +289,11 @@ public static partial class JobMappings
             }).ToList()
             : null,
 
-        CustomJobName = j.CustomJobName
+        CustomJobName = j.CustomJobName,
+
+        // Arrival times
+        PickupArrivalTime = j.PickupArrivalTime,
+        DeliveryArrivalTime = j.DeliveryArrivalTime
     };
 
     public static Expression<Func<TucJobArchive, DispatchJobViewModel>> PodSearchArchivedMapping(bool isUsCustomer) =>

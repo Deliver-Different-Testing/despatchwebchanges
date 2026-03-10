@@ -2,12 +2,9 @@ import {IAppConfig} from "./interfaces/app-config.interface";
 import {AppPage} from "./enums/app-pages.enum";
 import "./react/components/common/pod-photo-viewer/pod-photo-viewer-react.module";
 import "./react/components/dialogs/note-management-dialog/note-management-dialog-react.module";
-import EditParcelDimensionsDialogController
-    from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.controller";
 import {
     FeatureInDevelopmentDialogController
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
-import {SelectDialogController} from "./components/dialogs/select-dialog/select-dialog.controller";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import NavigationService from "./services/navigation.service";
@@ -29,11 +26,9 @@ import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import JobAddStopService from "./services/job-add-stop.service";
-import AddressLookupService from "./services/address-lookup.service";
 import dayjs from "dayjs";
 import 'dayjs/locale/en';
 import 'dayjs/locale/en-nz';
-import TablePaginationComponent from "./components/common/table-pagination/table-pagination.component";
 import TruckCourierStatusDialogController
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.controller";
 import TruckCourierStatusDialogService
@@ -42,9 +37,7 @@ import MessagingDialogService from "./components/dialogs/messaging-dialog/messag
 import CustomUrlService from "./services/custom-url.service";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
-import SwapPodsDialogService
-    from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
-import DayJsDatePickerComponent from "./components/common/dayjs-date-picker/dayjs-date-picker.component";
+import SwapPodsDialogService from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
 import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 import SimplePriceEditDialogService
@@ -214,9 +207,7 @@ app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);
-app.component("tablePagination", TablePaginationComponent);
 app.component("stickyNoteReact", StickyNotesReactComponent);
-app.component("customDatePicker", DayJsDatePickerComponent);
 app.component("taskItemReact", TaskItemReactComponent);
 app.component("driverLocationsReact", DriverLocationsReactComponent);
 app.component("noDataReact", NoDataReactComponent);
@@ -226,9 +217,7 @@ app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
 app.directive("reactAppShell", reactAppShellDirective);
 
 // Dialogs
-app.controller("EditParcelDimensionsDialogController", EditParcelDimensionsDialogController);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
-app.controller("SelectDialogController", SelectDialogController);
 app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
@@ -248,7 +237,6 @@ app.service("jobFileUploadDialogService", JobFileUploadDialogService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
-app.service("addressLookupService", AddressLookupService);
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
 app.service('customUrlService', CustomUrlService);

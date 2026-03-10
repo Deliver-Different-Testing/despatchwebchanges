@@ -1,5 +1,5 @@
 import angular from 'angular';
-﻿class UrlService implements angular.IServiceProvider {
+class UrlService implements angular.IServiceProvider {
     static $inject = ['$location'];
 
     constructor(

@@ -156,6 +156,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             value: dateTime,
             onChange: handleDateTimeChange,
             disabled: isLoading,
+            enableAccessibleFieldDOMStructure: false as const,
             slotProps: {
                 textField: {
                     fullWidth: true,
@@ -260,6 +261,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         value={dateTime}
                                         onChange={handleDateChange}
                                         disabled={isLoading}
+                                        enableAccessibleFieldDOMStructure={false}
                                         label="Date"
                                         format="YYYY-MM-DD"
                                         slotProps={{
@@ -273,6 +275,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         value={dateTime}
                                         onChange={handleTimeChange}
                                         disabled={isLoading}
+                                        enableAccessibleFieldDOMStructure={false}
                                         label="Time (24-hour)"
                                         ampm={false}
                                         format="HH:mm"

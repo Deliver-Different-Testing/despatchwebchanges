@@ -37,6 +37,8 @@ type EntryPointName =
     | 'aiAssistantDialogReact'
     | 'createJobDialogReact'
     | 'swapPodsDialogReact'
+    | 'selectDialogReact'
+    | 'editParcelDimensionsDialogReact'
     | 'overviewReact';
 type EntryPoints = Record<EntryPointName, string>;
 
@@ -81,6 +83,8 @@ const entryPoints: EntryPoints = {
     aiAssistantDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/ai-assistant-dialog/ai-assistant-dialog-react.module.tsx"),
     createJobDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/create-job-dialog/create-job-dialog-react.module.tsx"),
     swapPodsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module.tsx"),
+    selectDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/select-dialog/select-dialog-react.module.tsx"),
+    editParcelDimensionsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog-react.module.tsx"),
     overviewReact: path.join(rootDir, "wwwroot/app/react/pages/overview/overview-react.module.tsx"),
 };
 

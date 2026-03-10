@@ -36,8 +36,8 @@ public class MessageRepository(
 
         // Cache with sliding expiration matching poll interval
         cache.Set(
-            cacheKey, 
-            unreadCount, 
+            cacheKey,
+            unreadCount,
             new MemoryCacheEntryOptions
             {
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(60),
@@ -46,7 +46,7 @@ public class MessageRepository(
 
         return unreadCount;
     }
-    
+
     public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
@@ -207,7 +207,7 @@ public class MessageRepository(
     {
         var currentDate = infoService.GetCurrentTenantTime();
         var currentStaffId = infoService.GetStaffId();
-        
+
         var affectedRows = otherPartyType == OtherMessagePartyType.Courier
             ? await Context.MarkCourierMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate)
             : await Context.MarkStaffMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate);
@@ -265,53 +265,6 @@ public class MessageRepository(
             throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.");
     }
 
-    private async Task HandleCourierMessageAsync(TucManualMessage message, int sendToCourierId, int messageType,
-        bool isUsTenant,
-        DateTime currentDate)
-    {
-        var courierData = await (from courier in Context.TucCouriers
-            where courier.UccrId == sendToCourierId && courier.Active
-            join loginOut in Context.TblCourierLogInOuts
-                on courier.CourierLogInOutId equals loginOut.CourierLogInOutId into loginGroup
-            from login in loginGroup.DefaultIfEmpty()
-            select new
-            {
-                CourierId = courier.UccrId,
-                courier.Code,
-                courier.PersonalMobile,
-                courier.UccrMobile,
-                IsLoggedInToday = login != null &&
-                                  login.LogInTime.Date == currentDate &&
-                                  !login.LogOutTime.HasValue
-            }).FirstOrDefaultAsync();
-
-        ArgumentNullException.ThrowIfNull(courierData);
-
-        var deliveryMethod = GetDeliveryMethod(messageType, courierData.IsLoggedInToday);
-
-        message.UcmmSendToCourierId = sendToCourierId;
-
-        if (deliveryMethod == MessageDeliveryType.App)
-        {
-            message.Subject = "Courier Manager";
-        }
-        else // SMS
-        {
-            if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
-                string.IsNullOrWhiteSpace(courierData.UccrMobile))
-            {
-                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS");
-            }
-
-            var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
-                ? courierData.PersonalMobile
-                : courierData.UccrMobile;
-
-            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
-            message.Subject = $"SMS to Courier: {courierData.Code}";
-        }
-    }
-
     public async Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
     {
         var currentDate = infoService.GetCurrentTenantTime();
@@ -352,6 +305,51 @@ public class MessageRepository(
 
         var results = couriers.Concat(staff).ToList();
         return results;
+    }
+
+    private async Task HandleCourierMessageAsync(TucManualMessage message, int sendToCourierId, int messageType,
+        bool isUsTenant,
+        DateTime currentDate)
+    {
+        var courierData = await (from courier in Context.TucCouriers
+            where courier.UccrId == sendToCourierId && courier.Active
+            join loginOut in Context.TblCourierLogInOuts
+                on courier.CourierLogInOutId equals loginOut.CourierLogInOutId into loginGroup
+            from login in loginGroup.DefaultIfEmpty()
+            select new
+            {
+                CourierId = courier.UccrId,
+                courier.Code,
+                courier.PersonalMobile,
+                courier.UccrMobile,
+                IsLoggedInToday = login != null &&
+                                  login.LogInTime.Date == currentDate &&
+                                  !login.LogOutTime.HasValue
+            }).FirstOrDefaultAsync();
+
+        ArgumentNullException.ThrowIfNull(courierData);
+
+        var deliveryMethod = GetDeliveryMethod(messageType, courierData.IsLoggedInToday);
+
+        message.UcmmSendToCourierId = sendToCourierId;
+
+        if (deliveryMethod == MessageDeliveryType.App)
+        {
+            message.Subject = "Courier Manager";
+        }
+        else // SMS
+        {
+            if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
+                string.IsNullOrWhiteSpace(courierData.UccrMobile))
+                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS");
+
+            var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
+                ? courierData.PersonalMobile
+                : courierData.UccrMobile;
+
+            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+            message.Subject = $"SMS to Courier: {courierData.Code}";
+        }
     }
 
     private static void HandleStaffMessage(TucManualMessage message, int sendToStaffId)

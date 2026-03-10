@@ -1862,7 +1862,7 @@ public class NationwideJobRepositoryTests : IDisposable
     #region Issue #4: First Job (Pickup) DeliverBy Time Tests
 
     /// <summary>
-    /// Tests for Issue #4: The deliver by time of the first job doesn't get set when you assign a flight.
+    /// Tests for Issue #4: The delivery by time of the first job doesn't get set when you assign a flight.
     ///
     /// When assigning a flight, the pickup job's DeliverByTime should be set to:
     /// departure time - airport processing time (so the package arrives at the airport on time).

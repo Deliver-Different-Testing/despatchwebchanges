@@ -186,12 +186,18 @@ export interface IJob {
     bookingSource?: ISuggestion;
     isInvoiced: boolean;
     barcode?: string;
+    pickupArrivalTime?: Dayjs;
+    deliveryArrivalTime?: Dayjs;
     isFlightAssigned: boolean;
     isAgentAssigned: boolean;
     accessorialChargeGroupId?: number;
 
     // Private variables
     _createdDateStr?: string;
+    _createdDateTimeStr?: string;
+    _readyStr?: string;
+    _pickupArrivalTimeStr?: string;
+    _deliveryArrivalTimeStr?: string;
     _startTimeStr?: string;
     _puTimeStr?: string;
     _dispatchTimeStr?: string;
@@ -376,6 +382,8 @@ export interface IJobDto {
     bookingSource?: ISuggestion;
     isInvoiced: boolean;
     barcode?: string;
+    pickupArrivalTime?: string;
+    deliveryArrivalTime?: string;
     isFlightAssigned: boolean;
     isAgentAssigned: boolean;
 }
