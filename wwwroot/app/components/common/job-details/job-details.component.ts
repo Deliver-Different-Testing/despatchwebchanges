@@ -683,7 +683,7 @@ class JobDetailController extends BaseController {
         checkboxLabel: string = ""
     ): Promise<void> {
         try {
-            const result: ISelectDialogResult = await this.selectDialogService.showSelectDialog(
+            const result: ISelectDialogResult | undefined = await this.selectDialogService.showSelectDialog(
                 $event,
                 data,
                 fieldName,
@@ -958,6 +958,28 @@ class JobDetailController extends BaseController {
             JobProperty.BookedTime,
             job.booked,
             job.pickUpTimeZone
+        );
+    }
+
+    async editPickupArrivalTime($event: MouseEvent, job: IJob): Promise<void> {
+        await this.showEditDateAndTimeDialog(
+            $event,
+            job,
+            "Pickup Arrival Time",
+            JobProperty.PickupArrivalTime,
+            job.pickupArrivalTime,
+            job.pickUpTimeZone
+        );
+    }
+
+    async editDeliveryArrivalTime($event: MouseEvent, job: IJob): Promise<void> {
+        await this.showEditDateAndTimeDialog(
+            $event,
+            job,
+            "Delivery Arrival Time",
+            JobProperty.DeliveryArrivalTime,
+            job.deliveryArrivalTime,
+            job.deliveryTimeZone
         );
     }
 

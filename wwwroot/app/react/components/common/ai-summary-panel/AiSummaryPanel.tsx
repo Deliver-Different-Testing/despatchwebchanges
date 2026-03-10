@@ -112,7 +112,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
         const willExpand = !expanded;
         setExpanded(willExpand);
         if (willExpand && !hasFetched && !loading) {
-            loadSummary();
+            return loadSummary();
         }
     }, [expanded, hasFetched, loading, loadSummary]);
 

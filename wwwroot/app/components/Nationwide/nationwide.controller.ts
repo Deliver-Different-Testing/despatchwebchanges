@@ -38,7 +38,6 @@ import NavigationService from '../../services/navigation.service';
 import ApiConfig from "../../interfaces/apiConfig.interface";
 import ConfigService from "../../services/config.service";
 import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-complete-dialog.service";
-import InternalJobStatus from "../../enums/job-internal-status.enum";
 import NationwideBoxes from "./enums/NationwideBoxes";
 import JobAddStopService from "../../services/job-add-stop.service";
 import greetUser from '../../functions/greetUser';
@@ -1879,8 +1878,8 @@ class NationwideControl extends BaseController {
         try {
             const url = "nationwideJob/GetAllAgentsSearch";
             const selectedAgent = await this.autoCompleteDialogService.showAutocompleteDialog($event, url, "Search all Agents", "Agent", "Agents", undefined);
-            if(!selectedAgent) return;
-            
+            if (!selectedAgent) return;
+
             await this.addSelectedAgentToJob($event, selectedAgent, job);
         } catch (error) {
             this.handleError(error);
@@ -2014,44 +2013,44 @@ class NationwideControl extends BaseController {
         this.applyScope();
     }
 
-    onOutboundAirportSelectionChangedReact(airport: IAirportSuggestion | null): void {
+    async onOutboundAirportSelectionChangedReact(airport: IAirportSuggestion | null): Promise<void> {
         this.selectedOutboundAirport = airport ?? undefined;
-        this.onOutboundAirportSelectionChanged();
+        await this.onOutboundAirportSelectionChanged();
     }
 
-    onInboundAirportSelectionChangedReact(airport: IAirportSuggestion | null): void {
+    async onInboundAirportSelectionChangedReact(airport: IAirportSuggestion | null): Promise<void> {
         this.selectedInboundAirport = airport ?? undefined;
-        this.onInboundAirportSelectionChanged();
+        await this.onInboundAirportSelectionChanged();
     }
 
-    addFlightToJobReact($event: MouseEvent | undefined, flight: IFlightViewModel): void {
+    async addFlightToJobReact($event: MouseEvent | undefined, flight: IFlightViewModel): Promise<void> {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
-        this.addFlightToJob(mouseEvent, flight, this.currentJob);
+        await this.addFlightToJob(mouseEvent, flight, this.currentJob);
     }
 
-    addAgentToJobReact($event: MouseEvent | undefined, agent: IAgent): void {
+    async addAgentToJobReact($event: MouseEvent | undefined, agent: IAgent): Promise<void> {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
-        this.addAgentToJob(mouseEvent, agent, this.currentJob);
+        await this.addAgentToJob(mouseEvent, agent, this.currentJob);
     }
 
-    sendQuoteRequestReact($event: MouseEvent | undefined, agent: IAgent): void {
+    async sendQuoteRequestReact($event: MouseEvent | undefined, agent: IAgent): Promise<void> {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
-        this.sendQuoteRequest(mouseEvent, agent, this.currentJob);
+        await this.sendQuoteRequest(mouseEvent, agent, this.currentJob);
     }
 
-    openAgentSearchDialogReact($event: MouseEvent | undefined): void {
+    async openAgentSearchDialogReact($event: MouseEvent | undefined): Promise<void> {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
-        this.openAgentSearchDialog(mouseEvent, this.currentJob);
+        await this.openAgentSearchDialog(mouseEvent, this.currentJob);
     }
 
-    openRecoveryAgentDialogReact($event: MouseEvent | undefined): void {
+    async openRecoveryAgentDialogReact($event: MouseEvent | undefined): Promise<void> {
         if (!this.currentJob) return;
         const mouseEvent = $event || new MouseEvent('click');
-        this.openRecoveryAgentDialog(mouseEvent, this.currentJob);
+        await this.openRecoveryAgentDialog(mouseEvent, this.currentJob);
     }
 
     formatMinutesToTimeReact(minutes: number): string {

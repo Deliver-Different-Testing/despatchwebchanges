@@ -119,6 +119,97 @@ public class JobMappingsTests
 
     #endregion
 
+    #region JobMappingCore Arrival Time Tests
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_MapsPickupArrivalTime(bool isUsCustomer)
+    {
+        // Arrange
+        var arrivalTime = new DateTime(2024, 6, 10, 9, 30, 0);
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            PickupArrivalTime = arrivalTime,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.PickupArrivalTime.Should().Be(arrivalTime,
+            "PickupArrivalTime should be mapped from the entity");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_MapsDeliveryArrivalTime(bool isUsCustomer)
+    {
+        // Arrange
+        var arrivalTime = new DateTime(2024, 6, 10, 14, 45, 0);
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            DeliveryArrivalTime = arrivalTime,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.DeliveryArrivalTime.Should().Be(arrivalTime,
+            "DeliveryArrivalTime should be mapped from the entity");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_ArrivalTimes_NullWhenNotSet(bool isUsCustomer)
+    {
+        // Arrange
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            PickupArrivalTime = null,
+            DeliveryArrivalTime = null,
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(job);
+
+        // Assert
+        result.PickupArrivalTime.Should().BeNull("PickupArrivalTime should be null when not set on entity");
+        result.DeliveryArrivalTime.Should().BeNull("DeliveryArrivalTime should be null when not set on entity");
+    }
+
+    #endregion
+
     #region LiveJobDownloadMapping Tests
 
     [Fact]

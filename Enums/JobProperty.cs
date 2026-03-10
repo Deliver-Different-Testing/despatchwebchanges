@@ -49,13 +49,8 @@ public enum JobProperty
     DeliverBy,
     BookedTime,
     FollowupTime,
-    DeliverToContact,
     StopDate ,
     RestartDate,
-    InActiveDate,
-    FirstDue,
-    LastDone,
-    NextDue,
     DaysOfWeek,
     Frequency,
     HolidayDelivery,
@@ -66,5 +61,7 @@ public enum JobProperty
     DeliverToPrivateRes,
     Barcode,
     CourierId,
-    InactiveBy
+    InactiveBy,
+    PickupArrivalTime,
+    DeliveryArrivalTime
 }

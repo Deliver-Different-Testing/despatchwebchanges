@@ -5525,6 +5525,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
             entity.Property(e => e.DeliveryAddressLine7).HasMaxLength(255);
             entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
+            entity.Property(e => e.DeliveryArrivalTime).HasColumnType("datetime");
             entity.Property(e => e.DeliveryGps).HasMaxLength(50);
             entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
@@ -5594,6 +5595,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
             entity.Property(e => e.PickupAmount).HasColumnType("money");
+            entity.Property(e => e.PickupArrivalTime).HasColumnType("datetime");
             entity.Property(e => e.PickupCondition).HasMaxLength(50);
             entity.Property(e => e.PickupFromContact).HasMaxLength(100);
             entity.Property(e => e.PickupFromPhone).HasMaxLength(100);
@@ -6030,6 +6032,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.DeliveryAddressLine6).HasMaxLength(255);
             entity.Property(e => e.DeliveryAddressLine7).HasMaxLength(255);
             entity.Property(e => e.DeliveryAddressLine8).HasMaxLength(255);
+            entity.Property(e => e.DeliveryArrivalTime).HasColumnType("datetime");
             entity.Property(e => e.DeliveryGps).HasMaxLength(50);
             entity.Property(e => e.DeliveryLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.DeliveryLongitude).HasColumnType("decimal(18, 9)");
@@ -6112,6 +6115,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupAddressLine7).HasMaxLength(255);
             entity.Property(e => e.PickupAddressLine8).HasMaxLength(255);
             entity.Property(e => e.PickupAmount).HasColumnType("money");
+            entity.Property(e => e.PickupArrivalTime).HasColumnType("datetime");
             entity.Property(e => e.PickupCondition).HasMaxLength(50);
             entity.Property(e => e.PickupGps)
                 .HasMaxLength(50)

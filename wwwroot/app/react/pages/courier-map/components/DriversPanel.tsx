@@ -101,8 +101,6 @@ export function DriversPanel({
     isPanelHidden,
     onTogglePanel,
 }: DriversPanelProps) {
-    const theme = useTheme();
-
     // Compute summary stats from the driver data
     const stats = useMemo(() => {
         const totalJobs = drivers.reduce((sum, d) => sum + d.totalJobs, 0);

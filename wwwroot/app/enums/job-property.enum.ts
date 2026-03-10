@@ -54,4 +54,6 @@ export enum JobProperty {
     TailLiftDo = 'TailLiftDo',
     DeliverToPrivateRes = 'DeliverToPrivateRes',
     Barcode = 'Barcode',
+    PickupArrivalTime = 'PickupArrivalTime',
+    DeliveryArrivalTime = 'DeliveryArrivalTime',
 }

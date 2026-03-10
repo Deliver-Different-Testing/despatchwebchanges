@@ -281,6 +281,12 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\resolution-warning-dialog\resolution-warning.service.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\react\services\api.ts" />
       <_ContentIncludedByDefault Remove="wwwroot\app\components\common\data-table\data-table.interfaces.ts"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.styles.less"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.template.html"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.component.ts"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.styles.less"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.template.html"/>
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
@@ -313,7 +319,6 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\dayjs-date-picker\dayjs-date-picker.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
@@ -351,7 +356,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
@@ -361,7 +365,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
@@ -426,7 +429,6 @@
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\note-management-dialog\types.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\address-lookup.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />

@@ -166,6 +166,16 @@ public partial class JobRepository
                     .SetProperty(j => j.UcjbTime, bookedTime));
                 break;
 
+            case JobProperty.PickupArrivalTime:
+                var pickupArrival = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupArrivalTime, pickupArrival));
+                break;
+
+            case JobProperty.DeliveryArrivalTime:
+                var deliveryArrival = DateTimeOffset.Parse(value).DateTime;
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliveryArrivalTime, deliveryArrival));
+                break;
+
             case JobProperty.FollowupTime:
                 var followupTime = DateTimeOffset.Parse(value).DateTime;
                 rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.FollowupTime, followupTime));
@@ -626,6 +636,12 @@ public partial class JobRepository
                 var archivedBookedTime = DateTimeOffset.Parse(value).DateTime;
                 archive.UcjbDate = archivedBookedTime;
                 archive.UcjbTime = archivedBookedTime;
+                break;
+            case JobProperty.PickupArrivalTime:
+                archive.PickupArrivalTime = DateTimeOffset.Parse(value).DateTime;
+                break;
+            case JobProperty.DeliveryArrivalTime:
+                archive.DeliveryArrivalTime = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Barcode:
                 archive.Barcode = value[..Math.Min(value.Length, 20)];

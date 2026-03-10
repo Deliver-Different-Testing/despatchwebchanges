@@ -87,6 +87,14 @@ public class DeliveryJourneyServiceTests : IDisposable
         await context.SaveChangesAsync();
     }
 
+    private async Task SeedStaffAsync(params TucStaff[] staff)
+    {
+        var options = CreateDbContextOptions();
+        await using var context = new DespatchContext(options);
+        context.TucStaffs.AddRange(staff);
+        await context.SaveChangesAsync();
+    }
+
     private async Task SeedMessagesAsync(params TucManualMessage[] messages)
     {
         var options = CreateDbContextOptions();
@@ -300,6 +308,104 @@ public class DeliveryJourneyServiceTests : IDisposable
         result.Should().Contain(n => n.Description == "Second note");
     }
 
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_ConvertsDatePropertyTimezone()
+    {
+        // Arrange — use NZST offset so conversion is visible
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "TZ test",
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0), NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — Date should be converted (09:00 UTC → 22:00 NZST)
+        result.Should().HaveCount(1);
+        result[0].Date.Hour.Should().Be(22);
+        result[0].Date.Offset.Should().Be(TimeSpan.FromHours(13));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_UsesUpdatedDateForDatePropertyWhenPresent()
+    {
+        // Arrange — UpdatedDate should take precedence over CreatedDate
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Updated note",
+            CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0),
+            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
+            NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — should use UpdatedDate (09:00 UTC → 22:00 NZST), not CreatedDate (02:00 → 15:00)
+        result.Should().HaveCount(1);
+        result[0].Date.Hour.Should().Be(22);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_TagCreatedDateConvertsTimezone()
+    {
+        // Arrange — 15:00 UTC → 04:00+13 next day (crosses midnight, proving conversion)
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedStaffAsync(new TucStaff { UcstId = 1, UcstFirstName = "Alice", UcstLastName = "Smith", CreatedBy = "test", LastModifiedBy = "test" });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Tag TZ test",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0),
+            CreatedBy = 1, NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — tag should show 01/16/2024 04:00 (next day in NZST), not 01/15/2024 15:00 (UTC)
+        result.Should().HaveCount(1);
+        result[0].Tags.Should().Contain(t => t.Contains("Alice Smith") && t.Contains("01/16/2024 04:00"));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_TagUpdatedDateConvertsTimezone()
+    {
+        // Arrange — note with UpdatedBy staff and UpdatedDate that crosses midnight
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedStaffAsync(
+            new TucStaff { UcstId = 1, UcstFirstName = "Alice", UcstLastName = "Smith", CreatedBy = "test", LastModifiedBy = "test" },
+            new TucStaff { UcstId = 2, UcstFirstName = "Bob", UcstLastName = "Jones", CreatedBy = "test", LastModifiedBy = "test" });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedNotesAsync(new TucNote
+        {
+            NoteId = 1, JobId = 1, NoteText = "Updated tag TZ test",
+            CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0), CreatedBy = 1,
+            UpdatedDate = new DateTime(2024, 1, 15, 15, 0, 0), UpdatedBy = 2,
+            NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — Updated tag should show converted date (01/16/2024 04:00 NZST)
+        result.Should().HaveCount(1);
+        result[0].Tags.Should().Contain(t => t.Contains("Bob Jones") && t.Contains("01/16/2024 04:00"));
+    }
+
     #endregion
 
     #region GetDeliveryJourneyForJobAsync - Notes (Archived)
@@ -326,6 +432,96 @@ public class DeliveryJourneyServiceTests : IDisposable
         result[0].Title.Should().Be("Note added by System");
         result[0].Description.Should().Be("Archived note content");
         result[0].Icon.Should().Be("sticky_note_2");
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_ConvertsDatePropertyTimezone()
+    {
+        // Arrange — use NZST offset so conversion is visible
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedArchivedNotesAsync(new TucNoteArchive
+        {
+            NoteId = 1, JobId = 1, NoteText = "Archived TZ test",
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0), NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — Date should be converted (09:00 UTC → 22:00 NZST)
+        result.Should().HaveCount(1);
+        result[0].Date.Hour.Should().Be(22);
+        result[0].Date.Offset.Should().Be(TimeSpan.FromHours(13));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_UsesUpdatedDateForDatePropertyWhenPresent()
+    {
+        // Arrange — UpdatedDate should take precedence over CreatedDate
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedArchivedNotesAsync(new TucNoteArchive
+        {
+            NoteId = 1, JobId = 1, NoteText = "Updated archived note",
+            CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0),
+            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
+            NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — should use UpdatedDate (09:00 UTC → 22:00 NZST), not CreatedDate
+        result.Should().HaveCount(1);
+        result[0].Date.Hour.Should().Be(22);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_TagDatesConvertTimezone()
+    {
+        // Arrange — 15:00 UTC → 04:00+13 next day (crosses midnight, proving conversion)
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt.AddHours(13), TimeSpan.FromHours(13)));
+        await SeedArchivedNotesAsync(new TucNoteArchive
+        {
+            NoteId = 1, JobId = 1, NoteText = "Archived tag TZ test",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0),
+            UpdatedDate = new DateTime(2024, 1, 16, 15, 0, 0),
+            NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — tags should show NZST dates (next day), not UTC dates
+        result.Should().HaveCount(1);
+        result[0].Tags.Should().Contain(t => t.Contains("Created on") && t.Contains("01/16/2024 04:00"));
+        result[0].Tags.Should().Contain(t => t.Contains("Updated on") && t.Contains("01/17/2024 04:00"));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_FallsBackToMinDateWhenNoDates()
+    {
+        // Arrange — neither CreatedDate nor UpdatedDate set
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero));
+        await SeedArchivedNotesAsync(new TucNoteArchive
+        {
+            NoteId = 1, JobId = 1, NoteText = "No dates note",
+            NoteTypeId = 1
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert — should fallback to DateTime.MinValue converted
+        result.Should().HaveCount(1);
+        result[0].Date.DateTime.Should().Be(DateTime.MinValue);
     }
 
     #endregion

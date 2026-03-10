@@ -98,6 +98,9 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
             })) ?? []
         } : undefined,
 
+        pickupArrivalTime: dto.pickupArrivalTime ? formatDateFromApi(dto.pickupArrivalTime) : undefined,
+        deliveryArrivalTime: dto.deliveryArrivalTime ? formatDateFromApi(dto.deliveryArrivalTime) : undefined,
+
         deliverToPrivateResString: dto.deliverToPrivateRes ? 'residential' : 'business',
 
         // Prebook-specific options
@@ -113,6 +116,10 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
 
         // Private
         _createdDateStr: dto.createdDate ? formatShortDate(dto.createdDate, isUsCustomer) : undefined,
+        _createdDateTimeStr: dto.createdDate ? formatShortDateTime(dto.createdDate, isUsCustomer) : undefined,
+        _readyStr: dto.booked ? formatShortDateTime(dto.booked, isUsCustomer) : undefined,
+        _pickupArrivalTimeStr: dto.pickupArrivalTime ? formatShortDateTime(dto.pickupArrivalTime, isUsCustomer) : undefined,
+        _deliveryArrivalTimeStr: dto.deliveryArrivalTime ? formatShortDateTime(dto.deliveryArrivalTime, isUsCustomer) : undefined,
         _startTimeStr: dto.time ? formatMins(dto.time) : undefined,
         _puTimeStr: dto.puTime ? formatShortDateTime(dto.puTime, isUsCustomer) : undefined,
         _deliverByTimeStr: dto.deliverByTime ? formatShortDateTime(dto.deliverByTime, isUsCustomer) : undefined,

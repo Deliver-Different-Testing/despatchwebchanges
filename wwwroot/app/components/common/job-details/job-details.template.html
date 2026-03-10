@@ -144,36 +144,41 @@
 
         <!-- Timing Section -->
         <div class="metrics-grid">
+            <!-- Created Date/Time (read-only) -->
+            <div class="metric-card" md-ink-ripple ng-click="ctrl.showItemNotEditableToaster('Created Date')">
+                <div class="metric-label">Created</div>
+                <div class="metric-value">
+                    {{ctrl.job._createdDateTimeStr || '—'}}
+                    {{ ctrl.job._pickUpTimeZoneStr ? ctrl.job._pickUpTimeZoneStr : ctrl.timeZoneShort}}
+                </div>
+            </div>
+            <!-- Pricing -->
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showPricingBreakdown($event, ctrl.job)">
                 <div class="metric-label">Pricing</div>
                 <div class="metric-value">
                     {{ctrl.job.charge | currency }}
                 </div>
             </div>
+            <!-- Ready (combined Booked + Start Time) -->
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editBookedDate($event, ctrl.job)">
-                <div class="metric-label">Booked</div>
+                <div class="metric-label">Ready</div>
                 <div class="metric-value">
-                    {{ctrl.job._createdDateStr || '—'}}
+                    {{ctrl.job._readyStr || '—'}}
                     {{ ctrl.job._pickUpTimeZoneStr ? ctrl.job._pickUpTimeZoneStr : ctrl.timeZoneShort}}
                 </div>
             </div>
-            <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editStartTime($event, ctrl.job)">
-                <div class="metric-label">Start Time</div>
-                <div class="metric-value">
-                    {{ctrl.job._startTimeStr || '—'}}
-                    {{ ctrl.job._pickUpTimeZoneStr ? ctrl.job._pickUpTimeZoneStr : ctrl.timeZoneShort}}
-                </div>
-            </div>
+            <!-- PU Time -->
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPuDate($event, ctrl.job)">
                 <div class="metric-label">PU Time</div>
                 <div class="metric-value">
-                <span ng-if="ctrl.job.puTime">
-                      {{ctrl.job._puTimeStr}} 
-                    {{ ctrl.job._pickUpTimeZoneStr ? ctrl.job._pickUpTimeZoneStr : ctrl.timeZoneShort}}
+                    <span ng-if="ctrl.job.puTime">
+                        {{ctrl.job._puTimeStr}}
+                        {{ ctrl.job._pickUpTimeZoneStr ? ctrl.job._pickUpTimeZoneStr : ctrl.timeZoneShort}}
                     </span>
                     <span ng-if="!ctrl.job.puTime">-</span>
                 </div>
             </div>
+            <!-- Deliver By -->
             <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliverBy($event, ctrl.job)">
                 <div class="metric-label">Deliver By</div>
                 <div class="metric-value" ng-if="ctrl.job.deliverByTime">
@@ -184,11 +189,33 @@
                     -
                 </div>
             </div>
+            <!-- PU Arrival -->
+            <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editPickupArrivalTime($event, ctrl.job)">
+                <div class="metric-label">PU Arrival</div>
+                <div class="metric-value">
+                    <span ng-if="ctrl.job.pickupArrivalTime">
+                        {{ctrl.job._pickupArrivalTimeStr}}
+                        {{ ctrl.job._pickUpTimeZoneStr ? ctrl.job._pickUpTimeZoneStr : ctrl.timeZoneShort}}
+                    </span>
+                    <span ng-if="!ctrl.job.pickupArrivalTime">-</span>
+                </div>
+            </div>
+            <!-- Del Arrival -->
+            <div class="metric-card" md-ink-ripple ng-click="!ctrl.job.locked && ctrl.editDeliveryArrivalTime($event, ctrl.job)">
+                <div class="metric-label">Del Arrival</div>
+                <div class="metric-value">
+                    <span ng-if="ctrl.job.deliveryArrivalTime">
+                        {{ctrl.job._deliveryArrivalTimeStr}}
+                        {{ ctrl.job._deliveryTimeZoneStr ? ctrl.job._deliveryTimeZoneStr : ctrl.timeZoneShort}}
+                    </span>
+                    <span ng-if="!ctrl.job.deliveryArrivalTime">-</span>
+                </div>
+            </div>
         </div>
 
         <div class="metrics-grid">
             <div class="metric-card" md-ink-ripple ng-click="ctrl.showItemNotEditableToaster('Dispatch Time')">
-                <div class="metric-label">Dispatch</div>
+                <div class="metric-label">Dispatched</div>
                 <div class="metric-value">
                     <span ng-if="ctrl.job.dispatchTime">
                         {{ctrl.job._dispatchTimeStr}} {{ ::ctrl.timeZoneShort}}
