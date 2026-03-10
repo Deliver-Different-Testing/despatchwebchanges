@@ -35,7 +35,7 @@ import VoidJobConfirmationDialogService
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
-import {formatLongDateTime} from "../../../functions/formatDates";
+import {formatDateForApiWithTzs, formatLongDateTime} from "../../../functions/formatDates";
 import {ViewDensity, ViewDensityLabels} from "../../../enums/view-density.enum";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {isAiEnabled} from "../../../functions/aiSettings";
@@ -1752,7 +1752,10 @@ class JobDetailController extends BaseController {
                 jobId: job.id,
                 jobStatus: JobStatus.Completed.toString(),
                 podName: podName ?? '',
-                podTime: completedTime ?? dayjs(job.completedTime).format('YYYY-MM-DD HH:mm')
+                podTime: completedTime ?? formatDateForApiWithTzs(
+                    job.completedTime!,
+                    job.deliveryTimeZone?.text
+                )
             }
 
             await this.DispatchData.updatePODDetail(requestData);

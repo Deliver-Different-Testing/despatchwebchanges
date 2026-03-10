@@ -222,7 +222,6 @@ public class FlightStatsService(
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
         query["appKey"] = _appKey;
-        query["payloadType"] = "cargo";
         query["maxResults"] = "80";
         query["includeCodeshares"] = "false";
         query["maxConnections"] = "1"; //default is 2
@@ -318,8 +317,7 @@ public class FlightStatsService(
                             ?.FirstOrDefault(e => e.Iata == segment.FlightEquipmentIataCode);
 
                         var airline = flightStatusResponse.Appendix?.Airlines
-                            ?.FirstOrDefault(a =>
-                                a.Fs == segment.CarrierFsCode && activeAirlineCodes.Contains(segment.CarrierFsCode));
+                            ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode);
 
                         return new FlightSegmentViewModel
                         {
@@ -437,10 +435,27 @@ public class FlightStatsService(
             effectiveDateTime.Minute);
 
     /// <summary>
-    /// Splits a flight number into carrier code (first 2 chars) and flight number.
+    /// Splits a complete flight number (e.g., "AA1234", "BXR1984") into carrier code and flight number
+    /// by finding the first digit character. Handles variable-length carrier codes (2-3+ chars).
     /// </summary>
-    private static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber) =>
-        (completeFlightNumber?[..2], completeFlightNumber?[2..]);
+    internal static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber)
+    {
+        if (string.IsNullOrEmpty(completeFlightNumber))
+            return (completeFlightNumber, null);
+
+        var firstDigitIndex = -1;
+        for (var i = 0; i < completeFlightNumber.Length; i++)
+        {
+            if (!char.IsDigit(completeFlightNumber[i])) continue;
+            firstDigitIndex = i;
+            break;
+        }
+
+        if (firstDigitIndex <= 0)
+            return (completeFlightNumber, null);
+
+        return (completeFlightNumber[..firstDigitIndex], completeFlightNumber[firstDigitIndex..]);
+    }
 
     /// <summary>
     /// Adjusts arrival time when flight crosses midnight (overnight flight).

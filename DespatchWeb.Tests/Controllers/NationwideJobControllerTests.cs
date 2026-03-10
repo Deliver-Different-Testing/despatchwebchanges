@@ -53,7 +53,7 @@ public class NationwideJobControllerTests
                 null, // no airline filter
                 departureAirportId,
                 arrivalAirportId,
-                null,
+                "FS",
                 null,
                 60))
             .ReturnsAsync(expectedFlights);
@@ -105,7 +105,7 @@ public class NationwideJobControllerTests
                 airlineId, // airline filter
                 departureAirportId,
                 arrivalAirportId,
-                null,
+                "FS",
                 null,
                 60))
             .ReturnsAsync(expectedFlights);
@@ -143,7 +143,7 @@ public class NationwideJobControllerTests
             airlineId,
             departureAirportId,
             arrivalAirportId,
-            null,
+            "FS",
             null,
             60), Times.Once);
     }
@@ -293,7 +293,7 @@ public class NationwideJobControllerTests
             null,
             150,
             96,
-            null,
+            "FS",
             null,
             minimumLayover), Times.Once);
     }
@@ -383,7 +383,7 @@ public class NationwideJobControllerTests
             null,
             150,
             96,
-            null,
+            "FS",
             null,
             60), Times.Once);
     }

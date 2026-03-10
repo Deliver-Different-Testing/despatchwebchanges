@@ -602,6 +602,14 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                     },
                 },
             },
+            MuiAutocomplete: {
+                styleOverrides: {
+                    listbox: {
+                        maxHeight: 300,
+                        overflow: 'auto',
+                    },
+                },
+            },
             MuiAlert: {
                 styleOverrides: {
                     root: {

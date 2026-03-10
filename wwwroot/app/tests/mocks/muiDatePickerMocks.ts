@@ -142,7 +142,14 @@ export const DatePicker = forwardRef<HTMLInputElement, any>(
 export const TimePicker = forwardRef<HTMLInputElement, any>(
     ({label, value, onChange, disabled, ...props}, ref) => {
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            onChange?.(createMockDayjs(`1970-01-01T${e.target.value}`));
+            // Preserve the date portion from the current value (matching real MUI X v8 behavior)
+            const datePrefix = value?.format?.('YYYY-MM-DD') ?? '1970-01-01';
+            const newDateStr = `${datePrefix}T${e.target.value}`;
+            const mockValue = createMockDayjs(newDateStr);
+            // Only emit onChange for valid values (real MUI X v8 only emits for complete valid times)
+            if (mockValue.isValid()) {
+                onChange?.(mockValue);
+            }
         };
 
         const formattedValue = value?.format?.('HH:mm') ?? '';

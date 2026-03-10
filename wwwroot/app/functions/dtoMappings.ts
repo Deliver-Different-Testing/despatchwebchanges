@@ -65,18 +65,28 @@ export function transformJobGroupDTO(dto: IJobGroupDto, isUsCustomer: boolean): 
 }
 
 function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
+    // Parse dates first (preserves timezone offset from API)
+    const dispatchTime = dto.dispatchTime ? formatDateFromApi(dto.dispatchTime) : undefined;
+    const puTime = dto.puTime ? formatDateFromApi(dto.puTime) : undefined;
+    const followupTime = dto.followupTime ? formatDateFromApi(dto.followupTime) : undefined;
+    const completedTime = dto.completedTime ? formatDateFromApi(dto.completedTime) : undefined;
+    const createdDate = dto.createdDate ? formatDateFromApi(dto.createdDate) : undefined;
+    const deliverByTime = dto.deliverByTime ? formatDateFromApi(dto.deliverByTime) : undefined;
+    const pickupArrivalTime = dto.pickupArrivalTime ? formatDateFromApi(dto.pickupArrivalTime) : undefined;
+    const deliveryArrivalTime = dto.deliveryArrivalTime ? formatDateFromApi(dto.deliveryArrivalTime) : undefined;
+
     return {
         ...dto,
         time: dto.time ? dayjs(dto.time) : undefined,
         bookedDate: dto.bookedDate ? dayjs(dto.bookedDate) : undefined,
-        dispatchTime: dto.dispatchTime ? formatDateFromApi(dto.dispatchTime) : undefined,
+        dispatchTime,
         booked: dayjs(dto.booked),
-        puTime: dto.puTime ? formatDateFromApi(dto.puTime) : undefined,
-        followupTime: dto.followupTime ? formatDateFromApi(dto.followupTime) : undefined,
+        puTime,
+        followupTime,
         truckStartTime: dto.truckStartTime ? dayjs(dto.truckStartTime) : undefined,
-        completedTime: dto.completedTime ? formatDateFromApi(dto.completedTime) : undefined,
-        createdDate: dto.createdDate ? formatDateFromApi(dto.createdDate) : undefined,
-        deliverByTime: dto.deliverByTime ? formatDateFromApi(dto.deliverByTime) : undefined,
+        completedTime,
+        createdDate,
+        deliverByTime,
         inActiveDate: dto.inActiveDate ? dayjs(dto.inActiveDate) : undefined,
         firstDue: dto.firstDue ? dayjs(dto.firstDue) : undefined,
         nextDue: dto.nextDue ? dayjs(dto.nextDue) : undefined,
@@ -98,8 +108,8 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
             })) ?? []
         } : undefined,
 
-        pickupArrivalTime: dto.pickupArrivalTime ? formatDateFromApi(dto.pickupArrivalTime) : undefined,
-        deliveryArrivalTime: dto.deliveryArrivalTime ? formatDateFromApi(dto.deliveryArrivalTime) : undefined,
+        pickupArrivalTime,
+        deliveryArrivalTime,
 
         deliverToPrivateResString: dto.deliverToPrivateRes ? 'residential' : 'business',
 
@@ -114,19 +124,19 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
             _readDateStr: dto.readTrackerInfo.readDate ? formatLongDateTime(dto.readTrackerInfo.readDate, isUsCustomer) : undefined,
         } : undefined,
 
-        // Private
-        _createdDateStr: dto.createdDate ? formatShortDate(dto.createdDate, isUsCustomer) : undefined,
-        _createdDateTimeStr: dto.createdDate ? formatShortDateTime(dto.createdDate, isUsCustomer) : undefined,
+        // Display strings use parsed Dayjs objects (with correct timezone offset)
+        _createdDateStr: createdDate ? formatShortDate(createdDate, isUsCustomer) : undefined,
+        _createdDateTimeStr: createdDate ? formatShortDateTime(createdDate, isUsCustomer) : undefined,
         _readyStr: dto.booked ? formatShortDateTime(dto.booked, isUsCustomer) : undefined,
-        _pickupArrivalTimeStr: dto.pickupArrivalTime ? formatShortDateTime(dto.pickupArrivalTime, isUsCustomer) : undefined,
-        _deliveryArrivalTimeStr: dto.deliveryArrivalTime ? formatShortDateTime(dto.deliveryArrivalTime, isUsCustomer) : undefined,
+        _pickupArrivalTimeStr: pickupArrivalTime ? formatShortDateTime(pickupArrivalTime, isUsCustomer) : undefined,
+        _deliveryArrivalTimeStr: deliveryArrivalTime ? formatShortDateTime(deliveryArrivalTime, isUsCustomer) : undefined,
         _startTimeStr: dto.time ? formatMins(dto.time) : undefined,
-        _puTimeStr: dto.puTime ? formatShortDateTime(dto.puTime, isUsCustomer) : undefined,
-        _deliverByTimeStr: dto.deliverByTime ? formatShortDateTime(dto.deliverByTime, isUsCustomer) : undefined,
-        _dispatchTimeStr: dto.dispatchTime ? formatShortDateTime(dto.dispatchTime, isUsCustomer) : undefined,
-        _completedTimeStr: dto.completedTime ? formatShortDateTime(dto.completedTime, isUsCustomer) : undefined,
-        _completedTimeLongStr: dto.completedTime ? formatLongDateTime(dto.completedTime, isUsCustomer) : undefined,
-        _followupTimeStr: dto.followupTime ? formatShortDateTime(dto.followupTime, isUsCustomer) : undefined,
+        _puTimeStr: puTime ? formatShortDateTime(puTime, isUsCustomer) : undefined,
+        _deliverByTimeStr: deliverByTime ? formatShortDateTime(deliverByTime, isUsCustomer) : undefined,
+        _dispatchTimeStr: dispatchTime ? formatShortDateTime(dispatchTime, isUsCustomer) : undefined,
+        _completedTimeStr: completedTime ? formatShortDateTime(completedTime, isUsCustomer) : undefined,
+        _completedTimeLongStr: completedTime ? formatLongDateTime(completedTime, isUsCustomer) : undefined,
+        _followupTimeStr: followupTime ? formatShortDateTime(followupTime, isUsCustomer) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
         _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
         _stopDateStr: dto.stopDate ? formatLongDate(dto.stopDate, isUsCustomer) : undefined,

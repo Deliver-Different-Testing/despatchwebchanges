@@ -21,6 +21,8 @@ public class NoteRepository(
 
     public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
     {
+        var tenantTimeZone = infoService.GetTenantTimeZone();
+
         var bulkNotes = await Context.TblBulkJobNotes
             .AsNoTracking()
             .AsSplitQuery()
@@ -47,6 +49,7 @@ public class NoteRepository(
             })
             .ToListAsync();
 
+        UpdateNoteDate(bulkNotes, tenantTimeZone);
         return bulkNotes;
     }
 
@@ -465,13 +468,16 @@ public class NoteRepository(
     private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
     {
         var effectiveJobId = await GetEffectiveJobId(jobId, true);
+        var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var query = CreateArchivedNoteQuery()
             .Where(note => note.JobId == effectiveJobId || note.JobBookingId == effectiveJobId);
 
         var notes = await query.ToListAsync();
         // Order in memory as TucNoteViewModel.CreatedDate is DateTimeOffset which some providers don't support in ORDER BY
-        return notes.OrderByDescending(note => note.CreatedDate).ToList();
+        notes = notes.OrderByDescending(note => note.CreatedDate).ToList();
+        UpdateNoteDate(notes, tenantTimeZone);
+        return notes;
     }
 
     private IQueryable<TucNoteViewModel> CreateArchivedNoteQuery() => CreateArchivedNoteQuery(Context);

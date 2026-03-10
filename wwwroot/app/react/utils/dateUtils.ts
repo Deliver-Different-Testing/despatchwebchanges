@@ -118,9 +118,10 @@ export function parseDateFromApi(dateString: string): Dayjs {
  */
 export function formatLongDateTime(date: Date | Dayjs | string, isUs?: boolean): string {
     const useUs = isUs ?? isUsCustomer();
+    const d = dayjs.isDayjs(date) ? date : dayjs(date);
     return useUs
-        ? dayjs(date).format('MMM/DD/YYYY h:mm A')
-        : dayjs(date).format('DD/MMM/YYYY HH:mm');
+        ? d.format('MMM/DD/YYYY h:mm A')
+        : d.format('DD/MMM/YYYY HH:mm');
 }
 
 /**
@@ -131,9 +132,10 @@ export function formatLongDateTime(date: Date | Dayjs | string, isUs?: boolean):
  */
 export function formatLongDate(date: Date | Dayjs | string, isUs?: boolean): string {
     const useUs = isUs ?? isUsCustomer();
+    const d = dayjs.isDayjs(date) ? date : dayjs(date);
     return useUs
-        ? dayjs(date).format('MMM/DD/YYYY')
-        : dayjs(date).format('DD/MMM/YYYY');
+        ? d.format('MMM/DD/YYYY')
+        : d.format('DD/MMM/YYYY');
 }
 
 /**
@@ -144,9 +146,10 @@ export function formatLongDate(date: Date | Dayjs | string, isUs?: boolean): str
  */
 export function formatShortDateTime(date: Date | Dayjs | string, isUs?: boolean): string {
     const useUs = isUs ?? isUsCustomer();
+    const d = dayjs.isDayjs(date) ? date : dayjs(date);
     return useUs
-        ? dayjs(date).format('MMM/DD HH:mm')
-        : dayjs(date).format('DD/MMM HH:mm');
+        ? d.format('MMM/DD HH:mm')
+        : d.format('DD/MMM HH:mm');
 }
 
 /**
@@ -157,9 +160,10 @@ export function formatShortDateTime(date: Date | Dayjs | string, isUs?: boolean)
  */
 export function formatShortDate(date: Date | Dayjs | string, isUs?: boolean): string {
     const useUs = isUs ?? isUsCustomer();
+    const d = dayjs.isDayjs(date) ? date : dayjs(date);
     return useUs
-        ? dayjs(date).format('MMM/DD')
-        : dayjs(date).format('DD/MMM');
+        ? d.format('MMM/DD')
+        : d.format('DD/MMM');
 }
 
 /**
@@ -168,7 +172,8 @@ export function formatShortDate(date: Date | Dayjs | string, isUs?: boolean): st
  * @returns Formatted time string (e.g., "14:30")
  */
 export function formatTime(date: Date | Dayjs | string): string {
-    return dayjs(date).format('HH:mm');
+    const d = dayjs.isDayjs(date) ? date : dayjs(date);
+    return d.format('HH:mm');
 }
 
 /**

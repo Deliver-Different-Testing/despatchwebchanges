@@ -128,7 +128,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         const int minute = 0;
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/{hour}/{minute}" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=10&includeCodeshares=false&maxConnections=1&numHours=24";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=10&includeCodeshares=false&maxConnections=1&numHours=24";
 
         _output.WriteLine($"Request URL: {url}");
 
@@ -173,7 +173,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var (year, month, day) = DateTime.UtcNow.AddDays(1);
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24";
 
         _output.WriteLine($"Request URL: {url}");
 
@@ -207,7 +207,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         const string airline = "AA"; // American Airlines
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24&includeAirlines={airline}";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24&includeAirlines={airline}";
 
         _output.WriteLine($"Request URL: {url}");
 
@@ -250,7 +250,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         const string airlines = "UA,AA"; // United and American
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24&includeAirlines={airlines}";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24&includeAirlines={airlines}";
 
         _output.WriteLine($"Request URL: {url}");
 
@@ -280,7 +280,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var (year, month, day) = DateTime.UtcNow.AddDays(1);
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/8/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=10";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=10";
 
         _output.WriteLine($"Request URL: {url}");
 
@@ -311,7 +311,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var (year, month, day) = DateTime.UtcNow.AddDays(1);
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/8/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=5&numHours=24";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=5&numHours=24";
 
         // Act
         var response = await _httpClient.GetAsync(url);
@@ -354,7 +354,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var (year, month, day) = DateTime.UtcNow.AddDays(2);
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=10&includeCodeshares=false&maxConnections=2&numHours=24&minimumConnectTime=60";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=10&includeCodeshares=false&maxConnections=2&numHours=24&minimumConnectTime=60";
 
         _output.WriteLine($"Request URL: {url}");
 
@@ -450,7 +450,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var (year, month, day) = DateTime.UtcNow.AddDays(1);
 
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/8/0" +
-                  $"?appId={_appId}&appKey={_appKey}&payloadType=cargo&maxResults=5";
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=5";
 
         // Act - Make 3 rapid requests
         var tasks = new List<Task<HttpResponseMessage>>();

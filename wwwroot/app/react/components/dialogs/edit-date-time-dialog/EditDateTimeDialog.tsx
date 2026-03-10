@@ -16,6 +16,7 @@ import {
     Box,
     CircularProgress,
     Paper,
+    TextField,
 } from '@mui/material';
 import {
     Today as TodayIcon,
@@ -82,7 +83,8 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         }
     }, [open, initialDateTime]);
 
-    // Handle date/time change
+    // Handle date/time change - pass through MUI's value directly to preserve
+    // internal Dayjs state compatibility with MUI X v8's accessible field sections
     const handleDateTimeChange = useCallback((newValue: Dayjs | null) => {
         if (newValue) {
             setDateTime(newValue);
@@ -96,10 +98,14 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         }
     }, []);
 
-    // Handle time-only change (preserves existing date)
-    const handleTimeChange = useCallback((newValue: Dayjs | null) => {
-        if (newValue && !isNaN(newValue.hour()) && !isNaN(newValue.minute())) {
-            setDateTime(prev => prev.hour(newValue.hour()).minute(newValue.minute()).second(0));
+    // Handle native time input change (preserves existing date)
+    const handleNativeTimeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        if (val) {
+            const [h, m] = val.split(':').map(Number);
+            if (!isNaN(h) && !isNaN(m)) {
+                setDateTime(prev => prev.hour(h).minute(m).second(0));
+            }
         }
     }, []);
 
@@ -156,7 +162,6 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             value: dateTime,
             onChange: handleDateTimeChange,
             disabled: isLoading,
-            enableAccessibleFieldDOMStructure: false as const,
             slotProps: {
                 textField: {
                     fullWidth: true,
@@ -261,7 +266,6 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         value={dateTime}
                                         onChange={handleDateChange}
                                         disabled={isLoading}
-                                        enableAccessibleFieldDOMStructure={false}
                                         label="Date"
                                         format="YYYY-MM-DD"
                                         slotProps={{
@@ -271,21 +275,17 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                             },
                                         }}
                                     />
-                                    <TimePicker
-                                        value={dateTime}
-                                        onChange={handleTimeChange}
-                                        disabled={isLoading}
-                                        enableAccessibleFieldDOMStructure={false}
+                                    <TextField
                                         label="Time (24-hour)"
-                                        ampm={false}
-                                        format="HH:mm"
-                                        timeSteps={{ minutes: 1 }}
+                                        type="time"
+                                        value={dateTime.format('HH:mm')}
+                                        onChange={handleNativeTimeChange}
+                                        disabled={isLoading}
+                                        fullWidth
                                         slotProps={{
-                                            textField: {
-                                                fullWidth: true,
-                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
-                                            },
+                                            htmlInput: { step: 60 },
                                         }}
+                                        sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                                     />
                                 </>
                             ) : (
