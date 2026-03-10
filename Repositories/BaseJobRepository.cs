@@ -102,33 +102,26 @@ public class BaseJobRepository(
                 .ToListAsync();
 
 
-            //// Deduplicate jobs (view joins can produce duplicates when a job matches multiple conditions)
-            //allJobs = allJobs
-            //    .GroupBy(j => j.Id)
-            //    .Select(g => g.First())
-            //    .ToList();
+            // Deduplicate jobs (view joins can produce duplicates when a job matches multiple conditions)
+            allJobs = allJobs
+                .GroupBy(j => j.Id)
+                .Select(g => g.First())
+                .ToList();
 
-            //// Populate Children on parent jobs so the frontend can track grouping via _groupChildren.
-            //// All jobs stay in the flat list — the template renders them as flat rows.
-            //var parentJobMap = allJobs
-            //    .Where(j => j.IsParentOrSingle && j.ParentId.HasValue && j.ParentId == j.Id)
-            //    .ToDictionary(j => j.Id);
+            // Populate Children on parent jobs so the frontend can track grouping via _groupChildren.
+            // All jobs stay in the flat list ï¿½ the template renders them as flat rows.
+            var parentJobMap = allJobs
+                .Where(j => j.IsParentOrSingle && j.ParentId.HasValue && j.ParentId == j.Id)
+                .ToDictionary(j => j.Id);
 
-            //foreach (var child in allJobs.Where(j => !j.IsParentOrSingle && j.ParentId.HasValue))
-            //{
-            //    if (parentJobMap.TryGetValue(child.ParentId!.Value, out var parent))
-            //    {
-            //        parent.Children ??= [];
-            //        parent.Children.Add(child);
-            //    }
-            //}
-
-            //// Sort so children appear immediately after their parent
-            //allJobs = allJobs
-            //    .OrderBy(j => j.IsParentOrSingle && j.ParentId == j.Id ? j.Id : j.ParentId ?? j.Id)
-            //    .ThenBy(j => j.IsParentOrSingle ? 0 : 1)
-            //    .ThenBy(j => j.Id)
-            //    .ToList();
+            foreach (var child in allJobs.Where(j => !j.IsParentOrSingle && j.ParentId.HasValue))
+            {
+                if (parentJobMap.TryGetValue(child.ParentId!.Value, out var parent))
+                {
+                    parent.Children ??= [];
+                    parent.Children.Add(child);
+                }
+            }
 
             await EnrichJobsWithCollections(allJobs);
 
