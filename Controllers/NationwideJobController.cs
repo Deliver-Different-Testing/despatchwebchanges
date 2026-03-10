@@ -115,7 +115,7 @@ public class NationwideJobController(
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
-                codeType: null,
+                codeType: "FS",
                 extendedOptions: null,
                 minimumLayoverMinutes: minimumLayoverMinutes);
 

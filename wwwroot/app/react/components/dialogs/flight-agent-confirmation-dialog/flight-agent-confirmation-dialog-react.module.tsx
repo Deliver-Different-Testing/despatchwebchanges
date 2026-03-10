@@ -6,27 +6,20 @@
  */
 
 import React from 'react';
-import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
+import {createRoot, Root} from 'react-dom/client';
+import {CssBaseline, ThemeProvider} from '@mui/material';
+import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import isBetween from 'dayjs/plugin/isBetween';
 import duration from 'dayjs/plugin/duration';
 
-import { FlightAgentConfirmationDialog } from './FlightAgentConfirmationDialog';
-import { getTheme } from '../../../theme/muiTheme';
-import { ReactQueryProvider } from '../../../query';
-import { getIanaTimezone, formatDateForApi, getTenantTimezone } from '../../../utils/dateUtils';
-import { nationwideApi } from '../../../services/nationwideApi';
-import angular from 'angular';
-import {
-    FlightAgentDialogResult,
-    FlightViewModel,
-    AgentSuggestion,
-    FlightCargoProcessing,
-    ToastService,
-} from './types';
+import {FlightAgentConfirmationDialog} from './FlightAgentConfirmationDialog';
+import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
+import {formatDateForApi, getIanaTimezone, getTenantTimezone} from '../../../utils/dateUtils';
+import {nationwideApi} from '../../../services/nationwideApi';
+import {AgentSuggestion, FlightAgentDialogResult, FlightCargoProcessing, FlightViewModel, ToastService,} from './types';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -99,12 +92,11 @@ class FlightAgentConfirmationDialogManager {
         ): Promise<FlightCargoProcessing | null> => {
             try {
                 const formattedArrivalTime = formatDateForApi(arrivalTime, tz);
-                const result = await nationwideApi.calculateCargoReadyTime(
+                return await nationwideApi.calculateCargoReadyTime(
                     jobId,
                     carrierFsCode,
                     formattedArrivalTime
                 );
-                return result;
             } catch (error) {
                 console.error('Error calculating cargo times:', error);
                 return null;

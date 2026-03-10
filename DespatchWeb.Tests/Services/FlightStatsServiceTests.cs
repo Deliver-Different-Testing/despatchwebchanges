@@ -594,6 +594,187 @@ public class FlightStatsServiceTests(ITestOutputHelper testOutputHelper)
 
     #endregion
 
+    #region SplitFlightCode Tests
+
+    [Theory]
+    [InlineData("AA1234", "AA", "1234")]
+    [InlineData("NZ123", "NZ", "123")]
+    [InlineData("BXR1984", "BXR", "1984")]
+    [InlineData("QF8", "QF", "8")]
+    public void SplitFlightCode_ValidFlightNumbers_SplitsCorrectly(string input, string expectedCarrier, string expectedFlight)
+    {
+        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
+        carrier.Should().Be(expectedCarrier);
+        flight.Should().Be(expectedFlight);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public void SplitFlightCode_NullOrEmpty_ReturnsInputAndNull(string input)
+    {
+        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
+        carrier.Should().Be(input);
+        flight.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("NZ")]
+    [InlineData("BXR")]
+    [InlineData("ABCD")]
+    public void SplitFlightCode_AllAlpha_ReturnsFullStringAsCarrier(string input)
+    {
+        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
+        carrier.Should().Be(input);
+        flight.Should().BeNull();
+    }
+
+    [Theory]
+    [InlineData("1234")]
+    [InlineData("0")]
+    public void SplitFlightCode_StartsWithDigit_ReturnsFullStringAsCarrier(string input)
+    {
+        var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
+        carrier.Should().Be(input);
+        flight.Should().BeNull();
+    }
+
+    #endregion
+
+    #region PayloadType Absence Tests
+
+    [Fact]
+    public async Task GetFlightsAsync_DoesNotIncludePayloadTypeParameter()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["NZ"]);
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        string? capturedUrl = null;
+        _httpHandlerMock.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
+            {
+                capturedUrl = req.RequestUri?.ToString();
+            })
+            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
+            });
+
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        capturedUrl.Should().NotBeNull();
+        capturedUrl.Should().NotContain("payloadType",
+            "payloadType=cargo was removed to support non-cargo-classified carriers like BXR");
+    }
+
+    #endregion
+
+    #region Partner Carrier Airline Name Tests
+
+    [Fact]
+    public async Task GetFlightsAsync_PartnerCarrierSegment_ShowsAirlineName()
+    {
+        // Arrange - A connecting flight where the second segment is operated by a partner carrier
+        // not in activeAirlineCodes (e.g., regional affiliate OO operating for AA)
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
+            .ReturnsAsync(["AA"]); // Only AA is active, but OO operates a connecting leg
+        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
+            .Returns(DateTime.Now);
+
+        var response = new FlightConnectionsRoot
+        {
+            Connections =
+            [
+                new Connection
+                {
+                    ScheduledFlight =
+                    [
+                        new ScheduledFlight
+                        {
+                            CarrierFsCode = "AA",
+                            FlightNumber = "100",
+                            DepartureTime = DateTime.Now.AddHours(3).ToString("O"),
+                            ArrivalTime = DateTime.Now.AddHours(5).ToString("O"),
+                            DepartureAirportFsCode = "AKL",
+                            ArrivalAirportFsCode = "SYD",
+                            FlightEquipmentIataCode = "737",
+                            ElapsedTime = 120,
+                            Stops = 0
+                        },
+                        new ScheduledFlight
+                        {
+                            CarrierFsCode = "OO", // Partner carrier not in activeAirlineCodes
+                            FlightNumber = "5432",
+                            DepartureTime = DateTime.Now.AddHours(6).ToString("O"),
+                            ArrivalTime = DateTime.Now.AddHours(8).ToString("O"),
+                            DepartureAirportFsCode = "SYD",
+                            ArrivalAirportFsCode = "SYD", // using SYD for simplicity
+                            FlightEquipmentIataCode = "E75",
+                            ElapsedTime = 120,
+                            Stops = 0
+                        }
+                    ],
+                    ElapsedTime = 300,
+                    Score = 80
+                }
+            ],
+            Appendix = new Appendix
+            {
+                Airlines =
+                [
+                    new Airline { Fs = "AA", Name = "American Airlines" },
+                    new Airline { Fs = "OO", Name = "SkyWest Airlines" }
+                ],
+                Airports =
+                [
+                    new Airport { Fs = "AKL", Name = "Auckland Airport", City = "Auckland", TimeZoneRegionName = "Pacific/Auckland" },
+                    new Airport { Fs = "SYD", Name = "Sydney Airport", City = "Sydney", TimeZoneRegionName = "Australia/Sydney" }
+                ],
+                Equipments =
+                [
+                    new Equipment { Iata = "737", Name = "Boeing 737", Jet = true },
+                    new Equipment { Iata = "E75", Name = "Embraer 175", Jet = true }
+                ]
+            }
+        };
+
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert - The partner carrier segment should have its airline name resolved
+        result.Should().NotBeEmpty();
+        var partnerSegment = result[0].FlightSegments.FirstOrDefault(s => s.CarrierFsCode == "OO");
+        partnerSegment.Should().NotBeNull();
+        partnerSegment!.AirlineName.Should().Be("SkyWest Airlines",
+            "Partner carrier airline name should be resolved from the appendix without requiring activeAirlineCodes membership");
+    }
+
+    #endregion
+
     #region Issue #1: Past Flight Filtering Tests - CalculateFlightSearchStartTime
 
     /// <summary>

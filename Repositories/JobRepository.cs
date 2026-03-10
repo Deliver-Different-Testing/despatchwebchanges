@@ -4370,28 +4370,24 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Parses a POD time string with proper tenant timezone handling.
-    /// Handles time-only inputs by combining with tenant's current date.
-    /// Falls back to tenant's current time if parsing fails.
+    /// Parses a POD time string and converts to UTC.
+    /// Handles DateTimeOffset strings (with timezone offset), time-only inputs, and plain DateTime strings.
+    /// Falls back to UTC now if parsing fails.
     /// </summary>
     private DateTime ParsePodTime(string podTime)
     {
         var tenantNow = _infoService.GetCurrentTenantTime();
 
         if (string.IsNullOrWhiteSpace(podTime))
-        {
-            Log.Warning("Empty POD time provided, using current tenant time");
             return tenantNow;
-        }
+
+        // Handle timezone-aware strings from frontend (e.g., "2024-06-10T17:04:00-04:00")
+        if (DateTimeOffset.TryParse(podTime, out var parsedOffset))
+            return parsedOffset.DateTime;
 
         if (!DateTime.TryParse(podTime, out var parsedTime))
-        {
-            Log.Warning("Failed to parse POD time '{PodTime}', using current tenant time", podTime);
             return tenantNow;
-        }
 
-        // If the parsed time has only a time component (date is MinValue or Year 1),
-        // combine with tenant's current date
         if (parsedTime.Date == DateTime.MinValue.Date || parsedTime.Year == 1)
             return tenantNow.Date.Add(parsedTime.TimeOfDay);
 

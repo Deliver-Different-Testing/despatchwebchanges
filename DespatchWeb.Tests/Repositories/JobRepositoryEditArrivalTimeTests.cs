@@ -99,7 +99,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1);
 
         updatedJob.PickupArrivalTime.Should().Be(newArrival.DateTime,
-            "PickupArrivalTime should be set to the provided date/time");
+            "PickupArrivalTime should be stored as wall-clock time");
     }
 
     [Fact]
@@ -120,7 +120,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
             await context.SaveChangesAsync();
         }
 
-        var newArrival = new DateTimeOffset(2024, 6, 10, 10, 30, 0, TimeSpan.Zero);
+        // Use a non-zero offset to verify wall-clock extraction (10:30 PDT stored as 10:30)
+        var newArrival = new DateTimeOffset(2024, 6, 10, 10, 30, 0, TimeSpan.FromHours(-7));
         var repository = CreateRepository();
 
         // Act
@@ -132,7 +133,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         updatedJob.PickupArrivalTime.Should().NotBe(originalArrival,
             "the old PickupArrivalTime should be overwritten");
-        updatedJob.PickupArrivalTime!.Value.Hour.Should().Be(10);
+        updatedJob.PickupArrivalTime!.Value.Hour.Should().Be(10,
+            "10:30 PDT (-07:00) should be stored as wall-clock 10:30");
         updatedJob.PickupArrivalTime!.Value.Minute.Should().Be(30);
     }
 
@@ -167,7 +169,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 3);
 
         updatedJob.DeliveryArrivalTime.Should().Be(newArrival.DateTime,
-            "DeliveryArrivalTime should be set to the provided date/time");
+            "DeliveryArrivalTime should be stored as wall-clock time");
     }
 
     [Fact]
@@ -188,7 +190,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
             await context.SaveChangesAsync();
         }
 
-        var newArrival = new DateTimeOffset(2024, 6, 10, 16, 15, 0, TimeSpan.Zero);
+        // Use a non-zero offset to verify wall-clock extraction (16:15 EDT stored as 16:15)
+        var newArrival = new DateTimeOffset(2024, 6, 10, 16, 15, 0, TimeSpan.FromHours(-4));
         var repository = CreateRepository();
 
         // Act
@@ -200,7 +203,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         updatedJob.DeliveryArrivalTime.Should().NotBe(originalArrival,
             "the old DeliveryArrivalTime should be overwritten");
-        updatedJob.DeliveryArrivalTime!.Value.Hour.Should().Be(16);
+        updatedJob.DeliveryArrivalTime!.Value.Hour.Should().Be(16,
+            "16:15 EDT (-04:00) should be stored as wall-clock 16:15");
         updatedJob.DeliveryArrivalTime!.Value.Minute.Should().Be(15);
     }
 
@@ -235,7 +239,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
         var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 5);
 
         updated.PickupArrivalTime.Should().Be(newArrival.DateTime,
-            "archived PickupArrivalTime should be set to the provided date/time");
+            "archived PickupArrivalTime should be stored as wall-clock time");
     }
 
     [Fact]
@@ -256,7 +260,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
             await context.SaveChangesAsync();
         }
 
-        var newArrival = new DateTimeOffset(2024, 6, 10, 10, 45, 0, TimeSpan.Zero);
+        // Use a non-zero offset to verify wall-clock extraction (10:45 PDT stored as 10:45)
+        var newArrival = new DateTimeOffset(2024, 6, 10, 10, 45, 0, TimeSpan.FromHours(-7));
         var repository = CreateRepository();
 
         // Act
@@ -267,7 +272,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
         var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 6);
 
         updated.PickupArrivalTime.Should().NotBe(originalArrival);
-        updated.PickupArrivalTime!.Value.Hour.Should().Be(10);
+        updated.PickupArrivalTime!.Value.Hour.Should().Be(10,
+            "10:45 PDT (-07:00) should be stored as wall-clock 10:45");
         updated.PickupArrivalTime!.Value.Minute.Should().Be(45);
     }
 
@@ -302,7 +308,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
         var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 7);
 
         updated.DeliveryArrivalTime.Should().Be(newArrival.DateTime,
-            "archived DeliveryArrivalTime should be set to the provided date/time");
+            "archived DeliveryArrivalTime should be stored as wall-clock time");
     }
 
     [Fact]
@@ -323,7 +329,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
             await context.SaveChangesAsync();
         }
 
-        var newArrival = new DateTimeOffset(2024, 6, 10, 17, 0, 0, TimeSpan.Zero);
+        // Use a non-zero offset to verify wall-clock extraction (17:00 EDT stored as 17:00)
+        var newArrival = new DateTimeOffset(2024, 6, 10, 17, 0, 0, TimeSpan.FromHours(-4));
         var repository = CreateRepository();
 
         // Act
@@ -334,7 +341,8 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
         var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 8);
 
         updated.DeliveryArrivalTime.Should().NotBe(originalArrival);
-        updated.DeliveryArrivalTime!.Value.Hour.Should().Be(17);
+        updated.DeliveryArrivalTime!.Value.Hour.Should().Be(17,
+            "17:00 EDT (-04:00) should be stored as wall-clock 17:00");
         updated.DeliveryArrivalTime!.Value.Minute.Should().Be(0);
     }
 

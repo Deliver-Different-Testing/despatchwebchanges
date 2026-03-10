@@ -382,8 +382,8 @@ describe('EditDateTimeDialog', () => {
             renderWithProviders(props);
 
             const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
-            await user.clear(timeInput);
-            await user.type(timeInput, '16:30');
+            // Use fireEvent.change to directly set the value (mock pickers are controlled)
+            fireEvent.change(timeInput, { target: { value: '16:30' } });
 
             await user.click(screen.getByRole('button', { name: /Save/i }));
 

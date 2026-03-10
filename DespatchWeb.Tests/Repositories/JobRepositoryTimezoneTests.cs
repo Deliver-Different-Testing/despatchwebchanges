@@ -15,30 +15,37 @@ public class JobRepositoryTimezoneTests
     private const string UtcTimeZone = "UTC";
 
     /// <summary>
-    /// Helper method that mimics the ApplyTimezoneToJobDates logic from JobRepository.
+    /// Helper method that mimics the ApplyTimezoneToJobDates logic from JobMappings.Enrichment.
     /// This allows us to test the timezone conversion behavior in isolation.
     /// </summary>
     private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
     {
         foreach (var job in jobs)
         {
+            var pickupTz = job.PickUpTimeZone?.Text ?? tenantTimeZone;
+            var deliveryTz = job.DeliveryTimeZone?.Text ?? tenantTimeZone;
+
+            // Pickup-timezone fields
+            if (job.PuTime.HasValue)
+                job.PuTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, pickupTz);
+            if (job.PickupArrivalTime.HasValue)
+                job.PickupArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PickupArrivalTime.Value, pickupTz);
+
+            // Delivery-timezone fields
+            if (job.CompletedTime.HasValue)
+                job.CompletedTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, deliveryTz);
+            if (job.DeliverByTime.HasValue)
+                job.DeliverByTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, deliveryTz);
+            if (job.DeliveryArrivalTime.HasValue)
+                job.DeliveryArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliveryArrivalTime.Value, deliveryTz);
+
+            // Tenant-local fields
             if (job.DispatchTime.HasValue)
                 job.DispatchTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimeZone);
-
-            if (job.PuTime.HasValue)
-                job.PuTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, tenantTimeZone);
-
             if (job.FollowupTime.HasValue)
                 job.FollowupTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, tenantTimeZone);
-
-            if (job.CompletedTime.HasValue)
-                job.CompletedTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, tenantTimeZone);
-
             if (job.CreatedDate.HasValue)
                 job.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimeZone);
-
-            if (job.DeliverByTime.HasValue)
-                job.DeliverByTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, tenantTimeZone);
         }
     }
 
