@@ -69,7 +69,7 @@ public class TenantInfoService(
             "NZ" => "en-NZ",
             _ => "en-US"
         };
-        _cachedCultureInfo = new CultureInfo(cultureCode);
+        _cachedCultureInfo = new CultureInfo(cultureCode, false);
         return _cachedCultureInfo;
     }
 
