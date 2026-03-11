@@ -82,3 +82,15 @@ export interface TaskApiResponse {
     jobNumber: string;
     priority?: 'high' | 'medium' | 'low';
 }
+
+export interface EventGroupViewModel {
+    eventTypeGroupTypeGroupId: number;
+    eventType: StaffSuggestion;
+    group: string;
+    date: Date;
+    sequence: number;
+    dueTime?: string | Date;
+    assignTo?: StaffSuggestion;
+    notes: string;
+    active: boolean;
+}

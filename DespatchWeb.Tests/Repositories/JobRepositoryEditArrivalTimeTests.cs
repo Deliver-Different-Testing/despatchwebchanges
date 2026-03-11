@@ -14,7 +14,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// These fields are only on live jobs (TucJob), not on archived jobs (TucJobArchive).
 /// Both use the ExecuteUpdateAsync (direct update) path.
 /// </summary>
-public class JobRepositoryEditArrivalTimeTests : IDisposable
+public class JobRepositoryEditArrivalTimeTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _contextOptions;
@@ -22,6 +22,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryEditArrivalTimeTests()
     {
@@ -34,7 +35,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
@@ -52,13 +53,12 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private DespatchContext CreateContext() => new(_contextOptions);
@@ -66,6 +66,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -85,7 +86,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 PickupArrivalTime = null
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newArrival = new DateTimeOffset(2024, 6, 10, 9, 15, 0, TimeSpan.Zero);
@@ -96,7 +97,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1);
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedJob.PickupArrivalTime.Should().Be(newArrival.DateTime,
             "PickupArrivalTime should be stored as wall-clock time");
@@ -117,7 +118,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 PickupArrivalTime = originalArrival
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         // Use a non-zero offset to verify wall-clock extraction (10:30 PDT stored as 10:30)
@@ -129,7 +130,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 2);
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 2, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedJob.PickupArrivalTime.Should().NotBe(originalArrival,
             "the old PickupArrivalTime should be overwritten");
@@ -155,7 +156,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 DeliveryArrivalTime = null
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newArrival = new DateTimeOffset(2024, 6, 10, 14, 45, 0, TimeSpan.Zero);
@@ -166,7 +167,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 3);
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 3, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedJob.DeliveryArrivalTime.Should().Be(newArrival.DateTime,
             "DeliveryArrivalTime should be stored as wall-clock time");
@@ -187,7 +188,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 DeliveryArrivalTime = originalArrival
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         // Use a non-zero offset to verify wall-clock extraction (16:15 EDT stored as 16:15)
@@ -199,7 +200,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 4);
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 4, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedJob.DeliveryArrivalTime.Should().NotBe(originalArrival,
             "the old DeliveryArrivalTime should be overwritten");
@@ -225,7 +226,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 PickupArrivalTime = null
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newArrival = new DateTimeOffset(2024, 6, 10, 9, 15, 0, TimeSpan.Zero);
@@ -236,7 +237,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 5);
+        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 5, cancellationToken: TestContext.Current.CancellationToken);
 
         updated.PickupArrivalTime.Should().Be(newArrival.DateTime,
             "archived PickupArrivalTime should be stored as wall-clock time");
@@ -257,7 +258,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 PickupArrivalTime = originalArrival
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         // Use a non-zero offset to verify wall-clock extraction (10:45 PDT stored as 10:45)
@@ -269,7 +270,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 6);
+        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 6, cancellationToken: TestContext.Current.CancellationToken);
 
         updated.PickupArrivalTime.Should().NotBe(originalArrival);
         updated.PickupArrivalTime!.Value.Hour.Should().Be(10,
@@ -294,7 +295,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 DeliveryArrivalTime = null
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newArrival = new DateTimeOffset(2024, 6, 10, 15, 30, 0, TimeSpan.Zero);
@@ -305,7 +306,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 7);
+        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 7, cancellationToken: TestContext.Current.CancellationToken);
 
         updated.DeliveryArrivalTime.Should().Be(newArrival.DateTime,
             "archived DeliveryArrivalTime should be stored as wall-clock time");
@@ -326,7 +327,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
                 UcjbDate = new DateTime(2024, 6, 10),
                 DeliveryArrivalTime = originalArrival
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         // Use a non-zero offset to verify wall-clock extraction (17:00 EDT stored as 17:00)
@@ -338,7 +339,7 @@ public class JobRepositoryEditArrivalTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 8);
+        var updated = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 8, cancellationToken: TestContext.Current.CancellationToken);
 
         updated.DeliveryArrivalTime.Should().NotBe(originalArrival);
         updated.DeliveryArrivalTime!.Value.Hour.Should().Be(17,

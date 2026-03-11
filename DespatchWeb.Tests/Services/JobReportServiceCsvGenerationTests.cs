@@ -29,7 +29,7 @@ public class CsvFormattingTests
     {
         const string input = "Line1\nLine2";
         var result = FormatCsvField(input);
-        result.Should().Be($"\"Line1\nLine2\"");
+        result.Should().Be("\"Line1\nLine2\"");
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public class CsvFormattingTests
     {
         const string input = "Line1\rLine2";
         var result = FormatCsvField(input);
-        result.Should().Be($"\"Line1\rLine2\"");
+        result.Should().Be("\"Line1\rLine2\"");
     }
 
     [Fact]

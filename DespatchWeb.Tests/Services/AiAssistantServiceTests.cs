@@ -22,13 +22,13 @@ public class AiAssistantServiceTests
 
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public AiAssistantServiceTests()
     {
         _tenantInfoMock.Setup(x => x.GetStaffInfoAsync())
             .ReturnsAsync(new Suggestion { Id = 1, Text = "Test Operator" });
         _tenantInfoMock.Setup(x => x.GetTenantTimeZone()).Returns("Pacific/Auckland");
-        _tenantInfoMock.Setup(x => x.GetCurrentTenantTime()).Returns(new DateTime(2025, 6, 15, 10, 30, 0));
         _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
     }
 
@@ -39,6 +39,7 @@ public class AiAssistantServiceTests
         _noteRepositoryMock.Object,
         _taskRepositoryMock.Object,
         _tenantInfoMock.Object,
+        _clock,
         _settings);
 
     #region ChatAsync - Token Accumulation
@@ -87,7 +88,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Show overview" } };
 
         // Act
-        var result = await service.ChatAsync(messages);
+        var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         result.Usage.InputTokens.Should().Be(300);
@@ -117,7 +118,7 @@ public class AiAssistantServiceTests
         };
 
         // Act
-        await service.ChatAsync(messages);
+        await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         capturedMessages.Should().NotBeNull();
@@ -145,7 +146,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
 
         // Act
-        await service.ChatAsync(messages);
+        await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         capturedTools.Should().NotBeNull();
@@ -181,7 +182,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "How many active jobs?" } };
 
         // Act
-        var result = await service.ChatAsync(messages);
+        var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         result.Message.Should().Be("There are 5 active jobs.");
@@ -207,7 +208,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hello" } };
 
         // Act
-        var result = await service.ChatAsync(messages);
+        var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         result.Message.Should().BeEmpty();
@@ -262,7 +263,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "What is job 123?" } };
 
         // Act
-        var result = await service.ChatAsync(messages);
+        var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         result.Message.Should().Be("Job 123 is currently active.");
@@ -314,7 +315,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Find job 999" } };
 
         // Act
-        var result = await service.ChatAsync(messages);
+        var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         result.Message.Should().Contain("not found");
@@ -332,7 +333,6 @@ public class AiAssistantServiceTests
             {
                 callCount++;
                 if (callCount == 1)
-                {
                     return new AiClientResponse
                     {
                         ToolCalls =
@@ -347,7 +347,6 @@ public class AiAssistantServiceTests
                         InputTokens = 100,
                         OutputTokens = 20
                     };
-                }
 
                 return new AiClientResponse
                 {
@@ -361,7 +360,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Do something" } };
 
         // Act
-        var result = await service.ChatAsync(messages);
+        var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -387,7 +386,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
 
         // Act
-        await service.ChatAsync(messages);
+        await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         capturedSystemPrompt.Should().Contain("Test Operator");
@@ -413,7 +412,7 @@ public class AiAssistantServiceTests
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
 
         // Act
-        await service.ChatAsync(messages);
+        await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
         capturedSystemPrompt.Should().Contain("US");

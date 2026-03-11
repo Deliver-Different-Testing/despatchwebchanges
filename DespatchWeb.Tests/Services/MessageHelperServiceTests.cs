@@ -1,9 +1,7 @@
 using DespatchWeb.EntityClasses;
-using DespatchWeb.Interfaces;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Services;
 using FluentAssertions;
-using Moq;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,13 +10,9 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class MessageHelperServiceTests
 {
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    private MessageHelperService CreateService()
-    {
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
-        return new MessageHelperService(_tenantInfoServiceMock.Object);
-    }
+    private MessageHelperService CreateService() => new(_clock);
 
     #region GetOtherParty Tests - Message FROM Current Staff
 
@@ -275,7 +269,7 @@ public class MessageHelperServiceTests
     {
         // Arrange
         var service = CreateService();
-        var currentDate = DateTime.Now;
+        var currentDate = TestDates.Now;
 
         // Act
         var result = service.GetCourierStatus(null, currentDate);
@@ -290,7 +284,7 @@ public class MessageHelperServiceTests
         // Arrange
         var service = CreateService();
         var courier = new TucCourier { CourierLogInOut = null };
-        var currentDate = DateTime.Now;
+        var currentDate = TestDates.Now;
 
         // Act
         var result = service.GetCourierStatus(courier, currentDate);

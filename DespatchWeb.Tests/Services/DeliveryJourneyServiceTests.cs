@@ -13,9 +13,8 @@ namespace DespatchWeb.Tests.Services;
 /// LINQ queries and entity relationships. These tests validate service construction,
 /// interface contracts, and basic behavior with mocked dependencies.
 /// </summary>
-public class DeliveryJourneyServiceTests : IDisposable
+public class DeliveryJourneyServiceTests
 {
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly string _databaseName;
 
@@ -28,12 +27,6 @@ public class DeliveryJourneyServiceTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
         _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
             .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero));
-    }
-
-    public void Dispose()
-    {
-        // Cleanup if needed
-        GC.SuppressFinalize(this);
     }
 
     private DbContextOptions<DespatchContext> CreateDbContextOptions() =>
@@ -60,7 +53,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.TucJobs.AddRange(jobs);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedEventsAsync(params TucEvent[] events)
@@ -68,7 +61,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.TucEvents.AddRange(events);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedNotesAsync(params TucNote[] notes)
@@ -76,7 +69,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.TucNotes.AddRange(notes);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedArchivedNotesAsync(params TucNoteArchive[] notes)
@@ -84,7 +77,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.TucNoteArchives.AddRange(notes);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedStaffAsync(params TucStaff[] staff)
@@ -92,7 +85,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.TucStaffs.AddRange(staff);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedMessagesAsync(params TucManualMessage[] messages)
@@ -100,7 +93,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.TucManualMessages.AddRange(messages);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     #region Constructor Tests
@@ -511,7 +504,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — should fallback to DateTime.MinValue with offset applied
+        // Assert — should fall back to DateTime.MinValue with offset applied
         result.Should().HaveCount(1);
         result[0].Date.DateTime.Should().Be(DateTime.MinValue);
     }
@@ -789,7 +782,7 @@ public class DeliveryJourneyServiceTests : IDisposable
         var options = CreateDbContextOptions();
         await using var context = new DespatchContext(options);
         context.JobDeliveryJourneys.AddRange(updates);
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     [Fact]

@@ -14,12 +14,13 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests for CourierRepository - focuses on GetClearListsAsync parallel query execution.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class CourierRepositoryTests : IDisposable
+public class CourierRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _contextOptions;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly IMemoryCache _cache;
 
@@ -29,7 +30,7 @@ public class CourierRepositoryTests : IDisposable
         _connection.Open();
 
         // Register custom SQL Server functions for SQLite compatibility
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         using (var command = _connection.CreateCommand())
         {
@@ -55,9 +56,6 @@ public class CourierRepositoryTests : IDisposable
 
         // Setup tenant info
         _tenantInfoServiceMock
-            .Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(2024, 1, 15, 10, 0, 0));
-        _tenantInfoServiceMock
             .Setup(x => x.GetTenantTimeZone())
             .Returns("New Zealand Standard Time");
 
@@ -65,15 +63,16 @@ public class CourierRepositoryTests : IDisposable
         _cache = new MemoryCache(new MemoryCacheOptions());
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _cache.Dispose();
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private CourierRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _cache
     );
@@ -127,12 +126,12 @@ public class CourierRepositoryTests : IDisposable
             {
                 DespatchViewId = 1,
                 Name = "Test View",
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -470,9 +469,9 @@ public class CourierRepositoryTests : IDisposable
             Name = "Central",
             ChannelId = 1,
             Order = 1,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TblClearListAreas.Add(clearListArea);
@@ -490,9 +489,9 @@ public class CourierRepositoryTests : IDisposable
             DespatchViewId = 1,
             Name = "Central",
             ShowOnAssistDespatch = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TblDespatchViews.Add(despatchView);
@@ -502,14 +501,14 @@ public class CourierRepositoryTests : IDisposable
             DespatchViewZoneGroupId = 1,
             DespatchViewId = 1,
             ZoneGroupId = 1,
-            CreatedDate = DateTime.Now,
+            CreatedDate = TestDates.Now,
             CreatedBy = "Test",
-            LastModifiedDate = DateTime.Now,
+            LastModifiedDate = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.DespatchViewZoneGroups.Add(despatchViewZoneGroup);
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SetupMultipleClearListAreasData()
@@ -524,9 +523,9 @@ public class CourierRepositoryTests : IDisposable
             Name = "Central",
             ChannelId = 1,
             Order = 1,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -538,9 +537,9 @@ public class CourierRepositoryTests : IDisposable
             Name = "West Mid",
             ChannelId = 1,
             Order = 2,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -557,9 +556,9 @@ public class CourierRepositoryTests : IDisposable
                 DespatchViewId = 1,
                 Name = "Central",
                 ShowOnAssistDespatch = true,
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             },
             new TblDespatchView
@@ -567,9 +566,9 @@ public class CourierRepositoryTests : IDisposable
                 DespatchViewId = 2,
                 Name = "West Mid",
                 ShowOnAssistDespatch = true,
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             }
         );
@@ -581,9 +580,9 @@ public class CourierRepositoryTests : IDisposable
                 DespatchViewZoneGroupId = 1,
                 DespatchViewId = 1,
                 ZoneGroupId = 1,
-                CreatedDate = DateTime.Now,
+                CreatedDate = TestDates.Now,
                 CreatedBy = "Test",
-                LastModifiedDate = DateTime.Now,
+                LastModifiedDate = TestDates.Now,
                 LastModifiedBy = "Test"
             },
             new DespatchViewZoneGroup
@@ -591,14 +590,14 @@ public class CourierRepositoryTests : IDisposable
                 DespatchViewZoneGroupId = 2,
                 DespatchViewId = 2,
                 ZoneGroupId = 2,
-                CreatedDate = DateTime.Now,
+                CreatedDate = TestDates.Now,
                 CreatedBy = "Test",
-                LastModifiedDate = DateTime.Now,
+                LastModifiedDate = TestDates.Now,
                 LastModifiedBy = "Test"
             }
         );
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SetupClearListWithCouriersData()
@@ -613,9 +612,9 @@ public class CourierRepositoryTests : IDisposable
             UccfId = 1,
             UccfName = "Standard Fleet",
             DisplayOnClearlistsDespatch = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TucCourierFleets.Add(fleet);
@@ -627,9 +626,9 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
             LogOutTime = null,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TblCourierLogInOuts.Add(loginRecord);
@@ -641,10 +640,10 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             ClearListAreaId = 1,
             Status = 1,
-            OrderTime = DateTime.Now,
-            Created = DateTime.Now,
+            OrderTime = TestDates.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TblClearListAreaOrders.Add(clearListOrder);
@@ -660,14 +659,14 @@ public class CourierRepositoryTests : IDisposable
             CourierFleetId = 1,
             CourierLogInOutId = 1,
             UccrChannelId = 1,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TucCouriers.Add(courier);
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SetupClearListWithP2PCourierData()
@@ -682,9 +681,9 @@ public class CourierRepositoryTests : IDisposable
             UccfId = (int)CourierFleet.UaAucklandP2P,
             UccfName = "P2P Fleet",
             DisplayOnClearlistsDespatch = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TucCourierFleets.Add(p2PFleet);
@@ -696,10 +695,10 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             ClearListAreaId = 1,
             Status = 1,
-            OrderTime = DateTime.Now,
-            Created = DateTime.Now,
+            OrderTime = TestDates.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TblClearListAreaOrders.Add(clearListOrder);
@@ -714,14 +713,14 @@ public class CourierRepositoryTests : IDisposable
             Active = true,
             CourierFleetId = (int)CourierFleet.UaAucklandP2P,
             UccrChannelId = 1,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TucCouriers.Add(courier);
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SetupComplexClearListData()
@@ -736,9 +735,9 @@ public class CourierRepositoryTests : IDisposable
             UccfId = 1,
             UccfName = "Standard Fleet",
             DisplayOnClearlistsDespatch = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         };
         context.TucCourierFleets.Add(fleet);
@@ -751,9 +750,9 @@ public class CourierRepositoryTests : IDisposable
                 CourierId = 1,
                 LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
                 LogOutTime = null,
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             },
             new TblCourierLogInOut
@@ -762,9 +761,9 @@ public class CourierRepositoryTests : IDisposable
                 CourierId = 2,
                 LogInTime = new DateTime(2024, 1, 15, 8, 30, 0),
                 LogOutTime = null,
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             }
         );
@@ -777,10 +776,10 @@ public class CourierRepositoryTests : IDisposable
                 CourierId = 1,
                 ClearListAreaId = 1,
                 Status = 1,
-                OrderTime = DateTime.Now,
-                Created = DateTime.Now,
+                OrderTime = TestDates.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             },
             new TblClearListAreaOrder
@@ -789,10 +788,10 @@ public class CourierRepositoryTests : IDisposable
                 CourierId = 2,
                 ClearListAreaId = 2,
                 Status = 1,
-                OrderTime = DateTime.Now,
-                Created = DateTime.Now,
+                OrderTime = TestDates.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             }
         );
@@ -809,9 +808,9 @@ public class CourierRepositoryTests : IDisposable
                 CourierFleetId = 1,
                 CourierLogInOutId = 1,
                 UccrChannelId = 1,
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             },
             new TucCourier
@@ -824,9 +823,9 @@ public class CourierRepositoryTests : IDisposable
                 CourierFleetId = 1,
                 CourierLogInOutId = 2,
                 UccrChannelId = 1,
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test"
             }
         );
@@ -853,7 +852,7 @@ public class CourierRepositoryTests : IDisposable
             }
         );
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SetupMultipleAreasForColumnLayoutData()
@@ -863,10 +862,10 @@ public class CourierRepositoryTests : IDisposable
         // Create clear list areas for different columns
         var areas = new[]
         {
-            new TblClearListArea { ClearListAreaId = 1, Code = "C", Name = "Central", ChannelId = 1, Order = 1, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" },
-            new TblClearListArea { ClearListAreaId = 2, Code = "WM", Name = "West Mid", ChannelId = 1, Order = 2, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" },
-            new TblClearListArea { ClearListAreaId = 3, Code = "EM", Name = "East Mid", ChannelId = 1, Order = 3, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" },
-            new TblClearListArea { ClearListAreaId = 4, Code = "M", Name = "Mangere", ChannelId = 1, Order = 4, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" }
+            new TblClearListArea { ClearListAreaId = 1, Code = "C", Name = "Central", ChannelId = 1, Order = 1, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
+            new TblClearListArea { ClearListAreaId = 2, Code = "WM", Name = "West Mid", ChannelId = 1, Order = 2, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
+            new TblClearListArea { ClearListAreaId = 3, Code = "EM", Name = "East Mid", ChannelId = 1, Order = 3, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
+            new TblClearListArea { ClearListAreaId = 4, Code = "M", Name = "Mangere", ChannelId = 1, Order = 4, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" }
         };
         context.TblClearListAreas.AddRange(areas);
 
@@ -883,24 +882,24 @@ public class CourierRepositoryTests : IDisposable
         // Despatch views
         var despatchViews = new[]
         {
-            new TblDespatchView { DespatchViewId = 1, Name = "Central", ShowOnAssistDespatch = true, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" },
-            new TblDespatchView { DespatchViewId = 2, Name = "West Mid", ShowOnAssistDespatch = true, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" },
-            new TblDespatchView { DespatchViewId = 3, Name = "East Mid", ShowOnAssistDespatch = true, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" },
-            new TblDespatchView { DespatchViewId = 4, Name = "Mangere", ShowOnAssistDespatch = true, Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test" }
+            new TblDespatchView { DespatchViewId = 1, Name = "Central", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
+            new TblDespatchView { DespatchViewId = 2, Name = "West Mid", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
+            new TblDespatchView { DespatchViewId = 3, Name = "East Mid", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
+            new TblDespatchView { DespatchViewId = 4, Name = "Mangere", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" }
         };
         context.TblDespatchViews.AddRange(despatchViews);
 
         // Link despatch views to zone groups
         var links = new[]
         {
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 1, DespatchViewId = 1, ZoneGroupId = 1, CreatedDate = DateTime.Now, CreatedBy = "Test", LastModifiedDate = DateTime.Now, LastModifiedBy = "Test" },
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 2, DespatchViewId = 2, ZoneGroupId = 2, CreatedDate = DateTime.Now, CreatedBy = "Test", LastModifiedDate = DateTime.Now, LastModifiedBy = "Test" },
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 3, DespatchViewId = 3, ZoneGroupId = 3, CreatedDate = DateTime.Now, CreatedBy = "Test", LastModifiedDate = DateTime.Now, LastModifiedBy = "Test" },
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 4, DespatchViewId = 4, ZoneGroupId = 4, CreatedDate = DateTime.Now, CreatedBy = "Test", LastModifiedDate = DateTime.Now, LastModifiedBy = "Test" }
+            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 1, DespatchViewId = 1, ZoneGroupId = 1, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" },
+            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 2, DespatchViewId = 2, ZoneGroupId = 2, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" },
+            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 3, DespatchViewId = 3, ZoneGroupId = 3, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" },
+            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 4, DespatchViewId = 4, ZoneGroupId = 4, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" }
         };
         context.DespatchViewZoneGroups.AddRange(links);
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     /// <summary>
@@ -921,9 +920,9 @@ public class CourierRepositoryTests : IDisposable
             UccfId = 1,
             UccfName = "Standard Fleet",
             DisplayOnClearlistsDespatch = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -943,9 +942,9 @@ public class CourierRepositoryTests : IDisposable
             ClearListAreaPolygonId = 1,
             ClearListAreaId = 1,
             PolygonId = 100,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -956,9 +955,9 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
             LogOutTime = null,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -969,10 +968,10 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             ClearListAreaId = 1,
             Status = courierStatus,
-            OrderTime = DateTime.Now,
-            Created = DateTime.Now,
+            OrderTime = TestDates.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -988,9 +987,9 @@ public class CourierRepositoryTests : IDisposable
             CourierLogInOutId = 1,
             CourierGpsid = 1,
             UccrChannelId = 1,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -1008,7 +1007,7 @@ public class CourierRepositoryTests : IDisposable
             });
         }
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     /// <summary>
@@ -1027,9 +1026,9 @@ public class CourierRepositoryTests : IDisposable
             UccfId = 1,
             UccfName = "Standard Fleet",
             DisplayOnClearlistsDespatch = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -1040,9 +1039,9 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
             LogOutTime = null,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -1053,10 +1052,10 @@ public class CourierRepositoryTests : IDisposable
             CourierId = 1,
             ClearListAreaId = 1,
             Status = 1,
-            OrderTime = DateTime.Now,
-            Created = DateTime.Now,
+            OrderTime = TestDates.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -1071,9 +1070,9 @@ public class CourierRepositoryTests : IDisposable
             CourierFleetId = 1,
             CourierLogInOutId = 1,
             UccrChannelId = 1,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -1099,7 +1098,7 @@ public class CourierRepositoryTests : IDisposable
             UcjbVoid = false
         });
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     #endregion

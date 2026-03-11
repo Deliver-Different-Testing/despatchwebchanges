@@ -18,11 +18,13 @@ public class AddStopJobServiceTests
 {
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private TucJob _createdStopJob;
 
     private AddStopJobService CreateService() => new(
         _jobRepositoryMock.Object,
-        _tenantInfoServiceMock.Object
+        _tenantInfoServiceMock.Object,
+        _clock
     );
 
     #region AddStopInsertJobAsync Validation Tests
@@ -443,8 +445,8 @@ public class AddStopJobServiceTests
     {
         UcjbId = 1,
         UcjbNumber = "JOB001",
-        UcjbDate = DateTime.Today,
-        UcjbTime = DateTime.Today.AddHours(10),
+        UcjbDate = TestDates.Today,
+        UcjbTime = TestDates.Today.AddHours(10),
         UcjbClientId = 1,
         UcjbStatus = 1,
         UcjbFrom = 100,
@@ -459,8 +461,8 @@ public class AddStopJobServiceTests
     {
         UcbkId = 1,
         UcbkJobNumber = "BK001",
-        UcbkDate = DateTime.Today,
-        UcbkTime = DateTime.Today.AddHours(10),
+        UcbkDate = TestDates.Today,
+        UcbkTime = TestDates.Today.AddHours(10),
         UcbkClientId = 1,
         UcbkFrom = 100,
         UcbkFromAddr = "123 Origin St",
@@ -485,8 +487,6 @@ public class AddStopJobServiceTests
             .ReturnsAsync(15m);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId())
             .Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(DateTime.Now);
         _tenantInfoServiceMock.Setup(x => x.GetContactId())
             .Returns(1);
 
@@ -513,8 +513,6 @@ public class AddStopJobServiceTests
             .ReturnsAsync(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId())
             .Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(DateTime.Now);
 
         _jobRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucJobBooking>()))
             .Callback<TucJobBooking>(j => j.UcbkId = newJobId)

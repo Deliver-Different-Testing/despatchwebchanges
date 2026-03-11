@@ -14,7 +14,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for creating additional stop jobs (extra pickups or deliveries) as child jobs linked to parent jobs.
 /// </summary>
-public class AddStopJobService(IJobRepository repository, ITenantInfoService infoService) : IAddStopJobService
+public class AddStopJobService(IJobRepository repository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
 {
     private const decimal ExtraStopAmount = 20m;
     private const decimal ExtraStopCourierPayment = 10m;
@@ -138,7 +138,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
             
             var staffId = infoService.GetStaffId();
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
 
             // Pricing Breakdown
             var pricingBreakdown = CreatePricingBreakdown(newStopJob.UcjbId);
@@ -274,7 +274,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
         await repository.SaveChangesAsync();
 
         var staffId = infoService.GetStaffId();
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         // Pricing Breakdown
         var pricingBreakdown = CreateBookingPricingBreakdown(newStopJob.UcbkId);
@@ -366,7 +366,7 @@ public class AddStopJobService(IJobRepository repository, ITenantInfoService inf
             FuelSurchargeAmount = 0,
             BookedBy = job.UcjbContact,
             LoggedInContactId = infoService.GetContactId(),
-            TenantCurrentTime = infoService.GetCurrentTenantTime()
+            TenantCurrentTime = clock.TenantNow
         };
 
     /// <summary>

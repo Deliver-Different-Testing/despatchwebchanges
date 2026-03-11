@@ -1,10 +1,10 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
-using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+
 
 namespace DespatchWeb.Tests.Services;
 
@@ -15,11 +15,11 @@ namespace DespatchWeb.Tests.Services;
 public class ClearListEnvelopeServiceTests
 {
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private ClearListEnvelopeService CreateService() => new(
         _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object
+        _clock
     );
 
     #region GetClearListAreaEnvelopeAsync Validation Tests

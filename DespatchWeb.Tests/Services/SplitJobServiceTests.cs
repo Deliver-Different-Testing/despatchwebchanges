@@ -15,13 +15,14 @@ namespace DespatchWeb.Tests.Services;
 /// a job into pickup and delivery legs with a meeting point address.
 /// Uses SQLite in-memory for EF Core operations and Moq for repository/service calls.
 /// </summary>
-public class SplitJobServiceTests : IDisposable
+public class SplitJobServiceTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _options;
     private readonly DespatchContext _seedContext;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
 
@@ -33,7 +34,7 @@ public class SplitJobServiceTests : IDisposable
         _connection.Open();
 
         // Register SQL Server functions that SQLite doesn't have
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         using (var command = _connection.CreateCommand())
@@ -55,8 +56,6 @@ public class SplitJobServiceTests : IDisposable
             .ReturnsAsync(() => new DespatchContext(_options));
 
         // Default tenant info
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(2024, 1, 15, 10, 0, 0));
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
         _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(1);
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
@@ -78,10 +77,10 @@ public class SplitJobServiceTests : IDisposable
         SeedLookupData();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _seedContext.Dispose();
-        _connection.Dispose();
+        await _seedContext.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     #region Helpers
@@ -95,9 +94,9 @@ public class SplitJobServiceTests : IDisposable
                 JobRelationshipTypeId = 1,
                 SystemName = "SplitParent",
                 Name = "Split Parent",
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test",
                 ShortName = "SP"
             },
@@ -106,9 +105,9 @@ public class SplitJobServiceTests : IDisposable
                 JobRelationshipTypeId = 2,
                 SystemName = "SplitChild",
                 Name = "Split Child",
-                Created = DateTime.Now,
+                Created = TestDates.Now,
                 CreatedBy = "Test",
-                LastModified = DateTime.Now,
+                LastModified = TestDates.Now,
                 LastModifiedBy = "Test",
                 ShortName = "SC"
             });
@@ -131,9 +130,9 @@ public class SplitJobServiceTests : IDisposable
             UcjtUnitRate = 0,
             GroupingId = 1,
             ShowPhotosWhenChild = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -181,9 +180,9 @@ public class SplitJobServiceTests : IDisposable
             FaxHeadLogo = [],
             FaxHeadLogoSmall = [],
             LetterHeadLogo = [],
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -193,6 +192,7 @@ public class SplitJobServiceTests : IDisposable
     private SplitJobService CreateService() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _rateJobServiceMock.Object,
         _jobRepositoryMock.Object);
 
@@ -264,7 +264,7 @@ public class SplitJobServiceTests : IDisposable
             UcnwAirportOnly = false,
             UcnwLegNumber = 1
         });
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
 
@@ -348,7 +348,7 @@ public class SplitJobServiceTests : IDisposable
 
         // Verify the original job's relationship type was set to SplitParent (ID=1)
         await using var verifyCtx = new DespatchContext(_options);
-        var parentJob = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100);
+        var parentJob = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100, cancellationToken: TestContext.Current.CancellationToken);
         parentJob.JobRelationshipTypeId.Should().Be(1);
     }
 
@@ -362,7 +362,7 @@ public class SplitJobServiceTests : IDisposable
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var parentJob = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100);
+        var parentJob = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100, cancellationToken: TestContext.Current.CancellationToken);
         parentJob.UcjbCourierId.Should().NotBe(5, "parent job courier should be replaced (original goes to pickup)");
     }
 
@@ -380,7 +380,7 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", meetingPoint);
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
 
         pickup.DeliveryAddressLine1.Should().Be(meetingPoint.AddressLine1);
         pickup.DeliveryAddressLine5.Should().Be(meetingPoint.AddressLine5);
@@ -401,7 +401,7 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
 
         pickup.PickupAddressLine1.Should().Be("1 Pickup St");
         pickup.PickUpLatitude.Should().Be(-36.80m);
@@ -417,7 +417,7 @@ public class SplitJobServiceTests : IDisposable
         var (_, deliveryId) = await service.SplitJobAsync(100, "TestUser", meetingPoint);
 
         await using var verifyCtx = new DespatchContext(_options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         delivery.PickupAddressLine1.Should().Be(meetingPoint.AddressLine1);
         delivery.PickupAddressLine5.Should().Be(meetingPoint.AddressLine5);
@@ -438,7 +438,7 @@ public class SplitJobServiceTests : IDisposable
         var (_, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         delivery.DeliveryAddressLine1.Should().Be("99 Delivery Ave");
         delivery.DeliveryLatitude.Should().Be(-41.28m);
@@ -457,7 +457,7 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
 
         pickup.UcjbCourierId.Should().Be(42, "pickup leg keeps the original courier");
     }
@@ -471,7 +471,7 @@ public class SplitJobServiceTests : IDisposable
         var (_, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         delivery.UcjbCourierId.Should().BeNull("delivery leg starts unassigned");
     }
@@ -489,8 +489,8 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         pickup.Sequence.Should().Be(1);
         delivery.Sequence.Should().Be(2);
@@ -505,8 +505,8 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         // SplitChild relationship type ID = 2
         pickup.JobRelationshipTypeId.Should().Be(2);
@@ -522,8 +522,8 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         pickup.ParentId.Should().Be(100);
         delivery.ParentId.Should().Be(100);
@@ -540,8 +540,8 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId, cancellationToken: TestContext.Current.CancellationToken);
 
         pickup.UcjbVoid.Should().BeFalse();
         pickup.UcjbJobDone.Should().BeFalse();
@@ -564,7 +564,7 @@ public class SplitJobServiceTests : IDisposable
         await using var verifyCtx = new DespatchContext(_options);
         var notes = await verifyCtx.TucNotes.AsNoTracking()
             .Where(n => n.JobId == pickupId || n.JobId == deliveryId)
-            .ToListAsync();
+            .ToListAsync(TestContext.Current.CancellationToken);
 
         notes.Should().HaveCount(2);
         notes.Should().Contain(n => n.JobId == pickupId && n.NoteText.Contains("SPLIT Part 1 of 2"));
@@ -581,7 +581,7 @@ public class SplitJobServiceTests : IDisposable
         var (pickupId, _) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         await using var verifyCtx = new DespatchContext(_options);
-        var note = await verifyCtx.TucNotes.AsNoTracking().FirstAsync(n => n.JobId == pickupId);
+        var note = await verifyCtx.TucNotes.AsNoTracking().FirstAsync(n => n.JobId == pickupId, cancellationToken: TestContext.Current.CancellationToken);
 
         note.NoteText.Should().Contain("Handle with care");
     }

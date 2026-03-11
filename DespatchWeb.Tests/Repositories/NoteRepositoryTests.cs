@@ -14,19 +14,20 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests for NoteRepository - covers note CRUD operations and note type management.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class NoteRepositoryTests : IDisposable
+public class NoteRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public NoteRepositoryTests()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         using (var command = _connection.CreateCommand())
         {
@@ -46,20 +47,20 @@ public class NoteRepositoryTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
         _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
             .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.FromHours(12)));
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _context.Dispose();
-        _connection.Dispose();
+        await _context.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     private NoteRepository CreateRepository() => new(
         _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object
+        _tenantInfoServiceMock.Object,
+        _clock
     );
 
     #region GetBulkJobNotesByBulkJobIdAsync Tests
@@ -75,7 +76,7 @@ public class NoteRepositoryTests : IDisposable
             CreateBulkJobNote(1, bulkJobId, "Note 1"),
             CreateBulkJobNote(2, bulkJobId, "Note 2")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -94,7 +95,7 @@ public class NoteRepositoryTests : IDisposable
         // Arrange
         const int bulkJobId = 100;
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -120,7 +121,7 @@ public class NoteRepositoryTests : IDisposable
             CreateBulkJobNote(1, bulkJobId1, "Note for job 1"),
             CreateBulkJobNote(2, bulkJobId2, "Note for job 2")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -148,7 +149,7 @@ public class NoteRepositoryTests : IDisposable
             CreateBulkJobNote(2, bulkJobId, "Oldest note", oldestDate),
             CreateBulkJobNote(3, bulkJobId, "Newest note", newestDate)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -182,7 +183,7 @@ public class NoteRepositoryTests : IDisposable
             CreateArchivedNote(2, jobId, "Oldest note", oldestDate),
             CreateArchivedNote(3, jobId, "Newest note", newestDate)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -226,25 +227,25 @@ public class NoteRepositoryTests : IDisposable
             NoteText = "Test note",
             NoteTypeId = 1,
             IsImportant = false,
-            CreatedDate = DateTime.Now
+            CreatedDate = TestDates.Now
         });
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
             DateTime.UtcNow, "Old text", "Test note"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
         // Act
-        await repository.DeleteNoteAsync(noteId);
+        await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert — use AsNoTracking since ExecuteDeleteAsync bypasses the change tracker
-        var note = await _context.TucNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId);
+        var note = await _context.TucNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
         note.Should().BeNull();
 
         var history = await _context.TucNoteHistories
             .Where(h => h.NoteId == noteId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         history.Should().BeEmpty();
     }
 
@@ -264,20 +265,20 @@ public class NoteRepositoryTests : IDisposable
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.BulkNote, noteId, 1,
             DateTime.UtcNow, "Old text", "Test bulk note"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
         // Act
-        await repository.DeleteBulkNoteAsync(noteId);
+        await repository.DeleteBulkNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert
-        var note = await _context.TblBulkJobNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId);
+        var note = await _context.TblBulkJobNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
         note.Should().BeNull();
 
         var history = await _context.TucNoteHistories
             .Where(h => h.BulkNoteId == noteId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         history.Should().BeEmpty();
     }
 
@@ -302,7 +303,7 @@ public class NoteRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -319,7 +320,7 @@ public class NoteRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -362,7 +363,7 @@ public class NoteRepositoryTests : IDisposable
             CreateNoteHistory(2, NoteHistorySource.Note, noteId, 1, oldest, "Old oldest", "New oldest"),
             CreateNoteHistory(3, NoteHistorySource.Note, noteId, 1, newest, "Old newest", "New newest")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -402,7 +403,7 @@ public class NoteRepositoryTests : IDisposable
             CreateNoteHistory(2, NoteHistorySource.BulkNote, noteId, 1, timestamp, "Old2", "New2"),
             CreateNoteHistory(3, NoteHistorySource.Note, noteId, 1, timestamp, "Old3", "New3")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -426,7 +427,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
             new DateTime(2024, 6, 15, 10, 0, 0), "Old text", "New text", oldNoteTypeId: 1, newNoteTypeId: 2));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -447,7 +448,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucStaffs.Add(CreateStaff(1, "Jane", "Smith"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
             new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -472,7 +473,7 @@ public class NoteRepositoryTests : IDisposable
             new TucNoteType { NoteTypeId = 2, NoteTypeName = "Inactive Type", IsActive = false, IsPublic = false, IsSystemDefined = false },
             new TucNoteType { NoteTypeId = 3, NoteTypeName = "Active Type 2", IsActive = true, IsPublic = true, IsSystemDefined = false }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -519,7 +520,7 @@ public class NoteRepositoryTests : IDisposable
         await repository.AddNewTucNoteTypeAsync(noteType);
 
         // Assert
-        var savedType = await _context.TucNoteTypes.FirstOrDefaultAsync(nt => nt.NoteTypeName == "New Note Type");
+        var savedType = await _context.TucNoteTypes.FirstOrDefaultAsync(nt => nt.NoteTypeName == "New Note Type", cancellationToken: TestContext.Current.CancellationToken);
         savedType.Should().NotBeNull();
         savedType!.IsActive.Should().BeTrue();
         savedType.IsPublic.Should().BeTrue();
@@ -539,7 +540,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
         _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Test note text"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -579,7 +580,7 @@ public class NoteRepositoryTests : IDisposable
         const int bulkJobId = 100;
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -592,10 +593,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveBulkNoteAsync(viewModel);
+        await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note");
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note", cancellationToken: TestContext.Current.CancellationToken);
         savedNote.Should().NotBeNull();
         savedNote!.BulkJobId.Should().Be(bulkJobId);
         savedNote.NoteTypeId.Should().Be(1);
@@ -613,7 +614,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucNoteTypes.Add(CreateNoteType(2, "Client Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
         _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Original text"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -626,10 +627,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveBulkNoteAsync(viewModel);
+        await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert - note is updated, not duplicated
-        var allNotes = await _context.TblBulkJobNotes.Where(n => n.BulkJobId == bulkJobId).ToListAsync();
+        var allNotes = await _context.TblBulkJobNotes.Where(n => n.BulkJobId == bulkJobId).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         allNotes.Should().ContainSingle();
 
         var updatedNote = allNotes.First();
@@ -650,7 +651,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucNoteTypes.Add(CreateNoteType(2, "Client Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
         _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Original text"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -663,12 +664,12 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveBulkNoteAsync(viewModel);
+        await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert - history record was created with BulkNoteId set
         var history = await _context.TucNoteHistories
             .Where(h => h.BulkNoteId == noteId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         history.Should().ContainSingle();
         var record = history.First();
@@ -692,7 +693,7 @@ public class NoteRepositoryTests : IDisposable
         const int bulkJobId = 100;
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -705,10 +706,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveBulkNoteAsync(viewModel);
+        await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert - no history for new notes
-        var history = await _context.TucNoteHistories.ToListAsync();
+        var history = await _context.TucNoteHistories.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         history.Should().BeEmpty();
     }
 
@@ -719,7 +720,7 @@ public class NoteRepositoryTests : IDisposable
         const int bulkJobId = 100;
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -732,10 +733,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveBulkNoteAsync(viewModel);
+        await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId);
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId, cancellationToken: TestContext.Current.CancellationToken);
         savedNote.Should().NotBeNull();
         savedNote!.NoteTypeId.Should().Be(1); // Internal Note default
     }
@@ -822,7 +823,7 @@ public class NoteRepositoryTests : IDisposable
             CreateNoteHistory(2, NoteHistorySource.Archive, noteId, 1, timestamp, "Old2", "New2"),
             CreateNoteHistory(3, NoteHistorySource.BulkNote, noteId, 1, timestamp, "Old3", "New3")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -842,7 +843,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Archive, archiveNoteId, 1,
             new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -866,7 +867,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.Note, noteId, 1,
             new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -886,7 +887,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
         _context.TucNoteHistories.Add(CreateNoteHistory(1, NoteHistorySource.BulkNote, bulkNoteId, 1,
             new DateTime(2024, 6, 15, 10, 0, 0), "Old", "New"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -911,7 +912,7 @@ public class NoteRepositoryTests : IDisposable
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
         _context.TblBulkJobNotes.Add(CreateBulkJobNote(noteId, bulkJobId, "Original text"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -924,10 +925,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveBulkNoteAsync(viewModel);
+        await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert — exactly one FK column is populated
-        var history = await _context.TucNoteHistories.SingleAsync();
+        var history = await _context.TucNoteHistories.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         history.NoteId.Should().BeNull();
         history.BulkNoteId.Should().Be(noteId);
         history.ArchiveNoteId.Should().BeNull();
@@ -948,7 +949,7 @@ public class NoteRepositoryTests : IDisposable
             NoteText = "Active note",
             NoteTypeId = 1,
             IsImportant = false,
-            CreatedDate = DateTime.Now
+            CreatedDate = TestDates.Now
         });
         _context.TucStaffs.Add(CreateStaff(1, "John", "Doe"));
 
@@ -958,15 +959,15 @@ public class NoteRepositoryTests : IDisposable
         // History for a bulk note that happens to have BulkNoteId = 1
         _context.TucNoteHistories.Add(CreateNoteHistory(2, NoteHistorySource.BulkNote, noteId, 1,
             DateTime.UtcNow, "Bulk old", "Bulk new"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
         // Act
-        await repository.DeleteNoteAsync(noteId);
+        await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert — bulk note history is untouched
-        var remaining = await _context.TucNoteHistories.AsNoTracking().ToListAsync();
+        var remaining = await _context.TucNoteHistories.AsNoTracking().ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         remaining.Should().ContainSingle();
         remaining[0].BulkNoteId.Should().Be(noteId);
         remaining[0].NoteId.Should().BeNull();
@@ -989,15 +990,15 @@ public class NoteRepositoryTests : IDisposable
         // History for an active note that happens to have NoteId = 1
         _context.TucNoteHistories.Add(CreateNoteHistory(2, NoteHistorySource.Note, noteId, 1,
             DateTime.UtcNow, "Active old", "Active new"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
         // Act
-        await repository.DeleteBulkNoteAsync(noteId);
+        await repository.DeleteBulkNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert — active note history is untouched
-        var remaining = await _context.TucNoteHistories.AsNoTracking().ToListAsync();
+        var remaining = await _context.TucNoteHistories.AsNoTracking().ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         remaining.Should().ContainSingle();
         remaining[0].NoteId.Should().Be(noteId);
         remaining[0].BulkNoteId.Should().BeNull();
@@ -1023,9 +1024,9 @@ public class NoteRepositoryTests : IDisposable
             NoteText = "Original text",
             NoteTypeId = 1,
             IsImportant = false,
-            CreatedDate = DateTime.Now
+            CreatedDate = TestDates.Now
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -1038,10 +1039,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveNoteAsync(viewModel);
+        await repository.SaveNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert — history row has only NoteId set
-        var history = await _context.TucNoteHistories.SingleAsync();
+        var history = await _context.TucNoteHistories.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         history.NoteId.Should().Be(noteId);
         history.BulkNoteId.Should().BeNull();
         history.ArchiveNoteId.Should().BeNull();
@@ -1072,9 +1073,9 @@ public class NoteRepositoryTests : IDisposable
             NoteText = "Archived original",
             NoteTypeId = 1,
             IsImportant = false,
-            CreatedDate = DateTime.Now
+            CreatedDate = TestDates.Now
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var viewModel = new TucNoteViewModel
@@ -1087,10 +1088,10 @@ public class NoteRepositoryTests : IDisposable
         };
 
         // Act
-        await repository.SaveNoteAsync(viewModel);
+        await repository.SaveNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert — history row has only ArchiveNoteId set
-        var history = await _context.TucNoteHistories.SingleAsync();
+        var history = await _context.TucNoteHistories.SingleAsync(cancellationToken: TestContext.Current.CancellationToken);
         history.NoteId.Should().BeNull();
         history.BulkNoteId.Should().BeNull();
         history.ArchiveNoteId.Should().Be(noteId);
@@ -1124,7 +1125,7 @@ public class NoteRepositoryTests : IDisposable
         NoteText = noteText,
         NoteTypeId = 1,
         IsImportant = false,
-        CreatedDate = createdDate ?? DateTime.Now
+        CreatedDate = createdDate ?? TestDates.Now
     };
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
@@ -1155,9 +1156,9 @@ public class NoteRepositoryTests : IDisposable
         UcstId = id,
         UcstFirstName = firstName,
         UcstLastName = lastName,
-        Created = DateTime.Now,
+        Created = TestDates.Now,
         CreatedBy = "test",
-        LastModified = DateTime.Now,
+        LastModified = TestDates.Now,
         LastModifiedBy = "test"
     };
 

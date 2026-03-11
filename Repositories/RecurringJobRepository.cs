@@ -18,10 +18,12 @@ namespace DespatchWeb.Repositories;
 public class RecurringJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService)
-    : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IRecurringJobRepository
+    : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IRecurringJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
+    private readonly ITenantClock _clock = clock;
 
     public async Task<PaginatedResponse<PrebookListViewModel>> GetRecurringJobsListAsync(
         RecurringJobQueryRequest request)
@@ -401,7 +403,7 @@ public class RecurringJobRepository(
                 case JobProperty.Active:
                     var isActive = bool.Parse(value);
                     var staffId = _infoService.GetStaffId();
-                    var currentTenantTime = _infoService.GetCurrentTenantTime();
+                    var currentTenantTime = _clock.TenantNow;
 
                     if (isActive)
                     {

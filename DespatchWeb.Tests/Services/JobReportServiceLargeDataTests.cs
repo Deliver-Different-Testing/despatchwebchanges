@@ -9,7 +9,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using FluentAssertions;
 using Moq;
-using Xunit.Abstractions;
+
 
 namespace DespatchWeb.Tests.Services;
 
@@ -20,24 +20,17 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobReportServiceLargeDataTests
 {
-    private readonly ITestOutputHelper _testOutputHelper;
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-
-    public JobReportServiceLargeDataTests(ITestOutputHelper testOutputHelper)
-    {
-        _testOutputHelper = testOutputHelper;
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
-    }
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private JobReportService CreateService()
     {
         return new JobReportService(
             _jobRepositoryMock.Object,
             _recurringJobRepositoryMock.Object,
-            _tenantInfoServiceMock.Object,
+            _clock,
             _s3ClientMock.Object
         );
     }
@@ -87,8 +80,8 @@ public class JobReportServiceLargeDataTests
         result.FileBytes.Should().NotBeEmpty();
 
         // Log memory usage for diagnostics
-        _testOutputHelper.WriteLine($"Memory used for {recordCount} records: {memoryUsedMb:F2} MB");
-        _testOutputHelper.WriteLine($"CSV file size: {result.FileBytes.Length / 1024.0:F2} KB");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Memory used for {recordCount} records: {memoryUsedMb:F2} MB");
+        TestContext.Current.TestOutputHelper?.WriteLine($"CSV file size: {result.FileBytes.Length / 1024.0:F2} KB");
     }
 
     #endregion
@@ -224,7 +217,7 @@ public class JobReportServiceLargeDataTests
                 CustomerName = new string('X', 200),
                 ClientReferenceA = new string('R', 100),
                 ClientReferenceB = new string('S', 100),
-                BookDate = DateTime.Now
+                BookDate = TestDates.Now
             }
         };
 
@@ -271,7 +264,7 @@ public class JobReportServiceLargeDataTests
                 PickupAddressLine1 = "123 \"Main\" Street", // Quotes
                 PickupAddressLine2 = "Line1\nLine2", // Newline
                 ClientReferenceA = "Ref,With,Commas",
-                BookDate = DateTime.Now
+                BookDate = TestDates.Now
             }
         };
 
@@ -359,8 +352,8 @@ public class JobReportServiceLargeDataTests
         var service = CreateService();
         var request = new ClientJobsReportRequest
         {
-            StartDate = DateTime.Now.AddMonths(-1),
-            EndDate = DateTime.Now,
+            StartDate = TestDates.Now.AddMonths(-1),
+            EndDate = TestDates.Now,
             ClientIds = [1, 2, 3]
         };
 
@@ -388,8 +381,8 @@ public class JobReportServiceLargeDataTests
         var service = CreateService();
         var request = new ClientJobsReportRequest
         {
-            StartDate = DateTime.Now.AddMonths(-1),
-            EndDate = DateTime.Now,
+            StartDate = TestDates.Now.AddMonths(-1),
+            EndDate = TestDates.Now,
             ClientIds = [1]
         };
 
@@ -413,8 +406,8 @@ public class JobReportServiceLargeDataTests
         var service = CreateService();
         var request = new ClientJobsReportRequest
         {
-            StartDate = DateTime.Now.AddMonths(-1),
-            EndDate = DateTime.Now,
+            StartDate = TestDates.Now.AddMonths(-1),
+            EndDate = TestDates.Now,
             ClientIds = [1]
         };
 
@@ -435,7 +428,7 @@ public class JobReportServiceLargeDataTests
     private static List<JobDownloadModel> GenerateLargeJobDownloadDataset(int count)
     {
         var jobs = new List<JobDownloadModel>(count);
-        var baseDate = DateTime.Now.AddMonths(-1);
+        var baseDate = TestDates.Now.AddMonths(-1);
 
         for (var i = 0; i < count; i++)
         {
@@ -494,7 +487,7 @@ public class JobReportServiceLargeDataTests
     private static List<PerformanceSpendReportModel> GenerateLargePerformanceSpendDataset(int count)
     {
         var reports = new List<PerformanceSpendReportModel>(count);
-        var baseDate = DateTime.Now.AddMonths(-1);
+        var baseDate = TestDates.Now.AddMonths(-1);
 
         for (var i = 0; i < count; i++)
         {

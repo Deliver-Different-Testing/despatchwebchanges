@@ -17,6 +17,7 @@ namespace DespatchWeb.Repositories;
 public class BaseJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService)
     : BaseRepository(contextFactory)
 {
@@ -102,7 +103,8 @@ public class BaseJobRepository(
                 .ToListAsync();
 
 
-            // Deduplicate jobs (view joins can produce duplicates when a job matches multiple conditions)
+            // Safety-net dedup — DISTINCT is applied in GetFilteredJobIdsQuery, but view joins
+            // may still produce duplicates in edge cases.
             allJobs = allJobs
                 .GroupBy(j => j.Id)
                 .Select(g => g.First())
@@ -126,7 +128,7 @@ public class BaseJobRepository(
             await EnrichJobsWithCollections(allJobs);
 
             var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
-            var now = infoService.GetCurrentTenantTime();
+            var now = clock.TenantNow;
             foreach (var job in allJobs)
             {
                 job.AngularId = Guid.NewGuid();
@@ -180,7 +182,8 @@ public class BaseJobRepository(
             if (!isUsTenant) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
 
             return Context.DeswebQryDespatchJobViewFilters
-                .Select(x => x.UcjbId);
+                .Select(x => x.UcjbId)
+                .Distinct();
         }
 
         var viewFilters = Context.TblDespatchViews
@@ -203,8 +206,8 @@ public class BaseJobRepository(
         return Context.DeswebQryDespatchJobViewFilters
             .FromSqlRaw(
                 isUsTenant
-                    ? $"SELECT UcjbId FROM DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
-                    : $"SELECT UcjbId FROM DESWEB_qryDespatch WHERE {combinedFilters}"
+                    ? $"SELECT DISTINCT UcjbId FROM DESWEB_qry_Despatch_Job_View_Filters WHERE {combinedFilters}"
+                    : $"SELECT DISTINCT UcjbId FROM DESWEB_qryDespatch WHERE {combinedFilters}"
             )
             .Select(x => x.UcjbId);
     }
@@ -440,7 +443,7 @@ public class BaseJobRepository(
         if (!noteTypeExists) noteType = NoteType.InternalNote;
 
         var staffId = infoService.GetStaffId();
-        var currentTime = infoService.GetCurrentTenantTime();
+        var currentTime = clock.TenantNow;
 
         var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote
                 { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType,
@@ -469,7 +472,7 @@ public class BaseJobRepository(
             // If a note type is not found, default to the internal note
             noteType = await ConfirmNoteTypeExists(noteType);
 
-            var now = infoService.GetCurrentTenantTime();
+            var now = clock.TenantNow;
             
             var newNotes = jobIds.Select(jobId => new TucNote
                 {
@@ -504,7 +507,7 @@ public class BaseJobRepository(
             // If a note type is not found, default to the internal note
             noteType = await ConfirmNoteTypeExists(noteType);
 
-            var now = infoService.GetCurrentTenantTime();
+            var now = clock.TenantNow;
 
             var newNotes = jobIds.Select(jobId => new TucNoteArchive
                 {
@@ -535,7 +538,7 @@ public class BaseJobRepository(
             // If a note type is not found, default to the internal note
             noteType = await ConfirmNoteTypeExists(noteType);
 
-            var now = infoService.GetCurrentTenantTime();
+            var now = clock.TenantNow;
 
             var newNote = new TucNote
             {
@@ -627,7 +630,7 @@ public class BaseJobRepository(
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
                 CreatedBy = infoService.GetStaffId(),
-                CreatedDate = infoService.GetCurrentTenantTime()
+                CreatedDate = clock.TenantNow
             };
             await Context.AddAsync(newNote);
             await Context.SaveChangesAsync();
@@ -649,7 +652,7 @@ public class BaseJobRepository(
         try
         {
             var staffId = infoService.GetStaffId();
-            var currentTime = infoService.GetCurrentTenantTime();
+            var currentTime = clock.TenantNow;
 
             // Fetch current state for history before updating
             var currentNote = await Context.TucNotes

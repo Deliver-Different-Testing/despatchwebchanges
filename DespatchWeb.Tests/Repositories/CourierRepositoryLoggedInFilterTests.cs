@@ -71,7 +71,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_ReturnsOnlyLoggedInCouriers()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -120,7 +120,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_ExcludesCouriersLoggedInYesterday()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -161,7 +161,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_ExcludesCouriersWithNoLoginRecord()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -198,7 +198,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnlyFalse_ReturnsAllActiveCouriers()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -246,7 +246,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_NoLoggedInCouriers_ReturnsEmpty()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -286,7 +286,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_DgOnlyAndLoggedInOnly_ReturnsDgCertifiedLoggedInCouriers()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -358,7 +358,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_DgOnlyAndLoggedInOnly_NoneMatch_ReturnsEmpty()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -405,7 +405,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_SearchTermAndLoggedInOnly_FiltersCorrectly()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -465,7 +465,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_MultipleLoggedInCouriers_ReturnsAllLoggedIn()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>();
 
         // Add 10 logged-in couriers
@@ -514,7 +514,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_InactiveLoggedInCourier_ExcludesInactive()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -557,7 +557,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_CourierLoggedInAtMidnight_IncludesCorrectly()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()
@@ -585,7 +585,7 @@ public class CourierRepositoryLoggedInFilterTests
     public void FilterCouriers_LoggedInOnly_CourierLoggedInJustBeforeMidnight_ExcludedNextDay()
     {
         // Arrange
-        var today = DateTime.Today;
+        var today = TestDates.Today;
         var couriers = new List<TestCourier>
         {
             new()

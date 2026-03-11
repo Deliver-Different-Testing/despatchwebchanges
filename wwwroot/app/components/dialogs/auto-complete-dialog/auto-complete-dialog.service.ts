@@ -70,10 +70,10 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
         }
     }
 
-    async showAutocompleteDialog($event: MouseEvent,
+    async showAutocompleteDialog(_$event: MouseEvent,
                                  url: string,
                                  placeholder: string,
-                                 fieldName: string,
+                                 _fieldName: string,
                                  title: string,
                                  existingItem: ISuggestion | undefined,
                                  showRerateOption: boolean = false,

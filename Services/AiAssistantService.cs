@@ -22,6 +22,7 @@ public class AiAssistantService(
     INoteRepository noteRepository,
     ITaskRepository taskRepository,
     ITenantInfoService tenantInfo,
+    ITenantClock clock,
     IOptions<AnthropicSettings> settings) : IAiAssistantService
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -56,7 +57,6 @@ public class AiAssistantService(
             totalOutputTokens += response.OutputTokens;
 
             if (!response.HasToolUse)
-            {
                 return new AiChatResponse
                 {
                     Message = response.TextContent ?? string.Empty,
@@ -66,14 +66,13 @@ public class AiAssistantService(
                         OutputTokens = totalOutputTokens
                     }
                 };
-            }
 
             // Build assistant message with tool use
             var toolCallsSummary = string.Join("\n", response.ToolCalls.Select(tc =>
                 $"[Calling tool: {tc.ToolName}]"));
             var assistantContent = (response.TextContent ?? string.Empty) +
-                                  (string.IsNullOrEmpty(response.TextContent) ? string.Empty : "\n") +
-                                  toolCallsSummary;
+                                   (string.IsNullOrEmpty(response.TextContent) ? string.Empty : "\n") +
+                                   toolCallsSummary;
 
             workingMessages.Add(new AiMessage { Role = "assistant", Content = assistantContent });
 
@@ -126,9 +125,7 @@ public class AiAssistantService(
 
         await foreach (var chunk in aiClient.StreamMessageAsync(
                            systemPrompt, sanitizedMessages, settings.Value.MaxTokensPerRequest, ct))
-        {
             yield return chunk;
-        }
     }
 
     private string BuildSystemPrompt()
@@ -136,7 +133,7 @@ public class AiAssistantService(
         var staffInfo = tenantInfo.GetStaffInfoAsync().GetAwaiter().GetResult();
         var staffName = staffInfo?.Text ?? "Operator";
         var timezone = tenantInfo.GetTenantTimeZone();
-        var currentTime = tenantInfo.GetCurrentTenantTime();
+        var currentTime = clock.TenantNow;
         var isUs = tenantInfo.IsUsTenant();
 
         return $"""
@@ -170,7 +167,8 @@ public class AiAssistantService(
                 Name = "lookup_job",
                 Description =
                     "Get detailed information about a specific job by its numeric ID. Returns job details including status, addresses, courier, pricing, and timestamps.",
-                InputSchemaJson = """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
+                InputSchemaJson =
+                    """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
             },
 
             new AiToolDefinition
@@ -268,7 +266,9 @@ public class AiAssistantService(
     {
         var jobId = args.RootElement.GetProperty("jobId").GetInt32();
         var job = await jobRepository.GetSingleJobById(jobId);
-        return job == null ? JsonSerializer.Serialize(new { error = $"Job {jobId} not found" }) : JsonSerializer.Serialize(job, JsonOptions);
+        return job == null
+            ? JsonSerializer.Serialize(new { error = $"Job {jobId} not found" })
+            : JsonSerializer.Serialize(job, JsonOptions);
     }
 
     private async Task<string> SearchJobsAsync(JsonDocument args, CancellationToken ct)
@@ -283,16 +283,21 @@ public class AiAssistantService(
         {
             var term = searchText.ToUpperInvariant();
             filtered = filtered.Where(j =>
-                (j.Reference?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ?? false) ||
-                (j.PickupAddress?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ?? false) ||
-                (j.DeliveryAddress?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ?? false) ||
-                (j.DriverName?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ?? false) ||
+                (j.Reference?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ??
+                 false) ||
+                (j.PickupAddress?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ??
+                 false) ||
+                (j.DeliveryAddress?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ??
+                 false) ||
+                (j.DriverName?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ??
+                 false) ||
                 (j.Status?.ToUpperInvariant().Contains(term, StringComparison.InvariantCultureIgnoreCase) ?? false));
         }
 
         var results = filtered.Take(20).ToList();
 
-        return JsonSerializer.Serialize(new { totalCount = jobs.Count, matchCount = results.Count, jobs = results }, JsonOptions);
+        return JsonSerializer.Serialize(new { totalCount = jobs.Count, matchCount = results.Count, jobs = results },
+            JsonOptions);
     }
 
     private async Task<string> SearchCouriersAsync(JsonDocument args, CancellationToken ct)
@@ -344,7 +349,9 @@ public class AiAssistantService(
     {
         var courierId = args.RootElement.GetProperty("courierId").GetInt32();
         var courier = await courierRepository.GetCourierByIdAsync(courierId);
-        return courier == null ? JsonSerializer.Serialize(new { error = $"Courier {courierId} not found" }) : JsonSerializer.Serialize(courier, JsonOptions);
+        return courier == null
+            ? JsonSerializer.Serialize(new { error = $"Courier {courierId} not found" })
+            : JsonSerializer.Serialize(courier, JsonOptions);
     }
 
     private async Task<string> GetOverviewStatsAsync(CancellationToken ct)

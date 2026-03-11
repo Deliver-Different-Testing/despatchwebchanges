@@ -25,7 +25,7 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_FirstRequest_ReturnsTrue()
     {
         // Arrange - cache returns null (no existing counter)
-        _cacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), default))
+        _cacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), CancellationToken.None))
             .ReturnsAsync((byte[])null);
 
         var service = CreateService();
@@ -41,9 +41,9 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_UserLimitExceeded_ReturnsFalse()
     {
         // Arrange - user has already made 20 requests this minute
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), default))
+        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), CancellationToken.None))
             .ReturnsAsync("20"u8.ToArray());
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), default))
+        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), CancellationToken.None))
             .ReturnsAsync((byte[])null);
 
         var service = CreateService();
@@ -59,9 +59,9 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_TenantLimitExceeded_ReturnsFalse()
     {
         // Arrange - user is under limit, but tenant is at 100
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), default))
+        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), CancellationToken.None))
             .ReturnsAsync("1"u8.ToArray());
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), default))
+        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), CancellationToken.None))
             .ReturnsAsync("100"u8.ToArray());
 
         var service = CreateService();
@@ -77,9 +77,9 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_BothUnderLimit_ReturnsTrue()
     {
         // Arrange
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), default))
+        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), CancellationToken.None))
             .ReturnsAsync("5"u8.ToArray());
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), default))
+        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), CancellationToken.None))
             .ReturnsAsync("50"u8.ToArray());
 
         var service = CreateService();

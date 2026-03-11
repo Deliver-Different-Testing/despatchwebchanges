@@ -17,6 +17,7 @@ namespace DespatchWeb.Repositories;
 public class MessageRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IMessageHelperService messageHelper,
     IMemoryCache cache) : BaseRepository(contextFactory), IMessageRepository
 {
@@ -50,7 +51,7 @@ public class MessageRepository(
     public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         var allMessages = await Context.TucManualMessages
             .AsNoTracking()
@@ -137,7 +138,7 @@ public class MessageRepository(
 
     public async Task SendMessageAsync(SendMessageRequest request)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
         var staffId = infoService.GetStaffId();
         var isUsTenant = infoService.IsUsTenant();
 
@@ -166,7 +167,7 @@ public class MessageRepository(
 
     public async Task SendMultipleMessagesAsync(SendMultipleMessageRequest request)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
         var currentStaffId = infoService.GetStaffId();
         var isUsTenant = infoService.IsUsTenant();
         List<TucManualMessage> messages = [];
@@ -205,7 +206,7 @@ public class MessageRepository(
 
     public async Task MarkMessagesAsReadAsync(int otherPartyId, OtherMessagePartyType otherPartyType)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
         var currentStaffId = infoService.GetStaffId();
 
         var affectedRows = otherPartyType == OtherMessagePartyType.Courier
@@ -267,7 +268,7 @@ public class MessageRepository(
 
     public async Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         var couriers = await Context
             .TucCouriers.Where(c =>

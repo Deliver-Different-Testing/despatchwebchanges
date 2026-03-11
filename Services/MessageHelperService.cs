@@ -9,7 +9,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for processing messaging data and determining message participants.
 /// </summary>
-public class MessageHelperService(ITenantInfoService infoService) : IMessageHelperService
+public class MessageHelperService(ITenantClock clock) : IMessageHelperService
 {
     /// <summary>
     /// Determines the other party in a message conversation based on the current staff member.
@@ -20,7 +20,7 @@ public class MessageHelperService(ITenantInfoService infoService) : IMessageHelp
     /// <returns>A MessageParticipant object containing the other party's details.</returns>
     public MessageParticipant GetOtherParty(TucManualMessage message, int currentStaffId)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
         if (message.UcmmSendFromStaffId == currentStaffId)
         {
             // Message is FROM current staff, so another party is the recipient

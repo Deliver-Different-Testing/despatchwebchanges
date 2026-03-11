@@ -19,22 +19,15 @@ public class ClientJobsReportCsvTests
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    public ClientJobsReportCsvTests()
-    {
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
-    }
-
-    private JobReportService CreateService()
-    {
-        return new JobReportService(
+    private JobReportService CreateService() =>
+        new(
             _jobRepositoryMock.Object,
             _recurringJobRepositoryMock.Object,
-            _tenantInfoServiceMock.Object,
+            _clock,
             _s3ClientMock.Object
         );
-    }
 
     #region RawBaseAmount and FuelSurchargeAmount Tests
 
@@ -483,8 +476,8 @@ public class ClientJobsReportCsvTests
     {
         return new ClientJobsReportRequest
         {
-            StartDate = DateTime.Now.AddMonths(-1),
-            EndDate = DateTime.Now,
+            StartDate = TestDates.Now.AddMonths(-1),
+            EndDate = TestDates.Now,
             ClientIds = [1]
         };
     }

@@ -112,11 +112,12 @@ export function formatMins(date: Date | Dayjs | string): string {
 export function formatInfoLogDateTimeString(dateTimeString: string): string {
     if (!dateTimeString) return 'No date';
     
-    const dateTime = dayjs(dateTimeString);
-    if (!dateTime.isValid()) return 'Invalid date';
-    
+    const parsed = dayjs(dateTimeString);
+    if (!parsed.isValid()) return 'Invalid date';
+
     const ianaTimeZone = getIanaTimezone();
 
+    const dateTime = parsed.tz(ianaTimeZone);
     const now = dayjs().tz(ianaTimeZone);
     const isToday = dateTime.isSame(now, 'day');
     const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');

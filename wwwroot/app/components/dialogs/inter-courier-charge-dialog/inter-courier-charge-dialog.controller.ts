@@ -1,11 +1,8 @@
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import ToastrService from "../../../services/toastr.service";
 import BaseController from "../../base-controller";
-import {IHttpService, material} from "angular";
+import {material} from "angular";
 import "./inter-courier-charge-dialog.styles.less";
-import {
-    FeatureInDevelopmentDialogService
-} from "../feature-in-development-dialog/feature-in-development-dialog.service";
 import {ISuggestion} from "../../../interfaces/job.interface";
 import IInterCourierData from "./interfaces/IInterCourierData";
 

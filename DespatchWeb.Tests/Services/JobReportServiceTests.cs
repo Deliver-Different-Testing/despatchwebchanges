@@ -15,13 +15,13 @@ public class JobReportServiceTests
 {
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
 
     private JobReportService CreateService() => new(
         _jobRepositoryMock.Object,
         _recurringJobRepositoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _clock,
         _s3ClientMock.Object
     );
 
@@ -254,8 +254,7 @@ public class JobReportServiceTests
         var csvContent = "Id,Amount\n1,100\n2,200";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(2024, 1, 15, 10, 30, 0));
+        // Clock is pre-set with TestDates.Now via FakeTenantClock
 
         var service = CreateService();
 
@@ -279,8 +278,7 @@ public class JobReportServiceTests
         var csvContent = "Id,Amount"; // Header only
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(DateTime.Now);
+        // Clock is pre-set with TestDates.Now via FakeTenantClock
 
         var service = CreateService();
 

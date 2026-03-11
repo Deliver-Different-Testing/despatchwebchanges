@@ -15,20 +15,21 @@ namespace DespatchWeb.Tests.Repositories;
 /// Note: Note-related tests have been moved to NoteRepositoryTests.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class BaseJobRepositoryTests : IDisposable
+public class BaseJobRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private FakeTenantClock _clock = new(new DateTime(2024, 6, 15, 10, 0, 0));
 
     public BaseJobRepositoryTests()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         using (var command = _connection.CreateCommand())
         {
@@ -48,13 +49,12 @@ public class BaseJobRepositoryTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(new DateTime(2024, 6, 15, 10, 0, 0));
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _context.Dispose();
-        _connection.Dispose();
+        await _context.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     /// <summary>
@@ -63,8 +63,9 @@ public class BaseJobRepositoryTests : IDisposable
     private class TestableBaseJobRepository(
         IDbContextFactory<DespatchContext> contextFactory,
         ITenantInfoService infoService,
+        ITenantClock tenantClock,
         IClearListEnvelopeService clearListEnvelopeService)
-        : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService)
+        : BaseJobRepository(contextFactory, infoService, tenantClock, clearListEnvelopeService)
     {
         public new Task<bool> IsJobArchived(int jobId)
             => base.IsJobArchived(jobId);
@@ -86,6 +87,7 @@ public class BaseJobRepositoryTests : IDisposable
     private TestableBaseJobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object
     );
 
@@ -97,7 +99,7 @@ public class BaseJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -114,7 +116,7 @@ public class BaseJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -155,7 +157,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateJobWithParent(childId1, "CHILD1", parentId),
             CreateJobWithParent(childId2, "CHILD2", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -182,7 +184,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateJob(parentId, "PARENT"),
             CreateJobWithParent(childId, "CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -206,7 +208,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateArchivedJob(parentId, "PARENT"),
             CreateArchivedJobWithParent(childId, "CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -224,7 +226,7 @@ public class BaseJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "SINGLE"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -254,7 +256,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateBulkJobWithParent(childId1, "BULK-CHILD1", parentId),
             CreateBulkJobWithParent(childId2, "BULK-CHILD2", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -280,7 +282,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateBulkJob(parentId, "BULK-PARENT"),
             CreateBulkJobWithParent(childId, "BULK-CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -299,7 +301,7 @@ public class BaseJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 200;
         _context.TblBulkJobs.Add(CreateBulkJob(jobId, "BULK-SINGLE"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -340,7 +342,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateJob(parentId, "PARENT"),
             CreateJobWithParent(childId, "CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -357,7 +359,7 @@ public class BaseJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "PARENT"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -393,7 +395,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateJobWithAmounts(100, "JOB001", amount: 150.00m, rawBase: 130.00m, fuel: 20.00m),
             CreateJobWithAmounts(101, "JOB002", amount: 200.00m, rawBase: 175.00m, fuel: 25.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -426,7 +428,7 @@ public class BaseJobRepositoryTests : IDisposable
     {
         // Arrange
         _context.TucJobs.Add(CreateJob(100, "JOB001")); // No amounts set
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -444,7 +446,7 @@ public class BaseJobRepositoryTests : IDisposable
     {
         // Arrange
         _context.TucJobs.Add(CreateJobWithAmounts(100, "TEST-JOB-123", amount: 100m));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -467,7 +469,7 @@ public class BaseJobRepositoryTests : IDisposable
         const int staffId = 42;
         var currentTime = new DateTime(2024, 8, 20, 15, 30, 0);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(staffId);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(currentTime);
+        _clock = new FakeTenantClock(currentTime);
 
         _context.TucNoteTypes.Add(new TucNoteType { NoteTypeId = 1, NoteTypeName = "Internal Note", IsActive = true, IsPublic = false, IsSystemDefined = true });
         _context.TblBulkJobs.AddRange(
@@ -475,7 +477,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateBulkJob(101, "BULK002"),
             CreateBulkJob(102, "BULK003")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -483,7 +485,7 @@ public class BaseJobRepositoryTests : IDisposable
         await repository.SaveMultipleBulkNotesAsync([100, 101, 102], "Test bulk note");
 
         // Assert
-        var notes = await _context.TblBulkJobNotes.ToListAsync();
+        var notes = await _context.TblBulkJobNotes.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         notes.Should().HaveCount(3);
         notes.Should().OnlyContain(n => n.CreatedBy == staffId);
         notes.Should().OnlyContain(n => n.CreatedDate == currentTime);
@@ -499,7 +501,7 @@ public class BaseJobRepositoryTests : IDisposable
             CreateBulkJob(200, "BULK-A"),
             CreateBulkJob(201, "BULK-B")
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -507,7 +509,7 @@ public class BaseJobRepositoryTests : IDisposable
         await repository.SaveMultipleBulkNotesAsync([200, 201], "Batch note", isImportant: true);
 
         // Assert
-        var notes = await _context.TblBulkJobNotes.ToListAsync();
+        var notes = await _context.TblBulkJobNotes.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         notes.Should().HaveCount(2);
 
         var distinctCreatedBy = notes.Select(n => n.CreatedBy).Distinct().ToList();

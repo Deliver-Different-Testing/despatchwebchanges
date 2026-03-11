@@ -16,7 +16,7 @@ namespace DespatchWeb.Tests.Services;
 /// reference validation, recurring bitmask parsing, settings lookup, validation errors,
 /// and stored procedure call parameter mapping via mocked IDespatchContextProcedures.
 /// </summary>
-public class CreateJobServiceTests : IDisposable
+public class CreateJobServiceTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _seedContext;
@@ -28,7 +28,7 @@ public class CreateJobServiceTests : IDisposable
         _connection.Open();
 
         // Register SQL Server functions that SQLite doesn't have
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         using (var command = _connection.CreateCommand())
@@ -63,10 +63,10 @@ public class CreateJobServiceTests : IDisposable
         SeedBaseData();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _seedContext.Dispose();
-        _connection.Dispose();
+        await _seedContext.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     #region Helpers
@@ -93,9 +93,9 @@ public class CreateJobServiceTests : IDisposable
             ReferenceAdefineList = false,
             ReferenceBmandatory = false,
             ReferenceBdefineList = false,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -116,9 +116,9 @@ public class CreateJobServiceTests : IDisposable
             UcjtUnitRate = 0,
             GroupingId = 1,
             ShowPhotosWhenChild = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -172,9 +172,9 @@ public class CreateJobServiceTests : IDisposable
         FaxHeadLogoSmall = [],
         LetterHeadLogo = [],
         // Audit fields
-        Created = DateTime.Now,
+        Created = TestDates.Now,
         CreatedBy = "Test",
-        LastModified = DateTime.Now,
+        LastModified = TestDates.Now,
         LastModifiedBy = "Test"
     };
 
@@ -370,7 +370,7 @@ public class CreateJobServiceTests : IDisposable
         var service = CreateService();
         var input = CreateInput(type: type);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         // The service should handle all type values without throwing
         result.Should().NotBeNull();
@@ -504,12 +504,12 @@ public class CreateJobServiceTests : IDisposable
             ProofOfDelivery = 1,
             ProofOfDeliveryEmail = "pod@test.com",
             RtnJob = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
         var input = CreateInput();
@@ -544,9 +544,9 @@ public class CreateJobServiceTests : IDisposable
             UcctFirstname = "Test",
             UcctSurname = "User",
             Active = true,
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
 
@@ -557,12 +557,12 @@ public class CreateJobServiceTests : IDisposable
             ContactId = 50,
             DefaultPod = 1,
             DefaultPodemail = "contact-pod@test.com",
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
         var input = CreateInput(bookedBy: "Test User");
@@ -596,12 +596,12 @@ public class CreateJobServiceTests : IDisposable
             Code = "TESTCODE",
             CourierNotes = "Default notes",
             ClientNotes = "Default client notes",
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
         var input = CreateInput(notes: "Custom notes");
@@ -621,7 +621,7 @@ public class CreateJobServiceTests : IDisposable
         var client = _seedContext.TucClients.First(c => c.UcclId == 10);
         client.ReferenceAmandatory = true;
         client.ReferenceAmessage = "Custom ref A message";
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
         var input = CreateInput();
@@ -637,7 +637,7 @@ public class CreateJobServiceTests : IDisposable
     {
         var client = _seedContext.TucClients.First(c => c.UcclId == 10);
         client.ReferenceAmandatory = true;
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
         var input = CreateInput(reference: "REF-001");
@@ -654,7 +654,7 @@ public class CreateJobServiceTests : IDisposable
         var client = _seedContext.TucClients.First(c => c.UcclId == 10);
         client.ReferenceBmandatory = true;
         client.ReferenceBmessage = "Ref B is required";
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
         var input = CreateInput();
@@ -670,7 +670,7 @@ public class CreateJobServiceTests : IDisposable
     {
         var client = _seedContext.TucClients.First(c => c.UcclId == 10);
         client.ReferenceAdefineList = true;
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         SeedReference(1, 10, "VALID-REF", "A");
 
@@ -688,7 +688,7 @@ public class CreateJobServiceTests : IDisposable
     {
         var client = _seedContext.TucClients.First(c => c.UcclId == 10);
         client.ReferenceAdefineList = true;
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         SeedReference(2, 10, "VALID-REF", "A");
 
@@ -706,7 +706,7 @@ public class CreateJobServiceTests : IDisposable
     {
         var client = _seedContext.TucClients.First(c => c.UcclId == 10);
         client.ReferenceBdefineList = true;
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         SeedReference(3, 10, "VALID-B-REF", "B");
 
@@ -946,12 +946,12 @@ public class CreateJobServiceTests : IDisposable
             Code = "TESTCODE",
             ProofOfDelivery = 1,
             ProofOfDeliveryEmail = "pod@test.com",
-            Created = DateTime.Now,
+            Created = TestDates.Now,
             CreatedBy = "Test",
-            LastModified = DateTime.Now,
+            LastModified = TestDates.Now,
             LastModifiedBy = "Test"
         });
-        await _seedContext.SaveChangesAsync();
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateServiceWithMockedProcs(out var mockProcs);
         SetupExceleratorInsert(mockProcs);

@@ -14,7 +14,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests for CourierRepository sorting — GetCourierEmailsAsync and GetCourierDailyEarningsAsync.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class CourierRepositorySortingTests : IDisposable
+public class CourierRepositorySortingTests : IAsyncDisposable
 {
     private readonly IMemoryCache _cache;
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
@@ -22,13 +22,14 @@ public class CourierRepositorySortingTests : IDisposable
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly DbContextOptions<DespatchContext> _contextOptions;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
 
     public CourierRepositorySortingTests()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         using (var command = _connection.CreateCommand())
         {
@@ -51,24 +52,22 @@ public class CourierRepositorySortingTests : IDisposable
             .ReturnsAsync(() => new DespatchContext(_contextOptions));
 
         _tenantInfoServiceMock
-            .Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(2024, 1, 15, 10, 0, 0));
-        _tenantInfoServiceMock
             .Setup(x => x.GetTenantTimeZone())
             .Returns("New Zealand Standard Time");
 
         _cache = new MemoryCache(new MemoryCacheOptions());
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         _cache.Dispose();
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private CourierRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _cache
     );
@@ -92,17 +91,17 @@ public class CourierRepositorySortingTests : IDisposable
             new TucCourierFleet
             {
                 UccfId = 1, UccfName = "Alpha fleet",
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourierFleet
             {
                 UccfId = 2, UccfName = "Beta fleet",
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourierFleet
             {
                 UccfId = 3, UccfName = "Gamma fleet",
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             }
         );
 
@@ -111,19 +110,19 @@ public class CourierRepositorySortingTests : IDisposable
             {
                 UccrId = 1, Code = "C01", UccrName = "Alice", UccrSurname = "Zara",
                 UccrEmail = "a@test.com", UccrMobile = "111", CourierFleetId = 1,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourier
             {
                 UccrId = 2, Code = "A02", UccrName = "Bob", UccrSurname = "Young",
                 UccrEmail = "c@test.com", UccrMobile = "333", CourierFleetId = 3,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourier
             {
                 UccrId = 3, Code = "B03", UccrName = "Carol", UccrSurname = "Xena",
                 UccrEmail = "b@test.com", UccrMobile = "222", CourierFleetId = 2,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             }
         );
 
@@ -133,17 +132,17 @@ public class CourierRepositorySortingTests : IDisposable
             {
                 UccrId = 4, Code = "D04", UccrName = "Dave", UccrSurname = "Wilson",
                 UccrEmail = null, UccrMobile = "444", CourierFleetId = 1,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourier
             {
                 UccrId = 5, Code = "E05", UccrName = "Eve", UccrSurname = "Thomas",
                 UccrEmail = null, UccrMobile = "555", CourierFleetId = 2,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             }
         );
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     /// <summary>
@@ -166,21 +165,21 @@ public class CourierRepositorySortingTests : IDisposable
         {
             CourierLogInOutId = 1, CourierId = 1,
             LogInTime = today.AddHours(6), LogOutTime = null,
-            Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+            Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
         });
         // Alice: login 02:00, now 10:00 → 480 min
         context.TblCourierLogInOuts.Add(new TblCourierLogInOut
         {
             CourierLogInOutId = 2, CourierId = 2,
             LogInTime = today.AddHours(2), LogOutTime = null,
-            Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+            Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
         });
         // Mike: login 08:00, now 10:00 → 120 min
         context.TblCourierLogInOuts.Add(new TblCourierLogInOut
         {
             CourierLogInOutId = 3, CourierId = 3,
             LogInTime = today.AddHours(8), LogOutTime = null,
-            Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+            Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
         });
 
         // Couriers
@@ -189,19 +188,19 @@ public class CourierRepositorySortingTests : IDisposable
             {
                 UccrId = 1, Code = "Z01", UccrName = "Zara", UccrSurname = "Adams",
                 CourierLogInOutId = 1,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourier
             {
                 UccrId = 2, Code = "A02", UccrName = "Alice", UccrSurname = "Brown",
                 CourierLogInOutId = 2,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             },
             new TucCourier
             {
                 UccrId = 3, Code = "M03", UccrName = "Mike", UccrSurname = "Carter",
                 CourierLogInOutId = 3,
-                Created = DateTime.Now, CreatedBy = "Test", LastModified = DateTime.Now, LastModifiedBy = "Test"
+                Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
             }
         );
 
@@ -238,7 +237,7 @@ public class CourierRepositorySortingTests : IDisposable
             });
         }
 
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     #endregion
