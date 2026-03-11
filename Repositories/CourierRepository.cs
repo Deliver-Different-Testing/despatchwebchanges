@@ -21,6 +21,7 @@ namespace DespatchWeb.Repositories;
 public class CourierRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
     IMemoryCache cache)
     : BaseRepository(contextFactory),
@@ -37,7 +38,7 @@ public class CourierRepository(
 
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
         var courier = await Context.GetCourierByIdAsync(courierId, now);
         return courier;
     }
@@ -177,7 +178,7 @@ public class CourierRepository(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
 
             var courierData = await Context.TucCouriers
                 .AsNoTracking()
@@ -276,7 +277,7 @@ public class CourierRepository(
     {
         try
         {
-            var now = infoService.GetCurrentTenantTime();
+            var now = clock.TenantNow;
 
             var courierData = await Context.TucCouriers
                 .AsNoTracking()
@@ -413,7 +414,7 @@ public class CourierRepository(
     public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false)
     {
         var isUsTenant = infoService.IsUsTenant();
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
 
         try
         {
@@ -517,7 +518,7 @@ public class CourierRepository(
 
     private async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
     {
-        var today = infoService.GetCurrentTenantTime();
+        var today = clock.TenantToday;
         var results = await Context.GetActiveCouriersAsync(today);
 
         if (!includeJobCount || results.Count == 0) return results;
@@ -554,7 +555,7 @@ public class CourierRepository(
 
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var currentDateOnly = currentDate.Date;
 
             // Use provided date range or default to today
@@ -1396,7 +1397,7 @@ public class CourierRepository(
     public async Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(
         CourierComplianceFilterRequest request)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
         var tenantTimezone = infoService.GetTenantTimeZone();
         var expiringThreshold = now.AddDays(30);
 
@@ -1553,7 +1554,7 @@ public class CourierRepository(
     public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
         CourierAfterHoursFilterRequest request)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
         var tenantTimezone = infoService.GetTenantTimeZone();
 
         // Ensure valid page and pageSize
@@ -1692,7 +1693,8 @@ public class CourierRepository(
     public async Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(
         TodayActiveDriversFilterRequest request)
     {
-        var today = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
+        var today = clock.TenantToday;
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var page = Math.Max(1, request.Page);
@@ -1760,7 +1762,7 @@ public class CourierRepository(
 
         var totalActiveDrivers = sessionData.Count(s => s.IsActive);
         var totalDriversActiveToday = sessionData.Count(s => s.IsActive && s.LogInTime.Date == today.Date);
-        var averageSessionTime = sessionData.Average(s => ((s.LogOutTime ?? today) - s.LogInTime).TotalMinutes);
+        var averageSessionTime = sessionData.Average(s => ((s.LogOutTime ?? now) - s.LogInTime).TotalMinutes);
 
         query = request.OrderBy?.ToLower() switch
         {
@@ -1846,7 +1848,7 @@ public class CourierRepository(
                 Fleet = c.Fleet,
                 LoginTime = loginTime,
                 LogoutTime = logoutTime,
-                Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? today),
+                Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? now),
                 Deliveries = deliveryCountDict.GetValueOrDefault(c.UccrId, 0),
                 Status = c.Status
             };
@@ -1900,7 +1902,7 @@ public class CourierRepository(
 
     public async Task<CourierDailyEarningsPaginatedResponse> GetCourierDailyEarningsAsync(PaginatedRequest request)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
 
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Max(1, Math.Min(100, request.PageSize));
@@ -2324,7 +2326,7 @@ public class CourierRepository(
 
     public async Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync()
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
 
         var drivers = await Context.TucCouriers
             .AsNoTracking()
@@ -2375,7 +2377,7 @@ public class CourierRepository(
 
     public async Task ResetClearListAreaOrderAsync(int courierId)
     {
-        var tenantTime = infoService.GetCurrentTenantTime();
+        var tenantTime = clock.TenantNow;
 
         // Count jobs for the courier that are not void and not done
         var jobCount = await Context.TucJobs
@@ -2456,7 +2458,8 @@ public class CourierRepository(
     public async Task<List<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(
         TodayActiveDriversFilterRequest request)
     {
-        var today = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
+        var today = clock.TenantToday;
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var query = Context.TucCouriers
@@ -2533,7 +2536,7 @@ public class CourierRepository(
             LogoutTime = c.LogOutTime.HasValue
                 ? TimeZoneHelper.SetDateTimeWithTimeZone(c.LogOutTime.Value, tenantTimeZone)
                 : null,
-            Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? today),
+            Duration = CourierActiveDuration(c.LogInTime, c.LogOutTime ?? now),
             Deliveries = deliveryCountDict.GetValueOrDefault(c.UccrId, 0),
             Status = c.Status
         }).ToList();
@@ -2542,7 +2545,7 @@ public class CourierRepository(
     public async Task<List<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(
         CourierComplianceFilterRequest request)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
         var tenantTimezone = infoService.GetTenantTimeZone();
         var expiringThreshold = now.AddDays(30);
 
@@ -2734,7 +2737,7 @@ public class CourierRepository(
     public async Task<List<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(
         PaginatedRequest request)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
 
         var query = Context.TucCouriers
             .Where(c => c.CourierLogInOut != null &&

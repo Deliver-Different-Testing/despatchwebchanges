@@ -29,16 +29,14 @@ public static class FrequencyExtensions
                 .Where(f => frequency.HasFlag(f))
                 .ToArray();
 
-        private bool MatchesDate(DateTime date, DateTime? referenceDate = null)
+        private bool MatchesDate(DateTime date, DateTime referenceDate)
         {
-            referenceDate ??= DateTime.Today;
-
             // For any frequency, check each flag
             var matches = false;
 
-            if (frequency.HasFlag(Frequency.Weekly)) matches |= IsWeeklyMatch(date, referenceDate.Value);
+            if (frequency.HasFlag(Frequency.Weekly)) matches |= IsWeeklyMatch(date, referenceDate);
 
-            if (frequency.HasFlag(Frequency.Fortnightly)) matches |= IsFortnightlyMatch(date, referenceDate.Value);
+            if (frequency.HasFlag(Frequency.Fortnightly)) matches |= IsFortnightlyMatch(date, referenceDate);
 
             if (frequency.HasFlag(Frequency.FirstOfMonth)) matches |= date.Day == 1;
 
@@ -117,7 +115,7 @@ public static class FrequencyExtensions
         return true;
     }
 
-    public static DateTime? GetNextOccurrenceForSingleFrequency(Frequency frequency, DateTime after)
+    public static DateTime? GetNextOccurrenceForSingleFrequency(Frequency frequency, DateTime after, DateTime referenceDate)
     {
         // Start checking from the day after
         var current = after.AddDays(1);
@@ -125,7 +123,7 @@ public static class FrequencyExtensions
         // Look ahead a reasonable amount (max 100 days to prevent infinite loops)
         for (var i = 0; i < 100; i++)
         {
-            if (frequency.MatchesDate(current))
+            if (frequency.MatchesDate(current, referenceDate))
                 return current;
 
             current = current.AddDays(1);

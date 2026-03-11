@@ -75,7 +75,7 @@ public class FlightRateServiceTests
                     SaleRate = 120.00m,
                     Availability = "Available",
                     AvailabilityColour = "#00FF00",
-                    BookDate = DateTime.Now,
+                    BookDate = TestDates.Now,
                     Duration = 120,
                     FlightRate = expectedRate
                 }

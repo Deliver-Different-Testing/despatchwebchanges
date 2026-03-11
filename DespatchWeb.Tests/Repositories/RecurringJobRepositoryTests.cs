@@ -16,13 +16,14 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests for RecurringJobRepository - focuses on UpdateRecurringJobAsync method.
 /// Uses SQLite in-memory database to properly test ExecuteUpdateAsync bulk operations.
 /// </summary>
-public class RecurringJobRepositoryTests : IDisposable
+public class RecurringJobRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public RecurringJobRepositoryTests()
     {
@@ -30,7 +31,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         // Disable foreign key constraints for testing
         using (var command = _connection.CreateCommand())
@@ -48,15 +49,16 @@ public class RecurringJobRepositoryTests : IDisposable
         _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _context.Dispose();
-        _connection.Dispose();
+        await _context.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     private RecurringJobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object
     );
 
@@ -78,7 +80,7 @@ public class RecurringJobRepositoryTests : IDisposable
         );
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, 1, "AGRAT"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -89,7 +91,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert - Verify the correct client code was set (not AGRAT which is first)
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkClientId.Should().Be(newClientId);
         updatedJob.UcbkClientCode.Should().Be(expectedClientCode);
     }
@@ -110,7 +112,7 @@ public class RecurringJobRepositoryTests : IDisposable
         );
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, 1, "AGRAT"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -121,7 +123,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert - Should be NEWCLIENT, NOT AGRAT
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkClientCode.Should().Be(expectedClientCode);
         updatedJob.UcbkClientCode.Should().NotBe("AGRAT");
     }
@@ -139,7 +141,7 @@ public class RecurringJobRepositoryTests : IDisposable
         );
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, 1, "AGRAT"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -150,7 +152,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert - Client code should be null for non-existent client
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkClientId.Should().Be(nonExistentClientId);
         updatedJob.UcbkClientCode.Should().BeNull();
     }
@@ -171,7 +173,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(childJobId, 1, "OLD", bookingParentId: parentJobId)
         );
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -181,13 +183,16 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert - Both parent and child should be updated
-        var parentJob = await _context.TucJobBookings.FindAsync(parentJobId);
-        var childJob = await _context.TucJobBookings.FindAsync(childJobId);
+        if (_context.TucJobBookings != null)
+        {
+            var parentJob = await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
+            var childJob = await _context.TucJobBookings.FindAsync([childJobId], TestContext.Current.CancellationToken);
 
-        parentJob!.UcbkClientId.Should().Be(newClientId);
-        parentJob.UcbkClientCode.Should().Be(expectedClientCode);
-        childJob!.UcbkClientId.Should().Be(newClientId);
-        childJob.UcbkClientCode.Should().Be(expectedClientCode);
+            parentJob!.UcbkClientId.Should().Be(newClientId);
+            parentJob.UcbkClientCode.Should().Be(expectedClientCode);
+            childJob!.UcbkClientId.Should().Be(newClientId);
+            childJob.UcbkClientCode.Should().Be(expectedClientCode);
+        }
     }
 
     [Fact]
@@ -206,7 +211,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(childJobId, 1, "OLD", parentId: parentJobId)
         );
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -216,8 +221,8 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert - Both parent and child (via ParentId) should be updated
-        var parentJob = await _context.TucJobBookings.FindAsync(parentJobId);
-        var childJob = await _context.TucJobBookings.FindAsync(childJobId);
+        var parentJob = await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
+        var childJob = await _context.TucJobBookings.FindAsync([childJobId], TestContext.Current.CancellationToken);
 
         parentJob!.UcbkClientCode.Should().Be(expectedClientCode);
         childJob!.UcbkClientCode.Should().Be(expectedClientCode);
@@ -235,7 +240,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const short newQuantity = 5;
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, quantity: 1));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -244,7 +249,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.Quantity.Should().Be(newQuantity);
     }
 
@@ -256,7 +261,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int newSpeedId = 3;
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, speed: 1, done: false));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -265,7 +270,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkSpeed.Should().Be(newSpeedId);
     }
 
@@ -278,7 +283,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int newSpeedId = 3;
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, speed: originalSpeed, done: true));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -287,7 +292,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert - Speed should remain unchanged for done jobs
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkSpeed.Should().Be(originalSpeed);
     }
 
@@ -298,7 +303,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, cbd: false));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -307,7 +312,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkCbd.Should().BeTrue();
     }
 
@@ -318,7 +323,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
 
         _context.TucJobBookings.Add(CreateJobBooking(jobId, attention: false));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -327,7 +332,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkAttention.Should().BeTrue();
     }
 
@@ -354,7 +359,7 @@ public class RecurringJobRepositoryTests : IDisposable
             active: true,
             oneOff: false
         ));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
@@ -387,7 +392,7 @@ public class RecurringJobRepositoryTests : IDisposable
             active: true,
             oneOff: false
         ));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
@@ -423,7 +428,7 @@ public class RecurringJobRepositoryTests : IDisposable
             active: true,
             oneOff: false
         ));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
@@ -453,7 +458,7 @@ public class RecurringJobRepositoryTests : IDisposable
             active: true,
             oneOff: false
         ));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
@@ -489,7 +494,7 @@ public class RecurringJobRepositoryTests : IDisposable
             active: true,
             oneOff: false
         ));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
@@ -540,7 +545,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithDates(101, null, null, null, true, false),
             CreateJobBookingWithDates(102, validDate, validTime, null, true, false)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
@@ -565,7 +570,7 @@ public class RecurringJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobBookings.Add(CreateJobBookingWithDetails(jobId, "JOB100", clientCode: "TEST"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -591,7 +596,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithDetails(childId1, "CHILD1", bookingParentId: parentId),
             CreateJobBookingWithDetails(childId2, "CHILD2", bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -615,7 +620,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithDetails(parentId, "PARENT"),
             CreateJobBookingWithDetails(childId, "CHILD", bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -651,7 +656,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
         var expected = bool.Parse(value);
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -659,7 +664,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.Reprice.Should().Be(expected);
     }
 
@@ -669,7 +674,7 @@ public class RecurringJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobBookings.Add(CreateJobBookingWithVehicle(jobId, van: true, truck: false));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -677,7 +682,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.Truck.Should().BeTrue();
         updatedJob.UcbkVan.Should().BeFalse();
     }
@@ -688,7 +693,7 @@ public class RecurringJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobBookings.Add(CreateJobBookingWithVehicle(jobId, van: false, truck: true));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -696,7 +701,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkVan.Should().BeTrue();
         updatedJob.Truck.Should().BeFalse();
     }
@@ -708,7 +713,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
         var longValue = new string('A', 50);
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -716,7 +721,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkClientRefa.Should().HaveLength(20);
     }
 
@@ -727,7 +732,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
         var longValue = new string('B', 50);
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -735,7 +740,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkClientRefb.Should().HaveLength(15);
     }
 
@@ -746,7 +751,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
         const decimal newAmount = 123.45m;
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -754,7 +759,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.UcbkAmount.Should().Be(newAmount);
     }
 
@@ -765,7 +770,7 @@ public class RecurringJobRepositoryTests : IDisposable
         const int jobId = 100;
         const int newCourierId = 42;
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -773,7 +778,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.CourierId.Should().Be(newCourierId);
     }
 
@@ -789,7 +794,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(parentId),
             CreateJobBooking(childId, bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -797,8 +802,8 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var parent = await _context.TucJobBookings.FindAsync(parentId);
-        var child = await _context.TucJobBookings.FindAsync(childId);
+        var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var child = await _context.TucJobBookings.FindAsync([childId], TestContext.Current.CancellationToken);
         parent!.UcbkTime.Should().Be(newTime);
         child!.UcbkTime.Should().Be(newTime);
     }
@@ -815,7 +820,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(parentId),
             CreateJobBooking(childId, bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -823,8 +828,8 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var parent = await _context.TucJobBookings.FindAsync(parentId);
-        var child = await _context.TucJobBookings.FindAsync(childId);
+        var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var child = await _context.TucJobBookings.FindAsync([childId], TestContext.Current.CancellationToken);
         parent!.UcbkWeight.Should().Be(newWeight);
         child!.UcbkWeight.Should().Be(newWeight);
     }
@@ -835,7 +840,7 @@ public class RecurringJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -843,7 +848,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.Direct.Should().BeTrue();
     }
 
@@ -864,7 +869,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(firstChildId, bookingParentId: parentId),
             CreateJobBooking(secondChildId, bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -872,9 +877,9 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var parent = await _context.TucJobBookings.FindAsync(parentId);
-        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
-        var secondChild = await _context.TucJobBookings.FindAsync(secondChildId);
+        var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
+        var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
         parent!.PickupFromContact.Should().Be(newContact);
         firstChild!.PickupFromContact.Should().Be(newContact);
@@ -895,7 +900,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(firstChildId, bookingParentId: parentId),
             CreateJobBooking(secondChildId, bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Act
@@ -903,9 +908,9 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var parent = await _context.TucJobBookings.FindAsync(parentId);
-        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
-        var secondChild = await _context.TucJobBookings.FindAsync(secondChildId);
+        var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
+        var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
         parent!.DeliverToContact.Should().Be(newContact);
         firstChild!.DeliverToContact.Should().BeNull(); // First child should NOT be updated
@@ -922,7 +927,7 @@ public class RecurringJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new UpdateAddressRequest
@@ -936,7 +941,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.DeliveryAddressLine1.Should().Be("123 Delivery St");
         updatedJob.DeliveryAddressLine6.Should().Be("Auckland");
         updatedJob.DeliveryAddressLine7.Should().Be("1010");
@@ -955,7 +960,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(firstChildId, bookingParentId: parentId),
             CreateJobBooking(lastChildId, bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new UpdateAddressRequest
@@ -969,9 +974,9 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var parent = await _context.TucJobBookings.FindAsync(parentId);
-        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
-        var lastChild = await _context.TucJobBookings.FindAsync(lastChildId);
+        var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
+        var lastChild = await _context.TucJobBookings.FindAsync([lastChildId], TestContext.Current.CancellationToken);
 
         parent!.DeliveryAddressLine1.Should().Be("456 New Delivery");
         firstChild!.DeliveryAddressLine1.Should().BeNull(); // First child NOT updated
@@ -1005,7 +1010,7 @@ public class RecurringJobRepositoryTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobBookings.Add(CreateJobBooking(jobId));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new UpdateAddressRequest
@@ -1019,7 +1024,7 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var updatedJob = await _context.TucJobBookings.FindAsync(jobId);
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
         updatedJob!.PickupAddressLine1.Should().Be("789 Pickup Ave");
         updatedJob.PickupAddressLine6.Should().Be("Hamilton");
         updatedJob.PickupAddressLine7.Should().Be("3200");
@@ -1038,7 +1043,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBooking(firstChildId, bookingParentId: parentId),
             CreateJobBooking(lastChildId, bookingParentId: parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new UpdateAddressRequest
@@ -1052,9 +1057,9 @@ public class RecurringJobRepositoryTests : IDisposable
         _context.ChangeTracker.Clear();
 
         // Assert
-        var parent = await _context.TucJobBookings.FindAsync(parentId);
-        var firstChild = await _context.TucJobBookings.FindAsync(firstChildId);
-        var lastChild = await _context.TucJobBookings.FindAsync(lastChildId);
+        var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
+        var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
+        var lastChild = await _context.TucJobBookings.FindAsync([lastChildId], TestContext.Current.CancellationToken);
 
         parent!.PickupAddressLine1.Should().Be("111 New Pickup");
         firstChild!.PickupAddressLine1.Should().Be("111 New Pickup");
@@ -1091,11 +1096,11 @@ public class RecurringJobRepositoryTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
 
         _context.TucJobBookings.AddRange(
-            CreateJobBookingWithDates(100, DateTime.Now, null, null, true, false),
-            CreateJobBookingWithDates(101, DateTime.Now, null, null, true, false),
-            CreateJobBookingWithDates(102, DateTime.Now, null, null, false, false) // Inactive
+            CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false),
+            CreateJobBookingWithDates(101, TestDates.Now, null, null, true, false),
+            CreateJobBookingWithDates(102, TestDates.Now, null, null, false, false) // Inactive
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true };
@@ -1120,7 +1125,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithSpeed(101, 2, true),
             CreateJobBookingWithSpeed(102, 1, true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, SpeedId = 1 };
@@ -1146,7 +1151,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithCourier(101, 20, true),
             CreateJobBookingWithCourier(102, 10, true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, CourierId = 10 };
@@ -1171,7 +1176,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithAddress(101, "456 King Ave", true),
             CreateJobBookingWithAddress(102, "789 Queen Road", true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, SearchText = "Queen" };
@@ -1192,10 +1197,10 @@ public class RecurringJobRepositoryTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
 
         _context.TucJobBookings.AddRange(
-            CreateJobBookingWithDates(100, DateTime.Now, null, null, true, false), // Recurring
-            CreateJobBookingWithDates(101, DateTime.Now, null, null, true, true)   // One-off
+            CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false), // Recurring
+            CreateJobBookingWithDates(101, TestDates.Now, null, null, true, true)   // One-off
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true };
@@ -1225,7 +1230,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithDates(101, new DateTime(2024, 6, 1), null, null, true, false),
             CreateJobBookingWithDates(102, new DateTime(2024, 3, 1), null, null, true, false)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest
@@ -1255,7 +1260,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithSearchFields(101, clientCode: "GLOBEX", active: true),
             CreateJobBookingWithSearchFields(102, clientCode: "ACME02", active: true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "ACME" };
@@ -1281,7 +1286,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithSearchFields(101, deliverContact: "Jane Smith", active: true),
             CreateJobBookingWithSearchFields(102, pickupContact: "Bob Jones", active: true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "Smith" };
@@ -1307,7 +1312,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithSearchFields(101, clientRefB: "INV-12345", active: true),
             CreateJobBookingWithSearchFields(102, ourRef: "REF-99999", active: true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "12345" };
@@ -1333,7 +1338,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithSearchFields(101, connote: "CN-XYZ-002", active: true),
             CreateJobBookingWithSearchFields(102, connote: "CN-ABC-003", active: true)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50, SearchText = "ABC" };
@@ -1368,7 +1373,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateNote(2, jobBookingId, "Oldest note", oldestDate),
             CreateNote(3, jobBookingId, "Newest note", newestDate)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -1400,7 +1405,7 @@ public class RecurringJobRepositoryTests : IDisposable
             CreateJobBookingWithDays(101, 3, true),   // Monday + Tuesday
             CreateJobBookingWithDays(102, 4, true)    // Wednesday only
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         // Filter for Monday (1)
@@ -1422,14 +1427,14 @@ public class RecurringJobRepositoryTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
 
         _context.TucJobBookings.AddRange(
-            CreateJobBookingWithDates(100, DateTime.Now, null, null, true, false),
+            CreateJobBookingWithDates(100, TestDates.Now, null, null, true, false),
             CreateJobBookingWithDetails(101, "CHILD", bookingParentId: 100)
         );
         // Set the child as active
-        var child = await _context.TucJobBookings.FindAsync(101);
+        var child = await _context.TucJobBookings.FindAsync([101], TestContext.Current.CancellationToken);
         child!.UcbkActive = true;
         child.UcbkOneOff = false;
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };

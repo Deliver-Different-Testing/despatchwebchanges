@@ -11,7 +11,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// <summary>
 /// Tests for JobRepository split job functionality.
 /// </summary>
-public class JobRepositorySplitJobTests : IDisposable
+public class JobRepositorySplitJobTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
@@ -19,6 +19,7 @@ public class JobRepositorySplitJobTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositorySplitJobTests()
     {
@@ -26,7 +27,7 @@ public class JobRepositorySplitJobTests : IDisposable
         _connection.Open();
 
         // Register SQL Server functions that SQLite doesn't have
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         using (var command = _connection.CreateCommand())
@@ -45,15 +46,16 @@ public class JobRepositorySplitJobTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _context.Dispose();
-        _connection.Dispose();
+        await _context.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -64,7 +66,7 @@ public class JobRepositorySplitJobTests : IDisposable
     public async Task CanJobBeSplitAsync_JobWithNoParent_ReturnsTrue()
     {
         _context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB-100" });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
@@ -79,7 +81,7 @@ public class JobRepositorySplitJobTests : IDisposable
             new TucJob { UcjbId = 100, UcjbNumber = "PARENT" },
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD", ParentId = 100 }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().CanJobBeSplitAsync(101);
 
@@ -102,7 +104,7 @@ public class JobRepositorySplitJobTests : IDisposable
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD-1", ParentId = 100 },
             new TucJob { UcjbId = 102, UcjbNumber = "CHILD-2", ParentId = 100 }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
@@ -126,7 +128,7 @@ public class JobRepositorySplitJobTests : IDisposable
             UcnwAirportOnly = false,
             UcnwLegNumber = 1
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
@@ -137,7 +139,7 @@ public class JobRepositorySplitJobTests : IDisposable
     public async Task CanJobBeSplitAsync_JobWithNoParentAndNoChildren_ReturnsTrue()
     {
         _context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "STANDALONE" });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
@@ -156,7 +158,7 @@ public class JobRepositorySplitJobTests : IDisposable
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD-1", ParentId = 100 },
             new TucJob { UcjbId = 102, UcjbNumber = "CHILD-2", ParentId = 100 }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
@@ -168,7 +170,7 @@ public class JobRepositorySplitJobTests : IDisposable
     public async Task GetSplitJobChildrenAsync_JobWithNoChildren_ReturnsEmptyList()
     {
         _context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "JOB" });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
@@ -183,7 +185,7 @@ public class JobRepositorySplitJobTests : IDisposable
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD", ParentId = 100 },
             new TucJob { UcjbId = 200, UcjbNumber = "UNRELATED" }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
@@ -214,7 +216,7 @@ public class JobRepositorySplitJobTests : IDisposable
             new TucJob { UcjbId = 100, UcjbNumber = "PARENT" },
             new TucJob { UcjbId = 101, UcjbNumber = "CHILD", ParentId = 100 }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().GetJobParentIdAsync(101);
 
@@ -225,7 +227,7 @@ public class JobRepositorySplitJobTests : IDisposable
     public async Task GetJobParentIdAsync_ParentJob_ReturnsNull()
     {
         _context.TucJobs.Add(new TucJob { UcjbId = 100, UcjbNumber = "PARENT" });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await CreateRepository().GetJobParentIdAsync(100);
 

@@ -62,7 +62,7 @@ public class AiControllerTests
 
         var json = result as JsonResult;
         json.Should().NotBeNull();
-        var value = json!.Value as dynamic;
+        dynamic? value = json.Value;
         ((bool)value!.enabled).Should().BeTrue();
     }
 
@@ -75,7 +75,7 @@ public class AiControllerTests
 
         var json = result as JsonResult;
         json.Should().NotBeNull();
-        var value = json!.Value as dynamic;
+        dynamic? value = json.Value;
         ((bool)value!.enabled).Should().BeFalse();
     }
 
@@ -96,7 +96,7 @@ public class AiControllerTests
         // Assert
         var statusResult = result as ObjectResult;
         statusResult.Should().NotBeNull();
-        statusResult!.StatusCode.Should().Be(503);
+        statusResult.StatusCode.Should().Be(503);
     }
 
     [Fact]
@@ -129,7 +129,7 @@ public class AiControllerTests
         // Assert
         var statusResult = result as ObjectResult;
         statusResult.Should().NotBeNull();
-        statusResult!.StatusCode.Should().Be(429);
+        statusResult.StatusCode.Should().Be(429);
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class AiControllerTests
         // Assert
         var statusResult = result as ObjectResult;
         statusResult.Should().NotBeNull();
-        statusResult!.StatusCode.Should().Be(500);
+        statusResult.StatusCode.Should().Be(500);
     }
 
     [Fact]
@@ -209,7 +209,7 @@ public class AiControllerTests
         // Assert
         var statusResult = result as ObjectResult;
         statusResult.Should().NotBeNull();
-        statusResult!.StatusCode.Should().Be(499);
+        statusResult.StatusCode.Should().Be(499);
     }
 
     #endregion

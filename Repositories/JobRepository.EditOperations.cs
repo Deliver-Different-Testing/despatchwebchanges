@@ -316,7 +316,7 @@ public partial class JobRepository
                 job.UndeliverableLocationId = int.Parse(value);
                 job.UcjbStatus = (int)JobStatus.Undeliverable;
                 job.UcjbJobDone = true;
-                job.UcjbComplTime = _infoService.GetCurrentTenantTime();
+                job.UcjbComplTime = _clock.TenantNow;
                 job.UcjbPodname =
                     job.UndeliverableLocation != null
                         ? job.UndeliverableLocation.Podname
@@ -328,7 +328,7 @@ public partial class JobRepository
                 if (delivered)
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
-                    job.UcjbComplTime = _infoService.GetCurrentTenantTime();
+                    job.UcjbComplTime = _clock.TenantNow;
                 }
 
                 break;
@@ -502,7 +502,7 @@ public partial class JobRepository
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
-                    archive.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(
+                    archive.FollowupTime = _clock.TenantNow.AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
                 else
@@ -553,7 +553,7 @@ public partial class JobRepository
                 archive.UndeliverableLocationId = int.Parse(value);
                 archive.UcjbStatus = (int)JobStatus.Undeliverable;
                 archive.UcjbJobDone = true;
-                archive.UcjbComplTime = _infoService.GetCurrentTenantTime();
+                archive.UcjbComplTime = _clock.TenantNow;
                 archive.UcjbPodname =
                     archive.UndeliverableLocation != null
                         ? archive.UndeliverableLocation.Podname
@@ -565,7 +565,7 @@ public partial class JobRepository
                 if (delivered)
                 {
                     archive.UcjbStatus = (int)JobStatus.Completed;
-                    archive.UcjbComplTime = _infoService.GetCurrentTenantTime();
+                    archive.UcjbComplTime = _clock.TenantNow;
                 }
 
                 break;
@@ -843,7 +843,7 @@ public partial class JobRepository
     private async Task JobUpdateAddNoteAsync(int jobId, bool isLiveJob, string updateNote)
     {
         var staffId = _infoService.GetStaffId();
-        var currentDate = _infoService.GetCurrentTenantTime();
+        var currentDate = _clock.TenantNow;
 
         var newNote = new TucNote
         {
@@ -873,7 +873,7 @@ public partial class JobRepository
         {
             // Safely handle DefaultMinutes when InternalStatusNavigation is null
             var defaultMinutes = job.InternalStatusNavigation?.DefaultMinutes ?? 0;
-            job.FollowupTime = _infoService.GetCurrentTenantTime().AddMinutes(defaultMinutes);
+            job.FollowupTime = _clock.TenantNow.AddMinutes(defaultMinutes);
         }
         else
         {

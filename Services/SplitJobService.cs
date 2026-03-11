@@ -18,6 +18,7 @@ namespace DespatchWeb.Services;
 public class SplitJobService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService,
+    ITenantClock clock,
     IRateJobService rateJobService,
     IJobRepository jobRepository) : ISplitJobService
 {
@@ -32,7 +33,7 @@ public class SplitJobService(
         string userName,
         AddressViewModel meetingPointAddress)
     {
-        var currentTenantTime = tenantInfoService.GetCurrentTenantTime();
+        var currentTenantTime = clock.TenantNow;
 
         await using var context = await contextFactory.CreateDbContextAsync();
         await using var transaction = await context.Database.BeginTransactionAsync();

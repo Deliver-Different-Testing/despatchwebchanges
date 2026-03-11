@@ -13,7 +13,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests the refactored query that now uses direct mappings and queries both live and archived tables.
 /// Uses SQLite in-memory database with shared connection for parallel context queries.
 /// </summary>
-public class JobRepositoryPodSearchDownloadTests : IDisposable
+public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _contextOptions;
@@ -21,6 +21,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPodSearchDownloadTests()
     {
@@ -28,7 +29,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         // Disable foreign keys for simpler test setup
         using (var command = _connection.CreateCommand())
@@ -57,14 +58,15 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -85,7 +87,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15)),
                 CreateArchivedJob(102, "ARCH-002", new DateTime(2024, 1, 16))
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -120,7 +122,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-FEB", new DateTime(2024, 2, 15)), // Outside range
                 CreateLiveJob(3, "JOB-JAN2", new DateTime(2024, 1, 20))
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -154,7 +156,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "CLIENT2-JOB", new DateTime(2024, 1, 15), clientId: 200),
                 CreateLiveJob(3, "CLIENT1-JOB2", new DateTime(2024, 1, 15), clientId: 100)
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -186,7 +188,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "COURIER2-JOB", new DateTime(2024, 1, 15), courierId: 20),
                 CreateLiveJob(3, "COURIER1-JOB2", new DateTime(2024, 1, 15), courierId: 10)
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -218,7 +220,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "SPEED2-JOB", new DateTime(2024, 1, 15), speedId: 2),
                 CreateLiveJob(3, "SPEED1-JOB2", new DateTime(2024, 1, 15), speedId: 1)
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -250,7 +252,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "ABC-002", new DateTime(2024, 1, 15)),
                 CreateLiveJob(3, "XYZ-001", new DateTime(2024, 1, 15))
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -282,7 +284,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "CHILD-001", new DateTime(2024, 1, 15), parentId: 1),  // Child of 1
                 CreateLiveJob(3, "SINGLE-001", new DateTime(2024, 1, 15))                // No parent/child relationship
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -316,7 +318,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "A-JOB", new DateTime(2024, 1, 15)),
                 CreateLiveJob(3, "B-JOB", new DateTime(2024, 1, 15))
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -344,7 +346,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
         {
             context.TucJobs.Add(CreateLiveJob(1, "LIVE-001", new DateTime(2024, 1, 15)));
             context.TucJobArchives.Add(CreateArchivedJob(101, "ARCH-001", new DateTime(2024, 1, 15)));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -376,7 +378,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
         {
             context.TucJobs.Add(CreateLiveJob(1, "JOB-001", new DateTime(2024, 1, 15)));
             context.TucJobArchives.Add(CreateArchivedJob(101, "JOB-002", new DateTime(2024, 1, 15)));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -407,7 +409,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), podName: "Jane Doe"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), podName: "Bob Johnson")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -440,7 +442,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), contactPhone: "0498765432"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), contactPhone: "0412999888")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -473,7 +475,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-BBB", new DateTime(2024, 1, 15), pickupFromPhone: "0398765432"),
                 CreateLiveJob(3, "JOB-CCC", new DateTime(2024, 1, 15), pickupFromPhone: "0212345678")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -505,7 +507,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), deliverToPhone: "0798765432"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), deliverToPhone: "0812345678")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -538,7 +540,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), podEmail: "jane@other.com"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), podEmail: "bob@example.com")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -571,7 +573,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), podMobile: "0400333444"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), podMobile: "0411555666")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -604,7 +606,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), trackingEmail: "notify@company.com"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), trackingEmail: "tracking@other.com")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -637,7 +639,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateLiveJob(2, "JOB-002", new DateTime(2024, 1, 15), trackingMobile: "0422333444"),
                 CreateLiveJob(3, "JOB-003", new DateTime(2024, 1, 15), trackingMobile: "0433555666")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -670,7 +672,7 @@ public class JobRepositoryPodSearchDownloadTests : IDisposable
                 CreateArchivedJob(2, "ARCH-002", new DateTime(2024, 1, 15), podName: "Jane Doe", contactPhone: "0498765432"),
                 CreateArchivedJob(3, "ARCH-003", new DateTime(2024, 1, 15), podName: "Bob Johnson", contactPhone: "0412999888")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();

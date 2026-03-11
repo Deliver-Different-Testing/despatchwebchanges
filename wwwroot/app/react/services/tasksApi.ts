@@ -16,6 +16,7 @@ import {
     TaskAssignStaffRequest,
     StaffSuggestion,
     EventTypeSuggestion,
+    EventGroupViewModel,
 } from '../interfaces';
 import {formatDateForApi, parseDateFromApi, formatRelativeDateTime} from '../utils/dateUtils';
 import dayjs, {Dayjs} from 'dayjs';
@@ -128,6 +129,20 @@ export async function getDeliveryJourney(jobId: number): Promise<DeliveryJourney
     return (response || []).map(transformDeliveryJourneyDTO);
 }
 
+/**
+ * Get event type groups for a specific event group
+ */
+export async function getEventTypeGroups(eventGroupId: number): Promise<EventGroupViewModel[]> {
+    return apiClient.get<EventGroupViewModel[]>('task/GetEventTypeGroups', {eventGroupId});
+}
+
+/**
+ * Add tasks to a job from event group selections
+ */
+export async function addTasks(jobId: number, eventGroupViewModels: EventGroupViewModel[]): Promise<void> {
+    await apiClient.post('task/AddTasks', {jobId, eventGroupViewModels});
+}
+
 export const tasksApi = {
     getAllTasks,
     markTaskAsClosed,
@@ -137,6 +152,8 @@ export const tasksApi = {
     getActiveStaff,
     getEventTypes,
     getDeliveryJourney,
+    getEventTypeGroups,
+    addTasks,
 };
 
 export default tasksApi;

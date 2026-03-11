@@ -10,8 +10,7 @@ import DispatchCoreService from "./services/dispatch-core.service";
 import NavigationService from "./services/navigation.service";
 import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
-import {EventGroupDialogController} from "./components/dialogs/event-group-dialog/event-group-dialog.controller";
-import {EventGroupDialogService} from "./components/dialogs/event-group-dialog/event-group-dialog.service";
+import "./react/components/dialogs/event-group-dialog/event-group-dialog-react.module";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
@@ -218,7 +217,6 @@ app.directive("reactAppShell", reactAppShellDirective);
 
 // Dialogs
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
-app.controller('EventGroupDialogController', EventGroupDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 app.controller("simplePriceEditDialogController", SimplePriceEditDialogController);
@@ -229,7 +227,6 @@ app.service("DispatchData", DispatchCoreService);
 app.service("navigationService", NavigationService);
 app.service("toastrService", ToastrService);
 app.service('selectDialogService', SelectDialogService);
-app.service('eventGroupDialogService', EventGroupDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
 app.service("priceBreakdownDialogService", PriceBreakdownDialogService);

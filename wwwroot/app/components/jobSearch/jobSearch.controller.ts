@@ -1021,6 +1021,7 @@ class JobSearchController extends BaseController {
 
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
         try {
+            this.dateSearchRange = dateRangeOption;
             const tenantTimezone = getIanaTimezone(this.timeZone);
 
             const now = dayjs().tz(tenantTimezone);
@@ -1212,6 +1213,10 @@ class JobSearchController extends BaseController {
             console.error('Error opening settings dialog:', error);
             this.toastrService.showErrorToast('Failed to open settings dialog');
         }
+    }
+
+    updateSearchField(field: string, value: any): void {
+        (this.searchCriteria as any)[field] = value;
     }
 
     updateFromDatePicker(dateTime: Dayjs): void {

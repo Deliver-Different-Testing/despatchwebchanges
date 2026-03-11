@@ -13,7 +13,7 @@ namespace DespatchWeb.Services;
 
 public class CourierReportService(
     ICourierRepository courierRepository,
-    ITenantInfoService infoService) : ICourierReportService
+    ITenantClock clock) : ICourierReportService
 {
     #region Today Active Drivers
 
@@ -22,7 +22,7 @@ public class CourierReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await courierRepository.GetTodayActiveDriversForExportAsync(request);
             var csvBytes = await GenerateCsvAsync(data, TodayActiveDriversCsvColumns);
             var filename = $"today-active-drivers-{currentDate:yyyy-MM-dd-HHmm}.csv";
@@ -56,7 +56,7 @@ public class CourierReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await courierRepository.GetCourierComplianceForExportAsync(request);
             var csvBytes = await GenerateCsvAsync(data, ComplianceCsvColumns);
             var filename = $"driver-compliance-{currentDate:yyyy-MM-dd-HHmm}.csv";
@@ -89,7 +89,7 @@ public class CourierReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await courierRepository.GetAfterHoursScheduleForExportAsync(request);
             var csvBytes = await GenerateCsvAsync(data, AfterHoursScheduleCsvColumns);
             var filename = $"after-hours-schedule-{currentDate:yyyy-MM-dd-HHmm}.csv";
@@ -120,7 +120,7 @@ public class CourierReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await courierRepository.GetCourierEmailsForExportAsync(request);
             var csvBytes = await GenerateCsvAsync(data, DriverEmailsCsvColumns);
             var filename = $"driver-emails-{currentDate:yyyy-MM-dd-HHmm}.csv";
@@ -150,7 +150,7 @@ public class CourierReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await courierRepository.GetCourierDailyEarningsForExportAsync(request);
             var csvBytes = await GenerateCsvAsync(data, DriverEarningsCsvColumns);
             var filename = $"driver-earnings-{currentDate:yyyy-MM-dd-HHmm}.csv";

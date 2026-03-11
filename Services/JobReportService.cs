@@ -28,7 +28,7 @@ namespace DespatchWeb.Services;
 public class JobReportService(
     IJobRepository jobRepository,
     IRecurringJobRepository recurringJobRepository,
-    ITenantInfoService infoService,
+    ITenantClock clock,
     IAmazonS3 s3Client) : IJobReportService
 {
     #region POD Search Export
@@ -38,7 +38,7 @@ public class JobReportService(
     /// </summary>
     public async Task<JobsReportResult> GenerateJobsReportAsync(PodSearchDownloadRequest request)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         var data = await jobRepository.PodSearchDownloadAsync(
             request.CourierIds,
@@ -140,7 +140,7 @@ public class JobReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await jobRepository.GetClientJobsReportDataAsync(request);
 
             var clientCode = data.Count > 0
@@ -291,7 +291,7 @@ public class JobReportService(
     {
         ValidateUploadedFile(file);
 
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
         await ArchiveUploadedFileToS3Async(file, currentDate);
 
         var parsedData = await ParseBulkPriceFileAsync(file);
@@ -310,7 +310,7 @@ public class JobReportService(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
             var data = await recurringJobRepository.GetAllRecurringJobsForExportAsync(request);
 
             var csvBytes = await GenerateRecurringJobsCsvBytesAsync(data);

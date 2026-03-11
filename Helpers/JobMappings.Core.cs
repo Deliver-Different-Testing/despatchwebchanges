@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
@@ -179,30 +180,36 @@ public static partial class JobMappings
         AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
-        Items = j.TucJobItemJobs.Count,
+        Items = j.TucJobItemChildJobs.Any()
+            ? j.TucJobItemChildJobs.Count
+            : j.TucJobItemJobs.Count > 0
+                ? j.TucJobItemJobs.Count
+                : j.Parent != null
+                    ? j.Parent.TucJobItemJobs.Count(i => i.ChildJobId == null)
+                    : 0,
 
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
         FromContactName = j.PickupFromContact,
         BookingContactEmail = j.Contact != null ? j.Contact.UcctEmail : null,
         FromContactNumber =
-            j.PickupFromPhone != null && j.PickupFromPhone != ""
+            j.PickupFromPhone != null && j.PickupFromPhone != string.Empty
                 ? j.PickupFromPhone
-                : j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != ""
+                : j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != string.Empty
                     ? j.Contact.UcctDirectDial
-                    : j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != ""
+                    : j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != string.Empty
                         ? j.Contact.UcctMobile
-                        : j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != ""
+                        : j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != string.Empty
                             ? j.UcjbClient.UcclPhone
                             : null,
         FromContactNumberSource =
-            j.PickupFromPhone != null && j.PickupFromPhone != ""
+            j.PickupFromPhone != null && j.PickupFromPhone != string.Empty
                 ? "Job"
-                : j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != ""
+                : j.Contact != null && j.Contact.UcctDirectDial != null && j.Contact.UcctDirectDial != string.Empty
                     ? "Direct Line"
-                    : j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != ""
+                    : j.Contact != null && j.Contact.UcctMobile != null && j.Contact.UcctMobile != string.Empty
                         ? "Mobile"
-                        : j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != ""
+                        : j.UcjbClient != null && j.UcjbClient.UcclPhone != null && j.UcjbClient.UcclPhone != string.Empty
                             ? "Company"
                             : null,
 
@@ -274,12 +281,18 @@ public static partial class JobMappings
 
         Locked = j.UcjbLocked ?? false,
 
-        // Job item flags - loaded inline from navigation property
-        TailLiftPu = j.TucJobItemJobs.Any(i => i.Pu == true),
-        TailLiftDo = j.TucJobItemJobs.Any(i => i.Do == true),
-        DeliverToPrivateRes = j.TucJobItemJobs.Any(i => i.PrivateRes == true),
+        // Job item flags - loaded inline from navigation property (3-tier: stop child → own → parent)
+        TailLiftPu = j.TucJobItemChildJobs.Any(i => i.Pu == true)
+            || j.TucJobItemJobs.Any(i => i.Pu == true)
+            || (j.Parent != null && j.Parent.TucJobItemJobs.Any(i => i.ChildJobId == null && i.Pu == true)),
+        TailLiftDo = j.TucJobItemChildJobs.Any(i => i.Do == true)
+            || j.TucJobItemJobs.Any(i => i.Do == true)
+            || (j.Parent != null && j.Parent.TucJobItemJobs.Any(i => i.ChildJobId == null && i.Do == true)),
+        DeliverToPrivateRes = j.TucJobItemChildJobs.Any(i => i.PrivateRes == true)
+            || j.TucJobItemJobs.Any(i => i.PrivateRes == true)
+            || (j.Parent != null && j.Parent.TucJobItemJobs.Any(i => i.ChildJobId == null && i.PrivateRes == true)),
 
-        // Parcel dimensions - try child items first, then parent items
+        // Parcel dimensions - 3-tier: stop child items → own items → parent items
         ParcelDimensions = j.TucJobItemChildJobs.Any()
             ? j.TucJobItemChildJobs.Select(i => new ParcelDimensions
             {
@@ -290,20 +303,32 @@ public static partial class JobMappings
                 Length = i.Length,
                 Barcode = i.Barcode
             }).ToList()
-            : j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
-            {
-                ItemId = i.ItemId,
-                ItemName = i.Notes,
-                Height = i.Height,
-                Depth = i.Depth,
-                Length = i.Length,
-                Barcode = i.Barcode
-            }).ToList(),
+            : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
+                ? j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                }).ToList()
+                : j.Parent != null
+                    ? j.Parent.TucJobItemJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new ParcelDimensions
+                        {
+                            ItemId = i.ItemId,
+                            ItemName = i.Notes,
+                            Height = i.Height,
+                            Depth = i.Depth,
+                            Length = i.Length,
+                            Barcode = i.Barcode
+                        }).ToList()
+                    : new List<ParcelDimensions>(),
 
-        // Pallet info - from parent job items only
-
-        PalletInfo = j.TucJobItemJobs.Any(i => i.ChildJobId == null)
-            ? j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new PalletInfo
+        // Pallet info - 3-tier: stop child items → own items → parent items
+        PalletInfo = j.TucJobItemChildJobs.Any()
+            ? j.TucJobItemChildJobs.Select(i => new PalletInfo
             {
                 Id = i.JobId,
                 Quantity = i.Items,
@@ -317,7 +342,38 @@ public static partial class JobMappings
                 DgClass = i.Dgclass,
                 Notes = i.Notes
             }).ToList()
-            : null,
+            : j.TucJobItemJobs.Any(i => i.ChildJobId == null)
+                ? j.TucJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }).ToList()
+                : j.Parent != null
+                    ? j.Parent.TucJobItemJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new PalletInfo
+                        {
+                            Id = i.JobId,
+                            Quantity = i.Items,
+                            ItemId = i.ItemId,
+                            Weight = i.Weight,
+                            Length = i.Length ?? 0,
+                            Depth = i.Depth ?? 0,
+                            Height = i.Height ?? 0,
+                            Pu = i.Pu,
+                            Do = i.Do,
+                            DgClass = i.Dgclass,
+                            Notes = i.Notes
+                        }).ToList()
+                    : null,
 
         // Flight info - loaded inline for root jobs, batch loaded for child jobs
         AssignedFlight = j.TucJobNationwides.Any()
@@ -336,7 +392,7 @@ public static partial class JobMappings
                         ArrivalTimeZone = last.ArrivalAirportTimeZoneNavigation != null
                             ? last.ArrivalAirportTimeZoneNavigation.Name
                             : last.ArrivalAirportTimeZone,
-                        FlightNumber = first.UcnwFlightNo ?? "",
+                        FlightNumber = first.UcnwFlightNo ?? string.Empty,
                         Notes = first.UcnwNotes,
                         FlightSegments = j.TucJobNationwides
                             .OrderBy(n => n.UcnwLegNumber)

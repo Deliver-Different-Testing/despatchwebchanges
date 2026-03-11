@@ -14,7 +14,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// Verifies that editing a job's booked date/time updates both UcjbDate and UcjbTime
 /// for live jobs (via ExecuteUpdateAsync) and archived jobs (via entity tracking).
 /// </summary>
-public class JobRepositoryEditBookedTimeTests : IDisposable
+public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _contextOptions;
@@ -22,6 +22,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryEditBookedTimeTests()
     {
@@ -34,7 +35,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
@@ -52,13 +53,12 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
 
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private DespatchContext CreateContext() => new(_contextOptions);
@@ -66,6 +66,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -88,7 +89,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
                 UcjbDate = originalDate,
                 UcjbTime = originalTime
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newDateTime = new DateTimeOffset(2024, 3, 3, 15, 20, 0, TimeSpan.Zero);
@@ -99,7 +100,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1);
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedJob.UcjbDate.Should().Be(newDateTime.DateTime,
             "UcjbDate should be updated to the new booked date/time");
@@ -123,7 +124,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
                 UcjbDate = originalDate,
                 UcjbTime = originalTime
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         // User edits to 3rd March at 15:20
@@ -135,7 +136,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
 
         // Assert — the old 6am time must NOT survive
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 2);
+        var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 2, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedJob.UcjbTime.Should().NotBe(originalTime,
             "the old UcjbTime (6am) should be overwritten, not preserved");
@@ -163,7 +164,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
                 UcjbDate = originalDate,
                 UcjbTime = originalTime
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newDateTime = new DateTimeOffset(2024, 3, 3, 15, 20, 0, TimeSpan.Zero);
@@ -174,7 +175,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 3);
+        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 3, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedArchive.UcjbDate.Should().Be(newDateTime.DateTime,
             "archived UcjbDate should be updated to the new booked date/time");
@@ -198,7 +199,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
                 UcjbDate = originalDate,
                 UcjbTime = originalTime
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var newDateTime = new DateTimeOffset(2024, 3, 3, 15, 20, 0, TimeSpan.Zero);
@@ -209,7 +210,7 @@ public class JobRepositoryEditBookedTimeTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 4);
+        var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 4, cancellationToken: TestContext.Current.CancellationToken);
 
         updatedArchive.UcjbTime.Should().NotBe(originalTime,
             "the old archived UcjbTime (6am) should be overwritten");

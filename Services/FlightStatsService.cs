@@ -22,7 +22,7 @@ public class FlightStatsService(
     HttpClient httpClient,
     IHttpContextAccessor contextAccessor,
     INationwideJobRepository repository,
-    ITenantInfoService infoService
+    ITenantClock clock
 ) : IFlightStatsService
 {
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
@@ -412,7 +412,7 @@ public class FlightStatsService(
     /// </summary>
     private DateTime CalculateFlightSearchStartTime(DateTimeOffset? departureDateTime, int flightBuffer)
     {
-        var currentTenantTime = infoService.GetCurrentTenantTime();
+        var currentTenantTime = clock.TenantNow;
 
         // Compare using DateTime values to avoid timezone conversion issues
         // when comparing DateTimeOffset with DateTime

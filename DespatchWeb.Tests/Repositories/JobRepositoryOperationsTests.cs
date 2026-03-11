@@ -17,7 +17,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// AssignCourierToJob, and GetBulkJobDetail.
 /// Uses SQLite in-memory database with shared connection for parallel context queries.
 /// </summary>
-public class JobRepositoryOperationsTests : IDisposable
+public class JobRepositoryOperationsTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _contextOptions;
@@ -25,6 +25,8 @@ public class JobRepositoryOperationsTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private FakeTenantClock _clock = new(TestDates.Now);
+    private static readonly int[] SourceArray = [100, 101];
 
     public JobRepositoryOperationsTests()
     {
@@ -37,7 +39,7 @@ public class JobRepositoryOperationsTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
@@ -57,13 +59,12 @@ public class JobRepositoryOperationsTests : IDisposable
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private DespatchContext CreateContext() => new(_contextOptions);
@@ -71,6 +72,7 @@ public class JobRepositoryOperationsTests : IDisposable
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -84,7 +86,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await using var context = CreateContext();
         context.TucJobs.Add(CreateJob(100, "PARENT"));
         context.TucJobs.Add(CreateJobWithParent(101, "CHILD", 100));
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -101,7 +103,7 @@ public class JobRepositoryOperationsTests : IDisposable
         // Arrange
         await using var context = CreateContext();
         context.TucJobs.Add(CreateJob(100, "PARENT"));
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -123,7 +125,7 @@ public class JobRepositoryOperationsTests : IDisposable
             UcbkJobNumber = "BK-001",
             ParentId = 100
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -144,7 +146,7 @@ public class JobRepositoryOperationsTests : IDisposable
             UcbkId = 200,
             UcbkJobNumber = "BK-001"
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -174,7 +176,7 @@ public class JobRepositoryOperationsTests : IDisposable
         // Arrange - live job exists with no parent
         await using var context = CreateContext();
         context.TucJobs.Add(CreateJob(100, "LIVE-JOB"));
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -199,10 +201,10 @@ public class JobRepositoryOperationsTests : IDisposable
             BulkJobId = 200,
             JobNumber = "BULK-CHILD",
             ParentId = 100,
-            BookDate = DateTime.Today,
-            BookTime = DateTime.Now
+            BookDate = TestDates.Today,
+            BookTime = TestDates.Now
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -223,10 +225,10 @@ public class JobRepositoryOperationsTests : IDisposable
             BulkJobId = 200,
             JobNumber = "BULK-CHILD",
             BulkParentId = 100,
-            BookDate = DateTime.Today,
-            BookTime = DateTime.Now
+            BookDate = TestDates.Today,
+            BookTime = TestDates.Now
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -246,10 +248,10 @@ public class JobRepositoryOperationsTests : IDisposable
         {
             BulkJobId = 200,
             JobNumber = "BULK-SINGLE",
-            BookDate = DateTime.Today,
-            BookTime = DateTime.Now
+            BookDate = TestDates.Today,
+            BookTime = TestDates.Now
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -287,7 +289,7 @@ public class JobRepositoryOperationsTests : IDisposable
                 CreateJob(100, "JOB001"),
                 CreateJob(101, "JOB002")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -298,8 +300,8 @@ public class JobRepositoryOperationsTests : IDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobs
-            .Where(j => new[] { 100, 101 }.Contains(j.UcjbId))
-            .ToListAsync();
+            .Where(j => ((IEnumerable<int>)SourceArray).Contains(j.UcjbId))
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         jobs.Should().HaveCount(2);
         jobs.Should().OnlyContain(j => j.UcjbVoid == true);
@@ -316,7 +318,7 @@ public class JobRepositoryOperationsTests : IDisposable
                 CreateArchivedJob(100, "ARCH001"),
                 CreateArchivedJob(101, "ARCH002")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -327,8 +329,8 @@ public class JobRepositoryOperationsTests : IDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobArchives
-            .Where(j => new[] { 100, 101 }.Contains(j.UcjbId))
-            .ToListAsync();
+            .Where(j => ((IEnumerable<int>)new[] { 100, 101 }).Contains(j.UcjbId))
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         jobs.Should().HaveCount(2);
         jobs.Should().OnlyContain(j => j.UcjbVoid == true);
@@ -343,7 +345,7 @@ public class JobRepositoryOperationsTests : IDisposable
         {
             context.TucJobs.Add(CreateJob(100, "ACTIVE"));
             context.TucJobArchives.Add(CreateArchivedJob(101, "ARCHIVED"));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -353,8 +355,8 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var activeJob = await verifyContext.TucJobs.FindAsync(100);
-        var archivedJob = await verifyContext.TucJobArchives.FindAsync(101);
+        var activeJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        var archivedJob = await verifyContext.TucJobArchives.FindAsync([101], TestContext.Current.CancellationToken);
 
         activeJob!.UcjbVoid.Should().BeTrue();
         activeJob.UcjbStatus.Should().Be(1000);
@@ -393,7 +395,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJobWithAmounts(100, "JOB001", amount: 50m));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -404,7 +406,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var job = await verifyContext.TucJobs.FindAsync(100);
+        var job = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         job!.UcjbAmount.Should().Be(150m);
         job.RatedManually.Should().BeTrue();
     }
@@ -422,7 +424,7 @@ public class JobRepositoryOperationsTests : IDisposable
                 UcjbAmount = 50m,
                 RatedManually = false
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -433,7 +435,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var job = await verifyContext.TucJobArchives.FindAsync(100);
+        var job = await verifyContext.TucJobArchives.FindAsync([100], TestContext.Current.CancellationToken);
         job!.UcjbAmount.Should().Be(200m);
         job.RatedManually.Should().BeTrue();
     }
@@ -449,10 +451,10 @@ public class JobRepositoryOperationsTests : IDisposable
                 BulkJobId = 300,
                 JobNumber = "BULK001",
                 Amount = 100m,
-                BookDate = DateTime.Today,
-                BookTime = DateTime.Now
+                BookDate = TestDates.Today,
+                BookTime = TestDates.Now
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -463,7 +465,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var job = await verifyContext.TblBulkJobs.FindAsync(300);
+        var job = await verifyContext.TblBulkJobs.FindAsync([300], TestContext.Current.CancellationToken);
         job!.Amount.Should().Be(250m);
     }
 
@@ -480,7 +482,7 @@ public class JobRepositoryOperationsTests : IDisposable
                 UcbkAmount = 75m,
                 RatedManually = false
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -491,7 +493,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var job = await verifyContext.TucJobBookings.FindAsync(400);
+        var job = await verifyContext.TucJobBookings.FindAsync([400], TestContext.Current.CancellationToken);
         job!.UcbkAmount.Should().Be(180m);
         job.RatedManually.Should().BeTrue();
     }
@@ -523,11 +525,10 @@ public class JobRepositoryOperationsTests : IDisposable
         {
             context.TucJobs.Add(CreateJob(100, "JOB001"));
             context.TucJobs.Add(CreateJob(101, "JOB002"));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(2025, 6, 15, 10, 30, 0));
+        _clock = new FakeTenantClock(new DateTime(2025, 6, 15, 10, 30, 0));
 
         var repository = CreateRepository();
 
@@ -537,8 +538,8 @@ public class JobRepositoryOperationsTests : IDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobs
-            .Where(j => new[] { 100, 101 }.Contains(j.UcjbId))
-            .ToListAsync();
+            .Where(j => ((IEnumerable<int>)SourceArray).Contains(j.UcjbId))
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         jobs.Should().HaveCount(2);
         jobs.Should().OnlyContain(j => j.UcjbCourierId == 5);
@@ -553,10 +554,10 @@ public class JobRepositoryOperationsTests : IDisposable
         await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJob(100, "JOB001"));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(dispatchTime);
+        _clock = new FakeTenantClock(dispatchTime);
         var repository = CreateRepository();
 
         // Act
@@ -564,7 +565,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FindAsync(100);
+        var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         updatedJob!.UcjbDispDate.Should().Be(dispatchTime);
         updatedJob.UcjbDispTime.Should().Be(dispatchTime);
     }
@@ -578,7 +579,7 @@ public class JobRepositoryOperationsTests : IDisposable
             var seedJob = CreateJob(100, "JOB001");
             seedJob.UcjbStatus = (int)JobStatus.Dispatched; // Status > 0
             context.TucJobs.Add(seedJob);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -588,7 +589,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var verifiedJob = await verifyContext.TucJobs.FindAsync(100);
+        var verifiedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         verifiedJob!.UcjbStatus.Should().Be((int)JobStatus.Dispatched); // Should keep existing status
     }
 
@@ -601,7 +602,7 @@ public class JobRepositoryOperationsTests : IDisposable
             var seedJob = CreateJob(100, "JOB001");
             seedJob.UcjbStatus = 0;
             context.TucJobs.Add(seedJob);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -611,7 +612,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var verifiedJob = await verifyContext.TucJobs.FindAsync(100);
+        var verifiedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         verifiedJob!.UcjbStatus.Should().Be((int)JobStatus.Dispatched);
     }
 
@@ -643,7 +644,7 @@ public class JobRepositoryOperationsTests : IDisposable
             seedJob.FdcourierId = 99;
             seedJob.DesCheck = true;
             context.TucJobs.Add(seedJob);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -653,7 +654,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FindAsync(100);
+        var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         updatedJob!.FdcourierId.Should().BeNull();
         updatedJob.DesCheck.Should().BeFalse();
     }
@@ -667,7 +668,7 @@ public class JobRepositoryOperationsTests : IDisposable
             var seedJob = CreateJob(100, "JOB001");
             seedJob.InternalStatus = 0;
             context.TucJobs.Add(seedJob);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -677,7 +678,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var updatedJob = await verifyContext.TucJobs.FindAsync(100);
+        var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         updatedJob!.InternalStatus.Should().Be((int)InternalJobStatus.AwaitingPod);
     }
 
@@ -698,7 +699,7 @@ public class JobRepositoryOperationsTests : IDisposable
                 UcjbAmount = 50m,
                 RatedManually = false
             });
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -709,7 +710,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var archivedJob = await verifyContext.TucJobArchives.FindAsync(500);
+        var archivedJob = await verifyContext.TucJobArchives.FindAsync([500], TestContext.Current.CancellationToken);
         archivedJob!.UcjbAmount.Should().Be(300m);
         archivedJob.RatedManually.Should().BeTrue();
     }
@@ -721,7 +722,7 @@ public class JobRepositoryOperationsTests : IDisposable
         await using (var context = CreateContext())
         {
             context.TucJobs.Add(CreateJobWithAmounts(600, "LIVE-JOB", amount: 50m));
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -732,7 +733,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var liveJob = await verifyContext.TucJobs.FindAsync(600);
+        var liveJob = await verifyContext.TucJobs.FindAsync([600], TestContext.Current.CancellationToken);
         liveJob!.UcjbAmount.Should().Be(999m);
         liveJob.RatedManually.Should().BeTrue();
     }
@@ -749,7 +750,7 @@ public class JobRepositoryOperationsTests : IDisposable
         {
             var seedJob = CreateJobWithAmounts(100, "JOB001", amount: 500m, rawBase: 400m, fuel: 100m);
             context.TucJobs.Add(seedJob);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -759,7 +760,7 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var voidedJob = await verifyContext.TucJobs.FindAsync(100);
+        var voidedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         voidedJob!.UcjbVoid.Should().BeTrue();
         voidedJob.UcjbStatus.Should().Be(1000);
         voidedJob.UcjbAmount.Should().Be(500m); // Amount preserved
@@ -777,7 +778,7 @@ public class JobRepositoryOperationsTests : IDisposable
                 CreateJob(101, "JOB002"),
                 CreateJob(102, "JOB003")
             );
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
         var repository = CreateRepository();
@@ -787,9 +788,9 @@ public class JobRepositoryOperationsTests : IDisposable
 
         // Assert
         await using var verifyContext = CreateContext();
-        var job100 = await verifyContext.TucJobs.FindAsync(100);
-        var job101 = await verifyContext.TucJobs.FindAsync(101);
-        var job102 = await verifyContext.TucJobs.FindAsync(102);
+        var job100 = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        var job101 = await verifyContext.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
+        var job102 = await verifyContext.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
         job100!.UcjbVoid.Should().BeTrue();
         job101!.UcjbVoid.Should().BeTrue();
@@ -935,12 +936,6 @@ public class JobRepositoryOperationsTests : IDisposable
             }
         };
 
-        // Act - should not throw because all values normalize to 0
-        // The method will look for jobs in TblJobs view (which may not exist in test DB),
-        // but validation should pass and it should handle empty results gracefully
-        // Note: This test validates the normalization logic only
-        var act = () => repository.UpdateManualPriceAsync(data);
-
         // The validation passes (all zeros), but TblJobs query may fail in SQLite
         // since it's a keyless view. We're testing validation, not the DB query.
         // If the validation passes, any exception would be from the DB layer, not validation.
@@ -985,23 +980,6 @@ public class JobRepositoryOperationsTests : IDisposable
     {
         UcjbId = id,
         UcjbNumber = jobNumber
-    };
-
-    private static TblBulkJob CreateBulkJob(int id, string jobNumber) => new()
-    {
-        BulkJobId = id,
-        JobNumber = jobNumber,
-        BookDate = DateTime.Today,
-        BookTime = DateTime.Now
-    };
-
-    private static TblBulkJob CreateBulkJobWithParent(int id, string jobNumber, int parentId) => new()
-    {
-        BulkJobId = id,
-        JobNumber = jobNumber,
-        ParentId = parentId,
-        BookDate = DateTime.Today,
-        BookTime = DateTime.Now
     };
 
     #endregion

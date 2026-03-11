@@ -14,7 +14,8 @@ namespace DespatchWeb.Services;
 public class AddAgentRecoveryJobService(
     IJobRepository repository,
     INationwideJobRepository nationwideJobRepository,
-    ITenantInfoService infoService) : IAddAgentRecoveryJobService
+    ITenantInfoService infoService,
+    ITenantClock clock) : IAddAgentRecoveryJobService
 {
     /// <summary>
     /// Creates a new recovery agent job as a child of an existing job.
@@ -140,7 +141,7 @@ public class AddAgentRecoveryJobService(
             Log.Debug("New Stop Job with ID: {JobId} has been created", newStopJob.UcjbId);
 
             var staffId = infoService.GetStaffId();
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
 
             // Add Note
             var note = CreateNote(job.UcjbId, agentName, staffId, currentDate);

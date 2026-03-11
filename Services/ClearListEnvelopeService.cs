@@ -14,7 +14,7 @@ namespace DespatchWeb.Services;
 /// </summary>
 public class ClearListEnvelopeService(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService) : IClearListEnvelopeService
+    ITenantClock clock) : IClearListEnvelopeService
 {
     private DespatchContext _context;
 
@@ -109,7 +109,7 @@ public class ClearListEnvelopeService(
     /// </summary>
     private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryUs(int clearListAreaId)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         return Context.TucCouriers
             .SelectMany(courier => courier.TucJobUcjbCouriers
@@ -164,9 +164,11 @@ public class ClearListEnvelopeService(
     /// <summary>
     /// Gets GPS coordinates of logged-in couriers with active jobs in the NZ clear list area.
     /// </summary>
-    private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId) =>
-        Context.TucCouriers
-            .Where(c => c.CourierLogInOut.LogInTime.Date == DateTime.Today && 
+    private IQueryable<EnvelopeCoordinate> GetCourierLocationsQueryNz(int clearListAreaId)
+    {
+        var today = clock.TenantToday;
+        return Context.TucCouriers
+            .Where(c => c.CourierLogInOut.LogInTime.Date == today &&
                         c.CourierLogInOut.LogOutTime == null)
             .SelectMany(c => c.TucJobUcjbCouriers
                 .Where(jt => !jt.UcjbJobDone && !jt.UcjbVoid)
@@ -179,6 +181,7 @@ public class ClearListEnvelopeService(
                             Longitude = (decimal)c.CourierGps.Longitude,
                             Latitude = (decimal)c.CourierGps.Latitude
                         }))));
+    }
 
     /// <summary>
     /// Gets delivery coordinates of unassigned jobs in the NZ clear list area.

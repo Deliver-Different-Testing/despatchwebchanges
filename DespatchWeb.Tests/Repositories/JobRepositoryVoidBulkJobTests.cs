@@ -462,10 +462,7 @@ public class JobRepositoryVoidBulkJobTests
         };
 
         // Add 50 children
-        for (var i = 1; i <= 50; i++)
-        {
-            allJobs.Add(new TestBulkJob { BulkJobId = i, ParentBulkJobId = 100 });
-        }
+        for (var i = 1; i <= 50; i++) allJobs.Add(new TestBulkJob { BulkJobId = i, ParentBulkJobId = 100 });
 
         var request = new VoidBulkJobRequest
         {

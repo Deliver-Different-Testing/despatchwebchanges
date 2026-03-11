@@ -13,7 +13,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// Verifies that the public wrapper methods correctly delegate to the protected base implementations.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class JobRepositoryInterfaceTests : IDisposable
+public class JobRepositoryInterfaceTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
@@ -21,13 +21,14 @@ public class JobRepositoryInterfaceTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryInterfaceTests()
     {
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         using (var command = _connection.CreateCommand())
         {
@@ -48,15 +49,16 @@ public class JobRepositoryInterfaceTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _context.Dispose();
-        _connection.Dispose();
+        await _context.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     private IJobRepository CreateRepository() => new JobRepository(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -83,7 +85,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -100,7 +102,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -128,7 +130,7 @@ public class JobRepositoryInterfaceTests : IDisposable
             CreateJobWithParent(childId1, "CHILD1", parentId),
             CreateJobWithParent(childId2, "CHILD2", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -153,7 +155,7 @@ public class JobRepositoryInterfaceTests : IDisposable
             CreateArchivedJob(parentId, "PARENT"),
             CreateArchivedJobWithParent(childId, "CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -175,7 +177,7 @@ public class JobRepositoryInterfaceTests : IDisposable
             CreateBulkJob(parentId, "BULK-PARENT"),
             CreateBulkJobWithParent(childId, "BULK-CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -202,7 +204,7 @@ public class JobRepositoryInterfaceTests : IDisposable
             CreateJob(parentId, "PARENT"),
             CreateJobWithParent(childId, "CHILD", parentId)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -219,7 +221,7 @@ public class JobRepositoryInterfaceTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "PARENT"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -242,7 +244,7 @@ public class JobRepositoryInterfaceTests : IDisposable
             CreateJobWithAmounts(100, "JOB001", amount: 150.00m, rawBase: 130.00m, fuel: 20.00m),
             CreateJobWithAmounts(101, "JOB002", amount: 200.00m, rawBase: 175.00m, fuel: 25.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 

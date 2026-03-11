@@ -22,12 +22,14 @@ namespace DespatchWeb.Repositories;
 public partial class JobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
     ICreateJobService createJobService)
-    : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), IJobRepository
+    : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobRepository
 {
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
+    private readonly ITenantClock _clock = clock;
 
 
     /// <summary>
@@ -382,7 +384,7 @@ public partial class JobRepository(
         try
         {
             var isUsCustomer = _infoService.IsUsTenant();
-            var now = _infoService.GetCurrentTenantTime();
+            var now = _clock.TenantNow;
 
             var fromDate = data.FromDate.Date;
             var toDate = data.ToDate.Date;
@@ -1367,7 +1369,7 @@ public partial class JobRepository(
 
         // Calculate remaining time for each job
         var (economySpeedId, ecoDeliveryTime) = await economyTask;
-        var now = _infoService.GetCurrentTenantTime();
+        var now = _clock.TenantNow;
         foreach (var job in jobs)
         {
             job.AngularId = Guid.NewGuid();
@@ -1492,8 +1494,9 @@ public partial class JobRepository(
         var activeJob = await Context.TucJobs.AsNoTracking().FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
         var isArchived = activeJob == null;
         int? parentId;
+        int? deliveryTzId;
 
-        // Determine parent ID based on job location
+        // Determine parent ID and delivery timezone based on job location
         if (isArchived)
         {
             var archivedJob =
@@ -1503,11 +1506,18 @@ public partial class JobRepository(
                 return;
 
             parentId = archivedJob.ParentId;
+            deliveryTzId = archivedJob.DeliverByTimeZoneId;
         }
         else
         {
             parentId = activeJob.ParentId;
+            deliveryTzId = activeJob.DeliverByTimeZoneId;
         }
+
+        // Load delivery timezone entity (null falls back to tenant timezone in ParsePodTime)
+        var deliveryTimeZone = deliveryTzId.HasValue
+            ? await Context.TimeZones.FindAsync(deliveryTzId.Value)
+            : null;
 
         // Check for uncompleted sibling jobs (child jobs with the same parent)
         var hasUncompletedSiblings = await Context.TucJobs
@@ -1523,7 +1533,8 @@ public partial class JobRepository(
             data.JobStatus,
             data.PodName,
             data.PodTime,
-            isArchived);
+            isArchived,
+            deliveryTimeZone);
 
         // Update a parent job if all siblings are complete
         if (!hasUncompletedSiblings && parentId != null)
@@ -1533,7 +1544,8 @@ public partial class JobRepository(
                 data.JobStatus,
                 data.PodName,
                 data.PodTime,
-                isArchived);
+                isArchived,
+                deliveryTimeZone);
         }
 
         await Context.SaveChangesAsync();
@@ -1613,7 +1625,7 @@ public partial class JobRepository(
         bool calculationRequired
     )
     {
-        var currentDate = _infoService.GetCurrentTenantTime();
+        var currentDate = _clock.TenantNow;
 
         var time = await Context.TucJobTypes
             .Where(jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
@@ -1667,7 +1679,7 @@ public partial class JobRepository(
         bool calculationRequired
     )
     {
-        var currentDate = _infoService.GetCurrentTenantTime();
+        var currentDate = _clock.TenantNow;
 
         // Get the maximum delivery time for the specified speeds
         var time = await Context.TucJobTypes
@@ -2535,7 +2547,7 @@ public partial class JobRepository(
 
         try
         {
-            var currentTenantTime = _infoService.GetCurrentTenantTime();
+            var currentTenantTime = _clock.TenantNow;
             var releaseNote = $"Bulk Job Released Manually at {currentTenantTime:dd/MM/yyyy HH:mm}\r\n";
 
             // Update book date and notes in a single query
@@ -2657,7 +2669,7 @@ public partial class JobRepository(
     {
         try
         {
-            var now = _infoService.GetCurrentTenantTime();
+            var now = _clock.TenantNow;
             var staffInfo = await _infoService.GetStaffInfoAsync();
 
             // Generate request number
@@ -2727,7 +2739,7 @@ public partial class JobRepository(
         try
         {
             var staffId = _infoService.GetStaffId();
-            var currentTime = _infoService.GetCurrentTenantTime();
+            var currentTime = _clock.TenantNow;
 
             var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
 
@@ -2884,7 +2896,7 @@ public partial class JobRepository(
         var jobIds = data.JobIds;
         if (jobIds == null || jobIds.Count == 0) return;
 
-        var currentTenantTime = _infoService.GetCurrentTenantTime();
+        var currentTenantTime = _clock.TenantNow;
         var staffId = _infoService.GetStaffId();
         var shouldMarkAsRead = data.ShouldMarkAsRead;
 
@@ -3626,7 +3638,7 @@ public partial class JobRepository(
         try
         {
             var staffId = _infoService.GetStaffId();
-            var currentTenantTime = _infoService.GetCurrentTenantTime();
+            var currentTenantTime = _clock.TenantNow;
 
             // Use MERGE to handle concurrent inserts safely (prevents PK violation race condition)
             await Context.Database.ExecuteSqlInterpolatedAsync($"""
@@ -3660,7 +3672,7 @@ public partial class JobRepository(
     public async Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
         string scan)
     {
-        runDate ??= _infoService.GetCurrentTenantTime();
+        runDate ??= _clock.TenantNow;
         var cutoffDate = runDate.Value.AddDays(-3);
 
         // Use proper joins instead of subqueries to avoid N+1 queries
@@ -3709,7 +3721,7 @@ public partial class JobRepository(
     /// <returns>True if the job is valid for POD swap.</returns>
     public async Task<bool> ValidatePodSwapAsync(string jobNumber)
     {
-        var today = _infoService.GetCurrentTenantTime();
+        var today = _clock.TenantToday;
 
         var isValid = await Context.TblJobs
             .AsNoTracking()
@@ -4298,7 +4310,8 @@ public partial class JobRepository(
         int jobStatus,
         string podName,
         string podTime,
-        bool isArchived)
+        bool isArchived,
+        EntityClasses.TimeZone deliveryTimeZone)
     {
         if (isArchived)
         {
@@ -4310,7 +4323,7 @@ public partial class JobRepository(
                 archivedJob.UcjbJobDone = true;
                 archivedJob.UcjbStatus = jobStatus;
                 archivedJob.UcjbPodname ??= podName;
-                archivedJob.UcjbComplTime ??= ParsePodTime(podTime);
+                archivedJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
                 archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -4324,7 +4337,7 @@ public partial class JobRepository(
                 activeJob.UcjbJobDone = true;
                 activeJob.UcjbStatus = jobStatus;
                 activeJob.UcjbPodname ??= podName;
-                activeJob.UcjbComplTime ??= ParsePodTime(podTime);
+                activeJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
                 activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
             }
         }
@@ -4335,7 +4348,8 @@ public partial class JobRepository(
         int jobStatus,
         string podName,
         string podTime,
-        bool isArchived)
+        bool isArchived,
+        EntityClasses.TimeZone deliveryTimeZone)
     {
         if (isArchived)
         {
@@ -4349,7 +4363,7 @@ public partial class JobRepository(
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname ??= podName;
-                parentJob.UcjbComplTime ??= ParsePodTime(podTime);
+                parentJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
             }
         }
         else
@@ -4364,32 +4378,35 @@ public partial class JobRepository(
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
                 parentJob.UcjbPodname ??= podName;
-                parentJob.UcjbComplTime ??= ParsePodTime(podTime);
+                parentJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
             }
         }
     }
 
     /// <summary>
-    /// Parses a POD time string and converts to UTC.
+    /// Parses a POD time string into a wall-clock DateTime in the delivery timezone.
     /// Handles DateTimeOffset strings (with timezone offset), time-only inputs, and plain DateTime strings.
-    /// Falls back to UTC now if parsing fails.
+    /// Falls back to current time in the delivery timezone if podTime is empty or parsing fails.
     /// </summary>
-    private DateTime ParsePodTime(string podTime)
+    /// <param name="podTime">The POD time string from the frontend.</param>
+    /// <param name="deliveryTimeZone">The delivery location's timezone (used for fallback to "now").</param>
+    private DateTime ParsePodTime(string podTime, EntityClasses.TimeZone deliveryTimeZone)
     {
-        var tenantNow = _infoService.GetCurrentTenantTime();
+        var deliveryNow = _infoService.GetCurrentTimeFromTimeZone(deliveryTimeZone);
 
         if (string.IsNullOrWhiteSpace(podTime))
-            return tenantNow;
+            return deliveryNow;
 
         // Handle timezone-aware strings from frontend (e.g., "2024-06-10T17:04:00-04:00")
+        // .DateTime extracts the wall-clock time which is already in delivery timezone from the frontend
         if (DateTimeOffset.TryParse(podTime, out var parsedOffset))
             return parsedOffset.DateTime;
 
         if (!DateTime.TryParse(podTime, out var parsedTime))
-            return tenantNow;
+            return deliveryNow;
 
         if (parsedTime.Date == DateTime.MinValue.Date || parsedTime.Year == 1)
-            return tenantNow.Date.Add(parsedTime.TimeOfDay);
+            return deliveryNow.Date.Add(parsedTime.TimeOfDay);
 
         return parsedTime;
     }
@@ -4640,7 +4657,7 @@ public partial class JobRepository(
 
     private async Task CloseAllBulkJobTasksAsync(List<int> bulkJobIds)
     {
-        var now = _infoService.GetCurrentTenantTime();
+        var now = _clock.TenantNow;
         var staffId = _infoService.GetStaffId();
 
         await Context.TblBulkEvents
@@ -4672,7 +4689,7 @@ public partial class JobRepository(
     private async Task MarkJobAsReadAsync(int jobId)
     {
         var staffId = _infoService.GetStaffId();
-        var currentTenantTime = _infoService.GetCurrentTenantTime();
+        var currentTenantTime = _clock.TenantNow;
 
         // Single query: insert only if a job exists in TucJobs and no tracker exists yet
         await Context.Database.ExecuteSqlInterpolatedAsync($"""
@@ -4799,7 +4816,7 @@ public partial class JobRepository(
     {
         if (courierIds.Count == 0) return;
 
-        var now = _infoService.GetCurrentTenantTime();
+        var now = _clock.TenantNow;
         try
         {
             // Batch query 1: Get job counts per courier (jobs not void and not done)
@@ -4871,7 +4888,7 @@ public partial class JobRepository(
 
     private async Task<int> AssignCourierToJobsAsync(IEnumerable<int> jobIds, int courierId)
     {
-        var tenantTime = _infoService.GetCurrentTenantTime();
+        var tenantTime = _clock.TenantNow;
 
         return await Context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))

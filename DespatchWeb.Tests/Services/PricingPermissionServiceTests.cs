@@ -12,7 +12,7 @@ namespace DespatchWeb.Tests.Services;
 /// <summary>
 /// Unit tests for PricingPermissionService - tests authorization/access control for pricing operations.
 /// </summary>
-public class PricingPermissionServiceTests : IDisposable
+public class PricingPermissionServiceTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DbContextOptions<DespatchContext> _dbOptions;
@@ -25,7 +25,7 @@ public class PricingPermissionServiceTests : IDisposable
         _connection = new SqliteConnection("DataSource=:memory:");
         _connection.Open();
 
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
         _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
 
         using (var command = _connection.CreateCommand())
@@ -249,9 +249,9 @@ public class PricingPermissionServiceTests : IDisposable
             .ReturnsAsync(() => new DespatchContext(_dbOptions));
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _connection.Dispose();
+        await _connection.DisposeAsync();
     }
 
     private DespatchContext CreateContext() => new(_dbOptions);
@@ -271,7 +271,7 @@ public class PricingPermissionServiceTests : IDisposable
             UcjbClientId = clientId,
             UcjbNumber = $"JOB-{jobId}"
         });
-        await context.SaveChangesAsync();
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private void SetupAsStaff(int staffId = 1)

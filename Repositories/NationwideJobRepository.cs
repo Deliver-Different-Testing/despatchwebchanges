@@ -25,10 +25,12 @@ namespace DespatchWeb.Repositories;
 public class NationwideJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService)
-    : BaseJobRepository(contextFactory, infoService, clearListEnvelopeService), INationwideJobRepository
+    : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), INationwideJobRepository
 {
     private readonly ITenantInfoService _infoService = infoService;
+    private readonly ITenantClock _clock = clock;
 
     public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
         List<string> webhookIds)
@@ -132,7 +134,7 @@ public class NationwideJobRepository(
                     requestData.JobId);
             }
 
-            var currentTime = _infoService.GetCurrentTenantTime();
+            var currentTime = _clock.TenantNow;
             job.UcjbDispDate = currentTime;
             job.UcjbDispTime = currentTime;
 
@@ -267,7 +269,7 @@ public class NationwideJobRepository(
             .FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
-        var currentDate = _infoService.GetCurrentTenantTime();
+        var currentDate = _clock.TenantNow;
         var isDepartureAirportAgent = job.FromAirportId != null && job.ToAirportId == null;
         var isGroundJob = !string.IsNullOrEmpty(job.UcjbNumber) && !char.IsDigit(job.UcjbNumber.Last());
 
@@ -776,7 +778,7 @@ public class NationwideJobRepository(
 
         // Update the recovery agent
         recoveryAgent.IsPrimary = request.IsPrimaryRecoveryAgent;
-        recoveryAgent.UpdatedOn = _infoService.GetCurrentTenantTime();
+        recoveryAgent.UpdatedOn = _clock.TenantNow;
 
         await Context.SaveChangesAsync();
     }
@@ -825,7 +827,7 @@ public class NationwideJobRepository(
         string carrierFsCode,
         DateTime flightArrivalTime)
     {
-        var now = _infoService.GetCurrentTenantTime();
+        var now = _clock.TenantNow;
 
         // Fetch cargo data including the arrival airport's timezone
         var cargoData = await Context.TucJobs
@@ -973,7 +975,7 @@ public class NationwideJobRepository(
                 SaleRate = r.SaleRate ?? 0,
                 Availability = r.Availability ?? string.Empty,
                 AvailabilityColour = r.AvailabilityColour ?? string.Empty,
-                BookDate = r.BookDate ?? DateTime.Now,
+                BookDate = r.BookDate ?? _clock.TenantNow,
                 Duration = r.Duration,
                 FlightRate = r.FlightRate ?? 0
             })

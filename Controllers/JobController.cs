@@ -34,6 +34,7 @@ public class JobController(
     IRateJobService rateJobService,
     IRecurringJobRepository recurringJobRepository,
     ITenantInfoService infoService,
+    ITenantClock clock,
     IAddStopJobService addStopJobService,
     IJobReportService jobReportService,
     IJobPhotoService jobPhotoService,
@@ -1181,7 +1182,7 @@ public class JobController(
     {
         try
         {
-            var currentDate = infoService.GetCurrentTenantTime();
+            var currentDate = clock.TenantNow;
 
             await taskRepository.AddEventAsync(
                 jobId,

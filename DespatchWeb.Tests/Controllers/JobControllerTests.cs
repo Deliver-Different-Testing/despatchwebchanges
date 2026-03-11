@@ -28,6 +28,7 @@ public class JobControllerTests
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly Mock<IAddStopJobService> _addStopJobServiceMock = new();
     private readonly Mock<IJobReportService> _jobReportServiceMock = new();
     private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
@@ -60,6 +61,7 @@ public class JobControllerTests
             _rateJobServiceMock.Object,
             _recurringJobRepositoryMock.Object,
             _tenantInfoServiceMock.Object,
+            _clock,
             _addStopJobServiceMock.Object,
             _jobReportServiceMock.Object,
             _jobPhotoServiceMock.Object,
@@ -119,8 +121,8 @@ public class JobControllerTests
         // Arrange
         var queryParams = new JobQueryParams
         {
-            StartDate = DateTime.Today.AddDays(-7),
-            EndDate = DateTime.Today
+            StartDate = TestDates.Today.AddDays(-7),
+            EndDate = TestDates.Today
         };
         var expectedResult = new JobSearchResult
         {
@@ -754,7 +756,7 @@ public class JobControllerTests
             S3Key = "jobs/1/test.png",
             ContentType = "image/png",
             Size = 1024,
-            UploadDate = DateTime.Now,
+            UploadDate = TestDates.Now,
             IsPod = true,
             PodDescription = "Test POD"
         };
@@ -1317,7 +1319,7 @@ public class JobControllerTests
         var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
         var status = _backgroundTaskTracker.GetStatus(taskId);
         status.Should().NotBeNull();
-        status!.Status.Should().Be("Completed");
+        status.Status.Should().Be("Completed");
         status.ErrorMessage.Should().BeNull();
     }
 
@@ -2011,8 +2013,8 @@ public class JobControllerTests
         // Arrange
         var request = new PodSearchRequest
         {
-            FromDate = DateTime.Today.AddDays(-7),
-            ToDate = DateTime.Today,
+            FromDate = TestDates.Today.AddDays(-7),
+            ToDate = TestDates.Today,
             Wild = "test"
         };
         var expectedResult = new JobSearchResult
@@ -2042,8 +2044,8 @@ public class JobControllerTests
         // Arrange
         var request = new PodSearchRequest
         {
-            FromDate = DateTime.Today.AddDays(-30),
-            ToDate = DateTime.Today
+            FromDate = TestDates.Today.AddDays(-30),
+            ToDate = TestDates.Today
         };
         var expectedResult = new JobSearchResult
         {
@@ -2072,8 +2074,8 @@ public class JobControllerTests
         // Arrange
         var request = new PodSearchDownloadRequest
         {
-            FromDate = DateTime.Today.AddDays(-7),
-            ToDate = DateTime.Today
+            FromDate = TestDates.Today.AddDays(-7),
+            ToDate = TestDates.Today
         };
         var reportResult = new JobsReportResult
         {
@@ -2218,7 +2220,7 @@ public class JobControllerTests
             S3Key = "jobs/1/attachments/document.pdf",
             ContentType = "application/pdf",
             Size = 2048,
-            UploadDate = DateTime.Now
+            UploadDate = TestDates.Now
         };
 
         _jobPhotoServiceMock.Setup(x => x.UploadJobAttachmentAsync(1, fileMock.Object))
@@ -2688,10 +2690,7 @@ public class JobControllerTests
     {
         // Arrange
         const int jobId = 1;
-        var currentTime = DateTime.Now;
 
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(currentTime);
         _taskRepositoryMock.Setup(x => x.AddEventAsync(
                 jobId, It.IsAny<string>(), (int)EventType.RestoreJob, null, 33, null, false))
             .Returns(Task.CompletedTask);
@@ -3254,7 +3253,7 @@ public class JobControllerTests
         {
             JobId = 1,
             PodName = "John Smith",
-            PodTime = DateTime.Now.ToString("o")
+            PodTime = TestDates.Now.ToString("o")
         };
 
         _jobRepositoryMock.Setup(x => x.UpdatePodDetailsAsync(request))
@@ -3281,7 +3280,7 @@ public class JobControllerTests
         const string scan = "SCAN001";
         var expectedResults = new List<ScanDetailResult>
         {
-            new() { BulkScanId = 1, ScanDateTime = DateTime.Now }
+            new() { BulkScanId = 1, ScanDateTime = TestDates.Now }
         };
 
         _jobRepositoryMock.Setup(x => x.ScanList(runDate, scan))

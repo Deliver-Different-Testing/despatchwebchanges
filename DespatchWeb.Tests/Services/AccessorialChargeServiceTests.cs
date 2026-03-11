@@ -1,6 +1,6 @@
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models.Accessorial;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Accessorial;
 using DespatchWeb.Services;
 using FluentAssertions;
 using Moq;
@@ -31,7 +31,8 @@ public class AccessorialChargeServiceTests
                 It.IsAny<decimal?>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
-    private async Task<JobAccessorialChargeDto> CallUpdate(JobAccessorialChargeDto existing, JobAccessorialChargeUpdateRequest? request = null)
+    private async Task<JobAccessorialChargeDto> CallUpdate(JobAccessorialChargeDto existing,
+        JobAccessorialChargeUpdateRequest? request = null)
     {
         request ??= new JobAccessorialChargeUpdateRequest
         {
@@ -48,6 +49,60 @@ public class AccessorialChargeServiceTests
 
         return await CreateService().UpdateChargeAsync(1, request);
     }
+
+    #region Quote-Based Charge
+
+    [Fact]
+    public async Task Recalculate_QuoteBased_ReturnsInputValueDirectly()
+    {
+        var jac = new JobAccessorialChargeDto { ChargeType = "quote_based", ItemCount = 1 };
+
+        var result = await CallUpdate(jac,
+            new JobAccessorialChargeUpdateRequest { InputValue = 75.50m, ItemCount = 1 });
+
+        result.CalculatedAmount.Should().Be(75.50m);
+    }
+
+    #endregion
+
+    #region GetJobAmountAsync
+
+    [Fact]
+    public async Task GetJobAmountAsync_DelegatesToRepository()
+    {
+        _repositoryMock
+            .Setup(r => r.GetJobAmountAsync(500))
+            .ReturnsAsync(127.50m);
+
+        var result = await CreateService().GetJobAmountAsync(500);
+
+        result.Should().Be(127.50m);
+        _repositoryMock.Verify(r => r.GetJobAmountAsync(500), Times.Once);
+    }
+
+    #endregion
+
+    #region GetPortionJobsAsync
+
+    [Fact]
+    public async Task GetPortionJobsAsync_DelegatesToRepository()
+    {
+        var expected = new List<PortionJobInfoDto>
+        {
+            new() { JobId = 101, Label = "Pickup", AccessorialChargeGroupId = 5 },
+            new() { JobId = 102, Label = "Flight", AccessorialChargeGroupId = 6 }
+        };
+        _repositoryMock
+            .Setup(r => r.GetPortionJobsAsync(200))
+            .ReturnsAsync(expected);
+
+        var result = await CreateService().GetPortionJobsAsync(200);
+
+        result.Should().BeEquivalentTo(expected);
+        _repositoryMock.Verify(r => r.GetPortionJobsAsync(200), Times.Once);
+    }
+
+    #endregion
 
     #region Flat Charge
 
@@ -207,20 +262,6 @@ public class AccessorialChargeServiceTests
 
     #endregion
 
-    #region Quote-Based Charge
-
-    [Fact]
-    public async Task Recalculate_QuoteBased_ReturnsInputValueDirectly()
-    {
-        var jac = new JobAccessorialChargeDto { ChargeType = "quote_based", ItemCount = 1 };
-
-        var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 75.50m, ItemCount = 1 });
-
-        result.CalculatedAmount.Should().Be(75.50m);
-    }
-
-    #endregion
-
     #region Min / Max Charge Enforcement
 
     [Fact]
@@ -281,7 +322,8 @@ public class AccessorialChargeServiceTests
     {
         SetupStaffInfo("Jane Smith");
         _repositoryMock
-            .Setup(r => r.AddChargeAsync(It.IsAny<int>(), It.IsAny<JobAccessorialChargeCreateRequest>(), It.IsAny<string>()))
+            .Setup(r => r.AddChargeAsync(It.IsAny<int>(), It.IsAny<JobAccessorialChargeCreateRequest>(),
+                It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         var charges = new List<JobAccessorialChargeCreateRequest>
@@ -304,7 +346,8 @@ public class AccessorialChargeServiceTests
             .Setup(t => t.GetStaffInfoAsync())
             .ReturnsAsync((Suggestion?)null);
         _repositoryMock
-            .Setup(r => r.AddChargeAsync(It.IsAny<int>(), It.IsAny<JobAccessorialChargeCreateRequest>(), It.IsAny<string>()))
+            .Setup(r => r.AddChargeAsync(It.IsAny<int>(), It.IsAny<JobAccessorialChargeCreateRequest>(),
+                It.IsAny<string>()))
             .Returns(Task.CompletedTask);
 
         await CreateService().AddChargesAsync(500, [new() { AccessorialChargeId = 1, ItemCount = 1 }]);
@@ -312,45 +355,6 @@ public class AccessorialChargeServiceTests
         _repositoryMock.Verify(
             r => r.AddChargeAsync(500, It.IsAny<JobAccessorialChargeCreateRequest>(), "Unknown"),
             Times.Once);
-    }
-
-    #endregion
-
-    #region GetJobAmountAsync
-
-    [Fact]
-    public async Task GetJobAmountAsync_DelegatesToRepository()
-    {
-        _repositoryMock
-            .Setup(r => r.GetJobAmountAsync(500))
-            .ReturnsAsync(127.50m);
-
-        var result = await CreateService().GetJobAmountAsync(500);
-
-        result.Should().Be(127.50m);
-        _repositoryMock.Verify(r => r.GetJobAmountAsync(500), Times.Once);
-    }
-
-    #endregion
-
-    #region GetPortionJobsAsync
-
-    [Fact]
-    public async Task GetPortionJobsAsync_DelegatesToRepository()
-    {
-        var expected = new List<PortionJobInfoDto>
-        {
-            new() { JobId = 101, Label = "Pickup", AccessorialChargeGroupId = 5 },
-            new() { JobId = 102, Label = "Flight", AccessorialChargeGroupId = 6 },
-        };
-        _repositoryMock
-            .Setup(r => r.GetPortionJobsAsync(200))
-            .ReturnsAsync(expected);
-
-        var result = await CreateService().GetPortionJobsAsync(200);
-
-        result.Should().BeEquivalentTo(expected);
-        _repositoryMock.Verify(r => r.GetPortionJobsAsync(200), Times.Once);
     }
 
     #endregion

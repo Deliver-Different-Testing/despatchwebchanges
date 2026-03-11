@@ -14,7 +14,8 @@ namespace DespatchWeb.Repositories;
 
 public class NoteRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService)
+    ITenantInfoService infoService,
+    ITenantClock clock)
     : BaseRepository(contextFactory), INoteRepository
 {
     private const string Space = " ";
@@ -115,7 +116,7 @@ public class NoteRepository(
         if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
 
         var staffId = infoService.GetStaffId();
-        var currentTime = infoService.GetCurrentTenantTime();
+        var currentTime = clock.TenantNow;
 
         if (viewModel.NoteId == 0)
             await CreateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
@@ -136,7 +137,7 @@ public class NoteRepository(
         if (!noteTypeExists) viewModel.NoteTypeId = (int)NoteType.InternalNote;
 
         var staffId = infoService.GetStaffId();
-        var currentTime = infoService.GetCurrentTenantTime();
+        var currentTime = clock.TenantNow;
 
         if (viewModel.NoteId > 0)
         {

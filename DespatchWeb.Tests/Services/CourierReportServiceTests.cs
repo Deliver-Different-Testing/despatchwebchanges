@@ -14,18 +14,12 @@ namespace DespatchWeb.Tests.Services;
 public class CourierReportServiceTests
 {
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private FakeTenantClock _clock = new(new DateTime(2026, 2, 18, 14, 30, 0));
 
     private CourierReportService CreateService() => new(
         _courierRepositoryMock.Object,
-        _tenantInfoServiceMock.Object
+        _clock
     );
-
-    public CourierReportServiceTests()
-    {
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(2026, 2, 18, 14, 30, 0));
-    }
 
     #region Helpers
 
@@ -38,10 +32,7 @@ public class CourierReportServiceTests
         return text;
     }
 
-    private static string[] GetCsvLines(byte[] bytes)
-    {
-        return DecodeCsv(bytes).TrimEnd('\r', '\n').Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
-    }
+    private static string[] GetCsvLines(byte[] bytes) => DecodeCsv(bytes).TrimEnd('\r', '\n').Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
 
     #endregion
 
@@ -121,7 +112,7 @@ public class CourierReportServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
-            .ReturnsAsync(new List<TodayActiveDriversViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -157,7 +148,7 @@ public class CourierReportServiceTests
         var request = new TodayActiveDriversFilterRequest { SearchTerm = "test", Status = "active", Fleet = 5 };
 
         _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(request))
-            .ReturnsAsync(new List<TodayActiveDriversViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -245,7 +236,7 @@ public class CourierReportServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync(new List<CourierComplianceViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -287,7 +278,7 @@ public class CourierReportServiceTests
             new()
             {
                 AfterHoursScheduleId = 1, CourierId = 10, CourierName = "John Doe", CourierCode = "C001",
-                Days = new List<string> { "Monday", "Wednesday", "Friday" },
+                Days = ["Monday", "Wednesday", "Friday"],
                 StartTime = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero),
                 EndTime = new DateTimeOffset(2026, 1, 1, 21, 0, 0, TimeSpan.Zero),
                 Duration = "4 hours"
@@ -322,7 +313,7 @@ public class CourierReportServiceTests
             new()
             {
                 CourierName = "Test", CourierCode = "T01",
-                Days = new List<string> { "Monday", "Tuesday" },
+                Days = ["Monday", "Tuesday"],
                 StartTime = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero),
                 EndTime = new DateTimeOffset(2026, 1, 1, 21, 0, 0, TimeSpan.Zero),
                 Duration = "4h"
@@ -375,7 +366,7 @@ public class CourierReportServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetAfterHoursScheduleForExportAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
-            .ReturnsAsync(new List<AfterHoursCourierScheduleViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -441,7 +432,7 @@ public class CourierReportServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new List<CourierEmailViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -529,7 +520,7 @@ public class CourierReportServiceTests
     {
         // Arrange
         _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new List<CourierDailyEarningsViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 
@@ -639,11 +630,10 @@ public class CourierReportServiceTests
         int year, int month, int day, int hour, int minute, string expectedTimestamp)
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(new DateTime(year, month, day, hour, minute, 0));
+        _clock = new FakeTenantClock(new DateTime(year, month, day, hour, minute, 0));
 
         _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new List<CourierEmailViewModel>());
+            .ReturnsAsync([]);
 
         var service = CreateService();
 

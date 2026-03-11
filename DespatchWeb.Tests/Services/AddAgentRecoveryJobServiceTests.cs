@@ -16,11 +16,13 @@ public class AddAgentRecoveryJobServiceTests
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<INationwideJobRepository> _nationwideJobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private AddAgentRecoveryJobService CreateService() => new(
         _jobRepositoryMock.Object,
         _nationwideJobRepositoryMock.Object,
-        _tenantInfoServiceMock.Object
+        _tenantInfoServiceMock.Object,
+        _clock
     );
 
     #region AddRecoveryAgentJobAsync Validation Tests
@@ -283,8 +285,8 @@ public class AddAgentRecoveryJobServiceTests
     {
         UcjbId = 1,
         UcjbNumber = "JOB001",
-        UcjbDate = DateTime.Today,
-        UcjbTime = DateTime.Today.AddHours(10),
+        UcjbDate = TestDates.Today,
+        UcjbTime = TestDates.Today.AddHours(10),
         UcjbClientId = 1,
         UcjbStatus = 1,
         UcjbFrom = 100,
@@ -303,8 +305,6 @@ public class AddAgentRecoveryJobServiceTests
             .ReturnsAsync("Test Agent");
         _tenantInfoServiceMock.Setup(x => x.GetStaffId())
             .Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime())
-            .Returns(DateTime.Now);
 
         // Capture the job when added and set its ID
         _jobRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucJob>()))

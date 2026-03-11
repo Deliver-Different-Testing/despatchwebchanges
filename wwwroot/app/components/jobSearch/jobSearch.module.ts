@@ -4,6 +4,7 @@ import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dial
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
+import {SearchCriteriaPanelReactComponent} from "../../react/components/common/search-criteria-panel/search-criteria-panel-react.module";
 import JobsListComponent from "../common/job-list/job-list.component";
 import JobHighlightService from "../common/job-list/job-highlight.service";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
@@ -30,6 +31,7 @@ const jobSearchModule = angular.module('uDispatch.jobSearch', [
 jobSearchModule
     .component("jobSearchComponent", JobSearchComponent)
     .component("taskHistoryReact", TaskHistoryReactComponent)
+    .component("searchCriteriaPanelReact", SearchCriteriaPanelReactComponent)
     .component("jobsList", JobsListComponent);
 
 jobSearchModule

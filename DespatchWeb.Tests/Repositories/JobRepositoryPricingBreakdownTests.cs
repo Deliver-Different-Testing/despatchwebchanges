@@ -13,7 +13,7 @@ namespace DespatchWeb.Tests.Repositories;
 /// Tests for JobRepository pricing breakdown operations.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
-public class JobRepositoryPricingBreakdownTests : IDisposable
+public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 {
     private readonly SqliteConnection _connection;
     private readonly DespatchContext _context;
@@ -21,6 +21,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public JobRepositoryPricingBreakdownTests()
     {
@@ -28,7 +29,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         _connection.Open();
 
         // Register custom SQLite function to mimic SQL Server's getdate()
-        _connection.CreateFunction("getdate", () => DateTime.Now);
+        _connection.CreateFunction("getdate", () => TestDates.Now);
 
         using (var command = _connection.CreateCommand())
         {
@@ -48,8 +49,6 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetCurrentTenantTime()).Returns(DateTime.Now);
-
         // Add required note type for note creation
         _context.TucNoteTypes.Add(new TucNoteType
         {
@@ -62,15 +61,16 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         _context.SaveChanges();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _context.Dispose();
-        _connection.Dispose();
+        await _context.DisposeAsync();
+        await _connection.DisposeAsync();
     }
 
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _clock,
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
@@ -87,7 +87,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
             CreatePricingBreakdown(1, jobId, null, "Base Charge", 100.00m),
             CreatePricingBreakdown(2, jobId, null, "Fuel Surcharge", 15.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -110,7 +110,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
             CreatePricingBreakdownArchive(1, jobId, "Base Charge", 200.00m),
             CreatePricingBreakdownArchive(2, jobId, "Fuel Surcharge", 25.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -133,7 +133,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
             CreatePricingBreakdown(1, null, prebookId, "Prebook Base", 150.00m),
             CreatePricingBreakdown(2, null, prebookId, "Prebook Surcharge", 20.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -152,7 +152,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -177,7 +177,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
             CreatePricingBreakdown(1, jobId1, null, "Job 1 Charge", 100.00m),
             CreatePricingBreakdown(2, jobId2, null, "Job 2 Charge", 200.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -212,7 +212,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var viewModel = new ChargeViewModel
         {
@@ -229,7 +229,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
 
         // Assert
         chargeId.Should().BeGreaterThan(0);
-        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().NotBeNull();
         breakdown.ChargeName.Should().Be("New Charge");
         breakdown.ChargeAmount.Should().Be(50.00m);
@@ -242,7 +242,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         // Arrange
         const int jobId = 100;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var viewModel = new ChargeViewModel
         {
@@ -259,7 +259,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
 
         // Assert
         chargeId.Should().BeGreaterThan(0);
-        var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().NotBeNull();
         breakdown.ChargeName.Should().Be("Archive Charge");
         breakdown.ChargeAmount.Should().Be(75.00m);
@@ -272,7 +272,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         // Arrange
         const int prebookId = 100;
         _context.TucJobBookings.Add(CreatePrebookJob(prebookId, "PREBOOK001"));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var viewModel = new ChargeViewModel
         {
@@ -289,7 +289,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
 
         // Assert
         chargeId.Should().BeGreaterThan(0);
-        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().NotBeNull();
         breakdown.ChargeName.Should().Be("Prebook Charge");
         breakdown.PrebookJobId.Should().Be(prebookId);
@@ -327,7 +327,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         const int chargeId = 1;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
         _context.PricingBreakdowns.Add(CreatePricingBreakdown(chargeId, jobId, null, "Original", 100.00m));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var viewModel = new ChargeViewModel
         {
@@ -345,7 +345,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
 
         // Assert - Clear change tracker to ensure we read fresh data from DB
         _context.ChangeTracker.Clear();
-        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().NotBeNull();
         breakdown.ChargeName.Should().Be("Updated");
         breakdown.ChargeAmount.Should().Be(150.00m);
@@ -360,7 +360,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         const int chargeId = 1;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
         _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(chargeId, jobId, "Original", 100.00m));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var viewModel = new ChargeViewModel
         {
@@ -378,7 +378,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
 
         // Assert - Clear change tracker to ensure we read fresh data from DB
         _context.ChangeTracker.Clear();
-        var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().NotBeNull();
         breakdown.ChargeName.Should().Be("Updated Archive");
         breakdown.ChargeAmount.Should().Be(175.00m);
@@ -434,7 +434,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         const int chargeId = 1;
         _context.TucJobs.Add(CreateJob(jobId, "JOB001"));
         _context.PricingBreakdowns.Add(CreatePricingBreakdown(chargeId, jobId, null, "To Delete", 100.00m));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -442,7 +442,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         await repository.DeleteJobPriceBreakdownAsync(chargeId, isArchived: false);
 
         // Assert
-        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().BeNull();
     }
 
@@ -454,7 +454,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         const int chargeId = 1;
         _context.TucJobArchives.Add(CreateArchivedJob(jobId, "ARCH001"));
         _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(chargeId, jobId, "Archive To Delete", 100.00m));
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -462,7 +462,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         await repository.DeleteJobPriceBreakdownAsync(chargeId, isArchived: true);
 
         // Assert
-        var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId);
+        var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
         breakdown.Should().BeNull();
     }
 
@@ -487,7 +487,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
             CreatePricingBreakdown(1, jobId, null, "Keep", 100.00m),
             CreatePricingBreakdown(2, jobId, null, "Delete", 200.00m)
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
 
@@ -495,7 +495,7 @@ public class JobRepositoryPricingBreakdownTests : IDisposable
         await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
 
         // Assert
-        var remaining = await _context.PricingBreakdowns.ToListAsync();
+        var remaining = await _context.PricingBreakdowns.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         remaining.Should().ContainSingle();
         remaining.First().ChargeName.Should().Be("Keep");
     }

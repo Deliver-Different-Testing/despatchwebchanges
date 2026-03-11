@@ -146,6 +146,7 @@ builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
 builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
 builder.Services.AddScoped<IRateJobService, RateJobService>();
 builder.Services.AddScoped<ITenantInfoService, TenantInfoService>();
+builder.Services.AddScoped<ITenantClock, TenantClock>();
 builder.Services.AddScoped<IFlightRateService, FlightRateService>();
 builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
 builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();

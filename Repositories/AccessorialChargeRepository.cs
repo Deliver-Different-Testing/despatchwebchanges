@@ -145,7 +145,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             {
                 JobId = j.UcjbId,
                 Label = i < labels.Length ? labels[i] : $"Portion {i + 1}",
-                AccessorialChargeGroupId = j.AccessorialChargeGroupId,
+                AccessorialChargeGroupId = j.AccessorialChargeGroupId
             })
             .ToList();
     }

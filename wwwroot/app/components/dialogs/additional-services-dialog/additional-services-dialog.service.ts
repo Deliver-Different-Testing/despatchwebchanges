@@ -73,7 +73,7 @@ class AdditionalServicesDialogService implements angular.IServiceProvider {
         }
     }
 
-    async showAdditionalServicesDialog($event: MouseEvent, job: IJob | IDispatchJob) {
+    async showAdditionalServicesDialog(_$event: MouseEvent, job: IJob | IDispatchJob) {
         try {
             console.log("Additional Services Dialog opened!");
             console.log("Job: ", job);

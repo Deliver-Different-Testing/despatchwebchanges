@@ -17,7 +17,8 @@ namespace DespatchWeb.Repositories;
 
 public class TaskRepository(
     IDbContextFactory<DespatchContext> contextFactory,
-    ITenantInfoService infoService) : BaseRepository(contextFactory), ITaskRepository
+    ITenantInfoService infoService,
+    ITenantClock clock) : BaseRepository(contextFactory), ITaskRepository
 {
     private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -46,7 +47,7 @@ public class TaskRepository(
     public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
         var tenantTimeZone = infoService.GetTenantTimeZone();
-        var today = filters?.Date ?? infoService.GetCurrentTenantTime().AddDays(1);
+        var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
         var query = Context.TucEvents
             .AsNoTracking()
@@ -250,7 +251,7 @@ public class TaskRepository(
 
     public async Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
     {
-        var now = infoService.GetCurrentTenantTime();
+        var now = clock.TenantNow;
         var eventGroups = await Context.TucEventTypeEventTypeGroups
             .AsNoTracking()
             .Where(x => x.EventTypeGroupId == eventGroupId)
@@ -275,7 +276,7 @@ public class TaskRepository(
 
     public async Task CreateEventsForJobAsync(int jobId, List<EventGroupViewModel> eventGroupViewModels)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
         var staffId = infoService.GetStaffId();
 
         // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
@@ -386,7 +387,7 @@ public class TaskRepository(
 
         ArgumentNullException.ThrowIfNull(job);
 
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         await InsertEventAsync(
             jobNo: job.UcjbNumber,
@@ -535,7 +536,7 @@ public class TaskRepository(
         int? jobType,
         DateTimeOffset? dueTime)
     {
-        var currentDate = infoService.GetCurrentTenantTime();
+        var currentDate = clock.TenantNow;
 
         if (type is (int)EventType.LatePickUp or (int)EventType.LateDelivery)
         {

@@ -50,7 +50,7 @@ public class JobMappingsTests
             UcjbId = 2,
             ParentId = 1,
             Parent = archivedParent,
-            UcjbDate = DateTime.Now,
+            UcjbDate = TestDates.Now,
             UcjbAmount = 999m,
             PricingBreakdowns = new List<PricingBreakdownArchive>()
         };
@@ -465,7 +465,7 @@ public class JobMappingsTests
             UcjbId = 2,
             ParentId = 1,
             Parent = parentJob,
-            UcjbDate = DateTime.Now,
+            UcjbDate = TestDates.Now,
             UcjbAmount = 999m,
             PricingBreakdowns = new List<PricingBreakdownArchive>
             {
@@ -488,7 +488,7 @@ public class JobMappingsTests
         var archivedJob = new TucJobArchive
         {
             UcjbId = 1,
-            UcjbDate = DateTime.Now,
+            UcjbDate = TestDates.Now,
             PricingBreakdowns = new List<PricingBreakdownArchive>()
         };
 
@@ -508,7 +508,7 @@ public class JobMappingsTests
         var archivedJob = new TucJobArchive
         {
             UcjbId = 1,
-            UcjbDate = DateTime.Now,
+            UcjbDate = TestDates.Now,
             UcjbInvoiceNo = 12345,
             Invoice = new TucInvoiceNo { Created = invoiceDate },
             PricingBreakdowns = new List<PricingBreakdownArchive>()
@@ -712,7 +712,7 @@ public class JobMappingsTests
             UcjbId = 2,
             ParentId = 1,
             Parent = parentJob,
-            UcjbDate = DateTime.Now,
+            UcjbDate = TestDates.Now,
             UcjbAmount = 50m,
             PricingBreakdowns = new List<PricingBreakdownArchive>
             {
@@ -2091,8 +2091,8 @@ public class JobMappingsTests
                 DepartureTimeZone = "New Zealand Standard Time",
                 ExpectedArrival = new DateTimeOffset(2024, 1, 15, 23, 0, 0, TimeSpan.Zero), // UTC
                 ArrivalTimeZone = "Australia/Sydney", // AEDT = UTC+11 in January
-                FlightSegments = new List<FlightSegmentViewModel>
-                {
+                FlightSegments =
+                [
                     new()
                     {
                         DepartureTime = new DateTimeOffset(2024, 1, 15, 20, 30, 0, TimeSpan.Zero),
@@ -2100,7 +2100,7 @@ public class JobMappingsTests
                         ArrivalTime = new DateTimeOffset(2024, 1, 15, 23, 0, 0, TimeSpan.Zero),
                         ArrivalAirportTimeZone = "Australia/Sydney"
                     }
-                }
+                ]
             }
         };
 
@@ -2110,7 +2110,7 @@ public class JobMappingsTests
         var method = typeof(JobMappings).GetMethod(
             "ApplyFlightTimezonesToInlineLoadedJobs",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        method!.Invoke(null, new object[] { jobs });
+        method!.Invoke(null, [jobs]);
 
         // Assert - Times should be converted to local time with correct offset
         // 20:30 UTC = 09:30 NZDT (+13)
@@ -2141,8 +2141,8 @@ public class JobMappingsTests
                 DepartureTimeZone = "Pacific Standard Time",
                 ExpectedArrival = new DateTimeOffset(2024, 1, 16, 2, 0, 0, TimeSpan.Zero),
                 ArrivalTimeZone = "Eastern Standard Time",
-                FlightSegments = new List<FlightSegmentViewModel>
-                {
+                FlightSegments =
+                [
                     new()
                     {
                         DepartureTime = new DateTimeOffset(2024, 1, 15, 18, 30, 0, TimeSpan.Zero), // UTC
@@ -2150,7 +2150,7 @@ public class JobMappingsTests
                         ArrivalTime = new DateTimeOffset(2024, 1, 16, 2, 0, 0, TimeSpan.Zero), // UTC
                         ArrivalAirportTimeZone = "Eastern Standard Time" // UTC-5
                     }
-                }
+                ]
             }
         };
 
@@ -2160,7 +2160,7 @@ public class JobMappingsTests
         var method = typeof(JobMappings).GetMethod(
             "ApplyFlightTimezonesToInlineLoadedJobs",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        method!.Invoke(null, new object[] { jobs });
+        method!.Invoke(null, [jobs]);
 
         // Assert segment times
         var segment = job.AssignedFlight!.FlightSegments[0];
@@ -2191,8 +2191,8 @@ public class JobMappingsTests
                 DepartureTimeZone = "Pacific Standard Time",
                 ExpectedArrival = new DateTimeOffset(2024, 1, 15, 22, 0, 0, TimeSpan.Zero),
                 ArrivalTimeZone = "Eastern Standard Time",
-                FlightSegments = new List<FlightSegmentViewModel>
-                {
+                FlightSegments =
+                [
                     new()
                     {
                         DepartureTime = new DateTimeOffset(2024, 1, 15, 18, 0, 0, TimeSpan.Zero),
@@ -2200,7 +2200,7 @@ public class JobMappingsTests
                         ArrivalTime = new DateTimeOffset(2024, 1, 15, 22, 0, 0, TimeSpan.Zero),
                         ArrivalAirportTimeZone = "Eastern Standard Time"
                     }
-                }
+                ]
             }
         };
 
@@ -2210,7 +2210,7 @@ public class JobMappingsTests
         var method = typeof(JobMappings).GetMethod(
             "ApplyFlightTimezonesToInlineLoadedJobs",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        method!.Invoke(null, new object[] { jobs });
+        method!.Invoke(null, [jobs]);
 
         // Assert - Times should NOT be changed (child jobs are processed by BatchLoadFlightInfoAsync)
         childJob.AssignedFlight!.FlightSegments[0].DepartureTime.Hour.Should().Be(18);
@@ -2235,7 +2235,7 @@ public class JobMappingsTests
         var method = typeof(JobMappings).GetMethod(
             "ApplyFlightTimezonesToInlineLoadedJobs",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        var act = () => method!.Invoke(null, new object[] { jobs });
+        var act = () => method!.Invoke(null, [jobs]);
 
         // Assert
         act.Should().NotThrow();
@@ -2252,9 +2252,9 @@ public class JobMappingsTests
             "ConvertUtcToTimeZone",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
             null,
-            new[] { typeof(DateTime?), typeof(string) },
+            [typeof(DateTime?), typeof(string)],
             null);
-        var result = (DateTimeOffset)method!.Invoke(null, new object?[] { nullDateTime, "Pacific Standard Time" })!;
+        var result = (DateTimeOffset)method!.Invoke(null, [nullDateTime, "Pacific Standard Time"])!;
 
         // Assert - Should return SqlMinDateTime (1753-01-01)
         result.Year.Should().Be(1753);
@@ -2271,9 +2271,9 @@ public class JobMappingsTests
             "ConvertUtcToTimeZone",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
             null,
-            new[] { typeof(DateTime), typeof(string) },
+            [typeof(DateTime), typeof(string)],
             null);
-        var result = (DateTimeOffset)method!.Invoke(null, new object?[] { utcTime, null })!;
+        var result = (DateTimeOffset)method!.Invoke(null, [utcTime, null])!;
 
         // Assert - Should return with zero offset (UTC)
         result.Hour.Should().Be(12);
@@ -2291,9 +2291,9 @@ public class JobMappingsTests
             "ConvertUtcToTimeZone",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
             null,
-            new[] { typeof(DateTime), typeof(string) },
+            [typeof(DateTime), typeof(string)],
             null);
-        var result = (DateTimeOffset)method!.Invoke(null, new object?[] { utcTime, "" })!;
+        var result = (DateTimeOffset)method!.Invoke(null, [utcTime, ""])!;
 
         // Assert
         result.Hour.Should().Be(12);
@@ -2463,6 +2463,229 @@ public class JobMappingsTests
         // Assert - Should skip empty job phone and use direct line
         result.FromContactNumber.Should().Be("09-111-1111");
         result.FromContactNumberSource.Should().Be("Direct Line");
+    }
+
+    #endregion
+
+    #region Child Job Item Inheritance Tests
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_ParcelDimensions_ChildJobInheritsParentItems(bool isUsCustomer)
+    {
+        // Arrange - Parent has items, child has none (non-stop child scenario)
+        var parentJob = new TucJob
+        {
+            UcjbId = 100,
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 100, ItemId = 1, Notes = "Box A", Height = 10, Depth = 20, Length = 30, Barcode = "BC1" },
+                new() { JobId = 100, ItemId = 2, Notes = "Box B", Height = 15, Depth = 25, Length = 35, Barcode = "BC2" }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        var childJob = new TucJob
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "CHILD-001",
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(childJob);
+
+        // Assert - Should inherit parent's items
+        result.ParcelDimensions.Should().HaveCount(2);
+        result.ParcelDimensions[0].ItemName.Should().Be("Box A");
+        result.ParcelDimensions[0].Barcode.Should().Be("BC1");
+        result.ParcelDimensions[1].ItemName.Should().Be("Box B");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_PalletInfo_ChildJobInheritsParentItems(bool isUsCustomer)
+    {
+        // Arrange - Parent has pallet items, child has none
+        var parentJob = new TucJob
+        {
+            UcjbId = 100,
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 100, ItemId = 1, Items = 5, Weight = 100, Length = 120, Depth = 80, Height = 100, Notes = "Pallet 1" }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        var childJob = new TucJob
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "CHILD-002",
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(childJob);
+
+        // Assert - Should inherit parent's pallet info
+        result.PalletInfo.Should().HaveCount(1);
+        result.PalletInfo[0].Quantity.Should().Be(5);
+        result.PalletInfo[0].Weight.Should().Be(100);
+        result.PalletInfo[0].Notes.Should().Be("Pallet 1");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_Flags_ChildJobInheritsParentFlags(bool isUsCustomer)
+    {
+        // Arrange - Parent has tail lift and private res flags
+        var parentJob = new TucJob
+        {
+            UcjbId = 100,
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 100, ItemId = 1, Pu = true, Do = true, PrivateRes = true }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        var childJob = new TucJob
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "CHILD-003",
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(childJob);
+
+        // Assert - Should inherit parent's flags
+        result.TailLiftPu.Should().BeTrue("child job should inherit TailLiftPu from parent");
+        result.TailLiftDo.Should().BeTrue("child job should inherit TailLiftDo from parent");
+        result.DeliverToPrivateRes.Should().BeTrue("child job should inherit DeliverToPrivateRes from parent");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_Items_ChildJobInheritsParentItemCount(bool isUsCustomer)
+    {
+        // Arrange - Parent has 3 items, child has none
+        var parentJob = new TucJob
+        {
+            UcjbId = 100,
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 100, ItemId = 1 },
+                new() { JobId = 100, ItemId = 2 },
+                new() { JobId = 100, ItemId = 3 }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        var childJob = new TucJob
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "CHILD-004",
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        result.Items.Should().Be(3, "child job should inherit item count from parent");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JobMappingCore_StopChildJob_UsesOwnChildItems(bool isUsCustomer)
+    {
+        // Arrange - Stop child has items via TucJobItemChildJobs (ChildJobId = this job)
+        var parentJob = new TucJob
+        {
+            UcjbId = 100,
+            TucJobItemJobs = new List<TucJobItem>
+            {
+                new() { JobId = 100, ItemId = 1, Notes = "Parent Item", Height = 99 }
+            },
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        var stopChildJob = new TucJob
+        {
+            UcjbId = 300,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "STOP-001",
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>
+            {
+                new() { JobId = 100, ChildJobId = 300, ItemId = 10, Notes = "Stop Item", Height = 50, Depth = 40, Length = 60, Barcode = "STOP-BC" }
+            },
+            TucJobNationwides = new List<TucJobNationwide>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobMappingCore(isUsCustomer).Compile();
+        var result = mapping(stopChildJob);
+
+        // Assert - Should use its own child items, NOT parent's
+        result.Items.Should().Be(1);
+        result.ParcelDimensions.Should().HaveCount(1);
+        result.ParcelDimensions[0].ItemName.Should().Be("Stop Item");
+        result.ParcelDimensions[0].Barcode.Should().Be("STOP-BC");
+        result.PalletInfo.Should().HaveCount(1);
+        result.PalletInfo[0].Notes.Should().Be("Stop Item");
     }
 
     #endregion

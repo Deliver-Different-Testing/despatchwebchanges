@@ -72,7 +72,7 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
         }
     }
 
-    async showAccessorialChargesDialog($event: MouseEvent, job: IJob | IDispatchJob): Promise<void> {
+    async showAccessorialChargesDialog(_$event: MouseEvent, job: IJob | IDispatchJob): Promise<void> {
         const groupId = job.accessorialChargeGroupId;
 
         // Fetch portion jobs (child Pickup/Flight/Delivery jobs) for this job

@@ -294,7 +294,7 @@ public partial class JobRepository
     {
         try
         {
-            var now = _infoService.GetCurrentTenantTime();
+            var now = _clock.TenantNow;
             var tenantTimeZone = _infoService.GetTenantTimeZone();
             var currentDate = now.Date; 
 

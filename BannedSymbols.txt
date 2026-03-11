@@ -1,0 +1,3 @@
+P:System.DateTime.Now;Use ITenantClock.TenantNow or ITenantInfoService.GetCurrentTenantTime() instead
+P:System.DateTime.Today;Use ITenantClock.TenantToday instead
+P:System.DateTimeOffset.Now;Use ITenantClock instead

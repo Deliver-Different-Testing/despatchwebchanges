@@ -1,7 +1,7 @@
 using System.Text.Json;
 using DespatchWeb.Models.FlightStats;
 using FluentAssertions;
-using Xunit.Abstractions;
+
 
 namespace DespatchWeb.Tests.Services;
 
@@ -15,9 +15,8 @@ namespace DespatchWeb.Tests.Services;
 /// To run only integration tests: dotnet test --filter "Category=Integration"
 /// </summary>
 [Trait("Category", "Integration")]
-public class FlightStatsServiceIntegrationTests : IDisposable
+public class FlightStatsServiceIntegrationTests : IAsyncDisposable
 {
-    private readonly ITestOutputHelper _output;
     private readonly HttpClient _httpClient;
     private readonly string? _appId;
     private readonly string? _appKey;
@@ -26,9 +25,8 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     private const string ConnectionsBaseUrl = "https://api.flightstats.com/flex/connections/rest/v3/";
     private const string AlertsBaseUrl = "https://api.flightstats.com/flex/alerts/rest/v1/";
 
-    public FlightStatsServiceIntegrationTests(ITestOutputHelper output)
+    public FlightStatsServiceIntegrationTests()
     {
-        _output = output;
         _httpClient = new HttpClient();
 
         // Try environment variables first
@@ -40,13 +38,14 @@ public class FlightStatsServiceIntegrationTests : IDisposable
 
         _hasCredentials = !string.IsNullOrEmpty(_appId) && !string.IsNullOrEmpty(_appKey);
 
+        var output = TestContext.Current.TestOutputHelper;
         if (_hasCredentials)
         {
-            _output.WriteLine("FlightStats API credentials loaded successfully.");
+            output?.WriteLine("FlightStats API credentials loaded successfully.");
             return;
         }
-        _output.WriteLine("WARNING: FlightStats API credentials not configured.");
-        _output.WriteLine("Set FlightStatusApiAppId and FlightStatusApiAppKey environment variables or configure in launchSettings.json.");
+        output?.WriteLine("WARNING: FlightStats API credentials not configured.");
+        output?.WriteLine("Set FlightStatusApiAppId and FlightStatusApiAppKey environment variables or configure in launchSettings.json.");
     }
 
     /// <summary>
@@ -100,17 +99,10 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         return (null, null);
     }
 
-    public void Dispose() => _httpClient.Dispose();
-
-    /// <summary>
-    /// Checks if credentials are available and skips the test if not.
-    /// Returns true if test should be skipped (no credentials).
-    /// </summary>
-    private bool ShouldSkipTest()
+    public ValueTask DisposeAsync()
     {
-        if (_hasCredentials) return false;
-        _output.WriteLine("SKIPPED: FlightStats API credentials not configured.");
-        return true;
+        _httpClient.Dispose();
+        return ValueTask.CompletedTask;
     }
 
     #region Connections API Tests
@@ -119,7 +111,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task ConnectionsApi_SearchFlights_AucklandToSydney_ReturnsFlights()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "AKL";
         const string arrivalAirport = "SYD";
@@ -130,14 +122,14 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/{hour}/{minute}" +
                   $"?appId={_appId}&appKey={_appKey}&maxResults=10&includeCodeshares=false&maxConnections=1&numHours=24";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
-        _output.WriteLine($"Response Length: {content.Length} characters");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Response Length: {content.Length} characters");
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
@@ -145,7 +137,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
         result.Should().NotBeNull();
 
-        _output.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
 
         if (result.Connections is { Count: > 0 })
         {
@@ -154,7 +146,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
                 var firstFlight = connection.ScheduledFlight?.FirstOrDefault();
                 if (firstFlight != null)
                 {
-                    _output.WriteLine($"  Flight: {firstFlight.CarrierFsCode}{firstFlight.FlightNumber} " +
+                    TestContext.Current.TestOutputHelper?.WriteLine($"  Flight: {firstFlight.CarrierFsCode}{firstFlight.FlightNumber} " +
                                       $"{firstFlight.DepartureAirportFsCode}->{firstFlight.ArrivalAirportFsCode} " +
                                       $"Departs: {firstFlight.DepartureTime}");
                 }
@@ -166,7 +158,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task ConnectionsApi_SearchFlights_LosAngelesToNewYork_ReturnsFlights()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "LAX";
         const string arrivalAirport = "JFK";
@@ -175,13 +167,13 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
                   $"?appId={_appId}&appKey={_appKey}&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
@@ -189,7 +181,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
         result.Should().NotBeNull();
 
-        _output.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
 
         // LAX to JFK is a busy route, should have flights
         result.Connections.Should().NotBeNullOrEmpty("LAX to JFK is a major route with many flights");
@@ -199,7 +191,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task ConnectionsApi_SearchFlights_WithAirlineFilter_ReturnsFilteredResults()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "LAX";
         const string arrivalAirport = "JFK";
@@ -209,13 +201,13 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
                   $"?appId={_appId}&appKey={_appKey}&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24&includeAirlines={airline}";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
@@ -223,7 +215,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
         result.Should().NotBeNull();
 
-        _output.WriteLine($"American Airlines connections found: {result.Connections?.Count ?? 0}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"American Airlines connections found: {result.Connections?.Count ?? 0}");
 
         // Each connection should include at least one AA-operated flight
         // (connections may include legs operated by regional partners like SkyWest/OO)
@@ -242,7 +234,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task ConnectionsApi_SearchFlights_MultipleAirlines_ReturnsResults()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "SFO";
         const string arrivalAirport = "ORD";
@@ -252,13 +244,13 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
                   $"?appId={_appId}&appKey={_appKey}&maxResults=20&includeCodeshares=false&maxConnections=1&numHours=24&includeAirlines={airlines}";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
@@ -266,14 +258,14 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
         result.Should().NotBeNull();
 
-        _output.WriteLine($"United/American connections found: {result.Connections?.Count ?? 0}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"United/American connections found: {result.Connections?.Count ?? 0}");
     }
 
     [Fact]
     public async Task ConnectionsApi_InvalidAirport_ReturnsErrorOrEmptyResult()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "XXX"; // Invalid airport code
         const string arrivalAirport = "YYY";
@@ -282,14 +274,14 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/8/0" +
                   $"?appId={_appId}&appKey={_appKey}&maxResults=10";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
-        _output.WriteLine($"Response: {content}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Response: {content}");
 
         // Assert - API may return 200 with empty results or an error
         // We just want to ensure the API handles invalid airports gracefully
@@ -304,7 +296,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task ConnectionsApi_ResponseContainsAppendixData()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "AKL";
         const string arrivalAirport = "SYD";
@@ -314,8 +306,8 @@ public class FlightStatsServiceIntegrationTests : IDisposable
                   $"?appId={_appId}&appKey={_appKey}&maxResults=5&numHours=24";
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue();
@@ -330,15 +322,15 @@ public class FlightStatsServiceIntegrationTests : IDisposable
             result.Appendix?.Airlines.Should().NotBeNullOrEmpty("Appendix should contain airline data");
             result.Appendix?.Airports.Should().NotBeNullOrEmpty("Appendix should contain airport data");
 
-            _output.WriteLine($"Airlines in appendix: {result.Appendix?.Airlines?.Count}");
-            _output.WriteLine($"Airports in appendix: {result.Appendix?.Airports?.Count}");
-            _output.WriteLine($"Equipment in appendix: {result.Appendix?.Equipments?.Count}");
+            TestContext.Current.TestOutputHelper?.WriteLine($"Airlines in appendix: {result.Appendix?.Airlines?.Count}");
+            TestContext.Current.TestOutputHelper?.WriteLine($"Airports in appendix: {result.Appendix?.Airports?.Count}");
+            TestContext.Current.TestOutputHelper?.WriteLine($"Equipment in appendix: {result.Appendix?.Equipments?.Count}");
 
             // Verify airport data has timezone info
             var aklAirport = result.Appendix?.Airports?.FirstOrDefault(a => a.Fs == "AKL");
             aklAirport.Should().NotBeNull();
             aklAirport.TimeZoneRegionName.Should().NotBeNullOrEmpty("Airport should have timezone info");
-            _output.WriteLine($"AKL Timezone: {aklAirport.TimeZoneRegionName}");
+            TestContext.Current.TestOutputHelper?.WriteLine($"AKL Timezone: {aklAirport.TimeZoneRegionName}");
         }
     }
 
@@ -346,7 +338,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task ConnectionsApi_ConnectingFlights_ReturnsMultiSegmentResults()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         // Use a route that likely requires a connection
         const string departureAirport = "AKL";
@@ -356,13 +348,13 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/6/0" +
                   $"?appId={_appId}&appKey={_appKey}&maxResults=10&includeCodeshares=false&maxConnections=2&numHours=24&minimumConnectTime=60";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}");
@@ -370,19 +362,19 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
         result.Should().NotBeNull();
 
-        _output.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
 
         if (result.Connections != null)
         {
             foreach (var connection in result.Connections.Take(3))
             {
                 var segmentCount = connection.ScheduledFlight?.Count ?? 0;
-                _output.WriteLine($"  Connection with {segmentCount} segment(s), elapsed time: {connection.ElapsedTime} mins");
+                TestContext.Current.TestOutputHelper?.WriteLine($"  Connection with {segmentCount} segment(s), elapsed time: {connection.ElapsedTime} mins");
 
                 if (connection.ScheduledFlight == null) continue;
                 foreach (var segment in connection.ScheduledFlight)
                 {
-                    _output.WriteLine($"    {segment.CarrierFsCode}{segment.FlightNumber}: " +
+                    TestContext.Current.TestOutputHelper?.WriteLine($"    {segment.CarrierFsCode}{segment.FlightNumber}: " +
                                       $"{segment.DepartureAirportFsCode} -> {segment.ArrivalAirportFsCode}");
                 }
             }
@@ -399,14 +391,14 @@ public class FlightStatsServiceIntegrationTests : IDisposable
         // Arrange - Use invalid credentials
         const string url = $"{AlertsBaseUrl}json/list?appId=invalid&appKey=invalid";
 
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
-        _output.WriteLine($"Response: {content}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Response: {content}");
 
         // Assert - API returns 200 but with error in body
         // The response contains an error object indicating invalid credentials
@@ -418,18 +410,18 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task AlertsApi_ListAlerts_ReturnsValidResponse()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         var url = $"{AlertsBaseUrl}json/list?appId={_appId}&appKey={_appKey}";
  
-        _output.WriteLine($"Request URL: {url}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
 
         // Act
-        var response = await _httpClient.GetAsync(url);
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
-        _output.WriteLine($"Status Code: {response.StatusCode}");
-        _output.WriteLine($"Response Length: {content.Length} characters");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Response Length: {content.Length} characters");
 
         // Assert
         response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
@@ -443,7 +435,7 @@ public class FlightStatsServiceIntegrationTests : IDisposable
     public async Task Api_RateLimiting_HandlesMultipleRequests()
     {
         // Arrange
-        if (ShouldSkipTest()) return;
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
 
         const string departureAirport = "LAX";
         const string arrivalAirport = "SFO";
@@ -454,12 +446,14 @@ public class FlightStatsServiceIntegrationTests : IDisposable
 
         // Act - Make 3 rapid requests
         var tasks = new List<Task<HttpResponseMessage>>();
-        for (var i = 0; i < 3; i++) tasks.Add(_httpClient.GetAsync(url));
+        for (var i = 0; i < 3; i++)
+            if (_httpClient != null)
+                tasks.Add(_httpClient.GetAsync(url));
 
         var responses = await Task.WhenAll(tasks);
 
         // Assert - All should succeed (API should handle reasonable request rates)
-        foreach (var response in responses) _output.WriteLine($"Response: {response.StatusCode}");
+        foreach (var response in responses) TestContext.Current.TestOutputHelper?.WriteLine($"Response: {response.StatusCode}");
 
         var successCount = responses.Count(r => r.IsSuccessStatusCode);
         successCount.Should().BeGreaterThan(0, "At least some requests should succeed");
