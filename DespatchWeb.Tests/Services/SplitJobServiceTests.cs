@@ -6,6 +6,7 @@ using DespatchWeb.Services;
 using FluentAssertions;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -24,7 +25,8 @@ public class SplitJobServiceTests : IAsyncDisposable
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock = new();
 
     private int _nextCreatedJobId = 2000;
 
@@ -61,9 +63,9 @@ public class SplitJobServiceTests : IAsyncDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
 
-        // Default CreateMinimalTucJobAsync — inserts a TucJob into the shared DB
+        // Default CreateJobAsync — inserts a TucJob into the shared DB
         // so the service can load it back with FirstOrDefaultAsync.
-        _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+        _createJobServiceMock.Setup(x => x.CreateJobAsync(
                 It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
             {
@@ -73,6 +75,14 @@ public class SplitJobServiceTests : IAsyncDisposable
                 ctx.SaveChanges();
                 return new CreateMinimalTucJobResponse { Success = true, JobId = jobId };
             });
+
+        // Mock IServiceScopeFactory to return a scope that resolves IRateJobService
+        var scopeMock = new Mock<IServiceScope>();
+        var serviceProviderMock = new Mock<IServiceProvider>();
+        serviceProviderMock.Setup(sp => sp.GetService(typeof(IRateJobService)))
+            .Returns(_rateJobServiceMock.Object);
+        scopeMock.Setup(s => s.ServiceProvider).Returns(serviceProviderMock.Object);
+        _serviceScopeFactoryMock.Setup(f => f.CreateScope()).Returns(scopeMock.Object);
 
         SeedLookupData();
     }
@@ -193,8 +203,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
         _clock,
-        _rateJobServiceMock.Object,
-        _jobRepositoryMock.Object);
+        _createJobServiceMock.Object,
+        _serviceScopeFactoryMock.Object);
 
     private static AddressViewModel CreateMeetingPointAddress() => new(
         addressLine1: "100 Meeting Point Rd",
@@ -292,7 +302,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     public async Task SplitJobAsync_PickupCreationFails_ThrowsInvalidOperationException()
     {
         SeedJob();
-        _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+        _createJobServiceMock.Setup(x => x.CreateJobAsync(
                 It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CreateMinimalTucJobResponse
             {
@@ -326,15 +336,15 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SplitJobAsync_CallsCreateMinimalTucJobAsync_Twice()
+    public async Task SplitJobAsync_CallsCreateJobAsync_Twice()
     {
         SeedJob();
         var service = CreateService();
 
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
-        _jobRepositoryMock.Verify(
-            x => x.CreateMinimalTucJobAsync(It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()),
+        _createJobServiceMock.Verify(
+            x => x.CreateJobAsync(It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
     }
 
@@ -594,17 +604,13 @@ public class SplitJobServiceTests : IAsyncDisposable
     public async Task SplitJobAsync_GeneratesLetterSuffixJobNumbers()
     {
         SeedJob(100, "JOB-500");
-        CreateMinimalTucJobInputModel? firstInput = null;
-        CreateMinimalTucJobInputModel? secondInput = null;
-        var callCount = 0;
+        var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
-        _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+        _createJobServiceMock.Setup(x => x.CreateJobAsync(
                 It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
             {
-                var current = Interlocked.Increment(ref callCount);
-                if (current == 1) firstInput = input;
-                else secondInput = input;
+                capturedInputs.Add(input);
 
                 var jobId = Interlocked.Increment(ref _nextCreatedJobId);
                 using var ctx = new DespatchContext(_options);
@@ -616,9 +622,9 @@ public class SplitJobServiceTests : IAsyncDisposable
         var service = CreateService();
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
-        // First split: no existing children → suffixes A and B
-        firstInput!.JobNumber.Should().Be("JOB-500A");
-        secondInput!.JobNumber.Should().Be("JOB-500B");
+        // Both calls may execute in parallel — assert by content, not order
+        var jobNumbers = capturedInputs.Select(i => i.JobNumber).OrderBy(n => n).ToList();
+        jobNumbers.Should().BeEquivalentTo(["JOB-500A", "JOB-500B"]);
     }
 
     #endregion
@@ -635,14 +641,13 @@ public class SplitJobServiceTests : IAsyncDisposable
             j.PickUpLongitude = 174.70m;
         });
 
-        CreateMinimalTucJobInputModel? pickupInput = null;
-        var callCount = 0;
+        var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
-        _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+        _createJobServiceMock.Setup(x => x.CreateJobAsync(
                 It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
             {
-                if (Interlocked.Increment(ref callCount) == 1) pickupInput = input;
+                capturedInputs.Add(input);
 
                 var jobId = Interlocked.Increment(ref _nextCreatedJobId);
                 using var ctx = new DespatchContext(_options);
@@ -655,8 +660,9 @@ public class SplitJobServiceTests : IAsyncDisposable
         var service = CreateService();
         await service.SplitJobAsync(100, "TestUser", meetingPoint);
 
-        // Pickup: From = original pickup, To = meeting point
-        pickupInput!.FromAddress.AddressLine1.Should().Be("1 Origin St");
+        // Pickup leg: From = original pickup, To = meeting point (identify by "A" suffix)
+        var pickupInput = capturedInputs.Single(i => i.JobNumber.EndsWith("A"));
+        pickupInput.FromAddress.AddressLine1.Should().Be("1 Origin St");
         pickupInput.ToAddress.AddressLine1.Should().Be(meetingPoint.AddressLine1);
     }
 
@@ -670,14 +676,13 @@ public class SplitJobServiceTests : IAsyncDisposable
             j.DeliveryLongitude = 174.77m;
         });
 
-        CreateMinimalTucJobInputModel? deliveryInput = null;
-        var callCount = 0;
+        var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
-        _jobRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+        _createJobServiceMock.Setup(x => x.CreateJobAsync(
                 It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
             {
-                if (Interlocked.Increment(ref callCount) == 2) deliveryInput = input;
+                capturedInputs.Add(input);
 
                 var jobId = Interlocked.Increment(ref _nextCreatedJobId);
                 using var ctx = new DespatchContext(_options);
@@ -690,8 +695,9 @@ public class SplitJobServiceTests : IAsyncDisposable
         var service = CreateService();
         await service.SplitJobAsync(100, "TestUser", meetingPoint);
 
-        // Delivery: From = meeting point, To = original delivery
-        deliveryInput!.FromAddress.AddressLine1.Should().Be(meetingPoint.AddressLine1);
+        // Delivery leg: From = meeting point, To = original delivery (identify by "B" suffix)
+        var deliveryInput = capturedInputs.Single(i => i.JobNumber.EndsWith("B"));
+        deliveryInput.FromAddress.AddressLine1.Should().Be(meetingPoint.AddressLine1);
         deliveryInput.ToAddress.AddressLine1.Should().Be("99 Destination Ave");
     }
 

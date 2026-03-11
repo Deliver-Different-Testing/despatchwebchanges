@@ -533,6 +533,22 @@ public partial class JobRepository
         var description = new OutputParameter<string>();
         var returnValue = new OutputParameter<int>();
 
+        // Use pre-computed values when available, otherwise query the DB
+        bool isFromAirport, isToAirport;
+        if (dto.PrecomputedIsFromAddressAirport.HasValue && dto.PrecomputedIsToAddressAirport.HasValue)
+        {
+            isFromAirport = dto.PrecomputedIsFromAddressAirport.Value;
+            isToAirport = dto.PrecomputedIsToAddressAirport.Value;
+        }
+        else
+        {
+            var isFromAirportTask = Context.DoesAddressMatchAirportAsync(dto.JobId, true);
+            var isToAirportTask = Context.DoesAddressMatchAirportAsync(dto.JobId, false);
+            await Task.WhenAll(isFromAirportTask, isToAirportTask);
+            isFromAirport = isFromAirportTask.Result;
+            isToAirport = isToAirportTask.Result;
+        }
+
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             clientID: dto.ClientId,
             speedID: dto.Speed,
@@ -561,8 +577,8 @@ public partial class JobRepository
             fromAirportId: dto.FromAirportId,
             toAgentId: dto.ToAgentId,
             toAirportId: dto.ToAirportId,
-            isFromAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, true),
-            isToAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, false),
+            isFromAddressAirport: isFromAirport,
+            isToAddressAirport: isToAirport,
             dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
             description: description,
             rate: rate,
@@ -601,14 +617,6 @@ public partial class JobRepository
         var printableRate = rate.Value ?? 0;
         await SaveNoteAsync(dto.JobId, $"Repriced from {dto.PreviousRate} to {printableRate}", true);
     }
-
-    private async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress) =>
-        await Context.TucJobs
-            .AsNoTracking()
-            .Where(j => j.UcjbId == jobId)
-            .Where(j => Context.TblAirports
-                .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2)))
-            .AnyAsync();
 
     /// <summary>
     /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.
@@ -656,6 +664,22 @@ public partial class JobRepository
         var description = new OutputParameter<string>();
         var returnValue = new OutputParameter<int>();
 
+        // Use pre-computed values when available, otherwise query the DB
+        bool isFromAirport, isToAirport;
+        if (dto.PrecomputedIsFromAddressAirport.HasValue && dto.PrecomputedIsToAddressAirport.HasValue)
+        {
+            isFromAirport = dto.PrecomputedIsFromAddressAirport.Value;
+            isToAirport = dto.PrecomputedIsToAddressAirport.Value;
+        }
+        else
+        {
+            var isFromAirportPreviewTask = Context.DoesAddressMatchAirportAsync(dto.JobId, true);
+            var isToAirportPreviewTask = Context.DoesAddressMatchAirportAsync(dto.JobId, false);
+            await Task.WhenAll(isFromAirportPreviewTask, isToAirportPreviewTask);
+            isFromAirport = isFromAirportPreviewTask.Result;
+            isToAirport = isToAirportPreviewTask.Result;
+        }
+
         await Context.Procedures.DD_stpJob_Rate_DescribedAsync(
             clientID: dto.ClientId,
             speedID: dto.Speed,
@@ -684,8 +708,8 @@ public partial class JobRepository
             fromAirportId: dto.FromAirportId,
             toAgentId: dto.ToAgentId,
             toAirportId: dto.ToAirportId,
-            isFromAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, true),
-            isToAddressAirport: await DoesAddressMatchAirportAsync(dto.JobId, false),
+            isFromAddressAirport: isFromAirport,
+            isToAddressAirport: isToAirport,
             dimensionsType: dto.CalculateDimsOncePerJob ? 1 : 0,
             description: description,
             rate: rate,

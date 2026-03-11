@@ -54,4 +54,14 @@ public class RateJobUsDto
     
     public bool CalculateDimsOncePerJob { get; init; }
     public decimal? PreviousRate { get; init; }
+
+    /// <summary>
+    /// When set, bypasses the DoesAddressMatchAirportAsync DB query for the pickup address.
+    /// </summary>
+    public bool? PrecomputedIsFromAddressAirport { get; init; }
+
+    /// <summary>
+    /// When set, bypasses the DoesAddressMatchAirportAsync DB query for the delivery address.
+    /// </summary>
+    public bool? PrecomputedIsToAddressAirport { get; init; }
 }

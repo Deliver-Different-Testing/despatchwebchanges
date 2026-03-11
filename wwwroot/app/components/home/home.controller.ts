@@ -1112,19 +1112,10 @@ class HomeController extends BaseController {
     }
 
     async splitJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        const setLoadingState = (isLoading: boolean) => {
-            this.isDataLoading = isLoading;
-            this.applyScope();
-        };
-
         try {
-            setLoadingState(true);
             await this.jobContextMenuService.splitJob($event, job, () => this.getData());
         } catch (error: any) {
             console.error('Error in splitJob:', error);
-        } finally {
-            setLoadingState(false);
-            this.applyScope();
         }
     }
 
