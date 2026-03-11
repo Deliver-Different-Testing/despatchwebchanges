@@ -78,6 +78,14 @@ public partial class DespatchContext
                 .Select(x => x.EconomyDeliveryTime)
                 .FirstOrDefault());
 
+    private static readonly Func<DespatchContext, int, bool, Task<bool>> DoesAddressMatchAirportComplied =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId, bool isPickupAddress) =>
+            context.TucJobs
+                .AsNoTracking()
+                .Where(j => j.UcjbId == jobId)
+                .Any(j => context.TblAirports
+                    .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2))));
+
     private static readonly Func<DespatchContext, DateTime, IAsyncEnumerable<ActiveCourierDto>>
         GetActiveCouriersCompiled = EF.CompileAsyncQuery((DespatchContext context, DateTime today) =>
             context.TucCouriers
@@ -286,6 +294,9 @@ public partial class DespatchContext
     public async Task<int?> GetJobParentIdAsync(int jobId) => await GetJobParentIdCompiled(this, jobId);
     public async Task<int?> GetEconomySpeedIdAsync() => await GetEconomySpeedIdCompiled(this);
     public async Task<DateTime?> GetEcoDeliveryTimeAsync() => await GetEcoDeliveryTimeCompiled(this);
+
+    public async Task<bool> DoesAddressMatchAirportAsync(int jobId, bool isPickupAddress) =>
+        await DoesAddressMatchAirportComplied(this, jobId, isPickupAddress);
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
 

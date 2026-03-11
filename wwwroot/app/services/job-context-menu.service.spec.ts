@@ -305,12 +305,15 @@ describe('JobContextMenuService', () => {
                 }
 
                 // Fire API call and get taskId back immediately
-                mockToastrService.showInfoToast(`Splitting job ${(job as any).jobNo}...`);
-
                 const { taskId } = await mockDispatchDataSplit.splitJob(job.id, meetingPointAddress);
 
-                // Poll for completion (simplified for testing — calls once)
-                await pollSplitJobStatus(taskId, (job as any).jobNo, onRefresh);
+                // Show loading dialog during polling, hide in finally
+                mockMdDialogSplit.show({});
+                try {
+                    await pollSplitJobStatus(taskId, (job as any).jobNo, onRefresh);
+                } finally {
+                    mockMdDialogSplit.hide();
+                }
             } catch (error) {
                 if (error) {
                     mockToastrService.showErrorToast("Error splitting job");
@@ -493,9 +496,9 @@ describe('JobContextMenuService', () => {
             expect(mockDispatchDataSplit.splitJob).not.toHaveBeenCalled();
         });
 
-        // --- Info toast & fire tests ---
+        // --- Loading dialog tests ---
 
-        it('should show info toast before firing API call', async () => {
+        it('should show loading dialog after API call fires', async () => {
             const address = createMockAddress();
             const job = createMockJob({
                 jobNo: 'J-100',
@@ -506,7 +509,54 @@ describe('JobContextMenuService', () => {
 
             await splitJobAction(job);
 
-            expect(mockToastrService.showInfoToast).toHaveBeenCalledWith('Splitting job J-100...');
+            // 2 show calls: confirm dialog + loading dialog
+            expect(mockMdDialogSplit.show).toHaveBeenCalledTimes(2);
+        });
+
+        it('should hide loading dialog after successful poll', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus.mockResolvedValue({ status: 'Completed', errorMessage: null });
+
+            await splitJobAction(job);
+
+            expect(mockMdDialogSplit.hide).toHaveBeenCalledTimes(1);
+        });
+
+        it('should hide loading dialog when polling returns Failed', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.getSplitJobStatus.mockResolvedValue({
+                status: 'Failed',
+                errorMessage: 'Job already split',
+            });
+
+            await splitJobAction(job);
+
+            expect(mockMdDialogSplit.hide).toHaveBeenCalledTimes(1);
+        });
+
+        it('should not show loading dialog if splitJob API call fails', async () => {
+            const address = createMockAddress();
+            const job = createMockJob({
+                allowSplit: true,
+                deliveryAddress: { fullAddress: '456 Rd' },
+            } as any);
+            mockEditAddressDialogService.openEditAddressDialog.mockResolvedValue(address);
+            mockDispatchDataSplit.splitJob.mockRejectedValue(new Error('Server error'));
+
+            await splitJobAction(job);
+
+            // Only 1 show call: the confirm dialog. Loading dialog was never opened.
+            expect(mockMdDialogSplit.show).toHaveBeenCalledTimes(1);
         });
 
         // --- API call & success path tests ---

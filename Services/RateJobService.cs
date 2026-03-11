@@ -120,7 +120,9 @@ public class RateJobService(
                 Cubic = jobDetails.Cubic,
                 IsPrebook = jobDetails.IsPrebook ?? false,
                 CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
-                PreviousRate = jobDetails.PreviousRate
+                PreviousRate = jobDetails.PreviousRate,
+                PrecomputedIsFromAddressAirport = jobDetails.PrecomputedIsFromAddressAirport,
+                PrecomputedIsToAddressAirport = jobDetails.PrecomputedIsToAddressAirport
             });
         }
         catch (Exception ex)
@@ -223,7 +225,9 @@ public class RateJobService(
                 Cubic = jobDetails.Cubic,
                 IsPrebook = jobDetails.IsPrebook ?? false,
                 CalculateDimsOncePerJob = jobDetails.CalculateDimsOncePerJob,
-                PreviousRate = jobDetails.PreviousRate
+                PreviousRate = jobDetails.PreviousRate,
+                PrecomputedIsFromAddressAirport = jobDetails.PrecomputedIsFromAddressAirport,
+                PrecomputedIsToAddressAirport = jobDetails.PrecomputedIsToAddressAirport
             });
 
             return rate;
@@ -488,17 +492,21 @@ public class RateJobService(
             result.FromAirport = closestFromAirports.First();
             result.ToAirport = closestToAirports.First();
 
-            result.FromMiles = await CalculateRoadDistance(
+            // Calculate road distances to/from airports in parallel
+            var fromMilesTask = CalculateRoadDistance(
                 request.PickupLat,
                 request.PickupLong,
                 result.FromAirport.Latitude,
                 result.FromAirport.Longitude);
-
-            result.ToMiles = await CalculateRoadDistance(
+            var toMilesTask = CalculateRoadDistance(
                 result.ToAirport.Latitude,
                 result.ToAirport.Longitude,
                 request.DeliveryLat,
                 request.DeliveryLong);
+            await Task.WhenAll(fromMilesTask, toMilesTask);
+
+            result.FromMiles = fromMilesTask.Result;
+            result.ToMiles = toMilesTask.Result;
         }
 
         return result;

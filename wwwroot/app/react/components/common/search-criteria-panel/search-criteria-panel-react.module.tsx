@@ -16,7 +16,7 @@ import {Dayjs} from 'dayjs';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 
 class SearchCriteriaPanelReactController implements angular.IController {
-    static $inject = ['$element'];
+    static $inject = ['$element', '$scope'];
 
     private root: Root | null = null;
 
@@ -36,7 +36,7 @@ class SearchCriteriaPanelReactController implements angular.IController {
     onCourierSearch?: (params: {searchText: string}) => Promise<ISuggestion[]>;
     onSpeedSearch?: (params: {searchText: string}) => Promise<ISuggestion[]>;
 
-    constructor(private $element: JQLite) {}
+    constructor(private $element: JQLite, private $scope: angular.IScope) {}
 
     $onInit(): void {
         this.root = createRoot(this.$element[0]);
@@ -59,27 +59,48 @@ class SearchCriteriaPanelReactController implements angular.IController {
 
         const currentTheme = getTheme();
 
-        // Wrap AngularJS '&' callbacks to match React callback signatures
-        const handleSearchRangeChange = (range: string) =>
+        // Wrap AngularJS '&' callbacks to match React callback signatures.
+        // Each callback calls $applyAsync() to trigger a digest cycle so
+        // AngularJS detects the state change and re-renders via $onChanges.
+        const handleSearchRangeChange = (range: string) => {
             this.onSearchRangeChange?.({range});
+            this.$scope.$applyAsync();
+        };
 
-        const handleFromDateChange = (dateTime: Dayjs) =>
+        const handleFromDateChange = (dateTime: Dayjs) => {
             this.onFromDateChange?.({dateTime});
+            this.$scope.$applyAsync();
+        };
 
-        const handleToDateChange = (dateTime: Dayjs) =>
+        const handleToDateChange = (dateTime: Dayjs) => {
             this.onToDateChange?.({dateTime});
+            this.$scope.$applyAsync();
+        };
 
-        const handleCriteriaChange = (field: string, value: any) =>
+        const handleCriteriaChange = (field: string, value: any) => {
             this.onCriteriaChange?.({field, value});
+            this.$scope.$applyAsync();
+        };
 
-        const handleSearch = () => this.onSearch?.();
+        const handleSearch = () => {
+            this.onSearch?.();
+            this.$scope.$applyAsync();
+        };
 
-        const handleDownload = () => this.onDownload?.();
+        const handleDownload = () => {
+            this.onDownload?.();
+            this.$scope.$applyAsync();
+        };
 
-        const handleClientReport = () => this.onClientReport?.();
+        const handleClientReport = () => {
+            this.onClientReport?.();
+            this.$scope.$applyAsync();
+        };
 
-        const handleUpload = (event: React.MouseEvent) =>
+        const handleUpload = (event: React.MouseEvent) => {
             this.onUpload?.({$event: event});
+            this.$scope.$applyAsync();
+        };
 
         // Search callbacks return Promises from AngularJS
         const handleClientSearch = (searchText: string) =>
