@@ -178,18 +178,61 @@ public class MessageRepository(
         var isUsTenant = infoService.IsUsTenant();
         List<TucManualMessage> messages = [];
 
-        foreach (var courierId in request.SendToCourierIds)
+        // Batch-load courier data for all recipients in a single query (avoids N+1)
+        if (request.SendToCourierIds.Count > 0)
         {
-            var message = new TucManualMessage
-            {
-                UcmmDate = currentDate,
-                UcmmSendFromStaffId = currentStaffId,
-                UcmmAttempts = 0,
-                UcmmMessage = request.Message
-            };
+            var courierDataMap = await (from courier in Context.TucCouriers
+                where request.SendToCourierIds.Contains(courier.UccrId) && courier.Active
+                join loginOut in Context.TblCourierLogInOuts
+                    on courier.CourierLogInOutId equals loginOut.CourierLogInOutId into loginGroup
+                from login in loginGroup.DefaultIfEmpty()
+                select new
+                {
+                    CourierId = courier.UccrId,
+                    courier.Code,
+                    courier.PersonalMobile,
+                    courier.UccrMobile,
+                    IsLoggedInToday = login != null &&
+                                      login.LogInTime.Date == currentDate.Date &&
+                                      !login.LogOutTime.HasValue
+                }).ToDictionaryAsync(c => c.CourierId);
 
-            await HandleCourierMessageAsync(message, courierId, request.MessageType, isUsTenant, currentDate.Date);
-            messages.Add(message);
+            foreach (var courierId in request.SendToCourierIds)
+            {
+                if (!courierDataMap.TryGetValue(courierId, out var courierData))
+                    throw new ArgumentException($"Courier {courierId} not found or inactive");
+
+                var message = new TucManualMessage
+                {
+                    UcmmDate = currentDate,
+                    UcmmSendFromStaffId = currentStaffId,
+                    UcmmAttempts = 0,
+                    UcmmMessage = request.Message,
+                    UcmmSendToCourierId = courierId
+                };
+
+                var deliveryMethod = GetDeliveryMethod(request.MessageType, courierData.IsLoggedInToday);
+
+                if (deliveryMethod == MessageDeliveryType.App)
+                {
+                    message.Subject = "Courier Manager";
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
+                        string.IsNullOrWhiteSpace(courierData.UccrMobile))
+                        throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS");
+
+                    var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
+                        ? courierData.PersonalMobile
+                        : courierData.UccrMobile;
+
+                    message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
+                    message.Subject = $"SMS to Courier: {courierData.Code}";
+                }
+
+                messages.Add(message);
+            }
         }
 
         foreach (var staffId in request.SendToStaffIds)
@@ -281,6 +324,7 @@ public class MessageRepository(
                 && EF.Functions.Like(c.Code + " " + c.UccrName + " " + c.UccrSurname, $"%{searchTerm}%")
             )
             .OrderBy(c => c.Code)
+            .Take(50)
             .Select(c => new MessageContactOptionViewModel
             {
                 Id = Guid.NewGuid(),
@@ -297,6 +341,7 @@ public class MessageRepository(
             .Where(s => s.UcstActive == true
                         && EF.Functions.Like(s.UcstFirstName + " " + s.UcstLastName, $"%{searchTerm}%"))
             .OrderBy(s => s.UcstFirstName)
+            .Take(50)
             .Select(s => new MessageContactOptionViewModel
             {
                 Id = Guid.NewGuid(),

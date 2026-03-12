@@ -57,7 +57,7 @@ public class CreateMinimalTucJobInputModel
 
     public string JobNotificationMobile { get; init; }
 
-    public bool Hold { get; init; } = false;
+    public bool Hold { get; init; }
 
     public decimal? FuelSurchargeAmount { get; init; }
 

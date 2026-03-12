@@ -40,7 +40,7 @@ public static partial class JobMappings
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
         DispatchTime = j.UcjbDispTime,
-        CreatedDate = j.UcjbDate,
+        CreatedDate = j.CreatedTime,
         ScheduleName = j.ScheduleName ?? Defaults.NotAvailable,
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,

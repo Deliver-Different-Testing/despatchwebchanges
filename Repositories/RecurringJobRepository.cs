@@ -543,8 +543,10 @@ public class RecurringJobRepository(
 
         query = ApplyRecurringJobSort(query, request.Order, request.OrderDirection, applyDefaultSort: true);
 
-        // No pagination - get all records for export
+        // Cap export to prevent unbounded result sets
+        const int maxExportRows = 10_000;
         var items = await query
+            .Take(maxExportRows)
             .Select(JobMappings.ToPrebookListViewModel)
             .ToListAsync();
 

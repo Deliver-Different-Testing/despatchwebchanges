@@ -496,6 +496,7 @@ public class SplitJobService(
                 .Include(j => j.TucJobItemJobs)
                 .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
                 .OrderBy(j => j.Sequence)
+                .AsSplitQuery()
                 .ToListAsync();
 
             if (childJobs.Count == 0)
@@ -529,6 +530,21 @@ public class SplitJobService(
                 }
             }
 
+            // Pre-compute flight speed flag once for all children (they all share the same speed)
+            bool? isFlightSpeed = null;
+            if (isUs && childJobs.Count > 0)
+            {
+                var speedId = childJobs[0].UcjbSpeed;
+                if (speedId.HasValue)
+                {
+                    var speed = await context.TucJobTypes
+                        .Include(s => s.Grouping)
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(s => s.UcjtId == speedId.Value);
+                    isFlightSpeed = speed?.Grouping?.GroupingId == (int)SpeedGrouping.Flight;
+                }
+            }
+
             // Rate child jobs in parallel — each task gets its own DI scope (and thus its own DbContext)
             var ratingTasks = childJobs.Select(async child =>
             {
@@ -540,7 +556,7 @@ public class SplitJobService(
 
                     if (isUs)
                     {
-                        var details = BuildRatingDtoUs(child, airportAddresses);
+                        var details = BuildRatingDtoUs(child, airportAddresses, isFlightSpeed);
                         rate = await scopedRateService.GetJobRateUsAsync(details);
                     }
                     else
@@ -588,18 +604,13 @@ public class SplitJobService(
                 amounts[jobRates[i].JobId] = jobAmount;
             }
 
-            // Batch update all child amounts in a single query
-            var idsToUpdate = amounts.Keys.ToList();
-            await context.TucJobs
-                .Where(j => idsToUpdate.Contains(j.UcjbId))
-                .ExecuteUpdateAsync(j => j
-                    .SetProperty(x => x.RatedManually, false));
-
+            // Update each child's amount and rated flag in a single statement per child
             foreach (var (id, amount) in amounts)
             {
                 await context.TucJobs
                     .Where(j => j.UcjbId == id)
                     .ExecuteUpdateAsync(j => j
+                        .SetProperty(x => x.RatedManually, false)
                         .SetProperty(x => x.UcjbAmount, amount));
             }
 
@@ -618,7 +629,8 @@ public class SplitJobService(
     /// Builds a US rating DTO directly from a TucJob entity loaded in memory,
     /// avoiding a separate GetJobDetailsForRatingAsync DB roundtrip.
     /// </summary>
-    private static JobRatingDetailsDto BuildRatingDtoUs(TucJob child, HashSet<string> airportAddresses) =>
+    private static JobRatingDetailsDto BuildRatingDtoUs(TucJob child, HashSet<string> airportAddresses,
+        bool? isFlightSpeed = null) =>
         new()
         {
             JobId = child.UcjbId,
@@ -657,6 +669,7 @@ public class SplitJobService(
             ClientDiscount = child.UcjbClient?.Discount ?? 0,
             Cubic = child.TucJobItemJobs?.Sum(i => i.Cubic),
             IsManuallyRated = child.RatedManually,
+            IsFlightSpeed = isFlightSpeed,
             // Pre-computed airport matches — passed through to RateJobUsDto to skip DB queries
             PrecomputedIsFromAddressAirport = !string.IsNullOrEmpty(child.PickupAddressLine2)
                 && airportAddresses.Contains(child.PickupAddressLine2),
@@ -717,7 +730,7 @@ public class SplitJobService(
             ToCity = child.DeliveryAddressLine6,
             ToPostCode = child.DeliveryAddressLine7,
             ToCountryCode = child.DeliveryAddressLine8,
-            JobType = Enums.JobType.Active,
+            JobType = JobType.Active,
             IsTruck = child.Truck ?? false,
             TruckStartTime = child.TruckStartTime?.ToString("HH:mm"),
             TruckHours = child.TruckHours.HasValue ? (int)child.TruckHours : null
