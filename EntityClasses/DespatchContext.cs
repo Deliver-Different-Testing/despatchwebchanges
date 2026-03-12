@@ -1580,6 +1580,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.JobId, e.ChildJobId }, "IX_TblBulkJobItems_JobLookup").HasFillFactor(90);
 
+            entity.HasIndex(e => e.JobId, "IX_tblBulkJobItems_JobID");
+
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
             entity.Property(e => e.Barcode)
@@ -1592,9 +1594,14 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Notes).HasMaxLength(4000);
             entity.Property(e => e.Pu).HasColumnName("PU");
 
-            entity.HasOne(d => d.ChildJob).WithMany(p => p.TblBulkJobItems)
+            entity.HasOne(d => d.ChildJob).WithMany(p => p.TblBulkJobItemChildJobs)
                 .HasForeignKey(d => d.ChildJobId)
                 .HasConstraintName("FK__tblBulkJo__Child__1B1FAD15");
+
+            entity.HasOne(d => d.Job).WithMany(p => p.TblBulkJobItemJobs)
+                .HasForeignKey(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblBulkJobItems_JobID");
         });
 
         modelBuilder.Entity<TblBulkJobNote>(entity =>

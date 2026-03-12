@@ -63,10 +63,16 @@ public static partial class JobMappings
                 }
                 : null,
 
-        // Tail Lift - computed during enrichment for performance
-        TailLiftPu = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.Pu == true),
-        TailLiftDo = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.Do == true),
-        DeliverToPrivateRes = j.TblBulkJobItems != null && j.TblBulkJobItems.Any(i => i.PrivateRes == true),
+        // Job item flags - loaded inline from navigation property (3-tier: stop child → own → parent)
+        TailLiftPu = j.TblBulkJobItemChildJobs.Any(i => i.Pu == true)
+            || j.TblBulkJobItemJobs.Any(i => i.Pu == true)
+            || (j.Parent != null && j.Parent.TblBulkJobItemJobs.Any(i => i.ChildJobId == null && i.Pu == true)),
+        TailLiftDo = j.TblBulkJobItemChildJobs.Any(i => i.Do == true)
+            || j.TblBulkJobItemJobs.Any(i => i.Do == true)
+            || (j.Parent != null && j.Parent.TblBulkJobItemJobs.Any(i => i.ChildJobId == null && i.Do == true)),
+        DeliverToPrivateRes = j.TblBulkJobItemChildJobs.Any(i => i.PrivateRes == true)
+            || j.TblBulkJobItemJobs.Any(i => i.PrivateRes == true)
+            || (j.Parent != null && j.Parent.TblBulkJobItemJobs.Any(i => i.ChildJobId == null && i.PrivateRes == true)),
 
         // Address information
         PickupAddress = new AddressViewModel
@@ -128,7 +134,13 @@ public static partial class JobMappings
         Done = j.Done,
         AlertLatePickup = j.Client != null ? j.Client.AlertLatePickUp : null,
         AlertLateDelivery = j.Client != null ? j.Client.AlertLateDelivery : null,
-        Items = j.TblBulkJobItems.Count,
+        Items = j.TblBulkJobItemChildJobs.Any()
+            ? j.TblBulkJobItemChildJobs.Count
+            : j.TblBulkJobItemJobs.Count > 0
+                ? j.TblBulkJobItemJobs.Count
+                : j.Parent != null
+                    ? j.Parent.TblBulkJobItemJobs.Count(i => i.ChildJobId == null)
+                    : 0,
 
         FromContactName = j.PickupFromContact ?? Defaults.NotApplicable,
         FromContactNumber =
@@ -174,42 +186,38 @@ public static partial class JobMappings
                 ? new Suggestion { Id = j.DeliverByTimeZone.Id, Text = j.DeliverByTimeZone.Name }
                 : null,
 
-        ParcelDimensions = GetPackagesForBulkJob(j, j.Parent,
-            j.TblBulkJobItems, j.Parent.TblBulkJobItems)
+        // Parcel dimensions - 3-tier: stop child items → own items → parent items
+        ParcelDimensions = j.TblBulkJobItemChildJobs.Any()
+            ? j.TblBulkJobItemChildJobs.Select(i => new ParcelDimensions
+            {
+                ItemId = i.ItemId,
+                ItemName = i.Notes,
+                Height = i.Height,
+                Depth = i.Depth,
+                Length = i.Length,
+                Barcode = i.Barcode
+            }).ToList()
+            : j.TblBulkJobItemJobs.Any(i => i.ChildJobId == null)
+                ? j.TblBulkJobItemJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Barcode = i.Barcode
+                }).ToList()
+                : j.Parent != null
+                    ? j.Parent.TblBulkJobItemJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new ParcelDimensions
+                        {
+                            ItemId = i.ItemId,
+                            ItemName = i.Notes,
+                            Height = i.Height,
+                            Depth = i.Depth,
+                            Length = i.Length,
+                            Barcode = i.Barcode
+                        }).ToList()
+                    : new List<ParcelDimensions>()
     };
-
-    #region Bulk Job Helpers
-
-    private static List<ParcelDimensions> GetPackagesForBulkJob(
-        TblBulkJob job,
-        TblBulkJob parent,
-        ICollection<TblBulkJobItem> jobItems,
-        ICollection<TblBulkJobItem> parentJobItems)
-    {
-        // Priority 1: Job items if this is a root job or self-referencing job
-        if ((parent == null || job.ParentId == job.BulkJobId) && HasItems(jobItems))
-            return ConvertToParcelDimensions(jobItems);
-
-        // Priority 2: Parent items as fallback
-        return ConvertToParcelDimensions(parentJobItems);
-    }
-
-    private static bool HasItems(ICollection<TblBulkJobItem> items) =>
-        items is { Count: > 0 };
-
-    private static List<ParcelDimensions> ConvertToParcelDimensions(ICollection<TblBulkJobItem> items) =>
-        items?.Select(CreateParcelDimensions).ToList() ?? [];
-
-    private static ParcelDimensions CreateParcelDimensions(TblBulkJobItem item) =>
-        new()
-        {
-            ItemId = item.ItemId,
-            ItemName = item.Notes,
-            Height = item.Height,
-            Depth = item.Depth,
-            Length = item.Length,
-            Barcode = item.Barcode
-        };
-
-    #endregion
 }
