@@ -1314,6 +1314,17 @@ class JobDetailController extends BaseController {
         const url = "/courier/AllActiveSearch";
         const placeholder = "Start typing to search courier...";
 
+        // For recurring jobs, update the courier field directly (same as other fields)
+        if (this.isRecurringJob) {
+            const existingItem = job.assignedCourier;
+            await this.showAutocompleteDialog(
+                $event, job, url, placeholder,
+                JobProperty.CourierID, "Courier",
+                existingItem, false
+            );
+            return;
+        }
+
         try {
             const result = await this.autoCompleteDialogService.showAutocompleteDialog(
                 $event,

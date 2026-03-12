@@ -38,4 +38,6 @@ public partial class TblBulkJobItem
     public string Barcode { get; set; }
 
     public virtual TblBulkJob ChildJob { get; set; }
+
+    public virtual TblBulkJob Job { get; set; }
 }
