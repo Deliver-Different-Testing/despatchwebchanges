@@ -9,7 +9,7 @@ import timezone from 'dayjs/plugin/timezone';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-import { formatDateFromApi } from './formatDates';
+import { formatDateFromApi, formatInfoLogDateTimeString } from './formatDates';
 
 describe('formatDates', () => {
     describe('formatDateFromApi', () => {
@@ -76,6 +76,32 @@ describe('formatDates', () => {
             // Central Time (CST: -06:00)
             const central = formatDateFromApi('2024-01-15T08:00:00-06:00');
             expect(central.format('HH:mm')).toBe('08:00');
+        });
+    });
+
+    describe('formatInfoLogDateTimeString cross-timezone behavior', () => {
+        const originalTimeZone = (globalThis as any).TimeZone;
+
+        afterEach(() => {
+            (globalThis as any).TimeZone = originalTimeZone;
+        });
+
+        it('with cross-TZ offset documents conversion behavior', () => {
+            // Known limitation: formatInfoLogDateTimeString converts the input to tenant TZ
+            // via dayjs(dateTimeString).tz(ianaTimeZone). When the input has a different offset,
+            // the conversion changes the wall-clock time and may produce wrong Today/Tomorrow labels.
+            //
+            // This is the same issue as formatRelativeDateTime in dateUtils.ts.
+            (globalThis as any).TimeZone = 'New Zealand Standard Time';
+
+            // Use a time that when converted from PDT to NZ crosses midnight
+            const pdtString = dayjs().tz('America/Los_Angeles').format('YYYY-MM-DD') + 'T09:00:00-07:00';
+
+            const result = formatInfoLogDateTimeString(pdtString);
+            // The result shows NZ-converted time, not original PDT wall-clock.
+            // Verify it produces a valid formatted string.
+            expect(result).not.toBe('No date');
+            expect(result).not.toBe('Invalid date');
         });
     });
 });

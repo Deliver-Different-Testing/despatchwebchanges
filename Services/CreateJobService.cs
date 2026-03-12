@@ -151,9 +151,9 @@ public class CreateJobService(
         if (data.ClientId > 0)
         {
             var initialData = await (
-                from c in context.TucClients.AsNoTracking()
+                from c in context.TucClients
                 where c.UcclId == data.ClientId
-                join d in context.TblJobDefaults.AsNoTracking() on c.UcclCode equals d.Code into defaults
+                join d in context.TblJobDefaults on c.UcclCode equals d.Code into defaults
                 from d in defaults.DefaultIfEmpty()
                 select new
                 {
@@ -238,7 +238,7 @@ public class CreateJobService(
         else
         {
             // No client — still need settings
-            var settings = await context.TblSettings.AsNoTracking()
+            var settings = await context.TblSettings
                 .Where(s => s.SettingId == 1)
                 .Select(s => new { s.InternetJobChargeType, s.InternetJobStaffId })
                 .FirstOrDefaultAsync(ct);
@@ -260,7 +260,6 @@ public class CreateJobService(
 
             // Load the bulk schedule and region
             resolved.BulkSchedule = await context.TblBulkRunSchedules
-                .AsNoTracking()
                 .Include(s => s.RegionNavigation)
                 .FirstOrDefaultAsync(s => s.BulkRunScheduleId == resolved.BulkRunScheduleId, ct);
 
@@ -276,7 +275,6 @@ public class CreateJobService(
         if (!string.IsNullOrWhiteSpace(data.Speed))
         {
             var jobType = await context.TucJobTypes
-                .AsNoTracking()
                 .Where(jt => jt.SystemName == data.Speed && jt.WebServiceEntry)
                 .Select(jt => new { jt.UcjtId })
                 .FirstOrDefaultAsync(ct);
@@ -319,7 +317,6 @@ public class CreateJobService(
 
         // Find the contact by matching BookedBy to contact first/last name via TucClientContact table
         var contact = await context.TucClientContacts
-            .AsNoTracking()
             .Where(c => c.UcctClientId == resolved.ClientId
                         && c.UcctFirstname + " " + c.UcctSurname == data.BookedBy)
             .Select(c => new { c.UcctId })
@@ -329,7 +326,6 @@ public class CreateJobService(
 
         // Look up the client-contact defaults
         var clientContact = await context.TblClientContacts
-            .AsNoTracking()
             .Where(cc => cc.ClientId == resolved.ClientId && cc.ContactId == contact.UcctId)
             .FirstOrDefaultAsync(ct);
 
@@ -342,7 +338,6 @@ public class CreateJobService(
         {
             // Look up the speed from the default name
             var speedType = await context.TucJobTypes
-                .AsNoTracking()
                 .Where(jt => jt.UcjtName == clientContact.DefaultJobSpeed && jt.WebServiceEntry)
                 .Select(jt => new { jt.UcjtId })
                 .FirstOrDefaultAsync(ct);
@@ -450,7 +445,7 @@ public class CreateJobService(
         var needRefB = resolved.ReferenceBdefineList && !string.IsNullOrWhiteSpace(resolved.ClientReferenceB);
 
         if (!needRefA && !needRefB) return null; // Valid
-        var matchedGroups = await context.TblReferences.AsNoTracking()
+        var matchedGroups = await context.TblReferences
             .Where(r => r.ClientId == resolved.ClientId && (
                 (r.Grouping == "A" && r.Name == resolved.ClientReferenceA) ||
                 (r.Grouping == "B" && r.Name == resolved.ClientReferenceB)))

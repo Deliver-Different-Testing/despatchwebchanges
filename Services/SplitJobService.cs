@@ -49,7 +49,7 @@ public class SplitJobService(
             var relTypes = context.TblJobRelationshipTypes;
             var nationWide = context.TucJobNationwides;
 
-            var lookups = await context.TblSettings.AsNoTracking()
+            var lookups = await context.TblSettings
                 .Where(s => s.SettingId == 1)
                 .Select(s => new
                 {
@@ -81,7 +81,6 @@ public class SplitJobService(
 
             // Load the job with related data
             var job = await context.TucJobs
-                          .AsSplitQuery()
                           .Include(j => j.UcjbSpeedNavigation)
                           .FirstOrDefaultAsync(j => j.UcjbId == jobId)
                       ?? throw new InvalidOperationException($"Job {jobId} not found");
@@ -128,7 +127,6 @@ public class SplitJobService(
 
             // 1D: Load both created child jobs in one query
             var createdJobs = await context.TucJobs
-                .AsSplitQuery()
                 .Where(j => j.UcjbId == pickupResult.JobId || j.UcjbId == deliveryResult.JobId)
                 .ToListAsync();
             
@@ -365,13 +363,11 @@ public class SplitJobService(
         {
             mainJobNumber = job.UcjbNumber;
             existingChildCount = await context.TucJobs
-                .AsNoTracking()
                 .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId);
         }
         else
         {
             var data = await context.TucJobs
-                .AsNoTracking()
                 .Where(j => j.UcjbId == rootParentId)
                 .Select(j => new
                 {
@@ -494,8 +490,6 @@ public class SplitJobService(
 
             // Load all child entities with rating-related navigations in a single query
             var childJobs = await context.TucJobs
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Include(j => j.UcjbClient)
                 .Include(j => j.FromAirport)
                 .Include(j => j.ToAirport)
@@ -524,7 +518,6 @@ public class SplitJobService(
                 if (allAddresses.Count > 0)
                 {
                     var matchingAddresses = await context.TblAirports
-                        .AsNoTracking()
                         .Where(a => allAddresses.Contains(a.AddressLine2))
                         .Select(a => a.AddressLine2)
                         .ToListAsync();

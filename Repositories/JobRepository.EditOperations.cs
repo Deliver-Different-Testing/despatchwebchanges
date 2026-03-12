@@ -224,7 +224,7 @@ public partial class JobRepository
     /// </summary>
     private async Task UpdateTucJobWithEntityAsync(int jobId, JobProperty property, string value)
     {
-        var query = Context.TucJobs.Where(j => j.UcjbId == jobId);
+        var query = Context.TucJobs.AsTracking().Where(j => j.UcjbId == jobId);
         query = AddRequiredIncludes(query, property);
 
         var job = await query.FirstOrDefaultAsync();
@@ -316,7 +316,7 @@ public partial class JobRepository
                 job.UndeliverableLocationId = int.Parse(value);
                 job.UcjbStatus = (int)JobStatus.Undeliverable;
                 job.UcjbJobDone = true;
-                job.UcjbComplTime = _clock.TenantNow;
+                job.UcjbComplTime = _infoService.GetCurrentTimeFromTimeZone(job.DeliverByTimeZone);
                 job.UcjbPodname =
                     job.UndeliverableLocation != null
                         ? job.UndeliverableLocation.Podname
@@ -328,7 +328,7 @@ public partial class JobRepository
                 if (delivered)
                 {
                     job.UcjbStatus = (int)JobStatus.Completed;
-                    job.UcjbComplTime = _clock.TenantNow;
+                    job.UcjbComplTime = _infoService.GetCurrentTimeFromTimeZone(job.DeliverByTimeZone);
                 }
 
                 break;
@@ -397,7 +397,7 @@ public partial class JobRepository
 
     private async Task UpdateTucJobArchiveAsync(int jobId, JobProperty property, string value)
     {
-        var query = Context.TucJobArchives.Where(j => j.UcjbId == jobId);
+        var query = Context.TucJobArchives.AsTracking().Where(j => j.UcjbId == jobId);
         query = AddRequiredArchiveIncludes(query, property);
 
         var archive = await query.FirstOrDefaultAsync();
@@ -553,7 +553,7 @@ public partial class JobRepository
                 archive.UndeliverableLocationId = int.Parse(value);
                 archive.UcjbStatus = (int)JobStatus.Undeliverable;
                 archive.UcjbJobDone = true;
-                archive.UcjbComplTime = _clock.TenantNow;
+                archive.UcjbComplTime = _infoService.GetCurrentTimeFromTimeZone(archive.DeliverByTimeZone);
                 archive.UcjbPodname =
                     archive.UndeliverableLocation != null
                         ? archive.UndeliverableLocation.Podname
@@ -565,7 +565,7 @@ public partial class JobRepository
                 if (delivered)
                 {
                     archive.UcjbStatus = (int)JobStatus.Completed;
-                    archive.UcjbComplTime = _clock.TenantNow;
+                    archive.UcjbComplTime = _infoService.GetCurrentTimeFromTimeZone(archive.DeliverByTimeZone);
                 }
 
                 break;
@@ -931,7 +931,6 @@ public partial class JobRepository
     private static IQueryable<TucJob> AddRequiredIncludes(IQueryable<TucJob> query, JobProperty property)
     {
         query = query
-            .AsSplitQuery()
             .Include(j => j.UcjbStatusNavigation)
             .Include(j => j.PickupTimeZone);
 
@@ -945,7 +944,10 @@ public partial class JobRepository
             JobProperty.ClientID => query.Include(j => j.UcjbClient).Include(j => j.InverseParent),
             JobProperty.ContactID => query.Include(j => j.Contact),
             JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
-            JobProperty.UndeliverableLocationID => query.Include(j => j.UndeliverableLocation),
+            JobProperty.Delivered => query.Include(j => j.DeliverByTimeZone),
+            JobProperty.UndeliverableLocationID => query
+                .Include(j => j.UndeliverableLocation)
+                .Include(j => j.DeliverByTimeZone),
             JobProperty.NotifiedJobTypeID => query.Include(j => j.NotifiedJobType).Include(j => j.Contact),
             JobProperty.TailLiftPu or JobProperty.TailLiftDo or JobProperty.DeliverToPrivateRes => query.Include(j =>
                 j.TucJobItemJobs),
@@ -956,8 +958,6 @@ public partial class JobRepository
     private static IQueryable<TucJobArchive> AddRequiredArchiveIncludes(IQueryable<TucJobArchive> query,
         JobProperty property)
     {
-        query = query.AsSplitQuery();
-
         return property switch
         {
             JobProperty.AirportOnly => query.Include(j => j.Nationwide),
@@ -966,18 +966,19 @@ public partial class JobRepository
             JobProperty.ContactID => query.Include(j => j.Contact),
             JobProperty.InternalStatusID => query.Include(j => j.InternalStatusNavigation),
             JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
-            JobProperty.UndeliverableLocationID => query.Include(j => j.UndeliverableLocation),
+            JobProperty.Delivered => query.Include(j => j.DeliverByTimeZone),
+            JobProperty.UndeliverableLocationID => query
+                .Include(j => j.UndeliverableLocation)
+                .Include(j => j.DeliverByTimeZone),
             JobProperty.NotifiedJobTypeID => query.Include(j => j.NotifiedJobType).Include(j => j.Contact),
             _ => query
         };
     }
-    
+
     private static IQueryable<TblBulkJob> AddRequiredBulkJobIncludes(
         IQueryable<TblBulkJob> query,
         JobProperty property)
     {
-        query = query.AsSplitQuery();
-
         return property switch
         {
             JobProperty.ClientID or JobProperty.ClientCode => query.Include(j => j.Client),

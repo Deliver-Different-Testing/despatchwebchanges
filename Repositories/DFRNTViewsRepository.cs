@@ -21,8 +21,6 @@ public class DfrntViewsRepository(IDbContextFactory<DespatchContext> contextFact
         {
             var pageInt = (int)page;
             var views = await Context.DfrntpageViews
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(pv => pv.PageId == pageInt && pv.View != null)
                 .Select(dv => new DfrntPageViewModel
                 {

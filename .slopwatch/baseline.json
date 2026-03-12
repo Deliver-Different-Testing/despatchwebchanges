@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "createdAt": "2026-03-11T22:55:02.2967364+00:00",
+  "updatedAt": "2026-03-11T22:55:02.299573+00:00",
+  "description": "Initial baseline created by 'slopwatch init' on 2026-03-11 22:55:02 UTC",
+  "entries": [
+    {
+      "hash": "06e6ba3d7e79b37a",
+      "ruleId": "SW003",
+      "filePath": "Controllers/AiController.cs",
+      "lineNumber": 135,
+      "codeSnippet": "catch (OperationCanceledException)\r\n        {\r\n            // Client disconnected, nothing to do\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2994843+00:00"
+    },
+    {
+      "hash": "ebe9162f517ac143",
+      "ruleId": "SW004",
+      "filePath": "DespatchWeb.Tests/Controllers/JobControllerTests.cs",
+      "lineNumber": 110,
+      "codeSnippet": "Task.Delay(50)",
+      "message": "Test uses Task.Delay(50) which may indicate a timing-dependent test",
+      "baselinedAt": "2026-03-11T22:55:02.2995433+00:00"
+    },
+    {
+      "hash": "2b3390ba16477dbb",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Repositories/JobRepositoryOperationsTests.cs",
+      "lineNumber": 946,
+      "codeSnippet": "catch (Exception ex) when (ex is not ArgumentException)\r\n        {\r\n            // Expected - DB layer may fail, but validation passed\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2995506+00:00"
+    },
+    {
+      "hash": "2db36a458027f069",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Repositories/NationwideJobRepositoryTests.cs",
+      "lineNumber": 1115,
+      "codeSnippet": "catch (DbUpdateException)\r\n        {\r\n            // Expected due to SQLite unique constraint, verify records were added correctly\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.299554+00:00"
+    },
+    {
+      "hash": "89705d71fbd8dcb5",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Repositories/NationwideJobRepositoryTests.cs",
+      "lineNumber": 1510,
+      "codeSnippet": "catch (DbUpdateException)\r\n        {\r\n            // Expected due to SQLite unique constraint\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2995578+00:00"
+    },
+    {
+      "hash": "9dc0ca97fb15f3e7",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Repositories/NationwideJobRepositoryTests.cs",
+      "lineNumber": 1781,
+      "codeSnippet": "catch (DbUpdateException)\r\n        {\r\n            // SQLite constraint issue in tests\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2995627+00:00"
+    },
+    {
+      "hash": "f2180e853118300b",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Repositories/NationwideJobRepositoryTests.cs",
+      "lineNumber": 2211,
+      "codeSnippet": "catch (DbUpdateException)\r\n        {\r\n            // Expected in SQLite tests\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2995659+00:00"
+    },
+    {
+      "hash": "63330fb48cbad6c6",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Services/FlightStatsServiceIntegrationTests.cs",
+      "lineNumber": 94,
+      "codeSnippet": "catch\r\n        {\r\n            // Ignore errors reading launchSettings.json\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2995691+00:00"
+    },
+    {
+      "hash": "f86c486a185d387e",
+      "ruleId": "SW003",
+      "filePath": "DespatchWeb.Tests/Services/JobReportServiceTests.cs",
+      "lineNumber": 119,
+      "codeSnippet": "catch\r\n        {\r\n            // Other exceptions are OK - means it passed validation\r\n        }",
+      "message": "Empty catch block swallows exceptions without handling",
+      "baselinedAt": "2026-03-11T22:55:02.2995728+00:00"
+    }
+  ]
+}

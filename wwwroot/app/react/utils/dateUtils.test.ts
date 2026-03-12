@@ -185,11 +185,70 @@ describe('dateUtils', () => {
         });
 
         it('formats today as time only and tomorrow with prefix', () => {
-            const today = dayjs().format('YYYY-MM-DD') + 'T14:30:00';
-            const tomorrow = dayjs().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00';
+            // Use UTC dates with Z suffix since tenant TZ is UTC — avoids local timezone shifting
+            const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00Z';
+            const tomorrow = dayjs.utc().add(1, 'day').format('YYYY-MM-DD') + 'T09:00:00Z';
 
             expect(formatRelativeDateTime(today)).toBe('14:30');
             expect(formatRelativeDateTime(tomorrow)).toBe('Tomorrow 09:00');
+        });
+    });
+
+    describe('parse-format round-trip', () => {
+        it('parseDateFromApi → formatShortDateTime preserves wall-clock (non-US)', () => {
+            const parsed = parseDateFromApi('2024-06-15T09:37:00-07:00');
+            expect(formatShortDateTime(parsed, false)).toBe('15/Jun 09:37');
+        });
+
+        it('parseDateFromApi → formatShortDateTime preserves wall-clock (US)', () => {
+            const parsed = parseDateFromApi('2024-06-15T09:37:00-07:00');
+            expect(formatShortDateTime(parsed, true)).toBe('Jun/15 09:37');
+        });
+
+        it('parseDateFromApi → formatLongDateTime with NZST offset', () => {
+            const parsed = parseDateFromApi('2024-06-15T14:30:00+12:00');
+            expect(formatLongDateTime(parsed, false)).toBe('15/Jun/2024 14:30');
+        });
+
+        it.each([
+            ['+00:00'],
+            ['-05:00'],
+            ['+12:00'],
+            ['+05:30'],
+        ])('parseDateFromApi → formatTime preserves 14:30 regardless of offset %s', (offset) => {
+            const parsed = parseDateFromApi(`2024-06-15T14:30:00${offset}`);
+            expect(formatTime(parsed)).toBe('14:30');
+        });
+    });
+
+    describe('formatRelativeDateTime cross-timezone behavior', () => {
+        it('with matching TZ offset works correctly for today', () => {
+            (window as any).TimeZone = 'UTC';
+            const today = dayjs().utc().format('YYYY-MM-DD') + 'T14:30:00+00:00';
+            // When input offset matches tenant TZ, conversion doesn't change the day
+            expect(formatRelativeDateTime(today)).toBe('14:30');
+        });
+
+        it('with cross-TZ offset documents conversion behavior', () => {
+            // Known limitation: formatRelativeDateTime converts to tenant TZ before
+            // comparing to "today"/"tomorrow". When the input offset differs from tenant TZ,
+            // the converted time may land on a different day.
+            //
+            // Example: 09:37 PDT (-07:00) displayed to NZ tenant (UTC+12).
+            // dayjs parses this as 16:37 UTC, then .tz('Pacific/Auckland') = 04:37 next day.
+            // So "today's" delivery in PDT may show as "tomorrow" for the NZ tenant.
+            (window as any).TimeZone = 'New Zealand Standard Time';
+
+            // Use a time that when converted from PDT to NZ crosses midnight
+            const now = dayjs().tz('America/Los_Angeles');
+            const pdtString = now.format('YYYY-MM-DD') + 'T09:00:00-07:00';
+
+            const result = formatRelativeDateTime(pdtString);
+            // The result will show the NZ-converted time, not the original PDT wall-clock.
+            // We don't assert a specific value since it depends on the current date,
+            // but verify it produces a valid formatted string (not an error).
+            expect(result).not.toBe('No date');
+            expect(result).not.toBe('Invalid date');
         });
     });
 

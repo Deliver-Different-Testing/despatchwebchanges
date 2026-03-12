@@ -65,13 +65,12 @@ public class NationwideJobRepository(
                 requestData.JobId, primaryFlightNumber);
 
             var job = await Context.TucJobs
-                .AsSplitQuery()
                 .Include(j => j.Parent)
                 .Where(j => j.UcjbId == requestData.JobId)
                 .FirstOrDefaultAsync();
             ArgumentNullException.ThrowIfNull(job);
 
-            var timeZones = await Context.TimeZones.AsNoTracking().ToListAsync();
+            var timeZones = await Context.TimeZones.ToListAsync();
 
             Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
                 job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
@@ -187,46 +186,44 @@ public class NationwideJobRepository(
     {
         const double maxDistanceMiles = 500;
 
-        var jobAndAirports = await (
-                from job in Context.TucJobs
-                where job.UcjbId == jobId &&
-                      (usePickup
-                          ? job.PickUpLatitude != null && job.PickUpLongitude != null
-                          : job.DeliveryLatitude != null && job.DeliveryLongitude != null)
-                join airport in Context.TblAirports on 1 equals 1
-                where airport.Active && airport.Latitude != null && airport.Longitude != null
-                select new
-                {
-                    JobLatitude = usePickup ? job.PickUpLatitude.Value : job.DeliveryLatitude.Value,
-                    JobLongitude = usePickup ? job.PickUpLongitude.Value : job.DeliveryLongitude.Value,
-                    airport.AirportId,
-                    airport.Name,
-                    AirportLatitude = airport.Latitude.Value,
-                    AirportLongitude = airport.Longitude.Value,
-                    TimeZone = airport.Timezone
-                })
-            .AsNoTracking()
+        // Query 1: Get job coordinates (single row)
+        var jobCoords = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => usePickup
+                ? new { Latitude = j.PickUpLatitude, Longitude = j.PickUpLongitude }
+                : new { Latitude = j.DeliveryLatitude, Longitude = j.DeliveryLongitude })
+            .FirstOrDefaultAsync();
+
+        if (jobCoords?.Latitude == null || jobCoords.Longitude == null) return [];
+
+        var jobLatitude = jobCoords.Latitude.Value;
+        var jobLongitude = jobCoords.Longitude.Value;
+
+        // Query 2: Get all active airports with coordinates
+        var airports = await Context.TblAirports
+            .Where(a => a.Active && a.Latitude != null && a.Longitude != null)
+            .Select(a => new
+            {
+                a.AirportId,
+                a.Name,
+                AirportLatitude = a.Latitude!.Value,
+                AirportLongitude = a.Longitude!.Value,
+                TimeZone = a.Timezone
+            })
             .ToListAsync();
 
-        // Return an empty list if no valid job found
-        if (jobAndAirports.Count == 0) return [];
-
-        // Extract job coordinates from the first result (all have the same job coordinates)
-        var jobLatitude = jobAndAirports.First().JobLatitude;
-        var jobLongitude = jobAndAirports.First().JobLongitude;
-
-        // Calculate distances, filter and sort
-        return jobAndAirports
-            .Select(item => new
+        // Calculate distances in C#, filter and sort
+        return airports
+            .Select(a => new
             {
-                item.AirportId,
-                item.Name,
+                a.AirportId,
+                a.Name,
                 Distance = DistanceCalculator.CalculateDistance(
                     jobLatitude,
                     jobLongitude,
-                    item.AirportLatitude,
-                    item.AirportLongitude),
-                Timezone = item.TimeZone
+                    a.AirportLatitude,
+                    a.AirportLongitude),
+                Timezone = a.TimeZone
             })
             .Where(result => result.Distance <= maxDistanceMiles)
             .OrderBy(result => result.Distance)
@@ -262,7 +259,6 @@ public class NationwideJobRepository(
     public async Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
     {
         var job = await Context.TucJobs
-            .AsSplitQuery()
             .Include(j => j.Parent)
             .ThenInclude(j => j.InverseParent)
             .Include(j => j.InverseParent)
@@ -387,19 +383,16 @@ public class NationwideJobRepository(
                 Text = x.CarrierCode,
                 FullAirlineName = x.FlightCarrierName
             })
-            .AsNoTracking()
             .ToListAsync();
 
     public async Task<List<string>> GetActiveAirlineCodesAsync() =>
         await Context.FlightCarriers
-            .AsNoTracking()
             .Where(fc => fc.IsActive)
             .Select(x => x.CarrierCode)
             .ToListAsync();
 
     public async Task<string> GetAirlineCodeByIdAsync(int airlineId) =>
         await Context.FlightCarriers
-            .AsNoTracking()
             .Where(fc => fc.FlightCarrierId == airlineId)
             .Select(fc => fc.CarrierCode)
             .FirstOrDefaultAsync();
@@ -407,7 +400,6 @@ public class NationwideJobRepository(
     public async Task SendAgentRequestMessageAsync(int agentId, int jobId)
     {
         var agentEmail = await Context.TucAgents
-            .AsNoTracking()
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagFax)
             .FirstOrDefaultAsync();
@@ -418,7 +410,6 @@ public class NationwideJobRepository(
 
         // Create an object
         var agentQuoteTemplateDto = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new AgentQuoteTemplateDto
             {
@@ -499,7 +490,6 @@ public class NationwideJobRepository(
 
         // Get flight IDs for cascade deletion
         var flightIds = await Context.TucJobNationwides
-            .AsNoTracking()
             .Where(flight => flight.UcnwJobId == jobId)
             .Select(flight => flight.UcnwId)
             .ToListAsync();
@@ -533,7 +523,6 @@ public class NationwideJobRepository(
         if (!string.IsNullOrWhiteSpace(searchTerm)) query = query.Where(a => a.UcagName.Contains(searchTerm));
 
         var agents = await query
-            .AsNoTracking()
             .Select(a => new Suggestion
             {
                 Id = a.UcagId,
@@ -547,7 +536,6 @@ public class NationwideJobRepository(
 
     public async Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId) =>
         await Context.TucJobNationwides
-            .AsNoTracking()
             .Where(nj => nj.UcnwJobId == jobId)
             .Select(nj => nj.WebhookAlertId)
             .Distinct()
@@ -555,8 +543,6 @@ public class NationwideJobRepository(
 
     public async Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId) =>
         await Context.TucAgents
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(a => a.UcagId == agentId)
             .Select(a => new AgentInfoDialogViewModel
             {
@@ -593,8 +579,6 @@ public class NationwideJobRepository(
     public async Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode,
         bool extraStopOffs, DateTime? bookTime) =>
         await Context.TucJobs
-            .AsSplitQuery()
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new FlightRateCalculationDto
             {
@@ -618,7 +602,6 @@ public class NationwideJobRepository(
 
     public async Task<string> GetAgentNameAsync(int agentId) =>
         await Context.TucAgents
-            .AsNoTracking()
             .Where(a => a.UcagId == agentId)
             .Select(a => a.UcagName)
             .FirstOrDefaultAsync();
@@ -626,8 +609,6 @@ public class NationwideJobRepository(
     public async Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId)
     {
         var recoveryAgentData = await Context.TucJobs
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new RecoveryAgentJobViewModel
             {
@@ -715,7 +696,6 @@ public class NationwideJobRepository(
 
     public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId) =>
         await Context.TblAirports
-            .AsNoTracking()
             .Where(a => a.AirportId == airportId)
             .SelectMany(a => a.AgentVehicles)
             .Select(agentVehicle => new Suggestion
@@ -728,7 +708,6 @@ public class NationwideJobRepository(
 
     public async Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync() =>
         await Context.TblAirports
-            .AsNoTracking()
             .Where(a => a.Active && a.AgentVehicles.Any())
             .Select(a => new Suggestion
             {
@@ -746,7 +725,6 @@ public class NationwideJobRepository(
         {
             // Get the job ID through the recovery job relationship
             var recoveryJob = await Context.TucJobs
-                .AsNoTracking()
                 .FirstOrDefaultAsync(j => j.JobRecoveryAgents
                     .Any(ra => ra.RecoveryId == request.RecoveryId));
 
@@ -757,6 +735,7 @@ public class NationwideJobRepository(
 
                 // Remove primary status from all other recovery agents in related recovery jobs
                 var otherPrimaryAgents = await Context.JobRecoveryAgents
+                    .AsTracking()
                     .Where(ra => ra.Job.ParentId == parentJobId &&
                                  ra.RecoveryId != request.RecoveryId &&
                                  ra.IsPrimary)
@@ -766,6 +745,7 @@ public class NationwideJobRepository(
 
                 // Also check recovery jobs where the parent job is the main job
                 var childJobPrimaryAgents = await Context.JobRecoveryAgents
+                    .AsTracking()
                     .Where(ra => ra.Job.UcjbId != parentJobId &&
                                  ra.Job.ParentId == parentJobId &&
                                  ra.RecoveryId != request.RecoveryId &&
@@ -787,7 +767,6 @@ public class NationwideJobRepository(
     {
         // Check if this is the only recovery agent on the job
         var recoveryJob = await Context.TucJobs
-            .AsSplitQuery()
             .Include(j => j.JobRecoveryAgents)
             .FirstOrDefaultAsync(j => j.JobRecoveryAgents.Any(ra => ra.RecoveryId == recoveryId));
         ArgumentNullException.ThrowIfNull(recoveryJob);
@@ -806,7 +785,6 @@ public class NationwideJobRepository(
     public async Task<string> GetWebhookEventsAsStringAsync()
     {
         var webhookEvents = await Context.FlightWebhookEventTypes
-            .AsNoTracking()
             .Where(e => e.IsActive && e.IsEnabled)
             .Select(e => new WebhookEventDto
             {
@@ -831,7 +809,6 @@ public class NationwideJobRepository(
 
         // Fetch cargo data including the arrival airport's timezone
         var cargoData = await Context.TucJobs
-            .AsSplitQuery()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
@@ -847,7 +824,6 @@ public class NationwideJobRepository(
                     .FirstOrDefault(),
                 ArrivalAirportTimeZone = j.ToAirport.Timezone
             })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         if (cargoData == null)
@@ -908,8 +884,6 @@ public class NationwideJobRepository(
             return true;
 
         var result = await Context.TucJobs
-            .AsSplitQuery()
-            .AsNoTracking()
             .Where(j => j.UcjbId == agentJobId)
             .SelectMany(j => j.Parent.InverseParent)
             .Select(siblingJob => new
@@ -931,7 +905,6 @@ public class NationwideJobRepository(
 
     public async Task<List<GetAirportsDto>> GetAllActiveAirportsAsync() =>
         await Context.TblAirports
-            .AsNoTracking()
             .Where(a => a.Active)
             .Select(a => new GetAirportsDto
             {
@@ -1011,7 +984,6 @@ public class NationwideJobRepository(
             parentJobId, jobSuffix, targetGroupingId);
 
         var agentJob = await Context.TucJobs
-            .AsSplitQuery()
             .Include(j => j.UcjbSpeedNavigation)
             .ThenInclude(s => s.Grouping)
             .Where(j => j.ParentId == parentJobId &&
@@ -1026,8 +998,6 @@ public class NationwideJobRepository(
         {
             // Diagnostic: Find any jobs with matching suffix to understand why they didn't match
             var candidateJobs = await Context.TucJobs
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Include(j => j.UcjbSpeedNavigation)
                 .ThenInclude(s => s.Grouping)
                 .Where(j => j.ParentId == parentJobId &&
@@ -1055,7 +1025,6 @@ public class NationwideJobRepository(
             {
                 // Check if ANY child jobs exist for this parent
                 var allChildJobs = await Context.TucJobs
-                    .AsNoTracking()
                     .Where(j => j.ParentId == parentJobId)
                     .Select(j => new { j.UcjbId, j.UcjbNumber })
                     .ToListAsync();
@@ -1251,7 +1220,6 @@ public class NationwideJobRepository(
 
     private async Task<List<AirportAddressInfoDto>> GetAirportAddressInfosAsync() =>
         await Context.TblAirports
-            .AsNoTracking()
             .Where(a => a.Active)
             .Select(a => new AirportAddressInfoDto
             {
@@ -1379,7 +1347,6 @@ public class NationwideJobRepository(
 
     private async Task<List<AgentDto>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId) =>
         await Context.AgentVehicles
-            .AsNoTracking()
             .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
             .Select(a => new AgentDto
             {
@@ -1481,14 +1448,12 @@ public class NationwideJobRepository(
 
     private async Task<int> GetAirportProcessingTimeAsync(int airportId) =>
         await Context.TblAirports
-            .AsNoTracking()
             .Where(a => a.AirportId == airportId)
             .Select(a => a.ProcessingTime)
             .FirstOrDefaultAsync() ?? 60;
 
     public async Task<int?> GetFlightCarrierIdByCodeAsync(string carrierCode) =>
         await Context.FlightCarriers
-            .AsNoTracking()
             .Where(fc => fc.CarrierCode == carrierCode)
             .Select(fc => fc.FlightCarrierId)
             .FirstOrDefaultAsync();

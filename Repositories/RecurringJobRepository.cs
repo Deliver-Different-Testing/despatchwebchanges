@@ -36,8 +36,6 @@ public class RecurringJobRepository(
         query = ApplyRecurringJobSort(query, request.Order, request.OrderDirection, applyDefaultSort: false);
 
         var items = await query
-            .AsSplitQuery()
-            .AsNoTracking()
             .Skip((request.Page - 1) * request.Limit)
             .Take(request.Limit)
             .Select(JobMappings.ToPrebookListViewModel)
@@ -81,8 +79,6 @@ public class RecurringJobRepository(
         var effectiveJobId = await Context.GetEffectiveJobBookingIdAsync(jobId);
 
         var allJobsInGroup = await Context.TucJobBookings
-            .AsSplitQuery()
-            .AsNoTracking()
             .Where(j => j.UcbkId == effectiveJobId || j.BookingParentId == effectiveJobId)
             .Select(JobMappings.JobRecurringMapping)
             .TagWith($"GetRecurringJob - Complete Booking Group {effectiveJobId}")
@@ -125,7 +121,6 @@ public class RecurringJobRepository(
                     // Parse ID and get Code
                     var clientId = int.Parse(value);
                     var code = await Context.TucClients
-                        .AsNoTracking()
                         .Where(c => c.UcclId == clientId)
                         .Select(c => c.UcclCode)
                         .FirstOrDefaultAsync();
@@ -306,7 +301,6 @@ public class RecurringJobRepository(
                 case JobProperty.FromContactName:
                     var fromContact = value[..Math.Min(value.Length, 100)];
                     var firstChildIdForContact = await Context.TucJobBookings
-                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderBy(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForContact)
@@ -316,7 +310,6 @@ public class RecurringJobRepository(
                 case JobProperty.FromContactPhone:
                     var fromPhone = value[..Math.Min(value.Length, 100)];
                     var firstChildIdForPhone = await Context.TucJobBookings
-                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderBy(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == firstChildIdForPhone)
@@ -326,7 +319,6 @@ public class RecurringJobRepository(
                 case JobProperty.ToContactName:
                     var toContact = value[..Math.Min(value.Length, 100)];
                     var lastChildIdForContact = await Context.TucJobBookings
-                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderByDescending(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForContact)
@@ -336,7 +328,6 @@ public class RecurringJobRepository(
                 case JobProperty.ToContactPhone:
                     var toPhone = value[..Math.Min(value.Length, 100)];
                     var lastChildIdForPhone = await Context.TucJobBookings
-                        .AsNoTracking()
                         .Where(c => c.BookingParentId == jobId).OrderByDescending(c => c.UcbkId)
                         .Select(c => c.UcbkId).FirstOrDefaultAsync();
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId || j.UcbkId == lastChildIdForPhone)
@@ -444,8 +435,6 @@ public class RecurringJobRepository(
         var tenantTimeZone = _infoService.GetTenantTimeZone();
 
         var notes = await Context.TucNotes
-            .AsSplitQuery()
-            .AsNoTracking()
             .Where(n => n.JobBookingId == effectivePrebookId)
             .OrderByDescending(n => n.CreatedDate)
             .Select(NoteMappings.ActiveNoteMap)
@@ -475,7 +464,6 @@ public class RecurringJobRepository(
 
             // Get the last child job ID (for delivery address)
             var lastChildId = await Context.TucJobBookings
-                .AsNoTracking()
                 .Where(child => child.BookingParentId == request.JobId)
                 .OrderByDescending(child => child.UcbkId)
                 .Select(child => child.UcbkId)
@@ -516,7 +504,6 @@ public class RecurringJobRepository(
 
             // Get the first child job ID (for pickup address)
             var firstChildId = await Context.TucJobBookings
-                .AsNoTracking()
                 .Where(child => child.BookingParentId == request.JobId)
                 .OrderBy(child => child.UcbkId)
                 .Select(child => child.UcbkId)
@@ -558,7 +545,6 @@ public class RecurringJobRepository(
 
         // No pagination - get all records for export
         var items = await query
-            .AsNoTracking()
             .Select(JobMappings.ToPrebookListViewModel)
             .ToListAsync();
 

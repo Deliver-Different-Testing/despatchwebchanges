@@ -4,7 +4,7 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import ToastrService from "../../services/toastr.service";
 import DispatchCoreService from "../../services/dispatch-core.service";
 import {IAppConfig} from "../../interfaces/app-config.interface";
-import {IDispatchJob, IJobSearchResult, ISuggestion} from "../../interfaces/job.interface";
+import {IDispatchJob, IJobSearchResult} from "../../interfaces/job.interface";
 import {Coordinates} from "../../interfaces/coordinates.interface";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";

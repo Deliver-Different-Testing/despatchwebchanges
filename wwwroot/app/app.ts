@@ -41,8 +41,6 @@ import DispatchExecutorService from "./services/dispatch-executor.service";
 import {minutesToTimeFilter} from "./components/Nationwide/filters/minutesToTimeFilter";
 import SimplePriceEditDialogService
     from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.service";
-import SimplePriceEditDialogController
-    from "./components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog.controller";
 import BulkPriceUploadDialogService
     from "./components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import {TaskItemReactComponent} from "./react/components/common/task-item/task-item-react.module";
@@ -219,7 +217,6 @@ app.directive("reactAppShell", reactAppShellDirective);
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
-app.controller("simplePriceEditDialogController", SimplePriceEditDialogController);
 
 // Services
 app.service("configService", ConfigService);

@@ -23,8 +23,6 @@ public partial class JobRepository
         try
         {
             var jobDetails = await Context.TucJobs
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(j => j.UcjbId == jobId)
                 .Select(job => new JobRatingDetailsDto
                 {
@@ -101,8 +99,6 @@ public partial class JobRepository
             if (isArchived)
             {
                 var jobDetailsForRating = await Context.TucJobArchives
-                    .AsNoTracking()
-                    .AsSplitQuery()
                     .Where(j => j.UcjbId == jobId)
                     .Select(job => new JobRatingDetailsDtoNz
                     {
@@ -211,8 +207,6 @@ public partial class JobRepository
             else
             {
                 var jobDetailsForRating = await Context.TucJobs
-                    .AsNoTracking()
-                    .AsSplitQuery()
                     .Where(j => j.UcjbId == jobId)
                     .Select(job => new JobRatingDetailsDtoNz
                     {
@@ -332,8 +326,6 @@ public partial class JobRepository
         try
         {
             var jobDetails = await Context.TucJobBookings
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(j => j.UcbkId == jobId)
                 .Select(job => new JobRatingDetailsDto
                 {
@@ -405,8 +397,6 @@ public partial class JobRepository
         try
         {
             var jobDetails = await Context.TucJobBookings
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(j => j.UcbkId == jobId)
                 .Select(job => new JobRatingDetailsDtoNz
                 {

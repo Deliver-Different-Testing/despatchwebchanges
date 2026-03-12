@@ -72,13 +72,14 @@ describe('AccessorialChargesDialogManager', () => {
         it('should proceed to render when both job.id and accessorialChargeGroupId are valid', async () => {
             const job = createMockJob();
 
-            // Start the dialog — it won't resolve because render is mocked
-            openAccessorialChargesDialog({ job });
+            // Start the dialog — don't await since the promise only resolves when
+            // the dialog closes, which never happens with mocked render
+            openAccessorialChargesDialog({job});
 
-            // Give time for async operations
+            // Give time for synchronous initialization to complete
             await new Promise(resolve => setTimeout(resolve, 50));
 
-            // If we got here without returning false, validation passed and rendering was attempted
+            // Validation passed and rendering was attempted
             const { createRoot } = require('react-dom/client');
             expect(createRoot).toHaveBeenCalled();
         });

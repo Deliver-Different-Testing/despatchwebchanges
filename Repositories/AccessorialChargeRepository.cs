@@ -46,7 +46,6 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
     public async Task<List<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId) =>
         await Context.AccessorialChargeGroupMembers
-            .AsNoTracking()
             .Where(acgm => acgm.AccessorialChargeGroupId == accessorialChargeGroupId)
             .Select(acgm => acgm.AccessorialCharge)
             .Where(ac => ac.Active && ac.AvailableAtDispatch)
@@ -78,7 +77,6 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
     public async Task<List<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId) =>
         await Context.JobAccessorialCharges
-            .AsNoTracking()
             .Where(jac => jac.JobId == jobId)
             .OrderBy(jac => jac.Created)
             .Select(AppliedChargeProjection)
@@ -100,7 +98,6 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
     public async Task<JobAccessorialChargeDto> GetAppliedChargeWithDetailsAsync(int jobAccessorialChargeId) =>
         await Context.JobAccessorialCharges
-            .AsNoTracking()
             .Where(jac => jac.JobAccessorialChargeId == jobAccessorialChargeId)
             .Select(AppliedChargeProjection)
             .FirstOrDefaultAsync();
@@ -125,7 +122,6 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
 
     public async Task<decimal> GetJobAmountAsync(int jobId) =>
         await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.UcjbAmount ?? 0m)
             .FirstOrDefaultAsync();
@@ -134,7 +130,6 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
     {
         var labels = new[] { "Pickup", "Flight", "Delivery" };
         var children = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.ParentId == parentJobId)
             .OrderBy(j => j.UcjbId)
             .Select(j => new { j.UcjbId, j.AccessorialChargeGroupId })

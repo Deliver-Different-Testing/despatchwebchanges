@@ -31,8 +31,6 @@ public partial class JobRepository
         var isUsCustomer = _infoService.IsUsTenant();
 
         var query = Context.TucJobs
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j => j.ParentId == j.UcjbId || !j.ParentId.HasValue);
 
         // Apply status group - filter early
@@ -236,8 +234,6 @@ public partial class JobRepository
         var isUsCustomer = _infoService.IsUsTenant();
 
         var locations = await Context.TucJobs
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new OverviewDeliveryMapResponse
             {
@@ -299,8 +295,6 @@ public partial class JobRepository
             var currentDate = now.Date; 
 
             var query = Context.TucJobs
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(j =>
                     j.UcjbStatus != (int)JobStatus.Completed &&
                     j.UcjbStatus != (int)JobStatus.Rejected &&
@@ -382,8 +376,6 @@ public partial class JobRepository
             if (courierIds.Count > 0)
             {
                 var courierCompletions = await Context.TucJobs
-                    .AsNoTracking()
-                    .AsSplitQuery()
                     .Where(j => j.UcjbCourierId.HasValue &&
                                 courierIds.Contains(j.UcjbCourierId.Value) &&
                                 j.UcjbStatus == (int)JobStatus.Completed &&
