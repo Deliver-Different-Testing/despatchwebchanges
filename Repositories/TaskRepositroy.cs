@@ -44,7 +44,7 @@ public class TaskRepository(
         JobNumber = e.UcevJob.UcjbNumber
     };
 
-    public async Task<List<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
+    public async Task<IReadOnlyList<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
     {
         var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
@@ -236,13 +236,13 @@ public class TaskRepository(
         }
     }
 
-    public async Task<List<Suggestion>> GetEventGroupsAsync() =>
+    public async Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync() =>
         await Context.TucEventTypeGroups
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .ToListAsync();
 
-    public async Task<List<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
+    public async Task<IReadOnlyList<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId)
     {
         var now = clock.TenantNow;
         var eventGroups = await Context.TucEventTypeEventTypeGroups
@@ -331,7 +331,7 @@ public class TaskRepository(
         await Context.SaveChangesAsync();
     }
 
-    public async Task<List<Suggestion>> GetActiveStaffAsync()
+    public async Task<IReadOnlyList<Suggestion>> GetActiveStaffAsync()
     {
         var staff = await Context.TucStaffs
             .Where(s => s.UcstActive)

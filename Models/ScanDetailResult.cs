@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 
 namespace DespatchWeb.Models;
 
-public class ScanDetailResult
+public readonly record struct ScanDetailResult
 {
     public int BulkScanId { get; init; }
     public DateTime ScanDateTime { get; init; }

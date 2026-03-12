@@ -11,7 +11,7 @@ namespace DespatchWeb.Interfaces;
 
 public interface IJobCommandRepository
 {
-    Task UpdateManualPriceAsync(List<JobManualPriceModel> data);
+    Task UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data);
     Task UpdateJobVoidStatusAsync(List<int> jobIds);
 
     Task SwapPodAsync(string job1, string job2);

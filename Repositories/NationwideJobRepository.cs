@@ -182,7 +182,7 @@ public class NationwideJobRepository(
         }
     }
 
-    public async Task<List<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
+    public async Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)
     {
         const double maxDistanceMiles = 500;
 
@@ -236,7 +236,7 @@ public class NationwideJobRepository(
             .ToList();
     }
 
-    public async Task<List<AgentViewModel>> GetAgentsAsync(int jobId)
+    public async Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId)
     {
         var job = await GetJobDetailsAsync(jobId);
         ArgumentNullException.ThrowIfNull(job);
@@ -374,7 +374,7 @@ public class NationwideJobRepository(
             windowPane);
     }
 
-    public async Task<List<AirlineSuggestion>> GetActiveAirlineOptionsAsync() =>
+    public async Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync() =>
         await Context.FlightCarriers
             .Where(fc => fc.IsActive)
             .Select(x => new AirlineSuggestion
@@ -385,7 +385,7 @@ public class NationwideJobRepository(
             })
             .ToListAsync();
 
-    public async Task<List<string>> GetActiveAirlineCodesAsync() =>
+    public async Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync() =>
         await Context.FlightCarriers
             .Where(fc => fc.IsActive)
             .Select(x => x.CarrierCode)
@@ -516,7 +516,7 @@ public class NationwideJobRepository(
         await SaveNoteAsync(jobId, "Job restored", true);
     }
 
-    public async Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm)
+    public async Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm)
     {
         var query = Context.TucAgents.AsQueryable();
 
@@ -534,7 +534,7 @@ public class NationwideJobRepository(
         return agents;
     }
 
-    public async Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId) =>
+    public async Task<IReadOnlyList<string>> GetFlightWebhookIdByJobIdAsync(int jobId) =>
         await Context.TucJobNationwides
             .Where(nj => nj.UcnwJobId == jobId)
             .Select(nj => nj.WebhookAlertId)
@@ -694,7 +694,7 @@ public class NationwideJobRepository(
         return recoveryAgentData;
     }
 
-    public async Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId) =>
+    public async Task<IReadOnlyList<Suggestion>> GetAgentOptionsByAirportAsync(int airportId) =>
         await Context.TblAirports
             .Where(a => a.AirportId == airportId)
             .SelectMany(a => a.AgentVehicles)
@@ -706,7 +706,7 @@ public class NationwideJobRepository(
             .Distinct()
             .ToListAsync();
 
-    public async Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync() =>
+    public async Task<IReadOnlyList<Suggestion>> GetAllActiveAirportsWithAgentsAsync() =>
         await Context.TblAirports
             .Where(a => a.Active && a.AgentVehicles.Any())
             .Select(a => new Suggestion
@@ -903,7 +903,7 @@ public class NationwideJobRepository(
                || flightSpeedJobs.Any(job => job.HasTucJobNationwides);
     }
 
-    public async Task<List<GetAirportsDto>> GetAllActiveAirportsAsync() =>
+    public async Task<IReadOnlyList<GetAirportsDto>> GetAllActiveAirportsAsync() =>
         await Context.TblAirports
             .Where(a => a.Active)
             .Select(a => new GetAirportsDto
@@ -916,7 +916,7 @@ public class NationwideJobRepository(
             .ToListAsync();
 
     /// <inheritdoc />
-    public async Task<List<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto)
+    public async Task<IReadOnlyList<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto)
     {
         var results = await Context.Procedures.DD_stpGetCarrierFlightRateAsync(
             dto.ClientId,
@@ -1048,7 +1048,7 @@ public class NationwideJobRepository(
         FlightSegmentViewModel primaryFlight,
         int departureAirportId,
         int? departureTimeZoneId,
-        List<AirportAddressInfoDto> airports,
+        IReadOnlyList<AirportAddressInfoDto> airports,
         string primaryFlightNumber)
     {
         if (pickupJob == null)
@@ -1076,7 +1076,7 @@ public class NationwideJobRepository(
         AssignFlightToJobRequest requestData,
         int arrivalAirportId,
         int? arrivalTimeZoneId,
-        List<AirportAddressInfoDto> airports,
+        IReadOnlyList<AirportAddressInfoDto> airports,
         string primaryFlightNumber)
     {
         if (deliveryJob == null)
@@ -1218,7 +1218,7 @@ public class NationwideJobRepository(
             .Select(tz => tz.Id)
             .FirstOrDefault();
 
-    private async Task<List<AirportAddressInfoDto>> GetAirportAddressInfosAsync() =>
+    private async Task<IReadOnlyList<AirportAddressInfoDto>> GetAirportAddressInfosAsync() =>
         await Context.TblAirports
             .Where(a => a.Active)
             .Select(a => new AirportAddressInfoDto
@@ -1306,7 +1306,7 @@ public class NationwideJobRepository(
         };
     }
 
-    private async Task<List<AgentDto>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId) =>
+    private async Task<IReadOnlyList<AgentDto>> GetEligibleAgentsAsync(int? airportId, int? vehicleSizeId) =>
         await Context.AgentVehicles
             .Where(av => av.AirportId == airportId && av.VehicleSizeId == vehicleSizeId)
             .Select(a => new AgentDto
@@ -1318,8 +1318,8 @@ public class NationwideJobRepository(
             })
             .ToListAsync();
 
-    private async Task<List<AgentViewModel>> ProcessAgentsInParallelAsync(NationwideJobDetail nationwideJob,
-        List<AgentDto> agents)
+    private async Task<IReadOnlyList<AgentViewModel>> ProcessAgentsInParallelAsync(NationwideJobDetail nationwideJob,
+        IReadOnlyList<AgentDto> agents)
     {
         const int batchSize = 100;
         var agentResults = new ConcurrentBag<AgentViewModel>();
@@ -1419,7 +1419,7 @@ public class NationwideJobRepository(
             .Select(fc => fc.FlightCarrierId)
             .FirstOrDefaultAsync();
 
-    private static void UpdateJobAddressWithAirportInfo(List<AirportAddressInfoDto> airports, TucJob job, int airportId,
+    private static void UpdateJobAddressWithAirportInfo(IReadOnlyList<AirportAddressInfoDto> airports, TucJob job, int airportId,
         int? timeZoneId,
         bool isDeliveryAddress)
     {

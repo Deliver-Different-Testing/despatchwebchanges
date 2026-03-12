@@ -547,7 +547,7 @@ describe('EditAddressDialog', () => {
                 expect((screen.getByLabelText(/ZIP Code/) as HTMLInputElement).value).toBe('10001');
             });
 
-            // Company/Building is preserved (not cleared) when buildingName is not in the response
+            // Company/Building is cleared when buildingName is not in the response
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
 
             // Check coordinates
@@ -555,7 +555,7 @@ describe('EditAddressDialog', () => {
             expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
         });
 
-        it('preserves existing company name when selecting address without buildingName', async () => {
+        it('clears stale company name when selecting address without buildingName', async () => {
             mockUseAddressSearch.mockReturnValue({
                 data: sampleAddressResults,
                 isFetching: false,
@@ -581,11 +581,12 @@ describe('EditAddressDialog', () => {
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Company name should be preserved since the lookup has no buildingName
+            // Company name should be cleared since the lookup has no buildingName
+            // (prevents stale company names from pre-populated addresses persisting)
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
             });
-            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Empire State Building');
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
         });
 
         it('updates company name when selecting address with buildingName', async () => {
@@ -652,7 +653,7 @@ describe('EditAddressDialog', () => {
                 expect((screen.getByLabelText(/Post Code/) as HTMLInputElement).value).toBe('1010');
             });
 
-            // Company/Building is preserved (not cleared) when buildingName is not in the response
+            // Company/Building is cleared when buildingName is not in the response
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
         }, 30000);
 

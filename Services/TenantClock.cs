@@ -3,7 +3,7 @@ using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Services;
 
-public class TenantClock(ITenantInfoService tenantInfoService) : ITenantClock
+public sealed class TenantClock(ITenantInfoService tenantInfoService) : ITenantClock
 {
     public DateTime TenantNow => tenantInfoService.GetCurrentTenantTime();
     public DateTime TenantToday => TenantNow.Date;

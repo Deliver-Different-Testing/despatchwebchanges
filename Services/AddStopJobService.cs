@@ -14,7 +14,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for creating additional stop jobs (extra pickups or deliveries) as child jobs linked to parent jobs.
 /// </summary>
-public class AddStopJobService(IJobRepository repository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
+public sealed class AddStopJobService(IJobRepository repository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
 {
     private const decimal ExtraStopAmount = 20m;
     private const decimal ExtraStopCourierPayment = 10m;

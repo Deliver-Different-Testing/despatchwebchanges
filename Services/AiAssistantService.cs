@@ -15,7 +15,7 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
-public class AiAssistantService(
+public sealed class AiAssistantService(
     IAiClientService aiClient,
     IJobRepository jobRepository,
     ICourierRepository courierRepository,

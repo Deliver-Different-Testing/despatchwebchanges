@@ -9,7 +9,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for calculating air freight rates using the DD_stpGetCarrierFlightRate stored procedure.
 /// </summary>
-public class FlightRateService(INationwideJobRepository repository) : IFlightRateService
+public sealed class FlightRateService(INationwideJobRepository repository) : IFlightRateService
 {
     /// <summary>
     /// Calculates the flight rate for a job based on carrier, route, weight, and booking time.

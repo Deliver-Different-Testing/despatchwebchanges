@@ -18,7 +18,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for managing job photos, signatures, and file attachments stored in Amazon S3.
 /// </summary>
-public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
+public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 {
     /// <summary>
     /// Retrieves delivery photos and signatures for a job from S3 storage.
@@ -27,7 +27,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <param name="year">The year folder to search in.</param>
     /// <param name="month">The month folder to search in.</param>
     /// <returns>A list of photo information including base64 encoded image data.</returns>
-    public async Task<List<S3PhotoInfo>> GetDeliveryPhotosAsync(int jobId, int year, int month)
+    public async Task<IReadOnlyList<S3PhotoInfo>> GetDeliveryPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         var key = $"{jobId}-";
@@ -49,7 +49,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <param name="year">The year folder to search in.</param>
     /// <param name="month">The month folder to search in.</param>
     /// <returns>A list of photo information including base64 encoded image data.</returns>
-    public async Task<List<S3PhotoInfo>> GetPickupPhotosAsync(int jobId, int year, int month)
+    public async Task<IReadOnlyList<S3PhotoInfo>> GetPickupPhotosAsync(int jobId, int year, int month)
     {
         var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
         var key = $"{jobId}-";
@@ -203,7 +203,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// </summary>
     /// <param name="jobId">The job ID to get attachments for.</param>
     /// <returns>A list of file information including filename and size.</returns>
-    public async Task<List<S3FileInfo>> GetAttachedFilesAsync(int jobId)
+    public async Task<IReadOnlyList<S3FileInfo>> GetAttachedFilesAsync(int jobId)
     {
         var s3Files = new List<S3FileInfo>();
 
@@ -425,7 +425,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <param name="bucketName">The S3 bucket to search in.</param>
     /// <param name="pattern">The key prefix pattern to match.</param>
     /// <returns>A list of matching S3 objects.</returns>
-    public async Task<List<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
+    public async Task<IReadOnlyList<S3Object>> SearchFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
 
@@ -470,7 +470,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <param name="month">The month folder to search in.</param>
     /// <param name="photoType">The type of photo to determine folder locations.</param>
     /// <returns>A list of matching S3 objects.</returns>
-    public async Task<List<S3Object>> SearchFilesByPatternAsync(
+    public async Task<IReadOnlyList<S3Object>> SearchFilesByPatternAsync(
         string bucketName,
         string pattern,
         int year,
@@ -529,7 +529,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <summary>
     /// Searches for attachment files matching a pattern prefix.
     /// </summary>
-    private async Task<List<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
+    private async Task<IReadOnlyList<S3Object>> SearchAttachmentFilesByPatternAsync(string bucketName, string pattern)
     {
         var allResults = new List<S3Object>();
 
@@ -563,7 +563,7 @@ public class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     /// <summary>
     /// Retrieves detailed photo information from S3 objects including base64 encoded image data.
     /// </summary>
-    private async Task<List<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(List<S3Object> s3Objects, string bucketName)
+    private async Task<IReadOnlyList<S3PhotoInfo>> GetPhotoInfoFromS3ObjectsAsync(IReadOnlyList<S3Object> s3Objects, string bucketName)
     {
         var photoInfos = new List<S3PhotoInfo>();
 

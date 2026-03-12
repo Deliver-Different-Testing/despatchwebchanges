@@ -18,7 +18,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for integrating with the FlightStats API to search flights and manage flight alerts.
 /// </summary>
-public class FlightStatsService(
+public sealed class FlightStatsService(
     HttpClient httpClient,
     IHttpContextAccessor contextAccessor,
     INationwideJobRepository repository,
@@ -183,7 +183,7 @@ public class FlightStatsService(
     /// <param name="extendedOptions">Optional extended search options.</param>
     /// <param name="minimumLayoverMinutes">Minimum layover time for connecting flights (default 60 minutes).</param>
     /// <returns>A list of available flight options sorted by arrival time.</returns>
-    public async Task<List<FlightViewModel>> GetFlightsAsync(
+    public async Task<IReadOnlyList<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTimeOffset? departureDateTime = null,
         int? airlineId = null,

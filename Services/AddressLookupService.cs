@@ -13,7 +13,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for address lookup and geocoding operations using the HERE Maps API.
 /// </summary>
-public class AddressLookupService(
+public sealed class AddressLookupService(
     HttpClient httpClient,
     ITenantInfoService infoService) : IAddressLookupService
 {
@@ -28,7 +28,7 @@ public class AddressLookupService(
     /// </summary>
     /// <param name="text">The partial address text to search for (minimum 3 characters).</param>
     /// <returns>A list of matching location results with address labels and coordinates.</returns>
-    public async Task<List<HereMapsLocationResult>> AutocompleteAddressSearchAsync(string text)
+    public async Task<IReadOnlyList<HereMapsLocationResult>> AutocompleteAddressSearchAsync(string text)
     {
         if (string.IsNullOrWhiteSpace(text) || text.Length < 3) return [];
 
@@ -121,7 +121,7 @@ public class AddressLookupService(
     /// <param name="lat">The latitude coordinate.</param>
     /// <param name="lng">The longitude coordinate.</param>
     /// <returns>A list containing the nearest address result.</returns>
-    public async Task<List<HereMapsLocationResult>> FetchNearestAddressAsync(double lat, double lng)
+    public async Task<IReadOnlyList<HereMapsLocationResult>> FetchNearestAddressAsync(double lat, double lng)
     {
         try
         {

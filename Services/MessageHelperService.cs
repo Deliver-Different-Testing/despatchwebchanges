@@ -9,7 +9,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for processing messaging data and determining message participants.
 /// </summary>
-public class MessageHelperService(ITenantClock clock) : IMessageHelperService
+public sealed class MessageHelperService(ITenantClock clock) : IMessageHelperService
 {
     /// <summary>
     /// Determines the other party in a message conversation based on the current staff member.

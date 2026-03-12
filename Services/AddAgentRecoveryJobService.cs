@@ -11,7 +11,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for creating recovery agent jobs as child jobs linked to parent deliveries.
 /// </summary>
-public class AddAgentRecoveryJobService(
+public sealed class AddAgentRecoveryJobService(
     IJobRepository repository,
     INationwideJobRepository nationwideJobRepository,
     ITenantInfoService infoService,

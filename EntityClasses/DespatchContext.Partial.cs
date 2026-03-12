@@ -249,7 +249,7 @@ public partial class DespatchContext
     public async Task<TucNoteViewModel> GetActiveNotesByNoteIdAsync(int noteId) =>
         await GetActiveNoteByIdCompiled(this, noteId);
 
-    public async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
+    public async Task<IReadOnlyList<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
         await GetActiveNotesByJobIdCompiled(this, jobId).ToListAsync();
 
     public async Task<int> MarkCourierMessagesAsReadAsync(int staffId, int fromStaffId, DateTime readTime) =>
@@ -261,19 +261,19 @@ public partial class DespatchContext
     public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext context = null) =>
         await GetUnreadMessageCountCompiled(context ?? this, staffId);
 
-    public async Task<List<Suggestion>> GetAllVehicleSizesAsync() =>
+    public async Task<IReadOnlyList<Suggestion>> GetAllVehicleSizesAsync() =>
         await GetAllVehicleSizesCompiled(this).ToListAsync();
 
-    public async Task<List<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this).ToListAsync();
-    public async Task<List<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this).ToListAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this).ToListAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this).ToListAsync();
 
-    public async Task<List<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) =>
+    public async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) =>
         await GetPolygonMappingsCompiled(this, clearListAreaIds).ToListAsync();
 
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) =>
         await GetCourierByIdCompiled(this, courierId, tenantTime);
 
-    public async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(DateTime today) =>
+    public async Task<IReadOnlyList<ActiveCourierDto>> GetActiveCouriersAsync(DateTime today) =>
         await GetActiveCouriersCompiled(this, today).ToListAsync();
 
     public async Task<bool> ConfirmNoteTypeExistsAsync(NoteType noteType) =>

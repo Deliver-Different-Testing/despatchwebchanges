@@ -12,11 +12,11 @@ using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Services;
 
-public class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientService
+public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientService
 {
     private readonly AnthropicClient _client = new();
     private readonly AnthropicSettings _settings = settings.Value;
-    
+
     public async Task<AiClientResponse> SendMessageAsync(
         string systemPrompt,
         List<AiMessage> messages,
@@ -37,18 +37,14 @@ public class AiClientService(IOptions<AnthropicSettings> settings) : IAiClientSe
         foreach (var block in response.Content)
         {
             if (block.TryPickText(out var textBlock))
-            {
                 result.TextContent = (result.TextContent ?? string.Empty) + textBlock.Text;
-            }
             else if (block.TryPickToolUse(out var toolUse))
-            {
                 result.ToolCalls.Add(new AiToolCall
                 {
                     ToolUseId = toolUse.ID,
                     ToolName = toolUse.Name,
                     ArgumentsJson = JsonSerializer.Serialize(toolUse.Input)
                 });
-            }
         }
 
         return result;

@@ -9,20 +9,20 @@ namespace DespatchWeb.Interfaces;
 public interface INoteRepository
 {
     // Job Notes
-    Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId);
+    Task<IReadOnlyList<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId);
     Task<TucNoteViewModel> GetNoteByIdAsync(int noteId);
     Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken ct = default);
     Task DeleteNoteAsync(int noteId, CancellationToken ct = default);
 
     // Bulk Job Notes
-    Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId);
+    Task<IReadOnlyList<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId);
     Task<TucNoteViewModel> GetBulkNoteByIdAsync(int noteId);
     Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken ct = default);
 
     // Note Types
-    Task<List<NoteTypeViewModel>> GetNoteTypesAsync();
+    Task<IReadOnlyList<NoteTypeViewModel>> GetNoteTypesAsync();
     Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType);
 
     // Note History
-    Task<List<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source);
+    Task<IReadOnlyList<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source);
 }

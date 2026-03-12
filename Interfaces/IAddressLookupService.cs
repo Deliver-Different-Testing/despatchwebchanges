@@ -6,7 +6,7 @@ namespace DespatchWeb.Interfaces;
 
 public interface IAddressLookupService
 {
-    Task<List<HereMapsLocationResult>> AutocompleteAddressSearchAsync(string text);
+    Task<IReadOnlyList<HereMapsLocationResult>> AutocompleteAddressSearchAsync(string text);
     Task<HereMapsLookupResponse> GetLocationDetailsByIdAsync(string id);
-    Task<List<HereMapsLocationResult>> FetchNearestAddressAsync(double lat, double lng);
+    Task<IReadOnlyList<HereMapsLocationResult>> FetchNearestAddressAsync(double lat, double lng);
 }

@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 
 namespace DespatchWeb.Services;
 
-public class AiSummarizationService(
+public sealed class AiSummarizationService(
     IAiClientService aiClient,
     INoteRepository noteRepository,
     ITaskRepository taskRepository,
@@ -237,14 +237,22 @@ public class AiSummarizationService(
         sb.AppendLine($"Total open tasks: {tasks.Count}");
         sb.AppendLine();
 
-        var overdue = tasks.Where(t => !t.Closed && t.DueDate < now).ToList();
-        var dueToday = tasks.Where(t => !t.Closed && t.DueDate >= now && t.DueDate.Date == now.Date).ToList();
-        var upcoming = tasks.Where(t => !t.Closed && t.DueDate.Date > now.Date).ToList();
+        var ordered = tasks.OrderBy(t => t.DueDate).ToList();
+        var overdueCount = 0;
+        var dueTodayCount = 0;
+        var upcomingCount = 0;
+        foreach (var task in ordered)
+        {
+            if (task.Closed) continue;
+            if (task.DueDate < now) overdueCount++;
+            else if (task.DueDate.Date == now.Date) dueTodayCount++;
+            else upcomingCount++;
+        }
 
-        sb.AppendLine($"Overdue: {overdue.Count}, Due today: {dueToday.Count}, Upcoming: {upcoming.Count}");
+        sb.AppendLine($"Overdue: {overdueCount}, Due today: {dueTodayCount}, Upcoming: {upcomingCount}");
         sb.AppendLine();
 
-        foreach (var task in tasks.OrderBy(t => t.DueDate))
+        foreach (var task in ordered)
         {
             var status = task.Closed ? "CLOSED" : task.DueDate < now ? "OVERDUE" : "OPEN";
             var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
@@ -343,9 +351,18 @@ public class AiSummarizationService(
             };
 
         var now = DateTimeOffset.UtcNow;
-        var expired = items.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value < now).ToList();
-        var expiringWeek = items.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value >= now && i.ExpiryDate.Value < now.AddDays(7)).ToList();
-        var expiringMonth = items.Where(i => i.ExpiryDate.HasValue && i.ExpiryDate.Value >= now.AddDays(7) && i.ExpiryDate.Value < now.AddDays(30)).ToList();
+        var weekCutoff = now.AddDays(7);
+        var monthCutoff = now.AddDays(30);
+        var expired = new List<CourierComplianceViewModel>();
+        var expiringWeek = new List<CourierComplianceViewModel>();
+        var expiringMonth = new List<CourierComplianceViewModel>();
+        foreach (var i in items)
+        {
+            if (!i.ExpiryDate.HasValue) continue;
+            if (i.ExpiryDate.Value < now) expired.Add(i);
+            else if (i.ExpiryDate.Value < weekCutoff) expiringWeek.Add(i);
+            else if (i.ExpiryDate.Value < monthCutoff) expiringMonth.Add(i);
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine($"Analyze the following driver compliance data. Current date: {now:yyyy-MM-dd}.");

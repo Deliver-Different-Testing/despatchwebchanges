@@ -12,7 +12,7 @@ public interface IFlightStatsService
 
     Task DeleteFlightRuleById(string webhookId);
 
-    Task<List<FlightViewModel>> GetFlightsAsync(
+    Task<IReadOnlyList<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTimeOffset? departureDateTime = null,
         int? airlineId = null,

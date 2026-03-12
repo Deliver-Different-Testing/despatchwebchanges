@@ -16,23 +16,23 @@ public interface INationwideJobRepository
 
     Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, List<string> webhookIds);
 
-    Task<List<AgentViewModel>> GetAgentsAsync(int jobId);
+    Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
-    Task<List<AirlineSuggestion>> GetActiveAirlineOptionsAsync();
-    Task<List<string>> GetActiveAirlineCodesAsync();
+    Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync();
+    Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync();
     Task<string> GetAirlineCodeByIdAsync(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
-    Task<List<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
+    Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task RestoreNationwideJobAsync(int jobId);
-    Task<List<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
-    Task<List<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
+    Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
+    Task<IReadOnlyList<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
     Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId);
 
     Task<string> GetAgentNameAsync(int agentId);
     Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId);
-    Task<List<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
-    Task<List<Suggestion>> GetAllActiveAirportsWithAgentsAsync();
+    Task<IReadOnlyList<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
+    Task<IReadOnlyList<Suggestion>> GetAllActiveAirportsWithAgentsAsync();
     Task UpdateRecoveryAgentAsync(UpdateAgentRecoveryRequest request);
     Task RemoveRecoveryAgentAsync(int recoveryId);
     Task<string> GetWebhookEventsAsStringAsync();
@@ -45,7 +45,7 @@ public interface INationwideJobRepository
     Task<FlightRateCalculationDto> GetFlightRateCalculationDtoAsync(int jobId, string carrierCode, bool extraStopOffs,
         DateTime? bookTime);
 
-    Task<List<GetAirportsDto>> GetAllActiveAirportsAsync();
+    Task<IReadOnlyList<GetAirportsDto>> GetAllActiveAirportsAsync();
     
-    Task<List<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto);
+    Task<IReadOnlyList<FlightRateDto>> GetCarrierFlightRatesAsync(FlightRateCalculationDto dto);
 }

@@ -17,7 +17,7 @@ namespace DespatchWeb.Services;
 /// Service for splitting jobs into pickup and delivery child jobs.
 /// Replaces the stored procedure DES_stpJob_SplitJob with C# implementation.
 /// </summary>
-public class SplitJobService(
+public sealed class SplitJobService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService,
     ITenantClock clock,
@@ -545,8 +545,9 @@ public class SplitJobService(
                 }
             }
 
-            // Rate child jobs in parallel — each task gets its own DI scope (and thus its own DbContext)
-            var ratingTasks = childJobs.Select(async child =>
+            // Rate child jobs in parallel with bounded concurrency
+            var jobRates = new List<(int JobId, decimal Rate)>(childJobs.Count);
+            await Parallel.ForEachAsync(childJobs, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (child, _) =>
             {
                 var rate = 0m;
                 try
@@ -570,10 +571,8 @@ public class SplitJobService(
                     Log.Warning(ex, "Failed to rate job {JobId}. Using rate 0.", child.UcjbId);
                 }
 
-                return (JobId: child.UcjbId, Rate: rate);
-            }).ToList();
-
-            var jobRates = (await Task.WhenAll(ratingTasks)).ToList();
+                lock (jobRates) { jobRates.Add((child.UcjbId, rate)); }
+            });
 
             // Sum all rates
             var totalRate = jobRates.Sum(c => c.Rate);

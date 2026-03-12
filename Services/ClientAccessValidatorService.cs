@@ -9,7 +9,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for validating client access permissions based on contact associations.
 /// </summary>
-public class ClientAccessValidatorService(IClientRepository clientRepo) : IClientAccessValidatorService
+public sealed class ClientAccessValidatorService(IClientRepository clientRepo) : IClientAccessValidatorService
 {
     /// <summary>
     /// Validates that a contact has access to the specified client IDs.
