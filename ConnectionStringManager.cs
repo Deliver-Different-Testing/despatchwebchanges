@@ -13,7 +13,7 @@ public class ConnectionStringManager(
     IMemoryCache memoryCache)
     : IConnectionStringManager
 {
-    private static readonly SemaphoreSlim Semaphore = new(1, 1);
+    private static readonly SemaphoreSlim WriteSemaphore = new(1, 1);
 
     // Cache settings - using sliding expiration so active users stay cached
     private static readonly TimeSpan CacheSlidingExpiry = TimeSpan.FromHours(8);
@@ -27,7 +27,7 @@ public class ConnectionStringManager(
         // Always set in memory cache first (fast, reliable)
         SetMemoryCache(tenantAppCacheKey, connectionString);
 
-        await Semaphore.WaitAsync();
+        await WriteSemaphore.WaitAsync();
         try
         {
             var options = new DistributedCacheEntryOptions
@@ -47,21 +47,29 @@ public class ConnectionStringManager(
         }
         finally
         {
-            Semaphore.Release();
+            WriteSemaphore.Release();
         }
     }
 
-    public async Task<string> GetConnectionStringAsync(string tenantAppCacheKey)
+    public string GetConnectionStringFromMemoryCache(string tenantAppCacheKey)
     {
-        // Try memory cache first (fastest)
-        if (memoryCache.TryGetValue(tenantAppCacheKey, out string cachedConnectionString)
-            && !string.IsNullOrEmpty(cachedConnectionString))
+        return memoryCache.TryGetValue(tenantAppCacheKey, out string cached)
+            && !string.IsNullOrEmpty(cached)
+                ? cached
+                : null;
+    }
+
+    public async Task<string?> GetConnectionStringAsync(string tenantAppCacheKey)
+    {
+        // Try memory cache first (fastest, no async overhead)
+        var memoryCached = GetConnectionStringFromMemoryCache(tenantAppCacheKey);
+        if (memoryCached != null)
         {
             Log.Debug("Connection string retrieved from memory cache for {CacheKey}", tenantAppCacheKey);
-            return cachedConnectionString;
+            return memoryCached;
         }
 
-        // Try distributed cache with retry logic
+        // Try distributed cache with retry logic (no semaphore — IDistributedCache is thread-safe)
         var connectionString = await GetFromDistributedCacheWithRetryAsync(tenantAppCacheKey);
 
         if (!string.IsNullOrEmpty(connectionString))
@@ -81,7 +89,6 @@ public class ConnectionStringManager(
 
         for (var attempt = 1; attempt <= MaxRetryAttempts; attempt++)
         {
-            await Semaphore.WaitAsync();
             try
             {
                 var connectionString = await distributedCache.GetStringAsync(tenantAppCacheKey);
@@ -116,10 +123,6 @@ public class ConnectionStringManager(
                     "Failed to retrieve connection string from distributed cache for {CacheKey} after {MaxAttempts} attempts",
                     tenantAppCacheKey, MaxRetryAttempts);
                 return null;
-            }
-            finally
-            {
-                Semaphore.Release();
             }
         }
 

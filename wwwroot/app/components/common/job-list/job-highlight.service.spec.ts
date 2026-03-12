@@ -218,9 +218,7 @@ describe('JobHighlightService', () => {
         });
 
         it('should pass a copy of the IDs to listeners', () => {
-            let receivedIds: number[] = [];
             service.subscribe((ids) => {
-                receivedIds = ids;
                 ids.push(999); // Try to modify
             });
 

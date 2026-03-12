@@ -44,13 +44,13 @@ public class JobReportServiceLargeDataTests
         const int recordCount = 20000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
@@ -97,13 +97,13 @@ public class JobReportServiceLargeDataTests
         // Arrange
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
         // Skip S3 upload
@@ -138,13 +138,13 @@ public class JobReportServiceLargeDataTests
         const int recordCount = 10000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
@@ -175,13 +175,13 @@ public class JobReportServiceLargeDataTests
         const int recordCount = 50000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
@@ -222,13 +222,13 @@ public class JobReportServiceLargeDataTests
         };
 
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
@@ -269,13 +269,13 @@ public class JobReportServiceLargeDataTests
         };
 
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
@@ -305,13 +305,13 @@ public class JobReportServiceLargeDataTests
     {
         // Arrange
         _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<List<int>>(),
-                It.IsAny<List<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
+                It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<DateTime>(),
                 It.IsAny<DateTime>(),
-                It.IsAny<List<int>>()))
+                It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync([]);
 
         _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))

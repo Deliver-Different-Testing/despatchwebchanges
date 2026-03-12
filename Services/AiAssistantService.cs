@@ -35,7 +35,7 @@ public sealed class AiAssistantService(
 
     public async Task<AiChatResponse> ChatAsync(List<AiMessage> messages, CancellationToken ct = default)
     {
-        var systemPrompt = BuildSystemPrompt();
+        var systemPrompt = await BuildSystemPromptAsync();
         var tools = GetToolDefinitions();
 
         // Sanitize user messages to strip PII before sending to Claude
@@ -114,7 +114,7 @@ public sealed class AiAssistantService(
         List<AiMessage> messages,
         [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var systemPrompt = BuildSystemPrompt();
+        var systemPrompt = await BuildSystemPromptAsync();
 
         // Sanitize user messages to strip PII before sending to Claude
         var sanitizedMessages = messages.Select(m => new AiMessage
@@ -128,9 +128,9 @@ public sealed class AiAssistantService(
             yield return chunk;
     }
 
-    private string BuildSystemPrompt()
+    private async Task<string> BuildSystemPromptAsync()
     {
-        var staffInfo = tenantInfo.GetStaffInfoAsync().GetAwaiter().GetResult();
+        var staffInfo = await tenantInfo.GetStaffInfoAsync();
         var staffName = staffInfo?.Text ?? "Operator";
         var timezone = tenantInfo.GetTenantTimeZone();
         var currentTime = clock.TenantNow;
@@ -158,83 +158,80 @@ public sealed class AiAssistantService(
                 """;
     }
 
-    private static List<AiToolDefinition> GetToolDefinitions()
-    {
-        return
-        [
-            new AiToolDefinition
-            {
-                Name = "lookup_job",
-                Description =
-                    "Get detailed information about a specific job by its numeric ID. Returns job details including status, addresses, courier, pricing, and timestamps.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
-            },
+    private static List<AiToolDefinition> GetToolDefinitions() =>
+    [
+        new()
+        {
+            Name = "lookup_job",
+            Description =
+                "Get detailed information about a specific job by its numeric ID. Returns job details including status, addresses, courier, pricing, and timestamps.",
+            InputSchemaJson =
+                """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "search_jobs",
-                Description =
-                    "Search for open/active jobs. Can filter by search text. Returns a list of jobs with basic details.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{"searchText":{"type":"string","description":"Optional search text to filter jobs by job number, client, address, etc."}},"required":[]}"""
-            },
+        new()
+        {
+            Name = "search_jobs",
+            Description =
+                "Search for open/active jobs. Can filter by search text. Returns a list of jobs with basic details.",
+            InputSchemaJson =
+                """{"type":"object","properties":{"searchText":{"type":"string","description":"Optional search text to filter jobs by job number, client, address, etc."}},"required":[]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "search_couriers",
-                Description =
-                    "Search for couriers by name or code. Returns matching courier suggestions.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{"searchTerm":{"type":"string","description":"Search term to find couriers by name or code"}},"required":["searchTerm"]}"""
-            },
+        new()
+        {
+            Name = "search_couriers",
+            Description =
+                "Search for couriers by name or code. Returns matching courier suggestions.",
+            InputSchemaJson =
+                """{"type":"object","properties":{"searchTerm":{"type":"string","description":"Search term to find couriers by name or code"}},"required":["searchTerm"]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "get_job_notes",
-                Description =
-                    "Get all notes/comments attached to a specific job. Returns note text, author, date, and type.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
-            },
+        new()
+        {
+            Name = "get_job_notes",
+            Description =
+                "Get all notes/comments attached to a specific job. Returns note text, author, date, and type.",
+            InputSchemaJson =
+                """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "get_job_events",
-                Description =
-                    "Get event/task history for a specific job. Events include late alerts, ETAs, status changes, and other tracking events.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
-            },
+        new()
+        {
+            Name = "get_job_events",
+            Description =
+                "Get event/task history for a specific job. Events include late alerts, ETAs, status changes, and other tracking events.",
+            InputSchemaJson =
+                """{"type":"object","properties":{"jobId":{"type":"integer","description":"The numeric job ID"}},"required":["jobId"]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "get_courier_details",
-                Description =
-                    "Get detailed information about a specific courier by their ID, including status and current details.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{"courierId":{"type":"integer","description":"The courier ID"}},"required":["courierId"]}"""
-            },
+        new()
+        {
+            Name = "get_courier_details",
+            Description =
+                "Get detailed information about a specific courier by their ID, including status and current details.",
+            InputSchemaJson =
+                """{"type":"object","properties":{"courierId":{"type":"integer","description":"The courier ID"}},"required":["courierId"]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "get_overview_stats",
-                Description =
-                    "Get a high-level overview of current operations showing active, inactive, and completed job counts.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{},"required":[]}"""
-            },
+        new()
+        {
+            Name = "get_overview_stats",
+            Description =
+                "Get a high-level overview of current operations showing active, inactive, and completed job counts.",
+            InputSchemaJson =
+                """{"type":"object","properties":{},"required":[]}"""
+        },
 
-            new AiToolDefinition
-            {
-                Name = "get_active_couriers",
-                Description =
-                    "Get a list of all currently active couriers with their status information.",
-                InputSchemaJson =
-                    """{"type":"object","properties":{},"required":[]}"""
-            }
-        ];
-    }
+        new()
+        {
+            Name = "get_active_couriers",
+            Description =
+                "Get a list of all currently active couriers with their status information.",
+            InputSchemaJson =
+                """{"type":"object","properties":{},"required":[]}"""
+        }
+    ];
 
     private async Task<string> ExecuteToolAsync(AiToolCall toolCall)
     {

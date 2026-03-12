@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -31,9 +32,10 @@ public class BaseJobRepository(
         bool isInternal,
         bool isUsTenant,
         string clientIds,
-        List<int> selectedViewIds,
+        IReadOnlyList<int> selectedViewIds,
         NationwideWidget? windowPane = null,
-        int? selectedClearListId = null
+        int? selectedClearListId = null,
+        CancellationToken cancellationToken = default
     )
     {
         try
@@ -106,7 +108,7 @@ public class BaseJobRepository(
 
             if (requestedPage > 0)
             {
-                totalCount = await projectedQuery.Select(j => j.Id).Distinct().CountAsync();
+                totalCount = await projectedQuery.Select(j => j.Id).Distinct().CountAsync(cancellationToken);
                 projectedQuery = projectedQuery
                     .OrderBy(j => j.Id)
                     .Skip((requestedPage - 1) * pageSize)
@@ -114,7 +116,7 @@ public class BaseJobRepository(
                 hasMore = totalCount > requestedPage * pageSize;
             }
 
-            var allJobs = await projectedQuery.ToListAsync();
+            var allJobs = await projectedQuery.ToListAsync(cancellationToken);
 
             allJobs = allJobs
                 .GroupBy(j => j.Id)
@@ -172,7 +174,7 @@ public class BaseJobRepository(
         }
     }
 
-    private async Task<IQueryable<TucJob>> BuildBaseQueryAsync(List<int> selectedViewIds, bool isUsTenant)
+    private async Task<IQueryable<TucJob>> BuildBaseQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
     {
         var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
 
@@ -186,7 +188,7 @@ public class BaseJobRepository(
         return query.TagWith($"BuildBaseQuery - Views: {selectedViewIds?.Count ?? 0}");
     }
 
-    private async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(List<int> selectedViewIds, bool isUsTenant)
+    private async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(IReadOnlyList<int> selectedViewIds, bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
@@ -402,7 +404,7 @@ public class BaseJobRepository(
              (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
     }
 
-    protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
+    protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds, CancellationToken cancellationToken = default)
     {
         const int maxMapCoordinates = 5000;
 
@@ -432,7 +434,7 @@ public class BaseJobRepository(
                         ToAddress = job.UcjbToAddr
                     })
                 .Take(maxMapCoordinates)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             return jobCoordinates;
         }
@@ -809,7 +811,7 @@ public class BaseJobRepository(
     /// <summary>
     /// Gets current amounts for a list of jobs for bulk price preview/comparison.
     /// </summary>
-    protected async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
+    protected async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds)
     {
         // Check live jobs
         var liveJobs = await Context.TucJobs

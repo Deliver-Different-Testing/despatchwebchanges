@@ -494,7 +494,7 @@ public sealed class RateJobService(
         }
         else
         {
-            // Get closest airports in parallel — these are independent stored procedure calls
+            // Get the closest airports in parallel — these are independent stored procedure calls
             var fromAirportsTask = jobRepository.GetClosestAirportsAsync(
                 request.PickupLat ?? 0,
                 request.PickupLong ?? 0);

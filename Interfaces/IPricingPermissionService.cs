@@ -42,7 +42,7 @@ public interface IPricingPermissionService
     /// </summary>
     /// <param name="jobIds">The list of job IDs to validate access for.</param>
     /// <returns>List of inaccessible job IDs (empty if all accessible).</returns>
-    Task<IReadOnlyList<int>> ValidateJobsAccessAsync(List<int> jobIds);
+    Task<IReadOnlyList<int>> ValidateJobsAccessAsync(IReadOnlyList<int> jobIds);
 
     /// <summary>
     /// Validates that the pricing mode is a valid, allowed value.

@@ -82,7 +82,7 @@ public sealed class PricingPermissionService(
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<int>> ValidateJobsAccessAsync(List<int> jobIds)
+    public async Task<IReadOnlyList<int>> ValidateJobsAccessAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
             return [];

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -546,7 +547,7 @@ public sealed class SplitJobService(
             }
 
             // Rate child jobs in parallel with bounded concurrency
-            var jobRates = new List<(int JobId, decimal Rate)>(childJobs.Count);
+            var jobRates = new ConcurrentBag<(int JobId, decimal Rate)>();
             await Parallel.ForEachAsync(childJobs, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (child, _) =>
             {
                 var rate = 0m;
@@ -571,19 +572,22 @@ public sealed class SplitJobService(
                     Log.Warning(ex, "Failed to rate job {JobId}. Using rate 0.", child.UcjbId);
                 }
 
-                lock (jobRates) { jobRates.Add((child.UcjbId, rate)); }
+                jobRates.Add((child.UcjbId, rate));
             });
 
+            // Materialize to list for indexed access in distribution logic
+            var jobRatesList = jobRates.ToList();
+
             // Sum all rates
-            var totalRate = jobRates.Sum(c => c.Rate);
+            var totalRate = jobRatesList.Sum(c => c.Rate);
 
             // Distribute parent amount proportionally based on calculated rates
             var amounts = new Dictionary<int, decimal>();
             var runningTotal = 0m;
-            for (var i = 0; i < jobRates.Count; i++)
+            for (var i = 0; i < jobRatesList.Count; i++)
             {
                 decimal jobAmount;
-                if (i == jobRates.Count - 1)
+                if (i == jobRatesList.Count - 1)
                 {
                     // Last job absorbs rounding difference to ensure exact balance
                     jobAmount = parentAmount - runningTotal;
@@ -591,16 +595,16 @@ public sealed class SplitJobService(
                 else if (totalRate == 0m)
                 {
                     // All rates are 0: distribute evenly
-                    jobAmount = Math.Round(parentAmount / jobRates.Count, 2);
+                    jobAmount = Math.Round(parentAmount / jobRatesList.Count, 2);
                 }
                 else
                 {
-                    var percentage = jobRates[i].Rate / totalRate;
+                    var percentage = jobRatesList[i].Rate / totalRate;
                     jobAmount = Math.Round(percentage * parentAmount, 2);
                 }
 
                 runningTotal += jobAmount;
-                amounts[jobRates[i].JobId] = jobAmount;
+                amounts[jobRatesList[i].JobId] = jobAmount;
             }
 
             // Update each child's amount and rated flag in a single statement per child

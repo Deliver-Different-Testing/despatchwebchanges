@@ -5,11 +5,13 @@ using System.Threading;
 
 namespace DespatchWeb.Services;
 
-public sealed class BackgroundTaskStatus
+public sealed record BackgroundTaskStatus(
+    string Status = "Running",
+    string ErrorMessage = null,
+    DateTime CreatedAt = default)
 {
-    public string Status { get; set; } = "Running";
-    public string ErrorMessage { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    // Default CreatedAt to UtcNow when not specified
+    public DateTime CreatedAt { get; init; } = CreatedAt == default ? DateTime.UtcNow : CreatedAt;
 }
 
 public sealed class BackgroundTaskTracker : IDisposable
@@ -26,17 +28,15 @@ public sealed class BackgroundTaskTracker : IDisposable
         return taskId;
     }
 
-    public void SetCompleted(string taskId)
-    {
-        if (_tasks.TryGetValue(taskId, out var status)) status.Status = "Completed";
-    }
+    public void SetCompleted(string taskId) =>
+        _tasks.AddOrUpdate(taskId,
+            _ => new BackgroundTaskStatus("Completed"),
+            (_, existing) => existing with { Status = "Completed" });
 
-    public void SetFailed(string taskId, string errorMessage)
-    {
-        if (!_tasks.TryGetValue(taskId, out var status)) return;
-        status.Status = "Failed";
-        status.ErrorMessage = errorMessage;
-    }
+    public void SetFailed(string taskId, string errorMessage) =>
+        _tasks.AddOrUpdate(taskId,
+            _ => new BackgroundTaskStatus("Failed", errorMessage),
+            (_, existing) => existing with { Status = "Failed", ErrorMessage = errorMessage });
 
     public BackgroundTaskStatus GetStatus(string taskId) => _tasks.TryGetValue(taskId, out var status) ? status : null;
 

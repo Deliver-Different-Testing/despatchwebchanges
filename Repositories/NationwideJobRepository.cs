@@ -33,7 +33,8 @@ public class NationwideJobRepository(
     private readonly ITenantClock _clock = clock;
 
     public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
-        List<string> webhookIds)
+        IReadOnlyList<string> webhookIds,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(webhookIds);
 
@@ -58,7 +59,7 @@ public class NationwideJobRepository(
         ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
 
-        await using var transaction = await Context.Database.BeginTransactionAsync();
+        await using var transaction = await Context.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             Log.Debug("Fetching job details for JobId: {JobId}, PrimaryFlight: {PrimaryFlightNumber}",
@@ -67,10 +68,10 @@ public class NationwideJobRepository(
             var job = await Context.TucJobs
                 .Include(j => j.Parent)
                 .Where(j => j.UcjbId == requestData.JobId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(cancellationToken);
             ArgumentNullException.ThrowIfNull(job);
 
-            var timeZones = await Context.TimeZones.ToListAsync();
+            var timeZones = await Context.TimeZones.ToListAsync(cancellationToken);
 
             Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
                 job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
@@ -151,7 +152,7 @@ public class NationwideJobRepository(
             Log.Debug("Saving changes for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
                 primaryFlightNumber, requestData.JobId);
 
-            await Context.SaveChangesAsync();
+            await Context.SaveChangesAsync(cancellationToken);
 
             // Create journey record (requires primary flight record ID from first save)
             var journeyRecord = new JobDeliveryJourney
@@ -163,10 +164,10 @@ public class NationwideJobRepository(
                 UpdatedAt = DateTime.UtcNow,
                 UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
             };
-            await Context.JobDeliveryJourneys.AddAsync(journeyRecord);
+            await Context.JobDeliveryJourneys.AddAsync(journeyRecord, cancellationToken);
 
-            await Context.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await Context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             Log.Information(
                 "Successfully completed AddJobNationwideAsync for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}, FlightId: {FlightId}",
@@ -354,7 +355,8 @@ public class NationwideJobRepository(
     public async Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
         bool isUsTenant,
         string clientIds, NationwideWidget windowPane,
-        List<int> selectedViewIds)
+        IReadOnlyList<int> selectedViewIds,
+        CancellationToken cancellationToken = default)
     {
         if (!isInternal && string.IsNullOrEmpty(clientIds))
             return new JobSearchResult
@@ -371,7 +373,8 @@ public class NationwideJobRepository(
             isUsTenant,
             clientIds,
             selectedViewIds,
-            windowPane);
+            windowPane,
+            cancellationToken: cancellationToken);
     }
 
     public async Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync() =>
@@ -1169,7 +1172,7 @@ public class NationwideJobRepository(
     private async Task<TucJobNationwide> CreateFlightRecordsAsync(
         TucJob job,
         List<FlightSegmentViewModel> segments,
-        List<string> webhookIds,
+        IReadOnlyList<string> webhookIds,
         List<TimeZone> timeZones,
         int? departureTimeZoneId,
         DateTimeOffset lastFlightArrivalTime,

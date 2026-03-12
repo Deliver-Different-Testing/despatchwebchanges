@@ -2,7 +2,7 @@ using System;
 
 namespace DespatchWeb.Models.Accessorial;
 
-public class JobAccessorialChargeDto
+public record JobAccessorialChargeDto
 {
     public int JobAccessorialChargeId { get; init; }
     public int JobId { get; init; }

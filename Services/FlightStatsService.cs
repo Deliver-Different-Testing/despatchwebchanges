@@ -190,7 +190,7 @@ public sealed class FlightStatsService(
         int? departureAirportId = null,
         int? arrivalAirportId = null,
         string codeType = null,
-        List<string> extendedOptions = null,
+        IReadOnlyList<string> extendedOptions = null,
         int minimumLayoverMinutes = 60
     )
     {

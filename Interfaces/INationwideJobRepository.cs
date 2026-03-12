@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -12,16 +13,18 @@ namespace DespatchWeb.Interfaces;
 public interface INationwideJobRepository
 {
     Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
-        bool isUsTenant, string clientIds, NationwideWidget windowPane, List<int> selectedViewIds);
+        bool isUsTenant, string clientIds, NationwideWidget windowPane, IReadOnlyList<int> selectedViewIds,
+        CancellationToken cancellationToken = default);
 
-    Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, List<string> webhookIds);
+    Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, IReadOnlyList<string> webhookIds,
+        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<AgentViewModel>> GetAgentsAsync(int jobId);
 
     Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false);
     Task<IReadOnlyList<AirlineSuggestion>> GetActiveAirlineOptionsAsync();
     Task<IReadOnlyList<string>> GetActiveAirlineCodesAsync();
-    Task<string> GetAirlineCodeByIdAsync(int airlineId);
+    Task<string?> GetAirlineCodeByIdAsync(int airlineId);
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
     Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task RestoreNationwideJobAsync(int jobId);
@@ -29,7 +32,7 @@ public interface INationwideJobRepository
     Task<IReadOnlyList<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
     Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId);
 
-    Task<string> GetAgentNameAsync(int agentId);
+    Task<string?> GetAgentNameAsync(int agentId);
     Task<RecoveryAgentJobViewModel> GetRecoveryAgentDialogDataAsync(int jobId);
     Task<IReadOnlyList<Suggestion>> GetAgentOptionsByAirportAsync(int airportId);
     Task<IReadOnlyList<Suggestion>> GetAllActiveAirportsWithAgentsAsync();

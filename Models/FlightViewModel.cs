@@ -6,56 +6,56 @@ namespace DespatchWeb.Models;
 
 public class FlightViewModel
 {
-    public string Airline { get; set; }
-    public string AirlineCode { get; set; }
-    public string FlightNumber { get; set; }
-    public DateTimeOffset DepartureTime { get; set; }
-    public DateTimeOffset ArrivalTime { get; set; }
-    public string DepartureAirport { get; set; }
-    public string ArrivalAirport { get; set; }
-    public TimeSpan Duration { get; set; }
-    public int Stops { get; set; }
-    public string Aircraft { get; set; }
-    public List<string> ServiceClasses { get; set; }
-    public bool IsCodeShare { get; set; }
+    public string Airline { get; init; }
+    public string AirlineCode { get; init; }
+    public string FlightNumber { get; init; }
+    public DateTimeOffset DepartureTime { get; init; }
+    public DateTimeOffset ArrivalTime { get; init; }
+    public string DepartureAirport { get; init; }
+    public string ArrivalAirport { get; init; }
+    public TimeSpan Duration { get; init; }
+    public int Stops { get; init; }
+    public string Aircraft { get; init; }
+    public List<string> ServiceClasses { get; init; }
+    public bool IsCodeShare { get; init; }
     public decimal Amount { get; set; }
-    public string CodeShareAirline { get; set; }
-    public bool IsMultiSegment { get; set; }
-    public int ElapsedTime { get; set; }
-    public int Score { get; set; }
-    public string ConnectionId { get; set; }
-    public List<FlightSegmentViewModel> FlightSegments { get; set; } = [];
-    public string DepartureTimeZone { get; set; }
-    public string ArrivalTimeZone { get; set; }
+    public string CodeShareAirline { get; init; }
+    public bool IsMultiSegment { get; init; }
+    public int ElapsedTime { get; init; }
+    public int Score { get; init; }
+    public string ConnectionId { get; init; }
+    public List<FlightSegmentViewModel> FlightSegments { get; init; } = [];
+    public string DepartureTimeZone { get; init; }
+    public string ArrivalTimeZone { get; init; }
 }
 
 public class FlightSegmentViewModel : ScheduledFlight
 {
     public new DateTimeOffset DepartureTime { get; set; }
     public new DateTimeOffset ArrivalTime { get; set; }
-    public int SegmentOrder { get; set; }
-    public int StopsInSegment { get; set; }
-    public int DepartureAirportId { get; set; }
-    public string DepartureAirportName { get; set; }
-    public string DepartureAirportCity { get; set; }
-    public string DepartureAirportCountry { get; set; }
-    public string DepartureAirportTimeZone { get; set; }
-    public int DepartureAirportTimeZoneId { get; set; }
-    public int ArrivalAirportId { get; set; }
-    public string ArrivalAirportName { get; set; }
-    public string ArrivalAirportCity { get; set; }
-    public string ArrivalAirportCountry { get; set; }
-    public string ArrivalAirportTimeZone { get; set; }
-    public int ArrivalAirportTimeZoneId { get; set; }
-    public string AircraftName { get; set; }
-    public string AircraftType { get; set; }
-    public string AirlineName { get; set; }
-    public new string CarrierFsCode { get; set; }
-    public new string FlightNumber { get; set; }
-    public new string DepartureAirportFsCode { get; set; }
-    public new string ArrivalAirportFsCode { get; set; }
-    public new string FlightEquipmentIataCode { get; set; }
-    public new int? ElapsedTime { get; set; }
+    public int SegmentOrder { get; init; }
+    public int StopsInSegment { get; init; }
+    public int DepartureAirportId { get; init; }
+    public string DepartureAirportName { get; init; }
+    public string DepartureAirportCity { get; init; }
+    public string DepartureAirportCountry { get; init; }
+    public string DepartureAirportTimeZone { get; init; }
+    public int DepartureAirportTimeZoneId { get; init; }
+    public int ArrivalAirportId { get; init; }
+    public string ArrivalAirportName { get; init; }
+    public string ArrivalAirportCity { get; init; }
+    public string ArrivalAirportCountry { get; init; }
+    public string ArrivalAirportTimeZone { get; init; }
+    public int ArrivalAirportTimeZoneId { get; init; }
+    public string AircraftName { get; init; }
+    public string AircraftType { get; init; }
+    public string AirlineName { get; init; }
+    public new string CarrierFsCode { get; init; }
+    public new string FlightNumber { get; init; }
+    public new string DepartureAirportFsCode { get; init; }
+    public new string ArrivalAirportFsCode { get; init; }
+    public new string FlightEquipmentIataCode { get; init; }
+    public new int? ElapsedTime { get; init; }
     public new string ArrivalTerminal { get; set; }
     public new string DepartureTerminal { get; set; }
 }
