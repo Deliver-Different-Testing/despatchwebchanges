@@ -25,7 +25,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for job-related spreadsheet operations including CSV exports, file parsing, and S3 archival.
 /// </summary>
-public class JobReportService(
+public sealed class JobReportService(
     IJobRepository jobRepository,
     IRecurringJobRepository recurringJobRepository,
     ITenantClock clock,
@@ -229,7 +229,7 @@ public class JobReportService(
     /// <summary>
     /// Parses an uploaded Excel or CSV file into job manual price models.
     /// </summary>
-    public async Task<List<JobManualPriceModel>> ParseBulkPriceFileAsync(IFormFile file)
+    public async Task<IReadOnlyList<JobManualPriceModel>> ParseBulkPriceFileAsync(IFormFile file)
     {
         ValidateUploadedFile(file);
 

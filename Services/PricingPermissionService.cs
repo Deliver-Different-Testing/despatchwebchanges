@@ -12,7 +12,7 @@ namespace DespatchWeb.Services;
 /// Service for validating pricing-related permissions.
 /// Validates job access based on user type (staff vs client contact).
 /// </summary>
-public class PricingPermissionService(
+public sealed class PricingPermissionService(
     ITenantInfoService tenantInfoService,
     IClientRepository clientRepository,
     IDbContextFactory<DespatchContext> contextFactory) : IPricingPermissionService
@@ -82,7 +82,7 @@ public class PricingPermissionService(
     }
 
     /// <inheritdoc />
-    public async Task<List<int>> ValidateJobsAccessAsync(List<int> jobIds)
+    public async Task<IReadOnlyList<int>> ValidateJobsAccessAsync(List<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
             return [];

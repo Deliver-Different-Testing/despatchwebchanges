@@ -14,15 +14,15 @@ public interface ICourierRepository
 
     Task<TruckCourierStatusViewModel> TruckCourierStatusAsync(int courierId);
 
-   Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data);
+   Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data);
 
-    Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
+    Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 
-    Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync();
+    Task<IReadOnlyList<ActiveCouriersViewModel>> ActiveCouriersAsync();
 
-    Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false);
+    Task<IReadOnlyList<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false);
 
-    Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync();
+    Task<IReadOnlyList<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 
     Task<ClearListViewModel> GetClearListsAsync(
         List<int> despatchViewIds,
@@ -35,21 +35,21 @@ public interface ICourierRepository
         bool includeCouriers = false
     );
 
-    Task<List<Suggestion>> GetVehicleSizesAsync();
+    Task<IReadOnlyList<Suggestion>> GetVehicleSizesAsync();
 
-    Task<List<Suggestion>> GetAllRegionsAsync();
+    Task<IReadOnlyList<Suggestion>> GetAllRegionsAsync();
 
-    Task<List<Suggestion>> GetAllSpeedsAsync();
+    Task<IReadOnlyList<Suggestion>> GetAllSpeedsAsync();
     
     /* Driver Management Dashboard */
-    Task<List<Suggestion>> SearchAllCouriersAsync(string searchTerm);
+    Task<IReadOnlyList<Suggestion>> SearchAllCouriersAsync(string searchTerm);
     Task<CourierDataDashboardViewModel> GetCourierDetailsForDashboardAsync(int courierId);
 
     Task<CourierCompliancePaginatedResponse> GetAllCourierComplianceAsync(CourierComplianceFilterRequest request);
 
     Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(CourierAfterHoursFilterRequest request);
     Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(TodayActiveDriversFilterRequest request);
-    Task<List<Suggestion>> GetAllFleetOptionsAsync();
+    Task<IReadOnlyList<Suggestion>> GetAllFleetOptionsAsync();
     Task<CourierDailyEarningsPaginatedResponse> GetCourierDailyEarningsAsync(PaginatedRequest request);
     Task<PaginatedResponse<CourierEmailViewModel>> GetCourierEmailsAsync(PaginatedRequest request);
     Task SendEmailToCouriersAsync(GroupEmailDataViewModel request);
@@ -58,13 +58,13 @@ public interface ICourierRepository
     Task DeleteAfterHoursCourierScheduleAsync(int afterHoursScheduleId);
     Task<Suggestion> GetExactCourierByCodeAsync(string courierCode);
 
-    Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
+    Task<IReadOnlyList<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
     Task ResetClearListAreaOrderAsync(int courierId);
 
     /* Driver Management Dashboard - Export (no pagination) */
-    Task<List<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(TodayActiveDriversFilterRequest request);
-    Task<List<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(CourierComplianceFilterRequest request);
-    Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(CourierAfterHoursFilterRequest request);
-    Task<List<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request);
-    Task<List<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(PaginatedRequest request);
+    Task<IReadOnlyList<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(TodayActiveDriversFilterRequest request);
+    Task<IReadOnlyList<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(CourierComplianceFilterRequest request);
+    Task<IReadOnlyList<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(CourierAfterHoursFilterRequest request);
+    Task<IReadOnlyList<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request);
+    Task<IReadOnlyList<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(PaginatedRequest request);
 }

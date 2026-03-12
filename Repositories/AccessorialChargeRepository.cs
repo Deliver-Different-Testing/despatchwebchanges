@@ -44,7 +44,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             Created = jac.Created
         };
 
-    public async Task<List<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId) =>
+    public async Task<IReadOnlyList<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId) =>
         await Context.AccessorialChargeGroupMembers
             .Where(acgm => acgm.AccessorialChargeGroupId == accessorialChargeGroupId)
             .Select(acgm => acgm.AccessorialCharge)
@@ -75,7 +75,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             })
             .ToListAsync();
 
-    public async Task<List<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId) =>
+    public async Task<IReadOnlyList<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId) =>
         await Context.JobAccessorialCharges
             .Where(jac => jac.JobId == jobId)
             .OrderBy(jac => jac.Created)
@@ -126,7 +126,7 @@ public class AccessorialChargeRepository(IDbContextFactory<DespatchContext> cont
             .Select(j => j.UcjbAmount ?? 0m)
             .FirstOrDefaultAsync();
 
-    public async Task<List<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId)
+    public async Task<IReadOnlyList<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId)
     {
         var labels = new[] { "Pickup", "Flight", "Delivery" };
         var children = await Context.TucJobs

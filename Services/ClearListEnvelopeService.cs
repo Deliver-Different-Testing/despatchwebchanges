@@ -12,7 +12,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for calculating map envelope boundaries for clear list areas, including courier and job locations.
 /// </summary>
-public class ClearListEnvelopeService(
+public sealed class ClearListEnvelopeService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantClock clock) : IClearListEnvelopeService
 {

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class CreateMinimalTucJobResponse
+public readonly record struct CreateMinimalTucJobResponse
 {
     public bool Success { get; init; }
     public int? JobId { get; init; }

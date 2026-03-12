@@ -6,5 +6,5 @@ namespace DespatchWeb.Interfaces;
 
 public interface IDeliveryJourneyService
 {
-    Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
+    Task<IReadOnlyList<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId);
 }

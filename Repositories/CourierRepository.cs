@@ -119,7 +119,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
+    public async Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
     {
         var correlationId = Guid.NewGuid().ToString();
 
@@ -171,7 +171,7 @@ public class CourierRepository(
         }
     }
 
-    private async Task<List<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
+    private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
         CourierLocationRequest data)
     {
         try
@@ -268,7 +268,7 @@ public class CourierRepository(
         }
     }
 
-    private async Task<List<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(
+    private async Task<IReadOnlyList<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(
         CourierLocationRequest data)
     {
         try
@@ -366,7 +366,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
+    public async Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId)
     {
         var results = await Context.Procedures.DESWEB_qryPotentialCouriersAsync(jobId);
         return results.Select(c => new PotentialCouriersViewModel
@@ -379,7 +379,7 @@ public class CourierRepository(
         }).ToList();
     }
 
-    public async Task<List<ActiveCouriersViewModel>> ActiveCouriersAsync()
+    public async Task<IReadOnlyList<ActiveCouriersViewModel>> ActiveCouriersAsync()
     {
         try
         {
@@ -405,7 +405,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false)
+    public async Task<IReadOnlyList<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false)
     {
         var isUsTenant = infoService.IsUsTenant();
         var now = clock.TenantNow;
@@ -477,7 +477,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<ActiveCouriersViewModel>> AllActiveCouriersAsync()
+    public async Task<IReadOnlyList<ActiveCouriersViewModel>> AllActiveCouriersAsync()
     {
         try
         {
@@ -508,7 +508,7 @@ public class CourierRepository(
         await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(
             clearListAreaId, country, includeCouriers);
 
-    private async Task<List<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
+    private async Task<IReadOnlyList<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
     {
         var today = clock.TenantToday;
         var results = await Context.GetActiveCouriersAsync(today);
@@ -928,7 +928,7 @@ public class CourierRepository(
     /// <summary>
     /// Query 1: Get all clear list areas for the given despatch view IDs.
     /// </summary>
-    private async Task<List<ClearListAreaDto>> GetClearListAreasAsync(List<int> despatchViewIds)
+    private async Task<IReadOnlyList<ClearListAreaDto>> GetClearListAreasAsync(List<int> despatchViewIds)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.TblDespatchViews
@@ -950,7 +950,7 @@ public class CourierRepository(
     /// <summary>
     /// Query 3&4: Get all courier data with GPS, Fleet info.
     /// </summary>
-    private async Task<List<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly)
+    private async Task<IReadOnlyList<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.TucCouriers
@@ -1005,7 +1005,7 @@ public class CourierRepository(
     /// <summary>
     /// Query 2: Get polygon mappings for clear list areas (cached).
     /// </summary>
-    private async Task<List<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds)
+    private async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds)
     {
         var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
 
@@ -1026,7 +1026,7 @@ public class CourierRepository(
     /// <summary>
     /// Query 7: Get area filters for total remaining calculation.
     /// </summary>
-    private async Task<Dictionary<string, string>> GetAreaFiltersAsync(List<ClearListAreaDto> clearLists)
+    private async Task<Dictionary<string, string>> GetAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         var clearListNames = clearLists.Select(cl => cl.AreaName);
@@ -1050,7 +1050,7 @@ public class CourierRepository(
     /// <summary>
     /// Query 4b: Get display orders for couriers.
     /// </summary>
-    private async Task<List<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds)
+    private async Task<IReadOnlyList<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
         return await context.TblClearListAreaOrders
@@ -1068,7 +1068,7 @@ public class CourierRepository(
     /// <summary>
     /// Query 5: Get all jobs for couriers.
     /// </summary>
-    private async Task<List<CourierJobSuburbDto>> GetAllJobsAsync(
+    private async Task<IReadOnlyList<CourierJobSuburbDto>> GetAllJobsAsync(
         List<int> courierIds, DateTime startDate, DateTime endDate)
     {
         await using var context = await _contextFactory.CreateDbContextAsync();
@@ -1251,7 +1251,7 @@ public class CourierRepository(
 
     private static List<ClearListSection> BuildClearListSection(
         List<ClearListResult> data,
-        List<CourierClearListDto> allCouriers,
+        IReadOnlyList<CourierClearListDto> allCouriers,
         int displayOrder
     )
     {
@@ -1275,7 +1275,7 @@ public class CourierRepository(
 
     private static CourierData BuildCourierData(
         ClearListResult result,
-        List<CourierClearListDto> allCouriers
+        IReadOnlyList<CourierClearListDto> allCouriers
     )
     {
         if (allCouriers == null)
@@ -1302,7 +1302,7 @@ public class CourierRepository(
             .Where(y => !string.IsNullOrWhiteSpace(y.Label))
             .ToList() ?? [];
 
-    public async Task<List<Suggestion>> SearchAllCouriersAsync(string searchTerm)
+    public async Task<IReadOnlyList<Suggestion>> SearchAllCouriersAsync(string searchTerm)
     {
         var searchPattern = $"%{searchTerm}%";
 
@@ -1859,7 +1859,7 @@ public class CourierRepository(
         return hours + "h " + minutes.ToString().PadLeft(2, '0') + "m";
     }
 
-    public async Task<List<Suggestion>> GetAllFleetOptionsAsync()
+    public async Task<IReadOnlyList<Suggestion>> GetAllFleetOptionsAsync()
     {
         var fleetOptions = await Context.TucCourierFleets
             .Select(f => new Suggestion
@@ -2289,7 +2289,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync()
+    public async Task<IReadOnlyList<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync()
     {
         var now = clock.TenantNow;
 
@@ -2387,11 +2387,11 @@ public class CourierRepository(
         }
     }
 
-    public async Task<List<Suggestion>> GetVehicleSizesAsync() => await Context.GetAllVehicleSizesAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetVehicleSizesAsync() => await Context.GetAllVehicleSizesAsync();
 
-    public async Task<List<Suggestion>> GetAllRegionsAsync() => await Context.GetAllRegionsAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetAllRegionsAsync() => await Context.GetAllRegionsAsync();
 
-    public async Task<List<Suggestion>> GetAllSpeedsAsync() => await Context.GetAllSpeedsAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetAllSpeedsAsync() => await Context.GetAllSpeedsAsync();
 
 
     /// <summary>
@@ -2420,7 +2420,7 @@ public class CourierRepository(
 
     private const int MaxExportRows = 10_000;
 
-    public async Task<List<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(
+    public async Task<IReadOnlyList<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(
         TodayActiveDriversFilterRequest request)
     {
         var now = clock.TenantNow;
@@ -2505,7 +2505,7 @@ public class CourierRepository(
         }).ToList();
     }
 
-    public async Task<List<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(
+    public async Task<IReadOnlyList<CourierComplianceViewModel>> GetCourierComplianceForExportAsync(
         CourierComplianceFilterRequest request)
     {
         var now = clock.TenantNow;
@@ -2588,7 +2588,7 @@ public class CourierRepository(
         }).ToList();
     }
 
-    public async Task<List<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(
+    public async Task<IReadOnlyList<AfterHoursCourierScheduleViewModel>> GetAfterHoursScheduleForExportAsync(
         CourierAfterHoursFilterRequest request)
     {
         var tenantTimezone = infoService.GetTenantTimeZone();
@@ -2658,7 +2658,7 @@ public class CourierRepository(
         }).ToList();
     }
 
-    public async Task<List<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request)
+    public async Task<IReadOnlyList<CourierEmailViewModel>> GetCourierEmailsForExportAsync(PaginatedRequest request)
     {
         var query = Context.TucCouriers
             .Where(c => c.UccrEmail != null);
@@ -2695,7 +2695,7 @@ public class CourierRepository(
             .ToListAsync();
     }
 
-    public async Task<List<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(
+    public async Task<IReadOnlyList<CourierDailyEarningsViewModel>> GetCourierDailyEarningsForExportAsync(
         PaginatedRequest request)
     {
         var now = clock.TenantNow;

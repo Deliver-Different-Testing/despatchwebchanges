@@ -8,7 +8,7 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
-public class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSettings> settings)
+public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSettings> settings)
     : IAiRateLimiter
 {
     private readonly AnthropicSettings _settings = settings.Value;

@@ -8,7 +8,7 @@ namespace DespatchWeb.Helpers;
 /// JSON converter that handles boolean values that may come as strings from Excel/CSV files.
 /// Supports: "True", "False", "true", "false", "1", "0", 1, 0, true, false
 /// </summary>
-public class StringToBooleanConverter : JsonConverter<bool?>
+public sealed class StringToBooleanConverter : JsonConverter<bool?>
 {
     public override bool? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

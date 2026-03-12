@@ -70,7 +70,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         public new Task<bool> IsJobArchived(int jobId)
             => base.IsJobArchived(jobId);
 
-        public new Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
+        public new Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
             => base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
 
         public new Task<int?> GetJobParentIdAsync(int jobId)
@@ -79,7 +79,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         public new Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
             => base.GetJobCurrentAmountsAsync(jobIds);
 
-        public new Task SaveMultipleBulkNotesAsync(List<int> bulkJobIds, string noteText, bool isImportant = false,
+        public new Task SaveMultipleBulkNotesAsync(IReadOnlyList<int> bulkJobIds, string noteText, bool isImportant = false,
             NoteType noteType = NoteType.InternalNote)
             => base.SaveMultipleBulkNotesAsync(bulkJobIds, noteText, isImportant, noteType);
     }

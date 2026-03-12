@@ -20,7 +20,7 @@ public class NoteRepository(
 {
     private const string Space = " ";
 
-    public async Task<List<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
+    public async Task<IReadOnlyList<TucNoteViewModel>> GetBulkJobNotesByBulkJobIdAsync(int bulkJobId)
     {
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
@@ -54,7 +54,7 @@ public class NoteRepository(
 
     private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
 
-    public async Task<List<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId) =>
+    public async Task<IReadOnlyList<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId) =>
         await IsJobArchived(jobId)
             ? await GetArchivedNotesByJobIdAsync(jobId)
             : await GetActiveNotesByJobIdAsync(jobId);
@@ -200,7 +200,7 @@ public class NoteRepository(
 
     public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
 
-    public async Task<List<NoteTypeViewModel>> GetNoteTypesAsync() =>
+    public async Task<IReadOnlyList<NoteTypeViewModel>> GetNoteTypesAsync() =>
         await Context.TucNoteTypes
             .Where(x => x.IsActive)
             .Select(x => new NoteTypeViewModel
@@ -385,7 +385,7 @@ public class NoteRepository(
         await Context.TucNoteHistories.AddAsync(history, cancellationToken);
     }
 
-    public async Task<List<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source)
+    public async Task<IReadOnlyList<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source)
     {
         var query = source switch
         {
@@ -451,7 +451,7 @@ public class NoteRepository(
     }
 
     // Query Methods
-    private async Task<List<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId)
+    private async Task<IReadOnlyList<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId)
     {
         var effectiveJobId = await GetEffectiveJobId(jobId, false);
         var tenantTimeZone = infoService.GetTenantTimeZone();
@@ -461,7 +461,7 @@ public class NoteRepository(
         return notes;
     }
 
-    private async Task<List<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
+    private async Task<IReadOnlyList<TucNoteViewModel>> GetArchivedNotesByJobIdAsync(int jobId)
     {
         var effectiveJobId = await GetEffectiveJobId(jobId, true);
         var tenantTimeZone = infoService.GetTenantTimeZone();
@@ -519,7 +519,7 @@ public class NoteRepository(
             };
     }
 
-    private static void UpdateNoteDate(List<TucNoteViewModel> notes, string tenantTimeZone)
+    private static void UpdateNoteDate(IReadOnlyList<TucNoteViewModel> notes, string tenantTimeZone)
     {
         foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
     }

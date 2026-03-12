@@ -429,7 +429,7 @@ public class RecurringJobRepository(
         }
     }
 
-    public async Task<List<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobBookingId)
+    public async Task<IReadOnlyList<TucNoteViewModel>> GetRecurringNotesByJobIdAsync(int jobBookingId)
     {
         var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobBookingId);
         var tenantTimeZone = _infoService.GetTenantTimeZone();
@@ -536,7 +536,7 @@ public class RecurringJobRepository(
         }
     }
 
-    public async Task<List<PrebookListViewModel>> GetAllRecurringJobsForExportAsync(RecurringJobQueryRequest request)
+    public async Task<IReadOnlyList<PrebookListViewModel>> GetAllRecurringJobsForExportAsync(RecurringJobQueryRequest request)
     {
         var isUsTenant = _infoService.IsUsTenant();
         var query = BuildRecurringJobQuery(request, isUsTenant);

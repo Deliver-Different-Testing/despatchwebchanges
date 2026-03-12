@@ -11,7 +11,7 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
-public class CourierReportService(
+public sealed class CourierReportService(
     ICourierRepository courierRepository,
     ITenantClock clock) : ICourierReportService
 {

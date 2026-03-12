@@ -16,7 +16,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for retrieving tenant-specific information including timezone, culture, and staff details from the current HTTP context.
 /// </summary>
-public class TenantInfoService(
+public sealed class TenantInfoService(
     IHttpContextAccessor contextAccessor,
     IDbContextFactory<DespatchContext> contextFactory,
     IMemoryCache cache) : ITenantInfoService

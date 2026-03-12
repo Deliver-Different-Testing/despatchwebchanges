@@ -593,7 +593,7 @@ public partial class JobRepository(
     /// Handles both active and archived jobs, updates parent job totals, and manages pricing breakdowns.
     /// </summary>
     /// <param name="data">List of job pricing updates to apply.</param>
-    public async Task UpdateManualPriceAsync(List<JobManualPriceModel> data)
+    public async Task UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data)
     {
         // Normalize all nullable values to 0 at the beginning
         data = data.Select(item => new JobManualPriceModel
@@ -989,7 +989,7 @@ public partial class JobRepository(
     /// <param name="clientIds">Optional filter by client IDs.</param>
     /// <param name="jobId"></param>
     /// <returns>List of job models formatted for download export.</returns>
-    public async Task<List<JobDownloadModel>> PodSearchDownloadAsync(
+    public async Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
         List<int> courierIds,
         List<int> speedIds,
         string wild,
@@ -1205,7 +1205,7 @@ public partial class JobRepository(
     /// Retrieves performance and spend report data for multiple clients.
     /// Uses Dapper with explicit SQL for optimal query plan and ordering.
     /// </summary>
-    public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
+    public async Task<IReadOnlyList<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
         [FromQuery] ClientJobsReportRequest request)
     {
         const string sql = """
@@ -2002,7 +2002,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves all available job speeds/types.
     /// </summary>
-    public async Task<List<Suggestion>> GetSpeedsAsync() =>
+    public async Task<IReadOnlyList<Suggestion>> GetSpeedsAsync() =>
         await Context.DesQryAllJobTypes
             .Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })
             .ToListAsync();
@@ -2011,7 +2011,7 @@ public partial class JobRepository(
     /// Searches job speeds/types by name.
     /// </summary>
     /// <param name="searchTerm">The search term to filter speeds by.</param>
-    public async Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm) =>
+    public async Task<IReadOnlyList<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm) =>
         await Context.DesQryAllJobTypes
             .Where(jt => EF.Functions.Like(jt.Name, $"%{searchTerm}%"))
             .Select(jt => new Suggestion { Id = jt.JobTypeId, Text = jt.Name })
@@ -2021,7 +2021,7 @@ public partial class JobRepository(
     /// Retrieves active contacts for a specific client.
     /// </summary>
     /// <param name="clientId">The client ID to get contacts for.</param>
-    public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId) =>
+    public async Task<IReadOnlyList<Suggestion>> GetContactsByClientIdAsync(int clientId) =>
         await Context.UtlQryContactLookups
             .Join(
                 Context.TblClientContacts,
@@ -2037,7 +2037,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves available locations where parcels can be left if recipient not home.
     /// </summary>
-    public async Task<List<Lookup>> LeaveParcelLocationsAsync() =>
+    public async Task<IReadOnlyList<Lookup>> LeaveParcelLocationsAsync() =>
         await Context.TblJobLeaveNotHomes
             .OrderBy(l => l.Sequence)
             .Select(x => new Lookup { Id = x.LeaveNotHomeId, Text = x.Name })
@@ -2046,7 +2046,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves available undeliverable location options (e.g., wrong address, refused).
     /// </summary>
-    public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync() =>
+    public async Task<IReadOnlyList<UndeliverableLocation>> UndeliverableLocationsAsync() =>
         await Context.TblUndeliverableLocations
             .OrderBy(u => u.Name)
             .Select(x => new UndeliverableLocation
@@ -2060,7 +2060,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves available internal job statuses for dispatch workflow.
     /// </summary>
-    public async Task<List<InternalStatus>> GetInternalStatusListAsync() =>
+    public async Task<IReadOnlyList<InternalStatus>> GetInternalStatusListAsync() =>
         await Context
             .TucJobInternalStatuses
             .Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
@@ -2078,7 +2078,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves all available job statuses.
     /// </summary>
-    public async Task<List<Suggestion>> GetStatusListAsync() =>
+    public async Task<IReadOnlyList<Suggestion>> GetStatusListAsync() =>
         await Context.TucJobStatuses
             .OrderBy(s => s.UcjsName)
             .Select(s => new Suggestion { Id = s.UcjsId, Text = s.UcjsName })
@@ -2087,7 +2087,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves event types for customer service and general events.
     /// </summary>
-    public async Task<List<Suggestion>> EventTypeListAsync() =>
+    public async Task<IReadOnlyList<Suggestion>> EventTypeListAsync() =>
         await Context.TucEventTypes
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
@@ -2101,7 +2101,7 @@ public partial class JobRepository(
     /// <param name="isPrebook">True if querying a prebook job.</param>
     /// <param name="isArchived">True if querying an archived job (skips live table lookup).</param>
     /// <returns>List of charge components making up the total price.</returns>
-    public async Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
+    public async Task<IReadOnlyList<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId,
         bool isPrebook, bool isArchived = false)
     {
         if (isPrebook)
@@ -2863,7 +2863,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves all available time zone options for selection.
     /// </summary>
-    public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions() =>
+    public async Task<IReadOnlyList<TimeZoneSuggestion>> GetTimeZoneOptions() =>
         await Context.TimeZones
             .Select(t => new TimeZoneSuggestion
             {
@@ -3333,7 +3333,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves all active jobs with location data for the mega map display.
     /// </summary>
-    public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
+    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
         const int maxMapJobs = 5000;
         var isUsCustomer = _infoService.IsUsTenant();
@@ -3516,7 +3516,7 @@ public partial class JobRepository(
     /// <param name="latitude">Reference latitude.</param>
     /// <param name="longitude">Reference longitude.</param>
     /// <returns>List of closest airports with distance and agent info.</returns>
-    public async Task<List<AddressWithAgent>> GetClosestAirportsAsync(
+    public async Task<IReadOnlyList<AddressWithAgent>> GetClosestAirportsAsync(
         decimal latitude,
         decimal longitude
     )
@@ -3649,7 +3649,7 @@ public partial class JobRepository(
     /// <param name="runDate">Reference date for the search window.</param>
     /// <param name="scan">The barcode/scan value to search for.</param>
     /// <returns>List of scan events with courier and timestamp details.</returns>
-    public async Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
+    public async Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
         string scan)
     {
         runDate ??= _clock.TenantNow;
@@ -3977,7 +3977,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="parentJobId">The parent job ID.</param>
     /// <returns>List of child job IDs.</returns>
-    public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId) =>
+    public async Task<IReadOnlyList<int>> GetSplitJobChildrenAsync(int parentJobId) =>
         await Context.TucJobs
             .Where(j => j.ParentId == parentJobId)
             .Select(j => j.UcjbId)
@@ -4183,7 +4183,7 @@ public partial class JobRepository(
                 .SetProperty(j => j.UcjbAmount, data.NewPrice));
     }
 
-    private async Task UpdateJobCouriersAsync(List<JobManualPriceModel> data,
+    private async Task UpdateJobCouriersAsync(IReadOnlyList<JobManualPriceModel> data,
         Dictionary<int, TucJob> dbDataDict,
         Dictionary<int, TucJobArchive> dbDataArchiveDict)
     {
@@ -4230,7 +4230,7 @@ public partial class JobRepository(
         }
     }
 
-    private async Task UpdateJobStatusesAsync(List<JobManualPriceModel> data,
+    private async Task UpdateJobStatusesAsync(IReadOnlyList<JobManualPriceModel> data,
         Dictionary<int, TucJob> dbDataDict,
         Dictionary<int, TucJobArchive> dbDataArchiveDict)
     {
@@ -4385,7 +4385,7 @@ public partial class JobRepository(
     /// <summary>
     /// Gets the job ID along with all its children IDs (if any).
     /// </summary>
-    private async Task<List<int>> GetJobWithChildrenAsync(int jobId)
+    private async Task<IReadOnlyList<int>> GetJobWithChildrenAsync(int jobId)
     {
         var childIds = await Context.TucJobs
             .Where(j => j.ParentId == jobId)
@@ -4397,7 +4397,7 @@ public partial class JobRepository(
         return childIds;
     }
 
-    private async Task<List<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
+    private async Task<IReadOnlyList<int>> GetAllRelatedJobIdsIncludingParentAsync(int jobId)
     {
         // Single query to get both parent ID and all related job IDs
         var jobWithRelations = await Context.TucJobs
@@ -4423,7 +4423,7 @@ public partial class JobRepository(
         return relatedJobIds;
     }
 
-    private async Task<List<int>> GetAllRelatedBulkJobIdsIncludingParentAsync(int bulkJobId)
+    private async Task<IReadOnlyList<int>> GetAllRelatedBulkJobIdsIncludingParentAsync(int bulkJobId)
     {
         // Single query to get both parent ID and all related job IDs
         var jobWithRelations = await Context.TblBulkJobs
@@ -4451,7 +4451,7 @@ public partial class JobRepository(
     /// <summary>
     /// Gets the bulk job ID along with all its children IDs (if any).
     /// </summary>
-    private async Task<List<int>> GetBulkJobWithChildrenAsync(int bulkJobId)
+    private async Task<IReadOnlyList<int>> GetBulkJobWithChildrenAsync(int bulkJobId)
     {
         var childIds = await Context.TblBulkJobs
             .Where(j => j.BulkParentId == bulkJobId)
@@ -4465,7 +4465,7 @@ public partial class JobRepository(
     /// <summary>
     /// Gets the archived job ID along with all its children IDs (if any).
     /// </summary>
-    private async Task<List<int>> GetArchivedJobWithChildrenAsync(int jobId)
+    private async Task<IReadOnlyList<int>> GetArchivedJobWithChildrenAsync(int jobId)
     {
         var childIds = await Context.TucJobArchives
             .Where(j => j.ParentId == jobId)
@@ -4480,7 +4480,7 @@ public partial class JobRepository(
     /// <summary>
     /// Gets all related archived job IDs including parent and siblings.
     /// </summary>
-    private async Task<List<int>> GetAllRelatedArchivedJobIdsIncludingParentAsync(int jobId)
+    private async Task<IReadOnlyList<int>> GetAllRelatedArchivedJobIdsIncludingParentAsync(int jobId)
     {
         // Single query to get both parent ID and all related job IDs
         var jobWithRelations = await Context.TucJobArchives
@@ -4620,12 +4620,12 @@ public partial class JobRepository(
         return jobNumberOutput.Value;
     }
 
-    private async Task CloseTasksByJobIdsAsync(List<int> jobIds) =>
+    private async Task CloseTasksByJobIdsAsync(IReadOnlyList<int> jobIds) =>
         await Context.TucEvents
             .Where(t => jobIds.Contains(t.UcevJobId.Value) && !t.UcevClosed)
             .ExecuteUpdateAsync(setters => setters.SetProperty(e => e.UcevClosed, true));
 
-    private async Task CloseAllBulkJobTasksAsync(List<int> bulkJobIds)
+    private async Task CloseAllBulkJobTasksAsync(IReadOnlyList<int> bulkJobIds)
     {
         var now = _clock.TenantNow;
         var staffId = _infoService.GetStaffId();
@@ -4868,13 +4868,13 @@ public partial class JobRepository(
 
     #region IJobRepository Interface Methods (delegating to protected base methods)
 
-    public new async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
+    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
         => await base.GetJobCoordinatesAsync(selectedViewIds);
 
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
 
-    public new async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
+    public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
         bool isBulkJob = false)
         => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
 

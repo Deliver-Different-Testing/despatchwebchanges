@@ -21,7 +21,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for calculating job rates for NZ and US tenants, including distance calculations, DFRNT API integration, and courier payment processing.
 /// </summary>
-public class RateJobService(
+public sealed class RateJobService(
     IJobRepository jobRepository,
     HttpClient httpClient,
     ITenantInfoService infoService,

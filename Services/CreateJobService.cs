@@ -16,7 +16,7 @@ namespace DespatchWeb.Services;
 /// Replaces the stored procedure DD_stpJob_InsertExcelerator with C# implementation.
 /// Inner INSERT stored procedures are called via scaffolded EF Core stored proc methods.
 /// </summary>
-public class CreateJobService(
+public sealed class CreateJobService(
     IDbContextFactory<DespatchContext> contextFactory) : ICreateJobService
 {
     /// <summary>

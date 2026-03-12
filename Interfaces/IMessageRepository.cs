@@ -9,14 +9,14 @@ namespace DespatchWeb.Interfaces;
 public interface IMessageRepository
 {
     Task<int> GetUnreadMessageCountAsync();
-    Task<List<RecentMessageViewModel>> GetRecentListAsync();
-    Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200);
-    Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200);
+    Task<IReadOnlyList<RecentMessageViewModel>> GetRecentListAsync();
+    Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200);
+    Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200);
     Task SendMessageAsync(SendMessageRequest request);
     Task SendMultipleMessagesAsync(SendMultipleMessageRequest request);
     Task MarkMessagesAsReadAsync(int otherPartyId, OtherMessagePartyType otherPartyType);
-    Task<List<Suggestion>> GetSavedQuickResponsesAsync();
+    Task<IReadOnlyList<Suggestion>> GetSavedQuickResponsesAsync();
     Task<int> AddNewQuickResponseAsync(SaveQuickResponseRequest data);
     Task DeleteQuickResponseAsync(int responseId);
-    Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm);
+    Task<IReadOnlyList<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm);
 }

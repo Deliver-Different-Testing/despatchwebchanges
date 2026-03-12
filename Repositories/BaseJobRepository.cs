@@ -402,7 +402,7 @@ public class BaseJobRepository(
              (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
     }
 
-    protected async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
+    protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
     {
         const int maxMapCoordinates = 5000;
 
@@ -445,7 +445,7 @@ public class BaseJobRepository(
         }
     }
 
-    protected async Task SaveMultipleBulkNotesAsync(List<int> bulkJobIds, string noteText, bool isImportant = false,
+    protected async Task SaveMultipleBulkNotesAsync(IReadOnlyList<int> bulkJobIds, string noteText, bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
@@ -474,7 +474,7 @@ public class BaseJobRepository(
         return noteType;
     }
 
-    protected async Task SaveNoteToMultipleJobsAsync(List<int> jobIds, string noteText, bool isImportant = false,
+    protected async Task SaveNoteToMultipleJobsAsync(IReadOnlyList<int> jobIds, string noteText, bool isImportant = false,
         bool isRecurringJobs = false, NoteType noteType = NoteType.InternalNote)
     {
         try
@@ -507,7 +507,7 @@ public class BaseJobRepository(
     }
 
     protected async Task SaveNoteToMultipleArchivedJobsAsync(
-        List<int> jobIds,
+        IReadOnlyList<int> jobIds,
         string noteText,
         bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
@@ -741,7 +741,7 @@ public class BaseJobRepository(
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
     }
 
-    protected async Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
+    protected async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
     {
         if (isBulkJob)
         {

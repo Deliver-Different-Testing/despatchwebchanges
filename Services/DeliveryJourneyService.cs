@@ -27,7 +27,7 @@ public partial class DeliveryJourneyService(
     /// </summary>
     /// <param name="jobId">The job ID to get the journey for.</param>
     /// <returns>A chronologically sorted list of journey events.</returns>
-    public async Task<List<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
+    public async Task<IReadOnlyList<DeliveryJourneyViewModel>> GetDeliveryJourneyForJobAsync(int jobId)
     {
         await using var mainContext = await contextFactory.CreateDbContextAsync();
         await using var tasksContext = await contextFactory.CreateDbContextAsync();
@@ -55,7 +55,7 @@ public partial class DeliveryJourneyService(
     /// <summary>
     /// Retrieves task/event records associated with a job, including audit history.
     /// </summary>
-    private async Task<List<DeliveryJourneyViewModel>> GetTasksAsync(DespatchContext context, int jobId)
+    private async Task<IReadOnlyList<DeliveryJourneyViewModel>> GetTasksAsync(DespatchContext context, int jobId)
     {
         var timezone = infoService.GetTenantTimeZone();
 
@@ -119,7 +119,7 @@ public partial class DeliveryJourneyService(
     /// <summary>
     /// Retrieves notes for a job from live or archived tables based on job status.
     /// </summary>
-    private async Task<List<DeliveryJourneyViewModel>> GetNotesAsync(
+    private async Task<IReadOnlyList<DeliveryJourneyViewModel>> GetNotesAsync(
         DespatchContext context,
         int jobId,
         bool isLiveJob)
@@ -205,7 +205,7 @@ public partial class DeliveryJourneyService(
     /// <summary>
     /// Retrieves manual messages associated with a job including direct messages, emails, and SMS.
     /// </summary>
-    private async Task<List<DeliveryJourneyViewModel>> GetMessagesAsync(DespatchContext context, int jobId)
+    private async Task<IReadOnlyList<DeliveryJourneyViewModel>> GetMessagesAsync(DespatchContext context, int jobId)
     {
         var timezone = infoService.GetTenantTimeZone();
 
@@ -296,7 +296,7 @@ public partial class DeliveryJourneyService(
     /// <summary>
     /// Retrieves status updates for a job from live or archived tables, including courier, agent, and field changes.
     /// </summary>
-    private async Task<List<DeliveryJourneyViewModel>> GetStatusUpdatesAsync(
+    private async Task<IReadOnlyList<DeliveryJourneyViewModel>> GetStatusUpdatesAsync(
         DespatchContext context,
         int jobId,
         bool isLiveJob)

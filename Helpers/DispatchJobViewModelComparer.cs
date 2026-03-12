@@ -3,7 +3,7 @@ using DespatchWeb.Models;
 
 namespace DespatchWeb.Helpers;
 
-public class DispatchJobViewModelComparer : IEqualityComparer<DispatchJobViewModel>
+public sealed class DispatchJobViewModelComparer : IEqualityComparer<DispatchJobViewModel>
 {
     public bool Equals(DispatchJobViewModel x, DispatchJobViewModel y)
     {

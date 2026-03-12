@@ -172,9 +172,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 150m))
             .ReturnsAsync(175m); // 150 base + 25 fuel = 175 total
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -188,7 +188,7 @@ public class RateJobServiceBulkPriceTests
         result.Rows[0].NewAmount.Should().Be(175m);
 
         // Verify UpdateManualPriceAsync was called with correct values
-        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()), Times.Once);
+        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Once);
 
         capturedModels.Should().NotBeNull();
         capturedModels!.Should().HaveCount(1);
@@ -269,7 +269,7 @@ public class RateJobServiceBulkPriceTests
             It.Is<RepriceJobWithBaseAmountModel>(m => m.IsPrebook == true && m.BaseAmount == 100m)), Times.Once);
 
         // UpdateManualPriceAsync should NOT be called for prebook-only updates
-        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()), Times.Never);
+        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
 
         result.Rows[0].NewAmount.Should().Be(120m);
     }
@@ -299,9 +299,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
             .ReturnsAsync(115m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -348,9 +348,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()))
             .ReturnsAsync(230m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -392,9 +392,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 0m))
             .ReturnsAsync(0m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -433,9 +433,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(2, 200m)).ReturnsAsync(230m);
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(3, 300m)).ReturnsAsync(345m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -444,7 +444,7 @@ public class RateJobServiceBulkPriceTests
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - all 3 jobs should be batched in one call
-        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()), Times.Once);
+        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Once);
         capturedModels.Should().NotBeNull();
         capturedModels!.Should().HaveCount(3);
         capturedModels.Select(m => m.Id).Should().BeEquivalentTo([1, 2, 3]);
@@ -482,9 +482,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
             .ReturnsAsync(115m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -550,9 +550,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
             .ReturnsAsync(115m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
@@ -615,9 +615,9 @@ public class RateJobServiceBulkPriceTests
         _jobRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
             .ReturnsAsync(100m);
 
-        List<JobManualPriceModel>? capturedModels = null;
-        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()))
-            .Callback<List<JobManualPriceModel>>(models => capturedModels = models)
+        IReadOnlyList<JobManualPriceModel>? capturedModels = null;
+        _jobRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
+            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
             .Returns(Task.CompletedTask);
 
         var service = CreateService();

@@ -5,14 +5,14 @@ using System.Threading;
 
 namespace DespatchWeb.Services;
 
-public class BackgroundTaskStatus
+public sealed class BackgroundTaskStatus
 {
     public string Status { get; set; } = "Running";
     public string ErrorMessage { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-public class BackgroundTaskTracker : IDisposable
+public sealed class BackgroundTaskTracker : IDisposable
 {
     private readonly ConcurrentDictionary<string, BackgroundTaskStatus> _tasks = new();
     private readonly Timer _cleanupTimer;

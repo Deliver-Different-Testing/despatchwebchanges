@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 
 namespace DespatchWeb.Models;
 
-public class S3PhotoInfo
+public readonly record struct S3PhotoInfo
 {
     public string S3Key { get; init; }
     public string FileName { get; init; }

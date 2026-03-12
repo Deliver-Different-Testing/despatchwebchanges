@@ -6,15 +6,15 @@ using DespatchWeb.Models.Accessorial;
 
 namespace DespatchWeb.Services;
 
-public class AccessorialChargeService(
+public sealed class AccessorialChargeService(
     IAccessorialChargeRepository repository,
     ITenantInfoService tenantInfoService)
     : IAccessorialChargeService
 {
-    public Task<List<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId)
+    public Task<IReadOnlyList<AccessorialChargeDto>> GetAvailableChargesAsync(int accessorialChargeGroupId, int jobId)
         => repository.GetAvailableChargesAsync(accessorialChargeGroupId, jobId);
 
-    public Task<List<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId)
+    public Task<IReadOnlyList<JobAccessorialChargeDto>> GetAppliedChargesAsync(int jobId)
         => repository.GetAppliedChargesAsync(jobId);
 
     public async Task AddChargesAsync(int jobId, List<JobAccessorialChargeCreateRequest> charges)
@@ -110,7 +110,7 @@ public class AccessorialChargeService(
     public Task<decimal> GetJobAmountAsync(int jobId)
         => repository.GetJobAmountAsync(jobId);
 
-    public Task<List<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId)
+    public Task<IReadOnlyList<PortionJobInfoDto>> GetPortionJobsAsync(int parentJobId)
         => repository.GetPortionJobsAsync(parentJobId);
 
     /// <summary>

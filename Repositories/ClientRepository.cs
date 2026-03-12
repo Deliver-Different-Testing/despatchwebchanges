@@ -26,7 +26,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             })
             .FirstOrDefaultAsync();
 
-    public async Task<List<Suggestion>> ClientContactsAsync(int contactId) =>
+    public async Task<IReadOnlyList<Suggestion>> ClientContactsAsync(int contactId) =>
         await Context.TblClientContacts
             .Where(c => c.ContactId == contactId)
             .Where(c => c.TblClientContactInternetPermissions
@@ -40,7 +40,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .Distinct()
             .ToListAsync();
 
-    public async Task<List<Suggestion>> ActiveClientsAsync(string searchTerm)
+    public async Task<IReadOnlyList<Suggestion>> ActiveClientsAsync(string searchTerm)
     {
         var likePattern = $"%{searchTerm}%";
 

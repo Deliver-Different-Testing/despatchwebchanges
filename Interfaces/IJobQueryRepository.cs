@@ -18,7 +18,7 @@ public interface IJobQueryRepository
     Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data);
     Task<JobSearchResult> PodSearchAsync(PodSearchRequest data);
 
-    Task<List<JobDownloadModel>> PodSearchDownloadAsync(
+    Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
         List<int> courierIds,
         List<int> speedIds,
         string wild,
@@ -29,7 +29,7 @@ public interface IJobQueryRepository
         int? jobId = null
     );
 
-    Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);
+    Task<IReadOnlyList<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(ClientJobsReportRequest request);
 
     Task<JobSearchResult> CurrentJobListAsync(int courierId,
         DateTimeOffset startDate,
@@ -47,16 +47,16 @@ public interface IJobQueryRepository
     Task<int> MaxAutoLateDeliveryAlertAsync();
     Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount);
 
-    Task<List<Suggestion>> GetSpeedsAsync();
-    Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
-    Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId);
-    Task<List<Lookup>> LeaveParcelLocationsAsync();
-    Task<List<UndeliverableLocation>> UndeliverableLocationsAsync();
-    Task<List<InternalStatus>> GetInternalStatusListAsync();
-    Task<List<Suggestion>> GetStatusListAsync();
-    Task<List<Suggestion>> EventTypeListAsync();
+    Task<IReadOnlyList<Suggestion>> GetSpeedsAsync();
+    Task<IReadOnlyList<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
+    Task<IReadOnlyList<Suggestion>> GetContactsByClientIdAsync(int clientId);
+    Task<IReadOnlyList<Lookup>> LeaveParcelLocationsAsync();
+    Task<IReadOnlyList<UndeliverableLocation>> UndeliverableLocationsAsync();
+    Task<IReadOnlyList<InternalStatus>> GetInternalStatusListAsync();
+    Task<IReadOnlyList<Suggestion>> GetStatusListAsync();
+    Task<IReadOnlyList<Suggestion>> EventTypeListAsync();
 
-    Task<List<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook, bool isArchived = false);
+    Task<IReadOnlyList<ChargeViewModel>> GetJobPriceBreakdownAsync(int jobId, bool isPrebook, bool isArchived = false);
 
     Task<bool> HasClientItemsAvailableAsync(int clientId, int speedId);
 
@@ -81,11 +81,11 @@ public interface IJobQueryRepository
 
     Task<TucJobType> GetJobTypeByIdAsync(int speedId);
 
-    Task<List<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
+    Task<IReadOnlyList<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
 
-    Task<List<MegaMapResponse>> GetJobsForMegaMapAsync();
+    Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync();
 
-    Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
+    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
 
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);
@@ -93,7 +93,7 @@ public interface IJobQueryRepository
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);
-    Task<List<TimeZoneSuggestion>> GetTimeZoneOptions();
+    Task<IReadOnlyList<TimeZoneSuggestion>> GetTimeZoneOptions();
     Task<JobRatingDetailsDto> GetJobBookingDetailsForRatingAsync(int jobId);
     Task<bool> IsJobArchived(int jobId);
     Task<DispatchJobViewModel> GetDispatchJobDetailAsync(int jobId);
@@ -105,12 +105,12 @@ public interface IJobQueryRepository
     Task<T> GetByIdAsync<T>(int id)
         where T : class;
 
-    Task<List<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
+    Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
     Task<bool> ValidatePodSwapAsync(string jobNumber);
     Task<string> GetStaffNameAsync(int staffId);
     Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
-    Task<List<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false);
+    Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false);
     Task<int?> GetJobParentIdAsync(int jobId);
     Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds);
 }

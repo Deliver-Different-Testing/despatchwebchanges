@@ -50,7 +50,7 @@ public class MessageRepository(
 
     private const int RecentMessageDays = 90;
 
-    public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
+    public async Task<IReadOnlyList<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
         var currentDate = clock.TenantNow;
@@ -98,7 +98,7 @@ public class MessageRepository(
         return result;
     }
 
-    public async Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200) =>
+    public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200) =>
         await Context.TucManualMessages
             .BetweenStaffAndCourier(staffId, courierId)
             .OrderByDescending(m => m.UcmmDate)
@@ -120,7 +120,7 @@ public class MessageRepository(
             })
             .ToListAsync();
 
-    public async Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200) =>
+    public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200) =>
         await Context.TucManualMessages
             .BetweenStaff(currentStaffId, otherStaffId)
             .OrderByDescending(m => m.UcmmDate)
@@ -269,7 +269,7 @@ public class MessageRepository(
         }
     }
 
-    public async Task<List<Suggestion>> GetSavedQuickResponsesAsync()
+    public async Task<IReadOnlyList<Suggestion>> GetSavedQuickResponsesAsync()
     {
         var staffId = infoService.GetStaffId();
 
@@ -314,7 +314,7 @@ public class MessageRepository(
             throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.");
     }
 
-    public async Task<List<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
+    public async Task<IReadOnlyList<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
     {
         var currentDate = clock.TenantNow;
 

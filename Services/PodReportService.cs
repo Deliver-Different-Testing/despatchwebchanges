@@ -19,7 +19,7 @@ using Serilog;
 
 namespace DespatchWeb.Services;
 
-public class PodReportService(
+public sealed class PodReportService(
     IHttpContextAccessor httpContextAccessor,
     ITenantBrandingService tenantBrandingService,
     IJobRepository jobRepository,
@@ -40,7 +40,7 @@ public class PodReportService(
                   ?? throw new InvalidOperationException($"Job {jobId} not found");
 
         // Get S3 photos if the job is completed
-        List<S3PhotoInfo> s3Photos = [];
+        IReadOnlyList<S3PhotoInfo> s3Photos = [];
         if (job.CompletedTime.HasValue)
         {
             var year = job.CompletedTime.Value.Year;
@@ -64,7 +64,7 @@ public class PodReportService(
         var job = await jobRepository.GetSingleJobById(jobId)
                   ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-        List<S3PhotoInfo> s3Photos = [];
+        IReadOnlyList<S3PhotoInfo> s3Photos = [];
         if (job.CompletedTime.HasValue)
         {
             var year = job.CompletedTime.Value.Year;
@@ -104,7 +104,7 @@ public class PodReportService(
         return tenantId;
     }
 
-    private static PodData MapToPodData(JobViewModel job, List<S3PhotoInfo> s3Photos)
+    private static PodData MapToPodData(JobViewModel job, IReadOnlyList<S3PhotoInfo> s3Photos)
     {
         // Separate signatures from delivery photos
         var signaturePhotos = s3Photos

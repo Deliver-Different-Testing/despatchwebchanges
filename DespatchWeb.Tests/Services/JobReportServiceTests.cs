@@ -268,7 +268,7 @@ public class JobReportServiceTests
 
         // Assert - verify repository update was called
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(
-            It.Is<List<JobManualPriceModel>>(l => l.Count == 2)), Times.Once);
+            It.Is<IReadOnlyList<JobManualPriceModel>>(l => l.Count == 2)), Times.Once);
     }
 
     [Fact]
@@ -286,7 +286,7 @@ public class JobReportServiceTests
         await service.ProcessJobPriceUploadAsync(fileMock.Object);
 
         // Assert - should not call update when no data
-        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<List<JobManualPriceModel>>()), Times.Never);
+        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
     }
 
     #endregion
