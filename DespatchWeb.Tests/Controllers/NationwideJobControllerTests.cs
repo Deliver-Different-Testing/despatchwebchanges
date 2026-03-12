@@ -164,7 +164,7 @@ public class NationwideJobControllerTests
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),
                 It.IsAny<string>(),
-                It.IsAny<List<string>>(),
+                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<int>()))
             .ReturnsAsync([]);
 
@@ -200,7 +200,7 @@ public class NationwideJobControllerTests
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),
                 It.IsAny<string>(),
-                It.IsAny<List<string>>(),
+                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<int>()))
             .ReturnsAsync((List<FlightViewModel>)null!);
 
@@ -236,7 +236,7 @@ public class NationwideJobControllerTests
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),
                 It.IsAny<string>(),
-                It.IsAny<List<string>>(),
+                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<int>()))
             .ThrowsAsync(new ArgumentException("Departure airport with ID 150 not found in active airports"));
 
@@ -271,7 +271,7 @@ public class NationwideJobControllerTests
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),
                 It.IsAny<string>(),
-                It.IsAny<List<string>>(),
+                It.IsAny<IReadOnlyList<string>>(),
                 minimumLayover))
             .ReturnsAsync([]);
 
@@ -319,7 +319,7 @@ public class NationwideJobControllerTests
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),
                 It.IsAny<string>(),
-                It.IsAny<List<string>>(),
+                It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<int>()))
             .ReturnsAsync(flights);
 
@@ -362,7 +362,7 @@ public class NationwideJobControllerTests
                 It.IsAny<int?>(),
                 It.IsAny<int?>(),
                 It.IsAny<string>(),
-                It.IsAny<List<string>>(),
+                It.IsAny<IReadOnlyList<string>>(),
                 60)) // Default value
             .ReturnsAsync([]);
 

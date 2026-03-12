@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -15,17 +16,17 @@ public interface IJobQueryRepository
     Task<JobGroupViewModel> GetBulkJobDetailAsync(int bulkJobId);
     Task<DispatchJobViewModel> GetBulkDispatchJobDetailAsync(int bulkJobId);
 
-    Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data);
-    Task<JobSearchResult> PodSearchAsync(PodSearchRequest data);
+    Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default);
+    Task<JobSearchResult> PodSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
-        List<int> courierIds,
-        List<int> speedIds,
+        IReadOnlyList<int> courierIds,
+        IReadOnlyList<int> speedIds,
         string wild,
         string job,
         DateTime fromDate,
         DateTime toDate,
-        List<int> clientIds,
+        IReadOnlyList<int> clientIds,
         int? jobId = null
     );
 
@@ -40,8 +41,9 @@ public interface IJobQueryRepository
         bool isInternal,
         bool isUsTenant,
         string clientIds,
-        List<int> selectedViewIds,
-        int? selectedClearListId = null);
+        IReadOnlyList<int> selectedViewIds,
+        int? selectedClearListId = null,
+        CancellationToken cancellationToken = default);
 
     Task<int> MaxAutoLatePickupAlertAsync();
     Task<int> MaxAutoLateDeliveryAlertAsync();
@@ -68,13 +70,14 @@ public interface IJobQueryRepository
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
-    Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
+    Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default);
     Task<JobViewModel> GetSingleJobById(int jobId);
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
-        OverviewJobsRequest parameters
+        OverviewJobsRequest parameters,
+        CancellationToken cancellationToken = default
     );
 
     Task<OverviewDeliveryMapResponse> GetOverviewLocationDataAsync(int jobId);
@@ -83,9 +86,9 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<AddressWithAgent>> GetClosestAirportsAsync(decimal latitude, decimal longitude);
 
-    Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync();
+    Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(CancellationToken cancellationToken = default);
 
-    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds);
+    Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds, CancellationToken cancellationToken = default);
 
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);
@@ -107,10 +110,10 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
     Task<bool> ValidatePodSwapAsync(string jobNumber);
-    Task<string> GetStaffNameAsync(int staffId);
+    Task<string?> GetStaffNameAsync(int staffId);
     Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);
     Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false);
     Task<int?> GetJobParentIdAsync(int jobId);
-    Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds);
+    Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds);
 }

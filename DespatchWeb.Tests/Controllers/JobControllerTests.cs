@@ -48,7 +48,7 @@ public class JobControllerTests
         _pricingPermissionServiceMock.Setup(x => x.CanModifyPriceBreakdownAsync()).ReturnsAsync(true);
         _pricingPermissionServiceMock.Setup(x => x.CanUsePricingModeAsync(It.IsAny<string>())).ReturnsAsync(true);
         _pricingPermissionServiceMock.Setup(x => x.ValidateJobAccessAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
-        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>())).ReturnsAsync([]);
+        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>())).ReturnsAsync([]);
     }
 
     private JobController CreateController()
@@ -136,7 +136,7 @@ public class JobControllerTests
 
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _jobRepositoryMock.Setup(x => x.JobListAsync(
-                queryParams, true, false, null, It.IsAny<List<int>>(), null))
+                queryParams, true, false, null, It.IsAny<IReadOnlyList<int>>(), null))
             .ReturnsAsync(expectedResult);
 
         var controller = CreateController();
@@ -165,7 +165,7 @@ public class JobControllerTests
         _clientAccessValidatorMock.Setup(x => x.ValidateClientAccessAsync(contactId, clientIds))
             .Returns(Task.CompletedTask);
         _jobRepositoryMock.Setup(x => x.JobListAsync(
-                It.IsAny<JobQueryParams>(), false, false, clientIds, It.IsAny<List<int>>(), null))
+                It.IsAny<JobQueryParams>(), false, false, clientIds, It.IsAny<IReadOnlyList<int>>(), null))
             .ReturnsAsync(new JobSearchResult { Jobs = [], TotalCount = 0 });
 
         var controller = CreateController();
@@ -208,7 +208,7 @@ public class JobControllerTests
 
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _jobRepositoryMock.Setup(x => x.JobListAsync(
-                It.IsAny<JobQueryParams>(), true, false, null, It.IsAny<List<int>>(), null))
+                It.IsAny<JobQueryParams>(), true, false, null, It.IsAny<IReadOnlyList<int>>(), null))
             .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
@@ -236,7 +236,7 @@ public class JobControllerTests
             new() { Id = 2, PickupLatitude = -36.8500m, PickupLongitude = 174.7700m }
         };
 
-        _jobRepositoryMock.Setup(x => x.GetJobCoordinatesAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCoordinatesAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(expectedCoordinates);
 
         var controller = CreateController();
@@ -288,7 +288,7 @@ public class JobControllerTests
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _jobRepositoryMock.Setup(x => x.JobListAsync(
-                queryParams, true, false, null, It.IsAny<List<int>>(), clearListId))
+                queryParams, true, false, null, It.IsAny<IReadOnlyList<int>>(), clearListId))
             .ReturnsAsync(expectedResult);
 
         var controller = CreateController();
@@ -3075,7 +3075,7 @@ public class JobControllerTests
         // Arrange
         const string jobIds = "1,2,3";
 
-        _jobRepositoryMock.Setup(x => x.ReSendSelectedJobsAsync(jobIds))
+        _jobRepositoryMock.Setup(x => x.ReSendSelectedJobsAsync(It.IsAny<IReadOnlyList<int>>()))
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -3093,7 +3093,7 @@ public class JobControllerTests
         // Arrange
         const string jobIds = "1,2,3";
 
-        _jobRepositoryMock.Setup(x => x.ReAssignSelectedJobsAsync(jobIds))
+        _jobRepositoryMock.Setup(x => x.ReAssignSelectedJobsAsync(It.IsAny<IReadOnlyList<int>>()))
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();

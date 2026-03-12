@@ -1,21 +1,19 @@
 import React, {useState} from 'react';
-import {
-    Box,
-    Button,
-    Checkbox,
-    Chip,
-    IconButton,
-    Tooltip,
-} from '@mui/material';
-import {
-    ContactMail as ContactMailIcon,
-    Download as DownloadIcon,
-    Email as EmailIcon,
-} from '@mui/icons-material';
+import {Box, Button, Checkbox, Chip, IconButton, Tooltip,} from '@mui/material';
+import {ContactMail as ContactMailIcon, Download as DownloadIcon, Email as EmailIcon,} from '@mui/icons-material';
 import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks';
 import {DriverEmail, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, toolbarButtonSx, toolbarIconButtonSx, getFleetChipSx} from './shared';
+import {
+    DataTable,
+    DataTableColumn,
+    FilterToolbar,
+    getFleetChipSx,
+    SearchField,
+    SortState,
+    toolbarButtonSx,
+    toolbarIconButtonSx
+} from './shared';
 
 interface DriverEmailsTabProps {
     showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
@@ -79,14 +77,14 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
         }
     };
 
-    const handleComposeEmail = () => {
+    const handleComposeEmail = async () => {
         const selected = items.filter(e => selectedIds.has(e.courierId));
         if (selected.length === 0) { showToast('No recipients selected', 'warning'); return; }
-        openComposeDialog(selected);
+        await openComposeDialog(selected);
     };
 
-    const handleSingleEmail = (driver: DriverEmail) => {
-        openComposeDialog([driver]);
+    const handleSingleEmail = async (driver: DriverEmail) => {
+        await openComposeDialog([driver]);
     };
 
     const handleExport = async () => {
@@ -102,7 +100,10 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
         col.key === 'actions'
             ? {...col, render: (row: DriverEmail) => (
                 <Tooltip title="Send Email">
-                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleSingleEmail(row); }}>
+                    <IconButton size="small" onClick={async (e) => {
+                        e.stopPropagation();
+                        await handleSingleEmail(row);
+                    }}>
                         <EmailIcon fontSize="small" />
                     </IconButton>
                 </Tooltip>

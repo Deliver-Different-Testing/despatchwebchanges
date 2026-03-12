@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.Extensions;
 
@@ -119,7 +120,7 @@ public class CourierRepository(
         }
     }
 
-    public async Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data)
+    public async Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data, CancellationToken cancellationToken = default)
     {
         var correlationId = Guid.NewGuid().ToString();
 
@@ -145,8 +146,8 @@ public class CourierRepository(
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
             var result = isUsTenant
-                ? await GetUsAvailableCourierPositionsAsync(data)
-                : await GetNzAvailableCourierPositionsAsync(data);
+                ? await GetUsAvailableCourierPositionsAsync(data, cancellationToken)
+                : await GetNzAvailableCourierPositionsAsync(data, cancellationToken);
 
             stopwatch.Stop();
 
@@ -172,7 +173,7 @@ public class CourierRepository(
     }
 
     private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
-        CourierLocationRequest data)
+        CourierLocationRequest data, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -204,7 +205,7 @@ public class CourierRepository(
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
                 })
                 .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             if (courierData.Count == 0) return [];
 
@@ -223,7 +224,7 @@ public class CourierRepository(
                     Minutes = j.AcceptedJobType.Minutes ?? 0
                 })
                 .TagWith("GetUsAvailableCouriers - Step 2: Job Data")
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var jobsByCourier = jobData
                 .GroupBy(j => j.CourierId)
@@ -269,7 +270,7 @@ public class CourierRepository(
     }
 
     private async Task<IReadOnlyList<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(
-        CourierLocationRequest data)
+        CourierLocationRequest data, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -300,7 +301,7 @@ public class CourierRepository(
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
                 })
                 .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             if (courierData.Count == 0) return [];
 
@@ -320,7 +321,7 @@ public class CourierRepository(
                     j.AcceptedJobType.Minutes
                 })
                 .TagWith("GetNzAvailableCouriers - Step 2: Job Data")
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var jobsByCourier = jobData
                 .GroupBy(j => j.CourierId)
@@ -538,9 +539,10 @@ public class CourierRepository(
     }
 
     public async Task<ClearListViewModel> GetClearListsAsync(
-        List<int> despatchViewIds,
+        IReadOnlyList<int> despatchViewIds,
         DateTimeOffset? startDate = null,
-        DateTimeOffset? endDate = null)
+        DateTimeOffset? endDate = null,
+        CancellationToken cancellationToken = default)
     {
         if (despatchViewIds.Count == 0) return new ClearListViewModel();
 
@@ -556,8 +558,8 @@ public class CourierRepository(
             // ===================================================================
             // WAVE 1: Independent queries (Clear Lists + Courier Data) - PARALLEL
             // ===================================================================
-            var clearListsTask = GetClearListAreasAsync(despatchViewIds);
-            var courierDataTask = GetAllCourierDataAsync(currentDateOnly);
+            var clearListsTask = GetClearListAreasAsync(despatchViewIds, cancellationToken);
+            var courierDataTask = GetAllCourierDataAsync(currentDateOnly, cancellationToken);
 
             await Task.WhenAll(clearListsTask, courierDataTask);
 
@@ -574,10 +576,10 @@ public class CourierRepository(
             // ===================================================================
             // WAVE 2: Queries depending on Wave 1 results - PARALLEL
             // ===================================================================
-            var polygonMappingsTask = GetPolygonMappingsAsync(clearListAreaIds);
-            var areaFiltersTask = GetAreaFiltersAsync(clearLists);
-            var displayOrdersTask = GetDisplayOrdersAsync(courierIds);
-            var jobsTask = GetAllJobsAsync(courierIds, jobStartDate, jobEndDate);
+            var polygonMappingsTask = GetPolygonMappingsAsync(clearListAreaIds, cancellationToken);
+            var areaFiltersTask = GetAreaFiltersAsync(clearLists, cancellationToken);
+            var displayOrdersTask = GetDisplayOrdersAsync(courierIds, cancellationToken);
+            var jobsTask = GetAllJobsAsync(courierIds, jobStartDate, jobEndDate, cancellationToken);
 
             await Task.WhenAll(polygonMappingsTask, areaFiltersTask, displayOrdersTask, jobsTask);
 
@@ -635,7 +637,7 @@ public class CourierRepository(
             // ===================================================================
             // WAVE 3: Queries depending on Wave 2 results - PARALLEL
             // ===================================================================
-            var areaRemainingTask = GetTotalRemainingForAllAreasAsync(areaFilterDict);
+            var areaRemainingTask = GetTotalRemainingForAllAreasAsync(areaFilterDict, cancellationToken);
 
             Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup = [];
             Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup = [];
@@ -647,7 +649,7 @@ public class CourierRepository(
                     .Select(j => (j.DeliveryLatitude!.Value, j.DeliveryLongitude!.Value))
                     .ToHashSet();
 
-                var coordinateMappingsTask = GetCoordinateMappingsAsync(allCoordinates);
+                var coordinateMappingsTask = GetCoordinateMappingsAsync(allCoordinates, cancellationToken);
                 await Task.WhenAll(coordinateMappingsTask, areaRemainingTask);
                 coordinateLookup = coordinateMappingsTask.Result;
 
@@ -662,7 +664,7 @@ public class CourierRepository(
                     .Distinct()
                     .ToHashSet();
 
-                var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds);
+                var suburbMappingsTask = GetSuburbMappingsAsync(allSuburbIds, cancellationToken);
                 await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
                 suburbLookup = suburbMappingsTask.Result;
 
@@ -928,9 +930,9 @@ public class CourierRepository(
     /// <summary>
     /// Query 1: Get all clear list areas for the given despatch view IDs.
     /// </summary>
-    private async Task<IReadOnlyList<ClearListAreaDto>> GetClearListAreasAsync(List<int> despatchViewIds)
+    private async Task<IReadOnlyList<ClearListAreaDto>> GetClearListAreasAsync(IReadOnlyList<int> despatchViewIds, CancellationToken cancellationToken = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.TblDespatchViews
             .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
             .SelectMany(dv => dv.DespatchViewZoneGroups)
@@ -944,15 +946,15 @@ public class CourierRepository(
                 AreaOrder = cl.Order
             })
             .TagWith("GetClearLists - Wave 1: Clear List Areas")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// Query 3&4: Get all courier data with GPS, Fleet info.
     /// </summary>
-    private async Task<IReadOnlyList<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly)
+    private async Task<IReadOnlyList<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly, CancellationToken cancellationToken = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.TucCouriers
             .Where(c => c.Active && c.TblClearListAreaOrder != null)
             .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
@@ -999,13 +1001,13 @@ public class CourierRepository(
             })
             .OrderBy(c => c.Code)
             .TagWith("GetClearLists - Wave 1: All Courier Data with GPS")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// Query 2: Get polygon mappings for clear list areas (cached).
     /// </summary>
-    private async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds)
+    private async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds, CancellationToken cancellationToken = default)
     {
         var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
 
@@ -1018,7 +1020,7 @@ public class CourierRepository(
 
                 Log.Information("Cache MISS for polygon mappings - fetching from database");
 
-                await using var context = await _contextFactory.CreateDbContextAsync();
+                await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
                 return await context.GetPolygonMappings(clearListAreaIds);
             }) ?? [];
     }
@@ -1026,9 +1028,9 @@ public class CourierRepository(
     /// <summary>
     /// Query 7: Get area filters for total remaining calculation.
     /// </summary>
-    private async Task<Dictionary<string, string>> GetAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists)
+    private async Task<Dictionary<string, string>> GetAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists, CancellationToken cancellationToken = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var clearListNames = clearLists.Select(cl => cl.AreaName);
 
         var areaFilters = await context.TblDespatchViews
@@ -1040,7 +1042,7 @@ public class CourierRepository(
                 v.WhereCondition
             })
             .TagWith("GetClearLists - Wave 2: Area Filters")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return areaFilters
             .Where(af => !string.IsNullOrEmpty(af.WhereCondition))
@@ -1050,9 +1052,9 @@ public class CourierRepository(
     /// <summary>
     /// Query 4b: Get display orders for couriers.
     /// </summary>
-    private async Task<IReadOnlyList<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds)
+    private async Task<IReadOnlyList<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds, CancellationToken cancellationToken = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         return await context.TblClearListAreaOrders
             .Where(cao => courierIds.Contains(cao.CourierId))
             .Select(cao => new DisplayOrderDto
@@ -1062,16 +1064,16 @@ public class CourierRepository(
                 OrderTime = cao.OrderTime
             })
             .TagWith("GetClearLists - Wave 2: Display Orders")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// Query 5: Get all jobs for couriers.
     /// </summary>
     private async Task<IReadOnlyList<CourierJobSuburbDto>> GetAllJobsAsync(
-        List<int> courierIds, DateTime startDate, DateTime endDate)
+        List<int> courierIds, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
     {
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var courierIdSet = courierIds.ToHashSet();
 
         return await context.TucJobs
@@ -1089,18 +1091,18 @@ public class CourierRepository(
                 DeliveryLongitude = job.DeliveryLongitude
             })
             .TagWith("GetClearLists - Wave 2: All Jobs")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
     /// <summary>
     /// Query 6: Get suburb to clear list area mappings.
     /// </summary>
-    private async Task<Dictionary<int, List<SuburbClearListAreaDto>>> GetSuburbMappingsAsync(HashSet<int> allSuburbIds)
+    private async Task<Dictionary<int, List<SuburbClearListAreaDto>>> GetSuburbMappingsAsync(HashSet<int> allSuburbIds, CancellationToken cancellationToken = default)
     {
         if (allSuburbIds.Count == 0)
             return [];
 
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var suburbClearListAreas = await context.TblPolygonSuburbs
             .Where(ps => allSuburbIds.Contains(ps.SuburbId))
             .Join(context.TblPolygons,
@@ -1122,7 +1124,7 @@ public class CourierRepository(
                     ChannelId = cla.ChannelId
                 })
             .TagWith("GetClearLists - Wave 3: Suburb Mappings")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return suburbClearListAreas
             .GroupBy(sca => sca.SuburbId)
@@ -1133,12 +1135,12 @@ public class CourierRepository(
     /// Query 6b (US): Map delivery coordinates → ZipPolygon → ClearListArea.
     /// </summary>
     private async Task<Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>>>
-        GetCoordinateMappingsAsync(HashSet<(decimal lat, decimal lng)> coordinates)
+        GetCoordinateMappingsAsync(HashSet<(decimal lat, decimal lng)> coordinates, CancellationToken cancellationToken = default)
     {
         if (coordinates.Count == 0)
             return [];
 
-        await using var context = await _contextFactory.CreateDbContextAsync();
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
 
         var results = await context.ZipPolygons
@@ -1160,7 +1162,7 @@ public class CourierRepository(
                     cla.ChannelId
                 })
             .TagWith("GetClearLists - Wave 3: Coordinate Mappings (US)")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return results
             .Where(r => coordinates.Contains((r.Lat, r.Lng)))
@@ -1177,7 +1179,7 @@ public class CourierRepository(
     }
 
     private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(
-        Dictionary<string, string> areaFilterDict)
+        Dictionary<string, string> areaFilterDict, CancellationToken cancellationToken = default)
     {
         if (areaFilterDict.Count == 0)
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
@@ -1190,7 +1192,7 @@ public class CourierRepository(
 
             Log.Information("AreaRemainingCounts cache MISS - calling stored procedure");
 
-            await using var context = await _contextFactory.CreateDbContextAsync();
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
             var results = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -1198,12 +1200,12 @@ public class CourierRepository(
             command.CommandText = "EXEC dbo.GetAreaRemainingCounts";
             command.CommandType = System.Data.CommandType.Text;
 
-            await context.Database.OpenConnectionAsync();
+            await context.Database.OpenConnectionAsync(cancellationToken);
 
             try
             {
-                await using var reader = await command.ExecuteReaderAsync();
-                while (await reader.ReadAsync())
+                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+                while (await reader.ReadAsync(cancellationToken))
                 {
                     var areaName = reader.GetString(0);
                     var remaining = reader.GetInt32(1);

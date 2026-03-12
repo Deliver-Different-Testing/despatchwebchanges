@@ -36,7 +36,10 @@ public class DynamicDespatchDbContextFactory(
                 httpContext.Request.Path,
                 httpContext.User.Identity?.Name ?? "unknown");
 
-        var connectionString = connectionStringManager.GetConnectionStringAsync(cacheKey).GetAwaiter().GetResult();
+        // Use sync memory-cache lookup first to avoid blocking the thread pool.
+        // Only fall back to the async path (which may hit Redis) when memory cache is cold.
+        var connectionString = connectionStringManager.GetConnectionStringFromMemoryCache(cacheKey)
+            ?? connectionStringManager.GetConnectionStringAsync(cacheKey).GetAwaiter().GetResult();
 
         if (string.IsNullOrEmpty(connectionString))
         {

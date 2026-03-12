@@ -24,7 +24,7 @@ public class RateJobServiceBulkPriceTests
     {
         // By default, allow all job access in tests (internal user behavior)
         _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>()))
+            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync([]); // Empty list = all jobs accessible
     }
 
@@ -68,7 +68,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 999, Amount = 100m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>()); // Empty - job not found
 
         var service = CreateService();
@@ -99,7 +99,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync(parsedData);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false },
@@ -129,7 +129,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = null }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
@@ -158,7 +158,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = 150m, RawBaseAmount = 150m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -214,7 +214,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 150m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -247,7 +247,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "BOOK-001", Amount = 50m, IsPrebook = true }
@@ -286,7 +286,7 @@ public class RateJobServiceBulkPriceTests
                 CourierPayment = 75m, CourierFuel = 10m, CourierBonus = 5m
             }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -328,7 +328,7 @@ public class RateJobServiceBulkPriceTests
                 new JobManualPriceModel { Id = 2, RawBaseAmount = 200m }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -379,7 +379,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = null }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -421,7 +421,7 @@ public class RateJobServiceBulkPriceTests
                 new JobManualPriceModel { Id = 3, RawBaseAmount = 300m }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false },
@@ -469,7 +469,7 @@ public class RateJobServiceBulkPriceTests
                 CourierBonus = null
             }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -508,7 +508,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "BOOK-001", Amount = 50m, IsPrebook = true }
@@ -538,7 +538,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m, Ppd = 50m }]); // File has Ppd
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
@@ -576,7 +576,7 @@ public class RateJobServiceBulkPriceTests
                 new JobManualPriceModel { Id = 2, RawBaseAmount = 200m }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 80m, IsPrebook = false },
@@ -605,7 +605,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
@@ -651,7 +651,7 @@ public class RateJobServiceBulkPriceTests
             .ReturnsAsync([new JobManualPriceModel { Id = 1 }]);
 
         var callCount = 0;
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(() =>
             {
                 callCount++;
@@ -728,7 +728,7 @@ public class RateJobServiceBulkPriceTests
                 new JobManualPriceModel { Id = 3, Amount = 300m }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -758,7 +758,7 @@ public class RateJobServiceBulkPriceTests
                 new JobManualPriceModel { Id = 1, Amount = 200m }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m }
@@ -785,7 +785,7 @@ public class RateJobServiceBulkPriceTests
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 42, Amount = 500m }]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [42] = new() { JobId = 42, JobNo = "TEST-042", Amount = 250m, IsPrebook = true }

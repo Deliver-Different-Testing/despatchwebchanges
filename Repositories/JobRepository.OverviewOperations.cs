@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
@@ -25,7 +26,8 @@ public partial class JobRepository
     /// <returns>Paginated response containing delivery jobs with completion percentages and child jobs.</returns>
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
-        OverviewJobsRequest parameters
+        OverviewJobsRequest parameters,
+        CancellationToken cancellationToken = default
     )
     {
         var isUsCustomer = _infoService.IsUsTenant();
@@ -97,7 +99,7 @@ public partial class JobRepository
 
         query = ApplySorting(query, parameters.OrderBy, parameters.OrderDirection);
 
-        var total = await query.CountAsync();
+        var total = await query.CountAsync(cancellationToken);
 
         if (total == 0)
         {
@@ -157,7 +159,7 @@ public partial class JobRepository
                     .ToList()
             })
             .TagWith("GetJobsForOverviewPage - Paginated Jobs with Children")
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new PaginatedResponse<DeliveryJob>
         {

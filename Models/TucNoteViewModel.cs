@@ -5,30 +5,30 @@ namespace DespatchWeb.Models;
 
 public class TucNoteViewModel
 {
-    public int NoteId { get; set; }
+    public int NoteId { get; init; }
 
     public int NoteTypeId { get; set; }
-    public string NoteTypeName { get; set; }
+    public string NoteTypeName { get; init; }
 
-    public int? JobId { get; set; }
-    public int? BulkJobId { get; set; }
-    public string JobNumber { get; set; }
+    public int? JobId { get; init; }
+    public int? BulkJobId { get; init; }
+    public string JobNumber { get; init; }
 
-    public int? JobBookingId { get; set; }
+    public int? JobBookingId { get; init; }
 
-    public string NoteText { get; set; }
+    public string NoteText { get; init; }
 
-    public bool IsImportant { get; set; }
+    public bool IsImportant { get; init; }
 
     public DateTimeOffset CreatedDate { get; set; }
 
-    public int? CreatedBy { get; set; }
-    public string CreatedByName { get; set; }
+    public int? CreatedBy { get; init; }
+    public string CreatedByName { get; init; }
 
     public DateTimeOffset? UpdatedDate { get; set; }
 
-    public int? UpdatedBy { get; set; }
-    public string UpdatedByName { get; set; }
+    public int? UpdatedBy { get; init; }
+    public string UpdatedByName { get; init; }
 
     // Method to map from viewmodel to entity
     public TucNote ToEntity()
@@ -60,6 +60,4 @@ public class TucNoteViewModel
             UpdatedBy = UpdatedBy
         };
     }
-
-    private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
 }

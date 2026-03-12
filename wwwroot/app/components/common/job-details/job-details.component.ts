@@ -1718,7 +1718,7 @@ class JobDetailController extends BaseController {
                     return;
                 }
 
-                completedTime = result.value;
+                completedTime = formatDateForApiWithTzs(result.value, job.deliveryTimeZone?.text);
             }
 
             let podName: string | undefined;
@@ -1762,7 +1762,7 @@ class JobDetailController extends BaseController {
             const requestData: UpdatePodDetailsRequest = {
                 jobId: job.id,
                 jobStatus: JobStatus.Completed.toString(),
-                podName: podName ?? '',
+                podName: podName ?? job.podName ?? '',
                 podTime: completedTime ?? formatDateForApiWithTzs(
                     job.completedTime!,
                     job.deliveryTimeZone?.text

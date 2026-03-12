@@ -55,7 +55,11 @@ public sealed class JobReportService(
         var filename = $"Jobs {currentDate:yyyyMMddHHmmssfff}.csv";
 
         // Fire and forget S3 upload to avoid blocking the response
-        _ = Task.Run(() => UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyyMM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3Bucket"));
+        _ = Task.Run(async () =>
+        {
+            try { await UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyyMM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3Bucket"); }
+            catch (Exception ex) { Log.Error(ex, "Background S3 upload failed for jobs report"); }
+        });
 
         return new JobsReportResult
         {
@@ -152,11 +156,17 @@ public sealed class JobReportService(
             if (!Debugger.IsAttached)
             {
                 // Fire and forget S3 upload to avoid blocking the response
-                _ = Task.Run(() => UploadToS3Async(
-                    csvBytes,
-                    $"ClientJobsReports/{currentDate:yyyyMM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
-                    "S3BucketMars"
-                ));
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await UploadToS3Async(
+                            csvBytes,
+                            $"ClientJobsReports/{currentDate:yyyyMM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
+                            "S3BucketMars");
+                    }
+                    catch (Exception ex) { Log.Error(ex, "Background S3 upload failed for client jobs report {ClientCode}", clientCode); }
+                });
             }
 
             return (csvBytes, filename);

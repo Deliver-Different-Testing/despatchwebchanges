@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -10,11 +11,11 @@ namespace DespatchWeb.Interfaces;
 
 public interface ICourierRepository
 {
-    Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId);
+    Task<ActiveCouriersViewModel?> GetCourierByIdAsync(int courierId);
 
-    Task<TruckCourierStatusViewModel> TruckCourierStatusAsync(int courierId);
+    Task<TruckCourierStatusViewModel?> TruckCourierStatusAsync(int courierId);
 
-   Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data);
+   Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<PotentialCouriersViewModel>> GetPotentialCouriersAsync(int jobId);
 
@@ -25,9 +26,10 @@ public interface ICourierRepository
     Task<IReadOnlyList<ActiveCouriersViewModel>> AllActiveCouriersAsync();
 
     Task<ClearListViewModel> GetClearListsAsync(
-        List<int> despatchViewIds,
+        IReadOnlyList<int> despatchViewIds,
         DateTimeOffset? startDate = null,
-        DateTimeOffset? endDate = null);
+        DateTimeOffset? endDate = null,
+        CancellationToken cancellationToken = default);
 
     Task<ClearListEnvelopeViewModel> GetClearListAreaEnvelopeAsync(
         int clearListAreaId,

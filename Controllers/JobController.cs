@@ -915,14 +915,20 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> ReSendSelected(string jobIds)
     {
-        await jobRepository.ReSendSelectedJobsAsync(jobIds);
+        var parsedIds = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => int.Parse(id.Trim()))
+            .ToList();
+        await jobRepository.ReSendSelectedJobsAsync(parsedIds);
         return Ok();
     }
 
     [HttpPost]
     public async Task<IActionResult> ReAssignSelected(string jobIds)
     {
-        await jobRepository.ReAssignSelectedJobsAsync(jobIds);
+        var parsedIds = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(id => int.Parse(id.Trim()))
+            .ToList();
+        await jobRepository.ReAssignSelectedJobsAsync(parsedIds);
         return Ok();
     }
 

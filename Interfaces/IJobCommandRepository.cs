@@ -12,12 +12,12 @@ namespace DespatchWeb.Interfaces;
 public interface IJobCommandRepository
 {
     Task UpdateManualPriceAsync(IReadOnlyList<JobManualPriceModel> data);
-    Task UpdateJobVoidStatusAsync(List<int> jobIds);
+    Task UpdateJobVoidStatusAsync(IReadOnlyList<int> jobIds);
 
     Task SwapPodAsync(string job1, string job2);
-    Task ReDispatchSelectedJobsAsync(List<int> jobIds);
-    Task ReSendSelectedJobsAsync(string jobIds);
-    Task ReAssignSelectedJobsAsync(string jobIds);
+    Task ReDispatchSelectedJobsAsync(IReadOnlyList<int> jobIds);
+    Task ReSendSelectedJobsAsync(IReadOnlyList<int> jobIds);
+    Task ReAssignSelectedJobsAsync(IReadOnlyList<int> jobIds);
     Task SetFirstJobAsync(int jobId, int courierId);
 
     Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data);
@@ -42,8 +42,8 @@ public interface IJobCommandRepository
         bool calculationRequired
     );
 
-    Task RestoreSplitJobsAsync(List<int> jobIds);
-    Task RestoreJobsAsync(List<int> jobIds);
+    Task RestoreSplitJobsAsync(IReadOnlyList<int> jobIds);
+    Task RestoreJobsAsync(IReadOnlyList<int> jobIds);
     Task VoidJobAsync(VoidJobRequest data);
     Task VoidArchivedJobAsync(VoidJobRequest data);
     Task VoidBulkJobAsync(VoidBulkJobRequest data);
@@ -74,7 +74,7 @@ public interface IJobCommandRepository
     Task<int> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);
 
-    Task AddClientsItemToJobAsync(int jobId, List<int> clientItemIds, decimal totalCost);
+    Task AddClientsItemToJobAsync(int jobId, IReadOnlyList<int> clientItemIds, decimal totalCost);
 
     Task AddEntityAsync<T>(T entity) where T : class;
 
@@ -82,8 +82,8 @@ public interface IJobCommandRepository
 
     Task RateJobUsAsync(RateJobUsDto dto);
 
-    Task UpdatePackagesForJobAsync(int jobId, List<ParcelDimensions> parcels);
-    Task UpdatePackagesForBulkJobAsync(int bulkJobId, List<ParcelDimensions> parcels);
+    Task UpdatePackagesForJobAsync(int jobId, IReadOnlyList<ParcelDimensions> parcels);
+    Task UpdatePackagesForBulkJobAsync(int bulkJobId, IReadOnlyList<ParcelDimensions> parcels);
     Task<bool> ApplyWebQtyUpdateAsync(int jobId);
 
     Task UpdateJobReadStatusAsync(int jobId, bool hasBeenRead);
@@ -94,8 +94,8 @@ public interface IJobCommandRepository
     Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
     Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
-    Task AssignCourierToJobAsync(List<int> jobIds, int courierId);
-    Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus);
+    Task AssignCourierToJobAsync(IReadOnlyList<int> jobIds, int courierId);
+    Task AssignCourierToChildJobsAsync(IReadOnlyList<int> jobIds, InternalJobStatus internalStatus);
     Task<CreateMinimalTucJobResponse> CreateMinimalTucJobAsync(CreateMinimalTucJobInputModel data,
         CancellationToken cancellationToken = default);
 }

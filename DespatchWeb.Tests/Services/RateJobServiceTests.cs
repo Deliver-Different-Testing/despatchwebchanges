@@ -27,7 +27,7 @@ public class RateJobServiceTests
     {
         // By default, allow all job access in tests (internal user behavior)
         _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>()))
+            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync([]);
 
         // Default: US tenant
@@ -734,7 +734,7 @@ public class RateJobServiceTests
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = true }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -762,7 +762,7 @@ public class RateJobServiceTests
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = null }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -775,7 +775,7 @@ public class RateJobServiceTests
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(It.IsAny<List<int>>()), Times.Never);
+        _jobRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(It.IsAny<IReadOnlyList<int>>()), Times.Never);
     }
 
     [Fact]
@@ -790,7 +790,7 @@ public class RateJobServiceTests
                 new JobManualPriceModel { Id = 3, Amount = 300m, Void = true }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<List<int>>()))
+        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -826,7 +826,7 @@ public class RateJobServiceTests
 
         // Return inaccessible job IDs
         _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>()))
+            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync([1, 2]);
 
         var service = CreateService();
@@ -853,7 +853,7 @@ public class RateJobServiceTests
 
         // Only job 2 is inaccessible
         _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<List<int>>()))
+            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync([2]);
 
         var service = CreateService();

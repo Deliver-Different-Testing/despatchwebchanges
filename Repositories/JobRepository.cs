@@ -194,7 +194,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="data">Search parameters including date range, filters, and pagination.</param>
     /// <returns>Paginated search results with bulk job details.</returns>
-    public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data)
+    public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default)
     {
         var isUsCustomer = _infoService.IsUsTenant();
         var jobSearch = (data.Job ?? string.Empty).ToLower();
@@ -347,7 +347,7 @@ public partial class JobRepository(
         const int maxBulkSearchRows = 5000;
         var allResults = await query
             .Take(maxBulkSearchRows)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         var distinctResults = allResults
             .Distinct(new DispatchJobViewModelComparer())
@@ -381,7 +381,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="data">Search parameters including date range, filters, sorting, and pagination.</param>
     /// <returns>Paginated search results combining live and archived jobs.</returns>
-    public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data)
+    public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -496,11 +496,11 @@ public partial class JobRepository(
             // Get counts and data in parallel for better performance
             var liveCountTask = liveJobsQuery
                 .TagWith("PodSearch - Live Count")
-                .CountAsync();
+                .CountAsync(cancellationToken);
 
             var archivedCountTask = archivedJobsQuery
                 .TagWith("PodSearch - Archived Count")
-                .CountAsync();
+                .CountAsync(cancellationToken);
 
             // Wait for counts
             await Task.WhenAll(liveCountTask, archivedCountTask);
@@ -533,13 +533,13 @@ public partial class JobRepository(
                 .Take(fetchSize)
                 .Select(JobMappings.PodSearchMapping(isUsCustomer))
                 .TagWith("PodSearch - Live Jobs")
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             var archivedJobsTask = archivedJobsOrdered
                 .Take(fetchSize)
                 .Select(JobMappings.PodSearchArchivedMapping(isUsCustomer))
                 .TagWith("PodSearch - Archived Jobs")
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
 
             // Wait for both queries
             await Task.WhenAll(liveJobsTask, archivedJobsTask);
@@ -948,7 +948,7 @@ public partial class JobRepository(
     /// Updates the void status for multiple jobs. Sets UcjbVoid = true and UcjbStatus = 1000.
     /// </summary>
     /// <param name="jobIds">List of job IDs to void.</param>
-    public async Task UpdateJobVoidStatusAsync(List<int> jobIds)
+    public async Task UpdateJobVoidStatusAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds.Count == 0)
             return;
@@ -990,13 +990,13 @@ public partial class JobRepository(
     /// <param name="jobId"></param>
     /// <returns>List of job models formatted for download export.</returns>
     public async Task<IReadOnlyList<JobDownloadModel>> PodSearchDownloadAsync(
-        List<int> courierIds,
-        List<int> speedIds,
+        IReadOnlyList<int> courierIds,
+        IReadOnlyList<int> speedIds,
         string wild,
         string job,
         DateTime fromDate,
         DateTime toDate,
-        List<int> clientIds,
+        IReadOnlyList<int> clientIds,
         int? jobId = null
     )
     {
@@ -1386,8 +1386,9 @@ public partial class JobRepository(
         bool isInternal,
         bool isUsTenant,
         string clientIds,
-        List<int> selectedViewIds,
-        int? selectedClearListId = null) =>
+        IReadOnlyList<int> selectedViewIds,
+        int? selectedClearListId = null,
+        CancellationToken cancellationToken = default) =>
         await DespatchQry(
             AppPage.Dispatch,
             queryParams,
@@ -1396,7 +1397,8 @@ public partial class JobRepository(
             clientIds,
             selectedViewIds,
             null,
-            selectedClearListId
+            selectedClearListId,
+            cancellationToken
         );
 
     /// <summary>
@@ -1410,7 +1412,7 @@ public partial class JobRepository(
     /// Restores selected jobs back to dispatch status.
     /// </summary>
     /// <param name="jobIds">List of job IDs to redispatch.</param>
-    public async Task ReDispatchSelectedJobsAsync(List<int> jobIds)
+    public async Task ReDispatchSelectedJobsAsync(IReadOnlyList<int> jobIds)
     {
         try
         {
@@ -1428,18 +1430,14 @@ public partial class JobRepository(
     /// <summary>
     /// Re-sends selected jobs to the courier device.
     /// </summary>
-    /// <param name="jobIds">Comma-separated list of job IDs to resend.</param>
-    public async Task ReSendSelectedJobsAsync(string jobIds)
+    /// <param name="jobIds">List of job IDs to resend.</param>
+    public async Task ReSendSelectedJobsAsync(IReadOnlyList<int> jobIds)
     {
-        if (string.IsNullOrWhiteSpace(jobIds))
+        if (jobIds.Count == 0)
             return;
 
-        var jobIdArray = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        var validJobIds = jobIdArray.Where(id => int.TryParse(id.Trim(), out _));
-
-        foreach (var jobIdString in validJobIds)
+        foreach (var jobId in jobIds)
         {
-            var jobId = int.Parse(jobIdString.Trim());
             await Context.Procedures.uspReDespatchJobAsync(jobId);
         }
     }
@@ -1447,18 +1445,14 @@ public partial class JobRepository(
     /// <summary>
     /// Re-assigns selected jobs to auto-dispatch for courier reassignment.
     /// </summary>
-    /// <param name="jobIds">Comma-separated list of job IDs to reassign.</param>
-    public async Task ReAssignSelectedJobsAsync(string jobIds)
+    /// <param name="jobIds">List of job IDs to reassign.</param>
+    public async Task ReAssignSelectedJobsAsync(IReadOnlyList<int> jobIds)
     {
-        if (string.IsNullOrWhiteSpace(jobIds))
+        if (jobIds.Count == 0)
             return;
 
-        var jobIdArray = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries);
-        var validJobIds = jobIdArray.Where(id => int.TryParse(id.Trim(), out _));
-
-        foreach (var jobIdString in validJobIds)
+        foreach (var jobId in jobIds)
         {
-            var jobId = int.Parse(jobIdString.Trim());
             await Context.Procedures.uspReassignJobAsync(jobId);
         }
     }
@@ -1726,7 +1720,7 @@ public partial class JobRepository(
     /// Restores split jobs back to their original state.
     /// </summary>
     /// <param name="jobIds">List of job IDs to restore.</param>
-    public async Task RestoreSplitJobsAsync(List<int> jobIds)
+    public async Task RestoreSplitJobsAsync(IReadOnlyList<int> jobIds)
     {
         if (jobIds == null || jobIds.Count == 0)
             return;
@@ -1745,7 +1739,7 @@ public partial class JobRepository(
     /// Restores voided or completed jobs back to active dispatch status.
     /// </summary>
     /// <param name="jobIds">List of job IDs to restore.</param>
-    public async Task RestoreJobsAsync(List<int> jobIds)
+    public async Task RestoreJobsAsync(IReadOnlyList<int> jobIds)
     {
         try
         {
@@ -2835,7 +2829,7 @@ public partial class JobRepository(
     /// </summary>
     public async Task AddClientsItemToJobAsync(
         int jobId,
-        List<int> clientItemIds,
+        IReadOnlyList<int> clientItemIds,
         decimal totalCost
     )
     {
@@ -3146,7 +3140,7 @@ public partial class JobRepository(
     /// <param name="jobId">The job ID to update packages for.</param>
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
     public async Task UpdatePackagesForJobAsync(int jobId,
-        List<ParcelDimensions> parcels)
+        IReadOnlyList<ParcelDimensions> parcels)
     {
         if (parcels == null || parcels.Count == 0) return;
 
@@ -3240,7 +3234,7 @@ public partial class JobRepository(
     /// <param name="bulkJobId">The bulk job ID to update packages for.</param>
     /// <param name="parcels">List of parcel dimensions to add or update.</param>
     public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
-        List<ParcelDimensions> parcels)
+        IReadOnlyList<ParcelDimensions> parcels)
     {
         if (parcels == null || parcels.Count == 0) return;
 
@@ -3333,7 +3327,7 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves all active jobs with location data for the mega map display.
     /// </summary>
-    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync()
+    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(CancellationToken cancellationToken = default)
     {
         const int maxMapJobs = 5000;
         var isUsCustomer = _infoService.IsUsTenant();
@@ -3415,7 +3409,7 @@ public partial class JobRepository(
                             .FirstOrDefault()
                         : null
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return jobs;
     }
@@ -3471,7 +3465,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
     /// <returns>Job group containing the job and related jobs.</returns>
-    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId)
+    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -3831,7 +3825,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobIds">List of job IDs to assign.</param>
     /// <param name="courierId">The courier ID to assign.</param>
-    public async Task AssignCourierToJobAsync(List<int> jobIds, int courierId)
+    public async Task AssignCourierToJobAsync(IReadOnlyList<int> jobIds, int courierId)
     {
         var rowsChanged = await AssignCourierToJobsAsync(jobIds, courierId);
         if (rowsChanged == 0)
@@ -3844,7 +3838,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="jobIds">List of parent job IDs whose courier assignments should cascade to children.</param>
     /// <param name="internalStatus">The internal status to set on child jobs.</param>
-    public async Task AssignCourierToChildJobsAsync(List<int> jobIds, InternalJobStatus internalStatus)
+    public async Task AssignCourierToChildJobsAsync(IReadOnlyList<int> jobIds, InternalJobStatus internalStatus)
     {
         if (jobIds == null || jobIds.Count == 0) return;
 
@@ -4868,8 +4862,8 @@ public partial class JobRepository(
 
     #region IJobRepository Interface Methods (delegating to protected base methods)
 
-    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
-        => await base.GetJobCoordinatesAsync(selectedViewIds);
+    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds, CancellationToken cancellationToken = default)
+        => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
 
     public new async Task<bool> IsJobArchived(int jobId)
         => await base.IsJobArchived(jobId);
@@ -4881,7 +4875,7 @@ public partial class JobRepository(
     public new async Task<int?> GetJobParentIdAsync(int jobId)
         => await base.GetJobParentIdAsync(jobId);
 
-    public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
+    public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds)
         => await base.GetJobCurrentAmountsAsync(jobIds);
 
     /// <summary>

@@ -45,7 +45,7 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
             // Create stop job via stored procedure
             var stopInput = BuildStopJobInputModel(job, newStopJobNumber, request, extras);
             var stopResult = await repository.CreateMinimalTucJobAsync(stopInput);
-            if (!stopResult.Success)
+            if (!stopResult.Success || !stopResult.JobId.HasValue)
                 throw new InvalidOperationException($"Failed to create stop job: {stopResult.Message}");
 
             // Load created job to update remaining fields

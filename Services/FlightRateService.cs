@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using DespatchWeb.Interfaces;
 using Serilog;
@@ -44,7 +43,7 @@ public sealed class FlightRateService(INationwideJobRepository repository) : IFl
                 return 0;
             }
 
-            var rate = rates.First().Rate;
+            var rate = rates[0].Rate;
             Log.Debug("Flight rate calculated for JobId: {JobId}, CarrierCode: {CarrierCode}, Rate: {Rate}",
                 jobId, carrierCode, rate);
 
