@@ -57,6 +57,12 @@ public class JobRatingDetailsDto
     public decimal? PreviousRate { get; init; }
 
     /// <summary>
+    /// When set, bypasses the GetJobTypeByIdAsync DB lookup in CalculateJobRateUsAsync.
+    /// Used by split job re-rating where all children share the same speed.
+    /// </summary>
+    public bool? IsFlightSpeed { get; init; }
+
+    /// <summary>
     /// When set, bypasses the DoesAddressMatchAirportAsync DB query for the pickup address.
     /// </summary>
     public bool? PrecomputedIsFromAddressAirport { get; init; }

@@ -1316,6 +1316,8 @@ public class CourierRepository(
                         || EF.Functions.Like(c.PersonalMobile, searchPattern)
                         || EF.Functions.Like(c.UccrMobile, searchPattern)
                         || EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern))
+            .OrderBy(c => c.Code)
+            .Take(50)
             .Select(c => new Suggestion
             {
                 Id = c.UccrId,
@@ -1709,20 +1711,9 @@ public class CourierRepository(
             };
         }
 
-        var sessionData = await query
-            .Select(c => new
-            {
-                c.CourierLogInOut.LogInTime,
-                c.CourierLogInOut.LogOutTime,
-                IsActive = c.CourierLogInOut.LogOutTime == null
-            })
-            .TagWith("GetTodayActiveDrivers - Step 1: Session Aggregates")
-            .ToListAsync();
-
-        var totalCount = sessionData.Count;
+        var totalCount = await query.CountAsync();
 
         if (totalCount == 0)
-        {
             return new TodayActiveDriversPaginatedResponse
             {
                 Items = new List<TodayActiveDriversViewModel>(),
@@ -1733,11 +1724,20 @@ public class CourierRepository(
                 TotalDriversActiveToday = 0,
                 AverageSessionTime = 0.0
             };
-        }
 
-        var totalActiveDrivers = sessionData.Count(s => s.IsActive);
-        var totalDriversActiveToday = sessionData.Count(s => s.IsActive && s.LogInTime.Date == today.Date);
-        var averageSessionTime = sessionData.Average(s => ((s.LogOutTime ?? now) - s.LogInTime).TotalMinutes);
+        // Compute aggregates in SQL instead of materializing all rows
+        var totalActiveDrivers = await query.CountAsync(c => c.CourierLogInOut.LogOutTime == null);
+
+        // Average session time still needs in-memory computation due to COALESCE with runtime 'now'
+        var sessionTimes = await query
+            .Select(c => new
+            {
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime
+            })
+            .TagWith("GetTodayActiveDrivers - Step 1: Session Times for Average")
+            .ToListAsync();
+        var averageSessionTime = sessionTimes.Average(s => ((s.LogOutTime ?? now) - s.LogInTime).TotalMinutes);
 
         query = request.OrderBy?.ToLower() switch
         {
@@ -1790,7 +1790,7 @@ public class CourierRepository(
                 Page = page,
                 Pages = totalPages,
                 TotalActiveDrivers = totalActiveDrivers,
-                TotalDriversActiveToday = totalDriversActiveToday,
+                TotalDriversActiveToday = totalActiveDrivers,
                 AverageSessionTime = averageSessionTime
             };
 
@@ -1835,7 +1835,7 @@ public class CourierRepository(
             Page = page,
             Pages = totalPages,
             TotalActiveDrivers = totalActiveDrivers,
-            TotalDriversActiveToday = totalDriversActiveToday,
+            TotalDriversActiveToday = totalActiveDrivers,
             AverageSessionTime = averageSessionTime
         };
     }
@@ -2001,14 +2001,15 @@ public class CourierRepository(
 
         var allEarningsTask = allEarningsContext.TucJobs
             .Where(j => j.UcjbCourierId.HasValue &&
-                        allCourierIds.Contains(j.UcjbCourierId.Value))
+                        allCourierIds.Contains(j.UcjbCourierId.Value) &&
+                        j.UcjbDate.Date == now.Date)
             .GroupBy(j => j.UcjbCourierId.Value)
             .Select(g => new
             {
                 CourierId = g.Key,
                 TotalEarnings = g.Sum(j => j.CourierPayment) ?? 0
             })
-            .TagWith("GetCourierDailyEarnings - Step 4b: All Earnings for Average")
+            .TagWith("GetCourierDailyEarnings - Step 4b: All Earnings for Average (today)")
             .ToListAsync();
 
         await Task.WhenAll(earningsTask, allEarningsTask);
@@ -2417,6 +2418,8 @@ public class CourierRepository(
 
     #region Driver Management Export Methods
 
+    private const int MaxExportRows = 10_000;
+
     public async Task<List<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(
         TodayActiveDriversFilterRequest request)
     {
@@ -2458,6 +2461,7 @@ public class CourierRepository(
 
         var couriers = await query
             .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
+            .Take(MaxExportRows)
             .Select(c => new
             {
                 c.UccrId,
@@ -2554,6 +2558,7 @@ public class CourierRepository(
 
         var items = await query
             .OrderBy(c => c.Code)
+            .Take(MaxExportRows)
             .Select(c => new CourierComplianceViewModel
             {
                 Code = c.Code,
@@ -2676,6 +2681,7 @@ public class CourierRepository(
         return await query
             .OrderBy(c => c.UccrName)
             .ThenBy(c => c.UccrSurname)
+            .Take(MaxExportRows)
             .Select(c => new CourierEmailViewModel
             {
                 CourierId = c.UccrId,
@@ -2715,6 +2721,7 @@ public class CourierRepository(
 
         var couriers = await query
             .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
+            .Take(MaxExportRows)
             .Select(c => new
             {
                 c.UccrId,

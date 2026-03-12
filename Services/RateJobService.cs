@@ -85,7 +85,8 @@ public class RateJobService(
                     PickupLat = jobDetails.PickupLat,
                     PickupLong = jobDetails.PickupLong,
                     DeliveryLat = jobDetails.DeliveryLat,
-                    DeliveryLong = jobDetails.DeliveryLong
+                    DeliveryLong = jobDetails.DeliveryLong,
+                    IsFlightSpeed = jobDetails.IsFlightSpeed
                 }
             );
 
@@ -190,7 +191,8 @@ public class RateJobService(
                     PickupLat = jobDetails.PickupLat,
                     PickupLong = jobDetails.PickupLong,
                     DeliveryLat = jobDetails.DeliveryLat,
-                    DeliveryLong = jobDetails.DeliveryLong
+                    DeliveryLong = jobDetails.DeliveryLong,
+                    IsFlightSpeed = jobDetails.IsFlightSpeed
                 }
             );
 
@@ -461,8 +463,19 @@ public class RateJobService(
     private async Task<JobRateResult> CalculateJobRateUsAsync(JobRateRequest request)
     {
         var isUsCustomer = infoService.IsUsTenant();
-        var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
-        var speedGrouping = speed.Grouping;
+
+        // Use pre-computed flight speed flag when available (e.g. split job re-rating),
+        // otherwise look up from DB
+        bool isFlight;
+        if (request.IsFlightSpeed.HasValue)
+        {
+            isFlight = request.IsFlightSpeed.Value;
+        }
+        else
+        {
+            var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
+            isFlight = speed.Grouping.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight);
+        }
 
         var result = new JobRateResult
         {
@@ -471,7 +484,7 @@ public class RateJobService(
             ToMiles = 0
         };
 
-        if (speedGrouping.GroupingId != (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight))
+        if (!isFlight)
         {
             result.TotalMiles = await CalculateRoadDistance(
                 request.PickupLat,
@@ -481,13 +494,16 @@ public class RateJobService(
         }
         else
         {
-            // Get closest airports
-            var closestFromAirports = await jobRepository.GetClosestAirportsAsync(
+            // Get closest airports in parallel — these are independent stored procedure calls
+            var fromAirportsTask = jobRepository.GetClosestAirportsAsync(
                 request.PickupLat ?? 0,
                 request.PickupLong ?? 0);
-            var closestToAirports = await jobRepository.GetClosestAirportsAsync(
+            var toAirportsTask = jobRepository.GetClosestAirportsAsync(
                 request.DeliveryLat ?? 0,
                 request.DeliveryLong ?? 0);
+            await Task.WhenAll(fromAirportsTask, toAirportsTask);
+            var closestFromAirports = fromAirportsTask.Result;
+            var closestToAirports = toAirportsTask.Result;
 
             result.FromAirport = closestFromAirports.First();
             result.ToAirport = closestToAirports.First();

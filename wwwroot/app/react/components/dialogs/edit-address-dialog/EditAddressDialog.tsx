@@ -293,8 +293,12 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     const handleAddressFieldsFromLookup = useCallback((location: HereMapsLookupResponse) => {
         const address = location.address;
 
-        // Line 1: Company/Building (only use actual building name, not the full address title)
-        setAddressLine1(location.mapReferences?.pointAddress?.buildingName || '');
+        // Line 1: Company/Building — only overwrite when HERE returns a building name,
+        // otherwise preserve the existing value so users don't lose pre-populated company names
+        const buildingName = location.mapReferences?.pointAddress?.buildingName;
+        if (buildingName) {
+            setAddressLine1(buildingName);
+        }
 
         // Line 2: Unit/Suite - not directly available
         setAddressLine2('');

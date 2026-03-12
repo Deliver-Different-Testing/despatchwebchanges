@@ -7,6 +7,12 @@ public class JobRateRequest
     public decimal? PickupLong { get; set; }
     public decimal? DeliveryLat { get; set; }
     public decimal? DeliveryLong { get; set; }
+
+    /// <summary>
+    /// When set, bypasses the GetJobTypeByIdAsync DB lookup in CalculateJobRateUsAsync.
+    /// Used by split job re-rating where all children share the same speed.
+    /// </summary>
+    public bool? IsFlightSpeed { get; set; }
 }
 
 public class JobRateResult

@@ -342,7 +342,11 @@ public partial class JobRepository(
                 IsBulkJob = true
             };
 
+        // Cap initial SQL result set to prevent unbounded loads;
+        // client-side Distinct (custom comparer) requires in-memory dedup
+        const int maxBulkSearchRows = 5000;
         var allResults = await query
+            .Take(maxBulkSearchRows)
             .ToListAsync();
 
         var distinctResults = allResults
@@ -351,7 +355,6 @@ public partial class JobRepository(
 
         var totalCount = distinctResults.Count;
 
-        // Apply pagination in memory
         var page = data.Page ?? 0;
         var pageSize = data.PageSize ?? 50;
 
@@ -950,45 +953,26 @@ public partial class JobRepository(
         if (jobIds.Count == 0)
             return;
 
-        // Get jobs from both active and archived tables
+        // Use ExecuteUpdateAsync for direct SQL UPDATE without loading entities
         await using var activeContext = CreateNewContext();
         await using var archiveContext = CreateNewContext();
 
-        var activeJobsTask = activeContext.TucJobs
+        var activeTask = activeContext.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))
-            .ToListAsync();
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbVoid, true)
+                .SetProperty(j => j.UcjbStatus, 1000));
 
-        var archivedJobsTask = archiveContext.TucJobArchives
+        var archiveTask = archiveContext.TucJobArchives
             .Where(j => jobIds.Contains(j.UcjbId))
-            .ToListAsync();
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbVoid, true)
+                .SetProperty(j => j.UcjbStatus, 1000));
 
-        await Task.WhenAll(activeJobsTask, archivedJobsTask);
+        await Task.WhenAll(activeTask, archiveTask);
 
-        var activeJobs = await activeJobsTask;
-        var archivedJobs = await archivedJobsTask;
-
-        // Update active jobs
-        foreach (var job in activeJobs)
-        {
-            job.UcjbVoid = true;
-            job.UcjbStatus = 1000;
-            Log.Information("Job {JobId} marked as voided via bulk upload", job.UcjbId);
-        }
-
-        // Update archived jobs
-        foreach (var job in archivedJobs)
-        {
-            job.UcjbVoid = true;
-            job.UcjbStatus = 1000;
-            Log.Information("Archived job {JobId} marked as voided via bulk upload", job.UcjbId);
-        }
-
-        // Save changes
-        if (activeJobs.Count > 0)
-            await activeContext.SaveChangesAsync();
-
-        if (archivedJobs.Count > 0)
-            await archiveContext.SaveChangesAsync();
+        foreach (var jobId in jobIds)
+            Log.Information("Job {JobId} marked as voided via bulk upload", jobId);
     }
 
     /// <summary>
@@ -1133,15 +1117,20 @@ public partial class JobRepository(
             );
         }
 
+        // Cap each source to prevent unbounded export result sets
+        const int maxExportRowsPerSource = 5000;
+
         // Execute both queries in parallel with direct mapping to JobDownloadModel
         var liveJobsTask = liveJobsQuery
             .OrderBy(j => j.UcjbNumber)
+            .Take(maxExportRowsPerSource)
             .Select(JobMappings.LiveJobDownloadMapping)
             .TagWith("PodSearchDownload - Live Jobs")
             .ToListAsync();
 
         var archivedJobsTask = archivedJobsQuery
             .OrderBy(j => j.UcjbNumber)
+            .Take(maxExportRowsPerSource)
             .Select(JobMappings.ArchivedJobDownloadMapping)
             .TagWith("PodSearchDownload - Archived Jobs")
             .ToListAsync();
@@ -1307,7 +1296,7 @@ public partial class JobRepository(
             {
                 StartDate = request.StartDate.Date,
                 EndDate = request.EndDate.Date,
-                ClientIds = request.ClientIds
+                request.ClientIds
             })).AsList();
 
             return results.ConvertAll(MapToPerformanceSpendReportModel);
@@ -3346,6 +3335,7 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<MegaMapResponse>> GetJobsForMegaMapAsync()
     {
+        const int maxMapJobs = 5000;
         var isUsCustomer = _infoService.IsUsTenant();
 
         // Get active jobs to display on a map
@@ -3355,6 +3345,7 @@ public partial class JobRepository(
                 && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
                 && !j.UcjbVoid
             )
+            .Take(maxMapJobs)
             .Select(j => new MegaMapResponse
             {
                 JobId = j.UcjbId,
@@ -3971,14 +3962,14 @@ public partial class JobRepository(
     /// <returns>True if the job can be split, false otherwise.</returns>
     public async Task<bool> CanJobBeSplitAsync(int jobId)
     {
-        var job = await Context.TucJobs
-            .Include(j => j.TucJobNationwides)
-            .FirstOrDefaultAsync(j => j.UcjbId == jobId);
-
-        if (job == null) return false;
+        // Use projection to check in SQL without loading full entity + collection
+        var result = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => new { HasFlights = j.TucJobNationwides.Any() })
+            .FirstOrDefaultAsync();
 
         // Only restriction: cannot split jobs with flights assigned
-        return job.TucJobNationwides.Count == 0;
+        return result is { HasFlights: false };
     }
 
     /// <summary>

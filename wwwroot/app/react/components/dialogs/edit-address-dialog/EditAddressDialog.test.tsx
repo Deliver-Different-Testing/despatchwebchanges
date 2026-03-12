@@ -547,12 +547,82 @@ describe('EditAddressDialog', () => {
                 expect((screen.getByLabelText(/ZIP Code/) as HTMLInputElement).value).toBe('10001');
             });
 
-            // Company/Building is only populated from buildingName (not available in this response)
+            // Company/Building is preserved (not cleared) when buildingName is not in the response
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
 
             // Check coordinates
             expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
             expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
+        });
+
+        it('preserves existing company name when selecting address without buildingName', async () => {
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({
+                isUsTenant: true,
+                addressDetails: existingAddress, // Has 'Empire State Building' as addressLine1
+            });
+            renderWithProviders(props);
+
+            // Verify company name is pre-populated
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Empire State Building');
+
+            // Select a new address (without buildingName in the response)
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.clear(searchInput);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // Company name should be preserved since the lookup has no buildingName
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
+            });
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Empire State Building');
+        });
+
+        it('updates company name when selecting address with buildingName', async () => {
+            const lookupWithBuilding: HereMapsLookupResponse = {
+                ...usLookupResponse,
+                mapReferences: {
+                    pointAddress: {
+                        addressId: 'addr-123',
+                        buildingName: 'Freedom Tower',
+                    },
+                },
+            };
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(lookupWithBuilding);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({
+                isUsTenant: true,
+                addressDetails: existingAddress, // Has 'Empire State Building'
+            });
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.clear(searchInput);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // Company name should be updated to the buildingName from HERE
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Freedom Tower');
+            });
         });
 
         it('populates NZ form fields when selecting an address from search results', async () => {
@@ -582,7 +652,7 @@ describe('EditAddressDialog', () => {
                 expect((screen.getByLabelText(/Post Code/) as HTMLInputElement).value).toBe('1010');
             });
 
-            // Company/Building is only populated from buildingName (not available in this response)
+            // Company/Building is preserved (not cleared) when buildingName is not in the response
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
         }, 30000);
 

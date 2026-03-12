@@ -25,13 +25,13 @@ public class AiAssistantService(
     ITenantClock clock,
     IOptions<AnthropicSettings> settings) : IAiAssistantService
 {
+    private const int MaxToolIterations = 5;
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         WriteIndented = false
     };
-
-    private const int MaxToolIterations = 5;
 
     public async Task<AiChatResponse> ChatAsync(List<AiMessage> messages, CancellationToken ct = default)
     {
@@ -80,7 +80,7 @@ public class AiAssistantService(
             var toolResults = new List<string>();
             foreach (var toolCall in response.ToolCalls)
             {
-                var result = await ExecuteToolAsync(toolCall, ct);
+                var result = await ExecuteToolAsync(toolCall);
                 toolResults.Add($"[Tool result for {toolCall.ToolName}]\n{AiDataSanitizer.Sanitize(result)}");
             }
 
@@ -236,7 +236,7 @@ public class AiAssistantService(
         ];
     }
 
-    private async Task<string> ExecuteToolAsync(AiToolCall toolCall, CancellationToken ct)
+    private async Task<string> ExecuteToolAsync(AiToolCall toolCall)
     {
         try
         {
@@ -244,14 +244,14 @@ public class AiAssistantService(
 
             return toolCall.ToolName switch
             {
-                "lookup_job" => await LookupJobAsync(args, ct),
-                "search_jobs" => await SearchJobsAsync(args, ct),
-                "search_couriers" => await SearchCouriersAsync(args, ct),
-                "get_job_notes" => await GetJobNotesAsync(args, ct),
-                "get_job_events" => await GetJobEventsAsync(args, ct),
-                "get_courier_details" => await GetCourierDetailsAsync(args, ct),
-                "get_overview_stats" => await GetOverviewStatsAsync(ct),
-                "get_active_couriers" => await GetActiveCouriersAsync(ct),
+                "lookup_job" => await LookupJobAsync(args),
+                "search_jobs" => await SearchJobsAsync(args),
+                "search_couriers" => await SearchCouriersAsync(args),
+                "get_job_notes" => await GetJobNotesAsync(args),
+                "get_job_events" => await GetJobEventsAsync(args),
+                "get_courier_details" => await GetCourierDetailsAsync(args),
+                "get_overview_stats" => await GetOverviewStatsAsync(),
+                "get_active_couriers" => await GetActiveCouriersAsync(),
                 _ => JsonSerializer.Serialize(new { error = $"Unknown tool: {toolCall.ToolName}" })
             };
         }
@@ -262,7 +262,7 @@ public class AiAssistantService(
         }
     }
 
-    private async Task<string> LookupJobAsync(JsonDocument args, CancellationToken ct)
+    private async Task<string> LookupJobAsync(JsonDocument args)
     {
         var jobId = args.RootElement.GetProperty("jobId").GetInt32();
         var job = await jobRepository.GetSingleJobById(jobId);
@@ -271,7 +271,7 @@ public class AiAssistantService(
             : JsonSerializer.Serialize(job, JsonOptions);
     }
 
-    private async Task<string> SearchJobsAsync(JsonDocument args, CancellationToken ct)
+    private async Task<string> SearchJobsAsync(JsonDocument args)
     {
         var request = new OpenJobsRequest();
         var jobs = await jobRepository.GetOpenJobsAsync(request);
@@ -300,14 +300,14 @@ public class AiAssistantService(
             JsonOptions);
     }
 
-    private async Task<string> SearchCouriersAsync(JsonDocument args, CancellationToken ct)
+    private async Task<string> SearchCouriersAsync(JsonDocument args)
     {
         var searchTerm = args.RootElement.GetProperty("searchTerm").GetString();
         var couriers = await courierRepository.AllActiveCouriersAsync(searchTerm);
         return JsonSerializer.Serialize(couriers, JsonOptions);
     }
 
-    private async Task<string> GetJobNotesAsync(JsonDocument args, CancellationToken ct)
+    private async Task<string> GetJobNotesAsync(JsonDocument args)
     {
         var jobId = args.RootElement.GetProperty("jobId").GetInt32();
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
@@ -325,7 +325,7 @@ public class AiAssistantService(
         return JsonSerializer.Serialize(summary, JsonOptions);
     }
 
-    private async Task<string> GetJobEventsAsync(JsonDocument args, CancellationToken ct)
+    private async Task<string> GetJobEventsAsync(JsonDocument args)
     {
         var jobId = args.RootElement.GetProperty("jobId").GetInt32();
         var filters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
@@ -345,7 +345,7 @@ public class AiAssistantService(
         return JsonSerializer.Serialize(summary, JsonOptions);
     }
 
-    private async Task<string> GetCourierDetailsAsync(JsonDocument args, CancellationToken ct)
+    private async Task<string> GetCourierDetailsAsync(JsonDocument args)
     {
         var courierId = args.RootElement.GetProperty("courierId").GetInt32();
         var courier = await courierRepository.GetCourierByIdAsync(courierId);
@@ -354,13 +354,13 @@ public class AiAssistantService(
             : JsonSerializer.Serialize(courier, JsonOptions);
     }
 
-    private async Task<string> GetOverviewStatsAsync(CancellationToken ct)
+    private async Task<string> GetOverviewStatsAsync()
     {
         var stats = await jobRepository.GetOverviewStatsAsync();
         return JsonSerializer.Serialize(stats, JsonOptions);
     }
 
-    private async Task<string> GetActiveCouriersAsync(CancellationToken ct)
+    private async Task<string> GetActiveCouriersAsync()
     {
         var couriers = await courierRepository.ActiveCouriersAsync();
 

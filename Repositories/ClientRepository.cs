@@ -48,6 +48,7 @@ public class ClientRepository(IDbContextFactory<DespatchContext> contextFactory)
             .Where(c => c.UcclActive == true &&
                         EF.Functions.Like(c.UcclCode + " " + c.UcclName, likePattern))
             .OrderBy(c => c.UcclCode)
+            .Take(50)
             .Select(c => new Suggestion
             {
                 Id = c.UcclId,
