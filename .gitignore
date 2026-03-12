@@ -356,3 +356,5 @@ healthchecksdb
 /.claude/settings.local.json
 .jest-cache
 nul
+/test-output.txt
+/test-results.txt

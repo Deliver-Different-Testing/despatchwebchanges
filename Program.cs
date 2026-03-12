@@ -133,6 +133,8 @@ builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddScoped<IJobRepository, JobRepository>();
+builder.Services.AddScoped<IJobQueryRepository>(sp => sp.GetRequiredService<IJobRepository>());
+builder.Services.AddScoped<IJobCommandRepository>(sp => sp.GetRequiredService<IJobRepository>());
 builder.Services.AddScoped<INoteRepository, NoteRepository>();
 builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
 builder.Services.AddScoped<ICourierRepository, CourierRepository>();

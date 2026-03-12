@@ -22,6 +22,11 @@ public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) :
     public async Task AddEntityAsync<T>(T entity)
         where T : class => await Context.Set<T>().AddAsync(entity);  
     
+    /// <summary>
+    /// Finds an entity by primary key. Uses FindAsync which always returns a tracked entity
+    /// (bypasses the global NoTracking default). Use this when you intend to modify and save the entity.
+    /// For read-only lookups, prefer a direct query with .Select() projection instead.
+    /// </summary>
     public async Task<T> GetByIdAsync<T>(int id) where T : class => await Context.Set<T>().FindAsync(id);
 
     public async Task SaveChangesAsync() => await Context.SaveChangesAsync();

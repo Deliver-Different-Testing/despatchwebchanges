@@ -164,7 +164,6 @@ public static partial class JobMappings
 
         // Query TucJobNationwide directly by job ID - works for both live and archived jobs
         var segmentsByJob = await context.TucJobNationwides
-            .AsNoTracking()
             .Where(n => n.UcnwJobId.HasValue && effectiveJobIds.Contains(n.UcnwJobId.Value))
             .Include(n => n.DepartureAirportTimeZoneNavigation)
             .Include(n => n.ArrivalAirportTimeZoneNavigation)

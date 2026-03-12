@@ -48,14 +48,16 @@ public class MessageRepository(
         return unreadCount;
     }
 
+    private const int RecentMessageDays = 90;
+
     public async Task<List<RecentMessageViewModel>> GetRecentListAsync()
     {
         var staffId = infoService.GetStaffId();
         var currentDate = clock.TenantNow;
+        var cutoffDate = currentDate.AddDays(-RecentMessageDays);
 
         var allMessages = await Context.TucManualMessages
-            .AsNoTracking()
-            .AsSplitQuery()
+            .Where(m => m.UcmmDate >= cutoffDate)
             .ForStaff(staffId)
             .IncludeParticipants()
             .ToListAsync();
@@ -96,9 +98,11 @@ public class MessageRepository(
         return result;
     }
 
-    public async Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId) =>
+    public async Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200) =>
         await Context.TucManualMessages
             .BetweenStaffAndCourier(staffId, courierId)
+            .OrderByDescending(m => m.UcmmDate)
+            .Take(limit)
             .OrderBy(m => m.UcmmDate)
             .Select(m => new ChatMessageViewModel
             {
@@ -116,9 +120,11 @@ public class MessageRepository(
             })
             .ToListAsync();
 
-    public async Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId) =>
+    public async Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200) =>
         await Context.TucManualMessages
             .BetweenStaff(currentStaffId, otherStaffId)
+            .OrderByDescending(m => m.UcmmDate)
+            .Take(limit)
             .OrderBy(m => m.UcmmDate)
             .Select(m => new ChatMessageViewModel
             {
@@ -225,7 +231,6 @@ public class MessageRepository(
         var staffId = infoService.GetStaffId();
 
         var quickResponses = await Context.UserQuickResponses
-            .AsNoTracking()
             .Where(r => r.StaffId == staffId && r.IsActive == true)
             .Select(r => new Suggestion
             {
@@ -286,7 +291,6 @@ public class MessageRepository(
                     ? "online"
                     : "offline"
             })
-            .AsNoTracking()
             .ToListAsync();
 
         var staff = await Context.TucStaffs
@@ -301,7 +305,6 @@ public class MessageRepository(
                 OtherMessagePartyType = OtherMessagePartyType.Staff,
                 Status = "unknown"
             })
-            .AsNoTracking()
             .ToListAsync();
 
         var results = couriers.Concat(staff).ToList();

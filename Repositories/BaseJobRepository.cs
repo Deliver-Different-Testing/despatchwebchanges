@@ -38,7 +38,7 @@ public class BaseJobRepository(
     {
         try
         {
-            var query = BuildBaseQuery(selectedViewIds, isUsTenant);
+            var query = await BuildBaseQueryAsync(selectedViewIds, isUsTenant);
             if (query == null)
                 return new JobSearchResult
                 {
@@ -96,33 +96,44 @@ public class BaseJobRepository(
                     };
             }
 
-            var allJobs = await query
-                .AsNoTracking()
-                .AsSplitQuery()
-                .Select(JobMappings.JobDispatchMapping(isUsTenant))
-                .ToListAsync();
+            var projectedQuery = query.Select(JobMappings.JobDispatchMapping(isUsTenant));
 
+            // Apply server-side pagination when Page is provided
+            var requestedPage = queryParams.Page ?? 0;
+            var pageSize = queryParams.PageSize ?? 500;
+            int? totalCount = null;
+            var hasMore = false;
 
-            // Safety-net dedup — DISTINCT is applied in GetFilteredJobIdsQuery, but view joins
-            // may still produce duplicates in edge cases.
+            if (requestedPage > 0)
+            {
+                totalCount = await projectedQuery.Select(j => j.Id).Distinct().CountAsync();
+                projectedQuery = projectedQuery
+                    .OrderBy(j => j.Id)
+                    .Skip((requestedPage - 1) * pageSize)
+                    .Take(pageSize);
+                hasMore = totalCount > requestedPage * pageSize;
+            }
+
+            var allJobs = await projectedQuery.ToListAsync();
+
             allJobs = allJobs
                 .GroupBy(j => j.Id)
                 .Select(g => g.First())
                 .ToList();
 
+            totalCount ??= allJobs.Count;
+
             // Populate Children on parent jobs so the frontend can track grouping via _groupChildren.
-            // All jobs stay in the flat list � the template renders them as flat rows.
+            // All jobs stay in the flat list the template renders them as flat rows.
             var parentJobMap = allJobs
                 .Where(j => j.IsParentOrSingle && j.ParentId.HasValue && j.ParentId == j.Id)
                 .ToDictionary(j => j.Id);
 
             foreach (var child in allJobs.Where(j => !j.IsParentOrSingle && j.ParentId.HasValue))
             {
-                if (parentJobMap.TryGetValue(child.ParentId!.Value, out var parent))
-                {
-                    parent.Children ??= [];
-                    parent.Children.Add(child);
-                }
+                if (!parentJobMap.TryGetValue(child.ParentId!.Value, out var parent)) continue;
+                parent.Children ??= [];
+                parent.Children.Add(child);
             }
 
             await EnrichJobsWithCollections(allJobs);
@@ -149,8 +160,8 @@ public class BaseJobRepository(
             return new JobSearchResult
             {
                 Jobs = allJobs,
-                TotalCount = allJobs.Count,
-                HasMore = false,
+                TotalCount = totalCount.Value,
+                HasMore = hasMore,
                 MapItems = page == AppPage.Dispatch ? mapItems : null
             };
         }
@@ -161,9 +172,9 @@ public class BaseJobRepository(
         }
     }
 
-    private IQueryable<TucJob> BuildBaseQuery(List<int> selectedViewIds, bool isUsTenant)
+    private async Task<IQueryable<TucJob>> BuildBaseQueryAsync(List<int> selectedViewIds, bool isUsTenant)
     {
-        var jobIdsQuery = GetFilteredJobIdsQuery(selectedViewIds, isUsTenant);
+        var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
 
         if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
             return Context.TucJobs.Where(j => false);
@@ -175,7 +186,7 @@ public class BaseJobRepository(
         return query.TagWith($"BuildBaseQuery - Views: {selectedViewIds?.Count ?? 0}");
     }
 
-    private IQueryable<int> GetFilteredJobIdsQuery(List<int> selectedViewIds, bool isUsTenant)
+    private async Task<IQueryable<int>> GetFilteredJobIdsQueryAsync(List<int> selectedViewIds, bool isUsTenant)
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
@@ -186,10 +197,10 @@ public class BaseJobRepository(
                 .Distinct();
         }
 
-        var viewFilters = Context.TblDespatchViews
+        var viewFilters = await Context.TblDespatchViews
             .Where(dv => selectedViewIds.Contains(dv.DespatchViewId))
             .Select(dv => dv.WhereCondition)
-            .ToList();
+            .ToListAsync();
 
         if (viewFilters.Count == 0) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
 
@@ -200,7 +211,10 @@ public class BaseJobRepository(
             throw new InvalidOperationException("Invalid filter condition detected in view configuration.");
         }
 
-        // Case 3: Build combined filter
+        // Build combined filter from admin-configured view WhereConditions stored in TblDespatchViews.
+        // SECURITY: These filters originate from database-stored admin configuration, NOT user input.
+        // The IsValidWhereCondition blocklist provides defense-in-depth but is not the primary trust boundary.
+        // Do NOT pass untrusted/user-supplied input into this code path.
         var combinedFilters = string.Join(" OR ", viewFilters.Select(filter => $"({filter})"));
 
         return Context.DeswebQryDespatchJobViewFilters
@@ -250,7 +264,6 @@ public class BaseJobRepository(
 
         var relatedJobsTask = parentIds.Count != 0
             ? relatedJobsContext.TucJobs
-                .AsNoTracking()
                 .Where(j => parentIds.Contains(j.ParentId.Value))
                 .GroupBy(j => j.ParentId.Value)
                 .Select(g => new
@@ -262,7 +275,6 @@ public class BaseJobRepository(
             : Task.FromResult(new Dictionary<int, List<Suggestion>>());
 
         var flightsTask = flightsContext.TucJobNationwides
-            .AsNoTracking()
             .Where(nw => nw.UcnwJobId.HasValue && jobIds.Contains(nw.UcnwJobId.Value))
             .Select(nw => new { nw.UcnwJobId, nw.UcnwFlightNo })
             .GroupBy(x => x.UcnwJobId)
@@ -294,7 +306,6 @@ public class BaseJobRepository(
         if (clearListEnvelope == null) return query;
 
         if (pickupOnlyFilter)
-        {
             // Filter by pickup location only (jobs FROM this area) - for needs-dispatch
             return query.Where(j =>
                 j.PickUpLatitude >= clearListEnvelope.MinimumLatitude
@@ -302,7 +313,6 @@ public class BaseJobRepository(
                 && j.PickUpLongitude >= clearListEnvelope.MinimumLongitude
                 && j.PickUpLongitude <= clearListEnvelope.MaximumLongitude
             );
-        }
 
         // Filter by pickup OR delivery location (jobs FROM or TO this area) - for all other categories
         return query.Where(j =>
@@ -394,10 +404,12 @@ public class BaseJobRepository(
 
     protected async Task<List<JobCoordinateModel>> GetJobCoordinatesAsync(List<int> selectedViewIds)
     {
+        const int maxMapCoordinates = 5000;
+
         try
         {
             var isUsCustomer = infoService.IsUsTenant();
-            var jobIdsQuery = GetFilteredJobIdsQuery(selectedViewIds, isUsCustomer);
+            var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsCustomer);
 
             var jobCoordinates = await (
                     from job in Context.TucJobs
@@ -419,7 +431,7 @@ public class BaseJobRepository(
                         FromAddress = job.UcjbFromAddr,
                         ToAddress = job.UcjbToAddr
                     })
-                .AsNoTracking()
+                .Take(maxMapCoordinates)
                 .ToListAsync();
 
             return jobCoordinates;
@@ -656,7 +668,6 @@ public class BaseJobRepository(
 
             // Fetch current state for history before updating
             var currentNote = await Context.TucNotes
-                .AsNoTracking()
                 .Where(c => c.NoteId == noteId)
                 .Select(c => new { c.NoteText, c.NoteTypeId, c.IsImportant })
                 .FirstOrDefaultAsync();
@@ -736,7 +747,6 @@ public class BaseJobRepository(
         {
             // Get parent bulk job ID (self if parent, or BulkParentId if child)
             var parentBulkJobId = await Context.TblBulkJobs
-                .AsNoTracking()
                 .Where(j => j.BulkJobId == jobId)
                 .Select(j => j.BulkParentId ?? j.BulkJobId)
                 .FirstOrDefaultAsync();
@@ -744,7 +754,6 @@ public class BaseJobRepository(
             if (parentBulkJobId == 0) return [];
 
             return await Context.TblBulkJobs
-                .AsNoTracking()
                 .Where(j => j.BulkJobId == parentBulkJobId || j.BulkParentId == parentBulkJobId)
                 .Select(j => new MultiSuggestion
                 {
@@ -763,7 +772,6 @@ public class BaseJobRepository(
             var effectiveArchiveJobId = await Context.GetEffectiveArchiveJobIdAsync(jobId);
 
             var archivedData = await Context.TucJobArchives
-                .AsNoTracking()
                 .Where(j => j.UcjbId == effectiveArchiveJobId || j.ParentId == effectiveArchiveJobId)
                 .Select(j => new MultiSuggestion
                 {
@@ -782,7 +790,6 @@ public class BaseJobRepository(
         var effectiveLiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
 
         var liveData = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == effectiveLiveJobId || j.ParentId == effectiveLiveJobId)
             .Select(j => new MultiSuggestion
             {
@@ -806,7 +813,6 @@ public class BaseJobRepository(
     {
         // Check live jobs
         var liveJobs = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => jobIds.Contains(j.UcjbId))
             .Select(j => new JobCurrentAmountInfo
             {

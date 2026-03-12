@@ -24,6 +24,7 @@ public static class MessageQueryExtensions
 
         public IQueryable<TucManualMessage> IncludeParticipants() =>
             query
+                .AsSplitQuery()
                 .Include(m => m.UcmmSendFromCourier)
                 .ThenInclude(c => c.CourierLogInOut)
                 .Include(m => m.UcmmSendToCourier)

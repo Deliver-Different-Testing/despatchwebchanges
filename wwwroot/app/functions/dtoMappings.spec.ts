@@ -6,7 +6,7 @@
 
 import {transformJobGroupDTO} from './dtoMappings';
 import {IJobDto, IJobGroupDto} from '../interfaces/job.interface';
-import {formatShortDateTime, formatShortDate} from './formatDates';
+import {formatShortDateTime, formatShortDate, formatDateFromApi} from './formatDates';
 
 /** Builds a minimal IJobDto with sensible defaults. Override as needed. */
 function makeJobDto(overrides: Partial<IJobDto> = {}): IJobDto {
@@ -132,7 +132,7 @@ describe('transformJobGroupDTO - Arrival Time Fields', () => {
             const dto = makeJobGroupDto({pickupArrivalTime: dateStr});
             const result = transformJobGroupDTO(dto, false);
 
-            const expected = formatShortDateTime(dateStr, false);
+            const expected = formatShortDateTime(formatDateFromApi(dateStr), false);
             expect(result.job._pickupArrivalTimeStr).toBe(expected);
         });
 
@@ -167,7 +167,7 @@ describe('transformJobGroupDTO - Arrival Time Fields', () => {
             const dto = makeJobGroupDto({deliveryArrivalTime: dateStr});
             const result = transformJobGroupDTO(dto, false);
 
-            const expected = formatShortDateTime(dateStr, false);
+            const expected = formatShortDateTime(formatDateFromApi(dateStr), false);
             expect(result.job._deliveryArrivalTimeStr).toBe(expected);
         });
 
@@ -186,7 +186,7 @@ describe('transformJobGroupDTO - Created Date/Time String', () => {
         const dto = makeJobGroupDto({createdDate: createdStr});
         const result = transformJobGroupDTO(dto, false);
 
-        const expected = formatShortDateTime(createdStr, false);
+        const expected = formatShortDateTime(formatDateFromApi(createdStr), false);
         expect(result.job._createdDateTimeStr).toBe(expected);
     });
 
@@ -202,7 +202,7 @@ describe('transformJobGroupDTO - Created Date/Time String', () => {
         const dto = makeJobGroupDto({createdDate: createdStr});
         const result = transformJobGroupDTO(dto, false);
 
-        const expected = formatShortDate(createdStr, false);
+        const expected = formatShortDate(formatDateFromApi(createdStr), false);
         expect(result.job._createdDateStr).toBe(expected);
     });
 });
@@ -245,8 +245,9 @@ describe('transformJobGroupDTO - US vs Non-US Format', () => {
             deliveryArrivalTime: dateStr,
         })}, true);
 
-        expect(nzResult.job._pickupArrivalTimeStr).toBe(formatShortDateTime(dateStr, false));
-        expect(usResult.job._pickupArrivalTimeStr).toBe(formatShortDateTime(dateStr, true));
+        const parsed = formatDateFromApi(dateStr);
+        expect(nzResult.job._pickupArrivalTimeStr).toBe(formatShortDateTime(parsed, false));
+        expect(usResult.job._pickupArrivalTimeStr).toBe(formatShortDateTime(parsed, true));
     });
 });
 
@@ -270,10 +271,10 @@ describe('transformJobGroupDTO - Related Jobs', () => {
         expect(result.relatedJobs[0].pickupArrivalTime!.isValid()).toBe(true);
         expect(result.relatedJobs[0].deliveryArrivalTime).toBeDefined();
         expect(result.relatedJobs[0]._pickupArrivalTimeStr).toBe(
-            formatShortDateTime('2024-06-10T10:00:00+00:00', false)
+            formatShortDateTime(formatDateFromApi('2024-06-10T10:00:00+00:00'), false)
         );
         expect(result.relatedJobs[0]._deliveryArrivalTimeStr).toBe(
-            formatShortDateTime('2024-06-10T15:00:00+00:00', false)
+            formatShortDateTime(formatDateFromApi('2024-06-10T15:00:00+00:00'), false)
         );
     });
 });

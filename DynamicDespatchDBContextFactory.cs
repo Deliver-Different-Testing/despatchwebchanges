@@ -26,32 +26,31 @@ public class DynamicDespatchDbContextFactory(
 
         // Diagnostic logging for troubleshooting authentication issues
         if (httpContext == null)
-        {
             Log.Warning("CreateDbContext called without HttpContext - no authentication context available");
-        }
         else if (!isAuthenticated)
-        {
             Log.Warning("CreateDbContext called with unauthenticated request. Path: {Path}",
                 httpContext.Request.Path);
-        }
         else if (string.IsNullOrEmpty(tenantId))
-        {
-            Log.Warning("CreateDbContext called with authenticated user but missing CurrentTenantID claim. Path: {Path}, User: {User}",
+            Log.Warning(
+                "CreateDbContext called with authenticated user but missing CurrentTenantID claim. Path: {Path}, User: {User}",
                 httpContext.Request.Path,
                 httpContext.User.Identity?.Name ?? "unknown");
-        }
 
         var connectionString = connectionStringManager.GetConnectionStringAsync(cacheKey).GetAwaiter().GetResult();
 
         if (string.IsNullOrEmpty(connectionString))
         {
-            Log.Error("Connection string is not set. CacheKey: {CacheKey}, IsAuthenticated: {IsAuthenticated}, TenantId: {TenantId}",
+            Log.Error(
+                "Connection string is not set. CacheKey: {CacheKey}, IsAuthenticated: {IsAuthenticated}, TenantId: {TenantId}",
                 cacheKey, isAuthenticated, tenantId ?? "null");
-            throw new InvalidOperationException($"Connection string is not set. TenantId: {tenantId ?? "null"}, IsAuthenticated: {isAuthenticated}");
+            throw new InvalidOperationException(
+                $"Connection string is not set. TenantId: {tenantId ?? "null"}, IsAuthenticated: {isAuthenticated}");
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<DespatchContext>(_options);
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
+            sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+        optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 
         return new DespatchContext(optionsBuilder.Options);
     }

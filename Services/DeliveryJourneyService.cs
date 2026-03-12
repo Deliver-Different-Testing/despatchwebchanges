@@ -60,8 +60,6 @@ public partial class DeliveryJourneyService(
         var timezone = infoService.GetTenantTimeZone();
 
         var eventDtos = await context.TucEvents
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(e => e.UcevJobId == jobId)
             .Select(e => new DeliveryJourneyDto
             {
@@ -133,8 +131,6 @@ public partial class DeliveryJourneyService(
         if (isLiveJob)
         {
             var noteDtos = await context.TucNotes
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(n => n.JobId == jobId)
                 .Select(n => new NoteDto
                 {
@@ -174,7 +170,6 @@ public partial class DeliveryJourneyService(
         }
 
         var archivedNoteTemps = await context.TucNoteArchives
-            .AsNoTracking()
             .Where(n => n.JobId == jobId)
             .Select(n => new ArchivedNoteDto
             {
@@ -215,8 +210,6 @@ public partial class DeliveryJourneyService(
         var timezone = infoService.GetTenantTimeZone();
 
         var messageTemps = await context.TucManualMessages
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(m => m.JobId == jobId)
             .Select(m => new ManualMessageDto
             {
@@ -311,8 +304,6 @@ public partial class DeliveryJourneyService(
         if (isLiveJob)
         {
             var statusUpdateTemps = await context.JobDeliveryJourneys
-                .AsNoTracking()
-                .AsSplitQuery()
                 .Where(s => s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
                 .Select(s => new JobDeliveryJourneyDto
                 {
@@ -342,8 +333,6 @@ public partial class DeliveryJourneyService(
         }
 
         var archivedStatusUpdateTemps = await context.JobDeliveryJourneyArchives
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(s => s.JobId == jobId && s.ChangeType != nameof(DeliveryJourneyChangeType.InternalStatus))
             .Select(s => new JobDeliveryJourneyArchiveDto
             {

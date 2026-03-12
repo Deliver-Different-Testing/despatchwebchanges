@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Dapper;
 using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -43,7 +46,6 @@ public partial class JobRepository(
         {
             // Get the main job's parent ID first
             var parentIdQuery = await Context.TblBulkJobs
-                .AsNoTracking()
                 .Where(j => j.BulkJobId == bulkJobId)
                 .Select(j => j.ParentId ?? j.BulkJobId)
                 .FirstOrDefaultAsync();
@@ -58,7 +60,6 @@ public partial class JobRepository(
             var familyRootId = parentIdQuery;
 
             var allJobs = await Context.TblBulkJobs
-                .AsNoTracking()
                 .Where(j => j.BulkJobId == familyRootId || j.ParentId == familyRootId)
                 .Select(JobMappings.BulkJobMapping)
                 .TagWith($"GetBulkJobDetail - Family {familyRootId}")
@@ -183,7 +184,6 @@ public partial class JobRepository(
                     ),
                     IsBulkJob = true
                 })
-            .AsNoTracking()
             .FirstOrDefaultAsync();
 
         return bulkJob;
@@ -343,7 +343,6 @@ public partial class JobRepository(
             };
 
         var allResults = await query
-            .AsNoTracking()
             .ToListAsync();
 
         var distinctResults = allResults
@@ -398,7 +397,6 @@ public partial class JobRepository(
             await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync();
 
             var liveJobsQuery = liveJobsContext.TucJobs
-                .AsNoTracking()
                 .Where(j =>
                     j.UcjbDate.Date >= fromDate
                     && j.UcjbDate.Date <= toDate
@@ -411,7 +409,6 @@ public partial class JobRepository(
                 );
 
             var archivedJobsQuery = archivedJobsContext.TucJobArchives
-                .AsNoTracking()
                 .Where(j =>
                     j.UcjbDate.HasValue
                     && j.UcjbDate.Value.Date >= fromDate
@@ -1043,8 +1040,6 @@ public partial class JobRepository(
 
         // Build live jobs query with SAME filters as PodSearchAsync
         var liveJobsQuery = liveJobsContext.TucJobs
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j =>
                 j.UcjbDate.Date >= fromDateOnly
                 && j.UcjbDate.Date <= toDateOnly
@@ -1057,8 +1052,6 @@ public partial class JobRepository(
 
         // Build archived jobs query with SAME filters as PodSearchAsync
         var archivedJobsQuery = archivedJobsContext.TucJobArchives
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j =>
                 j.UcjbDate.HasValue
                 && j.UcjbDate.Value.Date >= fromDateOnly
@@ -1142,16 +1135,12 @@ public partial class JobRepository(
 
         // Execute both queries in parallel with direct mapping to JobDownloadModel
         var liveJobsTask = liveJobsQuery
-            .AsSplitQuery()
-            .AsNoTracking()
             .OrderBy(j => j.UcjbNumber)
             .Select(JobMappings.LiveJobDownloadMapping)
             .TagWith("PodSearchDownload - Live Jobs")
             .ToListAsync();
 
         var archivedJobsTask = archivedJobsQuery
-            .AsSplitQuery()
-            .AsNoTracking()
             .OrderBy(j => j.UcjbNumber)
             .Select(JobMappings.ArchivedJobDownloadMapping)
             .TagWith("PodSearchDownload - Archived Jobs")
@@ -1225,92 +1214,101 @@ public partial class JobRepository(
 
     /// <summary>
     /// Retrieves performance and spend report data for multiple clients.
-    /// Optimized with database-side ordering and direct projection.
+    /// Uses Dapper with explicit SQL for optimal query plan and ordering.
     /// </summary>
     public async Task<List<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
         [FromQuery] ClientJobsReportRequest request)
     {
+        const string sql = """
+            SELECT
+                j.ucjbNumber        AS JobNumber,
+                j.ucjbType          AS JobType,
+                j.ucjbDate          AS [Date],
+                j.ucjbTime          AS Booked,
+                j.ucjbContact       AS BookedBy,
+                j.PickUpTime        AS PickedUpTime,
+                j.ucjbComplTime     AS Delivered,
+                jt.ucjtDescription  AS JobTypeDescription,
+                jt.Minutes,
+                j.ucjbPODName       AS PodName,
+                sfrom.UcsuName      AS FromSuburb,
+                sfrom.PostCode      AS FromPostcode,
+                sto.UcsuName        AS ToSuburb,
+                sto.PostCode        AS ToPostcode,
+                ad.ToSuburb         AS ToSuburbFromAddress,
+                j.ucjbFromAddr      AS FromAddr,
+                j.ucjbToAddr        AS ToAddr,
+                j.ucjbCourierID     AS CourierId,
+                CAST(CASE WHEN j.ucjbLatePick = 1 THEN 1 ELSE 0 END AS BIT) AS LatePickup,
+                CAST(CASE WHEN j.ucjbLateDel = 1 THEN 1 ELSE 0 END AS BIT)  AS LateDelivery,
+                cl.ucclLegalName    AS ClientLegalName,
+                jt.ucjtName         AS Speed,
+                ajt.ucjtName        AS AcceptedSpeed,
+                j.ucjbNotes         AS Notes,
+                j.ucjbAmount        AS Amount,
+                j.ucjbClientRefa    AS RefA,
+                j.ucjbClientRefb    AS RefB,
+                j.ucjbOurRef        AS OurRef,
+                CAST(j.ucjbWeight AS decimal(18,4)) AS [Weight],
+                j.ucjbSize          AS Size,
+                j.ucjbQty           AS Quantity,
+                j.ucjbYear          AS [Year],
+                j.ucjbMonth         AS [Month],
+                cr.Code             AS CourierCode,
+                cr.uccrName         AS CourierName,
+                j.ucjbInvoiceNo     AS InvoiceNo,
+                CAST(CASE WHEN j.ucjbLocked = 1 THEN 1 ELSE 0 END AS BIT) AS Locked,
+                j.ucjbClientID      AS ClientId,
+                cl.ucclNote         AS ClientNote,
+                j.RawBaseAmount,
+                j.FuelSurchargeAmount
+            FROM tucJobArchive j
+            LEFT JOIN tucJobType jt ON jt.ucjtID = j.ucjbSpeed
+            LEFT JOIN tucJobType ajt ON ajt.ucjtID = j.AcceptedJobTypeID
+            LEFT JOIN tucSuburb sfrom ON sfrom.ucsuID = j.ucjbFrom
+            LEFT JOIN tucSuburb sto ON sto.ucsuID = j.ucjbTo
+            LEFT JOIN tucJobAddressDeatil ad ON ad.JobID = j.ucjbID
+            LEFT JOIN tucClient cl ON cl.ucclID = j.ucjbClientID
+            LEFT JOIN tucCourier cr ON cr.uccrID = j.ucjbCourierID
+            LEFT JOIN tblJobRelationshipType jrt ON jrt.JobRelationshipTypeID = j.JobRelationshipTypeID
+            WHERE j.ucjbDate >= @StartDate
+              AND j.ucjbDate <= @EndDate
+              AND (j.JobRelationshipTypeID IS NULL OR jrt.DisplayStatement = 1)
+              AND ISNULL(j.ucjbClientID, 0) IN @ClientIds
+              AND j.ucjbVoid = 0
+              AND j.ucjbJobDone = 1
+            ORDER BY
+                CASE
+                    WHEN jt.ucjtDescription = '15 Minute' THEN 1
+                    WHEN jt.ucjtDescription = '30 Minute' THEN 2
+                    WHEN jt.ucjtDescription = '45 Minute' THEN 3
+                    WHEN jt.ucjtDescription = '1 Hour' THEN 4
+                    WHEN jt.ucjtDescription = '75 Minute' THEN 5
+                    WHEN jt.ucjtDescription = '90 Minute' THEN 6
+                    WHEN jt.ucjtDescription = '2 Hour' THEN 7
+                    WHEN jt.ucjtDescription = '3 Hour' THEN 8
+                    WHEN jt.ucjtDescription = 'Baggage' THEN 10
+                    WHEN jt.ucjtDescription = 'Truck Super' THEN 11
+                    WHEN jt.ucjtDescription = 'Truck Express' THEN 12
+                    WHEN jt.ucjtDescription = 'Truck Standard' THEN 13
+                    WHEN jt.ucjtDescription = 'Truck Economy' THEN 14
+                    ELSE 100
+                END,
+                j.ucjbDate,
+                j.ucjbTime,
+                j.ucjbCourierID,
+                jt.Minutes
+            """;
+
         try
         {
-            var clientIds = request.ClientIds;
-            var startDate = request.StartDate.Date;
-            var endDate = request.EndDate.Date;
-
-            // Increase command timeout for large multi-client queries (5 minutes)
-            Context.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
-
-            var results = await Context.TucJobArchives
-                .AsNoTracking()
-                .AsSplitQuery()
-                .Where(j => j.UcjbDate >= startDate
-                            && j.UcjbDate <= endDate
-                            && (j.JobRelationshipType == null || j.JobRelationshipType.DisplayStatement == true)
-                            && clientIds.Contains(j.UcjbClientId ?? 0)
-                            && j.UcjbVoid == false
-                            && j.UcjbJobDone == true)
-                .OrderBy(j => j.SpeedNavigation == null ? 100 :
-                    j.SpeedNavigation.UcjtDescription == "15 Minute" ? 1 :
-                    j.SpeedNavigation.UcjtDescription == "30 Minute" ? 2 :
-                    j.SpeedNavigation.UcjtDescription == "45 Minute" ? 3 :
-                    j.SpeedNavigation.UcjtDescription == "1 Hour" ? 4 :
-                    j.SpeedNavigation.UcjtDescription == "75 Minute" ? 5 :
-                    j.SpeedNavigation.UcjtDescription == "90 Minute" ? 6 :
-                    j.SpeedNavigation.UcjtDescription == "2 Hour" ? 7 :
-                    j.SpeedNavigation.UcjtDescription == "3 Hour" ? 8 :
-                    j.SpeedNavigation.UcjtDescription == "Baggage" ? 10 :
-                    j.SpeedNavigation.UcjtDescription == "Truck Super" ? 11 :
-                    j.SpeedNavigation.UcjtDescription == "Truck Express" ? 12 :
-                    j.SpeedNavigation.UcjtDescription == "Truck Standard" ? 13 :
-                    j.SpeedNavigation.UcjtDescription == "Truck Economy" ? 14 : 100)
-                .ThenBy(j => j.UcjbDate)
-                .ThenBy(j => j.UcjbTime)
-                .ThenBy(j => j.UcjbCourierId)
-                .ThenBy(j => j.SpeedNavigation != null ? j.SpeedNavigation.Minutes : null)
-                .Select(j => new ClientJobsReportRow
-                {
-                    JobNumber = j.UcjbNumber,
-                    JobType = (int?)j.UcjbType,
-                    Date = j.UcjbDate,
-                    Booked = j.UcjbTime,
-                    BookedBy = j.UcjbContact,
-                    PickedUpTime = j.PickUpTime,
-                    Delivered = j.UcjbComplTime,
-                    JobTypeDescription = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtDescription : null,
-                    Minutes = j.SpeedNavigation != null ? j.SpeedNavigation.Minutes : null,
-                    PodName = j.UcjbPodname,
-                    FromSuburb = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.UcsuName : null,
-                    FromPostcode = j.UcjbFromNavigation != null ? j.UcjbFromNavigation.PostCode : null,
-                    ToSuburb = j.UcjbToNavigation != null ? j.UcjbToNavigation.UcsuName : null,
-                    ToPostcode = j.UcjbToNavigation != null ? j.UcjbToNavigation.PostCode : null,
-                    ToSuburbFromAddress = j.AddressDetail != null ? j.AddressDetail.ToSuburb : null,
-                    FromAddr = j.UcjbFromAddr,
-                    ToAddr = j.UcjbToAddr,
-                    CourierId = j.UcjbCourierId,
-                    LatePickup = j.UcjbLatePick == 1,
-                    LateDelivery = j.UcjbLateDel == 1,
-                    ClientLegalName = j.UcjbClient != null ? j.UcjbClient.UcclLegalName : null,
-                    Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
-                    AcceptedSpeed = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
-                    Notes = j.UcjbNotes,
-                    Amount = j.UcjbAmount,
-                    RefA = j.UcjbClientRefa,
-                    RefB = j.UcjbClientRefb,
-                    OurRef = j.UcjbOurRef,
-                    Weight = (decimal?)j.UcjbWeight,
-                    Size = j.UcjbSize,
-                    Quantity = j.UcjbQty,
-                    Year = j.UcjbYear,
-                    Month = j.UcjbMonth,
-                    CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
-                    CourierName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
-                    InvoiceNo = j.UcjbInvoiceNo,
-                    Locked = j.UcjbLocked == 1,
-                    ClientId = j.UcjbClientId,
-                    ClientNote = j.UcjbClient != null ? j.UcjbClient.UcclNote : null,
-                    RawBaseAmount = j.RawBaseAmount,
-                    FuelSurchargeAmount = j.FuelSurchargeAmount
-                })
-                .ToListAsync();
+            var connection = Context.GetDapperConnection();
+            var results = (await connection.QueryAsync<ClientJobsReportRow>(sql, new
+            {
+                StartDate = request.StartDate.Date,
+                EndDate = request.EndDate.Date,
+                ClientIds = request.ClientIds
+            })).AsList();
 
             return results.ConvertAll(MapToPerformanceSpendReportModel);
         }
@@ -1339,7 +1337,6 @@ public partial class JobRepository(
         var end = endDate.DateTime;
 
         var query = Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbCourierId == courierId
                         && !j.UcjbJobDone && !j.UcjbVoid
                         && j.UcjbStatus != (int)JobStatus.Void
@@ -1480,9 +1477,11 @@ public partial class JobRepository(
     /// <summary>
     /// Sets a job as the first priority job for a courier.
     /// </summary>
-    public async Task SetFirstJobAsync(int jobId,
-        int courierId) =>
-        await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
+    public async Task SetFirstJobAsync(int jobId, int courierId) =>
+        await Context.GetDapperConnection().ExecuteAsync(
+            "[dbo].[DES_stpJob_AutoDespatchSelectedJobs_FSCourierID]",
+            new { JobID = jobId, CourierID = courierId },
+            commandType: CommandType.StoredProcedure);
 
     /// <summary>
     /// Updates POD (proof of delivery) details including name, time, and status for a job and its related jobs.
@@ -1491,7 +1490,7 @@ public partial class JobRepository(
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
         // Find if a job is in active or archive table
-        var activeJob = await Context.TucJobs.AsNoTracking().FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
+        var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
         var isArchived = activeJob == null;
         int? parentId;
         int? deliveryTzId;
@@ -1500,7 +1499,7 @@ public partial class JobRepository(
         if (isArchived)
         {
             var archivedJob =
-                await Context.TucJobArchives.AsNoTracking().FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
+                await Context.TucJobArchives.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
                 // Job isn't found in either table
                 return;
@@ -1562,9 +1561,14 @@ public partial class JobRepository(
     /// </summary>
     public async Task<int> MaxAutoLatePickupAlertAsync()
     {
-        var maxAutoLatePickupAlert = new OutputParameter<int?>();
-        await Context.Procedures.GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(maxAutoLatePickupAlert);
-        return maxAutoLatePickupAlert.Value ?? 0;
+        var connection = Context.GetDapperConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@MaxAutoLatePickupAlert", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        await connection.ExecuteAsync(
+            "[dbo].[GEN_qdfSetting_GetMaxAutoLatePickupAlert]",
+            parameters,
+            commandType: CommandType.StoredProcedure);
+        return parameters.Get<int?>("@MaxAutoLatePickupAlert") ?? 0;
     }
 
     /// <summary>
@@ -1572,9 +1576,14 @@ public partial class JobRepository(
     /// </summary>
     public async Task<int> MaxAutoLateDeliveryAlertAsync()
     {
-        var maxAutoLateDeliveryAlert = new OutputParameter<int?>();
-        await Context.Procedures.GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(maxAutoLateDeliveryAlert);
-        return maxAutoLateDeliveryAlert.Value ?? 0;
+        var connection = Context.GetDapperConnection();
+        var parameters = new DynamicParameters();
+        parameters.Add("@MaxAutoLateDeliveryAlert", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        await connection.ExecuteAsync(
+            "[dbo].[GEN_qdfSetting_GetMaxAutoLateDeliveryAlert]",
+            parameters,
+            commandType: CommandType.StoredProcedure);
+        return parameters.Get<int?>("@MaxAutoLateDeliveryAlert") ?? 0;
     }
 
     /// <summary>
@@ -1683,7 +1692,6 @@ public partial class JobRepository(
 
         // Get the maximum delivery time for the specified speeds
         var time = await Context.TucJobTypes
-            .AsNoTracking()
             .Where(predicate: jt => jt.ShortName == bookedSpeed || jt.ShortName == notifiedSpeed)
             .MaxAsync(selector: jt => jt.DeliveryTime);
 
@@ -1734,7 +1742,14 @@ public partial class JobRepository(
         if (jobIds == null || jobIds.Count == 0)
             return;
 
-        foreach (var jobId in jobIds) await Context.Procedures.DES_stpJob_SplitJobRestoreAsync(jobId);
+        var connection = Context.GetDapperConnection();
+        foreach (var jobId in jobIds)
+        {
+            await connection.ExecuteAsync(
+                "[dbo].[DES_stpJob_SplitJobRestore]",
+                new { JobID = jobId },
+                commandType: CommandType.StoredProcedure);
+        }
     }
 
     /// <summary>
@@ -1778,7 +1793,6 @@ public partial class JobRepository(
 
             // Get courier IDs before voiding
             var courierIds = await Context.TucJobs
-                .AsNoTracking()
                 .Where(jt => jobsToVoid.Contains(jt.UcjbId) && jt.UcjbCourierId.HasValue)
                 .Select(jt => jt.UcjbCourierId!.Value)
                 .Distinct()
@@ -1827,7 +1841,6 @@ public partial class JobRepository(
             if (linkedBulkJobIds.Count > 0)
             {
                 var bulkCourierIds = await Context.TblBulkJobs
-                    .AsNoTracking()
                     .Where(b => linkedBulkJobIds.Contains(b.BulkJobId) && b.CourierId.HasValue)
                     .Select(b => b.CourierId!.Value)
                     .Distinct()
@@ -2002,7 +2015,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<Suggestion>> GetSpeedsAsync() =>
         await Context.DesQryAllJobTypes
-            .AsNoTracking()
             .Select(x => new Suggestion { Id = x.JobTypeId, Text = x.Name })
             .ToListAsync();
 
@@ -2012,7 +2024,6 @@ public partial class JobRepository(
     /// <param name="searchTerm">The search term to filter speeds by.</param>
     public async Task<List<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm) =>
         await Context.DesQryAllJobTypes
-            .AsNoTracking()
             .Where(jt => EF.Functions.Like(jt.Name, $"%{searchTerm}%"))
             .Select(jt => new Suggestion { Id = jt.JobTypeId, Text = jt.Name })
             .ToListAsync();
@@ -2023,7 +2034,6 @@ public partial class JobRepository(
     /// <param name="clientId">The client ID to get contacts for.</param>
     public async Task<List<Suggestion>> GetContactsByClientIdAsync(int clientId) =>
         await Context.UtlQryContactLookups
-            .AsNoTracking()
             .Join(
                 Context.TblClientContacts,
                 s => s.ContactId,
@@ -2040,7 +2050,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<Lookup>> LeaveParcelLocationsAsync() =>
         await Context.TblJobLeaveNotHomes
-            .AsNoTracking()
             .OrderBy(l => l.Sequence)
             .Select(x => new Lookup { Id = x.LeaveNotHomeId, Text = x.Name })
             .ToListAsync();
@@ -2050,7 +2059,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<UndeliverableLocation>> UndeliverableLocationsAsync() =>
         await Context.TblUndeliverableLocations
-            .AsNoTracking()
             .OrderBy(u => u.Name)
             .Select(x => new UndeliverableLocation
             {
@@ -2066,7 +2074,6 @@ public partial class JobRepository(
     public async Task<List<InternalStatus>> GetInternalStatusListAsync() =>
         await Context
             .TucJobInternalStatuses
-            .AsNoTracking()
             .Where(x => x.Tcis != (int)InternalJobStatus.OvernightCp
                         && x.Tcis != (int)InternalJobStatus.ActionRequired)
             .OrderBy(u => u.Tcis)
@@ -2084,7 +2091,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<Suggestion>> GetStatusListAsync() =>
         await Context.TucJobStatuses
-            .AsNoTracking()
             .OrderBy(s => s.UcjsName)
             .Select(s => new Suggestion { Id = s.UcjsId, Text = s.UcjsName })
             .ToListAsync();
@@ -2094,7 +2100,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<Suggestion>> EventTypeListAsync() =>
         await Context.TucEventTypes
-            .AsNoTracking()
             .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
             .OrderBy(u => u.UcetName)
             .Select(x => new Suggestion { Id = x.UcetId, Text = x.UcetName })
@@ -2114,7 +2119,6 @@ public partial class JobRepository(
         {
             var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
             return await Context.PricingBreakdowns
-                .AsNoTracking()
                 .Where(p => p.PrebookJobId == effectivePrebookId || p.PrebookJobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
@@ -2136,7 +2140,6 @@ public partial class JobRepository(
                 return [];
 
             return await Context.PricingBreakdownArchives
-                .AsNoTracking()
                 .Where(p => p.JobId == effectiveArchiveJobId || p.JobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
@@ -2155,7 +2158,6 @@ public partial class JobRepository(
         if (effectiveJobId != 0)
         {
             var pricingBreakdowns = await Context.PricingBreakdowns
-                .AsNoTracking()
                 .Where(p => p.JobId == effectiveJobId || p.JobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
@@ -2179,7 +2181,6 @@ public partial class JobRepository(
             return [];
 
         return await Context.PricingBreakdownArchives
-            .AsNoTracking()
             .Where(p => p.JobId == archiveJobId)
             .Select(p => new ChargeViewModel
             {
@@ -2725,7 +2726,6 @@ public partial class JobRepository(
     /// Gets the name of a staff member by ID.
     /// </summary>
     public async Task<string> GetStaffNameAsync(int staffId) => await Context.TucStaffs
-        .AsNoTracking()
         .Where(s => s.UcstId == staffId)
         .Select(s => s.UcstFirstName + " " + s.UcstLastName)
         .FirstOrDefaultAsync();
@@ -2867,7 +2867,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<JobLateCallDto> GetJobForLateCallAsync(int jobId) =>
         await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobLateCallMapping)
             .FirstOrDefaultAsync();
@@ -2877,7 +2876,6 @@ public partial class JobRepository(
     /// </summary>
     public async Task<List<TimeZoneSuggestion>> GetTimeZoneOptions() =>
         await Context.TimeZones
-            .AsNoTracking()
             .Select(t => new TimeZoneSuggestion
             {
                 Id = t.Id,
@@ -2975,8 +2973,6 @@ public partial class JobRepository(
 
         // First, try to get from active jobs (TucJobs)
         var activeJob = await Context.TucJobs
-            .AsSplitQuery()
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
             .FirstOrDefaultAsync();
@@ -2985,7 +2981,6 @@ public partial class JobRepository(
         {
             // TucJob doesn't have an Archived field, so check tblJobs view for the actual archived status
             var archivedStatus = await Context.TblJobs
-                .AsNoTracking()
                 .Where(j => j.JobId == jobId)
                 .Select(j => j.Archived ?? false)
                 .FirstOrDefaultAsync();
@@ -3119,7 +3114,7 @@ public partial class JobRepository(
                 DeliveryContact = j.DeliverToContact
             };
 
-        return await archivedJobQuery.AsNoTracking().FirstOrDefaultAsync();
+        return await archivedJobQuery.FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -3130,7 +3125,6 @@ public partial class JobRepository(
     public async Task<bool> IsJobParentAsync(int jobId)
     {
         var jobInfo = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { HasParent = j.ParentId.HasValue })
             .FirstOrDefaultAsync();
@@ -3139,7 +3133,6 @@ public partial class JobRepository(
             return jobInfo.HasParent;
 
         var bookingInfo = await Context.TucJobBookings
-            .AsNoTracking()
             .Where(j => j.UcbkId == jobId)
             .Select(j => new { HasParent = j.ParentId.HasValue })
             .FirstOrDefaultAsync();
@@ -3357,7 +3350,6 @@ public partial class JobRepository(
 
         // Get active jobs to display on a map
         var jobs = await Context.TucJobs
-            .AsNoTracking()
             .Where(j =>
                 j.UcjbStatus.HasValue
                 && JobStatusGroups.Active.Contains(j.UcjbStatus.Value)
@@ -3566,7 +3558,6 @@ public partial class JobRepository(
                 })
                 .OrderBy(a => a.Distance)
                 .Take(3)
-                .AsNoTracking()
                 .ToListAsync();
 
             return closestAirports;
@@ -3587,8 +3578,6 @@ public partial class JobRepository(
     /// <returns>The job type entity with grouping.</returns>
     public async Task<TucJobType> GetJobTypeByIdAsync(int speedId) =>
         await Context.TucJobTypes
-            .AsSplitQuery()
-            .AsNoTracking()
             .Include(s => s.Grouping)
             .FirstOrDefaultAsync(x => x.UcjtId == speedId) ??
         throw new KeyNotFoundException($"Job type with ID {speedId} not found");
@@ -3701,7 +3690,6 @@ public partial class JobRepository(
             };
 
         var results = await query
-            .AsNoTracking()
             .Select(s => new ScanDetailResult
             {
                 BulkScanId = s.BulkScanId,
@@ -3724,7 +3712,6 @@ public partial class JobRepository(
         var today = _clock.TenantToday;
 
         var isValid = await Context.TblJobs
-            .AsNoTracking()
             .Where(j => j.Number == jobNumber)
             .Where(j => j.Date.HasValue && j.Date.Value.Date == today.Date)
             .AnyAsync();
@@ -3875,7 +3862,6 @@ public partial class JobRepository(
         try
         {
             var parentJobValues = await Context.TucJobs
-                .AsNoTracking()
                 .Where(parent => jobIds.Contains(parent.UcjbId) && parent.ParentId.HasValue)
                 .Select(parent => new
                 {
@@ -3902,7 +3888,6 @@ public partial class JobRepository(
                 .ToDictionary(g => g.Key, g => g.OrderBy(p => p.UcjbDate).First());
 
             var childJobsToUpdate = await Context.TucJobs
-                .AsNoTracking()
                 .Where(child => parentIds.Contains(child.ParentId.Value)
                                 && child.UcjbCourierId == null
                                 && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
@@ -3969,7 +3954,6 @@ public partial class JobRepository(
 
     public async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
         await Context.TucJobTypes
-            .AsNoTracking()
             .Where(s => s.UcjtId == speedId)
             .Select(s => new Suggestion
             {
@@ -3988,7 +3972,6 @@ public partial class JobRepository(
     public async Task<bool> CanJobBeSplitAsync(int jobId)
     {
         var job = await Context.TucJobs
-            .AsNoTracking()
             .Include(j => j.TucJobNationwides)
             .FirstOrDefaultAsync(j => j.UcjbId == jobId);
 
@@ -4005,7 +3988,6 @@ public partial class JobRepository(
     /// <returns>List of child job IDs.</returns>
     public async Task<List<int>> GetSplitJobChildrenAsync(int parentJobId) =>
         await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.ParentId == parentJobId)
             .Select(j => j.UcjbId)
             .ToListAsync();
@@ -4226,7 +4208,6 @@ public partial class JobRepository(
         }
 
         var courierLookup = await Context.TucCouriers
-            .AsNoTracking()
             .Where(c => courierCodes.Contains(c.Code) && c.Active)
             .ToDictionaryAsync(c => c.Code, c => c.UccrId);
 
@@ -4274,7 +4255,6 @@ public partial class JobRepository(
         }
 
         var statusLookup = await Context.TucJobStatuses
-            .AsNoTracking()
             .Where(s => statusNames.Contains(s.UcjsName))
             .ToDictionaryAsync(s => s.UcjsName, s => s.UcjsId);
 
@@ -4558,7 +4538,6 @@ public partial class JobRepository(
     }
 
     private async Task<Suggestion> GetDefaultSpeedType() => await Context.TucJobTypes
-        .AsNoTracking()
         .Select(t => new Suggestion
         {
             Id = t.UcjtId,
@@ -4674,7 +4653,6 @@ public partial class JobRepository(
     private async Task<bool> IsStopJob(int jobId)
     {
         var jobNumber = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.UcjbNumber)
             .FirstOrDefaultAsync();
@@ -4703,7 +4681,6 @@ public partial class JobRepository(
     private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)
     {
         var mainJobInfo = await Context.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new { j.UcjbId, FamilyRootId = j.ParentId ?? j.UcjbId })
             .TagWith("GetLiveJob - Family Root Lookup")
@@ -4715,8 +4692,6 @@ public partial class JobRepository(
         var isUsTenant = _infoService.IsUsTenant();
 
         var allJobsInFamily = await Context.TucJobs
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobMappingCore(isUsTenant))
             .TagWith($"GetLiveJob - Complete Family {familyRootId}")
@@ -4742,7 +4717,6 @@ public partial class JobRepository(
     private async Task<JobGroupViewModel> GetArchivedJobByIdAsync(int jobId)
     {
         var familyRootId = await Context.TucJobArchives
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => j.ParentId ?? j.UcjbId)
             .TagWith("GetArchivedJob - Family Root")
@@ -4752,8 +4726,6 @@ public partial class JobRepository(
             throw new KeyNotFoundException($"Archived job {jobId} not found");
 
         var allJobsInFamily = await Context.TucJobArchives
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(j => j.UcjbId == familyRootId || j.ParentId == familyRootId)
             .Select(JobMappings.JobArchiveMapping)
             .TagWith($"GetArchivedJob - Family {familyRootId}")

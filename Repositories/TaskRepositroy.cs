@@ -50,8 +50,6 @@ public class TaskRepository(
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
         var query = Context.TucEvents
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
 
         if (filters != null) query = ApplyFilters(query, filters);
@@ -85,7 +83,6 @@ public class TaskRepository(
             var existingEvent = await Context.TucEvents
                 .Where(e => e.UcevId == eventId)
                 .Select(e => new { e.UcevClosed })
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (existingEvent == null)
@@ -127,7 +124,6 @@ public class TaskRepository(
             var existingEvent = await Context.TucEvents
                 .Where(e => e.UcevId == eventId)
                 .Select(e => new { e.UcevDueTime })
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             ArgumentNullException.ThrowIfNull(existingEvent);
@@ -169,7 +165,6 @@ public class TaskRepository(
             var existingEvent = await Context.TucEvents
                 .Where(e => e.UcevId == eventId)
                 .Select(e => new { e.UcevDueTime })
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (existingEvent == null)
@@ -210,7 +205,6 @@ public class TaskRepository(
             var existingEvent = await Context.TucEvents
                 .Where(e => e.UcevId == eventId)
                 .Select(e => new { e.UcevStaffIdin })
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             if (existingEvent == null)
@@ -244,7 +238,6 @@ public class TaskRepository(
 
     public async Task<List<Suggestion>> GetEventGroupsAsync() =>
         await Context.TucEventTypeGroups
-            .AsNoTracking()
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .ToListAsync();
@@ -253,7 +246,6 @@ public class TaskRepository(
     {
         var now = clock.TenantNow;
         var eventGroups = await Context.TucEventTypeEventTypeGroups
-            .AsNoTracking()
             .Where(x => x.EventTypeGroupId == eventGroupId)
             .Select(x => new EventGroupViewModel
             {
@@ -284,7 +276,6 @@ public class TaskRepository(
         await using var staffContext = CreateNewContext();
 
         var jobTask = jobContext.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == jobId)
             .Select(j => new
             {
@@ -298,7 +289,6 @@ public class TaskRepository(
             .FirstOrDefaultAsync();
 
         var dispatcherTask = staffContext.TucStaffs
-            .AsNoTracking()
             .Where(s => s.UcstId == staffId)
             .Select(s => s.UcstFirstName + " " + s.UcstLastName)
             .FirstOrDefaultAsync();
@@ -344,7 +334,6 @@ public class TaskRepository(
     public async Task<List<Suggestion>> GetActiveStaffAsync()
     {
         var staff = await Context.TucStaffs
-            .AsNoTracking()
             .Where(s => s.UcstActive)
             .Select(s => new Suggestion
             {
@@ -542,7 +531,6 @@ public class TaskRepository(
         {
             // Single query to get job speed and contact type info
             var jobContactInfo = await Context.TucJobs
-                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => new
                 {

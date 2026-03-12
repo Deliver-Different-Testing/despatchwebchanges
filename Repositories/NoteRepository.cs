@@ -25,8 +25,6 @@ public class NoteRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var bulkNotes = await Context.TblBulkJobNotes
-            .AsNoTracking()
-            .AsSplitQuery()
             .Where(n => n.BulkJobId == bulkJobId)
             .OrderByDescending(n => n.CreatedDate)
             .Select(n => new TucNoteViewModel
@@ -90,7 +88,6 @@ public class NoteRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
 
         var result = await Context.TblBulkJobNotes
-            .AsNoTracking()
             .Where(n => n.NoteId == noteId)
             .Select(n => new TucNoteViewModel
             {
@@ -212,7 +209,6 @@ public class NoteRepository(
                 Text = x.NoteTypeName,
                 IsPublic = x.IsPublic
             })
-            .AsNoTracking()
             .ToListAsync();
 
     public async Task AddNewTucNoteTypeAsync(NoteTypeViewModel noteType)
@@ -393,9 +389,9 @@ public class NoteRepository(
     {
         var query = source switch
         {
-            NoteHistorySource.Note => Context.TucNoteHistories.AsNoTracking().Where(h => h.NoteId == noteId),
-            NoteHistorySource.BulkNote => Context.TucNoteHistories.AsNoTracking().Where(h => h.BulkNoteId == noteId),
-            NoteHistorySource.Archive => Context.TucNoteHistories.AsNoTracking().Where(h => h.ArchiveNoteId == noteId),
+            NoteHistorySource.Note => Context.TucNoteHistories.Where(h => h.NoteId == noteId),
+            NoteHistorySource.BulkNote => Context.TucNoteHistories.Where(h => h.BulkNoteId == noteId),
+            NoteHistorySource.Archive => Context.TucNoteHistories.Where(h => h.ArchiveNoteId == noteId),
             _ => throw new ArgumentOutOfRangeException(nameof(source))
         };
 
@@ -431,7 +427,6 @@ public class NoteRepository(
         if (noteTypeIds.Count > 0)
         {
             noteTypes = await Context.TucNoteTypes
-                .AsNoTracking()
                 .Where(nt => noteTypeIds.Contains(nt.NoteTypeId))
                 .ToDictionaryAsync(nt => nt.NoteTypeId, nt => nt.NoteTypeName);
         }

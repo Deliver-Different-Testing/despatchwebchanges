@@ -10,8 +10,8 @@ public interface IMessageRepository
 {
     Task<int> GetUnreadMessageCountAsync();
     Task<List<RecentMessageViewModel>> GetRecentListAsync();
-    Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId);
-    Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId);
+    Task<List<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200);
+    Task<List<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200);
     Task SendMessageAsync(SendMessageRequest request);
     Task SendMultipleMessagesAsync(SendMultipleMessageRequest request);
     Task MarkMessagesAsReadAsync(int otherPartyId, OtherMessagePartyType otherPartyType);

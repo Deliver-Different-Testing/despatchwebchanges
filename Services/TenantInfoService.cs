@@ -175,7 +175,6 @@ public class TenantInfoService(
                     Id = s.UcstId,
                     Text = s.UcstFirstName + " " + s.UcstLastName
                 })
-                .AsNoTracking()
                 .FirstOrDefaultAsync();
 
             return staff;

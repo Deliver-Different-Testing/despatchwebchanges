@@ -66,7 +66,6 @@ public class PricingPermissionService(
 
         // Single query using TblJobs view (combines live and archived jobs)
         var hasAccess = await context.TblJobs
-            .AsNoTracking()
             .Where(j => j.JobId == jobId && j.ClientId != null && accessibleClientIds.Contains(j.ClientId.Value))
             .AnyAsync();
 
@@ -74,7 +73,6 @@ public class PricingPermissionService(
         {
             // Check if job exists at all
             var jobExists = await context.TblJobs
-                .AsNoTracking()
                 .AnyAsync(j => j.JobId == jobId);
 
             throw new UnauthorizedAccessException(jobExists
@@ -107,7 +105,6 @@ public class PricingPermissionService(
 
         // Single query: get job IDs that the user HAS access to
         var accessibleJobIds = await context.TblJobs
-            .AsNoTracking()
             .Where(j => jobIds.Contains(j.JobId) && j.ClientId != null && accessibleClientIds.Contains(j.ClientId.Value))
             .Select(j => j.JobId)
             .ToListAsync();
