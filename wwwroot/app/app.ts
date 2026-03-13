@@ -52,12 +52,13 @@ import {
 import reactAppShellDirective from "./components/common/react-app-shell/react-app-shell.directive";
 import angular from 'angular';
 
-const app = (window as any).uDispatchApp;
+// uDispatchApp is set by vendor-plugins.ts which loads before this module
+const app = window.uDispatchApp!;
 
 // Constants
 app
     .constant("APP_CONFIG", {
-        US_Customer: (serverConfig as any).isUSCustomer,
+        US_Customer: serverConfig.isUSCustomer,
         US_Coordinates_Center: {
             lat: 39.8283,
             lng: -98.5795
@@ -130,7 +131,7 @@ app.config(["$compileProvider", ($compileProvider: angular.ICompileProvider) => 
 
     // Disable debug info in production for better performance and security
     // Debug info exposes scope data on DOM elements which could leak sensitive data
-    if ((window as any).serverConfig?.isProduction) {
+    if (window.serverConfig?.isProduction) {
         $compileProvider.debugInfoEnabled(false);
     }
 }]);
@@ -164,7 +165,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 
             function getAllWeekdays(startWithMonday = false) {
                 const weekdays = [];
-                let startDay = startWithMonday ? 1 : 0; // 0 = Sunday, 1 = Monday
+                const startDay = startWithMonday ? 1 : 0; // 0 = Sunday, 1 = Monday
 
                 for (let i = 0; i < 7; i++) {
                     const day = (startDay + i) % 7;
@@ -175,7 +176,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 
             function getShortWeekdays(startWithMonday = false) {
                 const shortDays = [];
-                let startDay = startWithMonday ? 1 : 0;
+                const startDay = startWithMonday ? 1 : 0;
 
                 for (let i = 0; i < 7; i++) {
                     const day = (startDay + i) % 7;

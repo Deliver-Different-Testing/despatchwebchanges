@@ -27,7 +27,7 @@ export interface SearchCriteriaPanelProps {
     onSearchRangeChange: (range: string) => void;
     onFromDateChange: (dateTime: Dayjs) => void;
     onToDateChange: (dateTime: Dayjs) => void;
-    onCriteriaChange: (field: string, value: any) => void;
+    onCriteriaChange: (field: string, value: ISuggestion[] | string | number | undefined) => void;
     onSearch: () => void;
     onDownload: () => void;
     onClientReport: () => void;

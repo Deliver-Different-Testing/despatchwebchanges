@@ -319,7 +319,8 @@ public class JobController(
         }
     }
 
-    public async Task<IActionResult> VoidPrebookJob(int jobId)
+    [HttpPost]
+    public async Task<IActionResult> VoidPrebookJob([FromBody] int jobId)
     {
         await jobRepository.VoidPrebookJobAsync(jobId);
         return Ok();

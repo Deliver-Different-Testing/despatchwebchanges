@@ -12,7 +12,6 @@ import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
-import angular from 'angular';
 
 // API interface for making requests
 interface ApiService {

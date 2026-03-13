@@ -116,7 +116,7 @@ class AdditionalServicesDialogService implements angular.IServiceProvider {
             });
 
             console.log("Additional Services Dialog closed!");
-        } catch (error: any) {
+        } catch (error) {
             if (error === undefined) {
                 console.log("User canceled dialog!");
             } else {

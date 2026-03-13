@@ -149,9 +149,9 @@ class AdditionalServicesDialogManager {
                 );
                 return false;
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             toastService?.showToast(
-                `Error checking available services: ${error.message}`,
+                `Error checking available services: ${error instanceof Error ? error.message : String(error)}`,
                 'error'
             );
             return false;

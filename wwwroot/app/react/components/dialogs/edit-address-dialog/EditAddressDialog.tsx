@@ -46,6 +46,25 @@ import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
 import {addressApi} from '../../../services/addressApi';
 import {US_STATES} from '../../../utils/usStates';
 
+/**
+ * Minimal HERE Maps type definitions for the SDK objects used in this component.
+ * The full HERE Maps SDK is loaded via a script tag and has no TypeScript definitions.
+ */
+interface HereMapsMapInstance {
+    dispose(): void;
+    removeObject(obj: unknown): void;
+    addObject(obj: unknown): void;
+    setCenter(coords: {lat: number; lng: number}): void;
+    setZoom(zoom: number): void;
+    getViewPort(): {resize(): void};
+    addEventListener(event: string, callback: (evt: HereMapsTapEvent) => void): void;
+    screenToGeo(x: number, y: number): {lat: number; lng: number};
+}
+
+interface HereMapsTapEvent {
+    currentPointer: {viewportX: number; viewportY: number};
+}
+
 // Default center coordinates (US)
 const DEFAULT_CENTER = {lat: 39.8283, lng: -98.5795};
 const DEFAULT_ZOOM = 4;
@@ -113,9 +132,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
     // Map state
     const mapContainerRef = useRef<HTMLDivElement>(null);
-    const mapInstanceRef = useRef<any>(null);
-    const platformRef = useRef<any>(null);
-    const markerRef = useRef<any>(null);
+    const mapInstanceRef = useRef<HereMapsMapInstance | null>(null);
+    const platformRef = useRef<unknown>(null);
+    const markerRef = useRef<unknown>(null);
     const handleMapClickRef = useRef<(lat: number, lng: number) => Promise<void>>(undefined);
 
     // React Query hooks
@@ -132,7 +151,8 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         if (mapInstanceRef.current) return; // Already initialized
 
         // Check if HERE Maps SDK is loaded
-        const H = (window as any).H;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- HERE Maps SDK loaded via script tag with no TypeScript definitions
+        const H = (window as Record<string, any>).H;
         if (!H) {
             console.error('[EditAddressDialog] HERE Maps SDK not loaded');
             return;
@@ -177,7 +197,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             }
 
             // Add click listener
-            map.addEventListener('tap', async (evt: any) => {
+            map.addEventListener('tap', async (evt: HereMapsTapEvent) => {
                 const coord = map.screenToGeo(
                     evt.currentPointer.viewportX,
                     evt.currentPointer.viewportY
@@ -198,6 +218,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             console.error('[EditAddressDialog] Error initializing HERE Maps:', error);
             showToast('Error loading map. Please try again.', 'error');
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- map init only on open/apiKey; lat/lng/addMarker change during drag
     }, [open, hereMapsApiKey]);
 
     // Cleanup map on dialog close
@@ -271,7 +292,8 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
     // Add or update marker on map
     const addMarker = useCallback((lat: number, lng: number) => {
-        const H = (window as any).H;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- HERE Maps SDK loaded via script tag with no TypeScript definitions
+        const H = (window as Record<string, any>).H;
         if (!mapInstanceRef.current || !H) return;
 
         // Remove existing marker

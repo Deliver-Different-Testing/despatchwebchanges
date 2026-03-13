@@ -9,7 +9,7 @@ jest.mock('./apiClient', () => ({
     },
 }));
 
-jest.mock('../../functions/formatDates', () => ({
+jest.mock('../utils/dateUtils', () => ({
     formatDateForApiWithTzs: jest.fn((d: Date) => d.toISOString()),
     formatLongDateTime: jest.fn((s: string) => `formatted:${s}`),
 }));

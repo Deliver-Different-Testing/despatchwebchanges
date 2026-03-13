@@ -108,8 +108,8 @@ export function useMarkTaskAsClosed() {
 export function useUpdateTaskDate() {
     const queryClient = useQueryClient();
 
-    return useMutation<void, Error, {eventId: number; date: Dayjs}>({
-        mutationFn: ({eventId, date}) => tasksApi.updateTaskDate(eventId, date),
+    return useMutation<void, Error, {eventId: number; date: Dayjs; timezone?: string}>({
+        mutationFn: ({eventId, date, timezone}) => tasksApi.updateTaskDate(eventId, date, timezone),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },
@@ -124,8 +124,8 @@ export function useUpdateTaskDate() {
 export function useUpdateTaskTime() {
     const queryClient = useQueryClient();
 
-    return useMutation<void, Error, {eventId: number; time: Dayjs}>({
-        mutationFn: ({eventId, time}) => tasksApi.updateTaskTime(eventId, time),
+    return useMutation<void, Error, {eventId: number; time: Dayjs; timezone?: string}>({
+        mutationFn: ({eventId, time, timezone}) => tasksApi.updateTaskTime(eventId, time, timezone),
         onSuccess: () => {
             queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },

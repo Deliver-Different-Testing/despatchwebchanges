@@ -45,8 +45,8 @@ export class EventApiService {
     /**
      * Get dispatch job detail for follow-up operations
      */
-    async getDispatchJobDetail(jobId: number): Promise<any> {
-        return apiClient.get<any>('job/DispatchJobDetail', {
+    async getDispatchJobDetail(jobId: number): Promise<unknown> {
+        return apiClient.get<unknown>('job/DispatchJobDetail', {
             jobId,
         });
     }

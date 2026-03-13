@@ -358,3 +358,6 @@ healthchecksdb
 nul
 /test-output.txt
 /test-results.txt
+
+# Claude Code local config and skills
+.claude/

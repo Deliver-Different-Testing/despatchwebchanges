@@ -67,10 +67,10 @@ export async function markTaskAsClosed(eventId: number, closed: boolean): Promis
 /**
  * Update a task's due date
  */
-export async function updateTaskDate(eventId: number, date: Dayjs): Promise<void> {
+export async function updateTaskDate(eventId: number, date: Dayjs, timezone?: string): Promise<void> {
     const data: TaskDateRequest = {
         eventId,
-        date: formatDateForApi(date),
+        date: formatDateForApi(date, timezone),
     };
     await apiClient.post('task/UpdateTaskDate', data);
 }
@@ -78,12 +78,12 @@ export async function updateTaskDate(eventId: number, date: Dayjs): Promise<void
 /**
  * Update a task's due time
  */
-export async function updateTaskTime(eventId: number, time: Dayjs): Promise<void> {
+export async function updateTaskTime(eventId: number, time: Dayjs, timezone?: string): Promise<void> {
     const data: TaskTimeRequest = {
         eventId,
-        time: formatDateForApi(time),
+        time: formatDateForApi(time, timezone),
     };
-    
+
     await apiClient.post('task/UpdateTaskTime', data);
 }
 

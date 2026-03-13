@@ -613,7 +613,7 @@ export function useHereMap({
             if (mapInstance?.map) {
                 try {
                     mapInstance.map.dispose();
-                } catch (e) {
+                } catch {
                     // Ignore disposal errors
                 }
             }
@@ -732,11 +732,12 @@ export function useHereMap({
                 try {
                     clearMap();
                     mapInstance.map.dispose();
-                } catch (e) {
+                } catch {
                     // Ignore disposal errors during cleanup
                 }
             }
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- cleanup-only effect; runs on unmount
     }, []);
 
     return {

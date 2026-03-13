@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {Box, Button, Checkbox, Chip, IconButton, Tooltip,} from '@mui/material';
 import {ContactMail as ContactMailIcon, Download as DownloadIcon, Email as EmailIcon,} from '@mui/icons-material';
 import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks';
-import {DriverEmail, PaginatedRequest} from '../../../interfaces';
+import {DriverEmail, GroupEmailData, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {
     DataTable,
@@ -67,7 +67,7 @@ export const DriverEmailsTab: React.FC<DriverEmailsTabProps> = ({showToast}) => 
 
     const openComposeDialog = async (recipients: DriverEmail[]) => {
         try {
-            const result = await (window as any).ReactComposeEmailDialog?.open(recipients);
+            const result = await (window as unknown as Record<string, { open: (recipients: DriverEmail[]) => Promise<GroupEmailData | null> }>).ReactComposeEmailDialog?.open(recipients);
             if (!result) return;
 
             await sendEmail.mutateAsync(result);

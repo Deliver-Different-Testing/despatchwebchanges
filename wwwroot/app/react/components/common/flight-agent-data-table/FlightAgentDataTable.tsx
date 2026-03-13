@@ -1047,7 +1047,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                         <ActionIcon
                                                             icon={<InfoIcon sx={{fontSize: 16}}/>}
                                                             tooltip="More Info"
-                                                            onClick={() => openFlightDetailsDialog(flight as any)}
+                                                            onClick={() => openFlightDetailsDialog(flight as unknown as Parameters<typeof openFlightDetailsDialog>[0])}
                                                         />
                                                     </Box>
                                                 </TableCell>

@@ -15,7 +15,7 @@ import {
     ITaskTimeRequest
 } from "../interfaces/task-request.interfaces";
 import {Dayjs} from "dayjs";
-import {formatDateForApiWithTzs} from "../functions/formatDates";
+import {formatDateForApiWithTzs} from "../react/utils/dateUtils";
 import angular from 'angular';
 
 interface PageFilterNames {
@@ -192,7 +192,7 @@ class TasksService implements angular.IServiceProvider {
         eventTypeFilter?: string,
         appPage?: AppPage
     ): TaskTableFiltersRequest {
-        let filters: TaskTableFiltersRequest = {};
+        const filters: TaskTableFiltersRequest = {};
         filters.jobId = currentJobId;
         filters.showCompleted = false;
 

@@ -18,7 +18,6 @@ import { JobNoteType } from '../../../../enums/job-note-type.enum';
 import { eventApi } from '../../../services/eventApi';
 import { notesApi } from '../../../services/notesApi';
 import { openVoidJobConfirmationDialog } from '../void-job-confirmation-dialog/void-job-confirmation-dialog-react.module';
-import angular from 'angular';
 
 interface ToastService {
     showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
@@ -116,7 +115,7 @@ class AddEventDialogManager {
             await eventApi.addEvent(formattedEventData);
 
             if (eventData.eventTypeId === EventTypeEnum.CancelJob) {
-                const jobDetail = await eventApi.getDispatchJobDetail(job.id);
+                const jobDetail = await eventApi.getDispatchJobDetail(job.id) as { id: number; jobNo: string; isArchived: boolean };
                 await openVoidJobConfirmationDialog(
                     {
                         id: jobDetail.id,

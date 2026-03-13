@@ -1,6 +1,6 @@
 import {IJobSearchResult, IDispatchJob, ISuggestion, IJobSearchResultDto} from "../../interfaces/job.interface";
 import {Dayjs} from "dayjs";
-import {formatDateForApiWithTzs} from "../../functions/formatDates";
+import {formatDateForApiWithTzs} from "../../react/utils/dateUtils";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
 import {transformDispatchJobDTO} from "../../functions/dtoMappings";
 import angular from 'angular';
@@ -102,7 +102,7 @@ class JobSearchService implements angular.IServiceProvider {
     }
 
     async uploadJobList(file: File) {
-        let fd = new FormData();
+        const fd = new FormData();
         fd.append("file", file);
         await this.$http.post("/Job/Upload", fd, {
             transformRequest: angular.identity,

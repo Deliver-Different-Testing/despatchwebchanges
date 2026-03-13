@@ -142,7 +142,7 @@ public class TaskRepository(
                     TucEventChangeType.Update,
                     "UcevDueTime",
                     existingEvent.UcevDueTime.ToString("O"),
-                    date.DateTime.ToString("O")
+                    date.ToString("O")
                 );
             }
 
@@ -183,7 +183,7 @@ public class TaskRepository(
                     TucEventChangeType.Update,
                     "UcevDueTime",
                     existingEvent.UcevDueTime.ToString("O"),
-                    time.DateTime.ToString("O")
+                    time.ToString("O")
                 );
             }
 

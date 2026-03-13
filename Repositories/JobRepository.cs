@@ -2101,8 +2101,8 @@ public partial class JobRepository(
         if (isPrebook)
         {
             var effectivePrebookId = await Context.GetEffectiveJobBookingIdAsync(jobId);
-            return await Context.PricingBreakdowns
-                .Where(p => p.PrebookJobId == effectivePrebookId || p.PrebookJobId == jobId)
+            var prebookBreakdowns = await Context.PricingBreakdowns
+                .Where(p => p.PrebookJobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
                     ChargeId = p.PricingBreakdownId,
@@ -2113,6 +2113,25 @@ public partial class JobRepository(
                     CostAmount = p.CostAmount
                 })
                 .ToListAsync();
+
+            // Fall back to parent prebook's rows if this job has none
+            if (prebookBreakdowns.Count == 0 && effectivePrebookId != jobId)
+            {
+                prebookBreakdowns = await Context.PricingBreakdowns
+                    .Where(p => p.PrebookJobId == effectivePrebookId)
+                    .Select(p => new ChargeViewModel
+                    {
+                        ChargeId = p.PricingBreakdownId,
+                        Amount = p.ChargeAmount,
+                        Name = p.ChargeName,
+                        JobId = p.JobId,
+                        PrebookJobId = p.PrebookJobId,
+                        CostAmount = p.CostAmount
+                    })
+                    .ToListAsync();
+            }
+
+            return prebookBreakdowns;
         }
 
         // Query archive table directly if we know the job is archived
@@ -2122,8 +2141,8 @@ public partial class JobRepository(
             if (effectiveArchiveJobId == 0)
                 return [];
 
-            return await Context.PricingBreakdownArchives
-                .Where(p => p.JobId == effectiveArchiveJobId || p.JobId == jobId)
+            var archiveBreakdowns = await Context.PricingBreakdownArchives
+                .Where(p => p.JobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
                     ChargeId = p.PricingBreakdownId,
@@ -2134,14 +2153,35 @@ public partial class JobRepository(
                     CostAmount = p.CostAmount
                 })
                 .ToListAsync();
+
+            // Fall back to parent's archived rows if this job has none
+            if (archiveBreakdowns.Count == 0 && effectiveArchiveJobId != jobId)
+            {
+                archiveBreakdowns = await Context.PricingBreakdownArchives
+                    .Where(p => p.JobId == effectiveArchiveJobId)
+                    .Select(p => new ChargeViewModel
+                    {
+                        ChargeId = p.PricingBreakdownId,
+                        Amount = p.ChargeAmount,
+                        Name = p.ChargeName,
+                        JobId = p.JobId,
+                        PrebookJobId = p.PrebookJobId,
+                        CostAmount = p.CostAmount
+                    })
+                    .ToListAsync();
+            }
+
+            return archiveBreakdowns;
         }
 
-        // Try live jobs
+        // Try live jobs — query the requested job first, then fall back to
+        // the parent's rows.  The previous OR query (effectiveJobId || jobId)
+        // combined both parent and child rows for split jobs, doubling the total.
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         if (effectiveJobId != 0)
         {
             var pricingBreakdowns = await Context.PricingBreakdowns
-                .Where(p => p.JobId == effectiveJobId || p.JobId == jobId)
+                .Where(p => p.JobId == jobId)
                 .Select(p => new ChargeViewModel
                 {
                     ChargeId = p.PricingBreakdownId,
@@ -2153,6 +2193,24 @@ public partial class JobRepository(
                     ChildJobId = p.ChildJobId
                 })
                 .ToListAsync();
+
+            // Fall back to parent's breakdown rows if the child has none of its own
+            if (pricingBreakdowns.Count == 0 && effectiveJobId != jobId)
+            {
+                pricingBreakdowns = await Context.PricingBreakdowns
+                    .Where(p => p.JobId == effectiveJobId)
+                    .Select(p => new ChargeViewModel
+                    {
+                        ChargeId = p.PricingBreakdownId,
+                        Amount = p.ChargeAmount,
+                        Name = p.ChargeName,
+                        JobId = p.JobId,
+                        PrebookJobId = p.PrebookJobId,
+                        CostAmount = p.CostAmount,
+                        ChildJobId = p.ChildJobId
+                    })
+                    .ToListAsync();
+            }
 
             if (pricingBreakdowns.Count != 0)
                 return pricingBreakdowns;
@@ -3241,6 +3299,7 @@ public partial class JobRepository(
         try
         {
             var effectiveJobId = await Context.GetEffectiveBulkJobIdAsync(bulkJobId);
+            int? childJobId = effectiveJobId != bulkJobId ? bulkJobId : null;
 
             // Process existing and new parcels separately
             var newParcels = new List<TblBulkJobItem>();
@@ -3261,7 +3320,7 @@ public partial class JobRepository(
                     var newItem = new TblBulkJobItem
                     {
                         JobId = effectiveJobId,
-                        ChildJobId = null,
+                        ChildJobId = childJobId,
                         Height = parcel.Height ?? 0,
                         Length = parcel.Length ?? 0,
                         Depth = parcel.Depth ?? 0,

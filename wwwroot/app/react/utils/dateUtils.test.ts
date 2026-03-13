@@ -26,6 +26,10 @@ import {
     formatRelativeDateTime,
     getTimezoneAbbreviation,
     getTimezoneName,
+    formatDateForApiWithTzs,
+    formatMins,
+    formatInfoLogDateTimeString,
+    formatDateFromApi,
 } from './dateUtils';
 
 describe('dateUtils', () => {
@@ -291,6 +295,36 @@ describe('dateUtils', () => {
 
         it('returns original timezone on error', () => {
             expect(getTimezoneName('Invalid/Timezone')).toBe('Invalid/Timezone');
+        });
+    });
+
+    describe('backward-compatible aliases', () => {
+        it('formatDateForApiWithTzs is an alias for formatDateForApi', () => {
+            expect(formatDateForApiWithTzs).toBe(formatDateForApi);
+        });
+
+        it('formatMins is an alias for formatTime', () => {
+            expect(formatMins).toBe(formatTime);
+        });
+
+        it('formatInfoLogDateTimeString is an alias for formatRelativeDateTime', () => {
+            expect(formatInfoLogDateTimeString).toBe(formatRelativeDateTime);
+        });
+
+        it('formatDateFromApi is an alias for parseDateFromApi', () => {
+            expect(formatDateFromApi).toBe(parseDateFromApi);
+        });
+    });
+
+    describe('formatInfoLogDateTimeString cross-timezone behavior (from formatDates)', () => {
+        it('with cross-TZ offset documents conversion behavior', () => {
+            (window as any).TimeZone = 'New Zealand Standard Time';
+
+            const pdtString = dayjs().tz('America/Los_Angeles').format('YYYY-MM-DD') + 'T09:00:00-07:00';
+
+            const result = formatInfoLogDateTimeString(pdtString);
+            expect(result).not.toBe('No date');
+            expect(result).not.toBe('Invalid date');
         });
     });
 });

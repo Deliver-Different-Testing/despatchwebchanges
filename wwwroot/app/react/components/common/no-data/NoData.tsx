@@ -14,12 +14,10 @@ import {
 } from '@mui/material';
 import {NoDataProps} from "./types";
 
-interface NoDataState {}
-
 /**
  * NoData Component - displays an empty state with icon, title, message, and optional action
  */
-export class NoData extends React.Component<NoDataProps, NoDataState> {
+export class NoData extends React.Component<NoDataProps> {
     static defaultProps: Partial<NoDataProps> = {
         title: 'No Data',
         message: 'No items to display.',

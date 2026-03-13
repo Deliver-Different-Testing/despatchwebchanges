@@ -12,7 +12,6 @@ import {
     Typography,
     Button,
     alpha,
-    useTheme,
 } from '@mui/material';
 import {
     SearchOff as SearchOffIcon,
@@ -76,7 +75,6 @@ export const ErrorPage: React.FC<ErrorPageProps> = ({
     onGoHome,
     onGoBack,
 }) => {
-    const theme = useTheme();
     const config = errorConfigs[errorType];
 
     const title = customTitle || config.title;

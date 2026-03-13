@@ -8,13 +8,12 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import dayjs, { Dayjs } from 'dayjs';
+import { Dayjs } from 'dayjs';
 
 import { EditDateTimeDialog } from './EditDateTimeDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
-import angular from 'angular';
 
 interface DialogState {
     open: boolean;

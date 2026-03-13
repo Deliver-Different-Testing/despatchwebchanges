@@ -58,7 +58,6 @@ const entryPoints: EntryPoints = {
     home: path.join(rootDir, "wwwroot/app/components/home/home.module.ts"),
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
-
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
     driverManagementReact: path.join(rootDir, "wwwroot/app/react/pages/driver-management/driver-management-react.module.tsx"),
     composeEmailDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/compose-email-dialog/compose-email-dialog-react.module.tsx"),
@@ -604,8 +603,8 @@ async function buildProd(): Promise<void> {
 
     // Build all bundle types in parallel
     const buildPromises = [
-        await esbuild.build(getBuildConfig(true, { "vendor-core": vendorEntries["vendor-core"] }, "vendor-core")),
-        await esbuild.build(getBuildConfig(true, { "vendor-plugins": vendorEntries["vendor-plugins"] }, "vendor-plugins")),
+        await esbuild.build(getBuildConfig(true, {"vendor-core": vendorEntries["vendor-core"]}, "vendor-core")),
+        await esbuild.build(getBuildConfig(true, {"vendor-plugins": vendorEntries["vendor-plugins"]}, "vendor-plugins")),
         await esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
         await esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
     ];
@@ -613,7 +612,7 @@ async function buildProd(): Promise<void> {
     // Add React modules build if there are any
     if (Object.keys(reactModuleEntries).length > 0) {
         buildPromises.push(
-            await esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
+           await esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
         );
     }
 

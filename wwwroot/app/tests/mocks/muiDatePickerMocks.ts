@@ -60,7 +60,7 @@ const createMockDayjs = (value: string) => {
 
 // Mock DateTimePicker
 export const DateTimePicker = forwardRef<HTMLInputElement, any>(
-    ({label, value, onChange, slotProps, disabled, minDateTime, maxDateTime, ...props}, ref) => {
+    ({label, value, onChange, slotProps: _slotProps, disabled, minDateTime: _minDateTime, maxDateTime: _maxDateTime, ...props}, ref) => {
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
             onChange?.(createMockDayjs(e.target.value));
         };
@@ -171,7 +171,7 @@ export const TimePicker = forwardRef<HTMLInputElement, any>(
 
 // Mock DateCalendar - includes gridcells for day selection
 export const DateCalendar = forwardRef<HTMLDivElement, any>(
-    ({value, onChange, disabled, ...props}, ref) => {
+    ({value, onChange, disabled, ..._props}, ref) => {
         const handleDayClick = (day: number) => {
             const currentValue = value?.format?.('YYYY-MM') ?? new Date().toISOString().slice(0, 7);
             const newDate = `${currentValue}-${String(day).padStart(2, '0')}`;

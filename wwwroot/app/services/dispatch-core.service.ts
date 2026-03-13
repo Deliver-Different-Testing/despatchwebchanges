@@ -43,7 +43,7 @@ import {
 } from "../interfaces/requests.interfaces";
 import {JobEventData} from "../react/interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
-import {formatDateForApiWithTzs} from "../functions/formatDates";
+import {formatDateForApiWithTzs} from "../react/utils/dateUtils";
 import IDateFilterData from "../interfaces/date-filter-data.interface";
 import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
@@ -811,7 +811,7 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getAllTasks(filters?: TaskTableFiltersRequest): Promise<ITask[]> {
         try {
-            let params: any = {};
+            const params: any = {};
 
             if (filters) {
                 if (filters.jobId) params.jobId = filters.jobId;

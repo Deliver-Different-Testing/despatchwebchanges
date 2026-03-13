@@ -1,4 +1,4 @@
-import {getIanaTimezone} from "../functions/formatDates";
+import {getIanaTimezone} from "../react/utils/dateUtils";
 import {TimeZone} from "../contants";
 import {timezoneShortFilter} from "../filters";
 import angular from 'angular';
@@ -20,7 +20,7 @@ class BaseController implements angular.IController {
     protected debouncedApplyScope?: (...args: any[]) => void;
     
     constructor() {
-        console.log('BaseController: Controller instantiated');
+        // no-op — lifecycle managed by initServices() and $onDestroy()
     }
 
     protected initServices(
@@ -202,8 +202,7 @@ class BaseController implements angular.IController {
         // Clear cache
         this.dataCache.clear();
 
-        // Log final memory state
-        console.log('BaseController destroyed, resources cleaned up');
+        // All resources cleaned up
     }
 
     // Filters

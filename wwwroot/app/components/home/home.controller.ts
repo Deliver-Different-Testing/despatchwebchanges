@@ -414,7 +414,7 @@ class HomeController extends BaseController {
                 // Load last active layout or default
                 const layoutToLoad = lastActiveLayout ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout) : 0;
                 this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error: any) {
+            } catch {
                 this.layouts = [this.defaultLayout];
                 this.loadLayout(0);
             }
@@ -738,7 +738,7 @@ class HomeController extends BaseController {
             try {
                 const savedViews = JSON.parse(localStorage.getItem(this.SelectedViewsKey) ?? '');
                 return savedViews || [];
-            } catch (error: any) {
+            } catch (error) {
                 console.error("Error loading views from storage:", error);
                 return [];
             }
@@ -767,7 +767,7 @@ class HomeController extends BaseController {
             await this.initializeViews();
 
             await this.fetchDriverLocations();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error fetching dispatch views:", error);
             this.views = [];
             await this.initializeViews();
@@ -959,7 +959,7 @@ class HomeController extends BaseController {
             // Update the job's assigned courier display
             job.assignedCourier = selectedCourier;
 
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in dispatch:", error);
             job.assignedCourier = undefined;
         }
@@ -980,7 +980,7 @@ class HomeController extends BaseController {
             await this.performSwapPOD(this.currentJob.jobNo, jobNumber);
             await this.showSuccessAlert();
             await this.updateJobsAfterSwap(secondJobId, firstJobId);
-        } catch (error: any) {
+        } catch (error) {
             console.error("POD Swap Canceled or Error occurred", error);
         }
     }
@@ -1114,7 +1114,7 @@ class HomeController extends BaseController {
     async splitJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
         try {
             await this.jobContextMenuService.splitJob($event, job, () => this.getData());
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error in splitJob:', error);
         }
     }
@@ -1122,7 +1122,7 @@ class HomeController extends BaseController {
     async getPotentialCouriers(jobId: number): Promise<void> {
         try {
             this.potentialCouriers = await this.DispatchData.getPotentialCouriers(jobId);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error getting potential couriers:", error);
         }
     }
@@ -1140,7 +1140,7 @@ class HomeController extends BaseController {
 
         try {
             this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courierId);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error fetching truck courier status:", error);
         }
     }
@@ -1156,7 +1156,7 @@ class HomeController extends BaseController {
 
             // Set courier
             await this.updateCourierData(foundCourier.courierId, foundCourier.name, foundCourier.id);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error searching courier:", error);
         }
     }
@@ -1183,14 +1183,14 @@ class HomeController extends BaseController {
 
                 try {
                     this.truckCourierStatus = await this.DispatchData.truckCourierStatus(foundCourier.courierId);
-                } catch (error: any) {
+                } catch (error) {
                     console.warn("Error fetching truck courier status:", error);
                 }
             } else {
                 console.warn("Courier not found in active or all couriers list");
                 this.toastrService.showErrorToast("An unexpected error occurred. Please contact support.");
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error selecting courier:", error);
             this.toastrService.showErrorToast("Error loading courier information");
         } finally {
@@ -1222,7 +1222,7 @@ class HomeController extends BaseController {
             } else {
                 console.log(`No jobs found for courier ${courierId}`);
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error getting current jobs:", error);
             this.jobsCurrentList = [];
         } finally {
@@ -1333,7 +1333,7 @@ class HomeController extends BaseController {
 
                     try {
                         this.truckCourierStatus = await this.DispatchData.truckCourierStatus(job.courierData.courierId);
-                    } catch (error: any) {
+                    } catch (error) {
                         console.warn("Error fetching truck courier status:", error);
                     }
                 } else {
@@ -1343,7 +1343,7 @@ class HomeController extends BaseController {
                     this.mapJobList = [mapJobItem]
                 }
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in selectJob:", error);
             // Fallback to showing just the current job
             const mapJobItem = this.mapToDispatchMapItem(job);
@@ -1488,12 +1488,12 @@ class HomeController extends BaseController {
 
         return jobs.map(job => {
             // Initialize search text if not present
-            if (!job.hasOwnProperty('searchText')) {
+            if (!Object.prototype.hasOwnProperty.call(job, 'searchText')) {
                 job.searchText = '';
             }
 
             // Initialize typeahead loading states
-            if (!job.hasOwnProperty('courierSearchLoading')) {
+            if (!Object.prototype.hasOwnProperty.call(job, 'courierSearchLoading')) {
                 job.courierSearchLoading = false;
             }
 
@@ -1589,11 +1589,12 @@ class HomeController extends BaseController {
                 this.jobsCurrentList = undefined;
             }
             this.totalJobCount = result.totalCount;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error getting job list:", error);
 
-            const statusCode = error?.status || error?.response?.status;
-            const errorMessage = error?.data?.message || error?.message || 'Unknown error';
+            const err = error as Record<string, Record<string, unknown> | undefined> | undefined;
+            const statusCode = (err?.status as number | undefined) || (err?.response?.status as number | undefined);
+            const errorMessage = (err?.data?.message as string | undefined) || (error instanceof Error ? error.message : undefined) || 'Unknown error';
 
             let toastMessage = "Failed to get job list.";
             if (statusCode === 500) {
@@ -1642,7 +1643,7 @@ class HomeController extends BaseController {
             if (hasCourier && courierId) {
                 await this.getCurrentJobs(courierId);
             }
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in getData:", error);
             this.toastrService.showErrorToast("An error occurred while loading data. Please refresh the page.");
         }
@@ -1699,7 +1700,7 @@ class HomeController extends BaseController {
                 this.currentJobId = jobId;
                 this.applyScope();
             }, 50);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error refreshing job detail:", error);
             this.toastrService.showErrorToast("Failed to refresh job details");
         }
@@ -1733,7 +1734,7 @@ class HomeController extends BaseController {
             );
             console.log('Driver locations received:', this.driverLocations);
             this.updateDriverLocationsDisplay();
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error getting driver locations data:", error);
             this.driverLocations = {areas: []};
             this.updateDriverLocationsDisplay();
@@ -1755,7 +1756,7 @@ class HomeController extends BaseController {
                 await this.processNewJob(newJobId);
                 console.log("Create new job process completed.");
             }
-        } catch (error: any) {
+        } catch (error) {
             console.log("Error in createNewJob:", error);
         } finally {
             this.applyScope();
@@ -1904,7 +1905,7 @@ class HomeController extends BaseController {
             const newStopJobId = await this.jobAddStopService.addNewStop(job, $event);
 
             if (newStopJobId) {
-                let newStopJob = this.jobList.find(j => j.id === newStopJobId) ||
+                const newStopJob = this.jobList.find(j => j.id === newStopJobId) ||
                     await this.DispatchData.getDispatchJobDetail(newStopJobId);
 
                 if (newStopJob) {
@@ -1914,10 +1915,10 @@ class HomeController extends BaseController {
                 this.currentJobId = job.id;
                 this.currentJob = job;
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error in addStopToJob:', error);
             this.toastrService.showErrorToast(
-                error.message?.includes('loading') ? 'Error loading new stop job details' : 'Failed to add stop to job'
+                error instanceof Error && error.message?.includes('loading') ? 'Error loading new stop job details' : 'Failed to add stop to job'
             );
         } finally {
             setLoadingState(false);
@@ -1979,7 +1980,7 @@ class HomeController extends BaseController {
             }
 
             return true;
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in dispatch:", error);
             throw error;
         }
@@ -2376,7 +2377,7 @@ class HomeController extends BaseController {
 
         try {
             this.truckCourierStatus = await this.DispatchData.truckCourierStatus(courierMatch.id);
-        } catch (error: any) {
+        } catch (error) {
             console.warn("Error fetching truck courier status:", error);
         }
 

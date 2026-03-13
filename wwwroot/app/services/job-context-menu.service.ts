@@ -301,7 +301,7 @@ class JobContextMenuService implements angular.IServiceProvider {
     private getEventGroupsMenuItems(
         jobId: number,
         onRefresh: () => void
-    ): Function {
+    ): () => IContextMenuOption[] | Promise<IContextMenuOption[]> {
         return () => {
             if (this.eventGroupsCache.length > 0) {
                 return this.eventGroupsCache.map((group) => ({
@@ -886,9 +886,9 @@ class JobContextMenuService implements angular.IServiceProvider {
             } else {
                 this.toastrService.showWarningToast("No analysis data returned");
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("AI late alert analysis error:", error);
-            this.toastrService.showErrorToast(error?.message || "Failed to analyze late alert");
+            this.toastrService.showErrorToast(error instanceof Error ? error.message : "Failed to analyze late alert");
         }
     }
 

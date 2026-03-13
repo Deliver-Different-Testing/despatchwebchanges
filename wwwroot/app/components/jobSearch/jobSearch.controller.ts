@@ -31,7 +31,7 @@ import InterCourierChargeDialogService
 import JobSearchDateRange from "./enums/JobSearchDateRange";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
-import {getIanaTimezone} from "../../functions/formatDates";
+import {getIanaTimezone} from "../../react/utils/dateUtils";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import {setAiEnabled} from "../../functions/aiSettings";
 import angular from 'angular';
@@ -232,7 +232,7 @@ class JobSearchController extends BaseController {
                     ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
                     : 0;
                 this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error: any) {
+            } catch (error) {
                 console.error('Error loading stored layouts:', error);
                 this.layouts = [this.defaultLayout];
                 this.loadLayout(0);
@@ -1084,7 +1084,7 @@ class JobSearchController extends BaseController {
                 console.log('🔄 Refreshing BulkJobList');
                 await this.refreshBulkData();
                 break;
-            case JobSearchBoxes.JobDetail:
+            case JobSearchBoxes.JobDetail: {
                 console.log('🔄 Refreshing JobDetail');
                 if (!this.currentJobId) {
                     console.log('❌ No current job ID');
@@ -1106,6 +1106,7 @@ class JobSearchController extends BaseController {
                     await this.selectJobDetail(jobIdToRefresh);
                 }
                 break;
+            }
         }
     }
 
@@ -1130,7 +1131,7 @@ class JobSearchController extends BaseController {
             job.assignedCourier = {id: courierId, text: ''};
 
             return true;
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in dispatch:", error);
             throw error;
         }

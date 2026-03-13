@@ -30,9 +30,9 @@ export function useConversations() {
         try {
             const data = await messagingApi.getRecentList();
             setConversations(data);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to load conversations:', err);
-            if (!silent) setError(err.message || 'Failed to load conversations');
+            if (!silent) setError(err instanceof Error ? err.message : 'Failed to load conversations');
         } finally {
             if (!silent) setIsLoading(false);
         }
@@ -94,9 +94,9 @@ export function useMessages(currentStaffId: number) {
                 new Date(a.messageTime).getTime() - new Date(b.messageTime).getTime()
             );
             setMessages(sorted);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to load messages:', err);
-            if (!silent) setError(err.message || 'Failed to load messages');
+            if (!silent) setError(err instanceof Error ? err.message : 'Failed to load messages');
         } finally {
             if (!silent) setIsLoading(false);
         }

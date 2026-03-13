@@ -8,7 +8,7 @@
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
-import {ErrorPage, ErrorPageProps, ErrorType} from './ErrorPage';
+import {ErrorPage, ErrorType} from './ErrorPage';
 import {getTheme} from '../../theme/muiTheme';
 import angular from 'angular';
 

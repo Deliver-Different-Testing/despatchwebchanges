@@ -43,6 +43,17 @@ const config: JestConfigWithTsJest = {
     ],
     coverageReporters: ['text', 'lcov', 'cobertura'],
 
+    // Minimum coverage thresholds to prevent silent regression.
+    // Tighten these as test coverage improves.
+    coverageThreshold: {
+        global: {
+            branches: 10,
+            functions: 10,
+            lines: 15,
+            statements: 15,
+        },
+    },
+
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/', '/__integration__/'],
 
     // Performance optimizations

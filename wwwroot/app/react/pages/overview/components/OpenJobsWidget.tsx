@@ -12,7 +12,7 @@ import {
     Typography,
 } from '@mui/material';
 import dayjs from 'dayjs';
-import {formatMins} from '../../../../functions/formatDates';
+import {formatMins} from '../../../utils/dateUtils';
 import type {DriverViewModel, IOpenJobResponse, TableSort, ViewJob,} from '../OverviewPage.interfaces';
 import {ContactID} from "../../../../contants";
 
@@ -43,7 +43,7 @@ function loadCollapseState(cardName: string): boolean {
             const states = JSON.parse(saved);
             return states[cardName] || false;
         }
-    } catch {}
+    } catch { /* localStorage may be unavailable */ }
     return false;
 }
 
@@ -53,7 +53,7 @@ function saveCollapseState(cardName: string, isCollapsed: boolean): void {
         const states = saved ? JSON.parse(saved) : {};
         states[cardName] = isCollapsed;
         localStorage.setItem('cardCollapseStates', JSON.stringify(states));
-    } catch {}
+    } catch { /* localStorage may be unavailable */ }
 }
 
 function getTimeSinceLastCompleted(lastCompletedTime: string): number {
@@ -161,9 +161,9 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
         const {column, direction} = tableSort;
         const dir = direction === 'asc' ? 1 : -1;
 
-        sorted.sort((a: any, b: any) => {
-            let valA = a[column];
-            let valB = b[column];
+        sorted.sort((a: ViewJob, b: ViewJob) => {
+            let valA: string | number | undefined | Record<string, unknown> = a[column as keyof ViewJob] as string | number | undefined | Record<string, unknown>;
+            let valB: string | number | undefined | Record<string, unknown> = b[column as keyof ViewJob] as string | number | undefined | Record<string, unknown>;
 
             if (column === 'pickup' || column === 'delivery') {
                 valA = a[column]?.timeString || '';
@@ -178,8 +178,9 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
 
             if (valA == null) return 1;
             if (valB == null) return -1;
-            if (typeof valA === 'string') return valA.localeCompare(valB) * dir;
-            return (valA < valB ? -1 : 1) * dir;
+            if (typeof valA === 'string' && typeof valB === 'string') return valA.localeCompare(valB) * dir;
+            if (typeof valA === 'number' && typeof valB === 'number') return (valA < valB ? -1 : 1) * dir;
+            return String(valA).localeCompare(String(valB)) * dir;
         });
 
         return sorted;

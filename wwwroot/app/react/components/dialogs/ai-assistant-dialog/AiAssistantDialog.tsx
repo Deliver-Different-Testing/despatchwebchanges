@@ -55,7 +55,7 @@ function renderMessageContent(content: string): React.ReactNode {
                 .sort((a, b) => (a!.index ?? 0) - (b!.index ?? 0))[0];
 
             if (!firstMatch || firstMatch.index === undefined) {
-                parts.push(<span key={partKey++}>{remaining}</span>);
+                parts.push(<span key={partKey}>{remaining}</span>);
                 break;
             }
 

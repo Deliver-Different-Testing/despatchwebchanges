@@ -58,7 +58,7 @@ export function DispatchMap({
     );
 
     // Initialize HERE Map
-    const { mapContainerRef, map, platform, ui, isLoading, isReady } = useHereMap({
+    const { mapContainerRef, map, isLoading, isReady } = useHereMap({
         center: mapCenter,
         zoom: mapZoom,
         onMapReady: handleMapReady,
@@ -261,6 +261,7 @@ export function DispatchMap({
             .catch((error) => {
                 console.error('Failed to fetch clearlist envelope:', error);
             });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onEnvelopeUpdate is a callback prop; only re-fetch when clearListId/isReady change
     }, [clearListId, isReady]);
 
     // Update marker click callback when it changes

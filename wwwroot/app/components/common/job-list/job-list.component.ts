@@ -19,7 +19,7 @@ import JobHighlightService from "./job-highlight.service";
 import DensityMode from "../../../enums/densityMode";
 import AutoCompleteDialogService from "../../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import ToastrService from "../../../services/toastr.service";
-import {formatLongDateTime, formatMins} from "../../../functions/formatDates";
+import {formatLongDateTime, formatMins} from "../../../react/utils/dateUtils";
 import angular from 'angular';
 
 class JobsListController extends BaseController {
@@ -1006,8 +1006,8 @@ class JobsListController extends BaseController {
             }
 
             return results;
-        } catch (error: any) {
-            console.error("Error in courier search:", error.message);
+        } catch (error: unknown) {
+            console.error("Error in courier search:", error instanceof Error ? error.message : String(error));
             return [];
         }
     }
@@ -1242,7 +1242,7 @@ class JobsListController extends BaseController {
                 return this.isUsCustomer
                     ? this.getCourierName(job)
                     : this.getCourierNumber;
-            case 'remaining':
+            case 'remaining': {
                 const hasNoCourier = !this.hasAssignedCourier(job);
                 const remainValue = job.remain !== undefined && job.remain !== null
                     ? job.remain
@@ -1250,6 +1250,7 @@ class JobsListController extends BaseController {
 
                 if (hasNoCourier) return remainValue - 1000000;
                 return remainValue;
+            }
             case 'status':
                 return job.status || job.statusName || '';
             case 'isArchived':

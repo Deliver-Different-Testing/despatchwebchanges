@@ -280,8 +280,8 @@ export class AccessorialChargesDialog extends React.Component<
             }
             this.setState({ appliedCharges: charges, appliedRowState: rowState, isLoadingApplied: false });
             return charges;
-        } catch (error: any) {
-            showToast(`Error loading applied charges: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Error loading applied charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState({ isLoadingApplied: false });
             return null;
         }
@@ -316,8 +316,8 @@ export class AccessorialChargesDialog extends React.Component<
                 isLoadingAvailable: false,
             }));
             return charges;
-        } catch (error: any) {
-            showToast(`Error loading available charges: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Error loading available charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState({ isLoadingAvailable: false });
             return null;
         }
@@ -329,7 +329,7 @@ export class AccessorialChargesDialog extends React.Component<
 
     // ── Applied row handlers ──────────────────────────────────────────────────
 
-    private setRowField(id: number, field: keyof AppliedRowState, value: any): void {
+    private setRowField(id: number, field: keyof AppliedRowState, value: AppliedRowState[keyof AppliedRowState]): void {
         this.setState(prev => ({
             appliedRowState: {
                 ...prev.appliedRowState,
@@ -390,8 +390,8 @@ export class AccessorialChargesDialog extends React.Component<
             showToast(`Charge "${charge.name}" updated.`, 'success');
             const applied = await this.loadAll();
             if (charge.chargeType !== 'percentage') await this.autoSavePercentageCharges(applied);
-        } catch (error: any) {
-            showToast(`Error saving charge: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Error saving charge: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState(prev => ({
                 appliedRowState: {
                     ...prev.appliedRowState,
@@ -424,8 +424,8 @@ export class AccessorialChargesDialog extends React.Component<
             showToast(`Charge "${charge.name}" removed.`, 'success');
             const applied = await this.loadAll();
             await this.autoSavePercentageCharges(applied);
-        } catch (error: any) {
-            showToast(`Error deleting charge: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Error deleting charge: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState(prev => ({
                 appliedRowState: {
                     ...prev.appliedRowState,
@@ -520,8 +520,8 @@ export class AccessorialChargesDialog extends React.Component<
             showToast(`${toAdd.length} charge(s) added.`, 'success');
             const applied = await this.loadAll();
             await this.autoSavePercentageCharges(applied);
-        } catch (error: any) {
-            showToast(`Error adding charges: ${error.message}`, 'error');
+        } catch (error: unknown) {
+            showToast(`Error adding charges: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState({ isAddingCharges: false });
         }
     };
@@ -661,8 +661,8 @@ export class AccessorialChargesDialog extends React.Component<
                     overrideAmount: undefined,
                 });
                 didSave = true;
-            } catch (error: any) {
-                showToast(`Error updating percentage charge "${charge.name}": ${error.message}`, 'error');
+            } catch (error: unknown) {
+                showToast(`Error updating percentage charge "${charge.name}": ${error instanceof Error ? error.message : String(error)}`, 'error');
             }
         }
 

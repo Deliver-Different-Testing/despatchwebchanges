@@ -35,7 +35,7 @@ import VoidJobConfirmationDialogService
 import JobPhotoType from "../../../enums/job-photo-type.enum";
 import {IFlightSegment} from "../../Nationwide/nationwide.interfaces";
 import PodPhotoType from "../../../enums/podPhotoType";
-import {formatDateForApiWithTzs, formatLongDateTime} from "../../../functions/formatDates";
+import {formatDateForApiWithTzs, formatLongDateTime} from "../../../react/utils/dateUtils";
 import {ViewDensity, ViewDensityLabels} from "../../../enums/view-density.enum";
 import DispatchExecutorService from "../../../services/dispatch-executor.service";
 import {isAiEnabled} from "../../../functions/aiSettings";
@@ -339,10 +339,11 @@ class JobDetailController extends BaseController {
             if (this.job?.completedTime && !this.isRecurringJob) {
                 await this.loadPodPhotos();
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error loading job data:", error);
+            const errMsg = error instanceof Error ? error.message : undefined;
             this.toastrService.showErrorToast(
-                error?.message ? `Failed to load job details: ${error.message}` : "Failed to load job details"
+                errMsg ? `Failed to load job details: ${errMsg}` : "Failed to load job details"
             );
         } finally {
             this.isLoading = false;
@@ -748,19 +749,19 @@ class JobDetailController extends BaseController {
 
             switch (fieldName) {
                 case JobProperty.Status:
-                    this.job.status = result.value;
+                    this.job.status = result.value as string;
                     this.job.statusName = selectedOption?.text || '';
                     break;
                 case JobProperty.SpeedID:
-                    this.job.speedId = result.value;
+                    this.job.speedId = result.value as number;
                     this.job.speedName = selectedOption?.text || '';
                     break;
                 case JobProperty.Size:
-                    this.job.size = selectedOption || {id: result.value, text: ''};
+                    this.job.size = selectedOption || {id: result.value as number, text: ''};
                     this.job.sizeId = selectedOption?.id || undefined;
                     break;
                 case JobProperty.ClientID:
-                    this.job.clientId = result.value;
+                    this.job.clientId = result.value as number;
                     this.job.clientName = selectedOption?.text || '';
                     break;
                 case JobProperty.CourierID:
@@ -769,26 +770,26 @@ class JobDetailController extends BaseController {
                     this.job.courierData.courierId = selectedOption?.id || undefined;
                     break;
                 case JobProperty.FromContactName:
-                    this.job.fromContactName = selectedOption?.text || result.value;
+                    this.job.fromContactName = (selectedOption?.text || result.value) as string;
                     break;
                 case JobProperty.AcceptedJobTypeID:
-                    this.job.jobType = result.value;
+                    this.job.jobType = result.value as number;
                     this.job.jobTypeDescription = selectedOption?.text || '';
                     break;
                 case JobProperty.DeliverToLeaveID:
-                    this.job.sigNotRequired = selectedOption?.text || result.value;
+                    this.job.sigNotRequired = (selectedOption?.text || result.value) as string;
                     break;
                 case JobProperty.TrackingMethod:
-                    this.job.trackingMethod = result.value;
+                    this.job.trackingMethod = result.value as number;
                     break;
                 case JobProperty.DGClass:
-                    this.job.dgClass = result.value;
+                    this.job.dgClass = result.value as number;
                     if (result.checkboxValue !== undefined) {
                         this.job.dgDocumentation = result.checkboxValue;
                     }
                     break;
                 case JobProperty.InActiveDate:
-                    this.job.inActiveBy = selectedOption || {id: result.value, text: ''};
+                    this.job.inActiveBy = selectedOption || {id: result.value as number, text: ''};
                     break;
             }
 
@@ -1462,7 +1463,7 @@ class JobDetailController extends BaseController {
     }
 
     async dgClassClick($event: MouseEvent, job: IJob): Promise<void> {
-        let dgClassOptions = [];
+        const dgClassOptions = [];
         for (let i = 1; i <= 9; i++) {
             dgClassOptions.push({id: i, text: i.toString()});
         }
@@ -1718,7 +1719,7 @@ class JobDetailController extends BaseController {
                     return;
                 }
 
-                completedTime = formatDateForApiWithTzs(result.value, job.deliveryTimeZone?.text);
+                completedTime = formatDateForApiWithTzs(result.value as string | Dayjs | Date, job.deliveryTimeZone?.text);
             }
 
             let podName: string | undefined;
@@ -1791,7 +1792,7 @@ class JobDetailController extends BaseController {
             }
 
             console.log("Job data refreshed");
-        } catch (error) {
+        } catch {
             this.isLoading = false;
             this.toastrService.showErrorToast("Failed to refresh job details");
         }
@@ -1939,7 +1940,7 @@ class JobDetailController extends BaseController {
                     .textContent("POD email has been sent")
                     .ok("OK")
             );
-        } catch (error: any) {
+        } catch (error) {
             this.handleError(error);
         }
     }
@@ -2146,7 +2147,7 @@ class JobDetailController extends BaseController {
 
         try {
             await this.ensureAiAssistantLoaded();
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to load AI assistant module:', err);
             this.showAiPanel = false;
             this.applyScope();

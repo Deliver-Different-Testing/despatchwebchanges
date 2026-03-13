@@ -56,4 +56,4 @@ app.component("hereMapReact", HereMapReactComponent);
 app.component("dispatchMapReact", DispatchMapReactComponent);
 
 // Make the module available globally
-(window as any).uDispatchApp = app;
+window.uDispatchApp = app;

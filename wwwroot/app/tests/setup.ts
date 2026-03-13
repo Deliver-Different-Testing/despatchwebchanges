@@ -20,9 +20,9 @@ Object.defineProperty(window, 'history', {
 
 // Global variables declared in cshtml templates at runtime
 // Must be defined before modules that use them at top-level scope
-(global as any).ContactID = 0;
-(global as any).FirstName = 'Test';
-(global as any).TimeZone = 'Europe/London';
+(global as unknown as Window).ContactID = 0;
+(global as unknown as Window).FirstName = 'Test';
+(global as unknown as Window).TimeZone = 'Europe/London';
 
 // Global test utilities
 export {};

@@ -265,7 +265,7 @@ describe('ApiClient', () => {
     });
 
     describe('Error handling via interceptor', () => {
-        it('should transform axios errors to ApiError format', () => {
+        it('should transform axios errors to ApiError format', async () => {
             // Get the error handler from the interceptor
             const interceptorCall = mockResponseInterceptorUse.mock.calls[0];
             const errorHandler = interceptorCall[1];
@@ -279,11 +279,11 @@ describe('ApiClient', () => {
                 message: 'Request failed',
             };
 
-            expect(() => {
+            await expect(() => {
                 // The interceptor returns a rejected promise
                 // Since it returns Promise.reject, we need to handle it
                 return errorHandler(axiosError);
-            }).rejects;
+            }).rejects.toBeDefined();
         });
 
         it('should handle network errors without response', async () => {

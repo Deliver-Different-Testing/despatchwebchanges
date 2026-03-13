@@ -123,7 +123,7 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
                 },
                 toastService,
             });
-        } catch (error: any) {
+        } catch (error) {
             if (error === undefined) {
                 console.log('[AccessorialChargesDialogService] User canceled dialog.');
             } else {

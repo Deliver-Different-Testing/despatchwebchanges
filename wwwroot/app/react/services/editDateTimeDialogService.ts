@@ -54,7 +54,7 @@ interface ReactEditDateTimeDialogWindow {
  * Get the React dialog manager from window
  */
 function getDialogManager(): ReactEditDateTimeDialogWindow {
-    const manager = (window as any).ReactEditDateTimeDialog as ReactEditDateTimeDialogWindow | undefined;
+    const manager = window.ReactEditDateTimeDialog as ReactEditDateTimeDialogWindow | undefined;
     if (!manager) {
         throw new Error('EditDateTimeDialog React module not loaded. Ensure the module is loaded before calling dialog functions.');
     }

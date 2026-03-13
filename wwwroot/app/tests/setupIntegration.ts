@@ -21,14 +21,14 @@ global.MessageChannel = MessageChannel as unknown as typeof global.MessageChanne
 global.MessagePort = MessagePort as unknown as typeof global.MessagePort;
 
 // Polyfill ReadableStream from Node's web streams (synchronous require)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const webStreams = require('stream/web');
 global.ReadableStream = webStreams.ReadableStream;
 global.TransformStream = webStreams.TransformStream;
 global.WritableStream = webStreams.WritableStream;
 
 // Now import undici after ReadableStream is available
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const undici = require('undici');
 
 global.fetch = undici.fetch;

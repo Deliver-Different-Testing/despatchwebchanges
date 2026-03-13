@@ -1,5 +1,5 @@
 ﻿import {IFlightSegment, IFlightSegmentDto} from "../components/Nationwide/nationwide.interfaces";
-import {formatDateForApiWithTzs} from "./formatDates";
+import {formatDateForApiWithTzs} from "../react/utils/dateUtils";
 import {IJobQueryParams, IJobQueryParamsDto} from "../interfaces/job.interface";
 
 export function transformFlightToDTO(model: IFlightSegment): IFlightSegmentDto {

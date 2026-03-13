@@ -65,7 +65,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
         }
     }, [open, initialValue, items]);
 
-    const handleSelectChange = useCallback((event: any) => {
+    const handleSelectChange = useCallback((event: { target: { value: unknown } }) => {
         const id = event.target.value as number;
         const item = items.find(i => i.id === id) ?? null;
         setSelectedItem(item);
@@ -87,9 +87,9 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             };
 
             await onSubmit(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error submitting selection:', error);
-            showToast(error.message || 'Failed to save selection', 'error');
+            showToast(error instanceof Error ? error.message : 'Failed to save selection', 'error');
         } finally {
             setIsLoading(false);
         }

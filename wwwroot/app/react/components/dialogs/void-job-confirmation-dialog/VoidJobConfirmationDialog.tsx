@@ -194,7 +194,7 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
 
             showToast(message, 'success');
             onConfirm({success: true, voidedCount});
-        } catch (error) {
+        } catch {
             showToast('An error occurred while voiding the job. Please try again later.', 'error');
             this.setState({isSubmitting: false});
         }

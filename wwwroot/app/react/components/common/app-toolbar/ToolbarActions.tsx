@@ -34,6 +34,7 @@ import {
     ViewList as ViewListIcon,
     VisibilityOff as VisibilityOffIcon,
 } from '@mui/icons-material';
+import type {Theme} from '@mui/material/styles';
 
 // Re-export DateFilterMenu
 export {DateFilterMenu} from '../date-filter-menu/DateFilterMenu';
@@ -47,7 +48,7 @@ export type {ActionsMenuProps} from './ActionsMenu';
 const toolbarIconButtonSx = {
     p: 1,
     '&:hover': {
-        bgcolor: (theme: any) => alpha(theme.palette.common.white, 0.12),
+        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
     },
 };
 

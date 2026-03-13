@@ -50,8 +50,8 @@ export const AiCourierSuggestionsDialog: React.FC<AiCourierSuggestionsDialogProp
             const response = await suggestCouriers(jobId);
             setData(response);
             setPhase('loaded');
-        } catch (err: any) {
-            setErrorMessage(err?.message || 'Failed to get courier suggestions');
+        } catch (err: unknown) {
+            setErrorMessage(err instanceof Error ? err.message : 'Failed to get courier suggestions');
             setPhase('error');
         }
     }, [jobId]);
@@ -76,9 +76,9 @@ export const AiCourierSuggestionsDialog: React.FC<AiCourierSuggestionsDialogProp
             setAssignedName(courier.firstName || courier.code);
             setPhase('assigned');
             setTimeout(() => onClose(), 1200);
-        } catch (err: any) {
+        } catch (err: unknown) {
             setAssigningId(null);
-            setErrorMessage(err?.message || 'Failed to assign courier');
+            setErrorMessage(err instanceof Error ? err.message : 'Failed to assign courier');
         }
     };
 

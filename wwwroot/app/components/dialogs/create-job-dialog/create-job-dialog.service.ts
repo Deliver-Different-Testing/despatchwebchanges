@@ -2,19 +2,7 @@ import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactCreateJobDialog?: {
-            open: (
-                isUsTenant: boolean,
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                }
-            ) => Promise<number | null>;
-        };
-    }
-}
+// Window.ReactCreateJobDialog type is declared in wwwroot/types/global.d.ts
 
 class CreateJobDialogService implements angular.IServiceProvider {
     static $inject = [

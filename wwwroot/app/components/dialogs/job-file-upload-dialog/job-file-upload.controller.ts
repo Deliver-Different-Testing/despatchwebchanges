@@ -4,7 +4,7 @@ import BaseController from "../../base-controller";
 import {IJobFile, IUploadProgressFile} from "./job-file-upload-dialog.interfaces";
 import dayjs from "dayjs";
 import DispatchCoreService from "../../../services/dispatch-core.service";
-import {formatDateForApiWithTzs} from "../../../functions/formatDates";
+import {formatDateForApiWithTzs} from "../../../react/utils/dateUtils";
 import angular from 'angular';
 
 class JobFileUploadController extends BaseController {
@@ -149,7 +149,7 @@ class JobFileUploadController extends BaseController {
             this.fileProgressMap.clear();
 
             // Add all files to the uploadingFiles array
-            for (let file of files) {
+            for (const file of files) {
                 const uploadFile: IUploadProgressFile = {
                     ...file,
                     progress: 0,
@@ -228,13 +228,14 @@ class JobFileUploadController extends BaseController {
             if (this.completedFiles === this.totalFiles - 1) {
                 this.loadFiles();
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             // Mark this file as failed (optional: you could show the failed state)
             const fileKey = `${file.name}_${file.size}`;
             this.fileProgressMap.set(fileKey, 0);
 
-            console.error(`Error status: ${error.status}`);
-            console.error(`Error data: ${JSON.stringify(error.data)}`);
+            const errObj = error as Record<string, unknown>;
+            console.error(`Error status: ${errObj.status}`);
+            console.error(`Error data: ${JSON.stringify(errObj.data)}`);
             this.toastrService.showErrorToast(`Failed to upload ${this.isPODUpload() ? 'POD photo' : 'file'}: ${file.name}. Please try again.`);
         }
     }
@@ -299,7 +300,7 @@ class JobFileUploadController extends BaseController {
         this.fileProgressMap.set(fileKey, progress);
 
         // Update the specific file in the uploadingFiles array
-        let index: number = this.uploadingFiles.findIndex((f: any) => f.name === file.name && f.size === file.size);
+        const index: number = this.uploadingFiles.findIndex((f: any) => f.name === file.name && f.size === file.size);
         if (index !== -1) {
             this.uploadingFiles[index].progress = progress;
         }

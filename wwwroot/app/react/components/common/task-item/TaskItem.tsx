@@ -6,7 +6,7 @@
  * and date/time editing.
  */
 
-import React from 'react';
+import React, {useState, useMemo, useCallback} from 'react';
 import {
     Box,
     Checkbox,
@@ -21,6 +21,7 @@ import {
     TextField,
     InputAdornment,
     CircularProgress,
+    type Theme,
 } from '@mui/material';
 import {
     Person as PersonIcon,
@@ -33,7 +34,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {TimeClock} from '@mui/x-date-pickers/TimeClock';
 import dayjs, {Dayjs} from 'dayjs';
-import {TaskItemProps, TaskItemConfig} from './TaskItem.interfaces';
+import {TaskItemProps, TaskItemConfig, Task} from './TaskItem.interfaces';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 const defaultConfig: TaskItemConfig = {
@@ -49,95 +50,76 @@ const defaultConfig: TaskItemConfig = {
 
 type PopoverType = 'date' | 'time' | 'assignee' | null;
 
-interface TaskItemState {
-    popoverType: PopoverType;
-    anchorEl: HTMLElement | null;
-    selectedDate: Dayjs;
-    staffList: Array<{id: number; text: string}>;
-    staffSearchText: string;
-    loadingStaff: boolean;
-    isCompleting: boolean;
-}
+const getStatusChip = (task: Task, isOverdue: boolean): {label: string; color: 'success' | 'error' | 'info'} => {
+    if (task.closed) return {label: 'Done', color: 'success'};
+    if (isOverdue) return {label: 'Overdue', color: 'error'};
+    return {label: 'To do', color: 'info'};
+};
 
-export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
-    private readonly timeZoneShort: string;
+const getStatusBorderColor = (theme: Theme, task: Task, isOverdue: boolean): string => {
+    if (task.closed) return theme.palette.success.main;
+    if (isOverdue) return theme.palette.error.main;
+    return theme.palette.primary.main;
+};
 
-    constructor(props: TaskItemProps) {
-        super(props);
-        this.state = {
-            popoverType: null,
-            anchorEl: null,
-            selectedDate: props.task.dueDate,
-            staffList: [],
-            staffSearchText: '',
-            loadingStaff: false,
-            isCompleting: false,
-        };
+// Compute timezone abbreviation once at module level (it doesn't change per-render)
+const ianaTimeZone = getIanaTimezone(getTenantTimezone());
+const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
 
-        const ianaTimeZone = getIanaTimezone(getTenantTimezone());
-        this.timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
-    }
+export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
+    const {
+        task,
+        config: configOverrides,
+        onTaskUpdated,
+        onTaskClick,
+        tasksService,
+        dispatchService,
+        showSuccessToast,
+        showErrorToast,
+    } = props;
 
-    private get config(): TaskItemConfig {
-        return {...defaultConfig, ...this.props.config};
-    }
+    const config = useMemo(() => ({...defaultConfig, ...configOverrides}), [configOverrides]);
 
-    private get isOverdue(): boolean {
-        const {task} = this.props;
+    // State
+    const [popoverType, setPopoverType] = useState<PopoverType>(null);
+    const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+    const [selectedDate, setSelectedDate] = useState<Dayjs>(task.dueDate);
+    const [staffList, setStaffList] = useState<Array<{id: number; text: string}>>([]);
+    const [staffSearchText, setStaffSearchText] = useState('');
+    const [loadingStaff, setLoadingStaff] = useState(false);
+    const [isCompleting, setIsCompleting] = useState(false);
+
+    // Derived state
+    const isOverdue = useMemo(() => {
         if (task.closed) return false;
         return task.dueDate.isBefore(dayjs());
-    }
+    }, [task.closed, task.dueDate]);
 
-    private get filteredStaff(): Array<{id: number; text: string}> {
-        const {staffList, staffSearchText} = this.state;
+    const filteredStaff = useMemo(() => {
         if (!staffSearchText) return staffList;
         const searchLower = staffSearchText.toLowerCase();
         return staffList.filter(s => s.text.toLowerCase().includes(searchLower));
-    }
+    }, [staffList, staffSearchText]);
 
-    private getStatusChip = (): {label: string; color: 'success' | 'error' | 'info'} => {
-        const {task} = this.props;
-        if (task.closed) {
-            return {label: 'Done', color: 'success'};
-        }
-        if (this.isOverdue) {
-            return {label: 'Overdue', color: 'error'};
-        }
-        return {label: 'To do', color: 'info'};
-    };
+    const statusChip = useMemo(() => getStatusChip(task, isOverdue), [task, isOverdue]);
 
-    private getPriorityColor = (priority?: string): string => {
-        switch (priority) {
-            case 'high':
-                return '#e53935';
-            case 'medium':
-                return '#fb8500';
-            case 'low':
-                return '#64748b';
-            default:
-                return 'transparent';
-        }
-    };
+    // Handlers
+    const closePopover = useCallback(() => {
+        setAnchorEl(null);
+        setPopoverType(null);
+    }, []);
 
-    private handleTaskClick = (event: React.MouseEvent): void => {
-        const {onTaskClick, task} = this.props;
-        console.log('[TaskItem] handleTaskClick called', {
-            taskId: task.id,
-            configOnTaskClick: this.config.onTaskClick,
-            hasOnTaskClick: !!onTaskClick,
-        });
-        if (this.config.onTaskClick && onTaskClick) {
+    const handleTaskClick = useCallback((event: React.MouseEvent) => {
+        if (config.onTaskClick && onTaskClick) {
             event.stopPropagation();
-            console.log('[TaskItem] Calling onTaskClick prop');
             onTaskClick(task);
         }
-    };
+    }, [config.onTaskClick, onTaskClick, task]);
 
-    private handleCheckboxChange = async (event: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const handleCheckboxChange = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
         event.stopPropagation();
-        const {task, tasksService, showSuccessToast, showErrorToast, onTaskUpdated} = this.props;
         const newClosedState = event.target.checked;
-        this.setState({isCompleting: true});
+        setIsCompleting(true);
 
         try {
             await tasksService.markTaskAsClosed(task.id, newClosedState);
@@ -147,123 +129,90 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
             showErrorToast?.('Error updating task');
             console.error('Error updating task:', error);
         } finally {
-            this.setState({isCompleting: false});
+            setIsCompleting(false);
         }
-    };
+    }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated]);
 
-    private openDatePopover = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    const openDatePopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
-        this.setState({
-            anchorEl: event.currentTarget,
-            selectedDate: this.props.task.dueDate,
-            popoverType: 'date',
-        });
-    };
+        setAnchorEl(event.currentTarget);
+        setSelectedDate(task.dueDate);
+        setPopoverType('date');
+    }, [task.dueDate]);
 
-    private openTimePopover = (event: React.MouseEvent<HTMLButtonElement>): void => {
+    const openTimePopover = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
-        this.setState({
-            anchorEl: event.currentTarget,
-            selectedDate: this.props.task.dueDate,
-            popoverType: 'time',
-        });
-    };
+        setAnchorEl(event.currentTarget);
+        setSelectedDate(task.dueDate);
+        setPopoverType('time');
+    }, [task.dueDate]);
 
-    private openAssigneePopover = async (event: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
+    const openAssigneePopover = useCallback(async (event: React.MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
-        const {dispatchService, showErrorToast} = this.props;
-
-        this.setState({
-            anchorEl: event.currentTarget,
-            popoverType: 'assignee',
-            loadingStaff: true,
-            staffSearchText: '',
-        });
+        setAnchorEl(event.currentTarget);
+        setPopoverType('assignee');
+        setLoadingStaff(true);
+        setStaffSearchText('');
 
         try {
             const staff = await dispatchService.getActiveStaff();
-            this.setState({staffList: staff || []});
+            setStaffList(staff || []);
         } catch (error) {
             console.error('Error loading staff:', error);
             showErrorToast?.('Error loading staff list');
         } finally {
-            this.setState({loadingStaff: false});
+            setLoadingStaff(false);
         }
-    };
+    }, [dispatchService, showErrorToast]);
 
-    private closePopover = (): void => {
-        this.setState({anchorEl: null, popoverType: null});
-    };
-
-    private handleDateSelect = async (newDate: Dayjs | null): Promise<void> => {
+    const handleDateSelect = useCallback(async (newDate: Dayjs | null) => {
         if (!newDate) return;
-
-        const {task, tasksService, showSuccessToast, showErrorToast, onTaskUpdated} = this.props;
 
         try {
             await tasksService.updateTaskDate(task.id, newDate);
             showSuccessToast?.('Task date updated successfully');
             onTaskUpdated?.();
-            this.closePopover();
+            closePopover();
         } catch (error) {
             showErrorToast?.('Error updating task date');
             console.error('Error updating task date:', error);
         }
-    };
+    }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);
 
-    private handleTimeSelect = async (newTime: Dayjs | null): Promise<void> => {
+    const handleTimeSelect = useCallback(async (newTime: Dayjs | null) => {
         if (!newTime) return;
-
-        const {task, tasksService, showSuccessToast, showErrorToast, onTaskUpdated} = this.props;
 
         try {
             await tasksService.updateTaskTime(task.id, newTime);
             showSuccessToast?.('Task time updated successfully');
             onTaskUpdated?.();
-            this.closePopover();
+            closePopover();
         } catch (error) {
             showErrorToast?.('Error updating task time');
             console.error('Error updating task time:', error);
         }
-    };
+    }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);
 
-    private handleAssigneeSelect = async (staffId: number): Promise<void> => {
-        const {task, tasksService, showSuccessToast, showErrorToast, onTaskUpdated} = this.props;
-
+    const handleAssigneeSelect = useCallback(async (staffId: number) => {
         try {
             await tasksService.reassignTaskToStaff(task.id, staffId);
             showSuccessToast?.('Task reassigned successfully');
             onTaskUpdated?.();
-            this.closePopover();
+            closePopover();
         } catch (error) {
             showErrorToast?.('Error reassigning task');
             console.error('Error reassigning task:', error);
         }
-    };
+    }, [task.id, tasksService, showSuccessToast, showErrorToast, onTaskUpdated, closePopover]);
 
-    private handleStaffSearchChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-        this.setState({staffSearchText: event.target.value});
-    };
+    const handleStaffSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        setStaffSearchText(event.target.value);
+    }, []);
 
-    private getStatusBorderColor = (theme: any): string => {
-        const {task} = this.props;
-        if (task.closed) return theme.palette.success.main;
-        if (this.isOverdue) return theme.palette.error.main;
-        return theme.palette.primary.main;
-    };
-
-    render(): React.ReactNode {
-        const {task} = this.props;
-        const {popoverType, anchorEl, selectedDate, loadingStaff, isCompleting, staffSearchText} = this.state;
-        const config = this.config;
-        const isOverdue = this.isOverdue;
-        const filteredStaff = this.filteredStaff;
-        const statusChip = this.getStatusChip();
-
-        return (
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <Box
-                onClick={this.handleTaskClick}
+    return (
+        <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <Box
+                onClick={handleTaskClick}
                 sx={(theme) => ({
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -273,7 +222,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                     margin: '0 0 1px 0',
                     backgroundColor: task.closed ? '#f8fafc' : '#ffffff',
                     border: '1px solid #e2e8f0',
-                    borderLeft: `4px solid ${this.getStatusBorderColor(theme)}`,
+                    borderLeft: `4px solid ${getStatusBorderColor(theme, task, isOverdue)}`,
                     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                     transition: 'all 150ms ease',
                     cursor: config.onTaskClick ? 'pointer' : 'default',
@@ -282,7 +231,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                         transform: 'translateY(-1px)',
                         backgroundColor: '#f8fafc',
                         borderColor: '#cbd5e1',
-                        borderLeftColor: this.getStatusBorderColor(theme),
+                        borderLeftColor: getStatusBorderColor(theme, task, isOverdue),
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                         '& .task-title': {
                             color: theme.palette.primary.main,
@@ -295,7 +244,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                 {config.allowCompletion !== false && (
                     <Checkbox
                         checked={task.closed}
-                        onChange={this.handleCheckboxChange}
+                        onChange={handleCheckboxChange}
                         onClick={(e) => e.stopPropagation()}
                         disabled={isCompleting}
                         sx={{
@@ -382,7 +331,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                         {config.showAssignee !== false && (
                             <Button
                                 size="small"
-                                onClick={this.openAssigneePopover}
+                                onClick={openAssigneePopover}
                                 startIcon={<PersonIcon sx={{fontSize: 14}} />}
                                 sx={{
                                     height: 24,
@@ -458,7 +407,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                         {/* Date Button */}
                         <Button
                             size="small"
-                            onClick={this.openDatePopover}
+                            onClick={openDatePopover}
                             startIcon={<CalendarIcon sx={{fontSize: 14}} />}
                             sx={{
                                 width: '100%',
@@ -482,13 +431,13 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                                 },
                             }}
                         >
-                            {task._dueDateString} {this.timeZoneShort}
+                            {task._dueDateString} {timeZoneShort}
                         </Button>
 
                         {/* Time Button */}
                         <Button
                             size="small"
-                            onClick={this.openTimePopover}
+                            onClick={openTimePopover}
                             startIcon={<ScheduleIcon sx={{fontSize: 14}} />}
                             sx={{
                                 width: '100%',
@@ -512,7 +461,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                                 },
                             }}
                         >
-                            {task._dueTimeString} {this.timeZoneShort}
+                            {task._dueTimeString} {timeZoneShort}
                         </Button>
                     </Box>
                 )}
@@ -522,13 +471,13 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
             <Popover
                 open={popoverType === 'date'}
                 anchorEl={anchorEl}
-                onClose={this.closePopover}
+                onClose={closePopover}
                 anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
                 transformOrigin={{vertical: 'top', horizontal: 'left'}}
             >
                 <DateCalendar
                     value={selectedDate}
-                    onChange={this.handleDateSelect}
+                    onChange={handleDateSelect}
                 />
             </Popover>
 
@@ -536,14 +485,14 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
             <Popover
                 open={popoverType === 'time'}
                 anchorEl={anchorEl}
-                onClose={this.closePopover}
+                onClose={closePopover}
                 anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
                 transformOrigin={{vertical: 'top', horizontal: 'left'}}
             >
                 <Box sx={{p: 2}}>
                     <TimeClock
                         value={selectedDate}
-                        onChange={this.handleTimeSelect}
+                        onChange={handleTimeSelect}
                     />
                 </Box>
             </Popover>
@@ -552,7 +501,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
             <Popover
                 open={popoverType === 'assignee'}
                 anchorEl={anchorEl}
-                onClose={this.closePopover}
+                onClose={closePopover}
                 anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
                 transformOrigin={{vertical: 'top', horizontal: 'left'}}
             >
@@ -563,7 +512,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                             size="small"
                             placeholder="Search staff..."
                             value={staffSearchText}
-                            onChange={this.handleStaffSearchChange}
+                            onChange={handleStaffSearchChange}
                             slotProps={{
                                 input: {
                                     startAdornment: (
@@ -590,7 +539,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                                 <ListItemButton
                                     key={staff.id}
                                     selected={staff.id === task.assignee?.id}
-                                    onClick={() => this.handleAssigneeSelect(staff.id)}
+                                    onClick={() => handleAssigneeSelect(staff.id)}
                                     sx={{py: 1, px: 2}}
                                 >
                                     <ListItemText
@@ -609,8 +558,7 @@ export class TaskItem extends React.Component<TaskItemProps, TaskItemState> {
                 </Box>
             </Popover>
         </LocalizationProvider>
-        );
-    }
-}
+    );
+});
 
 export default TaskItem;

@@ -89,11 +89,11 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             setSummary(response.summary);
             setHasFetched(true);
             setGeneratedAt(new Date());
-        } catch (e: any) {
-            if (e?.name === 'AbortError' || e?.name === 'CanceledError' || controller.signal.aborted) {
+        } catch (e: unknown) {
+            if (e instanceof Error && (e.name === 'AbortError' || e.name === 'CanceledError') || controller.signal.aborted) {
                 return;
             }
-            const message = e?.message || 'Failed to generate AI summary';
+            const message = e instanceof Error ? e.message : 'Failed to generate AI summary';
             setError(message);
         } finally {
             if (abortControllerRef.current === controller) {

@@ -30,6 +30,16 @@ import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getDayChipColor} from './shared';
 import dayjs from 'dayjs';
 
+interface WindowWithAfterhoursDialog {
+    ReactEditAfterhoursDialog?: {
+        open: (
+            schedule: AfterHoursCourierSchedule,
+            isUsTenant: boolean,
+            toastService: { showToast: (message: string, type: 'success' | 'warning' | 'error') => void }
+        ) => Promise<AfterHoursCourierSchedule | null>;
+    };
+}
+
 interface AfterHoursTabProps {
     showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
     isUsCustomer?: boolean;
@@ -107,10 +117,10 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 duration: '4 hours',
             };
 
-            const result = await (window as any).ReactEditAfterhoursDialog?.open(
+            const result = await (window as unknown as WindowWithAfterhoursDialog).ReactEditAfterhoursDialog?.open(
                 newSchedule,
                 isUsCustomer ?? false,
-                {showToast: (msg: string, type: string) => showToast(msg, type as any)}
+                {showToast: (msg: string, type: 'success' | 'warning' | 'error') => showToast(msg, type)}
             );
             if (!result) return;
 
@@ -139,10 +149,10 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
                 duration: schedule.duration,
             };
 
-            const result = await (window as any).ReactEditAfterhoursDialog?.open(
+            const result = await (window as unknown as WindowWithAfterhoursDialog).ReactEditAfterhoursDialog?.open(
                 scheduleForDialog,
                 isUsCustomer ?? false,
-                {showToast: (msg: string, type: string) => showToast(msg, type as any)}
+                {showToast: (msg: string, type: 'success' | 'warning' | 'error') => showToast(msg, type)}
             );
             if (!result) return;
 
