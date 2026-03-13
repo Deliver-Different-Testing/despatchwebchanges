@@ -8,11 +8,9 @@ using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 using DespatchWeb;
-using DespatchWeb.EntityClasses;
+using DespatchWeb.Extensions;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
-using DespatchWeb.Repositories;
-using DespatchWeb.Services;
+using DespatchWeb.Middleware;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
@@ -21,12 +19,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using DeliverDifferentReporting.Extensions;
+using DespatchWeb.Models;
 using Serilog;
 using StackExchange.Redis;
 
@@ -96,9 +95,10 @@ else
 
 
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
-builder.Services.AddSingleton<IAmazonS3>(_ =>
+builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
-    var awsOptions = builder.Configuration.GetAWSOptions();
+    var config = sp.GetRequiredService<IConfiguration>();
+    var awsOptions = config.GetAWSOptions();
 
     Log.Information("AWS Region from config: {Region}", awsOptions.Region?.SystemName ?? "null");
 
@@ -132,72 +132,38 @@ builder.Services.Configure<KestrelServerOptions>(options => { options?.Limits.Ma
 builder.Services.AddHttpClient();
 builder.Services.AddHttpContextAccessor();
 
-builder.Services.AddScoped<IJobRepository, JobRepository>();
-builder.Services.AddScoped<IJobQueryRepository>(sp => sp.GetRequiredService<IJobRepository>());
-builder.Services.AddScoped<IJobCommandRepository>(sp => sp.GetRequiredService<IJobRepository>());
-builder.Services.AddScoped<INoteRepository, NoteRepository>();
-builder.Services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
-builder.Services.AddScoped<ICourierRepository, CourierRepository>();
-builder.Services.AddScoped<IClientRepository, ClientRepository>();
-builder.Services.AddScoped<IDfrntViewsRepository, DfrntViewsRepository>();
-builder.Services.AddScoped<ITaskRepository, TaskRepository>();
-builder.Services.AddScoped<IRecurringJobRepository, RecurringJobRepository>();
-builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+// Bind application settings from environment variables and validate at startup
+builder.Services.AddOptions<AppSettings>()
+    .Configure<IConfiguration>((settings, config) =>
+    {
+        settings.Domain = config["Domain"] ?? string.Empty;
+        settings.RedisConfig = config["RedisConfig"] ?? string.Empty;
+        settings.PublicPath = config["PublicPath"] ?? string.Empty;
+        settings.HubUrl = config["HubUrl"] ?? string.Empty;
+        settings.S3BucketMars = config["S3BucketMars"] ?? string.Empty;
+    })
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
-builder.Services.AddScoped<IFlightStatsService, FlightStatsService>();
-builder.Services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
-builder.Services.AddScoped<IRateJobService, RateJobService>();
-builder.Services.AddScoped<ITenantInfoService, TenantInfoService>();
-builder.Services.AddScoped<ITenantClock, TenantClock>();
-builder.Services.AddScoped<IFlightRateService, FlightRateService>();
-builder.Services.AddScoped<IAddStopJobService, AddStopJobService>();
-builder.Services.AddScoped<IMessageHelperService, MessageHelperService>();
-builder.Services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobService>();
-builder.Services.AddScoped<IAddressLookupService, AddressLookupService>();
-builder.Services.AddScoped<IJobReportService, JobReportService>();
-builder.Services.AddScoped<ICourierReportService, CourierReportService>();
-builder.Services.AddScoped<IJobPhotoService, JobPhotoService>();
-builder.Services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
-builder.Services.AddScoped<IDispatchJobService, DispatchJobService>();
-builder.Services.AddScoped<IDeliveryJourneyService, DeliveryJourneyService>();
-builder.Services.AddScoped<IPricingPermissionService, PricingPermissionService>();
-builder.Services.AddScoped<ISplitJobService, SplitJobService>();
-builder.Services.AddSingleton<BackgroundTaskTracker>();
-builder.Services.AddScoped<ICreateJobService, CreateJobService>();
-builder.Services.AddScoped<IPodReportService, PodReportService>();
-builder.Services.AddScoped<IAccessorialChargeRepository, AccessorialChargeRepository>();
-builder.Services.AddScoped<IAccessorialChargeService, AccessorialChargeService>();
-
-// AI Services
-builder.Services.Configure<AnthropicSettings>(builder.Configuration.GetSection("Anthropic"));
-builder.Services.AddSingleton<IAiClientService, AiClientService>();
-builder.Services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
-builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
-builder.Services.AddScoped<IAiSummarizationService, AiSummarizationService>();
+builder.Services
+    .AddRepositories()
+    .AddJobServices()
+    .AddTenantServices()
+    .AddAiServices();
 
 builder.Services.AddTenantBranding(opts =>
 {
-    opts.BrandingApiBaseUrl = Environment.GetEnvironmentVariable("HubUrl")!;
+    opts.BrandingApiBaseUrl = builder.Configuration["HubUrl"]!;
 });
 
-// Register DespatchContext with a fake connection string
-builder.Services.AddDbContextFactory<DespatchContext>(options =>
-        options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"),
-    ServiceLifetime.Transient);
-
-builder.Services.AddScoped<IDbContextFactory<DespatchContext>, DynamicDespatchDbContextFactory>();
+builder.Services.AddMultiTenantDatabase();
 
 
-var domain = Environment.GetEnvironmentVariable("Domain") ?? string.Empty;
-if (string.IsNullOrEmpty(domain))
-    throw new InvalidOperationException(
-        "Could not find a env var string named 'Domain'.");
-
-// Configure Redis Based Distributed Session
-var redisConfig = Environment.GetEnvironmentVariable("RedisConfig");
-if (string.IsNullOrEmpty(redisConfig))
-    throw new InvalidOperationException(
-        "Could not find a Redis Env Var named 'RedisConfig'.");
+// Read build-time settings from configuration (validated at startup via AppSettings options)
+var domain = builder.Configuration["Domain"]
+    ?? throw new InvalidOperationException("Missing required configuration: 'Domain'.");
+var redisConfig = builder.Configuration["RedisConfig"]
+    ?? throw new InvalidOperationException("Missing required configuration: 'RedisConfig'.");
 var redisConfigurationOptions = ConfigurationOptions.Parse(redisConfig);
 
 builder.Services.AddStackExchangeRedisCache(redisCacheConfig =>
@@ -216,7 +182,8 @@ builder.Services.AddAuthentication("Identity.Application")
         {
             OnRedirectToLogin = context =>
             {
-                context.HttpContext.Response.Redirect(Environment.GetEnvironmentVariable("PublicPath") ?? string.Empty);
+                var appSettings = context.HttpContext.RequestServices.GetRequiredService<IOptions<AppSettings>>().Value;
+                context.HttpContext.Response.Redirect(appSettings.PublicPath);
                 return Task.CompletedTask;
             }
         };
@@ -276,70 +243,8 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = provider // Make sure to use the same provider here
 });
 
-// CSRF protection for API requests - verify X-Requested-With header
-// Combined with SameSite cookies, this prevents CSRF attacks
-app.Use(async (context, next) =>
-{
-    var method = context.Request.Method;
-    var isStateChangingRequest = method is "POST" or "PUT" or "PATCH" or "DELETE";
-
-    if (isStateChangingRequest && !context.Request.Path.StartsWithSegments("/healthz"))
-    {
-        var hasXhrHeader = context.Request.Headers.XRequestedWith == "XMLHttpRequest";
-        if (!hasXhrHeader)
-        {
-            context.Response.StatusCode = 400;
-            await context.Response.WriteAsync("Invalid request - missing required header");
-            return;
-        }
-    }
-
-    await next();
-});
-
-// Security headers middleware
-app.Use(async (context, next) =>
-{
-    var headers = context.Response.Headers;
-
-    // Prevent MIME type sniffing
-    headers.XContentTypeOptions = "nosniff";
-
-    // Prevent clickjacking
-    headers.XFrameOptions = "DENY";
-
-    // Control referrer information
-    headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
-
-    // Restrict browser features
-    headers["Permissions-Policy"] = "geolocation=(), microphone=()";
-
-    // HSTS - Force HTTPS for 1 year, include subdomains (production only)
-    if (!app.Environment.IsDevelopment()) headers.StrictTransportSecurity = "max-age=31536000; includeSubDomains";
-
-    // Content Security Policy - restrict resource loading
-    var csp =
-        "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://js.api.here.com; " +
-        "img-src 'self' data: blob: https:; " +
-        "font-src 'self' https://fonts.gstatic.com data:; " +
-        "connect-src 'self' blob: https://*.here.com https://*.hereapi.com https://*.googleapis.com; " +
-        "worker-src 'self' blob:; " +
-        "frame-ancestors 'none'; " +
-        "frame-src 'none'; " +
-        "object-src 'none'; " +
-        "manifest-src 'self'; " +
-        "base-uri 'self'; " +
-        "form-action 'self';";
-
-    // Only upgrade insecure requests in production
-    if (!app.Environment.IsDevelopment()) csp += " upgrade-insecure-requests;";
-
-    headers.ContentSecurityPolicy = csp;
-
-    await next();
-});
+app.UseCsrfProtection();
+app.UseSecurityHeaders();
 
 app.UseCookiePolicy();
 app.UseRouting();
@@ -349,8 +254,7 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-var s3BucketMars = Environment.GetEnvironmentVariable("S3BucketMars");
-if (string.IsNullOrEmpty(s3BucketMars)) Log.Warning("S3BucketMars environment variable is not set");
+if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"])) Log.Warning("S3BucketMars environment variable is not set");
 
 app.Run();
 return;

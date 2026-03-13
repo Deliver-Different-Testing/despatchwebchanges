@@ -179,6 +179,7 @@ const sampleNzAddressResults: HereMapsLocationResult[] = [
 const usLookupResponse: HereMapsLookupResponse = {
     title: '123 Main Street',
     id: 'here:af:address:123',
+    resultType: 'houseNumber',
     address: {
         label: '123 Main Street, New York, NY 10001',
         countryCode: 'USA',
@@ -206,6 +207,7 @@ const usLookupResponseWithStreetInfo: HereMapsLookupResponse = {
 const nzLookupResponse: HereMapsLookupResponse = {
     title: 'Queen Street Building',
     id: 'here:af:address:nz1',
+    resultType: 'houseNumber',
     address: {
         label: '10 Queen Street, Auckland CBD, Auckland 1010',
         countryCode: 'NZL',
@@ -239,6 +241,7 @@ describe('EditAddressDialog', () => {
         mockAddressApi.getLocationDetailsById.mockResolvedValue({
             title: '123 Main Street',
             id: 'here:af:address:123',
+            resultType: 'houseNumber',
             address: {
                 label: '123 Main Street, New York, NY 10001',
                 countryCode: 'USA',
@@ -555,7 +558,7 @@ describe('EditAddressDialog', () => {
             expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
         });
 
-        it('clears stale company name when selecting address without buildingName', async () => {
+        it('clears stale company name when selecting houseNumber result without buildingName', async () => {
             mockUseAddressSearch.mockReturnValue({
                 data: sampleAddressResults,
                 isFetching: false,
@@ -623,6 +626,94 @@ describe('EditAddressDialog', () => {
             // Company name should be updated to the buildingName from HERE
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Freedom Tower');
+            });
+        });
+
+        it('uses title as company name when resultType is place', async () => {
+            const placeLookupResponse: HereMapsLookupResponse = {
+                title: 'Starbucks Coffee',
+                id: 'here:af:place:abc',
+                resultType: 'place',
+                address: {
+                    label: '123 Main Street, New York, NY 10001',
+                    countryCode: 'USA',
+                    countryName: 'United States',
+                    stateCode: 'NY',
+                    state: 'New York',
+                    city: 'New York',
+                    street: 'Main Street',
+                    postalCode: '10001',
+                    houseNumber: '123',
+                },
+                position: {lat: 40.7128, lng: -74.006},
+            };
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(placeLookupResponse);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({isUsTenant: true});
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // Company name should be populated from title since resultType is 'place'
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Starbucks Coffee');
+            });
+        });
+
+        it('prefers buildingName over title even for place results', async () => {
+            const placeWithBuildingName: HereMapsLookupResponse = {
+                title: 'Starbucks Coffee',
+                id: 'here:af:place:abc',
+                resultType: 'place',
+                address: {
+                    label: '123 Main Street, New York, NY 10001',
+                    countryCode: 'USA',
+                    countryName: 'United States',
+                    stateCode: 'NY',
+                    state: 'New York',
+                    city: 'New York',
+                    street: 'Main Street',
+                    postalCode: '10001',
+                    houseNumber: '123',
+                },
+                position: {lat: 40.7128, lng: -74.006},
+                mapReferences: {
+                    pointAddress: {
+                        addressId: 'addr-123',
+                        buildingName: 'Main Street Plaza',
+                    },
+                },
+            };
+            mockUseAddressSearch.mockReturnValue({
+                data: sampleAddressResults,
+                isFetching: false,
+                error: null,
+            } as any);
+            mockAddressApi.getLocationDetailsById.mockResolvedValue(placeWithBuildingName);
+
+            const user = userEvent.setup();
+            const props = createDefaultProps({isUsTenant: true});
+            renderWithProviders(props);
+
+            const searchInput = screen.getByLabelText(/Search Address/);
+            await user.type(searchInput, '123');
+
+            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
+            await user.click(option);
+
+            // buildingName should take priority over title
+            await waitFor(() => {
+                expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Main Street Plaza');
             });
         });
 
