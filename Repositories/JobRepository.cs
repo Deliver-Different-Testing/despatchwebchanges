@@ -193,6 +193,7 @@ public partial class JobRepository(
     /// Searches bulk jobs with filtering by date, client, courier, speed, and wildcard text.
     /// </summary>
     /// <param name="data">Search parameters including date range, filters, and pagination.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>Paginated search results with bulk job details.</returns>
     public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default)
     {
@@ -380,6 +381,7 @@ public partial class JobRepository(
     /// Queries both tables in parallel for improved performance.
     /// </summary>
     /// <param name="data">Search parameters including date range, filters, sorting, and pagination.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>Paginated search results combining live and archived jobs.</returns>
     public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default)
     {
@@ -396,8 +398,8 @@ public partial class JobRepository(
             var jobSearch = $"%{data.Job ?? string.Empty}%";
             var wildSearch = $"%{data.Wild ?? string.Empty}%";
 
-            await using var liveJobsContext = await _contextFactory.CreateDbContextAsync();
-            await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync();
+            await using var liveJobsContext = await _contextFactory.CreateDbContextAsync(cancellationToken);
+            await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
             var liveJobsQuery = liveJobsContext.TucJobs
                 .Where(j =>
@@ -1380,6 +1382,7 @@ public partial class JobRepository(
     /// <param name="clientIds">Comma-separated list of client IDs to filter by.</param>
     /// <param name="selectedViewIds">List of view IDs to filter by.</param>
     /// <param name="selectedClearListId">Optional clear list ID to filter by.</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>Paginated job search results.</returns>
     public async Task<JobSearchResult> JobListAsync(
         JobQueryParams queryParams,
@@ -1451,10 +1454,7 @@ public partial class JobRepository(
         if (jobIds.Count == 0)
             return;
 
-        foreach (var jobId in jobIds)
-        {
-            await Context.Procedures.uspReassignJobAsync(jobId);
-        }
+        foreach (var jobId in jobIds) await Context.Procedures.uspReassignJobAsync(jobId);
     }
 
     /// <summary>
@@ -1472,17 +1472,21 @@ public partial class JobRepository(
     /// <param name="data">POD update request with job ID and POD details.</param>
     public async Task UpdatePodDetailsAsync(UpdatePodDetailsRequest data)
     {
-        // Find if a job is in active or archive table
-        var activeJob = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
+        // Find if a job is in active or archive table (tracked for mutation via SaveChanges)
+        var activeJob = await Context.TucJobs
+            .AsTracking()
+            .FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
         var isArchived = activeJob == null;
         int? parentId;
         int? deliveryTzId;
+        TucJobArchive archivedJob = null;
 
         // Determine parent ID and delivery timezone based on job location
         if (isArchived)
         {
-            var archivedJob =
-                await Context.TucJobArchives.FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
+            archivedJob = await Context.TucJobArchives
+                .AsTracking()
+                .FirstOrDefaultAsync(j => j.UcjbId == data.JobId);
             if (archivedJob == null)
                 // Job isn't found in either table
                 return;
@@ -1501,33 +1505,44 @@ public partial class JobRepository(
             ? await Context.TimeZones.FindAsync(deliveryTzId.Value)
             : null;
 
-        // Check for uncompleted sibling jobs (child jobs with the same parent)
-        var hasUncompletedSiblings = await Context.TucJobs
-            .AnyAsync(j => (j.ParentId == parentId || j.ParentId == null) &&
-                           j.UcjbId != data.JobId &&
-                           j.UcjbId != parentId &&
-                           j.UcjbJobDone == false &&
-                           j.UcjbVoid == false);
+        var completionTime = ParsePodTime(data.PodTime, deliveryTimeZone);
 
-        // Update job record with completion details
-        await UpdateJobCompletionDetailsAsync(
-            data.JobId,
-            data.JobStatus,
-            data.PodName,
-            data.PodTime,
-            isArchived,
-            deliveryTimeZone);
-
-        // Update a parent job if all siblings are complete
-        if (!hasUncompletedSiblings && parentId != null)
+        // Update the already-tracked job entity directly (no re-query needed)
+        if (isArchived)
         {
-            await UpdateParentJobCompletionDetailsAsync(
-                parentId.Value,
-                data.JobStatus,
-                data.PodName,
-                data.PodTime,
-                isArchived,
-                deliveryTimeZone);
+            archivedJob.UcjbJobDone = true;
+            archivedJob.UcjbStatus = data.JobStatus;
+            archivedJob.UcjbPodname = data.PodName;
+            archivedJob.UcjbComplTime = completionTime;
+            archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
+        }
+        else
+        {
+            activeJob.UcjbJobDone = true;
+            activeJob.UcjbStatus = data.JobStatus;
+            activeJob.UcjbPodname = data.PodName;
+            activeJob.UcjbComplTime = completionTime;
+            activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
+        }
+
+        // Update parent job if all siblings are complete (only relevant for child jobs)
+        if (parentId != null)
+        {
+            var hasUncompletedSiblings = await Context.TucJobs
+                .AnyAsync(j => j.ParentId == parentId &&
+                               j.UcjbId != data.JobId &&
+                               j.UcjbJobDone == false &&
+                               j.UcjbVoid == false);
+
+            if (!hasUncompletedSiblings)
+            {
+                await UpdateParentJobCompletionDetailsAsync(
+                    parentId.Value,
+                    data.JobStatus,
+                    data.PodName,
+                    completionTime,
+                    isArchived);
+            }
         }
 
         await Context.SaveChangesAsync();
@@ -2114,7 +2129,7 @@ public partial class JobRepository(
                 })
                 .ToListAsync();
 
-            // Fall back to parent prebook's rows if this job has none
+            // Fall back to parent prebooks rows if this job has none
             if (prebookBreakdowns.Count == 0 && effectivePrebookId != jobId)
             {
                 prebookBreakdowns = await Context.PricingBreakdowns
@@ -3523,6 +3538,7 @@ public partial class JobRepository(
     /// Retrieves a job by ID including its related family jobs, marking it as read.
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Job group containing the job and related jobs.</returns>
     public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default)
     {
@@ -3996,7 +4012,7 @@ public partial class JobRepository(
         CancellationToken cancellationToken = default) =>
         await createJobService.CreateJobAsync(data, cancellationToken);
 
-    public async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
+    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
         await Context.TucJobTypes
             .Where(s => s.UcjtId == speedId)
             .Select(s => new Suggestion
@@ -4329,80 +4345,41 @@ public partial class JobRepository(
         }
     }
 
-    private async Task UpdateJobCompletionDetailsAsync(
-        int jobId,
-        int jobStatus,
-        string podName,
-        string podTime,
-        bool isArchived,
-        EntityClasses.TimeZone deliveryTimeZone)
-    {
-        if (isArchived)
-        {
-            var archivedJob = await Context.TucJobArchives
-                .FirstOrDefaultAsync(j => j.UcjbId == jobId && j.UcjbJobDone == false);
-
-            if (archivedJob != null)
-            {
-                archivedJob.UcjbJobDone = true;
-                archivedJob.UcjbStatus = jobStatus;
-                archivedJob.UcjbPodname ??= podName;
-                archivedJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
-                archivedJob.InternalStatus = (int)InternalJobStatus.Reprice;
-            }
-        }
-        else
-        {
-            var activeJob = await Context.TucJobs
-                .FirstOrDefaultAsync(j => j.UcjbId == jobId && j.UcjbJobDone == false);
-
-            if (activeJob != null)
-            {
-                activeJob.UcjbJobDone = true;
-                activeJob.UcjbStatus = jobStatus;
-                activeJob.UcjbPodname ??= podName;
-                activeJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
-                activeJob.InternalStatus = (int)InternalJobStatus.Reprice;
-            }
-        }
-    }
-
     private async Task UpdateParentJobCompletionDetailsAsync(
         int parentId,
         int jobStatus,
         string podName,
-        string podTime,
-        bool isArchived,
-        EntityClasses.TimeZone deliveryTimeZone)
+        DateTime completionTime,
+        bool isArchived)
     {
         if (isArchived)
         {
             var parentJob = await Context.TucJobArchives
+                .AsTracking()
                 .FirstOrDefaultAsync(j => j.UcjbId == parentId &&
-                                          j.UcjbJobDone == false &&
                                           j.UcjbSpeed != 79);
 
             if (parentJob != null)
             {
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
-                parentJob.UcjbPodname ??= podName;
-                parentJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
+                parentJob.UcjbPodname = podName;
+                parentJob.UcjbComplTime = completionTime;
             }
         }
         else
         {
             var parentJob = await Context.TucJobs
+                .AsTracking()
                 .FirstOrDefaultAsync(j => j.UcjbId == parentId &&
-                                          j.UcjbJobDone == false &&
                                           j.UcjbSpeed != 79);
 
             if (parentJob != null)
             {
                 parentJob.UcjbJobDone = true;
                 parentJob.UcjbStatus = jobStatus;
-                parentJob.UcjbPodname ??= podName;
-                parentJob.UcjbComplTime ??= ParsePodTime(podTime, deliveryTimeZone);
+                parentJob.UcjbPodname = podName;
+                parentJob.UcjbComplTime = completionTime;
             }
         }
     }
@@ -4939,7 +4916,7 @@ public partial class JobRepository(
 
     /// <summary>
     /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
-    /// it to TucJob.UcjbQty, then records a Staff journey entry so the apply is auditable.
+    /// it to TucJob.UcjbQty, then records a Staff journey entry so to apply is auditable.
     /// </summary>
     public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
     {

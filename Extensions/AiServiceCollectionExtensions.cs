@@ -7,8 +7,7 @@ namespace DespatchWeb.Extensions;
 
 public static class AiServiceCollectionExtensions
 {
-    public static IServiceCollection AddAiServices(
-        this IServiceCollection services,
+    public static void AddAiServices(this IServiceCollection services,
         string configSectionName = "Anthropic")
     {
         services.AddOptions<AnthropicSettings>()
@@ -20,7 +19,5 @@ public static class AiServiceCollectionExtensions
         services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
         services.AddScoped<IAiAssistantService, AiAssistantService>();
         services.AddScoped<IAiSummarizationService, AiSummarizationService>();
-
-        return services;
     }
 }

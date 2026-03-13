@@ -12,7 +12,7 @@ public static class DatabaseServiceCollectionExtensions
     /// then overrides the factory with DynamicDespatchDbContextFactory which resolves
     /// tenant-specific connection strings at runtime from the authenticated user's claims.
     /// </summary>
-    public static IServiceCollection AddMultiTenantDatabase(this IServiceCollection services)
+    public static void AddMultiTenantDatabase(this IServiceCollection services)
     {
         // Phase 1: Register EF Core infrastructure (options, model caching, etc.)
         // The connection string here is a placeholder — it's never used at runtime.
@@ -23,7 +23,5 @@ public static class DatabaseServiceCollectionExtensions
         // Phase 2: Override the factory with our tenant-aware implementation
         // that resolves the real connection string per-request from cached tenant config.
         services.AddScoped<IDbContextFactory<DespatchContext>, DynamicDespatchDbContextFactory>();
-
-        return services;
     }
 }

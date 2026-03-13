@@ -1180,6 +1180,7 @@ public class JobController(
         }
         catch (Exception e)
         {
+            Log.Error(e, "{Message}", ErrorMessageStringFormatter.Format(e));
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
