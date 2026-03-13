@@ -6,8 +6,8 @@
 import dayjs from 'dayjs';
 
 // Mock the formatDateForApiWithTzs function
-jest.mock('../../functions/formatDates', () => ({
-    formatDateForApiWithTzs: (date: any) => date.format('YYYY-MM-DD')
+jest.mock('../../react/utils/dateUtils', () => ({
+    formatDateForApiWithTzs: (date: { format: (f: string) => string }) => date.format('YYYY-MM-DD')
 }));
 
 describe('JobSearchService', () => {

@@ -52,7 +52,7 @@ import TasksService from "../../services/tasks.service";
 import JobListType from "../common/job-list/enums/jobListType";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
-import {formatDateForApiWithTzs, getIanaTimezone} from "../../functions/formatDates";
+import {formatDateForApiWithTzs, getIanaTimezone} from "../../react/utils/dateUtils";
 import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
@@ -401,7 +401,7 @@ class NationwideControl extends BaseController {
                     ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
                     : 0;
                 this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error: any) {
+            } catch (error) {
                 console.error('Error loading stored layouts:', error);
                 this.layouts = [this.defaultLayout];
                 this.loadLayout(0);
@@ -1956,7 +1956,7 @@ class NationwideControl extends BaseController {
             case NationwideBoxes.PodJobs:
                 await this.getJobList(JobDataType.POD);
                 break;
-            case NationwideBoxes.JobDetail:
+            case NationwideBoxes.JobDetail: {
                 if (!this.currentJob?.id) return;
 
                 // Clear job
@@ -1967,6 +1967,7 @@ class NationwideControl extends BaseController {
                 const job = await this.DispatchData.getDispatchJobDetail(jobIdToRefresh);
                 await this.selectJob(job);
                 break;
+            }
             default:
                 break;
         }
@@ -1990,10 +1991,10 @@ class NationwideControl extends BaseController {
 
             const newStopJob = await this.DispatchData.getDispatchJobDetail(newStopJobId);
             await this.selectJob(newStopJob);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error in addStopToJob:', error);
             this.toastrService.showErrorToast(
-                error.message?.includes('loading') ? 'Error loading new stop job details' : 'Failed to add stop to job'
+                error instanceof Error && error.message?.includes('loading') ? 'Error loading new stop job details' : 'Failed to add stop to job'
             );
         } finally {
             setLoadingState(false);
@@ -2333,7 +2334,7 @@ class NationwideControl extends BaseController {
             job.assignedCourier = {id: courier.courierId, text: courier.name};
 
             this.toastrService.showSuccessToast(`${job.jobNo} dispatched to ${courier.name}`);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error in dispatch:", error);
         }
     }

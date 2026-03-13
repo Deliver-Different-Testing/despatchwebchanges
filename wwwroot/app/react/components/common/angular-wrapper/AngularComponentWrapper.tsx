@@ -18,7 +18,7 @@ interface AngularComponentWrapperProps {
     /**
      * Props to pass to the AngularJS component as attributes
      */
-    bindings?: Record<string, any>;
+    bindings?: Record<string, unknown>;
 
     /**
      * AngularJS $compile service
@@ -83,7 +83,7 @@ export const AngularComponentWrapper: React.FC<AngularComponentWrapperProps> = (
 
         // Build the HTML template with bindings
         let bindingAttrs = '';
-        const scopeValues: Record<string, any> = {};
+        const scopeValues: Record<string, unknown> = {};
 
         Object.entries(bindings).forEach(([key, value]) => {
             const attrName = toKebabCase(key);
@@ -123,7 +123,8 @@ export const AngularComponentWrapper: React.FC<AngularComponentWrapperProps> = (
         } catch (error) {
             console.error(`[AngularComponentWrapper] Error compiling ${componentName}:`, error);
         }
-    }, [componentName, $compile, scope]); // Note: bindings intentionally excluded to use effect for updates
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bindings intentionally excluded; applied via scope.$apply
+    }, [componentName, $compile, scope]);
 
     // Initial compilation
     useEffect(() => {
@@ -150,7 +151,7 @@ export const AngularComponentWrapper: React.FC<AngularComponentWrapperProps> = (
 
         Object.entries(bindings).forEach(([key, value]) => {
             const scopeKey = `__binding_${key}`;
-            (childScope as any)[scopeKey] = value;
+            (childScope as unknown as Record<string, unknown>)[scopeKey] = value;
         });
 
         // Trigger digest to propagate changes

@@ -221,9 +221,9 @@ export class BulkPriceUploadDialog extends React.Component<
             });
 
             showToast(`Successfully updated prices for ${response.totalJobs} jobs.`, 'success');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error applying prices:', error);
-            const errorMessage = error?.message || 'Failed to apply prices. Please try again.';
+            const errorMessage = error instanceof Error ? error.message : 'Failed to apply prices. Please try again.';
             this.setState({
                 errorMessage,
                 currentState: 'mode-select',

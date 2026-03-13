@@ -29,7 +29,7 @@ interface DriverDetailsTabProps {
     showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
 }
 
-export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast}) => {
+export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _showToast}) => {
     const [searchText, setSearchText] = useState('');
     const [selectedDriverId, setSelectedDriverId] = useState<number>(0);
 

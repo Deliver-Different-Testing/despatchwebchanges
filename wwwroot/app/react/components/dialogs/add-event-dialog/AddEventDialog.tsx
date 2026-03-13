@@ -136,7 +136,7 @@ export class AddEventDialog extends React.Component<AddEventDialogProps, AddEven
         }
     };
 
-    private handleEventTypeChange = (event: any): void => {
+    private handleEventTypeChange = (event: { target: { value: number | '' } }): void => {
         this.setState({ selectedEventTypeId: event.target.value });
     };
 
@@ -179,9 +179,9 @@ export class AddEventDialog extends React.Component<AddEventDialogProps, AddEven
             await onSubmit(eventData);
             showToast('Task added successfully.', 'success');
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error adding event:', error);
-            showToast(error.message || 'Failed to add task.', 'error');
+            showToast(error instanceof Error ? error.message : 'Failed to add task.', 'error');
             this.setState({ isSubmitting: false });
         }
     };

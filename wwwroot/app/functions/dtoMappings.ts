@@ -18,7 +18,7 @@ import {
     formatMins,
     formatShortDate,
     formatShortDateTime
-} from "./formatDates";
+} from "../react/utils/dateUtils";
 import {ITask, ITaskDto} from "../interfaces/task.interfaces";
 import {
     IDeliveryJourney,

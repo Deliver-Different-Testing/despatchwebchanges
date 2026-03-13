@@ -1,11 +1,14 @@
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ContextMenuCallback = (...args: any[]) => void | Promise<void>;
+
 export default interface IContextMenuOption {
-    text: string | Function;
-    html?: string | Function;
-    click?: Function;
-    enabled?: boolean | Function;
-    displayed?: boolean | Function;
-    hasTopDivider?: boolean | Function;
-    hasBottomDivider?: boolean | Function;
-    children?: IContextMenuOption[] | Function | Promise<any>;
+    text: string | (() => string);
+    html?: string | (() => string);
+    click?: ContextMenuCallback;
+    enabled?: boolean | (() => boolean);
+    displayed?: boolean | (() => boolean);
+    hasTopDivider?: boolean | (() => boolean);
+    hasBottomDivider?: boolean | (() => boolean);
+    children?: IContextMenuOption[] | (() => IContextMenuOption[] | Promise<IContextMenuOption[]>) | Promise<IContextMenuOption[]>;
     icon?: string;
 }

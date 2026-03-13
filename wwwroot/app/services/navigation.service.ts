@@ -76,8 +76,8 @@ class NavigationService implements angular.IServiceProvider {
             const url = this.$state.href(stateName, {jobId});
             this.$window.open(url, safeTarget);
             return true;
-        } catch (error: any) {
-            this.toastrService.showErrorToast(`Error opening job details: ${error.message}`);
+        } catch (error: unknown) {
+            this.toastrService.showErrorToast(`Error opening job details: ${error instanceof Error ? error.message : String(error)}`);
             return false;
         }
     }

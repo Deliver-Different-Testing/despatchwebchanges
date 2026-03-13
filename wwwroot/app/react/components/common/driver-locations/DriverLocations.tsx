@@ -101,7 +101,7 @@ const DriverRow = React.memo(function DriverRow({
     onCourierClick?: (courier: ICourierData) => void;
 }) {
     const [isHovered, setIsHovered] = useState(false);
-    const isActive = (section as any).isActive || false;
+    const isActive = (section as IClearListSection & { isActive?: boolean }).isActive || false;
 
     const handleMouseEnter = useCallback(() => setIsHovered(true), []);
     const handleMouseLeave = useCallback(() => setIsHovered(false), []);

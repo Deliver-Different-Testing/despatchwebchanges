@@ -109,7 +109,7 @@ class MessagingDialogService implements angular.IServiceProvider {
             });
 
             this.$log.debug('MessagingDialogService: Dialog closed!');
-        } catch (error: any) {
+        } catch (error) {
             if (error === undefined) {
                 this.$log.debug('User closed messaging dialog');
                 return;

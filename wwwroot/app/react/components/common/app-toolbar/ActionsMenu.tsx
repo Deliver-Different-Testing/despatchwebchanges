@@ -19,12 +19,13 @@ import {
     Add as AddIcon,
     AttachMoney as AttachMoneyIcon,
 } from '@mui/icons-material';
+import type {Theme} from '@mui/material/styles';
 
 // Shared icon button styles (matching ToolbarActions.tsx)
 const toolbarIconButtonSx = {
     p: 1,
     '&:hover': {
-        bgcolor: (theme: any) => alpha(theme.palette.common.white, 0.12),
+        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
     },
 };
 

@@ -21,7 +21,7 @@ export function markdownToSafeHtml(markdown: string): string {
     let inList: 'ul' | 'ol' | null = null;
 
     for (let i = 0; i < lines.length; i++) {
-        let line = lines[i];
+        const line = lines[i];
 
         // Check for list items before escaping (need raw chars)
         const ulMatch = line.match(/^(\s*)[-*]\s+(.+)/);

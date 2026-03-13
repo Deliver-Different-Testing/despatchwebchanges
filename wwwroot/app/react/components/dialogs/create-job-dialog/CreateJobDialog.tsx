@@ -66,7 +66,7 @@ const FormSection: React.FC<{
         }}
     >
         <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
-            {React.cloneElement(icon as React.ReactElement<any>, {sx: {color: 'text.secondary'}})}
+            {React.cloneElement(icon as React.ReactElement<Record<string, unknown>>, {sx: {color: 'text.secondary'}})}
             <Typography variant="subtitle1" fontWeight={500}>
                 {title}
             </Typography>

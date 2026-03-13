@@ -138,8 +138,8 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
     const [departureTime, setDepartureTime] = useState<Dayjs | null>(null);
     const [arrivalTime, setArrivalTime] = useState<Dayjs | null>(null);
     const [flightNumber, setFlightNumber] = useState('');
-    const [departureTimeZone, setDepartureTimeZone] = useState('');
-    const [arrivalTimeZone, setArrivalTimeZone] = useState('');
+    const [_departureTimeZone, setDepartureTimeZone] = useState('');
+    const [_arrivalTimeZone, setArrivalTimeZone] = useState('');
 
     // Computed values
     const isAwbDisabled = !!existingAwb;
@@ -465,7 +465,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
     // Get status icon component
     const getStatusIcon = (iconName: string, className: string) => {
-        const color = className.includes('valid') || className.includes('sufficient') || className.includes('open')
+        const color: 'success' | 'warning' | 'error' | 'inherit' = className.includes('valid') || className.includes('sufficient') || className.includes('open')
             ? 'success'
             : className.includes('warning')
                 ? 'warning'
@@ -475,13 +475,13 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
         switch (iconName) {
             case 'check_circle':
-                return <CheckCircleIcon color={color as any}/>;
+                return <CheckCircleIcon color={color}/>;
             case 'cancel':
-                return <CancelIcon color={color as any}/>;
+                return <CancelIcon color={color}/>;
             case 'warning':
-                return <WarningIcon color={color as any}/>;
+                return <WarningIcon color={color}/>;
             case 'error':
-                return <ErrorIcon color={color as any}/>;
+                return <ErrorIcon color={color}/>;
             case 'schedule':
                 return <ScheduleIcon color="inherit"/>;
             default:

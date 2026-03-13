@@ -41,7 +41,7 @@ export type TaskFilterType = 'mine' | 'unassigned' | 'newest' | 'oldest' | 'all'
  * Get the current contact ID from window
  */
 function getContactId(): number {
-    return (window as any).ContactID || 0;
+    return window.ContactID || 0;
 }
 
 /**

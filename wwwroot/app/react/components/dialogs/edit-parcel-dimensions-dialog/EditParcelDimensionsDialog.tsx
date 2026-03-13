@@ -264,9 +264,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
 
             const result: EditParcelDimensionsDialogResult = { parcels: updatedParcels };
             onSubmit(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('An error occurred while updating packages:', error);
-            showToast(error.message || 'Failed to update parcels', 'error');
+            showToast(error instanceof Error ? error.message : 'Failed to update parcels', 'error');
         } finally {
             setIsLoading(false);
         }

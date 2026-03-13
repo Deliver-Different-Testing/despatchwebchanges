@@ -1,6 +1,6 @@
 ﻿import IDateFilterData from "../interfaces/date-filter-data.interface";
 import dayjs from "dayjs";
-import {getIanaTimezone} from "./formatDates";
+import {getIanaTimezone} from "../react/utils/dateUtils";
 import {TimeZone} from "../contants";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";

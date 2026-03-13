@@ -13,7 +13,6 @@ import {EditAddressDialog} from './EditAddressDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {EditAddressDialogViewModel} from '../../../interfaces';
-import angular from 'angular';
 
 // Toast service interface (still provided by AngularJS for UI consistency)
 interface ToastService {

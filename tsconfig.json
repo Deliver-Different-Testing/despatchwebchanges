@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "target": "es2020",
+    "module": "esnext",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
@@ -9,7 +9,7 @@
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "allowUmdGlobalAccess": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "typeRoots": [
       "./node_modules/@types"

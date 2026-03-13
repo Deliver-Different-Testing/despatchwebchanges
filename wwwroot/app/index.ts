@@ -16,8 +16,8 @@ dayjs.extend(localizedFormat);
 dayjs.extend(isoWeek);
 dayjs.extend(weekday);
 dayjs.locale("en");
-(window as any).dayjs = dayjs;
-(window as any).windowsIana = windowsIana;
+window.dayjs = dayjs;
+window.windowsIana = windowsIana;
 
 // Angular core
 import "angular";

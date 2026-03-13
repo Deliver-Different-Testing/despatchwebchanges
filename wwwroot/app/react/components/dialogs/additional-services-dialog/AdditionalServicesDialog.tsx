@@ -33,7 +33,7 @@ import {
     Extension as ExtensionIcon,
     CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import { AdditionalService, AdditionalServicesDialogProps, AdditionalServicesJob } from './types';
+import { AdditionalService, AdditionalServicesDialogProps } from './types';
 
 interface AdditionalServicesDialogState {
     services: AdditionalService[];
@@ -123,9 +123,9 @@ export class AdditionalServicesDialog extends React.Component<
             if (preSelectedIds.size > 0) {
                 await this.calculateTotal(services, preSelectedIds);
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error loading services:', error);
-            showToast(`Error fetching services: ${error.message}`, 'error');
+            showToast(`Error fetching services: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState({ isLoading: false });
         }
     };
@@ -173,9 +173,9 @@ export class AdditionalServicesDialog extends React.Component<
             } else {
                 this.setState({ totalCost, isTotalCalculating: false });
             }
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error calculating total:', error);
-            showToast(`Error calculating total: ${error.message}`, 'error');
+            showToast(`Error calculating total: ${error instanceof Error ? error.message : String(error)}`, 'error');
             this.setState({ isTotalCalculating: false });
         }
     };
@@ -209,9 +209,9 @@ export class AdditionalServicesDialog extends React.Component<
                 'success'
             );
             onClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error booking services:', error);
-            showToast(error.message || 'Failed to add services.', 'error');
+            showToast(error instanceof Error ? error.message : 'Failed to add services.', 'error');
             this.setState({ isSubmitting: false });
         }
     };

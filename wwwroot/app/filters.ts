@@ -11,7 +11,7 @@ dayjs.extend(timezone);
  * Formats byte values into human-readable format
  */
 export function bytesFilter(bytes: number, precision?: number): string {
-    if (isNaN(parseFloat(bytes as any)) || !isFinite(bytes)) return "-";
+    if (isNaN(parseFloat(String(bytes))) || !isFinite(bytes)) return "-";
     if (typeof precision === "undefined") precision = 1;
     const units = ["bytes", "kB", "MB", "GB", "TB", "PB"];
     const number = Math.floor(Math.log(bytes) / Math.log(1024));

@@ -46,7 +46,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
         try {
             this.dispatchState.processing = true;
             await this.validateAndDispatch(courierId, jobsToDispatch);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Error dispatching jobs:", error);
             throw error;
         } finally {
@@ -223,7 +223,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
             if (shouldDispatch) {
                 return await this.DispatchData.getCourierById(courierId);
             }
-        } catch (error) {
+        } catch {
             console.log("Courier offline dispatch cancelled by user");
         }
 
@@ -380,8 +380,8 @@ class DispatchExecutorService implements angular.IServiceProvider {
             await this.allocateJobsToSelectedCourier(courier, jobs);
 
             console.log("Jobs processed successfully");
-        } catch (error: any) {
-            await this.handleDispatchFailure(error);
+        } catch (error: unknown) {
+            await this.handleDispatchFailure(error instanceof Error ? error : new Error(String(error)));
         }
     }
 

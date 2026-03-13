@@ -157,8 +157,8 @@ export function DataTable<T>({
                         ) : rows.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={colSpan} align="center" sx={{py: 8}}>
-                                    {emptyIcon && React.cloneElement(emptyIcon as React.ReactElement<any>, {
-                                        sx: {fontSize: 48, color: 'grey.400', mb: 1, ...(emptyIcon.props as any)?.sx},
+                                    {emptyIcon && React.cloneElement(emptyIcon as React.ReactElement<Record<string, unknown>>, {
+                                        sx: {fontSize: 48, color: 'grey.400', mb: 1, ...(emptyIcon.props as Record<string, unknown>)?.sx as object},
                                     })}
                                     <Typography variant="body1" sx={{fontWeight: 600}} color="text.secondary">
                                         {emptyTitle}

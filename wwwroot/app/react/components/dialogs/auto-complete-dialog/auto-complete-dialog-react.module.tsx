@@ -11,7 +11,6 @@ import {ThemeProvider, CssBaseline} from '@mui/material';
 import {AutoCompleteDialog, Suggestion} from './AutoCompleteDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
-import angular from 'angular';
 
 // Result interface for the dialog
 export interface AutoCompleteResult {

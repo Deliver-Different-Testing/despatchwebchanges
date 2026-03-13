@@ -390,7 +390,7 @@ describe('useTasksApi Hooks', () => {
                 expect(result.current.isSuccess).toBe(true);
             });
 
-            expect(mockTasksApi.updateTaskDate).toHaveBeenCalledWith(123, newDate);
+            expect(mockTasksApi.updateTaskDate).toHaveBeenCalledWith(123, newDate, undefined);
         });
 
         it('should handle errors', async () => {
@@ -426,7 +426,7 @@ describe('useTasksApi Hooks', () => {
                 expect(result.current.isSuccess).toBe(true);
             });
 
-            expect(mockTasksApi.updateTaskTime).toHaveBeenCalledWith(123, newTime);
+            expect(mockTasksApi.updateTaskTime).toHaveBeenCalledWith(123, newTime, undefined);
         });
 
         it('should handle errors', async () => {

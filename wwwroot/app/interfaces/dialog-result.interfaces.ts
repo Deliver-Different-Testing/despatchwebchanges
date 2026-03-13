@@ -4,7 +4,7 @@ import {Dayjs} from "dayjs";
 
 interface IDialogResult {
     fieldName: JobProperty | string;
-    value: any;
+    value: string | number | boolean | Dayjs | Record<string, unknown> | null;
 }
 
 export interface ISelectDialogResult extends IDialogResult {

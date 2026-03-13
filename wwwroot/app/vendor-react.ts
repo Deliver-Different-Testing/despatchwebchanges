@@ -12,17 +12,17 @@ import * as jsxRuntime from 'react/jsx-runtime';
 import {QueryClient, QueryClientProvider, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 // Expose React globally for module bundles to use via shims
-(window as any).React = React;
+window.React = React;
 // Combine ReactDOM (createPortal, flushSync) with ReactDOMClient (createRoot, hydrateRoot)
-(window as any).ReactDOM = {...ReactDOM, ...ReactDOMClient};
-(window as any).ReactJsxRuntime = jsxRuntime;
+window.ReactDOM = {...ReactDOM, ...ReactDOMClient} as typeof ReactDOM & typeof ReactDOMClient;
+window.ReactJsxRuntime = jsxRuntime;
 
 // Expose TanStack Query components/hooks
-(window as any).QueryClient = QueryClient;
-(window as any).QueryClientProvider = QueryClientProvider;
-(window as any).useQuery = useQuery;
-(window as any).useMutation = useMutation;
-(window as any).useQueryClient = useQueryClient;
+window.QueryClient = QueryClient;
+window.QueryClientProvider = QueryClientProvider;
+window.useQuery = useQuery;
+window.useMutation = useMutation;
+window.useQueryClient = useQueryClient;
 
 // Create and expose a shared QueryClient instance
 const queryClient = new QueryClient({
@@ -34,7 +34,7 @@ const queryClient = new QueryClient({
         },
     },
 });
-(window as any).ReactQueryClient = queryClient;
+window.ReactQueryClient = queryClient;
 
 // Export for type checking
 export {React, ReactDOMClient, jsxRuntime, queryClient, QueryClientProvider};

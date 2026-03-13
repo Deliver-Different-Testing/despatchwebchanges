@@ -6,7 +6,7 @@
 
 import {transformJobGroupDTO} from './dtoMappings';
 import {IJobDto, IJobGroupDto} from '../interfaces/job.interface';
-import {formatShortDateTime, formatShortDate, formatDateFromApi} from './formatDates';
+import {formatShortDateTime, formatShortDate, formatDateFromApi} from '../react/utils/dateUtils';
 
 /** Builds a minimal IJobDto with sensible defaults. Override as needed. */
 function makeJobDto(overrides: Partial<IJobDto> = {}): IJobDto {

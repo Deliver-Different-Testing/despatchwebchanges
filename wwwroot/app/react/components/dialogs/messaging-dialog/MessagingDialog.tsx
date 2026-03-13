@@ -285,7 +285,7 @@ function MessagingDialogContent({
             );
 
             showToast('Message sent', 'success');
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to send message:', err);
             showToast('Failed to send message', 'error');
         } finally {
@@ -326,7 +326,7 @@ function MessagingDialogContent({
             });
 
             showToast(`Message sent to ${courierIds.length + staffIds.length} contacts`, 'success');
-        } catch (err: any) {
+        } catch (err) {
             console.error('Failed to send multi message:', err);
             showToast('Failed to send message to all contacts', 'error');
         } finally {

@@ -33,12 +33,10 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
 import { EditDateTimeDialogProps, EditDateTimeDialogResult } from './types';
+import { getIanaTimezone } from '../../../utils/dateUtils';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
-
-// Default timezone constant
-const DEFAULT_TIMEZONE = 'Pacific/Auckland';
 
 /**
  * Format timezone for display (e.g., "Pacific/Auckland" -> "Pacific/Auckland (NZDT)")
@@ -69,7 +67,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     // State
     const [dateTime, setDateTime] = useState<Dayjs>(dayjs());
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedTimeZone] = useState(defaultTimeZone || DEFAULT_TIMEZONE);
+    const [selectedTimeZone] = useState(defaultTimeZone || getIanaTimezone());
     const browserTimeZone = dayjs.tz.guess();
 
     // Initialize dateTime when dialog opens or initialDateTime changes
@@ -148,9 +146,9 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
 
             // Await onSubmit in case it returns a promise
             await onSubmit(result);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error submitting date/time:', error);
-            showToast(error.message || 'Failed to save date/time', 'error');
+            showToast(error instanceof Error ? error.message : 'Failed to save date/time', 'error');
         } finally {
             setIsLoading(false);
         }

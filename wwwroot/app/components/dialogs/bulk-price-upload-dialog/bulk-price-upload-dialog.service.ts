@@ -51,7 +51,7 @@ class BulkPriceUploadDialogService implements angular.IServiceProvider {
         });
     }
 
-    async openBulkPriceUploadDialog($event: MouseEvent): Promise<boolean> {
+    async openBulkPriceUploadDialog(_$event: MouseEvent): Promise<boolean> {
         await this.loadReactDialog();
 
         if (!window.ReactBulkPriceUploadDialog) {

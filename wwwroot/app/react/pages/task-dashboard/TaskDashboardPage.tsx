@@ -36,7 +36,7 @@ import {
     ViewList as ViewListIcon,
     Warning as WarningIcon,
 } from '@mui/icons-material';
-import dayjs from 'dayjs';
+import dayjs, {Dayjs} from 'dayjs';
 
 import {
     DateFilterData,
@@ -68,12 +68,12 @@ import {isAiEnabled} from '../../../functions/aiSettings';
 
 // Local storage keys
 const getViewPreferenceKey = () => {
-    const contactId = (window as any).ContactID || 0;
+    const contactId = window.ContactID || 0;
     return `taskDashboardViewPreference-${contactId}`;
 };
 
 const getDateFilterKey = () => {
-    const contactId = (window as any).ContactID || 0;
+    const contactId = window.ContactID || 0;
     return `dateFilter-task-dashboard-${contactId}`;
 };
 
@@ -431,11 +431,11 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         markTaskAsClosed: async (eventId: number, closed: boolean) => {
             await markTaskAsClosedMutation.mutateAsync({eventId, closed});
         },
-        updateTaskDate: async (eventId: number, date: any) => {
-            await updateTaskDateMutation.mutateAsync({eventId, date});
+        updateTaskDate: async (eventId: number, date: Dayjs, timezone?: string) => {
+            await updateTaskDateMutation.mutateAsync({eventId, date, timezone});
         },
-        updateTaskTime: async (eventId: number, time: any) => {
-            await updateTaskTimeMutation.mutateAsync({eventId, time});
+        updateTaskTime: async (eventId: number, time: Dayjs, timezone?: string) => {
+            await updateTaskTimeMutation.mutateAsync({eventId, time, timezone});
         },
         reassignTaskToStaff: async (eventId: number, staffId: number) => {
             await reassignTaskMutation.mutateAsync({eventId, staffId});

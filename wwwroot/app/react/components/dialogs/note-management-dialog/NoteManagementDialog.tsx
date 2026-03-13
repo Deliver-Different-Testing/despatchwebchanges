@@ -91,7 +91,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
     // Timezone for metadata display
     const formattedTimeZone = useMemo(() => {
-        return getTimezoneAbbreviation((window as any).TimeZone || '');
+        return getTimezoneAbbreviation((window as unknown as Record<string, string>).TimeZone || '');
     }, []);
 
     // Edit history
@@ -107,6 +107,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
         if (open) {
             loadNoteTypes();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadNoteTypes is inline; only load on dialog open
     }, [open]);
 
     // Reset form when note changes or dialog opens

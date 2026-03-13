@@ -14,7 +14,6 @@ import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { FlightData } from './types';
 import { IFlightViewModel } from '../../../../components/Nationwide/nationwide.interfaces';
-import angular from 'angular';
 
 interface DialogState {
     open: boolean;

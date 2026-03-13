@@ -11,7 +11,6 @@ import {ThemeProvider, CssBaseline} from '@mui/material';
 import {DateRangeDialog, DateRange} from './DateRangeDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
-import angular from 'angular';
 
 // State management for the dialog
 interface DialogState {

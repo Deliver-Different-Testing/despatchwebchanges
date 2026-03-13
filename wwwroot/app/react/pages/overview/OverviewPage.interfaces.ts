@@ -1,5 +1,3 @@
-import {Dayjs} from 'dayjs';
-
 // ── Mount config (passed from AngularJS controller) ──
 
 export interface MountOverviewConfig {

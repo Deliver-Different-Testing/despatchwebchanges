@@ -44,7 +44,7 @@ export function react2angular<P extends object>(
             $onChanges(changes: angular.IOnChangesObject) {
                 // Update props from AngularJS bindings
                 Object.keys(changes).forEach(key => {
-                    (this.props as any)[key] = changes[key].currentValue;
+                    (this.props as Record<string, unknown>)[key] = changes[key].currentValue;
                 });
                 this.render();
             }

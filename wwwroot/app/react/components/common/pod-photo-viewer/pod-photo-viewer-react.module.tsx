@@ -10,7 +10,6 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider, CssBaseline} from '@mui/material';
 import {PodPhotoViewer, PodPhoto} from './PodPhotoViewer';
 import {getTheme} from '../../../theme/muiTheme';
-import angular from 'angular';
 
 // State management for the viewer
 interface ViewerState {

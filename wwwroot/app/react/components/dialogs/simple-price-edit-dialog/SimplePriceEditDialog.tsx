@@ -138,9 +138,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             const resultAmount = await onSubmit(selectedMode, amount);
             setSavedAmount(resultAmount);
             setShowResult(true);
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error saving price:', error);
-            const msg = error?.message || 'Failed to save price. Please try again.';
+            const msg = error instanceof Error ? error.message : 'Failed to save price. Please try again.';
             setErrorMessage(msg);
             showToast(msg, 'error');
         } finally {

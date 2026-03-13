@@ -20,7 +20,7 @@ import {
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../../interfaces/flight-cargo-processing.interface";
-import {formatDateForApiWithTzs} from "../../functions/formatDates";
+import {formatDateForApiWithTzs} from "../../react/utils/dateUtils";
 import {Dayjs} from "dayjs";
 import {transformCargoHoursDTO, transformDispatchJobDTO, transformFlightDTO} from "../../functions/dtoMappings";
 import angular from 'angular';

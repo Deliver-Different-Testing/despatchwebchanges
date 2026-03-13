@@ -73,13 +73,6 @@ export interface DashboardSettingsDialogProps {
     onSave: (result: DashboardSettingsResult) => void;
 }
 
-// Material icon name mapping (from material-symbols-outlined to MUI icons)
-const getIconComponent = (iconName?: string) => {
-    // Return a generic icon for now - MUI doesn't have direct mapping
-    // You could extend this with more icon mappings if needed
-    return DashboardIcon;
-};
-
 export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = ({
     open,
     config,

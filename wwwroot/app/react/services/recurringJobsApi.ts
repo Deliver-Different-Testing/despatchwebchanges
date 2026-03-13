@@ -41,7 +41,7 @@ export const recurringJobsApi = {
      * @param jobId - ID of the job to void
      */
     voidPrebookJob: async (jobId: number): Promise<void> => {
-        await apiClient.get('job/VoidPrebookJob', {jobId});
+        await apiClient.post('job/VoidPrebookJob', {jobId});
     },
 
     /**

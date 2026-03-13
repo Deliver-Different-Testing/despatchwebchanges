@@ -175,7 +175,7 @@ class RecoveryAgentManagementController extends BaseController {
 
             this.toastrService.showSuccessToast(`${agent.agentName} has been removed from the recovery assignment`);
         } catch (error) {
-            if (!error === undefined) return;
+            if (error === undefined) return;
             
             console.error('Error removing agent:', error);
             this.toastrService.showErrorToast('Failed to remove agent. Please try again.');

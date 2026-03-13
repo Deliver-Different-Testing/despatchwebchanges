@@ -5,8 +5,7 @@
  */
 
 import {apiClient, RequestOptions} from './apiClient';
-import {formatDateForApiWithTzs} from '../../functions/formatDates';
-import {formatLongDateTime} from '../../functions/formatDates';
+import {formatDateForApiWithTzs, formatLongDateTime} from '../utils/dateUtils';
 import type {
     OverviewQueryParams,
     OverviewStatsViewModel,

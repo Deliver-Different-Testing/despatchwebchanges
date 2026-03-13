@@ -6,7 +6,7 @@
  * standalone (via toastService singleton for use outside React).
  */
 
-import React, {createContext, useContext, useState, useCallback, ReactNode, useEffect} from 'react';
+import React, {createContext, useContext, useState, useCallback, ReactNode} from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {Snackbar, Alert, AlertColor, ThemeProvider} from '@mui/material';
 import {getTheme} from '../theme/muiTheme';

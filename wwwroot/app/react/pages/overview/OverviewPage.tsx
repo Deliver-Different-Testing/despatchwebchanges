@@ -32,15 +32,7 @@ import type {
     TableSort,
 } from './OverviewPage.interfaces';
 
-// Window type for AI assistant
-declare global {
-    interface Window {
-        ReactAiAssistant?: {
-            renderOperationsInsightsPanel: (container: HTMLElement) => void;
-            unmountSummaryPanel: (container: HTMLElement) => void;
-        };
-    }
-}
+// Window.ReactAiAssistant type is declared in wwwroot/types/global.d.ts
 
 const OVERVIEW_LIMIT_KEY = `overviewJobLimitDisplay-${ContactID}`;
 
@@ -51,8 +43,7 @@ function loadCollapseState(cardName: string): boolean {
             const states = JSON.parse(saved);
             return states[cardName] || false;
         }
-    } catch {
-    }
+    } catch { /* localStorage may be unavailable */ }
     return false;
 }
 
@@ -62,8 +53,7 @@ function saveCollapseState(cardName: string, isCollapsed: boolean): void {
         const states = saved ? JSON.parse(saved) : {};
         states[cardName] = isCollapsed;
         localStorage.setItem('cardCollapseStates', JSON.stringify(states));
-    } catch {
-    }
+    } catch { /* localStorage may be unavailable */ }
 }
 
 function transformStatus(status: string): string {
@@ -179,11 +169,12 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     // ── AI Insights panel ──
     useEffect(() => {
-        if (isAiEnabled() && aiContainerRef.current && window.ReactAiAssistant) {
-            window.ReactAiAssistant.renderOperationsInsightsPanel(aiContainerRef.current);
+        const container = aiContainerRef.current;
+        if (isAiEnabled() && container && window.ReactAiAssistant) {
+            window.ReactAiAssistant.renderOperationsInsightsPanel(container);
             return () => {
-                if (aiContainerRef.current && window.ReactAiAssistant) {
-                    window.ReactAiAssistant.unmountSummaryPanel(aiContainerRef.current);
+                if (container && window.ReactAiAssistant) {
+                    window.ReactAiAssistant.unmountSummaryPanel(container);
                 }
             };
         }
