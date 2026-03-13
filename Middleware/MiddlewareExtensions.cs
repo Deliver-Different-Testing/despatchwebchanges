@@ -4,9 +4,10 @@ namespace DespatchWeb.Middleware;
 
 public static class MiddlewareExtensions
 {
-    public static IApplicationBuilder UseCsrfProtection(this IApplicationBuilder app)
-        => app.UseMiddleware<CsrfProtectionMiddleware>();
+    extension(IApplicationBuilder app)
+    {
+        public void UseCsrfProtection() => app.UseMiddleware<CsrfProtectionMiddleware>();
 
-    public static IApplicationBuilder UseSecurityHeaders(this IApplicationBuilder app)
-        => app.UseMiddleware<SecurityHeadersMiddleware>();
+        public void UseSecurityHeaders() => app.UseMiddleware<SecurityHeadersMiddleware>();
+    }
 }

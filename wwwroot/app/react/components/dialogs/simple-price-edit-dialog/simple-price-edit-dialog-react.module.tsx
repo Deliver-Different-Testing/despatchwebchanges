@@ -13,6 +13,7 @@ import { SimplePriceEditDialog } from './SimplePriceEditDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions } from './types';
+import { apiClient } from '../../../services/apiClient';
 
 interface DialogState {
     open: boolean;
@@ -36,47 +37,21 @@ const defaultToastService: ToastService = {
 // --- API helpers ---
 
 async function applyRecalculatedJobRate(jobId: number, isPrebook: boolean): Promise<void> {
-    const params = new URLSearchParams({ jobId: String(jobId), isPrebook: String(isPrebook) });
-    const response = await fetch(`job/ApplyRecalculatedJobRate?${params}`, { method: 'POST' });
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.message || 'Failed to apply recalculated rate');
-    }
+    await apiClient.post('job/ApplyRecalculatedJobRate', null, {
+        params: { jobId, isPrebook },
+    });
 }
 
 async function recalculateJobRate(jobId: number, isPrebook: boolean): Promise<number> {
-    const params = new URLSearchParams({ jobId: String(jobId), isBooking: String(isPrebook) });
-    const response = await fetch(`job/RecalculateJobRate?${params}`);
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.message || 'Failed to recalculate rate');
-    }
-    return response.json();
+    return apiClient.get<number>('job/RecalculateJobRate', { jobId, isBooking: isPrebook });
 }
 
 async function repriceJobWithBaseAmount(jobId: number, isPrebook: boolean, baseAmount: number): Promise<number> {
-    const response = await fetch('job/RepriceJobWithBaseAmount', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, isPrebook, baseAmount }),
-    });
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.message || 'Failed to reprice with base amount');
-    }
-    return response.json();
+    return apiClient.post<number>('job/RepriceJobWithBaseAmount', { jobId, isPrebook, baseAmount });
 }
 
 async function simpleRepriceJobManual(jobId: number, isPrebook: boolean, isBulk: boolean, newPrice: number): Promise<void> {
-    const response = await fetch('job/SimpleRepriceJobManual', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jobId, isPrebook, isBulk, newPrice }),
-    });
-    if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.message || 'Failed to reprice job');
-    }
+    await apiClient.post('job/SimpleRepriceJobManual', { jobId, isPrebook, isBulk, newPrice });
 }
 
 /**
