@@ -6,9 +6,10 @@ function handleAddressFieldsFromLookup(location: HereMapsLookupResponse, address
     const address = location.address;
 
     // Common fields for both US and NZ
-    // Line 1: Company/Building
-    addressDetails.addressLine1 = location.title ||
-        location.mapReferences?.pointAddress?.buildingName || "";
+    // Line 1: Company/Building — use building name from HERE if available,
+    // fall back to title for 'place' results (company/venue names)
+    const placeName = location.resultType === 'place' ? location.title : '';
+    addressDetails.addressLine1 = location.mapReferences?.pointAddress?.buildingName || placeName || "";
 
     // Line 2: Unit/Suite - not directly available from HERE Maps
     addressDetails.addressLine2 = "";

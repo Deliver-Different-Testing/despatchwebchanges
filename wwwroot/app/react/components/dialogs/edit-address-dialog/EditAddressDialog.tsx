@@ -316,9 +316,11 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         const address = location.address;
 
         // Line 1: Company/Building — use building name from HERE if available,
+        // fall back to title for 'place' results (company/venue names),
         // otherwise clear so stale company names from pre-populated addresses don't persist
         const buildingName = location.mapReferences?.pointAddress?.buildingName;
-        setAddressLine1(buildingName || '');
+        const placeName = location.resultType === 'place' ? location.title : '';
+        setAddressLine1(buildingName || placeName || '');
 
         // Line 2: Unit/Suite - not directly available
         setAddressLine2('');
