@@ -68,14 +68,14 @@
     "jest-fixed-jsdom": "^0.0.11",
     "msw": "^2.12.10",
     "ts-jest": "^29.4.6",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.0",
     "undici": "^7.22.0"
   },
   "scripts": {
-    "dev": "ts-node build.ts --dev",
-    "build": "ts-node build.ts",
+    "dev": "tsx build.ts --dev",
+    "build": "tsx build.ts",
     "type-check": "tsc --noEmit",
     "lint": "eslint wwwroot/app/",
     "lint:fix": "eslint wwwroot/app/ --fix",
