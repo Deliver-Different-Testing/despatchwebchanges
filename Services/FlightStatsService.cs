@@ -1,16 +1,10 @@
-using System;
-using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Net.Http;
 using System.Security.Claims;
 using System.Text.Json;
-using System.Threading.Tasks;
 using System.Web;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.FlightStats;
-using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace DespatchWeb.Services;
@@ -31,6 +25,7 @@ public sealed class FlightStatsService(
     private readonly string _appId = Environment.GetEnvironmentVariable("FlightStatusApiAppId");
     private readonly string _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
     private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
+    private static readonly JsonSerializerOptions CaseInsensitiveJsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     /// <summary>
     /// Creates a flight alert rule to receive webhook notifications for flight status changes.
@@ -103,10 +98,7 @@ public sealed class FlightStatsService(
                 throw new Exception($"Failed to create flight alert: {response.ReasonPhrase}. Response: {content}");
             }
 
-            var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var createAlertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content, CaseInsensitiveJsonOptions);
 
             if (createAlertResponse?.Error?.ErrorId != null)
             {
@@ -293,6 +285,11 @@ public sealed class FlightStatsService(
         var connections = flightStatusResponse.Connections;
         if (connections is null) return [];
 
+        // Build O(1) lookup dictionaries from appendix data to avoid repeated O(n) scans
+        var airportLookup = (flightStatusResponse.Appendix?.Airports ?? []).ToDictionary(a => a.Fs);
+        var airlineLookup = (flightStatusResponse.Appendix?.Airlines ?? []).ToDictionary(a => a.Fs);
+        var equipmentLookup = (flightStatusResponse.Appendix?.Equipments ?? []).ToDictionary(e => e.Iata);
+
         var flightOptions = connections
             .Where(conn =>
                 conn.ScheduledFlight.Count != 0 &&
@@ -307,17 +304,10 @@ public sealed class FlightStatsService(
                 var segments = conn.ScheduledFlight
                     .Select((segment, index) =>
                     {
-                        var depAirport = flightStatusResponse.Appendix?.Airports
-                            ?.FirstOrDefault(a => a.Fs == segment.DepartureAirportFsCode);
-
-                        var arrAirport = flightStatusResponse.Appendix?.Airports
-                            ?.FirstOrDefault(a => a.Fs == segment.ArrivalAirportFsCode);
-
-                        var equipment = flightStatusResponse.Appendix?.Equipments
-                            ?.FirstOrDefault(e => e.Iata == segment.FlightEquipmentIataCode);
-
-                        var airline = flightStatusResponse.Appendix?.Airlines
-                            ?.FirstOrDefault(a => a.Fs == segment.CarrierFsCode);
+                        airportLookup.TryGetValue(segment.DepartureAirportFsCode, out var depAirport);
+                        airportLookup.TryGetValue(segment.ArrivalAirportFsCode, out var arrAirport);
+                        equipmentLookup.TryGetValue(segment.FlightEquipmentIataCode, out var equipment);
+                        airlineLookup.TryGetValue(segment.CarrierFsCode, out var airline);
 
                         return new FlightSegmentViewModel
                         {
@@ -356,16 +346,12 @@ public sealed class FlightStatsService(
                     })
                     .ToList();
 
-                var flightFlightDepartureAirport = flightStatusResponse.Appendix?.Airports
-                    ?.FirstOrDefault(a => a.Fs == firstFlight.DepartureAirportFsCode);
-                var lastFlightArrivalAirport = flightStatusResponse.Appendix?.Airports
-                    ?.FirstOrDefault(a => a.Fs == lastFlight.ArrivalAirportFsCode);
+                airportLookup.TryGetValue(firstFlight.DepartureAirportFsCode, out var flightFlightDepartureAirport);
+                airportLookup.TryGetValue(lastFlight.ArrivalAirportFsCode, out var lastFlightArrivalAirport);
 
                 return new FlightViewModel
                 {
-                    Airline = flightStatusResponse.Appendix?.Airlines
-                        .FirstOrDefault(a => a.Fs == firstFlight.CarrierFsCode)
-                        ?.Name,
+                    Airline = airlineLookup.GetValueOrDefault(firstFlight.CarrierFsCode)?.Name,
                     AirlineCode = firstFlight.CarrierFsCode,
                     FlightNumber = firstFlight.CarrierFsCode + firstFlight.FlightNumber,
                     DepartureTime =
@@ -381,9 +367,7 @@ public sealed class FlightStatsService(
                         CalculateCorrectDateTimeOffset(firstFlight.DepartureTime, flightFlightDepartureAirport)
                             .UtcDateTime,
                     Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
-                    Aircraft = flightStatusResponse.Appendix?.Equipments
-                        .FirstOrDefault(e => e.Iata == firstFlight.FlightEquipmentIataCode)
-                        ?.Name,
+                    Aircraft = equipmentLookup.GetValueOrDefault(firstFlight.FlightEquipmentIataCode)?.Name,
                     ServiceClasses = firstFlight.ServiceClasses,
                     IsCodeShare = firstFlight.IsCodeshare ?? false,
                     Amount = 0, // Will fill this in on the next step

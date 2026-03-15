@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace DespatchWeb.Models;
+﻿namespace DespatchWeb.Models;
 
 public class JobViewModel : DispatchJobViewModel
 {

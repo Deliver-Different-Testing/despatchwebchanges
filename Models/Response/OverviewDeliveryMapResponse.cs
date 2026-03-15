@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace DespatchWeb.Models.Response;
 
 public class OverviewDeliveryMapResponse

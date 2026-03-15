@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace DespatchWeb.Models.Dto;
+﻿namespace DespatchWeb.Models.Dto;
 
 public class DeliveryJourneyDto
 {

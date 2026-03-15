@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Threading.Tasks;
+﻿using System.Net;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DespatchWeb.Enums;
@@ -10,7 +6,6 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
-using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace DespatchWeb.Services;

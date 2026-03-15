@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using DespatchWeb.Enums;
+﻿using DespatchWeb.Enums;
 using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;

@@ -1,4 +1,3 @@
-using System;
 using DespatchWeb.EntityClasses;
 
 namespace DespatchWeb.Models;

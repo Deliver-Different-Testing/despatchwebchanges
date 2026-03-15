@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DespatchWeb.Extensions;
+﻿namespace DespatchWeb.Extensions;
 
 public static class DateExtension
 {

@@ -1,5 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-
 namespace DespatchWeb.Middleware;
 
 public static class MiddlewareExtensions

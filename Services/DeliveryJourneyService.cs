@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
@@ -17,7 +13,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for building delivery journey timelines showing all events, notes, messages, and status changes for a job.
 /// </summary>
-public partial class DeliveryJourneyService(
+public sealed partial class DeliveryJourneyService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService) : IDeliveryJourneyService
 {

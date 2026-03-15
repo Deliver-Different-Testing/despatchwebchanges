@@ -1,6 +1,5 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DespatchWeb.Extensions;
 

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DespatchWeb.Models.RequestModels;
+﻿namespace DespatchWeb.Models.RequestModels;
 
 public class TaskUpdateBaseRequest
 {

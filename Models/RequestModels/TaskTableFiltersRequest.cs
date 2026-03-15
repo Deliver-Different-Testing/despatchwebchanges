@@ -1,5 +1,3 @@
-using System;
-
 namespace DespatchWeb.Models.RequestModels;
 
 public class TaskTableFiltersRequest

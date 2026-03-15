@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using DespatchWeb.Constants;
+﻿using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
@@ -23,6 +18,7 @@ public partial class JobRepository
     /// </summary>
     /// <param name="statusGroup">The job status group filter (Active, Completed, or Inactive).</param>
     /// <param name="parameters">Request parameters including pagination, search, date range, and filters.</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Paginated response containing delivery jobs with completion percentages and child jobs.</returns>
     public async Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
         JobStatusGroup statusGroup,
@@ -114,7 +110,7 @@ public partial class JobRepository
 
         var pages = (int)Math.Ceiling(total / (double)parameters.Limit);
 
-        var jobs = await query  
+        var jobs = await query
             .Skip((parameters.Page - 1) * parameters.Limit)
             .Take(parameters.Limit)
             .Select(j => new DeliveryJob
@@ -168,62 +164,6 @@ public partial class JobRepository
             Page = parameters.Page,
             Pages = pages
         };
-    }
-
-    private static IQueryable<TucJob> ApplySorting(
-        IQueryable<TucJob> query,
-        string orderBy,
-        string orderDirection
-    )
-    {
-        var isAscending = !orderDirection.Equals("desc", StringComparison.OrdinalIgnoreCase);
-
-        query = orderBy?.ToLower() switch
-        {
-            "jobname" => isAscending
-                ? query.OrderBy(j => j.UcjbNumber)
-                : query.OrderByDescending(j => j.UcjbNumber),
-
-            "status" => isAscending
-                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
-                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
-
-            "completion" => isAscending
-                ? query.OrderBy(j =>
-                    100.0 * j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count
-                )
-                : query.OrderByDescending(j =>
-                    100.0 * j.InverseParent.Count(c =>
-                        c.UcjbJobDone
-                        || (c.UcjbStatus.HasValue
-                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
-                    ) / j.InverseParent.Count
-                ),
-
-            "pickup" => isAscending
-                ? query.OrderBy(j => j.PickupAddressLine5)
-                : query.OrderByDescending(j => j.PickupAddressLine5),
-
-            "delivery" => isAscending
-                ? query.OrderBy(j => j.DeliveryAddressLine5)
-                : query.OrderByDescending(j => j.DeliveryAddressLine5),
-
-            "driver" => isAscending
-                ? query.OrderBy(j => j.UcjbCourier.UccrName)
-                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
-
-            "region" => isAscending
-                ? query.OrderBy(j => j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault())
-                : query.OrderByDescending(j => j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault()),
-
-            _ => query.OrderBy(j => j.UcjbNumber) // Default sort
-        };
-
-        return query;
     }
 
     /// <summary>
@@ -294,7 +234,7 @@ public partial class JobRepository
         {
             var now = _clock.TenantNow;
             var tenantTimeZone = _infoService.GetTenantTimeZone();
-            var currentDate = now.Date; 
+            var currentDate = now.Date;
 
             var query = Context.TucJobs
                 .Where(j =>
@@ -420,6 +360,62 @@ public partial class JobRepository
             Log.Error(ex, "Error getting open jobs");
             throw;
         }
+    }
+
+    private static IQueryable<TucJob> ApplySorting(
+        IQueryable<TucJob> query,
+        string orderBy,
+        string orderDirection
+    )
+    {
+        var isAscending = !orderDirection.Equals("desc", StringComparison.OrdinalIgnoreCase);
+
+        query = orderBy?.ToLower() switch
+        {
+            "jobname" => isAscending
+                ? query.OrderBy(j => j.UcjbNumber)
+                : query.OrderByDescending(j => j.UcjbNumber),
+
+            "status" => isAscending
+                ? query.OrderBy(j => j.UcjbStatusNavigation.UcjsName)
+                : query.OrderByDescending(j => j.UcjbStatusNavigation.UcjsName),
+
+            "completion" => isAscending
+                ? query.OrderBy(j =>
+                    100.0 * j.InverseParent.Count(c =>
+                        c.UcjbJobDone
+                        || (c.UcjbStatus.HasValue
+                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
+                    ) / j.InverseParent.Count
+                )
+                : query.OrderByDescending(j =>
+                    100.0 * j.InverseParent.Count(c =>
+                        c.UcjbJobDone
+                        || (c.UcjbStatus.HasValue
+                            && JobStatusGroups.Completed.Contains(c.UcjbStatus.Value))
+                    ) / j.InverseParent.Count
+                ),
+
+            "pickup" => isAscending
+                ? query.OrderBy(j => j.PickupAddressLine5)
+                : query.OrderByDescending(j => j.PickupAddressLine5),
+
+            "delivery" => isAscending
+                ? query.OrderBy(j => j.DeliveryAddressLine5)
+                : query.OrderByDescending(j => j.DeliveryAddressLine5),
+
+            "driver" => isAscending
+                ? query.OrderBy(j => j.UcjbCourier.UccrName)
+                : query.OrderByDescending(j => j.UcjbCourier.UccrName),
+
+            "region" => isAscending
+                ? query.OrderBy(j => j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault())
+                : query.OrderByDescending(j => j.TblBulkJobs.Select(b => b.Region.Name).FirstOrDefault()),
+
+            _ => query.OrderBy(j => j.UcjbNumber) // Default sort
+        };
+
+        return query;
     }
 
     private static OpenJobResponse MapToOpenJobResponse(

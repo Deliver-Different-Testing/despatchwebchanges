@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace DespatchWeb.Models.RequestModels;
+﻿namespace DespatchWeb.Models.RequestModels;
 
 public class AllocateJobsToCourierRequest
 {

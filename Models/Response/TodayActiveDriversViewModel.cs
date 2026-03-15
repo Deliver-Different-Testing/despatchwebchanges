@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DespatchWeb.Models.Response;
+﻿namespace DespatchWeb.Models.Response;
 
 public class TodayActiveDriversViewModel
 {

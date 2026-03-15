@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Log = Serilog.Log;
@@ -21,6 +16,7 @@ public sealed class AddressLookupService(
     private static readonly string[] StringArray = ["categoryQuery", "chainQuery"];
     private const string UsCoordinates = "37.09024,-95.712891";
     private const string NzCoordinates = "-40.900557,174.885971";
+    private static readonly JsonSerializerOptions CaseInsensitiveJsonOptions = new() { PropertyNameCaseInsensitive = true };
     
     /// <summary>
     /// Searches for address suggestions based on partial text input using HERE Maps autosuggest API.
@@ -54,11 +50,7 @@ public sealed class AddressLookupService(
             response.EnsureSuccessStatusCode();
 
             var jsonResponse = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<HereMapsAutocompleteResponse>(jsonResponse,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+            var result = JsonSerializer.Deserialize<HereMapsAutocompleteResponse>(jsonResponse, CaseInsensitiveJsonOptions);
 
             return result?.Items?.Where(item =>
             {
@@ -101,10 +93,7 @@ public sealed class AddressLookupService(
             response.EnsureSuccessStatusCode();
 
             var jsonResponse = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<HereMapsLookupResponse>(jsonResponse, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var result = JsonSerializer.Deserialize<HereMapsLookupResponse>(jsonResponse, CaseInsensitiveJsonOptions);
 
             return result;
         }
@@ -140,11 +129,7 @@ public sealed class AddressLookupService(
             response.EnsureSuccessStatusCode();
 
             var jsonResponse = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<HereMapsAutocompleteResponse>(jsonResponse,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+            var result = JsonSerializer.Deserialize<HereMapsAutocompleteResponse>(jsonResponse, CaseInsensitiveJsonOptions);
 
             return result?.Items ?? [];
         }

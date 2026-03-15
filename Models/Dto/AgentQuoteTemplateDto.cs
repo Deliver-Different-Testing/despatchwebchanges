@@ -1,5 +1,3 @@
-using System;
-
 namespace DespatchWeb.Models.Dto;
 
 public class AgentQuoteTemplateDto

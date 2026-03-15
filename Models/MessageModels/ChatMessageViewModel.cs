@@ -1,5 +1,3 @@
-using System;
-
 namespace DespatchWeb.Models.MessageModels;
 
 public class ChatMessageViewModel

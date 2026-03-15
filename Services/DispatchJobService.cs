@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using DespatchWeb.Enums;
+﻿using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using Serilog;
 
@@ -37,10 +33,8 @@ public sealed class DispatchJobService(IJobRepository jobRepository, ICourierRep
     {
         try
         {
-            var jobIdsList = jobIds.ToList();
-
             // Assign courier to job(s)
-            await jobRepository.AssignCourierToJobAsync(jobIdsList, courierId);
+            await jobRepository.AssignCourierToJobAsync(jobIds, courierId);
 
             // Reset the couriers clear list area order
             await courierRepository.ResetClearListAreaOrderAsync(courierId);
@@ -48,20 +42,19 @@ public sealed class DispatchJobService(IJobRepository jobRepository, ICourierRep
             // Dispatch child jobs
             await jobRepository.AssignCourierToChildJobsAsync(jobIds, InternalJobStatus.AwaitingPod);
 
-            if (jobIdsList.Count == 1)
-                Log.Debug("Successfully dispatched job {JobId} to courier {CourierId}", jobIdsList[0], courierId);
+            if (jobIds.Count == 1)
+                Log.Debug("Successfully dispatched job {JobId} to courier {CourierId}", jobIds[0], courierId);
             else
                 Log.Debug("Successfully dispatched {JobCount} jobs to courier {CourierId}: {JobIds}",
-                    jobIdsList.Count, courierId, string.Join(", ", jobIdsList));
+                    jobIds.Count, courierId, string.Join(", ", jobIds));
         }
         catch (Exception e)
         {
-            var jobIdsList = jobIds.ToList();
-            if (jobIdsList.Count == 1)
-                Log.Error(e, "Error dispatching job {JobId} to courier {CourierId}", jobIdsList[0], courierId);
+            if (jobIds.Count == 1)
+                Log.Error(e, "Error dispatching job {JobId} to courier {CourierId}", jobIds[0], courierId);
             else
                 Log.Error(e, "Error dispatching {JobCount} jobs to courier {CourierId}: {JobIds}",
-                    jobIdsList.Count, courierId, string.Join(", ", jobIdsList));
+                    jobIds.Count, courierId, string.Join(", ", jobIds));
 
             throw;
         }

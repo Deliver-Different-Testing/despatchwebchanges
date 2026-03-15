@@ -1,12 +1,8 @@
-using System;
 using System.Globalization;
-using System.Linq;
-using System.Threading.Tasks;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
@@ -198,4 +194,6 @@ public sealed class TenantInfoService(
         var offset = tenantTimeZoneInfo.GetUtcOffset(utcDateTime);
         return new DateTimeOffset(tenantTime, offset);
     }
+
+    public void Dispose() => _context?.Dispose();
 }
