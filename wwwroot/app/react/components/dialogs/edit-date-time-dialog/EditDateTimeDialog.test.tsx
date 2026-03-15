@@ -9,8 +9,13 @@ import {createTheme, ThemeProvider} from '@mui/material';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import {EditDateTimeDialog} from './EditDateTimeDialog';
 import {EditDateTimeDialogProps} from './types';
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // Create a theme for testing
 const theme = createTheme();
@@ -564,6 +569,44 @@ describe('EditDateTimeDialog', () => {
 
             // The save button text should change to "Saving..."
             expect(await screen.findByText('Saving...')).toBeInTheDocument();
+        });
+    });
+
+    describe('Timezone-Aware Fallback Initialization', () => {
+        it('initializes with target timezone time when no initialDateTime is provided', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            // Use a US timezone that differs from the test runner's local timezone
+            const targetTz = 'America/Denver'; // Mountain Time
+            const props = createDefaultProps({
+                dateTime: undefined,
+                defaultTimeZone: targetTz,
+                showDate: true,
+                showTime: true,
+                onSubmit,
+            });
+            renderWithProviders(props);
+
+            // Submit to capture the initialized value
+            await user.click(screen.getByRole('button', { name: /Save/i }));
+
+            await waitFor(() => {
+                expect(onSubmit).toHaveBeenCalled();
+                const result = onSubmit.mock.calls[0][0];
+                const submittedValue = result.value;
+
+                // The initialized time should match the current time in the target timezone,
+                // not the browser's local timezone. We check by comparing against dayjs().tz().
+                const expectedInTargetTz = dayjs().tz(targetTz);
+
+                // Allow 1-minute tolerance for test execution time
+                const diffMinutes = Math.abs(submittedValue.hour() * 60 + submittedValue.minute()
+                    - (expectedInTargetTz.hour() * 60 + expectedInTargetTz.minute()));
+                expect(diffMinutes).toBeLessThanOrEqual(1);
+
+                // Verify the timezone was passed through
+                expect(result.timezone).toBe(targetTz);
+            });
         });
     });
 });

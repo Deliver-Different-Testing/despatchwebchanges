@@ -13,6 +13,7 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using QuestPDF;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using Serilog;
@@ -81,14 +82,44 @@ public sealed class PodReportService(
         return (stream.ToArray(), $"POD-{job.JobNo}.xlsx");
     }
 
+    public async Task QueuePodEmailAsync(int jobId, List<string> recipients, string subject, string body)
+    {
+        var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
+
+        var replyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
+                      ?? "support@deliverdifferent.com";
+
+        var messages = recipients.Select(email => new TucManualMessage
+        {
+            SendToEmailAddress = email,
+            ReplyToEmailAddress = replyTo,
+            Subject = subject,
+            UcmmMessage = body.Replace("\n", "<br>"),
+            JobId = jobId,
+            HasAttachment = true,
+            FileName = fileName,
+            FileType = "application/pdf",
+            FileContent = pdfBytes
+        }).ToList();
+
+        await using var context = await contextFactory.CreateDbContextAsync();
+        await context.TucManualMessages.AddRangeAsync(messages);
+        await context.SaveChangesAsync();
+
+        Log.Information("Queued POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
+            jobId, recipients.Count, string.Join(", ", recipients));
+    }
+
     private static void EnsureQuestPdfInitialized()
     {
-        lock (InitLock) if (_questPdfInitialized) return;
+        lock (InitLock)
+            if (_questPdfInitialized)
+                return;
 
         lock (InitLock)
         {
             if (_questPdfInitialized) return;
-            QuestPDF.Settings.License = LicenseType.Community;
+            Settings.License = LicenseType.Community;
             _questPdfInitialized = true;
         }
     }
@@ -116,9 +147,8 @@ public sealed class PodReportService(
             .ToList();
 
         // Get signature bytes from the first signature image
-        byte[]? signatureBytes = null;
         var firstSignature = signaturePhotos.FirstOrDefault(p => !string.IsNullOrEmpty(p.Data));
-        if (firstSignature != null) signatureBytes = Convert.FromBase64String(firstSignature.Data);
+        var signatureBytes = Convert.FromBase64String(firstSignature.Data);
 
         return new PodData
         {
@@ -159,34 +189,6 @@ public sealed class PodReportService(
             Barcode = p.Barcode,
             Description = p.ItemName
         }).ToList();
-    }
-
-    public async Task QueuePodEmailAsync(int jobId, List<string> recipients, string subject, string body)
-    {
-        var (pdfBytes, fileName) = await GeneratePodReportAsync(jobId);
-
-        var replyTo = Environment.GetEnvironmentVariable("ReplyToEmailAddress")
-                      ?? "support@deliverdifferent.com";
-
-        var messages = recipients.Select(email => new TucManualMessage
-        {
-            SendToEmailAddress = email,
-            ReplyToEmailAddress = replyTo,
-            Subject = subject,
-            UcmmMessage = body.Replace("\n", "<br>"),
-            JobId = jobId,
-            HasAttachment = true,
-            FileName = fileName,
-            FileType = "application/pdf",
-            FileContent = pdfBytes
-        }).ToList();
-
-        await using var context = await contextFactory.CreateDbContextAsync();
-        await context.TucManualMessages.AddRangeAsync(messages);
-        await context.SaveChangesAsync();
-
-        Log.Information("Queued POD email for job {JobId} to {RecipientCount} recipients: {Recipients}",
-            jobId, recipients.Count, string.Join(", ", recipients));
     }
 
     private static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)

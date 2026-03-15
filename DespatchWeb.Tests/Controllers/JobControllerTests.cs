@@ -5,7 +5,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using DespatchWeb.Services;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -37,7 +36,7 @@ public class JobControllerTests
     private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
     private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
     private readonly Mock<IPodReportService> _podReportServiceMock = new();
-    private readonly BackgroundTaskTracker _backgroundTaskTracker = new();
+    private readonly Mock<IBackgroundTaskTracker> _backgroundTaskTracker = new();
     private readonly Mock<IServiceScopeFactory> _serviceScopeFactoryMock = new();
 
     public JobControllerTests()
@@ -69,7 +68,7 @@ public class JobControllerTests
             _deliveryJourneyServiceMock.Object,
             _pricingPermissionServiceMock.Object,
             _podReportServiceMock.Object,
-            _backgroundTaskTracker,
+            _backgroundTaskTracker.Object,
             _serviceScopeFactoryMock.Object);
     }
 
@@ -106,7 +105,7 @@ public class JobControllerTests
 
         for (var i = 0; i < 200; i++)
         {
-            if (_backgroundTaskTracker.GetStatus(taskId)?.Status != "Running") break;
+            if (_backgroundTaskTracker.Object.GetStatus(taskId)?.Status != "Running") break;
             await Task.Delay(50);
         }
     }
@@ -1317,7 +1316,7 @@ public class JobControllerTests
         // Assert - Background task status should be Completed
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
-        var status = _backgroundTaskTracker.GetStatus(taskId);
+        var status = _backgroundTaskTracker.Object.GetStatus(taskId);
         status.Should().NotBeNull();
         status.Status.Should().Be("Completed");
         status.ErrorMessage.Should().BeNull();
@@ -1363,7 +1362,7 @@ public class JobControllerTests
         // Assert - Background task should have Failed status with error message
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var taskId = (string)okResult.Value!.GetType().GetProperty("taskId")!.GetValue(okResult.Value)!;
-        var status = _backgroundTaskTracker.GetStatus(taskId);
+        var status = _backgroundTaskTracker.Object.GetStatus(taskId);
         status.Should().NotBeNull();
         status.Status.Should().Be("Failed");
         status.ErrorMessage.Should().Contain("Job not found");
@@ -1435,8 +1434,8 @@ public class JobControllerTests
     public void SplitJobStatus_CompletedTask_ReturnsCompletedStatus()
     {
         // Arrange
-        var taskId = _backgroundTaskTracker.CreateTask();
-        _backgroundTaskTracker.SetCompleted(taskId);
+        var taskId = _backgroundTaskTracker.Object.CreateTask();
+        _backgroundTaskTracker.Object.SetCompleted(taskId);
         var controller = CreateController();
 
         // Act
@@ -1452,7 +1451,7 @@ public class JobControllerTests
     public void SplitJobStatus_RunningTask_ReturnsRunningStatus()
     {
         // Arrange
-        var taskId = _backgroundTaskTracker.CreateTask();
+        var taskId = _backgroundTaskTracker.Object.CreateTask();
         var controller = CreateController();
 
         // Act
@@ -1468,8 +1467,8 @@ public class JobControllerTests
     public void SplitJobStatus_FailedTask_ReturnsErrorMessage()
     {
         // Arrange
-        var taskId = _backgroundTaskTracker.CreateTask();
-        _backgroundTaskTracker.SetFailed(taskId, "Something went wrong");
+        var taskId = _backgroundTaskTracker.Object.CreateTask();
+        _backgroundTaskTracker.Object.SetFailed(taskId, "Something went wrong");
         var controller = CreateController();
 
         // Act
