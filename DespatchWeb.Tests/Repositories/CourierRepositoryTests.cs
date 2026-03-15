@@ -88,7 +88,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([]);
+        var result = await repository.GetClearListsAsync([], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -103,7 +103,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([999, 998, 997]);
+        var result = await repository.GetClearListsAsync([999, 998, 997], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -137,7 +137,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -156,7 +156,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -173,7 +173,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1, 2]);
+        var result = await repository.GetClearListsAsync([1, 2], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -193,7 +193,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -210,7 +210,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -229,7 +229,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1, 2]);
+        var result = await repository.GetClearListsAsync([1, 2], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - Verify data integrity across parallel queries
         result.Should().NotBeNull();
@@ -247,9 +247,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act - First call populates cache
-        var result1 = await repository.GetClearListsAsync([1]);
+        var result1 = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
         // Second call should use cache
-        var result2 = await repository.GetClearListsAsync([1]);
+        var result2 = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - Both calls should return consistent results
         result1.Areas.Should().HaveCount(result2.Areas.Count);
@@ -268,7 +268,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1, 2, 3, 4]);
+        var result = await repository.GetClearListsAsync([1, 2, 3, 4], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -291,7 +291,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act - no startDate/endDate provided (defaults to today)
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -309,7 +309,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Act - request jobs from Jan 14 to Jan 16
         var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, endDate);
+        var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -327,7 +327,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Act - request jobs from Jan 16 onward (past all test data)
         var startDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 17, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, endDate);
+        var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
         // Assert - still returns the area structure even with no matching jobs
         result.Should().NotBeNull();
@@ -343,7 +343,7 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Act - provide only startDate (endDate defaults to tomorrow: 2024-01-16)
         var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate);
+        var result = await repository.GetClearListsAsync([1], startDate, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -359,7 +359,7 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Act - provide only endDate (startDate defaults to today: 2024-01-15)
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], endDate: endDate);
+        var result = await repository.GetClearListsAsync([1], endDate: endDate, cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().NotBeNull();
@@ -379,7 +379,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act - default date filter (today = Jan 15)
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should move from Bottom (5) to Middle (3) since no jobs match filter
         result.Areas.Should().HaveCount(1);
@@ -395,7 +395,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act - default date filter (today = Jan 15)
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should stay in Bottom (5) since jobs match filter
         result.Areas.Should().HaveCount(1);
@@ -411,7 +411,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act - default date filter (today = Jan 15)
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should move from Top (1) to Middle (3)
         result.Areas.Should().HaveCount(1);
@@ -427,7 +427,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1]);
+        var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should remain in Middle (3)
         result.Areas.Should().HaveCount(1);
@@ -446,7 +446,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Act - widen date filter to include the job date
         var startDate = new DateTimeOffset(2024, 1, 19, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 21, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, endDate);
+        var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
         // Assert - courier should stay in Bottom (5) since jobs are within filter
         result.Areas.Should().HaveCount(1);

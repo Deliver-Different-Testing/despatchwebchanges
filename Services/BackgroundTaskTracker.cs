@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading;
+using DespatchWeb.Interfaces;
 
 namespace DespatchWeb.Services;
 
@@ -14,7 +15,7 @@ public sealed record BackgroundTaskStatus(
     public DateTime CreatedAt { get; init; } = CreatedAt == default ? DateTime.UtcNow : CreatedAt;
 }
 
-public sealed class BackgroundTaskTracker : IDisposable
+public sealed class BackgroundTaskTracker : IDisposable, IBackgroundTaskTracker
 {
     private readonly ConcurrentDictionary<string, BackgroundTaskStatus> _tasks = new();
     private readonly Timer _cleanupTimer;

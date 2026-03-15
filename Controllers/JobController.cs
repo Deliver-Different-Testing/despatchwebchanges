@@ -42,7 +42,7 @@ public class JobController(
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
     IPodReportService podReportService,
-    BackgroundTaskTracker backgroundTaskTracker,
+    IBackgroundTaskTracker backgroundTaskTracker,
     IServiceScopeFactory serviceScopeFactory
 ) : Controller
 {
