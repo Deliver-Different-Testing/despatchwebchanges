@@ -76,7 +76,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
             if (initialDateTime && initialDateTime.isValid()) {
                 setDateTime(initialDateTime);
             } else {
-                setDateTime(dayjs());
+                setDateTime(dayjs().tz(selectedTimeZone));
             }
         }
     }, [open, initialDateTime]);

@@ -701,5 +701,35 @@ public class SplitJobServiceTests : IAsyncDisposable
         deliveryInput.ToAddress.AddressLine1.Should().Be("99 Destination Ave");
     }
 
+    [Fact]
+    public async Task SplitJobAsync_PickupInputIncludesCourierId()
+    {
+        SeedJob(configure: j => j.UcjbCourierId = 42);
+
+        var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
+
+        _createJobServiceMock.Setup(x => x.CreateJobAsync(
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
+            {
+                capturedInputs.Add(input);
+
+                var jobId = Interlocked.Increment(ref _nextCreatedJobId);
+                using var ctx = new DespatchContext(_options);
+                ctx.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = input.JobNumber });
+                ctx.SaveChanges();
+                return new CreateMinimalTucJobResponse { Success = true, JobId = jobId };
+            });
+
+        var service = CreateService();
+        await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
+
+        var pickupInput = capturedInputs.Single(i => i.JobNumber.EndsWith("A"));
+        pickupInput.AgentCourierId.Should().Be(42, "pickup leg should pass original courier to stored proc");
+
+        var deliveryInput = capturedInputs.Single(i => i.JobNumber.EndsWith("B"));
+        deliveryInput.AgentCourierId.Should().BeNull("delivery leg should not have a courier at creation");
+    }
+
     #endregion
 }

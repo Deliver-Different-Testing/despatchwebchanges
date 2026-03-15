@@ -689,4 +689,98 @@ public class JobRepositoryTimezoneTests
     }
 
     #endregion
+
+    #region Archive CreatedDate Mapping Tests
+
+    /// <summary>
+    /// Verifies that the archive mapping prioritizes CreatedTime over UcjbDate for CreatedDate.
+    /// UcjbDate is the Ready date (date-only, no time component), while CreatedTime is the
+    /// actual creation timestamp. Previously, the mapping used UcjbDate ?? CreatedTime,
+    /// which caused CreatedDate to show 00:00 and change when Ready Time was edited.
+    /// </summary>
+    [Fact]
+    public void ArchiveMapping_CreatedDate_PrioritizesCreatedTimeOverUcjbDate()
+    {
+        // Arrange — compile the archive mapping expression to a delegate
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+
+        var createdTimestamp = new DateTime(2024, 6, 15, 14, 30, 45);
+        var readyDate = new DateTime(2024, 6, 15); // date-only → 00:00
+
+        var archive = new EntityClasses.TucJobArchive
+        {
+            UcjbId = 1,
+            CreatedTime = createdTimestamp,
+            UcjbDate = readyDate
+        };
+
+        // Act
+        var result = mapping(archive);
+
+        // Assert — CreatedDate should use CreatedTime (with time component), not UcjbDate
+        result.CreatedDate.Should().NotBeNull();
+        result.CreatedDate!.Value.DateTime.Should().Be(createdTimestamp,
+            "CreatedDate should use CreatedTime which has the actual creation time, not UcjbDate which is date-only");
+        result.CreatedDate!.Value.Hour.Should().Be(14,
+            "CreatedDate should preserve the hour from CreatedTime");
+        result.CreatedDate!.Value.Minute.Should().Be(30,
+            "CreatedDate should preserve the minute from CreatedTime");
+    }
+
+    /// <summary>
+    /// Verifies that changing UcjbDate (the Ready date) does not affect CreatedDate
+    /// when CreatedTime is set.
+    /// </summary>
+    [Fact]
+    public void ArchiveMapping_CreatedDate_NotAffectedByUcjbDateChange()
+    {
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+
+        var createdTimestamp = new DateTime(2024, 6, 15, 14, 30, 45);
+
+        var archive = new EntityClasses.TucJobArchive
+        {
+            UcjbId = 1,
+            CreatedTime = createdTimestamp,
+            UcjbDate = new DateTime(2024, 6, 15) // original Ready date
+        };
+
+        var resultBefore = mapping(archive);
+
+        // Simulate Ready date being edited
+        archive.UcjbDate = new DateTime(2024, 7, 20);
+        var resultAfter = mapping(archive);
+
+        // Assert — CreatedDate should remain unchanged
+        resultBefore.CreatedDate!.Value.DateTime.Should().Be(createdTimestamp);
+        resultAfter.CreatedDate!.Value.DateTime.Should().Be(createdTimestamp);
+        resultBefore.CreatedDate!.Value.DateTime.Should().Be(resultAfter.CreatedDate!.Value.DateTime,
+            "changing UcjbDate (Ready date) should not affect CreatedDate");
+    }
+
+    /// <summary>
+    /// For legacy records where CreatedTime is null, CreatedDate should fall back to UcjbDate.
+    /// </summary>
+    [Fact]
+    public void ArchiveMapping_CreatedDate_FallsBackToUcjbDate_WhenCreatedTimeIsNull()
+    {
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+
+        var readyDate = new DateTime(2024, 6, 15);
+
+        var archive = new EntityClasses.TucJobArchive
+        {
+            UcjbId = 1,
+            CreatedTime = null,
+            UcjbDate = readyDate
+        };
+
+        var result = mapping(archive);
+
+        result.CreatedDate.Should().NotBeNull();
+        result.CreatedDate!.Value.DateTime.Should().Be(readyDate,
+            "when CreatedTime is null, should fall back to UcjbDate for legacy records");
+    }
+
+    #endregion
 }

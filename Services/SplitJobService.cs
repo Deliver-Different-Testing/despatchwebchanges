@@ -110,7 +110,7 @@ public sealed class SplitJobService(
 
             // Create both child jobs in parallel — each CreateJobAsync uses its own DbContext
             var pickupInput = BuildPickupInputModel(job, pickupJobNumber, validSpeed, meetingPointAddress, userName,
-                currentTenantTime);
+                currentTenantTime, originalCourierId);
             var deliveryInput = BuildDeliveryInputModel(job, deliveryJobNumber, validSpeed, meetingPointAddress,
                 userName, currentTenantTime);
 
@@ -394,11 +394,13 @@ public sealed class SplitJobService(
         Suggestion validSpeed,
         AddressViewModel meetingPointAddress,
         string userName,
-        DateTime currentTenantTime) =>
+        DateTime currentTenantTime,
+        int? originalCourierId) =>
         new()
         {
             JobNumber = jobNumber,
             ClientId = parentJob.UcjbClientId ?? 0,
+            AgentCourierId = originalCourierId,
             SpeedId = validSpeed.Id,
             Speed = validSpeed.Text,
             Amount = parentJob.UcjbAmount ?? 0m,
