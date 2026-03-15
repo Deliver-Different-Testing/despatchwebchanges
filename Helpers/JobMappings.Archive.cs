@@ -24,7 +24,7 @@ public static partial class JobMappings
             ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime)
             : SqlMinDateTime,
         DispatchTime = j.UcjbDispTime,
-        CreatedDate = j.UcjbDate ?? j.CreatedTime,
+        CreatedDate = j.CreatedTime ?? j.UcjbDate,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,
         Void = j.UcjbVoid,
