@@ -10,8 +10,8 @@ RUN apt-get update && apt-get install -y curl
 RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 RUN apt-get install -y nodejs
 
-# Copy nuget.config and csproj for restore layer caching
-COPY nuget.config ./
+# Copy nuget.config, build props, and csproj for restore layer caching
+COPY nuget.config Directory.Build.props Directory.Packages.props ./
 COPY *.csproj ./
 RUN GITLAB_NUGET_USERNAME=${GITLAB_NUGET_USERNAME} \
     GITLAB_NUGET_TOKEN=${GITLAB_NUGET_TOKEN} \
