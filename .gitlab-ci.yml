@@ -48,7 +48,7 @@ test:backend:
       - ~/.nuget/packages
   script:
     - dotnet restore
-    - dotnet test DespatchWeb.Tests --verbosity normal --no-restore
+    - dotnet run --project DespatchWeb.Tests --no-restore
   extends: .test-rules
 
 # Frontend base configuration
