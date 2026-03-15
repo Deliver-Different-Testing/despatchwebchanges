@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace DespatchWeb.Models.RequestModels;
 
 public class SendPodReportRequest

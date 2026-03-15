@@ -1,6 +1,4 @@
-﻿using System;
-using System.Threading.Tasks;
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
@@ -134,7 +132,7 @@ public sealed class AddAgentRecoveryJobService(
                 DisplayInDespatch = false
             };
 
-            // Insert the new job stop
+            // Insert the new job stop — must save to generate UcjbId for downstream references
             await repository.AddEntityAsync(newStopJob);
             await repository.SaveChangesAsync();
 
@@ -152,7 +150,6 @@ public sealed class AddAgentRecoveryJobService(
                 request.IsPrimaryRecoveryAgent);
             await repository.AddEntityAsync(recoveryAgentRecord);
 
-            // Save changes to a database
             await repository.SaveChangesAsync();
 
             return newStopJob.UcjbId;

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DespatchWeb.Models.Dto;
+﻿namespace DespatchWeb.Models.Dto;
 
 public class ManualMessageDto
 {

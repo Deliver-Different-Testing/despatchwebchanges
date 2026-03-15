@@ -1,11 +1,9 @@
-using System;
-using System.Threading.Tasks;
 using DespatchWeb.Models;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Interfaces;
 
-public interface ITenantInfoService
+public interface ITenantInfoService : IDisposable
 {
     DateTime GetCurrentTenantTime();
     DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone);

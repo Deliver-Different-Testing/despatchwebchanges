@@ -9,12 +9,7 @@ using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
-using System;
-using System.Collections.Generic;
 using System.Data.Common;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using DespatchWeb.Extensions;
 
 namespace DespatchWeb.Repositories;
@@ -431,13 +426,11 @@ public class CourierRepository(
 
             // Filter for DG-certified couriers if dgOnly is true
             if (dgOnly)
-            {
                 query = query.Where(c =>
                     c.UccrDangerousGoods == 1
                     && c.DglicenseExpiry != null
                     && c.DglicenseExpiry >= now.AddDays(-1)
                 );
-            }
 
             // Filter for logged-in couriers if loggedInOnly is true
             if (loggedInOnly)
@@ -452,6 +445,7 @@ public class CourierRepository(
 
             var results = await query
                 .OrderBy(c => c.Code)
+                .Take(50)
                 .Select(c => new Suggestion
                 {
                     Id = c.UccrId,
@@ -709,6 +703,10 @@ public class CourierRepository(
                     .ToList();
             }
 
+            var courierLookup = allCourierData
+                .Where(c => c != null)
+                .ToDictionary(c => c.UccrId);
+
             var areas = new List<AreaClearList>();
 
             foreach (var clearList in clearLists)
@@ -757,9 +755,9 @@ public class CourierRepository(
                     Name = clearList.AreaName,
                     Order = clearList.AreaOrder,
                     PercentHeight = 33,
-                    Top = BuildClearListSection(clearListResults, allCourierData, 1),
-                    Middle = BuildClearListSection(clearListResults, allCourierData, 3),
-                    Bottom = BuildClearListSection(clearListResults, allCourierData, 5),
+                    Top = BuildClearListSection(clearListResults, courierLookup, 1),
+                    Middle = BuildClearListSection(clearListResults, courierLookup, 3),
+                    Bottom = BuildClearListSection(clearListResults, courierLookup, 5),
                     TotalRemaining = areaRemainingCounts.GetValueOrDefault(
                         clearList.AreaName?.ToLower() ?? string.Empty,
                         0
@@ -796,13 +794,11 @@ public class CourierRepository(
                 .ToList();
 
             if (unassignedAreas.Count == 0)
-            {
                 return new ClearListViewModel
                 {
                     Areas = areas,
                     Columns = columns
                 };
-            }
 
             if (columns.Count != 0)
             {
@@ -914,7 +910,7 @@ public class CourierRepository(
 
         // Add static separator rows and sort
         return clearListResults
-            .Concat(GetStaticSeparatorRows())
+            .Concat(StaticSeparatorRows)
             .OrderBy(x => x.DisplayOrder)
             .ThenBy(x => x.DisplayOrderDesc)
             .ThenBy(x => x.DisplayOrderAsc)
@@ -1074,7 +1070,6 @@ public class CourierRepository(
         List<int> courierIds, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        var courierIdSet = courierIds.ToHashSet();
 
         return await context.TucJobs
             .Where(job => !job.UcjbJobDone &&
@@ -1082,7 +1077,7 @@ public class CourierRepository(
                           job.UcjbDate >= startDate &&
                           job.UcjbDate < endDate &&
                           job.UcjbCourierId.HasValue &&
-                          courierIdSet.Contains(job.UcjbCourierId.Value))
+                          courierIds.Contains(job.UcjbCourierId.Value))
             .Select(job => new CourierJobSuburbDto
             {
                 CourierId = job.UcjbCourierId.Value,
@@ -1223,37 +1218,33 @@ public class CourierRepository(
     }
 
 
-    private static List<ClearListResult> GetStaticSeparatorRows()
-    {
-        return
-        [
-            new ClearListResult
-            {
-                CourierId = null,
-                Code = "----",
-                DisplayOrder = 2,
-                Deliver = "---------",
-                DisplayOrderDesc = null,
-                DisplayOrderAsc = null,
-                AutoDespatch = null
-            },
-
-            new ClearListResult
-            {
-                CourierId = null,
-                Code = "----",
-                DisplayOrder = 4,
-                Deliver = "---------",
-                DisplayOrderDesc = null,
-                DisplayOrderAsc = null,
-                AutoDespatch = null
-            }
-        ];
-    }
+    private static readonly List<ClearListResult> StaticSeparatorRows =
+    [
+        new()
+        {
+            CourierId = null,
+            Code = "----",
+            DisplayOrder = 2,
+            Deliver = "---------",
+            DisplayOrderDesc = null,
+            DisplayOrderAsc = null,
+            AutoDespatch = null
+        },
+        new()
+        {
+            CourierId = null,
+            Code = "----",
+            DisplayOrder = 4,
+            Deliver = "---------",
+            DisplayOrderDesc = null,
+            DisplayOrderAsc = null,
+            AutoDespatch = null
+        }
+    ];
 
     private static List<ClearListSection> BuildClearListSection(
         List<ClearListResult> data,
-        IReadOnlyList<CourierClearListDto> allCouriers,
+        Dictionary<int, CourierClearListDto> courierLookup,
         int displayOrder
     )
     {
@@ -1263,11 +1254,13 @@ public class CourierRepository(
             .Where(c => c.DisplayOrder == displayOrder)
             .Select(x =>
             {
-                var courier = allCouriers.FirstOrDefault(c => c?.UccrId == x.CourierId);
+                var courier = x.CourierId.HasValue
+                    ? courierLookup.GetValueOrDefault(x.CourierId.Value)
+                    : null;
                 return new ClearListSection
                 {
                     CourierNumber = x.Code,
-                    CourierData = BuildCourierData(x, allCouriers),
+                    CourierData = BuildCourierData(x, courierLookup),
                     Destinations = BuildDestinations(x.Deliver),
                     JobCount = courier?.JobCount ?? 0
                 };
@@ -1277,13 +1270,12 @@ public class CourierRepository(
 
     private static CourierData BuildCourierData(
         ClearListResult result,
-        IReadOnlyList<CourierClearListDto> allCouriers
+        Dictionary<int, CourierClearListDto> courierLookup
     )
     {
-        if (allCouriers == null)
-            return new CourierData();
-
-        var courier = allCouriers.FirstOrDefault(c => c?.UccrId == result?.CourierId);
+        var courier = result?.CourierId.HasValue == true
+            ? courierLookup.GetValueOrDefault(result.CourierId.Value)
+            : null;
 
         return new CourierData
         {

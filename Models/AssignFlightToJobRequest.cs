@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-
 namespace DespatchWeb.Models;
 
 public class AssignFlightToJobRequest

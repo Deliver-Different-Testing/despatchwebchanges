@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace DespatchWeb.Models.Response;
+﻿namespace DespatchWeb.Models.Response;
 
 public class AwsUploadResult
 {

@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="DespatchWeb.csproj" />
+  <Project Path="DespatchWeb.Tests/DespatchWeb.Tests.csproj" />
+  <Properties Name="ExtensibilityGlobals" Scope="PostLoad">
+    <Property Name="LessCompiler" Value="100a464d-538f-4881-8860-d78d8b8f32ba" />
+  </Properties>
+</Solution>

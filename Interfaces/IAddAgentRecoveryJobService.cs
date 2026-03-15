@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using DespatchWeb.Models.RequestModels;
+﻿using DespatchWeb.Models.RequestModels;
 
 namespace DespatchWeb.Interfaces;
 

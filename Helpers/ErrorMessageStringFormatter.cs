@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DespatchWeb.Helpers;
+﻿namespace DespatchWeb.Helpers;
 
 public static class ErrorMessageStringFormatter
 {

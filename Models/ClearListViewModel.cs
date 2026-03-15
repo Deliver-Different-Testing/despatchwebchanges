@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace DespatchWeb.Models;
+﻿namespace DespatchWeb.Models;
 
 public class ClearListViewModel
 {

@@ -1,5 +1,3 @@
-using System;
-
 namespace DespatchWeb.Interfaces;
 
 public interface ITenantClock

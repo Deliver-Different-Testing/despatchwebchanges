@@ -1,5 +1,4 @@
-﻿using System;
-using DespatchWeb.Models.MessageModels;
+﻿using DespatchWeb.Models.MessageModels;
 
 namespace DespatchWeb.Models;
 

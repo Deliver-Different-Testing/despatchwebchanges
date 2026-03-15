@@ -1,5 +1,3 @@
-using System;
-
 namespace DespatchWeb.Models;
 
 public readonly record struct S3FileInfo

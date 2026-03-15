@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace DespatchWeb.Helpers;
 
 public static class AddressFormatter

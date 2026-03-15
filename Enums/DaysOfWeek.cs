@@ -1,5 +1,3 @@
-using System;
-
 namespace DespatchWeb.Enums;
 
 [Flags]

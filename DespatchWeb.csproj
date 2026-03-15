@@ -3,7 +3,6 @@
     <Exec Command="npm run build" WorkingDirectory="$(ProjectDir)" />
   </Target>
   <PropertyGroup Label="Globals">
-    <LangVersion>14</LangVersion>
       <Nullable>disable</Nullable>
   </PropertyGroup>
   <ItemGroup>
@@ -15,10 +14,6 @@
 
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
     <TypeScriptTarget>ES2021</TypeScriptTarget>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
 
   <!-- Exclude test project from compilation -->
@@ -295,35 +290,33 @@
     <None Include="wwwroot\css\udispatch.less" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Anthropic" Version="12.8.0" />
-    <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" Version="4.0.1" />
-    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" Version="9.0.0" />
-      <PackageReference Include="AWSSDK.S3" Version="4.0.19"/>
-      <PackageReference Include="AWSSDK.SecurityToken" Version="4.0.5.12"/>
-      <PackageReference Include="AWSSDK.SSO" Version="4.0.2.16"/>
-    <PackageReference Include="Dapper" Version="2.1.72"/>
-    <PackageReference Include="ExcelDataReader" Version="3.8.0" />
-    <PackageReference Include="ExcelDataReader.DataSet" Version="3.8.0" />
-      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.5"/>
-      <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.5"/>
-      <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.5"/>
-    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
-    <PackageReference Include="System.Linq.Async" Version="7.0.0" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.1" />
-      <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.5"/>
-      <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.5"/>
-    <PackageReference Include="TimeZoneConverter" Version="7.2.0" />
-      <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers" Version="4.14.0">
+    <PackageReference Include="Amazon.AspNetCore.DataProtection.SSM" />
+    <PackageReference Include="Anthropic" />
+    <PackageReference Include="AspNetCore.HealthChecks.SqlServer" />
+    <PackageReference Include="AWSSDK.S3" />
+    <PackageReference Include="AWSSDK.SecurityToken" />
+    <PackageReference Include="AWSSDK.SSO" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="DeliverDifferentReporting" />
+    <PackageReference Include="ExcelDataReader" />
+    <PackageReference Include="ExcelDataReader.DataSet" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
+    <PackageReference Include="Microsoft.CodeAnalysis.BannedApiAnalyzers">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="System.Linq.Async" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+    <PackageReference Include="TimeZoneConverter" />
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="DeliverDifferentReporting" Version="1.1.0" />
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />

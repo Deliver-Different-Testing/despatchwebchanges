@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace DespatchWeb.EntityClasses;
+﻿namespace DespatchWeb.EntityClasses;
 
 public partial class TucJob
 {

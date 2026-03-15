@@ -1,5 +1,4 @@
-﻿using System;
-using Serilog;
+﻿using Serilog;
 using TimeZoneConverter;
 
 namespace DespatchWeb.Helpers;

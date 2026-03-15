@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-
-namespace DespatchWeb.Interfaces;
+﻿namespace DespatchWeb.Interfaces;
 
 public interface IDispatchJobService
 {

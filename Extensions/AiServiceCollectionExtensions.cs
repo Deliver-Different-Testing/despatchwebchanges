@@ -1,7 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace DespatchWeb.Extensions;
 

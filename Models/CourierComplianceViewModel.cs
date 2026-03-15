@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace DespatchWeb.Models;
+﻿namespace DespatchWeb.Models;
 
 public class CourierComplianceViewModel
 {

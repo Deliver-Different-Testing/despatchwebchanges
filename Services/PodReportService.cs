@@ -1,17 +1,10 @@
 #nullable enable
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using DeliverDifferentReporting.Documents;
 using DeliverDifferentReporting.Models;
 using DeliverDifferentReporting.Services;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF;
 using QuestPDF.Fluent;

@@ -1,13 +1,8 @@
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 using Amazon.S3;
 using Amazon.S3.Model;
 using DespatchWeb.Extensions;
@@ -17,7 +12,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using ExcelDataReader;
-using Microsoft.AspNetCore.Http;
 using Serilog;
 
 namespace DespatchWeb.Services;
@@ -31,6 +25,24 @@ public sealed class JobReportService(
     ITenantClock clock,
     IAmazonS3 s3Client) : IJobReportService
 {
+    private static readonly string[] ValidFileExtensions = [".xls", ".xlsx", ".csv"];
+
+    private static readonly JsonSerializerOptions BulkPriceSerializeOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private static readonly JsonSerializerOptions BulkPriceDeserializeOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
     #region POD Search Export
 
     /// <summary>
@@ -273,25 +285,9 @@ public sealed class JobReportService(
             rows.Add(dict);
         }
 
-        var options = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
+        var sResult = JsonSerializer.Serialize(rows, BulkPriceSerializeOptions).Replace("\"\"", "null");
 
-        var sResult = JsonSerializer.Serialize(rows, options).Replace("\"\"", "null");
-
-        var deserializeOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            NumberHandling = JsonNumberHandling.AllowReadingFromString | JsonNumberHandling.AllowNamedFloatingPointLiterals,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
-
-        return JsonSerializer.Deserialize<List<JobManualPriceModel>>(sResult, deserializeOptions) ?? [];
+        return JsonSerializer.Deserialize<List<JobManualPriceModel>>(sResult, BulkPriceDeserializeOptions) ?? [];
     }
 
     /// <summary>
@@ -393,9 +389,8 @@ public sealed class JobReportService(
         if (file == null || string.IsNullOrWhiteSpace(file.FileName))
             throw new ArgumentException("No file provided.");
 
-        var validExtensions = new[] { ".xls", ".xlsx", ".csv" };
         var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (!validExtensions.Contains(fileExtension))
+        if (!ValidFileExtensions.Contains(fileExtension))
             throw new ArgumentException("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.");
     }
 
@@ -423,7 +418,7 @@ public sealed class JobReportService(
     {
         if (string.IsNullOrEmpty(filename)) return "Unknown";
 
-        var invalidChars = Path.GetInvalidFileNameChars();
+        var invalidChars = new HashSet<char>(Path.GetInvalidFileNameChars());
         var sanitized = new string(filename.Where(c => !invalidChars.Contains(c)).ToArray());
 
         if (sanitized.Length > 50)
