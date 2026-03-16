@@ -122,6 +122,7 @@ public sealed class SplitJobService(
 
             // 1D: Load both created child jobs in one query
             var createdJobs = await context.TucJobs
+                .AsTracking()
                 .Where(j => j.UcjbId == pickupResult.JobId || j.UcjbId == deliveryResult.JobId)
                 .ToListAsync();
             
