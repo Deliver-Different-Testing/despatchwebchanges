@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class InterCourierChargeViewModel
+public sealed class InterCourierChargeViewModel
 {
     public int FromCourierId { get; init; }
     public int ToCourierId { get; init; }

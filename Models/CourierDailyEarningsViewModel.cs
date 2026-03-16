@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class CourierDailyEarningsViewModel
+public sealed class CourierDailyEarningsViewModel
 {
     public int CourierId { get; init; }
     public string Name { get; init; }

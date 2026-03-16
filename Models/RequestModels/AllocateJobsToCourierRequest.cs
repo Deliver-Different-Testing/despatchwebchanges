@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class AllocateJobsToCourierRequest
+public sealed class AllocateJobsToCourierRequest
 {
     public int CourierId { get; init; }
     public List<int> JobIds { get; init; }

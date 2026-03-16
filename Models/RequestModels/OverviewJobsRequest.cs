@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class OverviewJobsRequest : BaseOverviewRequest
+public sealed class OverviewJobsRequest : BaseOverviewRequest
 {
     public int StatusGroup { get; init; } = 1;
     public int Page { get; init; } = 1;
@@ -10,7 +10,7 @@ public class OverviewJobsRequest : BaseOverviewRequest
     public string OrderDirection { get; init; } = "asc";
 }
 
-public class OpenJobsRequest : BaseOverviewRequest;
+public sealed class OpenJobsRequest : BaseOverviewRequest;
 
 public class BaseOverviewRequest
 {

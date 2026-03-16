@@ -137,7 +137,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     const [selectedRangeOption, setSelectedRangeOption] = useState<DateRangeOption>('all_time');
     const [startDate, setStartDate] = useState<Dayjs>(dayjs().tz(ianaTimeZone));
     const [endDate, setEndDate] = useState<Dayjs>(dayjs().tz(ianaTimeZone).add(24, 'hours'));
-    const [selectedMinsOption, setSelectedMinsOption] = useState<number>(300); // 5 mins default
+    const [selectedMinsOption, setSelectedMinsOption] = useState<number>(10800); // 3 hours default
 
     const minsOptions = getMinsSelectionOptions(300, 300, 180);
     const minsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -431,8 +431,13 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                     value={startDate}
                                     onChange={(newValue) => newValue && setStartDate(newValue)}
                                     format="DD/MM/YYYY"
+                                    enableAccessibleFieldDOMStructure={false}
                                     slotProps={{
-                                        textField: {size: 'small', fullWidth: true},
+                                        textField: {
+                                            size: 'small',
+                                            fullWidth: true,
+                                            onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
+                                        },
                                     }}
                                 />
                                 <DatePicker
@@ -440,8 +445,13 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                     value={endDate}
                                     onChange={(newValue) => newValue && setEndDate(newValue)}
                                     format="DD/MM/YYYY"
+                                    enableAccessibleFieldDOMStructure={false}
                                     slotProps={{
-                                        textField: {size: 'small', fullWidth: true},
+                                        textField: {
+                                            size: 'small',
+                                            fullWidth: true,
+                                            onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
+                                        },
                                     }}
                                 />
                             </Box>

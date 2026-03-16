@@ -3,7 +3,7 @@
 namespace DespatchWeb.Models.FlightStats;
 
 
-public class FlightStatusResponse
+public sealed class FlightStatusResponse
 {
     [JsonPropertyName("request")]
     public InterpretedRequest Request { get; init; }
@@ -24,7 +24,7 @@ public class FlightStatusResponse
     public string Schema { get; init; }
 }
 
-public class InterpretedRequest
+public sealed class InterpretedRequest
 {
     [JsonPropertyName("carrier")]
     public string Carrier { get; init; }
@@ -57,7 +57,7 @@ public class InterpretedRequest
     public string Url { get; init; }
 }
 
-public class ApiResponseError
+public sealed class ApiResponseError
 {
     [JsonPropertyName("errorId")]
     public string ErrorId { get; init; }
@@ -72,7 +72,7 @@ public class ApiResponseError
     public int HttpStatusCode { get; init; }
 }
 
-public class AppendixWithWrapper
+public sealed class AppendixWithWrapper
 {
     [JsonPropertyName("airlines")]
     public List<Airline> Airlines { get; init; }
@@ -84,7 +84,7 @@ public class AppendixWithWrapper
     public List<Equipment> Equipments { get; init; }
 }
 
-public class FlightStatus
+public sealed class FlightStatus
 {
     [JsonPropertyName("flightId")]
     public long FlightId { get; init; }
@@ -171,7 +171,7 @@ public class FlightStatus
     public DateTime? LastDataAcquiredDate { get; init; }
 }
 
-public class DateUtcAndLocal
+public sealed class DateUtcAndLocal
 {
     [JsonPropertyName("dateUtc")]
     public DateTime? DateUtc { get; init; }
@@ -180,7 +180,7 @@ public class DateUtcAndLocal
     public DateTime? DateLocal { get; init; }
 }
 
-public class Schedule
+public sealed class Schedule
 {
     [JsonPropertyName("flightType")]
     public string FlightType { get; init; }
@@ -192,7 +192,7 @@ public class Schedule
     public List<string> Restrictions { get; init; }
 }
 
-public class OperationalTimes
+public sealed class OperationalTimes
 {
     [JsonPropertyName("publishedDeparture")]
     public DateUtcAndLocal PublishedDeparture { get; init; }
@@ -237,7 +237,7 @@ public class OperationalTimes
     public DateUtcAndLocal ActualRunwayArrival { get; init; }
 }
 
-public class Codeshare
+public sealed class Codeshare
 {
     [JsonPropertyName("fsCode")]
     public string FsCode { get; init; }
@@ -249,7 +249,7 @@ public class Codeshare
     public string Relationship { get; init; }
 }
 
-public class Delays
+public sealed class Delays
 {
     [JsonPropertyName("departureGateDelayMinutes")]
     public int? DepartureGateDelayMinutes { get; init; }
@@ -264,7 +264,7 @@ public class Delays
     public int? ArrivalRunwayDelayMinutes { get; init; }
 }
 
-public class FlightDurations
+public sealed class FlightDurations
 {
     [JsonPropertyName("scheduledBlockMinutes")]
     public int? ScheduledBlockMinutes { get; init; }
@@ -291,7 +291,7 @@ public class FlightDurations
     public int? TaxiInMinutes { get; init; }
 }
 
-public class AirportResources
+public sealed class AirportResources
 {
     [JsonPropertyName("departureTerminal")]
     public string DepartureTerminal { get; init; }
@@ -309,7 +309,7 @@ public class AirportResources
     public string Baggage { get; init; }
 }
 
-public class FlightEquipment
+public sealed class FlightEquipment
 {
     [JsonPropertyName("scheduledEquipmentIataCode")]
     public string ScheduledEquipmentIataCode { get; init; }
@@ -321,7 +321,7 @@ public class FlightEquipment
     public string TailNumber { get; init; }
 }
 
-public class FlightStatusUpdate
+public sealed class FlightStatusUpdate
 {
     [JsonPropertyName("updatedAt")]
     public DateTime? UpdatedAt { get; init; }
@@ -339,7 +339,7 @@ public class FlightStatusUpdate
     public string OldValue { get; init; }
 }
 
-public class IrregularOperation
+public sealed class IrregularOperation
 {
     [JsonPropertyName("type")]
     public string Type { get; init; }
@@ -354,7 +354,7 @@ public class IrregularOperation
     public DateTime? DateLocal { get; init; }
 }
 
-public class ConfirmedIncident
+public sealed class ConfirmedIncident
 {
     [JsonPropertyName("message")]
     public string Message { get; init; }

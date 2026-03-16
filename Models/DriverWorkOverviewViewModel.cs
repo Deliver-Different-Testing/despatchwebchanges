@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class DriverWorkOverviewViewModel
+public sealed class DriverWorkOverviewViewModel
 {
     public int CourierId { get; init; }
     public string Name { get; init; }

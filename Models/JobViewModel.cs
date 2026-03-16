@@ -89,7 +89,7 @@ public class JobViewModel : DispatchJobViewModel
     public bool IsFlightAssigned { get; set; }
 }
 
-public class ParcelDimensions
+public sealed class ParcelDimensions
 {
     public int? ItemId { get; set; }
     public string ItemName { get; set; }
@@ -99,7 +99,7 @@ public class ParcelDimensions
     public string Barcode { get; set; }
 }
 
-public class AssignedFlight
+public sealed class AssignedFlight
 {
     public string FlightNumber { get; set; }
     public DateTimeOffset? ExpectedDeparture { get; set; }
@@ -110,7 +110,7 @@ public class AssignedFlight
     public List<FlightSegmentViewModel> FlightSegments { get; set; } = new();
 }
 
-public class PalletInfo
+public sealed class PalletInfo
 {
     public int Id { get; set; }
     public int Quantity { get; set; }
@@ -172,12 +172,12 @@ public class AddressViewModel
         );
 }
 
-public class EditAddressDialogViewModel : AddressViewModel
+public sealed class EditAddressDialogViewModel : AddressViewModel
 {
     public ShipmentDetails ShipmentDetails { get; set; }
 }
 
-public class ShipmentDetails
+public sealed class ShipmentDetails
 {
     public string ContactName { get; set; }
     public string ContactMobile { get; set; }
@@ -195,35 +195,35 @@ public class Suggestion
     public string Text { get; set; }
 }
 
-public class MultiSuggestion : Suggestion
+public sealed class MultiSuggestion : Suggestion
 {
     public bool Selected { get; set; }
     public bool IsBulkJob { get; set; }
     public bool IsArchived { get; set; }
 }
 
-public class AirlineSuggestion : Suggestion
+public sealed class AirlineSuggestion : Suggestion
 {
     public string FullAirlineName { get; set; }
 }
 
-public class AirportSuggestion : Suggestion
+public sealed class AirportSuggestion : Suggestion
 {
     public string Timezone { get; set; }
 }
 
-public class TimeZoneSuggestion : Suggestion
+public sealed class TimeZoneSuggestion : Suggestion
 {
     public string TimeZoneIana { get; set; }
 }
 
-public class NoteTypeViewModel : Suggestion
+public sealed class NoteTypeViewModel : Suggestion
 {
     public bool IsPublic { get; set; }
     public string Description { get; set; }
 }
 
-public class ReadTrackerInfoViewModel
+public sealed class ReadTrackerInfoViewModel
 {
     public bool HasBeenRead { get; set; }
     public string ReadBy { get; set; }

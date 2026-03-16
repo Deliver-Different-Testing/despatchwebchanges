@@ -13,9 +13,7 @@ class ToastrService implements angular.IServiceProvider {
 
     constructor(
         private $mdToast: angular.material.IToastService,
-    ) {
-        console.log("Toastr service initialized");
-    }
+    ) {}
 
     $get() {
         return this;

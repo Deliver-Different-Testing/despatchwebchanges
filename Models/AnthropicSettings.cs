@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class AnthropicSettings
+public sealed class AnthropicSettings
 {
     public string Model { get; init; } = "claude-sonnet-4-20250514";
     public int MaxTokensPerRequest { get; init; } = 4096;

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Response;
 
-public class MegaMapResponse
+public sealed record MegaMapResponse
 {
     public int JobId { get; init; }
     public string JobNumber { get; init; }
@@ -13,9 +13,9 @@ public class MegaMapResponse
     public AssignedFlight FlightInfo { get; init; }
 }
 
-public class CourierLocation
+public sealed record CourierLocation
 {
     public int CourierId { get; init; }
     public string CourierName { get; init; }
-    public Coordinates Coordinates { get; init; }
+    public Coordinates? Coordinates { get; init; }
 }

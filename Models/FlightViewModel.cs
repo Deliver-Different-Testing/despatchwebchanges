@@ -2,7 +2,7 @@ using DespatchWeb.Models.FlightStats;
 
 namespace DespatchWeb.Models;
 
-public class FlightViewModel
+public sealed class FlightViewModel
 {
     public string Airline { get; init; }
     public string AirlineCode { get; init; }
@@ -27,7 +27,7 @@ public class FlightViewModel
     public string ArrivalTimeZone { get; init; }
 }
 
-public class FlightSegmentViewModel : ScheduledFlight
+public sealed class FlightSegmentViewModel : ScheduledFlight
 {
     public new DateTimeOffset DepartureTime { get; set; }
     public new DateTimeOffset ArrivalTime { get; set; }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class JobCreateViewModel
+public sealed class JobCreateViewModel
 {
     public int ClientId { get; init; }
     public string DeliverToContact { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class PotentialCouriersViewModel
+public sealed class PotentialCouriersViewModel
 {
     public int CourierId { get; init; }
     public string Code { get; init; }

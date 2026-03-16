@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class ClientJobsReportRequest
+public sealed class ClientJobsReportRequest
 {
     public DateTimeOffset StartDate { get; init; }
     public DateTimeOffset EndDate { get; init; }

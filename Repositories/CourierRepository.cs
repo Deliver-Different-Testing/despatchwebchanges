@@ -574,13 +574,16 @@ public class CourierRepository(
             var areaFiltersTask = GetAreaFiltersAsync(clearLists, cancellationToken);
             var displayOrdersTask = GetDisplayOrdersAsync(courierIds, cancellationToken);
             var jobsTask = GetAllJobsAsync(courierIds, jobStartDate, jobEndDate, cancellationToken);
+            // Full-day query for courier status — prebooked jobs must always be counted
+            var courierStatusJobsTask = GetAllJobsAsync(courierIds, currentDateOnly, currentDateOnly.AddDays(1), cancellationToken);
 
-            await Task.WhenAll(polygonMappingsTask, areaFiltersTask, displayOrdersTask, jobsTask);
+            await Task.WhenAll(polygonMappingsTask, areaFiltersTask, displayOrdersTask, jobsTask, courierStatusJobsTask);
 
             var allValidCourierGpsIds = polygonMappingsTask.Result;
             var areaFilterDict = areaFiltersTask.Result;
             var displayOrders = displayOrdersTask.Result;
             var allJobs = jobsTask.Result;
+            var courierStatusJobs = courierStatusJobsTask.Result;
 
             Log.Information("Wave 2 complete: {PolygonCount} polygon mappings, {JobCount} jobs",
                 allValidCourierGpsIds.Count, allJobs.Count);
@@ -610,8 +613,8 @@ public class CourierRepository(
                 .GroupBy(c => isUsTenant ? c.ZipPolygonId!.Value : c.PolygonId!.Value)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // Process job counts
-            var jobCountsByCourier = allJobs
+            // Process job counts — use full-day jobs so prebooked work is always counted
+            var jobCountsByCourier = courierStatusJobs
                 .GroupBy(j => j.CourierId)
                 .ToDictionary(g => g.Key, g => g.Count());
 

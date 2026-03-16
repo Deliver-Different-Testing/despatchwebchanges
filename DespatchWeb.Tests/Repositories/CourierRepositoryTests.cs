@@ -437,21 +437,21 @@ public class CourierRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task GetClearListsAsync_DateFilterIncludesJobs_CourierStaysInOriginalSection()
+    public async Task GetClearListsAsync_NarrowTimeFilter_CourierWithTodaysJobStaysInOriginalSection()
     {
-        // Arrange - courier has Status=5 and jobs on Jan 20
-        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 20));
+        // Arrange - courier has Status=5 and a prebooked job later today (Jan 15, 16:00)
+        await SetupClearListWithCourierAndPolygon(courierStatus: 5, jobDate: new DateTime(2024, 1, 15, 16, 0, 0));
         var repository = CreateRepository();
 
-        // Act - widen date filter to include the job date
-        var startDate = new DateTimeOffset(2024, 1, 19, 0, 0, 0, TimeSpan.Zero);
-        var endDate = new DateTimeOffset(2024, 1, 21, 0, 0, 0, TimeSpan.Zero);
+        // Act - narrow time filter (10:00-10:05) that excludes the 16:00 job
+        var startDate = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
+        var endDate = new DateTimeOffset(2024, 1, 15, 10, 5, 0, TimeSpan.Zero);
         var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
-        // Assert - courier should stay in Bottom (5) since jobs are within filter
+        // Assert - courier should stay in Bottom (5) because the full-day query still finds their job
         result.Areas.Should().HaveCount(1);
-        result.Areas[0].Bottom.Should().ContainSingle("courier has jobs in widened date range so should remain in Bottom/orange");
-        result.Areas[0].Middle.Should().BeEmpty("courier should not move to Middle when date filter includes their jobs");
+        result.Areas[0].Bottom.Should().ContainSingle("courier has a prebooked job today so should remain in Bottom/orange");
+        result.Areas[0].Middle.Should().BeEmpty("courier should not move to Middle when they have jobs today");
     }
 
     #endregion

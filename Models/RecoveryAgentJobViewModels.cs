@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class RecoveryAgentJobViewModel
+public sealed class RecoveryAgentJobViewModel
 {
     public int JobId { get; init; }
     public string JobNumber { get; init; }
@@ -14,14 +14,14 @@ public class RecoveryAgentJobViewModel
     public IEnumerable<RecoveryJobViewModel> RecoveryJobs { get; init; }
 }
 
-public class RecoveryJobViewModel
+public sealed class RecoveryJobViewModel
 {
     public int JobId { get; init; }
     public Suggestion AssignedAgent { get; init; }
     public IEnumerable<RecoveryAgentViewModel> RecoveryAgents { get; init; }
 }
 
-public class RecoveryAgentViewModel
+public sealed class RecoveryAgentViewModel
 {
     public int RecoveryId { get; init; }
     public string AgentName { get; init; }

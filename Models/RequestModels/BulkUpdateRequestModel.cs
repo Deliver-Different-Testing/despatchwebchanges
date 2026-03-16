@@ -5,7 +5,7 @@ public class BulkUpdateRequestModel
     public List<int> JobIds { get; init; }
 }
 
-public class BulkReadUpdateRequestModel : BulkUpdateRequestModel
+public sealed class BulkReadUpdateRequestModel : BulkUpdateRequestModel
 {
     public bool ShouldMarkAsRead { get; init; }
 }

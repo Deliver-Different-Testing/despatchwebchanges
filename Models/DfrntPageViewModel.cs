@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class DfrntPageViewModel
+public sealed class DfrntPageViewModel
 {
     public int Id { get; init; }
     public string Name { get; init; }

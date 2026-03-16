@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Accessorial;
 
-public record JobAccessorialChargeDto
+public sealed record JobAccessorialChargeDto
 {
     public int JobAccessorialChargeId { get; init; }
     public int JobId { get; init; }

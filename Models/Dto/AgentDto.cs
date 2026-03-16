@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class AgentDto
+public sealed record AgentDto
 {
     public int AgentId { get; init; }
     public string AgentName { get; init; }

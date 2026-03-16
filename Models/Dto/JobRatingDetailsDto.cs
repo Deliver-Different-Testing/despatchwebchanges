@@ -2,7 +2,7 @@ using DespatchWeb.Enums;
 
 namespace DespatchWeb.Models.Dto;
 
-public class JobRatingDetailsDto
+public record JobRatingDetailsDto
 {
     public int JobId { get; init; }
     public int? ClientId { get; init; }
@@ -72,7 +72,7 @@ public class JobRatingDetailsDto
 }
 
 
-public class JobRatingDetailsDtoNz : JobRatingDetailsDto
+public sealed record JobRatingDetailsDtoNz : JobRatingDetailsDto
 {
     // Address Details for From location
     public string FromCompanyName { get; init; }
@@ -95,7 +95,7 @@ public class JobRatingDetailsDtoNz : JobRatingDetailsDto
     public string ToCountryCode { get; init; }
 
     // Package Details
-    public List<PackageDetailsDto> Packages { get; init; } = [];
+    public IReadOnlyList<PackageDetailsDto> Packages { get; init; } = [];
 
     // Truck-specific properties
     public bool? PickupTailLift { get; init; }
@@ -109,7 +109,7 @@ public class JobRatingDetailsDtoNz : JobRatingDetailsDto
     public bool IsTruck { get; init; }
 }
 
-public class PackageDetailsDto
+public sealed record PackageDetailsDto
 {
     public string Name { get; init; }
     public double? Length { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class CourierClearListDto
+public sealed class CourierClearListDto
 {
     public int UccrId { get; init; }
     public string Code { get; init; }
@@ -20,7 +20,7 @@ public class CourierClearListDto
     public int JobCount { get; set; }
 }
 
-public class CourierJobSuburbDto
+public sealed record CourierJobSuburbDto
 {
     public int CourierId { get; init; }
     public int? ToSuburbId { get; init; }
@@ -28,7 +28,7 @@ public class CourierJobSuburbDto
     public decimal? DeliveryLongitude { get; init; }
 }
 
-public class SuburbClearListAreaDto
+public sealed record SuburbClearListAreaDto
 {
     public int SuburbId { get; init; }
     public int ClearListAreaId { get; init; }
@@ -36,7 +36,7 @@ public class SuburbClearListAreaDto
     public int? ChannelId { get; init; }
 }
 
-public class PolygonChannelMapping
+public sealed record PolygonChannelMapping
 {
     public int ClearListAreaId { get; init; }
     public int? PolygonId { get; init; }

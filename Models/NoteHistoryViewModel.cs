@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class NoteHistoryViewModel
+public sealed class NoteHistoryViewModel
 {
     public int NoteHistoryId { get; init; }
     public int NoteId { get; init; }

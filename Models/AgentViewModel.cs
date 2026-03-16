@@ -11,7 +11,7 @@ public class AgentViewModel
     public string AgentEmail { get; init; }
 }
 
-public class AgentInfoDialogViewModel: AgentViewModel
+public sealed class AgentInfoDialogViewModel: AgentViewModel
 {
     public List<AirportViewModel> Airports { get; init; }
     public AddressViewModel Address { get; init; }

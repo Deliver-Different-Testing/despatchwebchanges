@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models.FlightStats;
 
-public class CreateAlertResponse
+public sealed class CreateAlertResponse
 {
     [JsonPropertyName("request")] public Request Request { get; init; }
     
@@ -15,7 +15,7 @@ public class CreateAlertResponse
     [JsonPropertyName("appendix")] public Appendix Appendix { get; init; }
 }
 
-public class ApiError
+public sealed class ApiError
 {
     [JsonPropertyName("errorId")]
     public string ErrorId { get; init; }
@@ -24,7 +24,7 @@ public class ApiError
     public string ErrorMessage { get; init; }
 }
 
-public class AlertCapabilities
+public sealed class AlertCapabilities
 {
     [JsonPropertyName("baggage")] public bool Baggage { get; init; }
 
@@ -41,12 +41,12 @@ public class AlertCapabilities
     [JsonPropertyName("runwayArrival")] public bool RunwayArrival { get; init; }
 }
 
-public class Rule
+public sealed class Rule
 {
     [JsonPropertyName("id")] public string Id { get; init; }
 }
 
-public class RuleEvent
+public sealed class RuleEvent
 {
     [JsonPropertyName("type")] public string Type { get; init; }
 

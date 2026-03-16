@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class JobRateRequest
+public sealed class JobRateRequest
 {
     public int SpeedId { get; set; }
     public decimal? PickupLat { get; set; }
@@ -15,7 +15,7 @@ public class JobRateRequest
     public bool? IsFlightSpeed { get; set; }
 }
 
-public class JobRateResult
+public sealed class JobRateResult
 {
     public double TotalMiles { get; set; }
     public double FromMiles { get; set; }

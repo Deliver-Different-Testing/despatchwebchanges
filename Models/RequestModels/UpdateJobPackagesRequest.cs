@@ -1,11 +1,11 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class UpdateJobPackagesRequest : UpdateJobPackagesBase
+public sealed class UpdateJobPackagesRequest : UpdateJobPackagesBase
 {
     public int JobId { get; init; }
 }
 
-public class UpdateBulkJobPackagesRequest : UpdateJobPackagesBase
+public sealed class UpdateBulkJobPackagesRequest : UpdateJobPackagesBase
 {
     public int BulkJobId { get; init; }
 }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class EventGroupViewModel
+public sealed class EventGroupViewModel
 {
     public int EventTypeGroupTypeGroupId { get; init; }
     public Suggestion EventType { get; init; }

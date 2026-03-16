@@ -596,10 +596,10 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async updateJobDetail(
         jobId: number,
-        field: JobProperty | string,
+        field: JobProperty | string, // string needed for dynamic field names from edit dialogs
         value: any,
         isRecurring: boolean,
-        timezone?: string // For dates
+        timezone?: string
     ): Promise<any> {
         console.debug("Starting updateJobDetail:", {
             jobId,
@@ -811,28 +811,14 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async getAllTasks(filters?: TaskTableFiltersRequest): Promise<ITask[]> {
         try {
-            const params: any = {};
-
-            if (filters) {
-                if (filters.jobId) params.jobId = filters.jobId;
-                if (filters.staffId) params.staffId = filters.staffId;
-                if (filters.courierId) params.courierId = filters.courierId;
-                if (filters.eventTypeId) params.eventTypeId = filters.eventTypeId;
-                if (filters.searchText) params.searchText = filters.searchText;
-                if (filters.date) params.date = filters.date;
-                if (filters.showCompleted !== undefined) params.showCompleted = filters.showCompleted;
-                if (filters.orderBy) params.orderBy = filters.orderBy;
-                if (filters.orderDirection) params.orderDirection = filters.orderDirection;
-                if (filters.startDate) params.startDate = filters.startDate;
-                if (filters.endDate) params.endDate = filters.endDate;
-
-                if (Object.keys(params).length > 0) {
-                    console.debug(`Query params:`, params);
-                }
-            }
+            const params = filters
+                ? Object.fromEntries(
+                    Object.entries(filters).filter(([_, v]) => v !== undefined && v !== null)
+                )
+                : {};
 
             const response = await this.$http.get<ITaskDto[]>('/Task/GetAllTasks', {
-                params: params
+                params
             });
 
             return response.data.map(transformTaskDTO);
@@ -896,7 +882,9 @@ class DispatchCoreService implements angular.IServiceProvider {
     }
 
     async reSendJobs(jobIds: number[]): Promise<any> {
-        const response = await this.$http.post(`job/ReSendSelected?jobIds=${jobIds}`, null);
+        const response = await this.$http.post('job/ReSendSelected', null, {
+            params: { jobIds }
+        });
         return response.data;
     }
 

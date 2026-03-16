@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class ExsalerateActivity
+public sealed class ExsalerateActivity
 {
     public int SiteOwnerID { get; init; }
     public string CustomerRefCode { get; init; }

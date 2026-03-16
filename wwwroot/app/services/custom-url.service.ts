@@ -21,7 +21,7 @@ class UrlService implements angular.IServiceProvider {
     
     getAdminManagerUrl(): string {
         const currentUrl = this.getCurrentUrl();
-        return currentUrl.replace(/adminmanager/g, 'hub');
+        return currentUrl.replace(/despatch/g, 'adminmanager');
     }
 }
 

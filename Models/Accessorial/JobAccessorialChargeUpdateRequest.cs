@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Accessorial;
 
-public class JobAccessorialChargeUpdateRequest
+public sealed class JobAccessorialChargeUpdateRequest
 {
     public decimal? InputValue { get; init; }
     public int ItemCount { get; init; } = 1;

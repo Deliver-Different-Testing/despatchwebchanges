@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class LateCallRequest
+public sealed class LateCallRequest
 {
     public int JobId { get; init; }
     public int LateType { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class NationwideJobsRequestModel : JobQueryParams
+public sealed class NationwideJobsRequestModel : JobQueryParams
 {
     public  bool IsInternal { get; init; }
     public int Cid { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class UrgentRerateObject
+public sealed class UrgentRerateObject
 {
     public int SpeedId { get; init; }
     public int SizeId { get; init; }
@@ -20,7 +20,7 @@ public class UrgentRerateObject
     public string ClientReferenceB { get; init; }
 }
 
-public class UrgentRerateAddressObject
+public sealed class UrgentRerateAddressObject
 {
     public string CompanyName { get; init; }
     public string BuildingName { get; init; }
@@ -36,7 +36,7 @@ public class UrgentRerateAddressObject
     public decimal? Longitude { get; init; }
 }
 
-public class UrgentPackageObject
+public sealed class UrgentPackageObject
 {
     public string Name { get; init; }
     public double? Length { get; init; }
@@ -49,7 +49,7 @@ public class UrgentPackageObject
     public int Units { get; init; }
 }
 
-public class UrgentTruckObject
+public sealed class UrgentTruckObject
 {
     public bool? PickupTailLift { get; init; }
     public bool? DropoffTailLift { get; init; }

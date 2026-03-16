@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class GroupEmailDataViewModel
+public sealed class GroupEmailDataViewModel
 {
     public List<int> CourierIds { get; init; } = [];
     public string Subject { get; init; }

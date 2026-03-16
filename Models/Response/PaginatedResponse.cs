@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Response;
 
-public class PaginatedResponse<T>
+public record PaginatedResponse<T>
 {
     public IEnumerable<T> Items { get; init; }
     public int Total { get; init; }
@@ -8,26 +8,26 @@ public class PaginatedResponse<T>
     public int Pages { get; init; }
 }
 
-public class CourierCompliancePaginatedResponse : PaginatedResponse<CourierComplianceViewModel>
+public sealed record CourierCompliancePaginatedResponse : PaginatedResponse<CourierComplianceViewModel>
 {
     public int TotalExpired { get; init; }
     public int TotalExpiringSoon { get; init; }
     public int TotalValid { get; init; }
 }
 
-public class CourierAfterHoursPaginatedResponse : PaginatedResponse<AfterHoursCourierScheduleViewModel>
+public sealed record CourierAfterHoursPaginatedResponse : PaginatedResponse<AfterHoursCourierScheduleViewModel>
 {
     public int TotalActiveDrivers { get; init; }
 }
 
-public class TodayActiveDriversPaginatedResponse : PaginatedResponse<TodayActiveDriversViewModel>
+public sealed record TodayActiveDriversPaginatedResponse : PaginatedResponse<TodayActiveDriversViewModel>
 {
     public int TotalActiveDrivers { get; init; }
     public int TotalDriversActiveToday { get; init; }
     public double AverageSessionTime { get; init; }
 }
 
-public class CourierDailyEarningsPaginatedResponse : PaginatedResponse<CourierDailyEarningsViewModel>
+public sealed record CourierDailyEarningsPaginatedResponse : PaginatedResponse<CourierDailyEarningsViewModel>
 {
     public decimal TotalEarningsToday { get; init; }
     public decimal AverageHourlyRate { get; init; }

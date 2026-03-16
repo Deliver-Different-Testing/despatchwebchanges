@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class JobInfo
+public sealed class JobInfo
 {
     public string ClientItemIds { get; init; }
     public bool IsVan { get; init; }

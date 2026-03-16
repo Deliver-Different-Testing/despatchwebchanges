@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class ActiveCourierDto
+public sealed class ActiveCourierDto
 {
     public int CourierId { get; init; }
     public string Code { get; init; }

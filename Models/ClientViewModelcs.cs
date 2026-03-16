@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class ClientViewModel
+public sealed class ClientViewModel
 {
     public string FirstName { get; init; }
     public string FullName { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class InternalStatus
+public sealed class InternalStatus
 {
     public int Id { get; init; }
 

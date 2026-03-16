@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class AirportAddressInfoDto
+public sealed record AirportAddressInfoDto
 {
     public int AirportId { get; init; }
     public string AddressLine1 { get; init; }

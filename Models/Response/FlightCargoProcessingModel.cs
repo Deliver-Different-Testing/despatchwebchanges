@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Response;
 
-public class FlightCargoProcessingModel
+public sealed record FlightCargoProcessingModel
 {
     public DateTime ArrivalTime { get; init; }
     public int ProcessingTimeMins { get; init; }

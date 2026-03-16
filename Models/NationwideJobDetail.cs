@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-    public class NationwideJobDetail
+    public sealed class NationwideJobDetail
     {
         public int? AirPortId { get; init; }
         public int? VehicleSizeId { get; init; }

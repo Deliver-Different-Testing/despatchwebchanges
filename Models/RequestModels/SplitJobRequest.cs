@@ -3,7 +3,7 @@ namespace DespatchWeb.Models.RequestModels;
 /// <summary>
 /// Request model for splitting a job with a meeting point address.
 /// </summary>
-public class SplitJobRequest
+public sealed class SplitJobRequest
 {
     /// <summary>
     /// The ID of the job to split.

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class UpdatePodDetailsRequest
+public sealed class UpdatePodDetailsRequest
 {
     public int JobId { get; init; }
     public int JobStatus { get; init; }

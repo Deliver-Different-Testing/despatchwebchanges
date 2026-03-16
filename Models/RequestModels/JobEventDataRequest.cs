@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class JobEventDataRequest
+public sealed class JobEventDataRequest
 {
     public int JobId { get; init; }
     public string Notes { get; init; }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class FlightRateCalculationDto
+public sealed record FlightRateCalculationDto
 {
     // Required parameters
     public int ClientId { get; init; }

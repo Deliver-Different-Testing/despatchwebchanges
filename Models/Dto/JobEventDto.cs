@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class JobEventDto
+public sealed record JobEventDto
 {
     public string UcjbNumber { get; init; }
     public int? UcjbClientId { get; init; }

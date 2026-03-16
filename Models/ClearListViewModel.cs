@@ -1,17 +1,17 @@
 ﻿namespace DespatchWeb.Models;
 
-public class ClearListViewModel
+public sealed class ClearListViewModel
 {
     public List<AreaClearList> Areas { get; set; } = [];
     public List<ClearListColumn> Columns { get; set; } = [];
 }
 
-public class ClearListColumn
+public sealed class ClearListColumn
 {
     public List<AreaClearList> Areas { get; set; } = [];
 }
 
-public class AreaClearList
+public sealed class AreaClearList
 {
     public int Id { get; set; }
     public string Name { get; set; }
@@ -23,7 +23,7 @@ public class AreaClearList
     public int TotalRemaining { get; set; }
 }
 
-public class ClearListSection
+public sealed class ClearListSection
 {
     public string CourierNumber { get; set; }
     public CourierData CourierData { get; set; }
@@ -31,7 +31,7 @@ public class ClearListSection
     public int JobCount { get; set; }
 }
 
-public class CourierData
+public sealed class CourierData
 {
     public string Courier { get; set; }
     public string CourierNumber { get; set; }
@@ -45,7 +45,7 @@ public class CourierData
     public string CourierMobile { get; set; }
 }
 
-public class Destination
+public sealed class Destination
 {
     public int Id { get; set; }
     public string Label { get; set; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class ExtraRateCalculationRequest
+public sealed class ExtraRateCalculationRequest
 {
     // Weight and Dimension Properties
     public decimal TotalWeight { get; init; }

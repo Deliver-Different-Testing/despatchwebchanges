@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Accessorial;
 
-public class JobAccessorialChargeCreateRequest
+public sealed class JobAccessorialChargeCreateRequest
 {
     public int AccessorialChargeId { get; init; }
     public decimal? InputValue { get; init; }

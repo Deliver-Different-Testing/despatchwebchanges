@@ -1,14 +1,14 @@
 ﻿namespace DespatchWeb.Models.Response;
 
-public class JobSearchResult
+public sealed record JobSearchResult
 {
-    public List<DispatchJobViewModel> Jobs { get; init; }
+    public IReadOnlyList<DispatchJobViewModel> Jobs { get; init; }
     public int TotalCount { get; init; }
     public bool HasMore { get; init; }
-    public List<DispatchMapItem> MapItems { get; init; }
+    public IReadOnlyList<DispatchMapItem> MapItems { get; init; }
 }
 
-public class DispatchMapItem
+public sealed record DispatchMapItem
 {
     public int JobId { get; init; }
     public string JobNo { get; init; }

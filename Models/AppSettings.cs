@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DespatchWeb.Models;
 
-public class AppSettings
+public sealed class AppSettings
 {
     [Required]
     public string Domain { get; set; } = string.Empty;

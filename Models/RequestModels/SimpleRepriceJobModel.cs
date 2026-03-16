@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class SimpleRepriceJobModel
+public sealed class SimpleRepriceJobModel
 {
     public int JobId { get; init; }
     public bool IsPrebook { get; init; }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class PodSearchRequest
+public sealed class PodSearchRequest
 {
     public List<int> CourierIds { get; init; }
     public List<int> ClientIds { get; init; }

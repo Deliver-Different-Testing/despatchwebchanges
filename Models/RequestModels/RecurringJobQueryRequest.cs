@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class RecurringJobQueryRequest
+public sealed class RecurringJobQueryRequest
 {
     public string Order { get; init; }
     public string OrderDirection { get; init; }
