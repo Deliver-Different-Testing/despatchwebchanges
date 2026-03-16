@@ -798,7 +798,7 @@ public partial class JobRepository
     
     private async Task UpdateBulkJobWithEntityAsync(int bulkJobId, JobProperty property, string value)
     {
-        var query = Context.TblBulkJobs.Where(j => j.BulkJobId == bulkJobId);
+        var query = Context.TblBulkJobs.AsTracking().Where(j => j.BulkJobId == bulkJobId);
         query = AddRequiredBulkJobIncludes(query, property);
 
         var bulkJob = await query.FirstOrDefaultAsync();

@@ -61,6 +61,7 @@ public class NationwideJobRepository(
                 requestData.JobId, primaryFlightNumber);
 
             var job = await Context.TucJobs
+                .AsTracking()
                 .Include(j => j.Parent)
                 .Where(j => j.UcjbId == requestData.JobId)
                 .FirstOrDefaultAsync(cancellationToken);
@@ -255,6 +256,7 @@ public class NationwideJobRepository(
     public async Task AddAgentToJobAsync(int agentId, int jobId, bool includeStopJobs = false)
     {
         var job = await Context.TucJobs
+            .AsTracking()
             .Include(j => j.Parent)
             .ThenInclude(j => j.InverseParent)
             .Include(j => j.InverseParent)
@@ -982,6 +984,7 @@ public class NationwideJobRepository(
             parentJobId, jobSuffix, targetGroupingId);
 
         var agentJob = await Context.TucJobs
+            .AsTracking()
             .Include(j => j.UcjbSpeedNavigation)
             .ThenInclude(s => s.Grouping)
             .Where(j => j.ParentId == parentJobId &&
