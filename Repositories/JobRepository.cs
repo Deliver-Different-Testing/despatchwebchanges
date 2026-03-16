@@ -666,14 +666,14 @@ public partial class JobRepository(
         await using var archivedJobsContext = CreateNewContext();
 
         var dbDataTask = activeJobsContext
-            .TucJobs.Where(j =>
+            .TucJobs.AsTracking().Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && j.UcjbLocked != true
             )
             .ToListAsync();
 
         var dbDataArchiveTask = archivedJobsContext
-            .TucJobArchives.Where(j =>
+            .TucJobArchives.AsTracking().Where(j =>
                 (ids.Contains(j.UcjbId) || (j.ParentId.HasValue && ids.Contains(j.ParentId.Value)))
                 && (j.UcjbLocked != 1 || !j.UcjbInvoiceNo.HasValue)
             )
@@ -928,8 +928,15 @@ public partial class JobRepository(
 
         try
         {
-            // Save all changes at once
-            var changesCount = await Context.SaveChangesAsync();
+            // Save job entity changes on the contexts that own them
+            var activeChangesTask = activeJobsContext.SaveChangesAsync();
+            var archiveChangesTask = archivedJobsContext.SaveChangesAsync();
+            // Save pricing breakdown changes on the main context
+            var mainChangesTask = Context.SaveChangesAsync();
+
+            await Task.WhenAll(activeChangesTask, archiveChangesTask, mainChangesTask);
+
+            var changesCount = await activeChangesTask + await archiveChangesTask + await mainChangesTask;
             Log.Information("Successfully saved {ChangesCount} changes", changesCount);
         }
         catch (DbUpdateException ex)
@@ -1635,7 +1642,7 @@ public partial class JobRepository(
             .MaxAsync(jt => jt.PickupTime);
 
         // Get job information
-        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        var job = await Context.TucJobs.AsTracking().FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
         if (!job.UcjbTime.HasValue) return;
@@ -1690,7 +1697,7 @@ public partial class JobRepository(
             .MaxAsync(selector: jt => jt.DeliveryTime);
 
         // Get job information
-        var job = await Context.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
+        var job = await Context.TucJobs.AsTracking().FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
         if (!job.UcjbTime.HasValue) return;

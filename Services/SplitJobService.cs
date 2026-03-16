@@ -70,13 +70,12 @@ public sealed class SplitJobService(
                                  ?? throw new InvalidOperationException(
                                      $"Job relationship type '{ChildSystemName}' not found");
 
-            var parentJobCourierId = lookups.ParentJobCourierId;
-
             if (lookups.HasFlightAssigned)
                 throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
 
             // Load the job with related data
             var job = await context.TucJobs
+                          .AsTracking()
                           .Include(j => j.UcjbSpeedNavigation)
                           .FirstOrDefaultAsync(j => j.UcjbId == jobId)
                       ?? throw new InvalidOperationException($"Job {jobId} not found");
@@ -98,7 +97,7 @@ public sealed class SplitJobService(
 
             // Update parent job (only set parent IDs if not already set)
             job.JobRelationshipTypeId = parentRelTypeId;
-            job.UcjbCourierId = parentJobCourierId;
+            job.UcjbCourierId = null;
             if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
             job.RootParentId ??= jobId;
             job.InformationParentId ??= job.RootParentId;
