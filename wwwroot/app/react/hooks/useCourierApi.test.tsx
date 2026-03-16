@@ -66,7 +66,7 @@ describe('useCourierSearch', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockCourierApi.searchActiveCouriers).toHaveBeenCalledWith('jo');
+        expect(mockCourierApi.searchActiveCouriers).toHaveBeenCalledWith('jo', expect.anything());
         expect(result.current.data).toEqual(mockCouriers);
     });
 
@@ -79,7 +79,7 @@ describe('useCourierSearch', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockCourierApi.searchActiveCouriers).toHaveBeenCalledWith('john');
+        expect(mockCourierApi.searchActiveCouriers).toHaveBeenCalledWith('john', expect.anything());
         expect(result.current.data).toHaveLength(2);
     });
 

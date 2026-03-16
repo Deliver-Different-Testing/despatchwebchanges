@@ -1,7 +1,7 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {FilterPanel} from './FilterPanel';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 

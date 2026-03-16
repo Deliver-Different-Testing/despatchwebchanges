@@ -8,9 +8,14 @@
 import type * as React from 'react';
 import type * as ReactDOM from 'react-dom';
 import type * as ReactDOMClient from 'react-dom/client';
-import type {QueryClient, QueryClientProvider, UseQueryResult, UseMutationResult} from '@tanstack/react-query';
-import type {Dayjs} from 'dayjs';
+import type {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type angular from 'angular';
+import type {MountRecurringJobsConfig} from '../app/react/interfaces';
+import type {MountDriverManagementConfig} from '../app/react/interfaces';
+import type {MountOverviewConfig} from '../app/react/pages/overview/OverviewPage.interfaces';
+import type {MountTaskDashboardConfig} from '../app/react/pages/task-dashboard/TaskDashboardPage.interfaces';
+import type {MountErrorPageConfig} from '../app/react/pages/error-page/error-page-react.module';
+import type {MountCourierMapConfig} from '../app/react/pages/courier-map/courier-map-react.module';
 
 /** Common interface for lazy-loaded React modules with mount/unmount lifecycle */
 interface ReactModuleBridge {
@@ -18,9 +23,11 @@ interface ReactModuleBridge {
     unmount: () => void;
 }
 
-/** React module bridge with an additional refresh method */
-interface ReactModuleBridgeWithRefresh extends ReactModuleBridge {
-    refresh: () => void;
+/** Typed interface for a React page module with specific config */
+interface ReactPageModule<TConfig> {
+    mount(containerId: string, config: TConfig): void;
+    unmount(): void;
+    refresh?(): void;
 }
 
 declare global {
@@ -63,12 +70,12 @@ declare global {
             updateTitle: (title: string) => void;
             updateState: (state: Record<string, unknown>) => void;
         };
-        ReactRecurringJobs?: ReactModuleBridgeWithRefresh;
-        ReactOverview?: ReactModuleBridge;
-        ReactTaskDashboard?: ReactModuleBridge;
-        ReactDriverManagement?: ReactModuleBridge;
-        ReactCourierMap?: ReactModuleBridge;
-        ReactErrorPage?: ReactModuleBridge;
+        ReactRecurringJobs?: ReactPageModule<MountRecurringJobsConfig>;
+        ReactOverview?: ReactPageModule<MountOverviewConfig>;
+        ReactTaskDashboard?: ReactPageModule<MountTaskDashboardConfig>;
+        ReactDriverManagement?: ReactPageModule<MountDriverManagementConfig>;
+        ReactCourierMap?: ReactPageModule<MountCourierMapConfig>;
+        ReactErrorPage?: ReactPageModule<MountErrorPageConfig>;
 
         // ── Lazy-loaded React dialog modules ─────────────────────────────
         ReactCreateJobDialog?: {

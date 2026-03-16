@@ -4,6 +4,8 @@
  * TypeScript interfaces for the Bulk Price Upload Dialog component.
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 export type PricingMode = 'recalculate' | 'base' | 'gross';
 export type DialogState = 'upload' | 'mode-select' | 'loading' | 'result';
 
@@ -28,11 +30,11 @@ export interface BulkPriceUploadDialogProps {
     open: boolean;
     onClose: () => void;
     onSubmit: (file: File, mode: PricingMode) => Promise<BulkPricePreviewResponse>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 export interface OpenBulkPriceUploadDialogOptions {
     toastService?: {
-        showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+        showToast: ShowToastFn;
     };
 }

@@ -6,7 +6,10 @@
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
-import {Autocomplete, Chip, TextField, CircularProgress} from '@mui/material';
+import Autocomplete from '@mui/material/Autocomplete';
+import Chip from '@mui/material/Chip';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
 import {ISuggestion} from '../../../../interfaces/job.interface';
 
 export interface ChipsAutocompleteProps {

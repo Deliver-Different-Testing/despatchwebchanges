@@ -6,26 +6,21 @@
  */
 
 import React, { useMemo } from 'react';
-import {
-    Box,
-    CircularProgress,
-    IconButton,
-    InputAdornment,
-    List,
-    TextField,
-    Tooltip,
-    Typography,
-    alpha,
-    useTheme,
-} from '@mui/material';
-import {
-    ChevronRight,
-    Close,
-    PersonOff,
-    Search,
-    SearchOff,
-    Sync,
-} from '@mui/icons-material';
+import {alpha, useTheme} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import List from '@mui/material/List';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import Close from '@mui/icons-material/Close';
+import PersonOff from '@mui/icons-material/PersonOff';
+import Search from '@mui/icons-material/Search';
+import SearchOff from '@mui/icons-material/SearchOff';
+import Sync from '@mui/icons-material/Sync';
 import type { DriversPanelProps } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
 

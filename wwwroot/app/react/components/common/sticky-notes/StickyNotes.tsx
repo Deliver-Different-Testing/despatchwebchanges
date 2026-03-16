@@ -5,19 +5,17 @@
  */
 
 import React from 'react';
-import {
-    Box,
-    IconButton,
-    Tooltip,
-    LinearProgress,
-    Menu,
-    MenuItem,
-    ListItemIcon,
-    ListItemText,
-    Divider,
-    Typography,
-    Paper,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import LinearProgress from '@mui/material/LinearProgress';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Divider from '@mui/material/Divider';
+import Typography from '@mui/material/Typography';
+import Paper from '@mui/material/Paper';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
@@ -352,7 +350,7 @@ export class StickyNotes extends React.Component<StickyNotesProps, StickyNotesSt
                         display: 'flex',
                         flexWrap: 'wrap',
                         gap: 2,
-                        bgcolor: '#fafafa',
+                        bgcolor: 'background.default',
                         minHeight: 120,
                         flex: 1,
                         overflow: 'auto',

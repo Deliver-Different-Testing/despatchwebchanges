@@ -1,6 +1,10 @@
 import React from 'react';
-import {Card, CardContent, Toolbar, Typography, Box} from '@mui/material';
-import {Tune as TuneIcon} from '@mui/icons-material';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import TuneIcon from '@mui/icons-material/Tune';
 
 interface FilterToolbarProps {
     actions?: React.ReactNode;

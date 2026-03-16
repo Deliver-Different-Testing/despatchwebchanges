@@ -6,22 +6,21 @@
  */
 
 import React from 'react';
-import {
-    Avatar,
-    Box,
-    Chip,
-    ListItemButton,
-    ListItemAvatar,
-    ListItemText,
-    Typography,
-    alpha,
-    useTheme,
-} from '@mui/material';
-import { NearMe, WorkOutline, WarningAmberRounded } from '@mui/icons-material';
+import {alpha, useTheme} from '@mui/material/styles';
+import Avatar from '@mui/material/Avatar';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import NearMe from '@mui/icons-material/NearMe';
+import WorkOutline from '@mui/icons-material/WorkOutline';
+import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded';
 import type { DriverListItemProps } from '../CourierMapPage.types';
 import { getDriverStatus } from '../CourierMapPage.types';
 import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
-import type { Theme } from '@mui/material';
+import type {Theme} from '@mui/material/styles';
 
 function getStatusColor(driver: IAvailableCourierPosition, theme: Theme): string {
     const status = getDriverStatus(driver);

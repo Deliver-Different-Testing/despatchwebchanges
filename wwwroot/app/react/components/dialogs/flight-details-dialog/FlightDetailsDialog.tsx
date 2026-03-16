@@ -6,23 +6,19 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    Box,
-    Typography,
-    IconButton,
-    Tabs,
-    Tab,
-    useMediaQuery,
-    useTheme,
-} from '@mui/material';
-import {
-    Flight as FlightIcon,
-    Close as CloseIcon,
-    Dashboard as OverviewIcon,
-    FlightTakeoff as FlightTakeoffIcon,
-} from '@mui/icons-material';
+import {useTheme} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import Tabs from '@mui/material/Tabs';
+import Tab from '@mui/material/Tab';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import FlightIcon from '@mui/icons-material/Flight';
+import CloseIcon from '@mui/icons-material/Close';
+import OverviewIcon from '@mui/icons-material/Dashboard';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import { FlightDetailsDialogProps, FlightSegmentData, FlightData } from './types';
 import { FlightSummaryCard } from './FlightSummaryCard';
 import { FlightDetailsCard } from './FlightDetailsCard';

@@ -2,6 +2,8 @@
  * AI Assistant Dialog Types
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 export interface AiMessage {
     id: string;
     role: 'user' | 'assistant';
@@ -13,13 +15,13 @@ export interface AiMessage {
 export interface AiAssistantDialogProps {
     open: boolean;
     onClose: () => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
     currentStaffName: string;
 }
 
 export interface OpenAiAssistantDialogOptions {
     toastService?: {
-        showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+        showToast: ShowToastFn;
     };
 }
 

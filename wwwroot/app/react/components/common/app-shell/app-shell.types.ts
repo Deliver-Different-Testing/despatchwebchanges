@@ -12,7 +12,3 @@ export interface AppShellProps {
     onLogoClick?: () => void;
     onNavigate: (state: string) => void;
 }
-
-export interface AppShellState {
-    sidenavOpen: boolean;
-}

@@ -5,29 +5,25 @@
  */
 
 import React from 'react';
-import {
-    Drawer,
-    Box,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Typography,
-    alpha,
-} from '@mui/material';
-import {
-    AccountCircle as AccountCircleIcon,
-    Dashboard as DashboardIcon,
-    LocalShipping as LocalShippingIcon,
-    Assessment as AssessmentIcon,
-    TaskAlt as TaskAltIcon,
-    Search as SearchIcon,
-    Schedule as ScheduleIcon,
-    Map as MapIcon,
-    ManageAccounts as ManageAccountsIcon,
-    Favorite as FavoriteIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Drawer from '@mui/material/Drawer';
+import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Typography from '@mui/material/Typography';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import SearchIcon from '@mui/icons-material/Search';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import MapIcon from '@mui/icons-material/Map';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import dayjs from 'dayjs';
 import {NavItem, SideNavProps} from "./SideNav.types";
 

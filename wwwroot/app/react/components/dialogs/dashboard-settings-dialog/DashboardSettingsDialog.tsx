@@ -5,32 +5,28 @@
  */
 
 import React, {useState, useMemo} from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    Chip,
-    IconButton,
-    Typography,
-    Box,
-    Paper,
-    Stack,
-    Switch,
-    FormControl,
-    Select,
-    MenuItem,
-    alpha,
-    Divider,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Settings as SettingsIcon,
-    Schedule as ScheduleIcon,
-    Dashboard as DashboardIcon,
-    Info as InfoIcon,
-    AutoAwesome as AutoAwesomeIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Divider from '@mui/material/Divider';
+import CloseIcon from '@mui/icons-material/Close';
+import SettingsIcon from '@mui/icons-material/Settings';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import InfoIcon from '@mui/icons-material/Info';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -187,7 +183,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 0, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 {/* Auto-Refresh Section */}
                 {config.showRefreshInterval && (
                     <Box sx={{p: 3}}>

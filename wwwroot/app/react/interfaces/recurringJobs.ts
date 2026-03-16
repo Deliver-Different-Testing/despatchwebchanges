@@ -5,6 +5,7 @@
  */
 
 import {AddressViewModel} from './address';
+import type {ShowToastFn} from '../services/toastService';
 
 /**
  * Query parameters for fetching recurring jobs list
@@ -153,14 +154,14 @@ export function transformPaginatedResponse(
 }
 
 export interface MountRecurringJobsConfig {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer?: boolean;
     onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
     onJobSelect?: (jobId: number | null) => void;
 }
 
 export interface RecurringJobsPageProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer?: boolean;
     onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
     onJobSelect?: (jobId: number | null) => void;

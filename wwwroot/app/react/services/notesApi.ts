@@ -5,7 +5,7 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient} from './apiClient';
+import {apiClient, RequestOptions} from './apiClient';
 import {CreateNoteRequest, JobNote, JobNoteDto, NoteHistoryDto, NoteHistoryEntry, NoteType, UpdateNoteRequest} from '../interfaces';
 import dayjs from 'dayjs';
 
@@ -25,25 +25,25 @@ function transformJobNoteDto(dto: JobNoteDto): JobNote {
 /**
  * Get notes for a job
  */
-export async function getJobNotes(jobId: number, isRecurring: boolean): Promise<JobNote[]> {
+export async function getJobNotes(jobId: number, isRecurring: boolean, options?: RequestOptions): Promise<JobNote[]> {
     const url = isRecurring ? 'note/GetRecurringNotes' : 'note/GetNotes';
-    const notes = await apiClient.get<JobNoteDto[]>(url, {jobId});
+    const notes = await apiClient.get<JobNoteDto[]>(url, {jobId}, options);
     return notes?.map(transformJobNoteDto) ?? [];
 }
 
 /**
  * Get notes for a bulk job
  */
-export async function getBulkJobNotes(bulkJobId: number): Promise<JobNote[]> {
-    const notes = await apiClient.get<JobNoteDto[]>('note/GetBulkJobNotes', {bulkJobId});
+export async function getBulkJobNotes(bulkJobId: number, options?: RequestOptions): Promise<JobNote[]> {
+    const notes = await apiClient.get<JobNoteDto[]>('note/GetBulkJobNotes', {bulkJobId}, options);
     return notes?.map(transformJobNoteDto) ?? [];
 }
 
 /**
  * Get all note types
  */
-export async function getNoteTypes(): Promise<NoteType[]> {
-    const noteTypes = await apiClient.get<NoteType[]>('note/GetNoteTypes');
+export async function getNoteTypes(options?: RequestOptions): Promise<NoteType[]> {
+    const noteTypes = await apiClient.get<NoteType[]>('note/GetNoteTypes', undefined, options);
     return noteTypes ?? [];
 }
 
@@ -85,8 +85,8 @@ export async function deleteNote(noteId: number): Promise<void> {
 /**
  * Get edit history for a note
  */
-export async function getNoteHistory(noteId: number, noteSource: string = 'Note'): Promise<NoteHistoryEntry[]> {
-    const history = await apiClient.get<NoteHistoryDto[]>('note/GetNoteHistory', {noteId, noteSource});
+export async function getNoteHistory(noteId: number, noteSource: string = 'Note', options?: RequestOptions): Promise<NoteHistoryEntry[]> {
+    const history = await apiClient.get<NoteHistoryDto[]>('note/GetNoteHistory', {noteId, noteSource}, options);
     return history?.map(dto => ({
         ...dto,
         editedAt: dayjs(dto.editedAt),

@@ -1,5 +1,6 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
 import angular from 'angular';
+import type {ErrorType} from './react/pages/error-page/ErrorPage';
 
 class RouterConfig {
     constructor(
@@ -210,8 +211,8 @@ class RouterConfig {
                     $scope.selectedJobId = undefined;
                     $scope.onJobUpdate = () => {
                         // Trigger React refresh
-                        if ((window as any).ReactRecurringJobs?.refresh) {
-                            (window as any).ReactRecurringJobs.refresh();
+                        if (window.ReactRecurringJobs?.refresh) {
+                            window.ReactRecurringJobs.refresh();
                         }
                     };
 
@@ -241,7 +242,7 @@ class RouterConfig {
                         $scope.$apply();
                     };
 
-                    (window as any).ReactRecurringJobs.mount('react-recurring-jobs-list', {
+                    window.ReactRecurringJobs!.mount('react-recurring-jobs-list', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onAddStop,
@@ -249,7 +250,7 @@ class RouterConfig {
                     });
 
                     $scope.$on('$destroy', () => {
-                        (window as any).ReactRecurringJobs.unmount();
+                        window.ReactRecurringJobs!.unmount();
                     });
                 }
             ],
@@ -308,14 +309,14 @@ class RouterConfig {
                         showInfoToast: (m: string) => toastrService.showInfoToast(m),
                     };
 
-                    (window as any).ReactOverview.mount('react-overview', {
+                    window.ReactOverview!.mount('react-overview', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onOpenJobDetail: (jobId: number) => navigationService.openJobDetail(jobId),
                     });
 
                     $scope.$on('$destroy', () => {
-                        (window as any).ReactOverview.unmount();
+                        window.ReactOverview!.unmount();
                     });
                 }
             ],
@@ -479,7 +480,7 @@ class RouterConfig {
                         }
                     };
 
-                    (window as any).ReactTaskDashboard.mount('react-task-dashboard', {
+                    window.ReactTaskDashboard!.mount('react-task-dashboard', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onTaskSelect,
@@ -487,7 +488,7 @@ class RouterConfig {
                     });
 
                     $scope.$on('$destroy', () => {
-                        (window as any).ReactTaskDashboard.unmount();
+                        window.ReactTaskDashboard!.unmount();
                     });
                 }
             ],
@@ -547,13 +548,13 @@ class RouterConfig {
                         }
                     };
 
-                    (window as any).ReactDriverManagement.mount('react-driver-management', {
+                    window.ReactDriverManagement!.mount('react-driver-management', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
                     });
 
                     $scope.$on('$destroy', () => {
-                        (window as any).ReactDriverManagement.unmount();
+                        window.ReactDriverManagement!.unmount();
                     });
                 }
             ],
@@ -611,14 +612,14 @@ class RouterConfig {
                         ? appConfig?.US_Coordinates_Center ?? { lat: 39.8097343, lng: -98.5556199 }
                         : appConfig?.NZ_Coordinates_Center ?? { lat: -41.2865, lng: 174.7762 };
 
-                    (window as any).ReactCourierMap.mount('react-courier-map', {
+                    window.ReactCourierMap!.mount('react-courier-map', {
                         isUsCustomer,
                         mapCenter,
                         apiKey: hereMapsApiKey,
                     });
 
                     $scope.$on('$destroy', () => {
-                        (window as any).ReactCourierMap.unmount();
+                        window.ReactCourierMap!.unmount();
                     });
                 }
             ],
@@ -626,7 +627,7 @@ class RouterConfig {
         return this;
     }
 
-    private buildErrorState(errorType: string, url: string): angular.ui.IState {
+    private buildErrorState(errorType: ErrorType, url: string): angular.ui.IState {
         return {
             url,
             template: `<div id="react-error-page-${errorType}" style="height: 100%;"></div>`,
@@ -647,13 +648,13 @@ class RouterConfig {
             },
             controller: ['$scope', '$state', function ($scope: angular.IScope, $state: angular.ui.IStateService) {
                 const containerId = `react-error-page-${errorType}`;
-                (window as any).ReactErrorPage.mount(containerId, {
+                window.ReactErrorPage!.mount(containerId, {
                     errorType,
                     onGoHome: () => $state.go('home'),
                     onGoBack: () => window.history.back(),
                 });
                 $scope.$on('$destroy', () => {
-                    (window as any).ReactErrorPage.unmount();
+                    window.ReactErrorPage!.unmount();
                 });
             }]
         };

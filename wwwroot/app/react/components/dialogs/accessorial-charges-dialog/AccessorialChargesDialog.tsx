@@ -7,36 +7,32 @@
  */
 
 import React from 'react';
-import {
-    Box,
-    Button,
-    Checkbox,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    Divider,
-    IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableFooter,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Delete as DeleteIcon,
-    Lock as LockIcon,
-    Receipt as ReceiptIcon,
-    Refresh as RefreshIcon,
-    Save as SaveIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableFooter from '@mui/material/TableFooter';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import LockIcon from '@mui/icons-material/Lock';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SaveIcon from '@mui/icons-material/Save';
 import {
     AccessorialChargeDto,
     AccessorialChargesDialogProps,
@@ -834,7 +830,7 @@ export class AccessorialChargesDialog extends React.Component<
                     </Box>
                 )}
 
-                <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
                     {isLoading ? (
                         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
                             <CircularProgress size={40} />

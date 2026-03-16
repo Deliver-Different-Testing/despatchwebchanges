@@ -26,10 +26,7 @@ public class AiController(
     };
 
     [HttpGet]
-    public IActionResult IsEnabled()
-    {
-        return Json(new { enabled = settings.Value.EnableAiFeatures });
-    }
+    public IActionResult IsEnabled() => Json(new { enabled = settings.Value.EnableAiFeatures });
 
     [HttpPost]
     public async Task<IActionResult> Chat([FromBody] AiChatRequest request, CancellationToken ct)

@@ -24,7 +24,7 @@ import {
 export function useDriverSearch(searchText: string) {
     return useQuery<FleetOption[], Error>({
         queryKey: queryKeys.driverManagement.searchCouriers(searchText),
-        queryFn: () => driverManagementApi.searchAllCouriers(searchText),
+        queryFn: ({signal}) => driverManagementApi.searchAllCouriers(searchText, {signal}),
         enabled: searchText.length >= 2,
         staleTime: 60 * 1000,
     });
@@ -33,7 +33,7 @@ export function useDriverSearch(searchText: string) {
 export function useCourierDetails(courierId: number) {
     return useQuery<CourierDataDashboard, Error>({
         queryKey: queryKeys.driverManagement.courierDetails(courierId),
-        queryFn: () => driverManagementApi.getCourierDetailsForDashboard(courierId),
+        queryFn: ({signal}) => driverManagementApi.getCourierDetailsForDashboard(courierId, {signal}),
         enabled: courierId > 0,
     });
 }
@@ -41,7 +41,7 @@ export function useCourierDetails(courierId: number) {
 export function useFleetOptions() {
     return useQuery<FleetOption[], Error>({
         queryKey: queryKeys.driverManagement.fleetOptions,
-        queryFn: () => driverManagementApi.getAllFleetOptions(),
+        queryFn: ({signal}) => driverManagementApi.getAllFleetOptions({signal}),
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -49,35 +49,35 @@ export function useFleetOptions() {
 export function useTodayActiveDrivers(query: PaginatedRequest, filters: TodayActiveDriverFilter) {
     return useQuery<TodayActiveDriverPaginated, Error>({
         queryKey: queryKeys.driverManagement.todayActive(query, filters),
-        queryFn: () => driverManagementApi.getTodayActiveDrivers(query, filters),
+        queryFn: ({signal}) => driverManagementApi.getTodayActiveDrivers(query, filters, {signal}),
     });
 }
 
 export function useComplianceList(query: PaginatedRequest, filters: ComplianceFilter) {
     return useQuery<CourierCompliancePaginated, Error>({
         queryKey: queryKeys.driverManagement.compliance(query, filters),
-        queryFn: () => driverManagementApi.getCourierComplianceList(query, filters),
+        queryFn: ({signal}) => driverManagementApi.getCourierComplianceList(query, filters, {signal}),
     });
 }
 
 export function useAfterHoursSchedule(query: PaginatedRequest, filters: AfterHoursFilter) {
     return useQuery<AfterHoursPaginated, Error>({
         queryKey: queryKeys.driverManagement.afterHours(query, filters),
-        queryFn: () => driverManagementApi.getAfterHoursSchedule(query, filters),
+        queryFn: ({signal}) => driverManagementApi.getAfterHoursSchedule(query, filters, {signal}),
     });
 }
 
 export function useDriverEmails(query: PaginatedRequest) {
     return useQuery<PaginatedResponse<DriverEmail>, Error>({
         queryKey: queryKeys.driverManagement.driverEmails(query),
-        queryFn: () => driverManagementApi.getDriverEmails(query),
+        queryFn: ({signal}) => driverManagementApi.getDriverEmails(query, {signal}),
     });
 }
 
 export function useDriverEarnings(query: PaginatedRequest) {
     return useQuery<CourierDailyEarningsPaginated, Error>({
         queryKey: queryKeys.driverManagement.earnings(query),
-        queryFn: () => driverManagementApi.getDriverDailyEarnings(query),
+        queryFn: ({signal}) => driverManagementApi.getDriverDailyEarnings(query, {signal}),
     });
 }
 

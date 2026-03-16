@@ -7,25 +7,21 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    Box,
-    Card,
-    CardContent,
-    Chip,
-    Collapse,
-    CircularProgress,
-    IconButton,
-    Skeleton,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import {
-    AutoAwesome as AutoAwesomeIcon,
-    ContentCopy as ContentCopyIcon,
-    ExpandLess as ExpandLessIcon,
-    ExpandMore as ExpandMoreIcon,
-    Stop as StopIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Collapse from '@mui/material/Collapse';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Skeleton from '@mui/material/Skeleton';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import StopIcon from '@mui/icons-material/Stop';
 import {AiSummaryResponse} from '../../../services/aiAssistantApi';
 import {AiMarkdownRenderer} from './AiMarkdownRenderer';
 

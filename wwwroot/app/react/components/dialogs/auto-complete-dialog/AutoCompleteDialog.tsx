@@ -5,28 +5,24 @@
  */
 
 import React, {useState, useCallback, useEffect} from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
-    Autocomplete,
-    Checkbox,
-    FormControlLabel,
-    CircularProgress,
-    Paper,
-    alpha,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    ManageSearch as ManageSearchIcon,
-    SearchOff as SearchOffIcon,
-    Check as CheckIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import CircularProgress from '@mui/material/CircularProgress';
+import Paper from '@mui/material/Paper';
+import CloseIcon from '@mui/icons-material/Close';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import CheckIcon from '@mui/icons-material/Check';
 
 // Types
 export interface Suggestion {
@@ -172,7 +168,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 <Paper
                     elevation={0}
                     sx={(theme) => ({

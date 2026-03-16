@@ -1,4 +1,5 @@
 ﻿import {CreateNoteRequest, JobNote, NoteType, UpdateNoteRequest} from "../../../interfaces";
+import type {ShowToastFn} from '../../../services/toastService';
 
 export interface NoteManagementDialogProps {
     open: boolean;
@@ -9,5 +10,5 @@ export interface NoteManagementDialogProps {
     onCreateNote: (note: CreateNoteRequest) => Promise<void>;
     onUpdateNote: (note: UpdateNoteRequest) => Promise<void>;
     onCreateNoteType: (noteType: NoteType) => Promise<void>;
-    showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+    showToast: ShowToastFn;
 }

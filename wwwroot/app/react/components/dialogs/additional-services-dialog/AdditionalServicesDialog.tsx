@@ -6,33 +6,29 @@
  */
 
 import React from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Checkbox,
-    Paper,
-    Card,
-    CardContent,
-    Divider,
-    CircularProgress,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Refresh as RefreshIcon,
-    Extension as ExtensionIcon,
-    CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Checkbox from '@mui/material/Checkbox';
+import Paper from '@mui/material/Paper';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Divider from '@mui/material/Divider';
+import CircularProgress from '@mui/material/CircularProgress';
+import CloseIcon from '@mui/icons-material/Close';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ExtensionIcon from '@mui/icons-material/Extension';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { AdditionalService, AdditionalServicesDialogProps } from './types';
 
 interface AdditionalServicesDialogState {
@@ -308,7 +304,7 @@ export class AdditionalServicesDialog extends React.Component<
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
                     {isLoading ? (
                         <Box
                             sx={{

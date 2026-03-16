@@ -7,7 +7,7 @@
 import React from 'react';
 import {act, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {SwapPodsDialog, SwapPodsDialogProps} from './SwapPodsDialog';
 
 const theme = createTheme();

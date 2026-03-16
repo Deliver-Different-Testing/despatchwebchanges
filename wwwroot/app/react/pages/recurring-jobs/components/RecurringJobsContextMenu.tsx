@@ -5,8 +5,12 @@
  */
 
 import React from 'react';
-import {Divider, ListItemIcon, ListItemText, Menu, MenuItem,} from '@mui/material';
-import {PinDrop as PinDropIcon,} from '@mui/icons-material';
+import Divider from '@mui/material/Divider';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import PinDropIcon from '@mui/icons-material/PinDrop';
 import {PrebookListModel} from '../../../interfaces';
 
 export interface RecurringJobsContextMenuProps {

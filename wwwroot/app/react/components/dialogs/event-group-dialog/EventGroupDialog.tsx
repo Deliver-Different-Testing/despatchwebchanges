@@ -6,32 +6,28 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Checkbox,
-    Autocomplete,
-    TextField,
-    CircularProgress,
-    Chip,
-    Avatar,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Checklist as ChecklistIcon,
-    Save as SaveIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Checkbox from '@mui/material/Checkbox';
+import Autocomplete from '@mui/material/Autocomplete';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
+import Avatar from '@mui/material/Avatar';
+import CloseIcon from '@mui/icons-material/Close';
+import ChecklistIcon from '@mui/icons-material/Checklist';
+import SaveIcon from '@mui/icons-material/Save';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -40,6 +36,7 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
 import { NoData } from '../../common/no-data/NoData';
+import type { ShowToastFn } from '../../../services/toastService';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -51,7 +48,7 @@ export interface EventGroupDialogProps {
     onClose: () => void;
     onSave: (events: EventGroupViewModel[]) => Promise<void>;
     onOpenAdminManager: () => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
     timezone: string;
 }
 
@@ -186,7 +183,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
                     {hasEvents ? (
                         <Box
                             sx={{
@@ -271,7 +268,7 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                                         label={item.group}
                                                         size="small"
                                                         sx={{
-                                                            bgcolor: '#57534e',
+                                                            bgcolor: 'grey.600',
                                                             color: 'white',
                                                             fontWeight: 500,
                                                             fontSize: '0.7rem',

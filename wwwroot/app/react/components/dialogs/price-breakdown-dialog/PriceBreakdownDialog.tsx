@@ -6,42 +6,38 @@
  */
 
 import React, {useEffect, useMemo, useState} from 'react';
-import {
-    alpha,
-    Box,
-    Button,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    IconButton,
-    InputAdornment,
-    Paper,
-    Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {
-    AccountBalanceWallet as WalletIcon,
-    Add as AddIcon,
-    AttachMoney as MoneyIcon,
-    CheckCircle as CheckCircleIcon,
-    Close as CloseIcon,
-    Delete as DeleteIcon,
-    Edit as EditIcon,
-    Inventory2 as InventoryIcon,
-    ReceiptLong as ReceiptLongIcon,
-    Savings as SavingsIcon,
-    TrendingUp as TrendingUpIcon,
-    Work as WorkIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import WalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import AddIcon from '@mui/icons-material/Add';
+import MoneyIcon from '@mui/icons-material/AttachMoney';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import InventoryIcon from '@mui/icons-material/Inventory2';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import SavingsIcon from '@mui/icons-material/Savings';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import WorkIcon from '@mui/icons-material/Work';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -281,7 +277,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
             <DialogContent sx={{ p: 0 }}>
                 {/* Summary Cards */}
                 {!isEditing && priceBreakdowns.length > 0 && (
-                    <Box sx={{ p: 3, bgcolor: '#fafafa' }}>
+                    <Box sx={{ p: 3, bgcolor: 'background.default' }}>
                         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                             {/* Revenue Card */}
                             <Paper

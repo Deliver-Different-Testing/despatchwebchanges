@@ -1,13 +1,11 @@
 import React, {useState, useEffect, useMemo} from 'react';
-import {
-    Dialog,
-    AppBar,
-    Toolbar,
-    IconButton,
-    Typography,
-    Box,
-    CircularProgress,
-} from '@mui/material';
+import Dialog from '@mui/material/Dialog';
+import AppBar from '@mui/material/AppBar';
+import Toolbar from '@mui/material/Toolbar';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query';
 import {overviewApi} from '../../../services/overviewApi';

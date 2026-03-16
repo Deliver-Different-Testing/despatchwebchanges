@@ -39,9 +39,8 @@ export function usePriceBreakdowns(
 ) {
     return useQuery<PriceBreakdown[], Error>({
         queryKey: queryKeys.priceBreakdowns.job(jobId ?? 0, isPrebook, isArchived),
-        queryFn: () => pricingBreakdownApi.getPriceBreakdowns(jobId!, isPrebook, isArchived),
+        queryFn: ({signal}) => pricingBreakdownApi.getPriceBreakdowns(jobId!, isPrebook, isArchived, {signal}),
         enabled: !!jobId && (options?.enabled ?? true),
-        staleTime: 30 * 1000,
     });
 }
 

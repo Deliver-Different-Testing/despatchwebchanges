@@ -4,6 +4,7 @@
 
 import {Dayjs} from 'dayjs';
 import {Task} from '../../interfaces';
+import type {ShowToastFn} from '../../services/toastService';
 
 // Re-export Task for convenience
 export type {Task};
@@ -38,7 +39,7 @@ export interface ExtendedTask extends Task {
 }
 
 export interface MountTaskDashboardConfig {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer: boolean;
     onTaskSelect: (task: ExtendedTask | null) => void;
     onLayoutActionsChange?: (actions: LayoutActions) => void;
@@ -54,7 +55,7 @@ export interface LayoutActions {
 }
 
 export interface TaskDashboardPageProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer: boolean;
     onTaskSelect: (task: ExtendedTask | null) => void;
     setRefreshCallback?: (callback: () => void) => void;

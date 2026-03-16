@@ -1,6 +1,13 @@
 import React, {useState} from 'react';
-import {Box, Button, Checkbox, Chip, IconButton, Tooltip,} from '@mui/material';
-import {ContactMail as ContactMailIcon, Download as DownloadIcon, Email as EmailIcon,} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import ContactMailIcon from '@mui/icons-material/ContactMail';
+import DownloadIcon from '@mui/icons-material/Download';
+import EmailIcon from '@mui/icons-material/Email';
 import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks';
 import {DriverEmail, GroupEmailData, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
@@ -14,9 +21,10 @@ import {
     toolbarButtonSx,
     toolbarIconButtonSx
 } from './shared';
+import type {ShowToastFn} from '../../../services/toastService';
 
 interface DriverEmailsTabProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
 }
 
 const columns: DataTableColumn<DriverEmail>[] = [

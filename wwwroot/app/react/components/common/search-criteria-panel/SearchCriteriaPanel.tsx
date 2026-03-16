@@ -7,12 +7,15 @@
  */
 
 import React, {useState, useCallback} from 'react';
-import {Box, Typography, TextField, Button, IconButton, Tooltip} from '@mui/material';
-import {
-    Download as DownloadIcon,
-    Description as DescriptionIcon,
-    Upload as UploadIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import DownloadIcon from '@mui/icons-material/Download';
+import DescriptionIcon from '@mui/icons-material/Description';
+import UploadIcon from '@mui/icons-material/Upload';
 import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
 import {ChipsAutocomplete} from './ChipsAutocomplete';

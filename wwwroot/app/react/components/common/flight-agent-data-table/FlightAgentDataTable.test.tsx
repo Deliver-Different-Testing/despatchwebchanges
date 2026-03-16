@@ -6,7 +6,7 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {FlightAgentDataTable} from './FlightAgentDataTable';
 import {AgentOption, FlightAgentDataTableProps, FlightOption, FlightSegment} from './types';
 import dayjs from 'dayjs';

@@ -8,15 +8,17 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { BulkPriceUploadDialog } from './BulkPriceUploadDialog';
 import { OpenBulkPriceUploadDialogOptions, PricingMode, BulkPricePreviewResponse } from './types';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { bulkPriceApi } from '../../../services/bulkPriceApi';
+import type { ShowToastFn } from '../../../services/toastService';
 
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface DialogState {
@@ -67,7 +69,7 @@ class BulkPriceUploadDialogManager {
             return response;
         };
 
-        const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+        const handleShowToast: ShowToastFn = (message, type) => {
             if (!this.dialogState.toastService) {
                 console.log(`[Toast ${type}]: ${message}`);
                 return;

@@ -6,23 +6,19 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {
-    Box,
-    Button,
-    Card,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    Toolbar,
-    Typography,
-} from '@mui/material';
-import {
-    EventRepeat as EventRepeatIcon,
-    Tune as TuneIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import TuneIcon from '@mui/icons-material/Tune';
 import {useRecurringJobsList} from '../../hooks';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 import {

@@ -5,6 +5,8 @@
  */
 
 import {QueryClient} from '@tanstack/react-query';
+import type {PaginatedRequest, TodayActiveDriverFilter, ComplianceFilter, AfterHoursFilter} from '../interfaces/driverManagement';
+import type {OverviewQueryParams} from '../pages/overview/OverviewPage.interfaces';
 
 /**
  * Default options for all queries
@@ -126,11 +128,12 @@ export const queryKeys = {
     },
     overview: {
         all: ['overview'] as const,
-        jobs: (params: unknown) => ['overview', 'jobs', params] as const,
+        jobs: (params: OverviewQueryParams) => ['overview', 'jobs', params] as const,
         regions: ['overview', 'regions'] as const,
         speeds: ['overview', 'speeds'] as const,
         stats: ['overview', 'stats'] as const,
-        openJobs: (params: unknown) => ['overview', 'openJobs', params] as const,
+        openJobs: (params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers'>) =>
+            ['overview', 'openJobs', params] as const,
         parentJobMap: (jobId: number) => ['overview', 'parentJobMap', jobId] as const,
     },
     driverManagement: {
@@ -140,15 +143,15 @@ export const queryKeys = {
         courierDetails: (courierId: number) =>
             ['driverManagement', 'courierDetails', courierId] as const,
         fleetOptions: ['driverManagement', 'fleetOptions'] as const,
-        todayActive: (query: unknown, filters: unknown) =>
+        todayActive: (query: PaginatedRequest, filters: TodayActiveDriverFilter) =>
             ['driverManagement', 'todayActive', query, filters] as const,
-        compliance: (query: unknown, filters: unknown) =>
+        compliance: (query: PaginatedRequest, filters: ComplianceFilter) =>
             ['driverManagement', 'compliance', query, filters] as const,
-        afterHours: (query: unknown, filters: unknown) =>
+        afterHours: (query: PaginatedRequest, filters: AfterHoursFilter) =>
             ['driverManagement', 'afterHours', query, filters] as const,
-        driverEmails: (query: unknown) =>
+        driverEmails: (query: PaginatedRequest) =>
             ['driverManagement', 'driverEmails', query] as const,
-        earnings: (query: unknown) =>
+        earnings: (query: PaginatedRequest) =>
             ['driverManagement', 'earnings', query] as const,
     },
 } as const;

@@ -10,25 +10,22 @@
  */
 
 import React, {useState} from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
-    CircularProgress,
-    Paper,
-    alpha,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    SwapHoriz as SwapHorizIcon,
-    Info as InfoIcon,
-    CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Paper from '@mui/material/Paper';
+import CloseIcon from '@mui/icons-material/Close';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import InfoIcon from '@mui/icons-material/Info';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import type {ShowToastFn} from '../../../services/toastService';
 
 export interface SwapPodsDialogProps {
     open: boolean;
@@ -36,7 +33,7 @@ export interface SwapPodsDialogProps {
     onClose: () => void;
     onValidate: (jobNo: string) => Promise<boolean>;
     onSwap: (job1: string, job2: string) => Promise<void>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 type Phase = 'input' | 'confirm';
@@ -180,7 +177,7 @@ export function SwapPodsDialog({
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Info banner */}
                 <Paper
                     elevation={0}

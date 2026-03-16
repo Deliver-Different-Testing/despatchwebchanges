@@ -6,38 +6,34 @@
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
-    CircularProgress,
-    Paper,
-    Checkbox,
-    FormControlLabel,
-    Alert,
-    Chip,
-    Divider,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Flight as FlightIcon,
-    Person as PersonIcon,
-    Schedule as ScheduleIcon,
-    CheckCircle as CheckCircleIcon,
-    Cancel as CancelIcon,
-    Warning as WarningIcon,
-    Error as ErrorIcon,
-    Edit as EditIcon,
-    ArrowForward as ArrowForwardIcon,
-    LocalShipping as LocalShippingIcon,
-    Inventory as InventoryIcon,
-    AccessTime as AccessTimeIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Paper from '@mui/material/Paper';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Alert from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
+import Divider from '@mui/material/Divider';
+import CloseIcon from '@mui/icons-material/Close';
+import FlightIcon from '@mui/icons-material/Flight';
+import PersonIcon from '@mui/icons-material/Person';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CancelIcon from '@mui/icons-material/Cancel';
+import WarningIcon from '@mui/icons-material/Warning';
+import ErrorIcon from '@mui/icons-material/Error';
+import EditIcon from '@mui/icons-material/Edit';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import {DateTimePicker} from '@mui/x-date-pickers/DateTimePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -554,7 +550,7 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+                <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                     <Box sx={{display: 'flex', flexDirection: 'column', gap: 3}}>
                         {/* Flight Route Section */}
                         {mode === 'flight' && flight && (

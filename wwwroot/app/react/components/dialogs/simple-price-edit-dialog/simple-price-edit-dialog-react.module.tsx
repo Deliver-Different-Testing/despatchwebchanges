@@ -7,13 +7,15 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions } from './types';
 import { apiClient } from '../../../services/apiClient';
+import type { ShowToastFn } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -25,7 +27,7 @@ interface DialogState {
 }
 
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 const defaultToastService: ToastService = {

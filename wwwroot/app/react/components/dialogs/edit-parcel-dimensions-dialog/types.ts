@@ -2,6 +2,8 @@
  * Edit Parcel Dimensions Dialog Types
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 /**
  * Parcel dimensions - mirrors IParcelDimensions from job.interface.ts
  */
@@ -26,7 +28,7 @@ export interface EditParcelDimensionsDialogProps {
     isUsCustomer: boolean;
     onClose: () => void;
     onSubmit: (result: EditParcelDimensionsDialogResult) => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 /**

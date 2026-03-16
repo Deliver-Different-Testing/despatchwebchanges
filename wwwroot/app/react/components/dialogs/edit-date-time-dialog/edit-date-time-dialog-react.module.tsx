@@ -7,13 +7,15 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { Dayjs } from 'dayjs';
 
 import { EditDateTimeDialog } from './EditDateTimeDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
+import type { ShowToastFn } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -38,7 +40,7 @@ function getIsUSCustomer(): boolean {
  * Toast service interface for showing notifications
  */
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 // Default toast service that logs to console

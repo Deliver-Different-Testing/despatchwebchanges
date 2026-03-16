@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Tooltip } from '@mui/material';
+import Tooltip from '@mui/material/Tooltip';
 import type { MapControlsProps } from '../CourierMapPage.types';
 import styles from '../CourierMapPage.module.css';
 

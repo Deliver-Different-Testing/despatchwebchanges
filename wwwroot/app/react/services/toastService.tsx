@@ -8,10 +8,16 @@
 
 import React, {createContext, useContext, useState, useCallback, ReactNode} from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {Snackbar, Alert, AlertColor, ThemeProvider} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
+import type {AlertColor} from '@mui/material/Alert';
 import {getTheme} from '../theme/muiTheme';
 
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
+
+/** Shared callback type for showing a toast notification */
+export type ShowToastFn = (message: string, type: ToastType) => void;
 
 interface Toast {
     id: number;

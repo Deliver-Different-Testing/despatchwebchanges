@@ -31,7 +31,7 @@ describe('driverManagementApi', () => {
 
             const result = await driverManagementApi.searchAllCouriers('John');
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('courier/SearchAllCouriers', {searchTerm: 'John'});
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/SearchAllCouriers', {searchTerm: 'John'}, undefined);
             expect(result).toEqual(mockResults);
         });
 
@@ -57,7 +57,7 @@ describe('driverManagementApi', () => {
 
             const result = await driverManagementApi.getCourierDetailsForDashboard(42);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetCourierDetailsForDashboard', {courierId: 42});
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetCourierDetailsForDashboard', {courierId: 42}, undefined);
             expect(result).toEqual(mockDetails);
         });
 
@@ -83,7 +83,7 @@ describe('driverManagementApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetCourierComplianceList', {
                 page: 1, pageSize: 50, orderBy: 'code', sortDescending: false, searchTerm: 'test',
                 type: 'insurance', status: 'expired', fleet: 2,
-            });
+            }, undefined);
             expect(result).toEqual(mockResponse);
         });
 
@@ -138,7 +138,7 @@ describe('driverManagementApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetAfterHoursCourierSchedule', {
                 page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: '',
                 day: 'monday',
-            });
+            }, undefined);
             expect(result).toEqual(mockResponse);
         });
     });
@@ -198,7 +198,7 @@ describe('driverManagementApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetTodayActiveDrivers', {
                 page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: '',
                 location: 'auckland', status: 'active', fleet: 3,
-            });
+            }, undefined);
             expect(result).toEqual(mockResponse);
         });
     });
@@ -211,7 +211,7 @@ describe('driverManagementApi', () => {
             const query = {page: 1, pageSize: 50, orderBy: 'name', sortDescending: false};
             const result = await driverManagementApi.getDriverEmails(query);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetAllCourierEmails', query);
+            expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetAllCourierEmails', query, undefined);
             expect(result).toEqual(mockResponse);
         });
     });
@@ -235,7 +235,7 @@ describe('driverManagementApi', () => {
             const query = {page: 1, pageSize: 50, orderBy: 'name', sortDescending: false};
             const result = await driverManagementApi.getDriverDailyEarnings(query);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetCourierDailyEarnings', query);
+            expect(mockApiClient.post).toHaveBeenCalledWith('courier/GetCourierDailyEarnings', query, undefined);
             expect(result).toEqual(mockResponse);
         });
     });
@@ -247,7 +247,7 @@ describe('driverManagementApi', () => {
 
             const result = await driverManagementApi.getAllFleetOptions();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetAllFleetOptions');
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetAllFleetOptions', undefined, undefined);
             expect(result).toEqual(mockOptions);
         });
 

@@ -8,39 +8,35 @@
  */
 
 import React, {useState, useCallback, useEffect, useMemo} from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    TextField,
-    Autocomplete,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-    Checkbox,
-    ListItemText,
-    OutlinedInput,
-    Paper,
-    CircularProgress,
-    Alert,
-    Chip,
-    alpha,
-    SelectChangeEvent,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Schedule as ScheduleIcon,
-    Person as PersonIcon,
-    Timer as TimerIcon,
-    Event as EventIcon,
-    Save as SaveIcon,
-    Warning as WarningIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import TextField from '@mui/material/TextField';
+import Autocomplete from '@mui/material/Autocomplete';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import Checkbox from '@mui/material/Checkbox';
+import ListItemText from '@mui/material/ListItemText';
+import OutlinedInput from '@mui/material/OutlinedInput';
+import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Chip from '@mui/material/Chip';
+import type {SelectChangeEvent} from '@mui/material/Select';
+import CloseIcon from '@mui/icons-material/Close';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import PersonIcon from '@mui/icons-material/Person';
+import TimerIcon from '@mui/icons-material/Timer';
+import EventIcon from '@mui/icons-material/Event';
+import SaveIcon from '@mui/icons-material/Save';
+import WarningIcon from '@mui/icons-material/Warning';
 import {
     AfterHoursCourierSchedule,
     TimeZoneOption,
@@ -49,6 +45,7 @@ import {
     DayOfWeek,
 } from '../../../interfaces';
 import {useCourierSearch, useTimeZoneOptions} from '../../../hooks';
+import type {ShowToastFn} from '../../../services/toastService';
 
 export interface EditAfterhoursDialogProps {
     open: boolean;
@@ -56,7 +53,7 @@ export interface EditAfterhoursDialogProps {
     isUsTenant: boolean;
     onClose: () => void;
     onSave: (schedule: AfterHoursCourierSchedule) => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface ValidationErrors {
@@ -357,7 +354,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Driver Selection Section */}
                 <Paper
                     elevation={0}
@@ -590,7 +587,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                 sx={(theme) => ({
                     px: 3,
                     py: 2,
-                    bgcolor: '#fafafa',
+                    bgcolor: 'background.default',
                     borderTop: `1px solid ${theme.palette.divider}`,
                     gap: 1,
                 })}

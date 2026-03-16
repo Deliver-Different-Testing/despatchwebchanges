@@ -3,6 +3,7 @@
  */
 
 import { Dayjs } from 'dayjs';
+import type { ShowToastFn } from '../../../services/toastService';
 
 /**
  * Job property field names for identifying which field is being edited
@@ -37,7 +38,7 @@ export interface EditDateTimeDialogProps {
     isUSCustomer?: boolean;
     onClose: () => void;
     onSubmit: (result: EditDateTimeDialogResult) => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 /**

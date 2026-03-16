@@ -1,24 +1,21 @@
 import React, {useState} from 'react';
-import {
-    Box,
-    IconButton,
-    Tooltip,
-} from '@mui/material';
-import {
-    AttachMoney as MoneyIcon,
-    Download as DownloadIcon,
-    LocalShipping as LocalShippingIcon,
-    PeopleAlt as PeopleAltIcon,
-    Refresh as RefreshIcon,
-    TrendingUp as TrendingUpIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import MoneyIcon from '@mui/icons-material/AttachMoney';
+import DownloadIcon from '@mui/icons-material/Download';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import {useDriverEarnings} from '../../../hooks';
 import {CourierDailyEarnings, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx} from './shared';
+import type {ShowToastFn} from '../../../services/toastService';
 
 interface DriverEarningsTabProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
 }
 
 const columns: DataTableColumn<CourierDailyEarnings>[] = [

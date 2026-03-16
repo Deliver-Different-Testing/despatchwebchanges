@@ -6,28 +6,24 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    CircularProgress,
-    Select,
-    MenuItem,
-    FormControl,
-    InputLabel,
-    Alert,
-    Divider,
-    FormControlLabel,
-    Checkbox,
-} from '@mui/material';
-import {
-    Checklist as ChecklistIcon,
-    Close as CloseIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Alert from '@mui/material/Alert';
+import Divider from '@mui/material/Divider';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Checkbox from '@mui/material/Checkbox';
+import ChecklistIcon from '@mui/icons-material/Checklist';
+import CloseIcon from '@mui/icons-material/Close';
 
 import { SelectDialogProps, SelectDialogResult, SelectDialogItem } from './types';
 
@@ -157,7 +153,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{ p: 0, bgcolor: '#fafafa' }}>
+            <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {/* Select Dropdown */}
                     <FormControl fullWidth>

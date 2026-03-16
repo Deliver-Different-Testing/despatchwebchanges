@@ -2,6 +2,8 @@
  * Accessorial Charges Dialog Types
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 export interface AccessorialChargeDto {
     accessorialChargeId: number;
     name: string;
@@ -83,12 +85,12 @@ export interface AccessorialChargesDialogProps {
     open: boolean;
     job: AccessorialChargesJob | null;
     onClose: () => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 export interface OpenAccessorialChargesDialogOptions {
     job: AccessorialChargesJob;
     toastService?: {
-        showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+        showToast: ShowToastFn;
     };
 }

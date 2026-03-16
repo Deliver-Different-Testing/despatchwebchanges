@@ -32,7 +32,7 @@ export function useAddressSearch(
 
     return useQuery<HereMapsLocationResult[], Error>({
         queryKey: queryKeys.addresses.search(searchText),
-        queryFn: () => addressApi.autocompleteSearch(searchText),
+        queryFn: ({signal}) => addressApi.autocompleteSearch(searchText, {signal}),
         enabled: shouldSearch && (options?.enabled ?? true),
         staleTime: 30 * 1000, // Cache search results for 30 seconds
     });
@@ -58,7 +58,7 @@ export function useLocationDetails(
 ) {
     return useQuery<HereMapsLookupResponse, Error>({
         queryKey: queryKeys.addresses.details(addressId || ''),
-        queryFn: () => addressApi.getLocationDetailsById(addressId!),
+        queryFn: ({signal}) => addressApi.getLocationDetailsById(addressId!, {signal}),
         enabled: !!addressId && (options?.enabled ?? true),
         staleTime: 5 * 60 * 1000, // Cache location details for 5 minutes
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
@@ -79,7 +79,7 @@ export function useLocationDetails(
 export function useHereMapsApiKey(options?: {enabled?: boolean}) {
     return useQuery<string, Error>({
         queryKey: queryKeys.hereMaps.apiKey,
-        queryFn: () => addressApi.getHereMapsKey(),
+        queryFn: ({signal}) => addressApi.getHereMapsKey({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 60 * 60 * 1000, // Cache API key for 1 hour
         gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour

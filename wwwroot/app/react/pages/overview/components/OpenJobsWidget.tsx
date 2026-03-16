@@ -1,16 +1,14 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {
-    Box,
-    Card,
-    Chip,
-    Collapse,
-    Divider,
-    IconButton,
-    Switch,
-    TablePagination,
-    Tooltip,
-    Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Chip from '@mui/material/Chip';
+import Collapse from '@mui/material/Collapse';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import Switch from '@mui/material/Switch';
+import TablePagination from '@mui/material/TablePagination';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import {formatMins} from '../../../utils/dateUtils';
 import type {DriverViewModel, IOpenJobResponse, TableSort, ViewJob,} from '../OverviewPage.interfaces';

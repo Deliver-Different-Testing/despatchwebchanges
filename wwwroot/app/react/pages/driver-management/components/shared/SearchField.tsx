@@ -1,6 +1,9 @@
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {IconButton, InputAdornment, TextField} from '@mui/material';
-import {Clear as ClearIcon, Search as SearchIcon} from '@mui/icons-material';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
 
 interface SearchFieldProps {
     value: string;

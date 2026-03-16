@@ -6,46 +6,42 @@
  */
 
 import React from 'react';
-import {
-    Dialog,
-    DialogContent,
-    Box,
-    IconButton,
-    Typography,
-    TextField,
-    Button,
-    List,
-    ListItem,
-    ListItemAvatar,
-    ListItemText,
-    Avatar,
-    Badge,
-    CircularProgress,
-    Chip,
-    MenuItem,
-    Select,
-    FormControl,
-    Checkbox,
-    InputAdornment,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Chat as ChatIcon,
-    Send as SendIcon,
-    Refresh as RefreshIcon,
-    AddComment as AddCommentIcon,
-    ArrowBack as ArrowBackIcon,
-    Search as SearchIcon,
-    QuickreplyOutlined as QuickReplyIcon,
-    DoneAll as DoneAllIcon,
-    Done as DoneIcon,
-    CheckBox as CheckBoxIcon,
-    CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon,
-    SearchOff as SearchOffIcon,
-    PersonSearch as PersonSearchIcon,
-    ChatBubbleOutline as ChatBubbleOutlineIcon,
-    ErrorOutline as ErrorOutlineIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
+import ListItemText from '@mui/material/ListItemText';
+import Avatar from '@mui/material/Avatar';
+import Badge from '@mui/material/Badge';
+import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import FormControl from '@mui/material/FormControl';
+import Checkbox from '@mui/material/Checkbox';
+import InputAdornment from '@mui/material/InputAdornment';
+import CloseIcon from '@mui/icons-material/Close';
+import ChatIcon from '@mui/icons-material/Chat';
+import SendIcon from '@mui/icons-material/Send';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import AddCommentIcon from '@mui/icons-material/AddComment';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
+import QuickReplyIcon from '@mui/icons-material/QuickreplyOutlined';
+import DoneAllIcon from '@mui/icons-material/DoneAll';
+import DoneIcon from '@mui/icons-material/Done';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
+import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {
     MessagingDialogProps,
     ChatMessage,
@@ -584,7 +580,7 @@ function ConversationsPanel({
                 flexDirection: 'column',
                 borderRight: '1px solid',
                 borderColor: 'divider',
-                bgcolor: '#fafafa',
+                bgcolor: 'background.default',
             }}
         >
             {/* Panel Header */}
@@ -868,7 +864,7 @@ function ChatPanel({
                     sx={{
                         borderTop: '1px solid',
                         borderColor: 'divider',
-                        bgcolor: '#fafafa',
+                        bgcolor: 'background.default',
                         p: 1.5,
                     }}
                 >
@@ -1094,7 +1090,7 @@ function NewChatView({
                     alignItems: 'center',
                     gap: 1.5,
                     p: 2,
-                    bgcolor: '#fafafa',
+                    bgcolor: 'background.default',
                     borderBottom: '1px solid',
                     borderColor: 'divider',
                 }}

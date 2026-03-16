@@ -1,7 +1,7 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material';
-import {Check as CheckIcon} from '@mui/icons-material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
+import CheckIcon from '@mui/icons-material/Check';
 import {StatCard} from './StatCard';
 
 const theme = createTheme();

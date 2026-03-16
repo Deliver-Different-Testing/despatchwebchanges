@@ -8,6 +8,7 @@ import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {tasksApi} from '../services/tasksApi';
 import {Task, TaskFiltersRequest, StaffSuggestion, EventTypeSuggestion} from '../interfaces';
+import type {DeliveryJourney} from '../components/common/task-history/TaskHistory.interfaces';
 import {Dayjs} from 'dayjs';
 
 /**
@@ -34,9 +35,8 @@ export function useTasks(
 ) {
     return useQuery<Task[], Error>({
         queryKey: queryKeys.tasks.list(filters || {}),
-        queryFn: () => tasksApi.getAllTasks(filters),
+        queryFn: ({signal}) => tasksApi.getAllTasks(filters, {signal}),
         enabled: options?.enabled ?? true,
-        staleTime: 30 * 1000,
     });
 }
 
@@ -48,7 +48,7 @@ export function useTasks(
 export function useActiveStaff(options?: {enabled?: boolean}) {
     return useQuery<StaffSuggestion[], Error>({
         queryKey: queryKeys.tasks.staff,
-        queryFn: () => tasksApi.getActiveStaff(),
+        queryFn: ({signal}) => tasksApi.getActiveStaff({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     });
@@ -62,7 +62,7 @@ export function useActiveStaff(options?: {enabled?: boolean}) {
 export function useEventTypes(options?: {enabled?: boolean}) {
     return useQuery<EventTypeSuggestion[], Error>({
         queryKey: queryKeys.tasks.eventTypes,
-        queryFn: () => tasksApi.getEventTypes(),
+        queryFn: ({signal}) => tasksApi.getEventTypes({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes
     });
@@ -75,11 +75,10 @@ export function useEventTypes(options?: {enabled?: boolean}) {
  * @returns Query result with delivery journey events
  */
 export function useDeliveryJourney(jobId?: number, options?: {enabled?: boolean}) {
-    return useQuery<unknown[], Error>({
+    return useQuery<DeliveryJourney[], Error>({
         queryKey: queryKeys.tasks.deliveryJourney(jobId || 0),
-        queryFn: () => tasksApi.getDeliveryJourney(jobId!),
+        queryFn: ({signal}) => tasksApi.getDeliveryJourney(jobId!, {signal}),
         enabled: (options?.enabled ?? true) && !!jobId && jobId > 0,
-        staleTime: 30 * 1000,
     });
 }
 

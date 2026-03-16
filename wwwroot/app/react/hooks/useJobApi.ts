@@ -34,9 +34,8 @@ export function useRelatedJobs(
 ) {
     return useQuery<RelatedJobDto[], Error>({
         queryKey: queryKeys.jobs.related(jobId, isArchived),
-        queryFn: () => jobApi.getRelatedJobsMultiSelectList(jobId, isArchived),
+        queryFn: ({signal}) => jobApi.getRelatedJobsMultiSelectList(jobId, isArchived, false, {signal}),
         enabled: (options?.enabled ?? true) && jobId > 0,
-        staleTime: 30 * 1000,
     });
 }
 
@@ -49,9 +48,8 @@ export function useClientSearch(
 ) {
     return useQuery<Suggestion[], Error>({
         queryKey: queryKeys.clients.search(searchText),
-        queryFn: () => jobApi.searchActiveClients(searchText),
+        queryFn: ({signal}) => jobApi.searchActiveClients(searchText, {signal}),
         enabled: searchText.length >= 3 && (options?.enabled ?? true),
-        staleTime: 30 * 1000,
     });
 }
 
@@ -61,7 +59,7 @@ export function useClientSearch(
 export function useVehicleSizes(options?: { enabled?: boolean }) {
     return useQuery<Suggestion[], Error>({
         queryKey: queryKeys.vehicles.all,
-        queryFn: () => jobApi.getVehicleSizes(),
+        queryFn: ({signal}) => jobApi.getVehicleSizes({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000,
         gcTime: 30 * 60 * 1000,

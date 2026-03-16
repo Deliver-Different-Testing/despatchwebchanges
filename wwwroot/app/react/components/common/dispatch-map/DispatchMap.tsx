@@ -7,7 +7,8 @@
 
 import React, { useRef, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Box, LinearProgress } from '@mui/material';
+import Box from '@mui/material/Box';
+import LinearProgress from '@mui/material/LinearProgress';
 import type { DispatchMapProps } from './DispatchMap.types';
 import { COURIER_REFRESH_INTERVAL_MS } from './DispatchMap.types';
 import { useHereMap } from './useHereMap';

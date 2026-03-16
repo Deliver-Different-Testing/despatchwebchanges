@@ -57,7 +57,7 @@ describe('notesApi', () => {
 
             await notesApi.getJobNotes(100, false);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNotes', {jobId: 100});
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNotes', {jobId: 100}, undefined);
         });
 
         it('should call correct endpoint for recurring job notes', async () => {
@@ -65,7 +65,7 @@ describe('notesApi', () => {
 
             await notesApi.getJobNotes(100, true);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetRecurringNotes', {jobId: 100});
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetRecurringNotes', {jobId: 100}, undefined);
         });
 
         it('should transform date strings to Dayjs objects', async () => {
@@ -120,7 +120,7 @@ describe('notesApi', () => {
 
             await notesApi.getBulkJobNotes(200);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetBulkJobNotes', {bulkJobId: 200});
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetBulkJobNotes', {bulkJobId: 200}, undefined);
         });
 
         it('should return empty array when API returns null', async () => {
@@ -142,7 +142,7 @@ describe('notesApi', () => {
 
             const result = await notesApi.getNoteTypes();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteTypes');
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteTypes', undefined, undefined);
             expect(result).toEqual(mockNoteTypes);
         });
 
@@ -252,7 +252,7 @@ describe('notesApi', () => {
 
             await notesApi.getNoteHistory(1, 'Note');
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteHistory', {noteId: 1, noteSource: 'Note'});
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteHistory', {noteId: 1, noteSource: 'Note'}, undefined);
         });
 
         it('should use default noteSource of "Note"', async () => {
@@ -260,7 +260,7 @@ describe('notesApi', () => {
 
             await notesApi.getNoteHistory(1);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteHistory', {noteId: 1, noteSource: 'Note'});
+            expect(mockApiClient.get).toHaveBeenCalledWith('note/GetNoteHistory', {noteId: 1, noteSource: 'Note'}, undefined);
         });
 
         it('should transform editedAt strings to Dayjs objects', async () => {

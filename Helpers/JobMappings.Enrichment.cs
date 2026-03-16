@@ -114,33 +114,9 @@ public static partial class JobMappings
 
     private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
     {
-        foreach (var job in jobs)
-        {
-            var pickupTz = job.PickUpTimeZone?.Text ?? tenantTimeZone;
-            var deliveryTz = job.DeliveryTimeZone?.Text ?? tenantTimeZone;
-
-            // Pickup-timezone fields
-            if (job.PuTime.HasValue)
-                job.PuTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, pickupTz);
-            if (job.PickupArrivalTime.HasValue)
-                job.PickupArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PickupArrivalTime.Value, pickupTz);
-
-            // Delivery-timezone fields
-            if (job.CompletedTime.HasValue)
-                job.CompletedTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, deliveryTz);
-            if (job.DeliverByTime.HasValue)
-                job.DeliverByTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, deliveryTz);
-            if (job.DeliveryArrivalTime.HasValue)
-                job.DeliveryArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliveryArrivalTime.Value, deliveryTz);
-
-            // Tenant-local fields (unchanged)
-            if (job.DispatchTime.HasValue)
-                job.DispatchTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimeZone);
-            if (job.FollowupTime.HasValue)
-                job.FollowupTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, tenantTimeZone);
-            if (job.CreatedDate.HasValue)
-                job.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimeZone);
-        }
+        // Tenant-local datetimes are displayed as-is from the database.
+        // No timezone offset stamping needed — the frontend's parseDateFromApi
+        // extracts the time value from the ISO string regardless of offset.
     }
 
     private static async Task BatchLoadFlightInfoAsync(

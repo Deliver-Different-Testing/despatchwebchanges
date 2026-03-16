@@ -44,7 +44,8 @@ describe('jobApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'job/GetRelatedJobsMultiSelectList',
-                {jobId: 123, isArchived: false, isBulkJob: false}
+                {jobId: 123, isArchived: false, isBulkJob: false},
+                undefined
             );
             expect(result).toEqual(mockResponse);
         });
@@ -56,7 +57,8 @@ describe('jobApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'job/GetRelatedJobsMultiSelectList',
-                {jobId: 456, isArchived: true, isBulkJob: false}
+                {jobId: 456, isArchived: true, isBulkJob: false},
+                undefined
             );
         });
 
@@ -67,7 +69,8 @@ describe('jobApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'job/GetRelatedJobsMultiSelectList',
-                {jobId: 789, isArchived: false, isBulkJob: true}
+                {jobId: 789, isArchived: false, isBulkJob: true},
+                undefined
             );
         });
 
@@ -195,7 +198,7 @@ describe('jobApi', () => {
 
             const result = await searchActiveClients('Acme');
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('home/ActiveClients', {searchText: 'Acme'});
+            expect(mockApiClient.get).toHaveBeenCalledWith('home/ActiveClients', {searchText: 'Acme'}, undefined);
             expect(result).toEqual(mockClients);
         });
 
@@ -219,7 +222,7 @@ describe('jobApi', () => {
 
             const result = await getVehicleSizes();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetVehicleSizes');
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetVehicleSizes', undefined, undefined);
             expect(result).toEqual(mockVehicles);
         });
     });
@@ -254,7 +257,7 @@ describe('jobApi', () => {
 
             const result = await validateSwapPod('JOB-002');
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('Job/ValidateSwapPod', {job: 'JOB-002'});
+            expect(mockApiClient.get).toHaveBeenCalledWith('Job/ValidateSwapPod', {job: 'JOB-002'}, undefined);
             expect(result).toBe(true);
         });
 

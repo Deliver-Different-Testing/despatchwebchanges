@@ -1,13 +1,11 @@
 import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
-import {
-    Box,
-    Card,
-    Typography,
-    IconButton,
-    TextField,
-    InputAdornment,
-    Collapse,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import Collapse from '@mui/material/Collapse';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
 import {

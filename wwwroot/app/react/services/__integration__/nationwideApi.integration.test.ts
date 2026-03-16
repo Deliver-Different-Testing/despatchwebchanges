@@ -55,18 +55,16 @@ describe('nationwideApi integration', () => {
             expect(dayjs.isDayjs(result!.deliverByTime)).toBe(true);
         });
 
-        it('returns null on error instead of throwing', async () => {
+        it('throws on server error', async () => {
             server.use(
                 http.get('*/nationwideJob/CalculateCargoReadyTime', () => {
                     return new HttpResponse('Server error', { status: 500 });
                 })
             );
 
-            const result = await nationwideApi.calculateCargoReadyTime(
-                100, 'NZ', '2024-01-20T14:30:00+13:00'
-            );
-
-            expect(result).toBeNull();
+            await expect(
+                nationwideApi.calculateCargoReadyTime(100, 'NZ', '2024-01-20T14:30:00+13:00')
+            ).rejects.toBeDefined();
         });
 
         it('returns null when response is null', async () => {
@@ -184,7 +182,7 @@ describe('nationwideApi integration', () => {
             expect(result).toHaveLength(0);
         });
 
-        it('re-throws errors (unlike calculateCargoReadyTime)', async () => {
+        it('re-throws errors on server error', async () => {
             server.use(
                 http.get('*/nationwideJob/GetScheduledFlightOptions', () => {
                     return new HttpResponse('Server error', { status: 500 });

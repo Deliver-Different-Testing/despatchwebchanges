@@ -4,7 +4,7 @@
 
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {AppToolbar} from './AppToolbar';
 
 // Create a default theme for tests

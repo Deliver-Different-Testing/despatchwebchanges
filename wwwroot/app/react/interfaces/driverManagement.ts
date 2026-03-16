@@ -1,5 +1,7 @@
 // Driver Management Dashboard interfaces
 
+import type {ShowToastFn} from '../services/toastService';
+
 // ----- Pagination -----
 
 export interface PaginatedRequest {
@@ -189,12 +191,12 @@ export interface CourierDailyEarningsPaginated extends PaginatedResponse<Courier
 // ----- Page Props -----
 
 export interface DriverManagementPageProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer?: boolean;
     setRefreshCallback?: (callback: () => void) => void;
 }
 
 export interface MountDriverManagementConfig {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer?: boolean;
 }

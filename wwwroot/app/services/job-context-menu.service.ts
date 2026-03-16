@@ -2,6 +2,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import ToastrService from "./toastr.service";
 import {openAddEventDialog} from "../react/components/dialogs/add-event-dialog";
 import {openEventGroupDialog} from "../react/components/dialogs/event-group-dialog";
+import type {ToastType} from "../react/services/toastService";
 import {IDispatchJob, ILateCallRequest, ISuggestion,} from "../interfaces/job.interface";
 import IContextMenuOption from "../interfaces/context-menu-option.interface";
 import InternalJobStatus from "../enums/job-internal-status.enum";
@@ -61,7 +62,7 @@ class JobContextMenuService implements angular.IServiceProvider {
 
     private createToastAdapter() {
         return {
-            showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+            showToast: (message: string, type: ToastType) => {
                 switch (type) {
                     case 'success':
                         this.toastrService.showSuccessToast(message);
@@ -71,6 +72,9 @@ class JobContextMenuService implements angular.IServiceProvider {
                         break;
                     case 'error':
                         this.toastrService.showErrorToast(message);
+                        break;
+                    case 'info':
+                        this.toastrService.showSuccessToast(message);
                         break;
                 }
             },

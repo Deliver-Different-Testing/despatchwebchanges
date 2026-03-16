@@ -2,6 +2,8 @@
  * Simple Price Edit Dialog Types
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 export type PricingMode = 'recalculate' | 'base' | 'gross';
 
 export interface PriceEditResult {
@@ -19,7 +21,7 @@ export interface SimplePriceEditDialogProps {
     isPrebook: boolean;
     onClose: () => void;
     onSubmit: (mode: PricingMode, amount: number) => Promise<number>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 /**

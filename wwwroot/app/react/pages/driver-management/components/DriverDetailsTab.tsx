@@ -1,32 +1,29 @@
 import React, {useState} from 'react';
-import {
-    Autocomplete,
-    Box,
-    Card,
-    CardContent,
-    Chip,
-    CircularProgress,
-    TextField,
-    Toolbar,
-    Typography,
-} from '@mui/material';
-import {
-    Badge as BadgeIcon,
-    Phone as PhoneIcon,
-    DirectionsCar as CarIcon,
-    VerifiedUser as VerifiedIcon,
-    AccountBalance as BankIcon,
-    Email as EmailIcon,
-    Info as InfoIcon,
-    PersonSearch as PersonSearchIcon,
-    Search as SearchIcon,
-} from '@mui/icons-material';
+import Autocomplete from '@mui/material/Autocomplete';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextField from '@mui/material/TextField';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
+import BadgeIcon from '@mui/icons-material/Badge';
+import PhoneIcon from '@mui/icons-material/Phone';
+import CarIcon from '@mui/icons-material/DirectionsCar';
+import VerifiedIcon from '@mui/icons-material/VerifiedUser';
+import BankIcon from '@mui/icons-material/AccountBalance';
+import EmailIcon from '@mui/icons-material/Email';
+import InfoIcon from '@mui/icons-material/Info';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import SearchIcon from '@mui/icons-material/Search';
 import {useDriverSearch, useCourierDetails} from '../../../hooks';
 import {FleetOption} from '../../../interfaces';
+import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 
 interface DriverDetailsTabProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
 }
 
 export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _showToast}) => {

@@ -1,4 +1,4 @@
-import {SxProps, Theme} from '@mui/material';
+import type {SxProps, Theme} from '@mui/material/styles';
 
 // Day-of-week color mapping — each day gets a distinct MUI chip color
 const dayColorMap: Record<string, 'primary' | 'secondary' | 'success' | 'info' | 'warning' | 'error' | 'default'> = {

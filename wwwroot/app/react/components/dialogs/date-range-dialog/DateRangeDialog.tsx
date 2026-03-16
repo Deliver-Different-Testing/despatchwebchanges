@@ -5,24 +5,20 @@
  */
 
 import React, {useState, useMemo} from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    Paper,
-    Stack,
-    alpha,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    DateRange as DateRangeIcon,
-    ArrowForward as ArrowForwardIcon,
-    CalendarMonth as CalendarIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
+import CloseIcon from '@mui/icons-material/Close';
+import DateRangeIcon from '@mui/icons-material/DateRange';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CalendarIcon from '@mui/icons-material/CalendarMonth';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
@@ -212,7 +208,7 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 3, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
                     <Stack
                         direction={{ xs: 'column', md: 'row' }}
                         spacing={3}

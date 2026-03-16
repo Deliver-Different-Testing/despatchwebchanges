@@ -10,33 +10,29 @@
  */
 
 import React from 'react';
-import {
-    Dialog,
-    DialogContent,
-    Box,
-    IconButton,
-    Typography,
-    CircularProgress,
-    Chip,
-    Paper,
-    alpha,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Engineering as EngineeringIcon,
-    Person as PersonIcon,
-    Phone as PhoneIcon,
-    Email as EmailIcon,
-    LocationOn as LocationOnIcon,
-    Note as NoteIcon,
-    Flight as FlightIcon,
-    AirplanemodeInactive as FlightOffIcon,
-    Place as PlaceIcon,
-    Schedule as ScheduleIcon,
-    MyLocation as MyLocationIcon,
-    Star as StarIcon,
-    StarBorder as StarBorderIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
+import Paper from '@mui/material/Paper';
+import CloseIcon from '@mui/icons-material/Close';
+import EngineeringIcon from '@mui/icons-material/Engineering';
+import PersonIcon from '@mui/icons-material/Person';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import LocationOnIcon from '@mui/icons-material/LocationOn';
+import NoteIcon from '@mui/icons-material/Note';
+import FlightIcon from '@mui/icons-material/Flight';
+import FlightOffIcon from '@mui/icons-material/AirplanemodeInactive';
+import PlaceIcon from '@mui/icons-material/Place';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import MyLocationIcon from '@mui/icons-material/MyLocation';
+import StarIcon from '@mui/icons-material/Star';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
 import { AgentInfo, AirportViewModel, AddressViewModel } from '../../../interfaces';
 
 // Re-export interfaces for backward compatibility
@@ -153,7 +149,7 @@ export class AgentInfoDialog extends React.Component<AgentInfoDialogProps> {
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                     {isLoading ? (
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
                             <CircularProgress size={40} />
