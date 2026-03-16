@@ -2,7 +2,7 @@
 
 namespace DespatchWeb.Models.Dto;
 
-public class MessageParticipant
+public sealed record MessageParticipant
 {
     public int Id { get; init; }
     public OtherMessagePartyType Type { get; init; }

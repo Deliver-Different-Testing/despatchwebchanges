@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DespatchWeb.Models;
 
-public class AddressWithAgent
+public sealed class AddressWithAgent
 {
     /// <summary>
     /// Airport identifier

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class AirportViewModel
+public sealed class AirportViewModel
 {
     public string Code { get; init; }
     public string Name { get; init; }

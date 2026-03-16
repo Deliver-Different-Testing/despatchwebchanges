@@ -1,14 +1,14 @@
 namespace DespatchWeb.Models.Response;
 
-public class BulkPricePreviewResponse
+public sealed record BulkPricePreviewResponse
 {
-    public List<BulkPricePreviewRow> Rows { get; init; } = [];
+    public IReadOnlyList<BulkPricePreviewRow> Rows { get; init; } = [];
     public int TotalJobs { get; init; }
     public decimal TotalOldAmount { get; init; }
     public decimal TotalNewAmount { get; init; }
 }
 
-public class BulkPricePreviewRow
+public sealed record BulkPricePreviewRow
 {
     public int JobId { get; init; }
     public string JobNo { get; init; } = string.Empty;

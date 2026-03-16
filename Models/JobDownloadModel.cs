@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class JobDownloadModel
+public sealed class JobDownloadModel
 {
     public int Id { get; init; }
     public int? ParentId { get; init; }

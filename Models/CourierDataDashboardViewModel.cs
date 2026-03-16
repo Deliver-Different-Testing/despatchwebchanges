@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class CourierDataDashboardViewModel
+public sealed class CourierDataDashboardViewModel
 {
     public int CourierId { get; init; }
     public BasicInformation BasicInformation { get; init; }
@@ -11,7 +11,7 @@ public class CourierDataDashboardViewModel
     public AdditionalInformation AdditionalInformation { get; init; }
 }
 
-public class BasicInformation
+public sealed class BasicInformation
 {
     public string Code { get; init; }
     public string FirstName { get; init; }
@@ -20,7 +20,7 @@ public class BasicInformation
     public string Address { get; init; }
 }
 
-public class ContactInformation
+public sealed class ContactInformation
 {
     public string Mobile { get; init; }
     public string Home { get; init; }
@@ -28,7 +28,7 @@ public class ContactInformation
     public string IrdNumber { get; init; }
 }
 
-public class VehicleInformation
+public sealed class VehicleInformation
 {
     public string Rego { get; init; }
     public int? VehicleYear { get; init; }
@@ -36,21 +36,21 @@ public class VehicleInformation
     public string VehicleInsurance { get; init; }
 }
 
-public class Compliance
+public sealed class Compliance
 {
     public bool? DangerousGoods { get; init; }
     public DateTime? DangerousGoodsExpiry { get; init; }
     public DateTime? DriversLicenceExpiry { get; init; }
 }
 
-public class BankingAndEmergency
+public sealed class BankingAndEmergency
 {
     public bool EmergencyContact { get; init; }
     public string Bank { get; init; }
     public bool SecurityCheck { get; init; }
 }
 
-public class AdditionalInformation
+public sealed class AdditionalInformation
 {
     public DateTime? ContactSignDate { get; init; }
     public decimal? MobileInsurence { get; init; }

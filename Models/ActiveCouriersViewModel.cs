@@ -2,7 +2,7 @@
 
 namespace DespatchWeb.Models;
 
-public class ActiveCouriersViewModel
+public sealed class ActiveCouriersViewModel
 {
     public int CourierId { get; init; }
 

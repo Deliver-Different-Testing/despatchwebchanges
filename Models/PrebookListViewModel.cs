@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class PrebookListViewModel
+public sealed class PrebookListViewModel
 {
     public int Id { get; init; }
     public DateTimeOffset Booked { get; set; }

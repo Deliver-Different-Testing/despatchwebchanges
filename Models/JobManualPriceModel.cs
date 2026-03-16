@@ -3,7 +3,7 @@ using DespatchWeb.Helpers;
 
 namespace DespatchWeb.Models;
 
-public class JobManualPriceModel
+public sealed class JobManualPriceModel
 {
     public int Id { get; init; }
     public decimal? Amount { get; init; }

@@ -738,7 +738,7 @@ public sealed class RateJobService(
     /// </summary>
     /// <param name="packages">The list of package details.</param>
     /// <returns>A collection of UrgentPackageObjects, or empty if packages is null/empty.</returns>
-    private static IEnumerable<UrgentPackageObject> MapPackages(List<PackageDetailsDto> packages)
+    private static IEnumerable<UrgentPackageObject> MapPackages(IReadOnlyList<PackageDetailsDto> packages)
     {
         if (packages == null || packages.Count == 0) return new List<UrgentPackageObject>();
 

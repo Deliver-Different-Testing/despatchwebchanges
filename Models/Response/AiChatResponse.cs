@@ -1,38 +1,38 @@
 namespace DespatchWeb.Models.Response;
 
-public class AiChatResponse
+public sealed record AiChatResponse
 {
     public string Message { get; init; }
     public AiUsageInfo Usage { get; init; }
 }
 
-public class AiChatChunk
+public sealed record AiChatChunk
 {
     public string Text { get; init; }
     public bool IsComplete { get; init; }
     public AiUsageInfo Usage { get; init; }
 }
 
-public class AiUsageInfo
+public readonly record struct AiUsageInfo
 {
     public int InputTokens { get; init; }
     public int OutputTokens { get; init; }
 }
 
-public class AiSummaryResponse
+public sealed record AiSummaryResponse
 {
     public string Summary { get; init; }
     public AiUsageInfo Usage { get; init; }
 }
 
-public class AiCourierSuggestionResponse
+public sealed record AiCourierSuggestionResponse
 {
     public string Summary { get; init; }
     public AiUsageInfo Usage { get; init; }
-    public List<SuggestedCourier> Couriers { get; init; } = [];
+    public IReadOnlyList<SuggestedCourier> Couriers { get; init; } = [];
 }
 
-public class SuggestedCourier
+public sealed record SuggestedCourier
 {
     public int CourierId { get; init; }
     public string Code { get; init; }

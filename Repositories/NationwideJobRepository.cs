@@ -24,8 +24,8 @@ public class NationwideJobRepository(
     IClearListEnvelopeService clearListEnvelopeService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), INationwideJobRepository
 {
-    private readonly ITenantInfoService _infoService = infoService;
     private readonly ITenantClock _clock = clock;
+    private readonly ITenantInfoService _infoService = infoService;
 
     public async Task AddJobNationwideAsync(AssignFlightToJobRequest requestData,
         IReadOnlyList<string> webhookIds,
@@ -170,7 +170,7 @@ public class NationwideJobRepository(
         }
         catch (Exception e)
         {
-            await transaction.RollbackAsync();
+            await transaction.RollbackAsync(cancellationToken);
             Log.Error(e, "An error occured adding PrimaryFlight: {PrimaryFlightNumber} to job {JobId}",
                 requestData.FlightSegments[0]?.FlightNumber,
                 requestData.JobId);
@@ -1417,7 +1417,8 @@ public class NationwideJobRepository(
             .Select(fc => fc.FlightCarrierId)
             .FirstOrDefaultAsync();
 
-    private static void UpdateJobAddressWithAirportInfo(IReadOnlyList<AirportAddressInfoDto> airports, TucJob job, int airportId,
+    private static void UpdateJobAddressWithAirportInfo(IReadOnlyList<AirportAddressInfoDto> airports, TucJob job,
+        int airportId,
         int? timeZoneId,
         bool isDeliveryAddress)
     {

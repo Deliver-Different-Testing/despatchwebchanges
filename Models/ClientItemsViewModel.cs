@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class ClientItemsViewModel
+public sealed class ClientItemsViewModel
 {
     public int ItemId { get; init; }
 

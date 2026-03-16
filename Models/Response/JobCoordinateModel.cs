@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Response;
 
-public class JobCoordinateModel
+public sealed record JobCoordinateModel
 {
     public int Id { get; init; }
     public string JobNo { get; init; }

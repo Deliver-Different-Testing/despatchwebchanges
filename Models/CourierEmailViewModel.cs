@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class CourierEmailViewModel
+public sealed class CourierEmailViewModel
 {
     public int CourierId { get; init; }
     public string Code { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class CourierLocation
+public sealed class CourierLocation
 {
     public decimal Longitude { get; init; }
 

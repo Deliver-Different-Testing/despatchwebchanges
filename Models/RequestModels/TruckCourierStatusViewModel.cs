@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class TruckCourierStatusViewModel
+public sealed class TruckCourierStatusViewModel
 {
     public int CourierId { get; init; }
 

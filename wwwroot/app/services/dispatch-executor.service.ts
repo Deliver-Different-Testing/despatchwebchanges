@@ -93,7 +93,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
                 return;
             }
 
-            await this.assignSingleJobToCourier(courier.courierId, job as IDispatchJob);
+            await this.executeJobDispatch(courier, [job as IDispatchJob]);
         } catch (error) {
             console.error("Error in assignSingleJobById:", error);
             throw error;
@@ -159,7 +159,7 @@ class DispatchExecutorService implements angular.IServiceProvider {
             throw new Error(`Invalid courier ID: ${courierId}`);
         }
 
-        await this.assignJobsToCourier(courierId, jobs);
+        await this.executeJobDispatch(courier, jobs);
     }
 
     private async fetchJobsByParameters(

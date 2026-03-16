@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Accessorial;
 
-public class AccessorialChargeDto
+public sealed record AccessorialChargeDto
 {
     public int AccessorialChargeId { get; init; }
     public string Name { get; init; }

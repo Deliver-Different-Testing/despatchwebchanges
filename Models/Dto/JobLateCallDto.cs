@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class JobLateCallDto
+public sealed record JobLateCallDto
 {
      public int Id { get; init; }
         public int ClientId { get; init; }

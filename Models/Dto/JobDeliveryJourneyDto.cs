@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class JobDeliveryJourneyDto
+public sealed record JobDeliveryJourneyDto
 {
     public int Id { get; init; }
     public DateTime UpdatedAt { get; init; }
@@ -34,7 +34,7 @@ public class JobDeliveryJourneyDto
     public string OldCourierName { get; init; }
 }
 
-public class JobDeliveryJourneyArchiveDto
+public sealed record JobDeliveryJourneyArchiveDto
 {
     public int Id { get; init; }
     public DateTime UpdatedAt { get; init; }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class TaskViewModel
+public sealed class TaskViewModel
 {
     public int Id { get; init; }
 

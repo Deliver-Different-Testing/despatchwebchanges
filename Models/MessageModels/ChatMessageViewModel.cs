@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.MessageModels;
 
-public class ChatMessageViewModel
+public sealed class ChatMessageViewModel
 {
     public int MessageId { get; init; }
     public int? SendToStaffId { get; init; }

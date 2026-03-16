@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class AgentQuoteTemplateDto
+public sealed class AgentQuoteTemplateDto
 {
     public string DeliveryAddressLine5 { get; init; }
     public string JobNo { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class CourierComplianceViewModel
+public sealed class CourierComplianceViewModel
 {
     public string Code { get; init; }
     public string Name { get; init; }

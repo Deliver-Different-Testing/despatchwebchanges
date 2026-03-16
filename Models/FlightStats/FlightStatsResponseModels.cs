@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace DespatchWeb.Models.FlightStats;
 
-public class Airline
+public sealed class Airline
 {
     [JsonPropertyName("fs")] public string Fs { get; init; }
 
@@ -17,7 +17,7 @@ public class Airline
     [JsonPropertyName("category")] public string Category { get; init; }
 }
 
-public class Airport
+public sealed class Airport
 {
     [JsonPropertyName("fs")] public string Fs { get; init; }
 
@@ -69,17 +69,17 @@ public class Airport
     [JsonPropertyName("street2")] public string Street2 { get; init; }
 }
 
-public class AllowNearbyArrivals
+public sealed class AllowNearbyArrivals
 {
     [JsonPropertyName("interpreted")] public bool? Interpreted { get; init; }
 }
 
-public class AllowNearbyDepartures
+public sealed class AllowNearbyDepartures
 {
     [JsonPropertyName("interpreted")] public bool? Interpreted { get; init; }
 }
 
-public class Appendix
+public sealed class Appendix
 {
     [JsonPropertyName("airlines")] public List<Airline> Airlines { get; init; }
 
@@ -88,14 +88,14 @@ public class Appendix
     [JsonPropertyName("equipments")] public List<Equipment> Equipments { get; init; }
 }
 
-public class Arrival
+public sealed class Arrival
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; init; }
 }
 
-public class FlightStatsCodeshare
+public sealed class FlightStatsCodeshare
 {
     [JsonPropertyName("carrierFsCode")] public string CarrierFsCode { get; init; }
 
@@ -109,7 +109,7 @@ public class FlightStatsCodeshare
     public List<object> TrafficRestrictions { get; init; }
 }
 
-public class Connection
+public sealed class Connection
 {
     [JsonPropertyName("elapsedTime")] public int? ElapsedTime { get; init; }
 
@@ -118,14 +118,14 @@ public class Connection
     [JsonPropertyName("scheduledFlight")] public List<ScheduledFlight> ScheduledFlight { get; init; }
 }
 
-public class FlightStatsRequestDate
+public sealed class FlightStatsRequestDate
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; init; }
 }
 
-public class FlightStatusRequestDateTime
+public sealed class FlightStatusRequestDateTime
 {
     [JsonPropertyName("year")] public string Year { get; init; }
 
@@ -140,14 +140,14 @@ public class FlightStatusRequestDateTime
     [JsonPropertyName("interpreted")] public string Interpreted { get; init; }
 }
 
-public class Departure
+public sealed class Departure
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; init; }
 }
 
-public class Equipment
+public sealed class Equipment
 {
     [JsonPropertyName("iata")] public string Iata { get; init; }
 
@@ -162,88 +162,88 @@ public class Equipment
     [JsonPropertyName("regional")] public bool? Regional { get; init; }
 }
 
-public class ExcludeAirlines
+public sealed class ExcludeAirlines
 {
     [JsonPropertyName("interpreted")] public List<object> Interpreted { get; init; }
 }
 
-public class ExcludeAirports
+public sealed class ExcludeAirports
 {
     [JsonPropertyName("interpreted")] public List<object> Interpreted { get; init; }
 }
 
-public class ExtendedOptions
+public sealed class ExtendedOptions
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; init; }
 }
 
-public class IncludeAirlines
+public sealed class IncludeAirlines
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public List<string> Interpreted { get; init; }
 }
 
-public class IncludeAirports
+public sealed class IncludeAirports
 {
     [JsonPropertyName("interpreted")] public List<object> Interpreted { get; init; }
 }
 
-public class IncludeCodeshares
+public sealed class IncludeCodeshares
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public bool? Interpreted { get; init; }
 }
 
-public class IncludeMultipleCarriers
+public sealed class IncludeMultipleCarriers
 {
     [JsonPropertyName("interpreted")] public bool? Interpreted { get; init; }
 }
 
-public class IncludeSurface
+public sealed class IncludeSurface
 {
     [JsonPropertyName("interpreted")] public bool? Interpreted { get; init; }
 }
 
-public class MaxConnections
+public sealed class MaxConnections
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public int? Interpreted { get; init; }
 }
 
-public class MaxResults
+public sealed class MaxResults
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public int? Interpreted { get; init; }
 }
 
-public class MinimumConnectTime
+public sealed class MinimumConnectTime
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public int? Interpreted { get; init; }
 }
 
-public class NumHours
+public sealed class NumHours
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public int? Interpreted { get; init; }
 }
 
-public class PayloadType
+public sealed class PayloadType
 {
     [JsonPropertyName("requested")] public string Requested { get; init; }
 
     [JsonPropertyName("interpreted")] public string Interpreted { get; init; }
 }
 
-public class Request
+public sealed class Request
 {
     [JsonPropertyName("endpoint")] public string Endpoint { get; init; }
 
@@ -293,7 +293,7 @@ public class Request
     [JsonPropertyName("dateTime")] public FlightStatusRequestDateTime DateTime { get; init; }
 }
 
-public class FlightConnectionsRoot
+public sealed class FlightConnectionsRoot
 {
     [JsonPropertyName("request")] public Request Request { get; init; }
 

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class FlightRateDto
+public sealed record FlightRateDto
 {
     public int JobTypeId { get; init; }
     public string Name { get; init; }

@@ -7,7 +7,7 @@ namespace DespatchWeb.Models.Dto;
 /// All properties are strings to handle varying database types flexibly
 /// Using Column attribute for Dapper to map column names with spaces
 /// </summary>
-public class PerformanceSpendReportModel
+public sealed class PerformanceSpendReportModel
 {
     [Column("Job Number")]
     public string JobNumber { get; init; }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class TaskTableFiltersRequest
+public sealed class TaskTableFiltersRequest
 {
     public int? CourierId { get; init; }
     public int? EventTypeId { get; init; }

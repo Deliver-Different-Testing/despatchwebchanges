@@ -2,7 +2,7 @@ using DespatchWeb.EntityClasses;
 
 namespace DespatchWeb.Models;
 
-public class TucNoteViewModel
+public sealed class TucNoteViewModel
 {
     public int NoteId { get; init; }
 

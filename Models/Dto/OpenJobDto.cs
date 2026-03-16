@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class OpenJobDto
+public sealed record OpenJobDto
 {
     public int JobId { get; init; }
     public string Reference { get; init; }
@@ -39,7 +39,7 @@ public class OpenJobDto
     public int? SpeedMinutes { get; init; }
 }
 
-public class CourierCompletionData
+public sealed record CourierCompletionData
 {
     public int CompletedToday { get; init; }
     public DateTime? LastCompleted { get; init; }

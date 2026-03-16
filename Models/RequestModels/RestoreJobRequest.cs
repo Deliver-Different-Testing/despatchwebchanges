@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class RestoreJobRequest
+public sealed class RestoreJobRequest
 {
     public int JobId { get; init; }
 }

@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class ClearListResult
+public sealed class ClearListResult
 {
     public int? CourierId { get; init; }
     public string Code { get; init; }

@@ -1,12 +1,12 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class SendMessageRequest : SendMessageBaseClass
+public sealed class SendMessageRequest : SendMessageBaseClass
 {
     public int? SendToStaffId { get; init; }
     public int? SendToCourierId { get; init; }
 }
 
-public class SendMultipleMessageRequest(List<int> sendToStaffIds, List<int> sendToCourierIds) : SendMessageBaseClass
+public sealed class SendMultipleMessageRequest(List<int> sendToStaffIds, List<int> sendToCourierIds) : SendMessageBaseClass
 {
     public List<int> SendToStaffIds { get; init; } = sendToStaffIds;
     public List<int> SendToCourierIds { get; init; } = sendToCourierIds;

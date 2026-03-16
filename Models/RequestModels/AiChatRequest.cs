@@ -1,12 +1,12 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class AiChatRequest
+public sealed class AiChatRequest
 {
     public List<AiChatMessage> Messages { get; init; } = [];
     public string ConversationId { get; init; }
 }
 
-public class AiChatMessage
+public sealed class AiChatMessage
 {
     public string Role { get; init; }
     public string Content { get; init; }

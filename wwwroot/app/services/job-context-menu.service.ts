@@ -19,6 +19,7 @@ import PriceBreakdownDialogService from "../components/dialogs/price-breakdown-d
 import {JobStatus} from "../enums/job-status.enum";
 import {markdownToSafeHtml} from "../functions/markdownToHtml";
 import {isAiEnabled} from "../functions/aiSettings";
+import {NationwideSpeedId} from "../contants";
 import angular from 'angular';
 
 class JobContextMenuService implements angular.IServiceProvider {
@@ -51,12 +52,29 @@ class JobContextMenuService implements angular.IServiceProvider {
         private priceBreakdownDialogService: PriceBreakdownDialogService,
         private swapPodsDialogService: SwapPodsDialogService,
     ) {
-        console.log("JobContextMenuService initialized");
         this.preloadEventGroups();
     }
 
     $get() {
         return this;
+    }
+
+    private createToastAdapter() {
+        return {
+            showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                switch (type) {
+                    case 'success':
+                        this.toastrService.showSuccessToast(message);
+                        break;
+                    case 'warning':
+                        this.toastrService.showWarningToast(message);
+                        break;
+                    case 'error':
+                        this.toastrService.showErrorToast(message);
+                        break;
+                }
+            },
+        };
     }
 
     /**
@@ -115,7 +133,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 text: "Late Pickup",
                 icon: "schedule",
                 click: (_$itemScope: any, $event: MouseEvent) =>
-                    this.latePickup($event, job, callbacks.onRefresh),
+                    this.showLateCallDialog($event, job, LateEventType.Pickup, callbacks.onRefresh),
                 hasBottomDivider: true,
             });
 
@@ -123,7 +141,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 text: "Late Delivery",
                 icon: "local_shipping",
                 click: (_$itemScope: any, $event: MouseEvent) =>
-                    this.latePickup($event, job, callbacks.onRefresh),
+                    this.showLateCallDialog($event, job, LateEventType.Delivery, callbacks.onRefresh),
                 hasBottomDivider: false,
             });
 
@@ -141,7 +159,7 @@ class JobContextMenuService implements angular.IServiceProvider {
         if (
             job.internalStatusId &&
             job.internalStatusId != InternalJobStatus.Reprice &&
-            job.speedId === 415
+            job.speedId === NationwideSpeedId
         ) {
             if (job.preBook) {
                 // Schedule orders get Price Breakdown
@@ -487,21 +505,7 @@ class JobContextMenuService implements angular.IServiceProvider {
                 client: job.client ?? '',
                 clientId: job.clientId,
             },
-            toastService: {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
-                    switch (type) {
-                        case 'success':
-                            this.toastrService.showSuccessToast(message);
-                            break;
-                        case 'warning':
-                            this.toastrService.showWarningToast(message);
-                            break;
-                        case 'error':
-                            this.toastrService.showErrorToast(message);
-                            break;
-                    }
-                },
-            },
+            toastService: this.createToastAdapter(),
         });
 
         if (onRefresh) {
@@ -520,21 +524,7 @@ class JobContextMenuService implements angular.IServiceProvider {
             const saved = await openEventGroupDialog({
                 eventGroupId,
                 jobId,
-                toastService: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => {
-                        switch (type) {
-                            case 'success':
-                                this.toastrService.showSuccessToast(message);
-                                break;
-                            case 'warning':
-                                this.toastrService.showWarningToast(message);
-                                break;
-                            case 'error':
-                                this.toastrService.showErrorToast(message);
-                                break;
-                        }
-                    },
-                },
+                toastService: this.createToastAdapter(),
             });
 
             if (saved && onRefresh) {
@@ -775,27 +765,35 @@ class JobContextMenuService implements angular.IServiceProvider {
         }
     }
 
-    private async latePickup($event: MouseEvent, job: IDispatchJob, onRefresh: () => void): Promise<void> {
+    private async showLateCallDialog(
+        $event: MouseEvent,
+        job: IDispatchJob,
+        lateType: LateEventType,
+        onRefresh: () => void
+    ): Promise<void> {
+        const isPickup = lateType === LateEventType.Pickup;
+        const label = isPickup ? 'Pickup' : 'Delivery';
+
         try {
             const confirm = this.$mdDialog.prompt()
-                .title('Late Pickup')
-                .textContent('Enter the number of minutes the courier is running late for pickup:')
-                .ariaLabel('late pickup')
+                .title(`Late ${label}`)
+                .textContent(`Enter the number of minutes the courier is running late for ${label.toLowerCase()}:`)
+                .ariaLabel(`late ${label.toLowerCase()}`)
                 .targetEvent($event)
                 .required(true)
                 .ok('Save')
                 .cancel('Cancel');
 
             const minsAway: number = await this.$mdDialog.show(confirm);
-            await this.handleLateOperation(minsAway, job, LateEventType.Pickup);
+            await this.handleLateOperation(minsAway, job, lateType);
 
             if (onRefresh) {
                 onRefresh();
             }
         } catch (error) {
             if (!error) return;
-            console.error('Error in late pickup:', error);
-            this.toastrService.showErrorToast("Error applying late pickup");
+            console.error(`Error in late ${label.toLowerCase()}:`, error);
+            this.toastrService.showErrorToast(`Error applying late ${label.toLowerCase()}`);
         }
     }
     

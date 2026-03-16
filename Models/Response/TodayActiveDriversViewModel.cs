@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Response;
 
-public class TodayActiveDriversViewModel
+public sealed record TodayActiveDriversViewModel
 {
     public int CourierId { get; init; }
     public string Code { get; init; }

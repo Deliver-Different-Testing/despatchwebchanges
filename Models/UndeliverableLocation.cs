@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class UndeliverableLocation
+public sealed class UndeliverableLocation
 {
     public int Id { get; init; }
     public string Text { get; init; }

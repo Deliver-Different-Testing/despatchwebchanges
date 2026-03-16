@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Response;
 
-public class OpenJobResponse
+public sealed record OpenJobResponse
 {
     public int JobId { get; init; }
     public string Reference { get; init; }

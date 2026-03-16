@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class JobRecurringViewModel : JobViewModel
+public sealed class JobRecurringViewModel : JobViewModel
 {
     public Suggestion InActiveBy { get; init; }
     public DateTime? InActiveDate { get; init; }

@@ -75,8 +75,6 @@ class TasksService implements angular.IServiceProvider {
         private $http: angular.IHttpService,
         private DispatchData: DispatchCoreService
     ) {
-        console.log("Tasks service initialized");
-
         // Initialize background loading states for all pages
         Object.values(AppPage).forEach(page => {
             if (typeof page === 'number') {
@@ -202,12 +200,6 @@ class TasksService implements angular.IServiceProvider {
 
         if (eventTypeFilter && eventTypeFilter !== StatusFilter.All) {
             filters.eventTypeId = parseInt(eventTypeFilter, 10);
-        }
-
-        // Add page context for potential future use
-        if (appPage) {
-            // This could be used for page-specific filtering logic if needed
-            console.log(`Building filter request for page: ${AppPage[appPage]}`);
         }
 
         switch (filterType) {
@@ -364,7 +356,7 @@ class TasksService implements angular.IServiceProvider {
 
         const filterName = this.PAGE_FILTER_MAPPING[appPage]?.eventType;
         if (!filterName) {
-            console.log(`No event type filter mapping found for page: ${AppPage[appPage]}`);
+            console.warn(`No event type filter mapping found for page: ${AppPage[appPage]}`);
             return;
         }
 

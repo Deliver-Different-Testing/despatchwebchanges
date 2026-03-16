@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class DeletePriceComponentRequest
+public sealed class DeletePriceComponentRequest
 {
     public int JobId { get; init; }
     public int ChargeId { get; init; }

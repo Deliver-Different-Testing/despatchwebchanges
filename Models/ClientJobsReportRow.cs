@@ -4,7 +4,7 @@ namespace DespatchWeb.Models;
 /// Internal DTO for client jobs report database projection.
 /// Used as intermediate type before mapping to PerformanceSpendReportModel.
 /// </summary>
-internal class ClientJobsReportRow
+internal sealed class ClientJobsReportRow
 {
     public string JobNumber { get; init; }
     public int? JobType { get; init; }

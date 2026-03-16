@@ -85,7 +85,7 @@ export const DateTimePicker = forwardRef<HTMLInputElement, any>(
 
 // Mock DatePicker - includes grid cells for tests that interact with calendar
 export const DatePicker = forwardRef<HTMLInputElement, any>(
-    ({label, value, onChange, disabled, open, onOpen, onClose, ...props}, ref) => {
+    ({label, value, onChange, disabled, open, onOpen, onClose, enableAccessibleFieldDOMStructure: _eafds, ...props}, ref) => {
         const [isOpen, setIsOpen] = React.useState(open ?? false);
 
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

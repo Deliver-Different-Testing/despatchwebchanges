@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class AfterHoursCourierScheduleViewModel
+public sealed class AfterHoursCourierScheduleViewModel
 {
     public int AfterHoursScheduleId { get; init; }
     public int CourierId { get; init; }

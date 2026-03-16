@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class ManualMessageDto
+public sealed record ManualMessageDto
 {
     public int MessageId { get; init; }
     public string Subject { get; init; }

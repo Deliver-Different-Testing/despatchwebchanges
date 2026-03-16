@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.Dto;
 
-public class RateJobUsDto
+public sealed record RateJobUsDto
 {
     public int JobId { get; init; }
 

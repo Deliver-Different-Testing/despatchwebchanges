@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class CourierLocationRequest
+public sealed class CourierLocationRequest
 {
     public decimal MinLng { get; init; }
 

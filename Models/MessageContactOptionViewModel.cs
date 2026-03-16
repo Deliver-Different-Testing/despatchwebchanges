@@ -2,7 +2,7 @@
 
 namespace DespatchWeb.Models;
 
-public class MessageContactOptionViewModel
+public sealed class MessageContactOptionViewModel
 {
     public Guid Id { get; init; }
     public int RecordId { get; init; }

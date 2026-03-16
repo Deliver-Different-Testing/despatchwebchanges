@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.RequestModels;
 
-public class AddAgentRecoveryRequest
+public sealed class AddAgentRecoveryRequest
 {
     public int JobId { get; init; }
     public int AgentId { get; init; }

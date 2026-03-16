@@ -1,13 +1,13 @@
 ﻿namespace DespatchWeb.Models.Response;
 
-public class Errors;
+public sealed record Errors;
 
-public class ApiRerate
+public sealed record ApiRerate
 {
     public decimal Rate { get; init; }
 }
 
-public class RerateApiResponse
+public sealed record RerateApiResponse
 {
     public ApiRerate Rerate { get; init; } 
     public Errors Errors { get; init; }

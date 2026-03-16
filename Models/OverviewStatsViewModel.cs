@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models;
 
-public class OverviewStatsViewModel
+public sealed class OverviewStatsViewModel
 {
     public int Active { get; init; }
     public int Inactive { get; init; }

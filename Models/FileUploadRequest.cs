@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Models;
 
-public class FileUploadRequest
+public sealed class FileUploadRequest
 {
     [FromForm(Name = "jobId")] public int JobId { get; init; }
 

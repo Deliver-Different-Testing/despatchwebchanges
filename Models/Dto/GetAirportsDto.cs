@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class GetAirportsDto
+public sealed record GetAirportsDto
 {
     public int AirportId { get; init; }
     public int FlightBufferMinutes { get; init; }

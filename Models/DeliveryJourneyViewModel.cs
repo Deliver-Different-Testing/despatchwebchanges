@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class DeliveryJourneyViewModel
+public sealed class DeliveryJourneyViewModel
 {
     public Guid Id { get; init; }
     public int JobId { get; init; }

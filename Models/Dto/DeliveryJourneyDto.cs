@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class DeliveryJourneyDto
+public sealed record DeliveryJourneyDto
 {
     public int EventId { get; init; }
     public string Description { get; init; }
@@ -18,10 +18,10 @@ public class DeliveryJourneyDto
     public string CompletedByLastName { get; init; }
     
     // Audit trail
-    public List<EventAuditDto> Audits { get; init; } = [];
+    public IReadOnlyList<EventAuditDto> Audits { get; init; } = [];
 }
 
-public class EventAuditDto
+public sealed record EventAuditDto
 {
     public string ChangeType { get; init; }
     public string ColumnName { get; init; }

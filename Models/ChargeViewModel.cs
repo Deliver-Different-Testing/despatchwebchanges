@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DespatchWeb.Models;
 
-public class ChargeViewModel
+public sealed class ChargeViewModel
 {
     public int ChargeId { get; init; }
 

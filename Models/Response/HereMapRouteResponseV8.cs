@@ -1,12 +1,12 @@
 namespace DespatchWeb.Models.Response;
 
-public class HereMapRouteResponseV8
+public sealed record HereMapRouteResponseV8
 {
-    public List<Route> Routes { get; init; }
-    public List<Notice> Notices { get; init; }
+    public IReadOnlyList<Route> Routes { get; init; }
+    public IReadOnlyList<Notice> Notices { get; init; }
 }
 
-public class Notice
+public sealed record Notice
 {
     public string Title { get; init; }
     public string Code { get; init; }
@@ -14,42 +14,42 @@ public class Notice
     public string Severity { get; init; }
 }
 
-public class Location
+public readonly record struct Location
 {
     public double Lat { get; init; }
     public double Lng { get; init; }
 }
 
-public class Place
+public sealed record Place
 {
     public Location Location { get; init; }
     public string Type { get; init; }
 }
 
-public class Arrival
+public sealed record Arrival
 {
     public Place Place { get; init; }
     public DateTime Time { get; init; }
 }
 
-public class Departure
+public sealed record Departure
 {
     public Place Place { get; init; }
     public DateTime Time { get; init; }
 }
 
-public class Summary
+public readonly record struct Summary
 {
     public float Duration { get; init; }
     public float Length { get; init; }
 }
 
-public class Transport
+public sealed record Transport
 {
     public string Mode { get; init; }
 }
 
-public class Section
+public sealed record Section
 {
     public Arrival Arrival { get; init; }
     public Departure Departure { get; init; }
@@ -59,8 +59,8 @@ public class Section
     public string Type { get; init; }
 }
 
-public class Route
+public sealed record Route
 {
     public string Id { get; init; }
-    public List<Section> Sections { get; init; }
+    public IReadOnlyList<Section> Sections { get; init; }
 }

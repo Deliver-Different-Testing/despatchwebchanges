@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models.Dto;
 
-public class NoteDto
+public sealed record NoteDto
 {
     public int NoteId { get; init; }
     public string NoteText { get; init; }
@@ -12,7 +12,7 @@ public class NoteDto
     public string UpdatedByLastName { get; init; }
 }
 
-public class ArchivedNoteDto
+public sealed record ArchivedNoteDto
 {
     public int NoteId { get; init; }
     public string NoteText { get; init; }

@@ -1,6 +1,6 @@
 ﻿namespace DespatchWeb.Models;
 
-public class JobCurrentAmountInfo
+public sealed class JobCurrentAmountInfo
 {
     public int JobId { get; init; }
     public string JobNo { get; init; }

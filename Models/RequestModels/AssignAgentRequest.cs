@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.RequestModels;
 
-public class AgentJobRequestModel
+public sealed class AgentJobRequestModel
 {
     public int? AgentId { get; init; }
 

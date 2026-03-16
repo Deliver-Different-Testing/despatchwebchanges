@@ -1,6 +1,6 @@
 namespace DespatchWeb.Models.MessageModels;
 
-public class RecentMessageViewModel
+public sealed class RecentMessageViewModel
 {
     public int OtherPartyId { get; init; }
     public OtherMessagePartyType OtherPartyType { get; init; }

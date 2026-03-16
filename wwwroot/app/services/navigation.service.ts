@@ -16,9 +16,7 @@ class NavigationService implements angular.IServiceProvider {
         private $state: angular.ui.IStateService,
         private toastrService: ToastrService,
         private customUrlService: CustomUrlService,
-    ) {
-        console.log("OpenJobDispatchService: Service instantiated");
-    }
+    ) {}
 
     $get() {
         return this;

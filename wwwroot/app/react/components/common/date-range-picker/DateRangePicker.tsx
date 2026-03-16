@@ -58,7 +58,7 @@ const datePickerSlotProps = {
         size: 'small' as const,
         fullWidth: true,
     },
-} as const;
+};
 
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     dateSearchRange,
@@ -107,6 +107,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                                 value={fromDate}
                                 onChange={(newValue) => newValue && onFromDateChange(newValue)}
                                 format="DD/MM/YYYY"
+                                enableAccessibleFieldDOMStructure={false}
                                 slotProps={datePickerSlotProps}
                             />
                         </Box>
@@ -118,6 +119,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                                 value={toDate}
                                 onChange={(newValue) => newValue && onToDateChange(newValue)}
                                 format="DD/MM/YYYY"
+                                enableAccessibleFieldDOMStructure={false}
                                 slotProps={datePickerSlotProps}
                             />
                         </Box>
