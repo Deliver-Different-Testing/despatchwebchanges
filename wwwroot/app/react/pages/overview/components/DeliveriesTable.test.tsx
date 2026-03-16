@@ -1,6 +1,6 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DeliveriesTable} from './DeliveriesTable';
 import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
 

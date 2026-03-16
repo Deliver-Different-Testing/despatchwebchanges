@@ -5,7 +5,7 @@
  * Used by the React Recurring Jobs page.
  */
 
-import {apiClient, downloadBlob} from './apiClient';
+import {apiClient, RequestOptions, downloadBlob} from './apiClient';
 import {
     PaginatedRecurringJobsResponse,
     PaginatedRecurringJobsResponseDto,
@@ -18,22 +18,25 @@ export const recurringJobsApi = {
     /**
      * Fetch paginated list of recurring jobs
      * @param query - Query parameters for filtering, sorting, and pagination
+     * @param options - Request options (signal, timeout)
      * @returns Paginated response with transformed job models
      */
-    getPreBookJobs: async (query: RecurringJobQuery): Promise<PaginatedRecurringJobsResponse> => {
+    getPreBookJobs: async (query: RecurringJobQuery, options?: RequestOptions): Promise<PaginatedRecurringJobsResponse> => {
         const response = await apiClient.post<PaginatedRecurringJobsResponseDto>(
             'job/PreBookJobs',
-            query
+            query,
+            options
         );
         return transformPaginatedResponse(response);
     },
 
     /**
      * Fetch list of available speeds for filtering
+     * @param options - Request options (signal, timeout)
      * @returns Array of speed options
      */
-    getSpeedList: async (): Promise<SpeedOption[]> => {
-        return await apiClient.get<SpeedOption[]>('job/SpeedList');
+    getSpeedList: async (options?: RequestOptions): Promise<SpeedOption[]> => {
+        return await apiClient.get<SpeedOption[]>('job/SpeedList', undefined, options);
     },
 
     /**

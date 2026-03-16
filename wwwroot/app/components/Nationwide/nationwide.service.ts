@@ -25,7 +25,7 @@ import {Dayjs} from "dayjs";
 import {transformCargoHoursDTO, transformDispatchJobDTO, transformFlightDTO} from "../../functions/dtoMappings";
 import angular from 'angular';
 
-class NationwideService implements angular.IServiceProvider {
+class NationwideService {
     static $inject = [
         "$http",
     ];
@@ -33,11 +33,6 @@ class NationwideService implements angular.IServiceProvider {
     constructor(
         private $http: angular.IHttpService,
     ) {
-        console.log('NationwideService: Service instantiated');
-    }
-
-    $get(): any {
-        return this;
     }
 
     async getNationwideJobs(
@@ -119,7 +114,7 @@ class NationwideService implements angular.IServiceProvider {
 
         return {
             flights,
-            message: flights.length === 0 ? "Sorry, we couldn't find..." : undefined,
+            message: flights.length === 0 ? "No flights available for the selected criteria" : undefined,
             lastDepartureTime: flights.length > 0 ? flights[flights.length - 1].departureTime : undefined
         };
     }
@@ -233,7 +228,6 @@ class NationwideService implements angular.IServiceProvider {
 
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {
         const formattedArrivalTime = formatDateForApiWithTzs(arrivalTime, timezone);
-        console.log('formattedArrivalTime', formattedArrivalTime);
         const response = await this.$http.get<IFlightCargoProcessingDto>("nationwideJob/CalculateCargoReadyTime", {
             params: {
                 jobId,

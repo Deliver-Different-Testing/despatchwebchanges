@@ -8,14 +8,16 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider, CssBaseline} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {CreateJobDialog} from './CreateJobDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
+import type {ShowToastFn} from '../../../services/toastService';
 
 // Toast service interface (still provided by AngularJS for UI consistency)
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 // State management for the dialog
@@ -54,7 +56,7 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+    const handleShowToast: ShowToastFn = (message, type) => {
         if (!dialogState.toastService) {
             console.log(`[Toast ${type}]: ${message}`);
             return;

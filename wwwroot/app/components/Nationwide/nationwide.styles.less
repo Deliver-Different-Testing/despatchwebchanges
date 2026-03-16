@@ -428,197 +428,46 @@
     }
   }
 
-  // American Airlines (AA)
-  .airline-chip.aa {
-    background-color: #0078D2;
-    color: white;
+  // Airline brand color mixin — applies to both .airline-chip and .airline-code
+  .airline-brand-color(@code, @bg, @fg: white, @darken: 10%) {
+    .airline-chip.@{code} {
+      background-color: @bg;
+      color: @fg;
 
-    &:hover {
-      background-color: darken(#0078D2, 10%);
+      &:hover {
+        background-color: darken(@bg, @darken);
+      }
+    }
+
+    .airline-code.@{code} {
+      background-color: @bg;
+      color: @fg;
     }
   }
 
-  // Delta Air Lines (DL)
-  .airline-chip.dl {
-    background-color: #E01A4F;
-    color: white;
+  .airline-brand-color(aa, #0078D2);           // American Airlines
+  .airline-brand-color(dl, #E01A4F);           // Delta Air Lines
+  .airline-brand-color(ua, #002244, white, 5%);// United Airlines
+  .airline-brand-color(wn, #304CB2);           // Southwest Airlines
+  .airline-brand-color(ac, #D82F2F);           // Air Canada
+  .airline-brand-color(b6, #003A70);           // JetBlue Airways
+  .airline-brand-color(as, #0060AF);           // Alaska Airlines
+  .airline-brand-color(ws, #0F8ED0);           // WestJet
+  .airline-brand-color(nk, #FFC600, #000);     // Spirit Airlines
+  .airline-brand-color(f9, #018A32);           // Frontier Airlines
+  .airline-brand-color(ts, #1F83BE);           // Air Transat
+  .airline-brand-color(ha, #481D7D);           // Hawaiian Airlines
+  .airline-brand-color(g4, #FFC72C, #000);     // Allegiant Air
+  .airline-brand-color(pd, #00BDF2);           // Porter Airlines
+  .airline-brand-color(f8, #59CAEE, #000);     // Flair Airlines
+  .airline-brand-color(y9, #A3CE39, #000);     // Lynx Air
+  .airline-brand-color(sy, #F4792B);           // Sun Country Airlines
+  .airline-brand-color(pvl, #024DA1);          // PAL Airlines
+  .airline-brand-color(wg, #FFBB00, #000);     // Sunwing Airlines
 
-    &:hover {
-      background-color: darken(#E01A4F, 10%);
-    }
-  }
+  // Default for airlines not in the list above
+  @airline-known-codes: ~'.aa', ~'.dl', ~'.ua', ~'.wn', ~'.ac', ~'.b6', ~'.as', ~'.ws', ~'.nk', ~'.f9', ~'.ts', ~'.ha', ~'.g4', ~'.pd', ~'.f8', ~'.y9', ~'.sy', ~'.pvl', ~'.wg';
 
-  // United Airlines (UA)
-  .airline-chip.ua {
-    background-color: #002244;
-    color: white;
-
-    &:hover {
-      background-color: darken(#002244, 5%);
-    }
-  }
-
-  // Southwest Airlines (WN)
-  .airline-chip.wn {
-    background-color: #304CB2;
-    color: white;
-
-    &:hover {
-      background-color: darken(#304CB2, 10%);
-    }
-  }
-
-  // Air Canada (AC)
-  .airline-chip.ac {
-    background-color: #D82F2F;
-    color: white;
-
-    &:hover {
-      background-color: darken(#D82F2F, 10%);
-    }
-  }
-
-  // JetBlue Airways (B6)
-  .airline-chip.b6 {
-    background-color: #003A70;
-    color: white;
-
-    &:hover {
-      background-color: darken(#003A70, 10%);
-    }
-  }
-
-  // Alaska Airlines (AS)
-  .airline-chip.as {
-    background-color: #0060AF;
-    color: white;
-
-    &:hover {
-      background-color: darken(#0060AF, 10%);
-    }
-  }
-
-  // WestJet (WS)
-  .airline-chip.ws {
-    background-color: #0F8ED0;
-    color: white;
-
-    &:hover {
-      background-color: darken(#0F8ED0, 10%);
-    }
-  }
-
-  // Spirit Airlines (NK)
-  .airline-chip.nk {
-    background-color: #FFC600;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#FFC600, 10%);
-    }
-  }
-
-  // Frontier Airlines (F9)
-  .airline-chip.f9 {
-    background-color: #018A32;
-    color: white;
-
-    &:hover {
-      background-color: darken(#018A32, 10%);
-    }
-  }
-
-  // Air Transat (TS)
-  .airline-chip.ts {
-    background-color: #1F83BE;
-    color: white;
-
-    &:hover {
-      background-color: darken(#1F83BE, 10%);
-    }
-  }
-
-  // Hawaiian Airlines (HA)
-  .airline-chip.ha {
-    background-color: #481D7D;
-    color: white;
-
-    &:hover {
-      background-color: darken(#481D7D, 10%);
-    }
-  }
-
-  // Allegiant Air (G4)
-  .airline-chip.g4 {
-    background-color: #FFC72C;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#FFC72C, 10%);
-    }
-  }
-
-  // Porter Airlines (PD)
-  .airline-chip.pd {
-    background-color: #00BDF2;
-    color: white;
-
-    &:hover {
-      background-color: darken(#00BDF2, 10%);
-    }
-  }
-
-  // Flair Airlines (F8)
-  .airline-chip.f8 {
-    background-color: #59CAEE;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#59CAEE, 10%);
-    }
-  }
-
-  // Lynx Air (Y9)
-  .airline-chip.y9 {
-    background-color: #A3CE39;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#A3CE39, 10%);
-    }
-  }
-
-  // Sun Country Airlines (SY)
-  .airline-chip.sy {
-    background-color: #F4792B;
-    color: white;
-
-    &:hover {
-      background-color: darken(#F4792B, 10%);
-    }
-  }
-
-  // PAL Airlines (PVL)
-  .airline-chip.pvl {
-    background-color: #024DA1;
-    color: white;
-
-    &:hover {
-      background-color: darken(#024DA1, 10%);
-    }
-  }
-
-  // Sunwing Airlines (WG)
-  .airline-chip.wg {
-    background-color: #FFBB00;
-    color: #000;
-
-    &:hover {
-      background-color: darken(#FFBB00, 10%);
-    }
-  }
-
-  // Default for other airlines not in the top 20
   .airline-chip:not(.total):not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {
     background-color: #757575;
     color: white;
@@ -636,101 +485,6 @@
     font-weight: 500;
     text-align: center;
     font-size: 11px;
-    // Apply the same color scheme as chips
-    &.aa {
-      background-color: #0078D2;
-      color: white;
-    }
-
-    &.dl {
-      background-color: #E01A4F;
-      color: white;
-    }
-
-    &.ua {
-      background-color: #002244;
-      color: white;
-    }
-
-    &.wn {
-      background-color: #304CB2;
-      color: white;
-    }
-
-    &.ac {
-      background-color: #D82F2F;
-      color: white;
-    }
-
-    &.b6 {
-      background-color: #003A70;
-      color: white;
-    }
-
-    &.as {
-      background-color: #0060AF;
-      color: white;
-    }
-
-    &.ws {
-      background-color: #0F8ED0;
-      color: white;
-    }
-
-    &.nk {
-      background-color: #FFC600;
-      color: #000;
-    }
-
-    &.f9 {
-      background-color: #018A32;
-      color: white;
-    }
-
-    &.ts {
-      background-color: #1F83BE;
-      color: white;
-    }
-
-    &.ha {
-      background-color: #481D7D;
-      color: white;
-    }
-
-    &.g4 {
-      background-color: #FFC72C;
-      color: #000;
-    }
-
-    &.pd {
-      background-color: #00BDF2;
-      color: white;
-    }
-
-    &.f8 {
-      background-color: #59CAEE;
-      color: #000;
-    }
-
-    &.y9 {
-      background-color: #A3CE39;
-      color: #000;
-    }
-
-    &.sy {
-      background-color: #F4792B;
-      color: white;
-    }
-
-    &.pvl {
-      background-color: #024DA1;
-      color: white;
-    }
-
-    &.wg {
-      background-color: #FFBB00;
-      color: #000;
-    }
 
     // Default for other airlines
     &:not(.aa):not(.dl):not(.ua):not(.wn):not(.ac):not(.b6):not(.as):not(.ws):not(.nk):not(.f9):not(.ts):not(.ha):not(.g4):not(.pd):not(.f8):not(.y9):not(.sy):not(.pvl):not(.wg) {

@@ -5,7 +5,7 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient} from './apiClient';
+import {apiClient, RequestOptions} from './apiClient';
 import {
     Task,
     TaskApiResponse,
@@ -35,7 +35,7 @@ function transformTask(apiTask: TaskApiResponse): Task {
 /**
  * Get all tasks with optional filters
  */
-export async function getAllTasks(filters?: TaskFiltersRequest): Promise<Task[]> {
+export async function getAllTasks(filters?: TaskFiltersRequest, options?: RequestOptions): Promise<Task[]> {
     const params: Record<string, string | number | boolean> = {};
 
     if (filters) {
@@ -52,7 +52,7 @@ export async function getAllTasks(filters?: TaskFiltersRequest): Promise<Task[]>
         if (filters.jobId !== undefined) params.jobId = filters.jobId;
     }
 
-    const response = await apiClient.get<TaskApiResponse[]>('task/GetAllTasks', params);
+    const response = await apiClient.get<TaskApiResponse[]>('task/GetAllTasks', params, options);
     return (response || []).map(transformTask);
 }
 
@@ -98,15 +98,15 @@ export async function reassignTaskToStaff(eventId: number, staffId: number): Pro
 /**
  * Get list of active staff members
  */
-export async function getActiveStaff(): Promise<StaffSuggestion[]> {
-    return apiClient.get<StaffSuggestion[]>('task/GetStaff');
+export async function getActiveStaff(options?: RequestOptions): Promise<StaffSuggestion[]> {
+    return apiClient.get<StaffSuggestion[]>('task/GetStaff', undefined, options);
 }
 
 /**
  * Get list of event types
  */
-export async function getEventTypes(): Promise<EventTypeSuggestion[]> {
-    return apiClient.get<EventTypeSuggestion[]>('job/EventTypeList');
+export async function getEventTypes(options?: RequestOptions): Promise<EventTypeSuggestion[]> {
+    return apiClient.get<EventTypeSuggestion[]>('job/EventTypeList', undefined, options);
 }
 
 /**
@@ -124,16 +124,16 @@ function transformDeliveryJourneyDTO(dto: DeliveryJourneyDto): DeliveryJourney {
 /**
  * Get delivery journey for a job
  */
-export async function getDeliveryJourney(jobId: number): Promise<DeliveryJourney[]> {
-    const response = await apiClient.get<DeliveryJourneyDto[]>('job/GetDeliveryJourney', {jobId});
+export async function getDeliveryJourney(jobId: number, options?: RequestOptions): Promise<DeliveryJourney[]> {
+    const response = await apiClient.get<DeliveryJourneyDto[]>('job/GetDeliveryJourney', {jobId}, options);
     return (response || []).map(transformDeliveryJourneyDTO);
 }
 
 /**
  * Get event type groups for a specific event group
  */
-export async function getEventTypeGroups(eventGroupId: number): Promise<EventGroupViewModel[]> {
-    return apiClient.get<EventGroupViewModel[]>('task/GetEventTypeGroups', {eventGroupId});
+export async function getEventTypeGroups(eventGroupId: number, options?: RequestOptions): Promise<EventGroupViewModel[]> {
+    return apiClient.get<EventGroupViewModel[]>('task/GetEventTypeGroups', {eventGroupId}, options);
 }
 
 /**

@@ -7,35 +7,31 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-    Box,
-    Card,
-    CardContent,
-    FormControl,
-    InputAdornment,
-    InputLabel,
-    List,
-    MenuItem,
-    Select,
-    Skeleton,
-    TextField,
-    ToggleButton,
-    ToggleButtonGroup,
-    Toolbar,
-    Typography,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import FormControl from '@mui/material/FormControl';
+import InputAdornment from '@mui/material/InputAdornment';
+import InputLabel from '@mui/material/InputLabel';
+import List from '@mui/material/List';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import Skeleton from '@mui/material/Skeleton';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import {useTheme} from '@mui/material/styles';
-import {
-    CalendarMonth as CalendarMonthIcon,
-    CheckCircle as CheckCircleIcon,
-    Info as InfoIcon,
-    PendingActions as PendingActionsIcon,
-    RocketLaunch as RocketLaunchIcon,
-    Search as SearchIcon,
-    TaskAlt as TaskAltIcon,
-    ViewList as ViewListIcon,
-    Warning as WarningIcon,
-} from '@mui/icons-material';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import InfoIcon from '@mui/icons-material/Info';
+import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import SearchIcon from '@mui/icons-material/Search';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import ViewListIcon from '@mui/icons-material/ViewList';
+import WarningIcon from '@mui/icons-material/Warning';
 import dayjs, {Dayjs} from 'dayjs';
 
 import {
@@ -147,8 +143,14 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 }) => {
     const theme = useTheme();
 
-    // View state
-    const [showFullCalendar, setShowFullCalendar] = useState(false);
+    // View state (initialized from localStorage to avoid flash of default state)
+    const [showFullCalendar, setShowFullCalendar] = useState(() => {
+        try {
+            return localStorage.getItem(getViewPreferenceKey()) === ViewMode.Calendar;
+        } catch {
+            return false;
+        }
+    });
     const [statusFilter, setStatusFilter] = useState<StatusFilter>(StatusFilter.All);
 
     // Filter values
@@ -156,8 +158,20 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     const [staffFilter, setStaffFilter] = useState('all');
     const [eventTypeFilter, setEventTypeFilter] = useState('all');
 
-    // Date filter
-    const [dateFilterData, setDateFilterData] = useState<DateFilterData>(setDateFilterDefaults);
+    // Date filter (initialized from localStorage, falls back to defaults)
+    const [dateFilterData, setDateFilterData] = useState<DateFilterData>(() => {
+        try {
+            const saved = localStorage.getItem(getDateFilterKey());
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                return {
+                    startDate: dayjs(parsed.startDate),
+                    endDate: dayjs(parsed.endDate),
+                };
+            }
+        } catch { /* ignore localStorage errors */ }
+        return setDateFilterDefaults();
+    });
 
     // Selection
     const [selectedTask, setSelectedTask] = useState<ExtendedTask | undefined>();
@@ -224,34 +238,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             }
         });
     }, [rawTasks]);
-
-    // Load view preference from localStorage
-    useEffect(() => {
-        try {
-            const viewMode = localStorage.getItem(getViewPreferenceKey());
-            if (viewMode) {
-                setShowFullCalendar(viewMode === ViewMode.Calendar);
-            }
-        } catch {
-            // Ignore localStorage errors
-        }
-    }, []);
-
-    // Load date filter from localStorage
-    useEffect(() => {
-        try {
-            const savedDateFilter = localStorage.getItem(getDateFilterKey());
-            if (savedDateFilter) {
-                const parsed = JSON.parse(savedDateFilter);
-                setDateFilterData({
-                    startDate: dayjs(parsed.startDate),
-                    endDate: dayjs(parsed.endDate),
-                });
-            }
-        } catch {
-            // Ignore localStorage errors
-        }
-    }, []);
 
     // Register refresh callback for external use
     useEffect(() => {

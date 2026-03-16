@@ -37,9 +37,8 @@ export function useRecurringJobsList(
 ) {
     return useQuery<PaginatedRecurringJobsResponse, Error>({
         queryKey: queryKeys.recurringJobs.list(query),
-        queryFn: () => recurringJobsApi.getPreBookJobs(query),
+        queryFn: ({signal}) => recurringJobsApi.getPreBookJobs(query, {signal}),
         enabled: options?.enabled ?? true,
-        staleTime: 30 * 1000,
     });
 }
 
@@ -57,7 +56,7 @@ export function useRecurringJobsList(
 export function useSpeedList(options?: { enabled?: boolean }) {
     return useQuery<SpeedOption[], Error>({
         queryKey: queryKeys.recurringJobs.speeds,
-        queryFn: () => recurringJobsApi.getSpeedList(),
+        queryFn: ({signal}) => recurringJobsApi.getSpeedList({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes (speeds rarely change)
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes

@@ -6,17 +6,13 @@
  */
 
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
-import {
-    Dialog,
-    IconButton,
-    Box,
-    Typography,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    ChevronLeft as ChevronLeftIcon,
-    ChevronRight as ChevronRightIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {PodPhotoViewerProps, PodPhoto} from "./pod-photo-viewer.types";
 

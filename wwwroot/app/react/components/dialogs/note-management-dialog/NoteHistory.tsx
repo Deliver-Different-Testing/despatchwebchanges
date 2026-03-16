@@ -1,19 +1,15 @@
 import React, {useState} from 'react';
-import {
-    Box,
-    Typography,
-    Collapse,
-    Button,
-    Paper,
-    CircularProgress,
-    Chip,
-} from '@mui/material';
-import {
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon,
-    History as HistoryIcon,
-    Edit as EditIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Collapse from '@mui/material/Collapse';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
+import Chip from '@mui/material/Chip';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import HistoryIcon from '@mui/icons-material/History';
+import EditIcon from '@mui/icons-material/Edit';
 import {NoteHistoryEntry} from '../../../interfaces';
 
 interface NoteHistoryProps {

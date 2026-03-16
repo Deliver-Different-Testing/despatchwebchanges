@@ -5,7 +5,7 @@
  * Uses fetch with proper security headers instead of AngularJS $http.
  */
 
-import {apiClient} from './apiClient';
+import {apiClient, RequestOptions} from './apiClient';
 
 export interface PriceBreakdown {
     chargeId: number;
@@ -40,13 +40,14 @@ export interface DeletePriceBreakdownRequest {
 export async function getPriceBreakdowns(
     jobId: number,
     isPrebook: boolean,
-    isArchived: boolean
+    isArchived: boolean,
+    options?: RequestOptions
 ): Promise<PriceBreakdown[]> {
     const breakdowns = await apiClient.get<PriceBreakdown[]>('job/GetPricingBreakdown', {
         jobId,
         isPrebook,
         isArchived,
-    });
+    }, options);
     return breakdowns ?? [];
 }
 

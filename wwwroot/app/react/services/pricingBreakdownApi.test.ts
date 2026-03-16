@@ -37,7 +37,7 @@ describe('pricingBreakdownApi', () => {
                 jobId: 100,
                 isPrebook: false,
                 isArchived: false,
-            });
+            }, undefined);
             expect(result).toEqual(mockBreakdowns);
         });
 
@@ -50,7 +50,7 @@ describe('pricingBreakdownApi', () => {
                 jobId: 200,
                 isPrebook: true,
                 isArchived: false,
-            });
+            }, undefined);
         });
 
         it('should call apiClient.get with correct parameters for archived job', async () => {
@@ -62,7 +62,7 @@ describe('pricingBreakdownApi', () => {
                 jobId: 300,
                 isPrebook: false,
                 isArchived: true,
-            });
+            }, undefined);
         });
 
         it('should return empty array when no breakdowns found', async () => {

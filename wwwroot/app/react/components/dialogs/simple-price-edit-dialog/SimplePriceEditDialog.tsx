@@ -7,29 +7,25 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    Dialog,
-    Box,
-    Typography,
-    Button,
-    IconButton,
-    TextField,
-    CircularProgress,
-    Radio,
-    InputAdornment,
-} from '@mui/material';
-import {
-    PriceChange as PriceChangeIcon,
-    Close as CloseIcon,
-    CheckCircle as CheckCircleIcon,
-    Sync as SyncIcon,
-    AddCircle as AddCircleIcon,
-    EditNote as EditNoteIcon,
-    ArrowForward as ArrowForwardIcon,
-    LocalShipping as LocalShippingIcon,
-    Info as InfoIcon,
-    Check as CheckIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import CircularProgress from '@mui/material/CircularProgress';
+import Radio from '@mui/material/Radio';
+import InputAdornment from '@mui/material/InputAdornment';
+import PriceChangeIcon from '@mui/icons-material/PriceChange';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SyncIcon from '@mui/icons-material/Sync';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import InfoIcon from '@mui/icons-material/Info';
+import CheckIcon from '@mui/icons-material/Check';
 
 import { SimplePriceEditDialogProps, PricingMode } from './types';
 
@@ -75,7 +71,7 @@ const getSelectedIconBg = (mode: PricingMode) => {
 
 const getSelectedIconColor = (mode: PricingMode) => {
     switch (mode) {
-        case 'recalculate': return '#57534e';
+        case 'recalculate': return 'grey.600';
         case 'base': return '#4caf50';
         case 'gross': return '#9c27b0';
     }
@@ -187,13 +183,13 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 gap: 1.75,
                                 p: '14px 16px',
                                 border: 2,
-                                borderColor: isSelected ? '#57534e' : 'rgba(0, 0, 0, 0.08)',
+                                borderColor: isSelected ? 'grey.600' : 'rgba(0, 0, 0, 0.08)',
                                 borderRadius: '10px',
                                 cursor: 'pointer',
                                 bgcolor: isSelected ? 'rgba(87, 83, 78, 0.06)' : 'background.paper',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 '&:hover': {
-                                    borderColor: isSelected ? '#57534e' : 'rgba(0, 0, 0, 0.18)',
+                                    borderColor: isSelected ? 'grey.600' : 'rgba(0, 0, 0, 0.18)',
                                     bgcolor: isSelected ? 'rgba(87, 83, 78, 0.06)' : 'rgba(0, 0, 0, 0.02)',
                                 },
                             }}
@@ -203,7 +199,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 sx={{
                                     p: 0,
                                     color: 'rgba(0, 0, 0, 0.38)',
-                                    '&.Mui-checked': { color: '#57534e' },
+                                    '&.Mui-checked': { color: 'grey.600' },
                                 }}
                             />
                             <Box sx={{
@@ -283,7 +279,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 '&:hover fieldset': { borderColor: 'transparent' },
                                 '&.Mui-focused': {
                                     bgcolor: 'background.paper',
-                                    '& fieldset': { borderColor: '#57534e' },
+                                    '& fieldset': { borderColor: 'grey.600' },
                                 },
                             },
                             // Hide number spinner

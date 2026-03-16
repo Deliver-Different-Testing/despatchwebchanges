@@ -6,26 +6,22 @@
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
-import {
-    Box,
-    List,
-    ListItemButton,
-    ListItemText,
-    Chip,
-    Typography,
-    TextField,
-    InputAdornment,
-    IconButton,
-    Tooltip,
-    LinearProgress,
-    Divider,
-} from '@mui/material';
-import {
-    Search as SearchIcon,
-    SortByAlpha as SortIcon,
-    Clear as ClearIcon,
-    LocalShipping as TruckIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import List from '@mui/material/List';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import LinearProgress from '@mui/material/LinearProgress';
+import Divider from '@mui/material/Divider';
+import SearchIcon from '@mui/icons-material/Search';
+import SortIcon from '@mui/icons-material/SortByAlpha';
+import ClearIcon from '@mui/icons-material/Clear';
+import TruckIcon from '@mui/icons-material/LocalShipping';
 import { IDriverWorkOverview, SortOrder, CurrentWorkAllDriversProps } from './CurrentWorkAllDrivers.types';
 
 /**

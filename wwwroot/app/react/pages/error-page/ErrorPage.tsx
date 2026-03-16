@@ -6,21 +6,17 @@
  */
 
 import React from 'react';
-import {
-    Box,
-    Paper,
-    Typography,
-    Button,
-    alpha,
-} from '@mui/material';
-import {
-    SearchOff as SearchOffIcon,
-    ErrorOutline as ErrorOutlineIcon,
-    Lock as LockIcon,
-    CloudOff as CloudOffIcon,
-    ArrowBack as ArrowBackIcon,
-    Home as HomeIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import LockIcon from '@mui/icons-material/Lock';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import HomeIcon from '@mui/icons-material/Home';
 
 export type ErrorType = 'notFound' | 'error' | 'forbidden' | 'serverError';
 

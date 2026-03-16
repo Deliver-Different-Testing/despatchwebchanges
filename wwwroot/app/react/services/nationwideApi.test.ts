@@ -96,18 +96,12 @@ describe('NationwideApiService', () => {
             expect(result).toBeNull();
         });
 
-        it('should return null and log error when API throws', async () => {
-            const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+        it('should throw error when API throws', async () => {
             mockApiClient.get.mockRejectedValueOnce(new Error('API Error'));
 
-            const result = await nationwideApi.calculateCargoReadyTime(123, 'NZ', '2024-03-15T14:30:00');
-
-            expect(result).toBeNull();
-            expect(consoleSpy).toHaveBeenCalledWith(
-                'Error fetching cargo ready time:',
-                expect.any(Error)
-            );
-            consoleSpy.mockRestore();
+            await expect(
+                nationwideApi.calculateCargoReadyTime(123, 'NZ', '2024-03-15T14:30:00')
+            ).rejects.toThrow('API Error');
         });
 
         it('should work with different airline codes', async () => {

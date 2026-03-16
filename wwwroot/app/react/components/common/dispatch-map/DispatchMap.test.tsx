@@ -8,7 +8,7 @@
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DispatchMap} from './DispatchMap';
 import type {DispatchMapProps, ClearListEnvelopeData} from './DispatchMap.types';
 import * as courierApi from '../../../services/courierApi';

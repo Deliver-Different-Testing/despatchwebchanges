@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { AiMarkdownRenderer } from './AiMarkdownRenderer';
 
 const theme = createTheme();

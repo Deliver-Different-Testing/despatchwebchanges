@@ -114,7 +114,7 @@ describe('recurringJobsApi', () => {
 
             const result = await recurringJobsApi.getPreBookJobs(mockQuery);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', mockQuery);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', mockQuery, undefined);
             expect(result.items).toHaveLength(2);
             expect(result.total).toBe(2);
             expect(result.page).toBe(1);
@@ -142,7 +142,7 @@ describe('recurringJobsApi', () => {
 
             await recurringJobsApi.getPreBookJobs(queryWithSearch);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithSearch);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithSearch, undefined);
         });
 
         it('should pass speed filter', async () => {
@@ -155,7 +155,7 @@ describe('recurringJobsApi', () => {
 
             await recurringJobsApi.getPreBookJobs(queryWithSpeed);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithSpeed);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithSpeed, undefined);
         });
 
         it('should pass courier filter', async () => {
@@ -168,7 +168,7 @@ describe('recurringJobsApi', () => {
 
             await recurringJobsApi.getPreBookJobs(queryWithCourier);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithCourier);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithCourier, undefined);
         });
 
         it('should pass days of week filter', async () => {
@@ -181,7 +181,7 @@ describe('recurringJobsApi', () => {
 
             await recurringJobsApi.getPreBookJobs(queryWithDays);
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithDays);
+            expect(mockApiClient.post).toHaveBeenCalledWith('job/PreBookJobs', queryWithDays, undefined);
         });
 
         it('should propagate errors from apiClient', async () => {
@@ -204,7 +204,7 @@ describe('recurringJobsApi', () => {
 
             const result = await recurringJobsApi.getSpeedList();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('job/SpeedList');
+            expect(mockApiClient.get).toHaveBeenCalledWith('job/SpeedList', undefined, undefined);
             expect(result).toEqual(mockSpeedOptions);
         });
 

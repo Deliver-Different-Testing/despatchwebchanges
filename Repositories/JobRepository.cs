@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using CourierLocation = DespatchWeb.Models.Response.CourierLocation;
+using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Repositories;
 
@@ -25,9 +26,9 @@ public partial class JobRepository(
     ICreateJobService createJobService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobRepository
 {
+    private readonly ITenantClock _clock = clock;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
-    private readonly ITenantClock _clock = clock;
 
 
     /// <summary>
@@ -190,7 +191,8 @@ public partial class JobRepository(
     /// <param name="data">Search parameters including date range, filters, and pagination.</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Paginated search results with bulk job details.</returns>
-    public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default)
+    public async Task<JobSearchResult> BulkSearchAsync(PodSearchRequest data,
+        CancellationToken cancellationToken = default)
     {
         var isUsCustomer = _infoService.IsUsTenant();
         var jobSearch = (data.Job ?? string.Empty).ToLower();
@@ -378,7 +380,8 @@ public partial class JobRepository(
     /// <param name="data">Search parameters including date range, filters, sorting, and pagination.</param>
     /// <param name="cancellationToken"></param>
     /// <returns>Paginated search results combining live and archived jobs.</returns>
-    public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data, CancellationToken cancellationToken = default)
+    public async Task<JobSearchResult> PodSearchAsync(PodSearchRequest data,
+        CancellationToken cancellationToken = default)
     {
         try
         {
@@ -553,14 +556,12 @@ public partial class JobRepository(
                 .ToList();
 
             if (allJobs.Count == 0)
-            {
                 return new JobSearchResult
                 {
                     Jobs = [],
                     TotalCount = totalCount,
                     HasMore = false
                 };
-            }
 
             var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
 
@@ -1206,85 +1207,85 @@ public partial class JobRepository(
         [FromQuery] ClientJobsReportRequest request)
     {
         const string sql = """
-            SELECT
-                j.ucjbNumber        AS JobNumber,
-                j.ucjbType          AS JobType,
-                j.ucjbDate          AS [Date],
-                j.ucjbTime          AS Booked,
-                j.ucjbContact       AS BookedBy,
-                j.PickUpTime        AS PickedUpTime,
-                j.ucjbComplTime     AS Delivered,
-                jt.ucjtDescription  AS JobTypeDescription,
-                jt.Minutes,
-                j.ucjbPODName       AS PodName,
-                sfrom.UcsuName      AS FromSuburb,
-                sfrom.PostCode      AS FromPostcode,
-                sto.UcsuName        AS ToSuburb,
-                sto.PostCode        AS ToPostcode,
-                ad.ToSuburb         AS ToSuburbFromAddress,
-                j.ucjbFromAddr      AS FromAddr,
-                j.ucjbToAddr        AS ToAddr,
-                j.ucjbCourierID     AS CourierId,
-                CAST(CASE WHEN j.ucjbLatePick = 1 THEN 1 ELSE 0 END AS BIT) AS LatePickup,
-                CAST(CASE WHEN j.ucjbLateDel = 1 THEN 1 ELSE 0 END AS BIT)  AS LateDelivery,
-                cl.ucclLegalName    AS ClientLegalName,
-                jt.ucjtName         AS Speed,
-                ajt.ucjtName        AS AcceptedSpeed,
-                j.ucjbNotes         AS Notes,
-                j.ucjbAmount        AS Amount,
-                j.ucjbClientRefa    AS RefA,
-                j.ucjbClientRefb    AS RefB,
-                j.ucjbOurRef        AS OurRef,
-                CAST(j.ucjbWeight AS decimal(18,4)) AS [Weight],
-                j.ucjbSize          AS Size,
-                j.ucjbQty           AS Quantity,
-                j.ucjbYear          AS [Year],
-                j.ucjbMonth         AS [Month],
-                cr.Code             AS CourierCode,
-                cr.uccrName         AS CourierName,
-                j.ucjbInvoiceNo     AS InvoiceNo,
-                CAST(CASE WHEN j.ucjbLocked = 1 THEN 1 ELSE 0 END AS BIT) AS Locked,
-                j.ucjbClientID      AS ClientId,
-                cl.ucclNote         AS ClientNote,
-                j.RawBaseAmount,
-                j.FuelSurchargeAmount
-            FROM tucJobArchive j
-            LEFT JOIN tucJobType jt ON jt.ucjtID = j.ucjbSpeed
-            LEFT JOIN tucJobType ajt ON ajt.ucjtID = j.AcceptedJobTypeID
-            LEFT JOIN tucSuburb sfrom ON sfrom.ucsuID = j.ucjbFrom
-            LEFT JOIN tucSuburb sto ON sto.ucsuID = j.ucjbTo
-            LEFT JOIN tucJobAddressDeatil ad ON ad.JobID = j.ucjbID
-            LEFT JOIN tucClient cl ON cl.ucclID = j.ucjbClientID
-            LEFT JOIN tucCourier cr ON cr.uccrID = j.ucjbCourierID
-            LEFT JOIN tblJobRelationshipType jrt ON jrt.JobRelationshipTypeID = j.JobRelationshipTypeID
-            WHERE j.ucjbDate >= @StartDate
-              AND j.ucjbDate <= @EndDate
-              AND (j.JobRelationshipTypeID IS NULL OR jrt.DisplayStatement = 1)
-              AND ISNULL(j.ucjbClientID, 0) IN @ClientIds
-              AND j.ucjbVoid = 0
-              AND j.ucjbJobDone = 1
-            ORDER BY
-                CASE
-                    WHEN jt.ucjtDescription = '15 Minute' THEN 1
-                    WHEN jt.ucjtDescription = '30 Minute' THEN 2
-                    WHEN jt.ucjtDescription = '45 Minute' THEN 3
-                    WHEN jt.ucjtDescription = '1 Hour' THEN 4
-                    WHEN jt.ucjtDescription = '75 Minute' THEN 5
-                    WHEN jt.ucjtDescription = '90 Minute' THEN 6
-                    WHEN jt.ucjtDescription = '2 Hour' THEN 7
-                    WHEN jt.ucjtDescription = '3 Hour' THEN 8
-                    WHEN jt.ucjtDescription = 'Baggage' THEN 10
-                    WHEN jt.ucjtDescription = 'Truck Super' THEN 11
-                    WHEN jt.ucjtDescription = 'Truck Express' THEN 12
-                    WHEN jt.ucjtDescription = 'Truck Standard' THEN 13
-                    WHEN jt.ucjtDescription = 'Truck Economy' THEN 14
-                    ELSE 100
-                END,
-                j.ucjbDate,
-                j.ucjbTime,
-                j.ucjbCourierID,
-                jt.Minutes
-            """;
+                           SELECT
+                               j.ucjbNumber        AS JobNumber,
+                               j.ucjbType          AS JobType,
+                               j.ucjbDate          AS [Date],
+                               j.ucjbTime          AS Booked,
+                               j.ucjbContact       AS BookedBy,
+                               j.PickUpTime        AS PickedUpTime,
+                               j.ucjbComplTime     AS Delivered,
+                               jt.ucjtDescription  AS JobTypeDescription,
+                               jt.Minutes,
+                               j.ucjbPODName       AS PodName,
+                               sfrom.UcsuName      AS FromSuburb,
+                               sfrom.PostCode      AS FromPostcode,
+                               sto.UcsuName        AS ToSuburb,
+                               sto.PostCode        AS ToPostcode,
+                               ad.ToSuburb         AS ToSuburbFromAddress,
+                               j.ucjbFromAddr      AS FromAddr,
+                               j.ucjbToAddr        AS ToAddr,
+                               j.ucjbCourierID     AS CourierId,
+                               CAST(CASE WHEN j.ucjbLatePick = 1 THEN 1 ELSE 0 END AS BIT) AS LatePickup,
+                               CAST(CASE WHEN j.ucjbLateDel = 1 THEN 1 ELSE 0 END AS BIT)  AS LateDelivery,
+                               cl.ucclLegalName    AS ClientLegalName,
+                               jt.ucjtName         AS Speed,
+                               ajt.ucjtName        AS AcceptedSpeed,
+                               j.ucjbNotes         AS Notes,
+                               j.ucjbAmount        AS Amount,
+                               j.ucjbClientRefa    AS RefA,
+                               j.ucjbClientRefb    AS RefB,
+                               j.ucjbOurRef        AS OurRef,
+                               CAST(j.ucjbWeight AS decimal(18,4)) AS [Weight],
+                               j.ucjbSize          AS Size,
+                               j.ucjbQty           AS Quantity,
+                               j.ucjbYear          AS [Year],
+                               j.ucjbMonth         AS [Month],
+                               cr.Code             AS CourierCode,
+                               cr.uccrName         AS CourierName,
+                               j.ucjbInvoiceNo     AS InvoiceNo,
+                               CAST(CASE WHEN j.ucjbLocked = 1 THEN 1 ELSE 0 END AS BIT) AS Locked,
+                               j.ucjbClientID      AS ClientId,
+                               cl.ucclNote         AS ClientNote,
+                               j.RawBaseAmount,
+                               j.FuelSurchargeAmount
+                           FROM tucJobArchive j
+                           LEFT JOIN tucJobType jt ON jt.ucjtID = j.ucjbSpeed
+                           LEFT JOIN tucJobType ajt ON ajt.ucjtID = j.AcceptedJobTypeID
+                           LEFT JOIN tucSuburb sfrom ON sfrom.ucsuID = j.ucjbFrom
+                           LEFT JOIN tucSuburb sto ON sto.ucsuID = j.ucjbTo
+                           LEFT JOIN tucJobAddressDeatil ad ON ad.JobID = j.ucjbID
+                           LEFT JOIN tucClient cl ON cl.ucclID = j.ucjbClientID
+                           LEFT JOIN tucCourier cr ON cr.uccrID = j.ucjbCourierID
+                           LEFT JOIN tblJobRelationshipType jrt ON jrt.JobRelationshipTypeID = j.JobRelationshipTypeID
+                           WHERE j.ucjbDate >= @StartDate
+                             AND j.ucjbDate <= @EndDate
+                             AND (j.JobRelationshipTypeID IS NULL OR jrt.DisplayStatement = 1)
+                             AND ISNULL(j.ucjbClientID, 0) IN @ClientIds
+                             AND j.ucjbVoid = 0
+                             AND j.ucjbJobDone = 1
+                           ORDER BY
+                               CASE
+                                   WHEN jt.ucjtDescription = '15 Minute' THEN 1
+                                   WHEN jt.ucjtDescription = '30 Minute' THEN 2
+                                   WHEN jt.ucjtDescription = '45 Minute' THEN 3
+                                   WHEN jt.ucjtDescription = '1 Hour' THEN 4
+                                   WHEN jt.ucjtDescription = '75 Minute' THEN 5
+                                   WHEN jt.ucjtDescription = '90 Minute' THEN 6
+                                   WHEN jt.ucjtDescription = '2 Hour' THEN 7
+                                   WHEN jt.ucjtDescription = '3 Hour' THEN 8
+                                   WHEN jt.ucjtDescription = 'Baggage' THEN 10
+                                   WHEN jt.ucjtDescription = 'Truck Super' THEN 11
+                                   WHEN jt.ucjtDescription = 'Truck Express' THEN 12
+                                   WHEN jt.ucjtDescription = 'Truck Standard' THEN 13
+                                   WHEN jt.ucjtDescription = 'Truck Economy' THEN 14
+                                   ELSE 100
+                               END,
+                               j.ucjbDate,
+                               j.ucjbTime,
+                               j.ucjbCourierID,
+                               jt.Minutes
+                           """;
 
         try
         {
@@ -3396,7 +3397,8 @@ public partial class JobRepository(
     /// <summary>
     /// Retrieves all active jobs with location data for the mega map display.
     /// </summary>
-    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<MegaMapResponse>> GetJobsForMegaMapAsync(
+        CancellationToken cancellationToken = default)
     {
         const int maxMapJobs = 5000;
         var isUsCustomer = _infoService.IsUsTenant();
@@ -4386,7 +4388,7 @@ public partial class JobRepository(
     /// </summary>
     /// <param name="podTime">The POD time string from the frontend.</param>
     /// <param name="deliveryTimeZone">The delivery location's timezone (used for fallback to "now").</param>
-    private DateTime ParsePodTime(string podTime, EntityClasses.TimeZone deliveryTimeZone)
+    private DateTime ParsePodTime(string podTime, TimeZone deliveryTimeZone)
     {
         var deliveryNow = _infoService.GetCurrentTimeFromTimeZone(deliveryTimeZone);
 
@@ -4893,7 +4895,8 @@ public partial class JobRepository(
 
     #region IJobRepository Interface Methods (delegating to protected base methods)
 
-    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds, CancellationToken cancellationToken = default)
+    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
+        CancellationToken cancellationToken = default)
         => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
 
     public new async Task<bool> IsJobArchived(int jobId)

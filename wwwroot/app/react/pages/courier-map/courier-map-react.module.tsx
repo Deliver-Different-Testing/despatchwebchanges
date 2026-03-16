@@ -7,7 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {CssBaseline, ThemeProvider} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {CourierMapPage} from './CourierMapPage';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
@@ -88,8 +89,8 @@ export function unmountCourierMapPage(): void {
     courierMapContainer = null;
 }
 
-// Expose globally for AngularJS access
-(window as any).ReactCourierMap = {
+// Expose globally for AngularJS access (typed via global.d.ts)
+window.ReactCourierMap = {
     mount: mountCourierMapPage,
     unmount: unmountCourierMapPage,
 };

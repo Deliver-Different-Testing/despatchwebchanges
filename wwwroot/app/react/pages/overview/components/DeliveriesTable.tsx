@@ -1,14 +1,12 @@
 import React from 'react';
-import {
-    Box,
-    Typography,
-    IconButton,
-    CircularProgress,
-    LinearProgress,
-    Chip,
-    TablePagination,
-    Tooltip,
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import IconButton from '@mui/material/IconButton';
+import CircularProgress from '@mui/material/CircularProgress';
+import LinearProgress from '@mui/material/LinearProgress';
+import Chip from '@mui/material/Chip';
+import TablePagination from '@mui/material/TablePagination';
+import Tooltip from '@mui/material/Tooltip';
 import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
 
 interface DeliveriesTableProps {

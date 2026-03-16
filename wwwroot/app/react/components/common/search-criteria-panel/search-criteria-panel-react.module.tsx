@@ -8,7 +8,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider, CssBaseline} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {SearchCriteriaPanel} from './SearchCriteriaPanel';
 import {getTheme} from '../../../theme/muiTheme';
 import angular from 'angular';

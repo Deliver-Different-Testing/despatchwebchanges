@@ -32,7 +32,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith('courier/AllActiveSearch', {
                 searchText: 'John',
-            });
+            }, undefined);
             expect(result).toEqual(mockCouriers);
         });
 
@@ -52,7 +52,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith('courier/AllActiveSearch', {
                 searchText: '',
-            });
+            }, undefined);
             expect(result).toEqual(mockCouriers);
         });
 
@@ -75,7 +75,7 @@ describe('courierApi', () => {
 
             const result = await courierApi.getTimeZoneOptions();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('job/GetTimeZoneOptions');
+            expect(mockApiClient.get).toHaveBeenCalledWith('job/GetTimeZoneOptions', undefined, undefined);
             expect(result).toEqual(mockTimeZones);
         });
 
@@ -131,7 +131,7 @@ describe('courierApi', () => {
                 minLat: 24,
                 maxLng: -65,
                 maxLat: 50,
-            });
+            }, undefined);
             expect(result).toEqual(mockCouriers);
         });
 
@@ -175,7 +175,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith('courier/ClearListEnvelope', {
                 clearListId: 123,
-            });
+            }, undefined);
             expect(result).toEqual(mockEnvelope);
         });
 
@@ -199,7 +199,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith('courier/ClearListEnvelope', {
                 clearListId: 789,
-            });
+            }, undefined);
             expect(result).toEqual(mockEnvelope);
         });
 

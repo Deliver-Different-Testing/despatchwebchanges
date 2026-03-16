@@ -147,31 +147,26 @@ export class NationwideApiService {
         carrierFsCode: string,
         arrivalTime: string
     ): Promise<FlightCargoProcessing | null> {
-        try {
-            const dto = await apiClient.get<FlightCargoProcessingDto>(
-                'nationwideJob/CalculateCargoReadyTime',
-                {
-                    jobId,
-                    carrierFsCode,
-                    arrivalTime,
-                }
-            );
+        const dto = await apiClient.get<FlightCargoProcessingDto>(
+            'nationwideJob/CalculateCargoReadyTime',
+            {
+                jobId,
+                carrierFsCode,
+                arrivalTime,
+            }
+        );
 
-            if (!dto) return null;
+        if (!dto) return null;
 
-            // Transform DTO to domain model with Dayjs objects
-            // Use parseDateFromApi to preserve airport-local times without conversion
-            return {
-                arrivalTime: parseDateFromApi(dto.arrivalTime),
-                processingTimeMins: dto.processingTimeMins,
-                cargoOpeningTime: parseDateFromApi(dto.cargoOpeningTime),
-                cargoClosingTime: parseDateFromApi(dto.cargoClosingTime),
-                deliverByTime: dto.deliverByTime ? parseDateFromApi(dto.deliverByTime) : undefined,
-            };
-        } catch (error) {
-            console.error('Error fetching cargo ready time:', error);
-            return null;
-        }
+        // Transform DTO to domain model with Dayjs objects
+        // Use parseDateFromApi to preserve airport-local times without conversion
+        return {
+            arrivalTime: parseDateFromApi(dto.arrivalTime),
+            processingTimeMins: dto.processingTimeMins,
+            cargoOpeningTime: parseDateFromApi(dto.cargoOpeningTime),
+            cargoClosingTime: parseDateFromApi(dto.cargoClosingTime),
+            deliverByTime: dto.deliverByTime ? parseDateFromApi(dto.deliverByTime) : undefined,
+        };
     }
 
     /**

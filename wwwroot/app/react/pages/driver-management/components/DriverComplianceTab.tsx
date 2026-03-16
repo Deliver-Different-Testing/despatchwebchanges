@@ -1,28 +1,24 @@
 import React, {useState} from 'react';
-import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    IconButton,
-    MenuItem,
-    TextField,
-    Tooltip,
-} from '@mui/material';
-import {
-    CheckCircle as CheckCircleIcon,
-    Download as DownloadIcon,
-    Email as EmailIcon,
-    ErrorOutline as ErrorOutlineIcon,
-    PeopleAlt as PeopleAltIcon,
-    Send as SendIcon,
-    VerifiedUser as VerifiedIcon,
-    WarningAmber as WarningAmberIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DownloadIcon from '@mui/icons-material/Download';
+import EmailIcon from '@mui/icons-material/Email';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import SendIcon from '@mui/icons-material/Send';
+import VerifiedIcon from '@mui/icons-material/VerifiedUser';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import {useComplianceList, useSendComplianceReminder, useSendBulkComplianceReminders} from '../../../hooks';
 import {ComplianceFilter, CourierCompliance, FleetOption, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
@@ -30,10 +26,11 @@ import {summarizeCompliance} from '../../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../../components/common/ai-summary-panel/AiSummaryPanel';
 import {isAiEnabled} from '../../../../functions/aiSettings';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getComplianceTypeColor} from './shared';
+import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 
 interface DriverComplianceTabProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     fleetOptions: FleetOption[];
 }
 

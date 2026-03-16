@@ -6,30 +6,32 @@
  */
 
 import React from 'react';
-import {
-    alpha,
-    Box,
-    Button,
-    Checkbox,
-    Chip,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    FormControlLabel,
-    IconButton,
-    List,
-    ListItem,
-    ListItemButton,
-    ListItemIcon,
-    ListItemText,
-    Paper,
-    Switch,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {Close as CloseIcon, Delete as DeleteIcon, Info as InfoIcon, Warning as WarningIcon,} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import Paper from '@mui/material/Paper';
+import Switch from '@mui/material/Switch';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
+import InfoIcon from '@mui/icons-material/Info';
+import WarningIcon from '@mui/icons-material/Warning';
 import {RelatedJob, VoidJobDialogJob, VoidJobResult} from '../../../interfaces';
+import type {ShowToastFn} from '../../../services/toastService';
 
 // Re-export types for backward compatibility
 export type {RelatedJob, VoidJobDialogJob, VoidJobResult};
@@ -42,7 +44,7 @@ export interface VoidJobConfirmationDialogProps {
     onLoadRelatedJobs: (jobId: number, isArchived: boolean, isBulkJob: boolean) => Promise<RelatedJob[]>;
     onVoidJob: (jobId: number, voidSingleJobOnly: boolean, voidReason: string, selectedJobIds?: number[]) => Promise<void>;
     onVoidBulkJob: (bulkJobId: number, voidSingleJobOnly: boolean, voidReason: string, selectedJobIds?: number[]) => Promise<void>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface VoidJobConfirmationDialogState {
@@ -270,7 +272,7 @@ export class VoidJobConfirmationDialog extends React.Component<VoidJobConfirmati
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Warning Box */}
                 <Paper
                     elevation={0}

@@ -1,33 +1,30 @@
 import React, {useState} from 'react';
-import {
-    Box,
-    Button,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogContentText,
-    DialogTitle,
-    IconButton,
-    MenuItem,
-    TextField,
-    Tooltip,
-} from '@mui/material';
-import {
-    Add as AddIcon,
-    Delete as DeleteIcon,
-    DirectionsCar as CarIcon,
-    Download as DownloadIcon,
-    Edit as EditIcon,
-    EventNote as EventNoteIcon,
-    NightsStay as NightsStayIcon,
-    Refresh as RefreshIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import CarIcon from '@mui/icons-material/DirectionsCar';
+import DownloadIcon from '@mui/icons-material/Download';
+import EditIcon from '@mui/icons-material/Edit';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import NightsStayIcon from '@mui/icons-material/NightsStay';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks';
 import {AfterHoursCourierScheduleItem, AfterHoursFilter, PaginatedRequest} from '../../../interfaces';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getDayChipColor} from './shared';
+import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 
 interface WindowWithAfterhoursDialog {
@@ -35,13 +32,13 @@ interface WindowWithAfterhoursDialog {
         open: (
             schedule: AfterHoursCourierSchedule,
             isUsTenant: boolean,
-            toastService: { showToast: (message: string, type: 'success' | 'warning' | 'error') => void }
+            toastService: { showToast: ShowToastFn }
         ) => Promise<AfterHoursCourierSchedule | null>;
     };
 }
 
 interface AfterHoursTabProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     isUsCustomer?: boolean;
 }
 
@@ -120,7 +117,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
             const result = await (window as unknown as WindowWithAfterhoursDialog).ReactEditAfterhoursDialog?.open(
                 newSchedule,
                 isUsCustomer ?? false,
-                {showToast: (msg: string, type: 'success' | 'warning' | 'error') => showToast(msg, type)}
+                {showToast}
             );
             if (!result) return;
 
@@ -152,7 +149,7 @@ export const AfterHoursTab: React.FC<AfterHoursTabProps> = ({showToast, isUsCust
             const result = await (window as unknown as WindowWithAfterhoursDialog).ReactEditAfterhoursDialog?.open(
                 scheduleForDialog,
                 isUsCustomer ?? false,
-                {showToast: (msg: string, type: 'success' | 'warning' | 'error') => showToast(msg, type)}
+                {showToast}
             );
             if (!result) return;
 

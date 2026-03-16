@@ -4,6 +4,8 @@
  * TypeScript interfaces for the Additional Services Dialog component.
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 /**
  * Represents a single additional service item from the API.
  * Maps to ClientItemsViewModel from the backend.
@@ -40,7 +42,7 @@ export interface AdditionalServicesDialogProps {
     onSubmit: (serviceIds: number[], totalCost: number) => Promise<void>;
     onLoadServices: () => Promise<AdditionalService[]>;
     onCalculateTotal: (selectedServices: AdditionalService[]) => Promise<number>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 /**
@@ -57,7 +59,7 @@ export interface AdditionalServicesResult {
 export interface OpenAdditionalServicesDialogOptions {
     job: AdditionalServicesJob;
     toastService?: {
-        showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+        showToast: ShowToastFn;
     };
 }
 

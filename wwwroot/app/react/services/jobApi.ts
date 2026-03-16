@@ -1,11 +1,10 @@
 /**
  * Job API Service
  *
- * React-native API service for job-related operations.
- * Uses fetch with proper security headers instead of AngularJS $http.
+ * Axios-based API service for job-related operations.
  */
 
-import {apiClient} from './apiClient';
+import {apiClient, RequestOptions} from './apiClient';
 import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, Suggestion} from '../interfaces';
 
 /**
@@ -14,13 +13,14 @@ import {RelatedJobDto, VoidJobRequest, VoidBulkJobRequest, CreateJobRequest, Sug
 export async function getRelatedJobsMultiSelectList(
     jobId: number,
     isArchived: boolean,
-    isBulkJob: boolean = false
+    isBulkJob: boolean = false,
+    options?: RequestOptions
 ): Promise<RelatedJobDto[]> {
     return apiClient.get<RelatedJobDto[]>('job/GetRelatedJobsMultiSelectList', {
         jobId,
         isArchived,
         isBulkJob,
-    });
+    }, options);
 }
 
 /**
@@ -47,15 +47,15 @@ export async function quickCreateJob(job: CreateJobRequest): Promise<number> {
 /**
  * Search for active clients
  */
-export async function searchActiveClients(searchText: string): Promise<Suggestion[]> {
-    return apiClient.get<Suggestion[]>('home/ActiveClients', {searchText});
+export async function searchActiveClients(searchText: string, options?: RequestOptions): Promise<Suggestion[]> {
+    return apiClient.get<Suggestion[]>('home/ActiveClients', {searchText}, options);
 }
 
 /**
  * Get available vehicle sizes
  */
-export async function getVehicleSizes(): Promise<Suggestion[]> {
-    return apiClient.get<Suggestion[]>('courier/GetVehicleSizes');
+export async function getVehicleSizes(options?: RequestOptions): Promise<Suggestion[]> {
+    return apiClient.get<Suggestion[]>('courier/GetVehicleSizes', undefined, options);
 }
 
 /**
@@ -68,8 +68,8 @@ export async function allocateJobToCourier(courierId: number, jobIds: number[]):
 /**
  * Validate that a job is eligible for a POD swap
  */
-export async function validateSwapPod(jobNo: string): Promise<boolean> {
-    return apiClient.get<boolean>('Job/ValidateSwapPod', {job: jobNo});
+export async function validateSwapPod(jobNo: string, options?: RequestOptions): Promise<boolean> {
+    return apiClient.get<boolean>('Job/ValidateSwapPod', {job: jobNo}, options);
 }
 
 /**

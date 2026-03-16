@@ -6,26 +6,22 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import {
-    Box,
-    Chip,
-    Dialog,
-    DialogContent,
-    Divider,
-    IconButton,
-    InputAdornment,
-    Paper,
-    TextField,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import {
-    AutoAwesome as AssistantIcon,
-    Close as CloseIcon,
-    DeleteSweep as ClearIcon,
-    Send as SendIcon,
-    Stop as StopIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import AssistantIcon from '@mui/icons-material/AutoAwesome';
+import CloseIcon from '@mui/icons-material/Close';
+import ClearIcon from '@mui/icons-material/DeleteSweep';
+import SendIcon from '@mui/icons-material/Send';
+import StopIcon from '@mui/icons-material/Stop';
 import { AiAssistantDialogProps, AiMessage, SUGGESTED_PROMPTS } from './types';
 import { useAiAssistant } from './useAiAssistant';
 

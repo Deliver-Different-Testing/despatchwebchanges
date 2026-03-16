@@ -13,7 +13,7 @@
 
 import React from 'react';
 import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {AiCourierSuggestionsDialog} from './AiCourierSuggestionsDialog';
 import type {AiCourierSuggestionResponse} from '../../../services/aiAssistantApi';
 import {suggestCouriers} from '../../../services/aiAssistantApi';

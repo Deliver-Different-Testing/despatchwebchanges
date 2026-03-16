@@ -71,7 +71,7 @@ describe('tasksApi', () => {
 
             const result = await getAllTasks();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('task/GetAllTasks', {});
+            expect(mockApiClient.get).toHaveBeenCalledWith('task/GetAllTasks', {}, undefined);
             expect(result).toHaveLength(2);
             expect(result[0].id).toBe(1);
             expect(dayjs.isDayjs(result[0].dueDate)).toBe(true);
@@ -89,7 +89,7 @@ describe('tasksApi', () => {
         ])('should pass %s filter', async (_, filters) => {
             mockApiClient.get.mockResolvedValueOnce([]);
             await getAllTasks(filters);
-            expect(mockApiClient.get).toHaveBeenCalledWith('task/GetAllTasks', filters);
+            expect(mockApiClient.get).toHaveBeenCalledWith('task/GetAllTasks', filters, undefined);
         });
 
         it('should pass multiple filters together', async () => {
@@ -115,7 +115,7 @@ describe('tasksApi', () => {
                 showCompleted: false,
                 orderBy: 'staffName',
                 orderDirection: 'asc',
-            });
+            }, undefined);
         });
 
         it('should return empty array when API returns null', async () => {
@@ -239,7 +239,7 @@ describe('tasksApi', () => {
 
             const result = await getActiveStaff();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('task/GetStaff');
+            expect(mockApiClient.get).toHaveBeenCalledWith('task/GetStaff', undefined, undefined);
             expect(result).toEqual(mockStaffResponse);
         });
 
@@ -263,7 +263,7 @@ describe('tasksApi', () => {
 
             const result = await getEventTypes();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('job/EventTypeList');
+            expect(mockApiClient.get).toHaveBeenCalledWith('job/EventTypeList', undefined, undefined);
             expect(result).toEqual(mockEventTypesResponse);
         });
 
@@ -317,7 +317,7 @@ describe('tasksApi', () => {
 
             const result = await getDeliveryJourney(123);
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('job/GetDeliveryJourney', {jobId: 123});
+            expect(mockApiClient.get).toHaveBeenCalledWith('job/GetDeliveryJourney', {jobId: 123}, undefined);
             expect(result).toHaveLength(3);
             expect(result[0].title).toBe('Package picked up');
         });

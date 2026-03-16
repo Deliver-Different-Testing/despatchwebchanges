@@ -1,19 +1,17 @@
 import React, {useCallback} from 'react';
-import {
-    alpha,
-    Card,
-    Checkbox,
-    CircularProgress,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    Typography,
-} from '@mui/material';
+import {alpha} from '@mui/material/styles';
+import Card from '@mui/material/Card';
+import Checkbox from '@mui/material/Checkbox';
+import CircularProgress from '@mui/material/CircularProgress';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import Typography from '@mui/material/Typography';
 
 export interface DataTableColumn<T> {
     key: string;

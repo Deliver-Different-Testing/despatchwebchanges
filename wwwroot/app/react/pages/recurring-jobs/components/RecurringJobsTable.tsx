@@ -5,24 +5,23 @@
  */
 
 import React, {useCallback} from 'react';
-import {
-    alpha,
-    Box,
-    CircularProgress,
-    IconButton,
-    Paper,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TablePagination,
-    TableRow,
-    TableSortLabel,
-    Tooltip,
-    Typography,
-} from '@mui/material';
-import {Delete as DeleteIcon, EventRepeat as EventRepeatIcon,} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import {AddressViewModel, PrebookListModel, RecurringJobColumn, RecurringJobSort,} from '../../../interfaces';
 
 export interface RecurringJobsTableProps {

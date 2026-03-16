@@ -1,4 +1,4 @@
-import {apiClient, downloadBlob} from './apiClient';
+import {apiClient, RequestOptions, downloadBlob} from './apiClient';
 import {
     PaginatedRequest,
     PaginatedResponse,
@@ -18,17 +18,18 @@ import {
 } from '../interfaces';
 
 export const driverManagementApi = {
-    searchAllCouriers(searchTerm: string): Promise<FleetOption[]> {
-        return apiClient.get<FleetOption[]>('courier/SearchAllCouriers', {searchTerm});
+    searchAllCouriers(searchTerm: string, options?: RequestOptions): Promise<FleetOption[]> {
+        return apiClient.get<FleetOption[]>('courier/SearchAllCouriers', {searchTerm}, options);
     },
 
-    getCourierDetailsForDashboard(courierId: number): Promise<CourierDataDashboard> {
-        return apiClient.get<CourierDataDashboard>('courier/GetCourierDetailsForDashboard', {courierId});
+    getCourierDetailsForDashboard(courierId: number, options?: RequestOptions): Promise<CourierDataDashboard> {
+        return apiClient.get<CourierDataDashboard>('courier/GetCourierDetailsForDashboard', {courierId}, options);
     },
 
     getCourierComplianceList(
         query: PaginatedRequest,
-        filters: ComplianceFilter
+        filters: ComplianceFilter,
+        options?: RequestOptions
     ): Promise<CourierCompliancePaginated> {
         return apiClient.post<CourierCompliancePaginated>('courier/GetCourierComplianceList', {
             page: query.page,
@@ -39,7 +40,7 @@ export const driverManagementApi = {
             type: filters.type,
             status: filters.status,
             fleet: filters.fleet,
-        });
+        }, options);
     },
 
     sendComplianceReminder(item: CourierCompliance): Promise<void> {
@@ -55,7 +56,8 @@ export const driverManagementApi = {
 
     getAfterHoursSchedule(
         query: PaginatedRequest,
-        filters: AfterHoursFilter
+        filters: AfterHoursFilter,
+        options?: RequestOptions
     ): Promise<AfterHoursPaginated> {
         return apiClient.post<AfterHoursPaginated>('courier/GetAfterHoursCourierSchedule', {
             page: query.page,
@@ -64,7 +66,7 @@ export const driverManagementApi = {
             sortDescending: query.sortDescending,
             searchTerm: query.searchTerm,
             day: filters.day,
-        });
+        }, options);
     },
 
     createAfterHoursSchedule(schedule: AfterHoursCourierScheduleItem): Promise<void> {
@@ -83,7 +85,8 @@ export const driverManagementApi = {
 
     getTodayActiveDrivers(
         query: PaginatedRequest,
-        filters: TodayActiveDriverFilter
+        filters: TodayActiveDriverFilter,
+        options?: RequestOptions
     ): Promise<TodayActiveDriverPaginated> {
         return apiClient.post<TodayActiveDriverPaginated>('courier/GetTodayActiveDrivers', {
             page: query.page,
@@ -94,23 +97,23 @@ export const driverManagementApi = {
             location: filters.location,
             status: filters.status,
             fleet: filters.fleet,
-        });
+        }, options);
     },
 
-    getDriverEmails(query: PaginatedRequest): Promise<PaginatedResponse<DriverEmail>> {
-        return apiClient.post<PaginatedResponse<DriverEmail>>('courier/GetAllCourierEmails', query);
+    getDriverEmails(query: PaginatedRequest, options?: RequestOptions): Promise<PaginatedResponse<DriverEmail>> {
+        return apiClient.post<PaginatedResponse<DriverEmail>>('courier/GetAllCourierEmails', query, options);
     },
 
     sendEmailToCouriers(emailData: GroupEmailData): Promise<void> {
         return apiClient.post<void>('courier/SendEmailToCouriers', emailData);
     },
 
-    getDriverDailyEarnings(query: PaginatedRequest): Promise<CourierDailyEarningsPaginated> {
-        return apiClient.post<CourierDailyEarningsPaginated>('courier/GetCourierDailyEarnings', query);
+    getDriverDailyEarnings(query: PaginatedRequest, options?: RequestOptions): Promise<CourierDailyEarningsPaginated> {
+        return apiClient.post<CourierDailyEarningsPaginated>('courier/GetCourierDailyEarnings', query, options);
     },
 
-    getAllFleetOptions(): Promise<FleetOption[]> {
-        return apiClient.get<FleetOption[]>('courier/GetAllFleetOptions');
+    getAllFleetOptions(options?: RequestOptions): Promise<FleetOption[]> {
+        return apiClient.get<FleetOption[]>('courier/GetAllFleetOptions', undefined, options);
     },
 
     async exportTodayActiveDriversCsv(query: PaginatedRequest, filters: TodayActiveDriverFilter): Promise<void> {

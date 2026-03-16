@@ -5,29 +5,25 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    Autocomplete,
-    Box,
-    CircularProgress,
-    FormControl,
-    IconButton,
-    InputAdornment,
-    InputLabel,
-    MenuItem,
-    Select,
-    SelectChangeEvent,
-    TextField,
-    ToggleButton,
-    ToggleButtonGroup,
-    Tooltip,
-} from '@mui/material';
-import {
-    Clear as ClearIcon,
-    FilterAltOff as ClearFiltersIcon,
-    FileDownload as ExportIcon,
-    Refresh as RefreshIcon,
-    Search as SearchIcon,
-} from '@mui/icons-material';
+import Autocomplete from '@mui/material/Autocomplete';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
+import type {SelectChangeEvent} from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Tooltip from '@mui/material/Tooltip';
+import ClearIcon from '@mui/icons-material/Clear';
+import ClearFiltersIcon from '@mui/icons-material/FilterAltOff';
+import ExportIcon from '@mui/icons-material/FileDownload';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
 import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey} from '../../../interfaces';
 import {useCourierSearch, useSpeedList} from '../../../hooks';
 

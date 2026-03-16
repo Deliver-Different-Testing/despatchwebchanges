@@ -5,7 +5,7 @@
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {BulkPriceUploadDialog} from './BulkPriceUploadDialog';
 import {BulkPricePreviewResponse} from './types';
 

@@ -1,7 +1,9 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import {Box, Divider, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import Divider from '@mui/material/Divider';
+import Typography from '@mui/material/Typography';
 import type {Components} from 'react-markdown';
 
 interface AiMarkdownRendererProps {

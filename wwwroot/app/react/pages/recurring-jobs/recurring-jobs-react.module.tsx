@@ -7,7 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {CssBaseline, ThemeProvider} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
@@ -99,8 +100,8 @@ export function unmountRecurringJobsPage(): void {
     recurringJobsContainer = null;
 }
 
-// Expose globally for AngularJS access
-(window as any).ReactRecurringJobs = {
+// Expose globally for AngularJS access (typed via global.d.ts)
+window.ReactRecurringJobs = {
     mount: mountRecurringJobsPage,
     unmount: unmountRecurringJobsPage,
     refresh: refreshRecurringJobs,

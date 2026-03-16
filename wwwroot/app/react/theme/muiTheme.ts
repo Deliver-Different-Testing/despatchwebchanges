@@ -12,7 +12,7 @@ import {alpha, createTheme, Theme} from '@mui/material/styles';
  */
 
 // Primary palette for US customers - matches professionalPrimary from AngularJS theme
-const dfrntPrimaryPalette = {
+export const dfrntPrimaryPalette = {
     50: '#e3f2fd',
     100: '#bbdefb',
     200: '#90caf9',
@@ -30,7 +30,7 @@ const dfrntPrimaryPalette = {
 };
 
 // Primary palette for non-US customers - warm amber/gold (softened from original yellow)
-const urgentPrimaryPalette = {
+export const urgentPrimaryPalette = {
     50: '#fef9e7',
     100: '#fcefc4',
     200: '#fae49d',
@@ -48,7 +48,7 @@ const urgentPrimaryPalette = {
 };
 
 // Accent palette - matches accent from AngularJS theme (warm grays)
-const accentPalette = {
+export const accentPalette = {
     50: '#fafaf9',   // Warm white
     100: '#f5f5f4',  // Very light warm gray
     200: '#e7e5e4',  // Light warm gray
@@ -62,7 +62,7 @@ const accentPalette = {
 };
 
 // Design tokens
-const tokens = {
+export const tokens = {
     radius: {
         xs: 2,
         sm: 4,
@@ -87,7 +87,7 @@ const tokens = {
 };
 
 // Shared colors (non-primary)
-const sharedColors = {
+export const sharedColors = {
     success: {
         main: '#4CAF50',
         light: '#81C784',

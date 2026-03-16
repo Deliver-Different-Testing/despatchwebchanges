@@ -46,7 +46,8 @@ describe('addressApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'addressAutocomplete/AutocompleteAddressSearch',
-                {text: '123 Main'}
+                {text: '123 Main'},
+                undefined
             );
             expect(result).toEqual(mockResponse);
         });
@@ -91,7 +92,8 @@ describe('addressApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'addressAutocomplete/GetLocationDetailsById',
-                {addressId: 'here:af:address:123'}
+                {addressId: 'here:af:address:123'},
+                undefined
             );
             expect(result).toEqual(mockResponse);
         });
@@ -123,7 +125,8 @@ describe('addressApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'addressAutocomplete/FetchNearestAddress',
-                {latitude: 40.7128, longitude: -74.006}
+                {latitude: 40.7128, longitude: -74.006},
+                undefined
             );
             expect(result).toEqual(mockResponse);
         });
@@ -135,7 +138,8 @@ describe('addressApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'addressAutocomplete/FetchNearestAddress',
-                {latitude: 40.71284567890123, longitude: -74.00598765432109}
+                {latitude: 40.71284567890123, longitude: -74.00598765432109},
+                undefined
             );
         });
     });
@@ -147,7 +151,7 @@ describe('addressApi', () => {
 
             const result = await addressApi.getHereMapsKey();
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('config/GetHereMapsKey');
+            expect(mockApiClient.get).toHaveBeenCalledWith('config/GetHereMapsKey', undefined, undefined);
             expect(result).toBe('test-api-key-12345');
         });
 

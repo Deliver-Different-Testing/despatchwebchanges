@@ -7,7 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {CssBaseline, ThemeProvider} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {OverviewPage} from './OverviewPage';
 import {getTheme} from '../../theme/muiTheme';
 import {MountOverviewConfig} from './OverviewPage.interfaces';
@@ -97,8 +98,8 @@ export function unmountOverviewPage(): void {
     refreshCallback = null;
 }
 
-// Expose globally for AngularJS access
-(window as any).ReactOverview = {
+// Expose globally for AngularJS access (typed via global.d.ts)
+window.ReactOverview = {
     mount: mountOverviewPage,
     unmount: unmountOverviewPage,
     refresh: refreshOverview,

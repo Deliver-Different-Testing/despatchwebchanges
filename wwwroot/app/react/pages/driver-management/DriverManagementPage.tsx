@@ -1,5 +1,8 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Card, Tab, Tabs} from '@mui/material';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
 import {useFleetOptions} from '../../hooks';
 import {DriverManagementPageProps} from '../../interfaces';
 import {DriverDetailsTab} from './components/DriverDetailsTab';

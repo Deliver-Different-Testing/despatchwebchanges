@@ -79,7 +79,7 @@ describe('useDriverSearch', () => {
         const {result} = renderHook(() => useDriverSearch('jo'), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.searchAllCouriers).toHaveBeenCalledWith('jo');
+        expect(mockApi.searchAllCouriers).toHaveBeenCalledWith('jo', expect.anything());
         expect(result.current.data).toEqual(mockResults);
     });
 
@@ -119,7 +119,7 @@ describe('useCourierDetails', () => {
         const {result} = renderHook(() => useCourierDetails(10), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.getCourierDetailsForDashboard).toHaveBeenCalledWith(10);
+        expect(mockApi.getCourierDetailsForDashboard).toHaveBeenCalledWith(10, expect.anything());
         expect(result.current.data).toEqual(mockDetails);
     });
 
@@ -168,7 +168,7 @@ describe('useTodayActiveDrivers', () => {
         const {result} = renderHook(() => useTodayActiveDrivers(query, filters), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.getTodayActiveDrivers).toHaveBeenCalledWith(query, filters);
+        expect(mockApi.getTodayActiveDrivers).toHaveBeenCalledWith(query, filters, expect.anything());
     });
 
     it('should handle errors', async () => {
@@ -193,7 +193,7 @@ describe('useComplianceList', () => {
         const {result} = renderHook(() => useComplianceList(query, filters), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.getCourierComplianceList).toHaveBeenCalledWith(query, filters);
+        expect(mockApi.getCourierComplianceList).toHaveBeenCalledWith(query, filters, expect.anything());
     });
 });
 
@@ -210,7 +210,7 @@ describe('useAfterHoursSchedule', () => {
         const {result} = renderHook(() => useAfterHoursSchedule(query, filters), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.getAfterHoursSchedule).toHaveBeenCalledWith(query, filters);
+        expect(mockApi.getAfterHoursSchedule).toHaveBeenCalledWith(query, filters, expect.anything());
     });
 });
 
@@ -225,7 +225,7 @@ describe('useDriverEmails', () => {
         const {result} = renderHook(() => useDriverEmails(query), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.getDriverEmails).toHaveBeenCalledWith(query);
+        expect(mockApi.getDriverEmails).toHaveBeenCalledWith(query, expect.anything());
     });
 });
 
@@ -240,7 +240,7 @@ describe('useDriverEarnings', () => {
         const {result} = renderHook(() => useDriverEarnings(query), {wrapper: createWrapper()});
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(mockApi.getDriverDailyEarnings).toHaveBeenCalledWith(query);
+        expect(mockApi.getDriverDailyEarnings).toHaveBeenCalledWith(query, expect.anything());
     });
 });
 

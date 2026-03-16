@@ -8,15 +8,17 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider, CssBaseline} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {EditAddressDialog} from './EditAddressDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {EditAddressDialogViewModel} from '../../../interfaces';
+import type {ShowToastFn} from '../../../services/toastService';
 
 // Toast service interface (still provided by AngularJS for UI consistency)
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 // State management for the dialog
@@ -63,7 +65,7 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+    const handleShowToast: ShowToastFn = (message, type) => {
         if (!dialogState.toastService) {
             // Fallback to console if toast service not available
             console.log(`[Toast ${type}]: ${message}`);

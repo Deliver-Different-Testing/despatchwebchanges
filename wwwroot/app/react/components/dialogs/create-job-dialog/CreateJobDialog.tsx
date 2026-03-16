@@ -6,29 +6,25 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
-import {
-    Autocomplete,
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    IconButton,
-    Paper,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {
-    AddBusiness as AddBusinessIcon,
-    Close as CloseIcon,
-    ContactPhone as ContactIcon,
-    Description as RefIcon,
-    DirectionsCar as VehicleIcon,
-    LocationOn as LocationIcon,
-    Notes as NotesIcon,
-    Person as PersonIcon,
-} from '@mui/icons-material';
+import Autocomplete from '@mui/material/Autocomplete';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import AddBusinessIcon from '@mui/icons-material/AddBusiness';
+import CloseIcon from '@mui/icons-material/Close';
+import ContactIcon from '@mui/icons-material/ContactPhone';
+import RefIcon from '@mui/icons-material/Description';
+import VehicleIcon from '@mui/icons-material/DirectionsCar';
+import LocationIcon from '@mui/icons-material/LocationOn';
+import NotesIcon from '@mui/icons-material/Notes';
+import PersonIcon from '@mui/icons-material/Person';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -46,6 +42,7 @@ import {jobApi} from '../../../services/jobApi';
 import {dayjs, formatDateForApi, getIanaTimezone} from '../../../utils/dateUtils';
 import {getStateByAbbreviation} from '../../../utils/usStates';
 import type {Dayjs} from 'dayjs';
+import type {ShowToastFn} from '../../../services/toastService';
 
 // Section wrapper component for consistent styling
 const FormSection: React.FC<{
@@ -80,7 +77,7 @@ export interface CreateJobDialogProps {
     isUsTenant: boolean;
     onClose: () => void;
     onSubmit: (newJobId: number) => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
@@ -446,7 +443,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Job Details Section */}
                 <FormSection icon={<PersonIcon />} title="Job Details">
                     <Box sx={{display: 'flex', gap: 2, mb: 2}}>
@@ -770,7 +767,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             </DialogContent>
 
             {/* Actions */}
-            <DialogActions sx={{px: 3, py: 2, bgcolor: '#fafafa', borderTop: '1px solid', borderColor: 'divider'}}>
+            <DialogActions sx={{px: 3, py: 2, bgcolor: 'background.default', borderTop: '1px solid', borderColor: 'divider'}}>
                 {isLoading && <CircularProgress size={28} sx={{mr: 1}} />}
                 {!isLoading && (
                     <>

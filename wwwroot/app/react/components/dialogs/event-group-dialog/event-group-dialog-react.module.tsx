@@ -8,16 +8,18 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { EventGroupDialog } from './EventGroupDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, getTenantTimezone } from '../../../utils/dateUtils';
 import { getEventTypeGroups, addTasks, getActiveStaff } from '../../../services/tasksApi';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
+import type { ShowToastFn } from '../../../services/toastService';
 
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface DialogState {
@@ -91,7 +93,7 @@ class EventGroupDialogManager {
             window.open(adminUrl, '_blank');
         };
 
-        const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+        const handleShowToast: ShowToastFn = (message, type) => {
             if (!this.dialogState.toastService) {
                 console.log(`[Toast ${type}]: ${message}`);
                 return;

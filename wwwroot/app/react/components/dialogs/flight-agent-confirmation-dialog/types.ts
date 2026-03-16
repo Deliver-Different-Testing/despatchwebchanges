@@ -3,6 +3,7 @@
  */
 
 import { Dayjs } from 'dayjs';
+import type { ShowToastFn } from '../../../services/toastService';
 
 // Re-export flight interfaces for convenience
 export interface FlightSegment {
@@ -134,10 +135,10 @@ export interface FlightAgentConfirmationDialogProps {
         arrivalTime: Dayjs,
         timezone: string
     ) => Promise<FlightCargoProcessing | null>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 // Toast service interface
 export interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }

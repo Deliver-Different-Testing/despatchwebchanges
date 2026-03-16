@@ -7,12 +7,14 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 
 import { SelectDialog } from './SelectDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { SelectDialogResult, SelectDialogOptions, SelectDialogItem } from './types';
+import type { ShowToastFn } from '../../../services/toastService';
 
 /** Warning message displayed when changing a job's Status field */
 const STATUS_WARNING_MESSAGE =
@@ -35,7 +37,7 @@ interface DialogState {
  * Toast service interface for showing notifications
  */
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 // Default toast service that logs to console

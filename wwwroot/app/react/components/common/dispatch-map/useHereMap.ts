@@ -55,6 +55,7 @@ export function useHereMap({
         }
 
         let isMounted = true;
+        let handleResize: (() => void) | null = null;
 
         const initMap = async () => {
             try {
@@ -97,9 +98,8 @@ export function useHereMap({
                 ui.addControl('zoom', zoomControl, H.ui.LayoutAlignment.RIGHT_TOP);
 
                 // Handle resize
-                window.addEventListener('resize', () => {
-                    map.getViewPort().resize();
-                });
+                handleResize = () => map.getViewPort().resize();
+                window.addEventListener('resize', handleResize, { passive: true });
 
                 platformRef.current = platform;
                 mapRef.current = map;
@@ -122,6 +122,9 @@ export function useHereMap({
 
         return () => {
             isMounted = false;
+            if (handleResize) {
+                window.removeEventListener('resize', handleResize);
+            }
         };
     }, [apiKey, center, zoom, onMapReady]);
 

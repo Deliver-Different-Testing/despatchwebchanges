@@ -32,9 +32,8 @@ export function useJobNotes(
 ) {
     return useQuery<JobNote[], Error>({
         queryKey: queryKeys.notes.job(jobId ?? 0, isRecurring),
-        queryFn: () => notesApi.getJobNotes(jobId!, isRecurring),
+        queryFn: ({signal}) => notesApi.getJobNotes(jobId!, isRecurring, {signal}),
         enabled: !!jobId && (options?.enabled ?? true),
-        staleTime: 30 * 1000, // Cache for 30 seconds
     });
 }
 
@@ -58,9 +57,8 @@ export function useBulkJobNotes(
 ) {
     return useQuery<JobNote[], Error>({
         queryKey: queryKeys.notes.bulkJob(bulkJobId ?? 0),
-        queryFn: () => notesApi.getBulkJobNotes(bulkJobId!),
+        queryFn: ({signal}) => notesApi.getBulkJobNotes(bulkJobId!, {signal}),
         enabled: !!bulkJobId && (options?.enabled ?? true),
-        staleTime: 30 * 1000,
     });
 }
 
@@ -78,7 +76,7 @@ export function useBulkJobNotes(
 export function useNoteTypes(options?: { enabled?: boolean }) {
     return useQuery<NoteType[], Error>({
         queryKey: queryKeys.notes.types,
-        queryFn: () => notesApi.getNoteTypes(),
+        queryFn: ({signal}) => notesApi.getNoteTypes({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache note types for 5 minutes (rarely change)
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
@@ -242,9 +240,8 @@ export function useNoteHistory(
 ) {
     return useQuery<NoteHistoryEntry[], Error>({
         queryKey: queryKeys.notes.history(noteId ?? 0, noteSource),
-        queryFn: () => notesApi.getNoteHistory(noteId!, noteSource),
+        queryFn: ({signal}) => notesApi.getNoteHistory(noteId!, noteSource, {signal}),
         enabled: !!noteId && (options?.enabled ?? true),
-        staleTime: 30 * 1000,
     });
 }
 

@@ -69,7 +69,7 @@ describe('useRelatedJobs', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, false);
+        expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, false, false, expect.anything());
         expect(result.current.data).toEqual(mockRelatedJobs);
     });
 
@@ -82,7 +82,7 @@ describe('useRelatedJobs', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(200, true);
+        expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(200, true, false, expect.anything());
     });
 
     it('should not fetch when jobId is 0', async () => {
@@ -149,12 +149,12 @@ describe('useRelatedJobs', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, false);
+        expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, false, false, expect.anything());
 
         rerender({jobId: 200, isArchived: false});
 
         await waitFor(() => {
-            expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(200, false);
+            expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(200, false, false, expect.anything());
         });
     });
 
@@ -176,7 +176,7 @@ describe('useRelatedJobs', () => {
         rerender({jobId: 100, isArchived: true});
 
         await waitFor(() => {
-            expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, true);
+            expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, true, false, expect.anything());
         });
     });
 });

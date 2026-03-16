@@ -7,35 +7,31 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
-import {
-    alpha,
-    Autocomplete,
-    Box,
-    Button,
-    CircularProgress,
-    Collapse,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    FormControl,
-    IconButton,
-    InputLabel,
-    MenuItem,
-    Paper,
-    Select,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    ExpandLess as ExpandLessIcon,
-    ExpandMore as ExpandMoreIcon,
-    LocalShipping as ShippingIcon,
-    LocationOn as LocationIcon,
-    Map as MapIcon,
-    Save as SaveIcon,
-    Search as SearchIcon,
-} from '@mui/icons-material';
+import {alpha} from '@mui/material/styles';
+import Autocomplete from '@mui/material/Autocomplete';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import Collapse from '@mui/material/Collapse';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import FormControl from '@mui/material/FormControl';
+import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Paper from '@mui/material/Paper';
+import Select from '@mui/material/Select';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ShippingIcon from '@mui/icons-material/LocalShipping';
+import LocationIcon from '@mui/icons-material/LocationOn';
+import MapIcon from '@mui/icons-material/Map';
+import SaveIcon from '@mui/icons-material/Save';
+import SearchIcon from '@mui/icons-material/Search';
 import {
     EditAddressDialogViewModel,
     HereMapsLocationResult,
@@ -45,6 +41,7 @@ import {
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
 import {addressApi} from '../../../services/addressApi';
 import {US_STATES} from '../../../utils/usStates';
+import type {ShowToastFn} from '../../../services/toastService';
 
 /**
  * Minimal HERE Maps type definitions for the SDK objects used in this component.
@@ -79,7 +76,7 @@ export interface EditAddressDialogProps {
     isUsTenant: boolean;
     onClose: () => void;
     onSave: (address: EditAddressDialogViewModel) => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface ValidationErrors {
@@ -209,7 +206,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             const handleResize = () => {
                 map.getViewPort().resize();
             };
-            window.addEventListener('resize', handleResize);
+            window.addEventListener('resize', handleResize, { passive: true });
 
             return () => {
                 window.removeEventListener('resize', handleResize);
@@ -622,7 +619,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             </Box>
 
             {/* Content */}
-            <DialogContent sx={{p: 3, bgcolor: '#fafafa'}}>
+            <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Address Search Section */}
                 <Paper
                     elevation={0}
@@ -1006,7 +1003,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 sx={(theme) => ({
                     px: 3,
                     py: 2,
-                    bgcolor: '#fafafa',
+                    bgcolor: 'background.default',
                     borderTop: `1px solid ${theme.palette.divider}`,
                     gap: 1,
                 })}

@@ -7,14 +7,16 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {ThemeProvider, CssBaseline} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import {SwapPodsDialog} from './SwapPodsDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {jobApi} from '../../../services/jobApi';
+import type {ShowToastFn} from '../../../services/toastService';
 
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface DialogState {
@@ -54,7 +56,7 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+    const handleShowToast: ShowToastFn = (message, type) => {
         if (!dialogState.toastService) {
             console.log(`[Toast ${type}]: ${message}`);
             return;

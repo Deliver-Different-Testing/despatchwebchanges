@@ -23,6 +23,7 @@ import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dial
 import {AppPage} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
+import type {ToastType} from "../../react/services/toastService";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../../interfaces/coordinates.interface";
@@ -941,7 +942,7 @@ class HomeController extends BaseController {
         }
     }
 
-    async handleDispatchSelection(selectedCourier: ISuggestion, model: ISuggestion, label: string, $event: MouseEvent, job: IDispatchJob): Promise<void> {
+    async handleDispatchSelection(selectedCourier: ISuggestion, _model: ISuggestion, _label: string, $event: MouseEvent, job: IDispatchJob): Promise<void> {
         // Prevent duplicate dispatch attempts
         if ($event === undefined) return;
 
@@ -1052,11 +1053,12 @@ class HomeController extends BaseController {
 
     private createToastAdapter() {
         return {
-            showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+            showToast: (message: string, type: ToastType) => {
                 switch (type) {
                     case 'success': this.toastrService.showSuccessToast(message); break;
                     case 'warning': this.toastrService.showWarningToast(message); break;
                     case 'error': this.toastrService.showErrorToast(message); break;
+                    case 'info': this.toastrService.showSuccessToast(message); break;
                 }
             },
         };

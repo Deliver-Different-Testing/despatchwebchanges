@@ -6,43 +6,38 @@
  */
 
 import React, {useMemo, useState} from 'react';
-import {
-    alpha,
-    Box,
-    Button,
-    Collapse,
-    IconButton,
-    InputAdornment,
-    Menu,
-    MenuItem,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TableSortLabel,
-    TextField,
-    Tooltip,
-    Typography,
-    useTheme,
-} from '@mui/material';
+import {alpha, useTheme} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Collapse from '@mui/material/Collapse';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
-import {
-    Add as AddIcon,
-    Check as CheckIcon,
-    Clear as ClearIcon,
-    ConnectingAirports as ConnectingAirportsIcon,
-    ExpandLess as ExpandLessIcon,
-    ExpandMore as ExpandMoreIcon,
-    Flight as FlightIcon,
-    FlightLand as FlightLandIcon,
-    FlightTakeoff as FlightTakeoffIcon,
-    Info as InfoIcon,
-    PersonSearch as PersonSearchIcon,
-    RequestQuote as RequestQuoteIcon,
-    Search as SearchIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
+import ClearIcon from '@mui/icons-material/Clear';
+import ConnectingAirportsIcon from '@mui/icons-material/ConnectingAirports';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FlightIcon from '@mui/icons-material/Flight';
+import FlightLandIcon from '@mui/icons-material/FlightLand';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import InfoIcon from '@mui/icons-material/Info';
+import PersonSearchIcon from '@mui/icons-material/PersonSearch';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
+import SearchIcon from '@mui/icons-material/Search';
 import {NoData} from '../no-data/NoData';
 import {FlightAgentDataTableProps, FlightSegment} from './types';
 import {openFlightDetailsDialog} from '../../dialogs/flight-details-dialog';

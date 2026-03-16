@@ -5,7 +5,7 @@
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';

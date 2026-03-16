@@ -6,24 +6,20 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    CircularProgress,
-    Paper,
-    TextField,
-} from '@mui/material';
-import {
-    Today as TodayIcon,
-    Close as CloseIcon,
-    Public as PublicIcon,
-    Work as WorkIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Paper from '@mui/material/Paper';
+import TextField from '@mui/material/TextField';
+import TodayIcon from '@mui/icons-material/Today';
+import CloseIcon from '@mui/icons-material/Close';
+import PublicIcon from '@mui/icons-material/Public';
+import WorkIcon from '@mui/icons-material/Work';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -253,7 +249,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                     <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
                         {/* Date/Time Picker */}
                         <Box sx={{ display: 'flex', gap: 2 }}>

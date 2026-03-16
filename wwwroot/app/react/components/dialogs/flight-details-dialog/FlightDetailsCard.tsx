@@ -5,14 +5,17 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography, Divider, useMediaQuery, useTheme } from '@mui/material';
-import {
-    Info as InfoIcon,
-    FlightTakeoff as FlightTakeoffIcon,
-    FlightLand as FlightLandIcon,
-    MeetingRoom as TerminalIcon,
-    AirplanemodeActive as AircraftIcon,
-} from '@mui/icons-material';
+import {useTheme} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import Divider from '@mui/material/Divider';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import InfoIcon from '@mui/icons-material/Info';
+import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import FlightLandIcon from '@mui/icons-material/FlightLand';
+import TerminalIcon from '@mui/icons-material/MeetingRoom';
+import AircraftIcon from '@mui/icons-material/AirplanemodeActive';
 import { FlightDetailsCardProps } from './types';
 
 export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({

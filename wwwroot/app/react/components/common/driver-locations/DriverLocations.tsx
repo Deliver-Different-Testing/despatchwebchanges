@@ -6,13 +6,11 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-    Box,
-    LinearProgress,
-    IconButton,
-    Tooltip,
-} from '@mui/material';
-import { Clear as ClearIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import LinearProgress from '@mui/material/LinearProgress';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import ClearIcon from '@mui/icons-material/Clear';
 import { NoData } from '../no-data/NoData';
 import type {
     DriverLocationsProps,

@@ -1,7 +1,7 @@
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {ThemeProvider, createTheme} from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {OverviewPage} from './OverviewPage';
 
 // ContactID and FirstName are defined in setup.ts as 0 and 'Test'

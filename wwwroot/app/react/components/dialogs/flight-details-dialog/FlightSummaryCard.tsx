@@ -5,8 +5,11 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography } from '@mui/material';
-import { Flight as FlightIcon, Schedule as ScheduleIcon } from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import FlightIcon from '@mui/icons-material/Flight';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import { FlightSummaryCardProps } from './types';
 
 export const FlightSummaryCard: React.FC<FlightSummaryCardProps> = ({

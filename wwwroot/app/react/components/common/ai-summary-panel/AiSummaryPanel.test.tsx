@@ -14,7 +14,7 @@
 
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {AiSummaryPanel} from './AiSummaryPanel';
 import type {AiSummaryResponse} from '../../../services/aiAssistantApi';
 

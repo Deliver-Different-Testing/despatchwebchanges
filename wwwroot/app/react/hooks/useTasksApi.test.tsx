@@ -141,7 +141,7 @@ describe('useTasksApi Hooks', () => {
             });
 
             expect(result.current.data).toEqual(mockTasks);
-            expect(mockTasksApi.getAllTasks).toHaveBeenCalledWith(undefined);
+            expect(mockTasksApi.getAllTasks).toHaveBeenCalledWith(undefined, expect.anything());
         });
 
         it('should pass filters to the API', async () => {
@@ -161,7 +161,7 @@ describe('useTasksApi Hooks', () => {
                 expect(result.current.isSuccess).toBe(true);
             });
 
-            expect(mockTasksApi.getAllTasks).toHaveBeenCalledWith(filters);
+            expect(mockTasksApi.getAllTasks).toHaveBeenCalledWith(filters, expect.anything());
         });
 
         it('should handle errors', async () => {
@@ -287,7 +287,7 @@ describe('useTasksApi Hooks', () => {
             });
 
             expect(result.current.data).toEqual(mockDeliveryJourney);
-            expect(mockTasksApi.getDeliveryJourney).toHaveBeenCalledWith(123);
+            expect(mockTasksApi.getDeliveryJourney).toHaveBeenCalledWith(123, expect.anything());
         });
 
         it('should not fetch when jobId is undefined', async () => {

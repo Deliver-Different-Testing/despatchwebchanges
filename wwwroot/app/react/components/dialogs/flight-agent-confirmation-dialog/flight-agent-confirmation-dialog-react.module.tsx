@@ -7,7 +7,8 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
-import {CssBaseline, ThemeProvider} from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import dayjs, {Dayjs} from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
@@ -20,6 +21,7 @@ import {ReactQueryProvider} from '../../../query';
 import {formatDateForApi, getIanaTimezone, getTenantTimezone} from '../../../utils/dateUtils';
 import {nationwideApi} from '../../../services/nationwideApi';
 import {AgentSuggestion, FlightAgentDialogResult, FlightCargoProcessing, FlightViewModel, ToastService,} from './types';
+import type {ShowToastFn} from '../../../services/toastService';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -103,7 +105,7 @@ class FlightAgentConfirmationDialogManager {
             }
         };
 
-        const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+        const handleShowToast: ShowToastFn = (message, type) => {
             if (!this.dialogState.toastService) {
                 console.log(`[Toast ${type}]: ${message}`);
                 return;

@@ -107,7 +107,7 @@ describe('useJobNotes', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockNotesApi.getJobNotes).toHaveBeenCalledWith(100, false);
+        expect(mockNotesApi.getJobNotes).toHaveBeenCalledWith(100, false, expect.anything());
         expect(result.current.data).toEqual(mockNotes);
     });
 
@@ -120,7 +120,7 @@ describe('useJobNotes', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockNotesApi.getJobNotes).toHaveBeenCalledWith(100, true);
+        expect(mockNotesApi.getJobNotes).toHaveBeenCalledWith(100, true, expect.anything());
     });
 
     it('should not fetch when jobId is undefined', async () => {
@@ -167,7 +167,7 @@ describe('useBulkJobNotes', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockNotesApi.getBulkJobNotes).toHaveBeenCalledWith(200);
+        expect(mockNotesApi.getBulkJobNotes).toHaveBeenCalledWith(200, expect.anything());
         expect(result.current.data).toEqual(mockNotes);
     });
 
@@ -431,7 +431,7 @@ describe('useNoteHistory', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockNotesApi.getNoteHistory).toHaveBeenCalledWith(10, 'Note');
+        expect(mockNotesApi.getNoteHistory).toHaveBeenCalledWith(10, 'Note', expect.anything());
         expect(result.current.data).toEqual(mockHistory);
     });
 

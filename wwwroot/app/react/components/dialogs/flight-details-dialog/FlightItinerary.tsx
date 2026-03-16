@@ -5,12 +5,14 @@
  */
 
 import React from 'react';
-import { Box, Paper, Typography, useMediaQuery, useTheme } from '@mui/material';
-import {
-    Flight as FlightIcon,
-    Schedule as ScheduleIcon,
-    Route as RouteIcon,
-} from '@mui/icons-material';
+import {useTheme} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import FlightIcon from '@mui/icons-material/Flight';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import RouteIcon from '@mui/icons-material/Route';
 import { FlightItineraryProps, FlightSegmentData } from './types';
 
 /**

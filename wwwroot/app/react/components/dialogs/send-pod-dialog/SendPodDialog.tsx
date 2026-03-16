@@ -1,27 +1,22 @@
 import React, {useState} from 'react';
-import {
-    alpha,
-    Box,
-    Button,
-    Checkbox,
-    Chip,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    DialogTitle,
-    IconButton,
-    TextField,
-    Typography,
-    useTheme,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    Check as CheckIcon,
-    Send as SendIcon,
-    Description as DescriptionIcon,
-    Lock as LockIcon,
-    AttachFile as AttachFileIcon,
-} from '@mui/icons-material';
+import {alpha, useTheme} from '@mui/material/styles';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
+import SendIcon from '@mui/icons-material/Send';
+import DescriptionIcon from '@mui/icons-material/Description';
+import LockIcon from '@mui/icons-material/Lock';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
 
 export interface SendPodJobData {
     jobId: number;

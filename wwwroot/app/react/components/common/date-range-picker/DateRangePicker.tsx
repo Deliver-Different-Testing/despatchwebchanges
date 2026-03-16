@@ -7,7 +7,10 @@
  */
 
 import React from 'react';
-import {Box, ToggleButton, ToggleButtonGroup, Typography} from '@mui/material';
+import Box from '@mui/material/Box';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import Typography from '@mui/material/Typography';
 import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';

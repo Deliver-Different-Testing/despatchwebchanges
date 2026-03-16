@@ -1,6 +1,6 @@
 import React from 'react';
 import {fireEvent, render, screen, act} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {SearchField} from './SearchField';
 
 const theme = createTheme();

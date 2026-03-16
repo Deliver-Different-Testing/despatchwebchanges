@@ -7,7 +7,7 @@
 
 import React from 'react';
 import {render} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {HereMap} from './HereMap';
 import type {
     CourierLocation,

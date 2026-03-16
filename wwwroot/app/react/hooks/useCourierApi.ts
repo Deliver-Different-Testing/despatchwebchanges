@@ -32,7 +32,7 @@ export function useCourierSearch(
 
     return useQuery<CourierSuggestion[], Error>({
         queryKey: queryKeys.couriers.search(searchText),
-        queryFn: () => courierApi.searchActiveCouriers(searchText),
+        queryFn: ({signal}) => courierApi.searchActiveCouriers(searchText, {signal}),
         enabled: shouldSearch && (options?.enabled ?? true),
         staleTime: 60 * 1000, // Cache search results for 1 minute
     });
@@ -52,7 +52,7 @@ export function useCourierSearch(
 export function useTimeZoneOptions(options?: {enabled?: boolean}) {
     return useQuery<TimeZoneOption[], Error>({
         queryKey: queryKeys.timeZones.all,
-        queryFn: () => courierApi.getTimeZoneOptions(),
+        queryFn: ({signal}) => courierApi.getTimeZoneOptions({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache timezone options for 5 minutes (rarely change)
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes

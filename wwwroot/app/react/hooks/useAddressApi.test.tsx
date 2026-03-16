@@ -92,7 +92,7 @@ describe('useAddressSearch', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockAddressApi.autocompleteSearch).toHaveBeenCalledWith('main');
+        expect(mockAddressApi.autocompleteSearch).toHaveBeenCalledWith('main', expect.anything());
         expect(result.current.data).toEqual(mockAddressResults);
     });
 
@@ -158,7 +158,7 @@ describe('useLocationDetails', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockAddressApi.getLocationDetailsById).toHaveBeenCalledWith('addr1');
+        expect(mockAddressApi.getLocationDetailsById).toHaveBeenCalledWith('addr1', expect.anything());
         expect(result.current.data).toEqual(mockLocationDetails);
     });
 

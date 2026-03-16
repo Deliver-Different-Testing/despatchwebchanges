@@ -149,7 +149,7 @@ describe('useRecurringJobsApi Hooks', () => {
             });
 
             expect(result.current.data).toEqual(mockPaginatedResponse);
-            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledWith(mockQuery);
+            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledWith(mockQuery, expect.anything());
         });
 
         it('should pass query parameters to the API', async () => {
@@ -173,7 +173,7 @@ describe('useRecurringJobsApi Hooks', () => {
                 expect(result.current.isSuccess).toBe(true);
             });
 
-            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledWith(queryWithFilters);
+            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledWith(queryWithFilters, expect.anything());
         });
 
         it('should handle pagination parameters', async () => {
@@ -254,7 +254,7 @@ describe('useRecurringJobsApi Hooks', () => {
                 expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledTimes(2);
             });
 
-            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenLastCalledWith(newQuery);
+            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenLastCalledWith(newQuery, expect.anything());
         });
 
         it('should handle active/inactive filter', async () => {
@@ -276,7 +276,7 @@ describe('useRecurringJobsApi Hooks', () => {
                 expect(result.current.isSuccess).toBe(true);
             });
 
-            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledWith(inactiveQuery);
+            expect(mockRecurringJobsApi.getPreBookJobs).toHaveBeenCalledWith(inactiveQuery, expect.anything());
         });
     });
 

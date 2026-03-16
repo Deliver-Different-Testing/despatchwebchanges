@@ -69,7 +69,7 @@ describe('usePriceBreakdowns', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockPricingApi.getPriceBreakdowns).toHaveBeenCalledWith(100, false, false);
+        expect(mockPricingApi.getPriceBreakdowns).toHaveBeenCalledWith(100, false, false, expect.anything());
         expect(result.current.data).toEqual(mockBreakdowns);
     });
 
@@ -82,7 +82,7 @@ describe('usePriceBreakdowns', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockPricingApi.getPriceBreakdowns).toHaveBeenCalledWith(200, true, false);
+        expect(mockPricingApi.getPriceBreakdowns).toHaveBeenCalledWith(200, true, false, expect.anything());
     });
 
     it('should fetch price breakdowns for an archived job', async () => {
@@ -94,7 +94,7 @@ describe('usePriceBreakdowns', () => {
             expect(result.current.isSuccess).toBe(true);
         });
 
-        expect(mockPricingApi.getPriceBreakdowns).toHaveBeenCalledWith(300, false, true);
+        expect(mockPricingApi.getPriceBreakdowns).toHaveBeenCalledWith(300, false, true, expect.anything());
     });
 
     it('should not fetch when jobId is undefined', async () => {

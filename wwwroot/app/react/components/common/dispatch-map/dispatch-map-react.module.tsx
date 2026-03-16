@@ -7,7 +7,8 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { CssBaseline, ThemeProvider } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { DispatchMap } from './DispatchMap';
 import type { IDispatchMapItem, ClearListEnvelopeData } from './DispatchMap.types';

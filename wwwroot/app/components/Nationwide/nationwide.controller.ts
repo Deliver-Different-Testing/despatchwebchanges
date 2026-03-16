@@ -11,6 +11,7 @@ import {
     IDispatchJob,
     IJob,
     IJobQueryParams,
+    IJobSearchResult,
     ISuggestion
 } from "../../interfaces/job.interface";
 import {Coordinates} from "../../interfaces/coordinates.interface";
@@ -28,6 +29,7 @@ import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-fi
 import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
+import type {ToastType} from "../../react/services/toastService";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
@@ -104,6 +106,8 @@ class NationwideControl extends BaseController {
     private readonly NationwideLastActiveLayoutKey: string = `lastActiveLayoutNW-${ContactID}`;
     private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.Domestic}-${ContactID}`;
 
+    private static readonly FLIGHT_SPEED_ID = 415;
+
     readonly nationwideJobList: JobListType = JobListType.NationwideJobList;
     readonly nationwidePodJobList: JobListType = JobListType.NationwidePodJobList;
     readonly nationwideRepriceJobList: JobListType = JobListType.NationwideRepriceJobList;
@@ -118,7 +122,7 @@ class NationwideControl extends BaseController {
     layout?: { columns: IColumn[] };
 
     private lastMapJobId?: number;
-    private cachedMapConfig?: any;
+    private cachedMapConfig?: HereMapConfig;
     private isSelectingJob: boolean = false;
 
     private tasksLoadingInBackground: boolean = false;
@@ -129,7 +133,7 @@ class NationwideControl extends BaseController {
     jobList?: IDispatchJob[] = [];
     jobListPOD?: IDispatchJob[] = [];
     jobListReprice?: IDispatchJob[] = [];
-    STATUS_TO_LIST_MAP: any;
+    STATUS_TO_LIST_MAP: Record<number, JobDataType[]>;
     totalJobCount: number = 0;
     totalPodCount: number = 0;
     totalRepriceCount: number = 0;
@@ -270,20 +274,16 @@ class NationwideControl extends BaseController {
 
         this.watchEvent('jobChanged', async (_, newJob: IJob) => {
             if (this.isHandlingJobChange) {
-                console.log('Already handling job change, skipping');
                 return;
             }
 
             if (this.currentJob?.id === newJob.id) {
-                console.info(`Job ${newJob.jobNo} is already the current job, skipping reload`);
                 return;
             }
 
             this.isHandlingJobChange = true;
 
             try {
-                console.info(`Handling job changed event for job ${newJob.jobNo}`);
-
                 const job = await this.DispatchData.getDispatchJobDetail(newJob.id);
                 await this.selectJob(job);
             } finally {
@@ -293,9 +293,7 @@ class NationwideControl extends BaseController {
 
         this.initHereMaps();
 
-        // Start loading data
-        this.loadPageViews();
-
+        // Data loading is initiated in $onInit to avoid duplicate calls
         this.STATUS_TO_LIST_MAP = {
             1: [JobDataType.NEW],
             3: [JobDataType.POD],
@@ -303,7 +301,6 @@ class NationwideControl extends BaseController {
         };
 
         this.nationwideService.getActiveAirlines().then((response: IAirlineSuggestion[]) => {
-            console.info("[NationwideController] - Active Airlines:", response);
             this.activeAirlineOptions = response;
         });
 
@@ -388,25 +385,20 @@ class NationwideControl extends BaseController {
         };
 
         // Load saved layouts or use default
-        if (Modernizr.localstorage) {
-            try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.NationwideLayoutKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(this.NationwideLastActiveLayoutKey);
+        try {
+            const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.NationwideLayoutKey) || '[]');
+            const lastActiveLayout = localStorage.getItem(this.NationwideLastActiveLayoutKey);
 
-                this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
+            this.layouts = storedLayouts || [this.defaultLayout];
+            this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
 
-                // Load last active layout or default
-                const layoutToLoad = lastActiveLayout
-                    ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
-                    : 0;
-                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error) {
-                console.error('Error loading stored layouts:', error);
-                this.layouts = [this.defaultLayout];
-                this.loadLayout(0);
-            }
-        } else {
+            // Load last active layout or default
+            const layoutToLoad = lastActiveLayout
+                ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
+                : 0;
+            this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
+        } catch (error) {
+            console.error('Error loading stored layouts:', error);
             this.layouts = [this.defaultLayout];
             this.loadLayout(0);
         }
@@ -477,10 +469,7 @@ class NationwideControl extends BaseController {
         this.applyLayoutDimensions();
         this.loadBoxVisibility();
 
-        if (Modernizr.localstorage) {
-            localStorage.setItem(this.NationwideLastActiveLayoutKey, layout.name);
-        }
-
+        localStorage.setItem(this.NationwideLastActiveLayoutKey, layout.name);
         this.applyScope();
     }
 
@@ -514,10 +503,8 @@ class NationwideControl extends BaseController {
                 this.layouts.push(currentLayout);
                 this.currentLayoutName = name;
 
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-                    localStorage.setItem(this.NationwideLastActiveLayoutKey, name);
-                }
+                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
+                localStorage.setItem(this.NationwideLastActiveLayoutKey, name);
 
                 this.toastrService.showSuccessToast("Layout saved successfully");
             });
@@ -535,9 +522,7 @@ class NationwideControl extends BaseController {
                 .cancel("Cancel"))
             .then(() => {
                 this.layouts.splice(index, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-                }
+                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
             });
@@ -574,9 +559,7 @@ class NationwideControl extends BaseController {
                 this.layouts[index].layout = angular.copy(this.layout);
             }
 
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
-            }
+            localStorage.setItem(this.NationwideLayoutKey, JSON.stringify(this.layouts));
         }
     }
 
@@ -672,7 +655,7 @@ class NationwideControl extends BaseController {
     }
 
     private saveBoxVisibility(): void {
-        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+        if (!this.boxes || !this.currentLayoutName) return;
 
         try {
             const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
@@ -690,7 +673,7 @@ class NationwideControl extends BaseController {
     }
 
     private loadBoxVisibility(): void {
-        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+        if (!this.boxes || !this.currentLayoutName) return;
 
         try {
             const key = this.getBoxVisibilityKey(this.currentLayoutName);
@@ -735,20 +718,18 @@ class NationwideControl extends BaseController {
     }
 
     private loadSavedRefreshInterval(): void {
-        if (Modernizr.localstorage) {
-            try {
-                const savedIntervalString = localStorage.getItem(`${this.refreshDurationIntervalKey}-${ContactID}`);
-                if (savedIntervalString) {
-                    const refreshId = parseInt(savedIntervalString, 10) ?? 0;
-                    this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
+        try {
+            const savedIntervalString = localStorage.getItem(this.refreshDurationIntervalKey);
+            if (savedIntervalString) {
+                const refreshId = parseInt(savedIntervalString, 10) ?? 0;
+                this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
 
-                    if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
-                        this.startAutoRefresh();
-                    }
+                if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
+                    this.startAutoRefresh();
                 }
-            } catch (error) {
-                console.error('Error loading saved refresh interval:', error);
             }
+        } catch (error) {
+            console.error('Error loading saved refresh interval:', error);
         }
     }
 
@@ -869,52 +850,33 @@ class NationwideControl extends BaseController {
         await this.getData();
     }
 
-    private saveViewsToStorage(views: any): void {
-        if (Modernizr.localstorage) {
-            localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));
-        }
+    private saveViewsToStorage(views: DfrntPageViewModel[]): void {
+        localStorage.setItem(this.SelectedViewsKey, JSON.stringify(views));
     }
 
-    loadViewsFromStorage(): any {
-        if (Modernizr.localstorage) {
-            try {
-                const savedViews = JSON.parse(localStorage.getItem(this.SelectedViewsKey) || '[]');
-                return savedViews || [];
-            } catch (error) {
-                console.error('Error loading views from storage:', error);
-                return [];
-            }
+    loadViewsFromStorage(): DfrntPageViewModel[] {
+        try {
+            const savedViews = JSON.parse(localStorage.getItem(this.SelectedViewsKey) || '[]');
+            return savedViews || [];
+        } catch (error) {
+            console.error('Error loading views from storage:', error);
+            return [];
         }
-        return [];
     }
 
     async handleStatusChange(event: StatusChangeEvent): Promise<void> {
         try {
-            console.info('Handle status change triggered!', {
-                jobId: event.jobId,
-                previousStatus: event.previousStatusId,
-                newStatus: event.newStatusId
-            });
-
             const listsToRefresh = new Set([
                 ...(this.STATUS_TO_LIST_MAP[event.previousStatusId] || []),
                 ...(this.STATUS_TO_LIST_MAP[event.newStatusId] || [])
             ]);
-            console.info('Lists to refresh:', Array.from(listsToRefresh));
 
             await this.getJobList(Array.from(listsToRefresh));
-            console.info('Job lists refreshed successfully');
 
             const refreshedJob = this.findJobInLocalLists(event.jobId);
-            console.info(refreshedJob
-                    ? 'Found updated job in refreshed lists via lookup map'
-                    : 'Updated job not found in refreshed lists',
-                {jobId: event.jobId}
-            );
 
             if (refreshedJob) {
                 await this.selectJob(refreshedJob);
-                console.info('Job reselected successfully');
             }
 
             this.applyScope();
@@ -985,13 +947,10 @@ class NationwideControl extends BaseController {
             if (!job) return;
 
             if (this.isSelectingJob) {
-                console.log('Already selecting a job, skipping');
                 return;
             }
 
             this.isSelectingJob = true;
-
-            console.info(`Selecting job ${job.jobNo}`);
 
             // Cancel any existing task loading for a previous job
             if (this.currentJob?.id && this.currentJob?.id !== job.id) {
@@ -1075,25 +1034,20 @@ class NationwideControl extends BaseController {
         this.selectedOutboundAirport = undefined;
         this.selectedInboundAirport = undefined;
 
-        // Refresh tasks
-        await this.loadTasks();
+        // Tasks are loaded in background by selectJob after this method returns
 
         // Skip flight loading if flight is already assigned
         if (job.isFlightJob && !job.assignedFlight) {
-            console.info('[NationwideController] Getting nearby airports');
             this.outboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, true);
             this.inboundAirportOptions = await this.nationwideService.getNearbyAirports(job.id, false);
-            console.info('[NationwideController] Got nearby airports:', this.outboundAirportOptions);
 
             if (this.outboundAirportOptions && this.outboundAirportOptions.length > 0) {
                 const defaultOutboundAirport = this.outboundAirportOptions.find(airport => airport.id === job.fromAirportId);
-                console.info('Default Outbound Airport:', defaultOutboundAirport);
                 if (defaultOutboundAirport) this.selectedOutboundAirport = defaultOutboundAirport;
             }
 
             if (this.inboundAirportOptions && this.inboundAirportOptions.length > 0) {
                 const defaultInboundAirport = this.inboundAirportOptions.find(airport => airport.id === job.toAirportId);
-                console.info('Default Inbound Airport:', defaultInboundAirport);
                 if (defaultInboundAirport) this.selectedInboundAirport = defaultInboundAirport;
             }
 
@@ -1101,7 +1055,6 @@ class NationwideControl extends BaseController {
             this.lastDepartureTime = undefined;
             await this.loadFlights();
         } else if (job.isFlightJob && job.assignedFlight) {
-            console.info('[NationwideController] Flight already assigned, skipping flight loading');
             this.flightMessage = "Flight already assigned to this job";
         }
 
@@ -1109,7 +1062,6 @@ class NationwideControl extends BaseController {
         if (this.isDeliveryJob(job) && !job.assignedAgent) {
             await this.processAgents(job);
         } else if (this.isDeliveryJob(job) && job.assignedAgent) {
-            console.info('[NationwideController] Agent already assigned, skipping agent loading');
             this.agentMessage = "Agent already assigned to this job";
         }
 
@@ -1124,11 +1076,8 @@ class NationwideControl extends BaseController {
             }
 
             if (this.lastMapJobId === job.id && this.cachedMapConfig) {
-                console.log('Using cached map config for job', job.id);
                 return;
             }
-
-            console.info(`Displaying job ${job.jobNo} on map`);
 
             this.cachedMapConfig = this.calculateMapBounds(job);
             this.mapConfig = this.cachedMapConfig;
@@ -1199,8 +1148,8 @@ class NationwideControl extends BaseController {
                 id: job.id,
                 pickup: pickupCoords,
                 delivery: deliveryCoords,
-                childJobs: {},
-                flight: job.speedId === 415,
+                childJobs: [],
+                flight: job.speedId === NationwideControl.FLIGHT_SPEED_ID,
             },
             selectedJobIndex: 0
         };
@@ -1218,8 +1167,6 @@ class NationwideControl extends BaseController {
     }
 
     private async processAgents(job: IDispatchJob): Promise<void> {
-        console.info('Getting agents');
-
         // Clear existing agents while loading new ones
         this.agentOptions = [];
         this.agentMessage = undefined;
@@ -1232,8 +1179,6 @@ class NationwideControl extends BaseController {
             this.agentOptions = result.agents || [];
             this.agentMessage = result.message ||
                 (this.agentOptions.length === 0 ? "No agents available for this job" : undefined);
-
-            console.info("Agent options loaded:", this.agentOptions.length);
         } catch (error) {
             console.error("Error fetching agents:", error);
             this.agentMessage = "An error occurred while loading agents. Please try again.";
@@ -1253,12 +1198,10 @@ class NationwideControl extends BaseController {
         }
 
         if (this.currentJob.assignedFlight) {
-            console.info("Flight already assigned, skipping flight loading");
             return;
         }
 
         if (this.flightsLoading) {
-            console.info("Flight loading already in progress, skipping duplicate request");
             return;
         }
 
@@ -1300,8 +1243,6 @@ class NationwideControl extends BaseController {
                 "No flights available for the selected criteria" : undefined);
             this.lastDepartureTime = result.lastDepartureTime;
             this.filteredFlightOptions = this.flightOptions;
-
-            console.info(`Loaded ${this.flightOptions?.length} flights`);
         } catch (error) {
             console.error("Error loading flights:", error);
             this.flightMessage = "An error occurred while loading flights. Please try again.";
@@ -1349,7 +1290,6 @@ class NationwideControl extends BaseController {
             this.updateUIState(job);
 
             this.applyScope();
-            console.info('Assigning to job');
 
             // Always refresh both NEW and POD lists when assigning a flight
             // Flight jobs can appear in either list depending on status, so refresh both to avoid stale data
@@ -1366,8 +1306,6 @@ class NationwideControl extends BaseController {
                 packageDeliveryNotes: result.packageDeliveryNotes,
                 flightSegments: flight.flightSegments.map(transformFlightToDTO)
             };
-
-            console.info('Assigning flight to job:', requestData);
 
             // Pass the full flight data including segments to the service
             await this.nationwideService.assignFlightToJob(requestData);
@@ -1432,8 +1370,6 @@ class NationwideControl extends BaseController {
 
             this.applyScope();
 
-            console.info('Assigning to job');
-
             await this.nationwideService.assignAgentToJob(job.id, agent.id, result.shouldAssignToStopJobs ?? false);
 
             if (result.awb) {
@@ -1481,7 +1417,6 @@ class NationwideControl extends BaseController {
 
     async getJobList(dataTypes: JobDataType | JobDataType[] = JobDataType.ALL): Promise<void> {
         if (!this.viewsInitialized && this.selectedViews.length === 0) {
-            console.info('Views not initialized yet, loading defaults');
             this.selectedViews = this.loadViewsFromStorage();
 
             // If still no views, add at least one default view
@@ -1543,17 +1478,14 @@ class NationwideControl extends BaseController {
                     this.jobList = data.jobs || [];
                     this.totalJobCount = data.totalCount || 0;
                     this.jobListLoading = false;
-                    console.log(`Loaded ${this.jobList.length} of ${this.totalJobCount} NEW jobs`);
                 } else if (type === JobDataType.POD) {
                     this.jobListPOD = data.jobs || [];
                     this.totalPodCount = data.totalCount || 0;
                     this.podListLoading = false;
-                    console.log(`Loaded ${this.jobListPOD.length} of ${this.totalPodCount} POD jobs`);
                 } else if (type === JobDataType.REPRICE) {
                     this.jobListReprice = data.jobs || [];
                     this.totalRepriceCount = data.totalCount || 0;
                     this.repriceListLoading = false;
-                    console.log(`Loaded ${this.jobListReprice.length} of ${this.totalRepriceCount} REPRICE jobs`);
                 }
             });
 
@@ -1593,7 +1525,7 @@ class NationwideControl extends BaseController {
 
     private handleError(error: any) {
         if (!error) {
-            console.info('User canceled!');
+            // User canceled the dialog
         } else {
             console.error('Error assigning flight to job:', error);
         }
@@ -1608,7 +1540,7 @@ class NationwideControl extends BaseController {
                 clientId: job.clientId,
             },
             toastService: {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: ToastType) => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);
@@ -1618,6 +1550,9 @@ class NationwideControl extends BaseController {
                             break;
                         case 'error':
                             this.toastrService.showErrorToast(message);
+                            break;
+                        case 'info':
+                            this.toastrService.showSuccessToast(message);
                             break;
                     }
                 },
@@ -1630,8 +1565,7 @@ class NationwideControl extends BaseController {
 
         const callbacks = {
             onRefresh: () => this.getData(),
-            onRefreshCourierJobs: (params: { courierId: number }) => {
-                console.info('Refreshing courier jobs:', params.courierId);
+            onRefreshCourierJobs: (_params: { courierId: number }) => {
             }
         };
 
@@ -1693,7 +1627,6 @@ class NationwideControl extends BaseController {
     }
 
     async selectTaskJobDetail(task: ITask): Promise<void> {
-        this.logTaskInfo(task);
         this.currentSupport = task;
 
         if (!this.validateJobId(task)) {
@@ -1710,9 +1643,8 @@ class NationwideControl extends BaseController {
                 {list: this.jobListReprice, name: 'jobListReprice'}
             ]);
 
-            // If not found in local lists, fetch from a database
+            // If not found in local lists, fetch from database
             if (!attachedJob) {
-                console.info(`Job ${task.jobId} not found in local lists, fetching from database`);
                 attachedJob = await this.DispatchData.getDispatchJobDetail(task.jobId);
             }
 
@@ -1723,20 +1655,10 @@ class NationwideControl extends BaseController {
             }
 
             await this.selectJob(attachedJob);
-            console.info('[selectTaskJobDetail] Job selected successfully');
-
             this.updateCurrentSelection(attachedJob.jobNo);
         } catch (error) {
             this.handleError(error);
         }
-    }
-
-    private logTaskInfo(task: ITask): void {
-        console.info('[selectTaskJobDetail] Starting with task:', {
-            jobId: task.jobId,
-            jobNumber: task.jobNumber,
-            taskId: task.id
-        });
     }
 
     private validateJobId(task: ITask): boolean {
@@ -1772,11 +1694,6 @@ class NationwideControl extends BaseController {
         try {
             // Reset search when changing airport filter
             this.lastDepartureTime = undefined;
-
-            console.info('Airport selection changed to:',
-                this.selectedOutboundAirport ? this.selectedOutboundAirport.text : 'All airports');
-
-            // Reload flights with the new airport selection
             await this.loadFlights();
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
@@ -1787,11 +1704,6 @@ class NationwideControl extends BaseController {
         try {
             // Reset search when changing airport filter
             this.lastDepartureTime = undefined;
-
-            console.info('Airport selection changed to:',
-                this.selectedInboundAirport ? this.selectedInboundAirport.text : 'All airports');
-
-            // Reload flights with the new airport selection
             await this.loadFlights();
         } catch (error) {
             console.error('Error loading flights after airport change:', error);
@@ -1819,8 +1731,6 @@ class NationwideControl extends BaseController {
 
     async refreshJobLists(currentJobId?: number): Promise<void> {
         try {
-            console.info("[NationwideRefresh] - Refreshing job lists");
-
             await this.getJobList(JobDataType.ALL);
 
             if (currentJobId) {
@@ -1828,16 +1738,13 @@ class NationwideControl extends BaseController {
 
                 if (updatedJob) {
                     this.currentJob = updatedJob;
-                    console.info("[NationwideRefresh] - Current job selection maintained via lookup map");
                 } else {
                     this.currentJob = undefined;
                     this.toastrService.showWarningToast("Job list has been refreshed, but the selected job is no longer available on this page");
                 }
             }
-
-            console.info("[NationwideRefresh] - Job lists refresh complete");
         } catch (error) {
-            console.error("[NationwideRefresh] - Error refreshing job lists:", error);
+            console.error("Error refreshing job lists:", error);
         } finally {
             this.applyScope();
         }
@@ -1942,7 +1849,6 @@ class NationwideControl extends BaseController {
     }
 
     async refreshAction(boxName: string): Promise<void> {
-        console.info('[NationwideController] refreshing ', boxName);
         switch (boxName) {
             case NationwideBoxes.Tasks:
                 await this.loadTasks();
@@ -2065,10 +1971,7 @@ class NationwideControl extends BaseController {
 
     refreshMap(): void {
         if (this.currentJob) {
-            console.info('Manually refreshing map for current job');
             this.displayJobOnMap(this.currentJob);
-        } else {
-            console.warn('No current job to display on map');
         }
     }
 
@@ -2171,12 +2074,11 @@ class NationwideControl extends BaseController {
     }
 
     onRefreshIntervalChange(selectedInterval: ISuggestion): void {
-        console.info('Refresh interval changed to:', selectedInterval, 'seconds');
 
         this.selectedRefreshInterval = selectedInterval;
 
-        if (Modernizr.localstorage && this.selectedRefreshInterval) {
-            localStorage.setItem(`${this.refreshDurationIntervalKey}-${ContactID}`, this.selectedRefreshInterval?.id.toString());
+        if (this.selectedRefreshInterval) {
+            localStorage.setItem(this.refreshDurationIntervalKey, this.selectedRefreshInterval.id.toString());
         }
 
         this.stopAutoRefresh();
@@ -2196,13 +2098,10 @@ class NationwideControl extends BaseController {
         // Always stop any existing refresh first
         this.stopAutoRefresh();
 
-        console.info(`Starting auto refresh every ${this.selectedRefreshInterval.id} seconds (${this.selectedRefreshInterval.text})`);
-
         this.isAutoRefreshEnabled = true;
 
         this.refreshIntervalPromise = this.registerInterval(async () => {
             if (this.isAutoRefreshEnabled) {
-                console.info('Auto refreshing job lists...');
                 try {
                     await this.getData();
 
@@ -2210,8 +2109,6 @@ class NationwideControl extends BaseController {
                     if (this.currentJob?.id) {
                         await this.loadTasks();
                     }
-
-                    console.info('Auto refresh completed successfully');
                 } catch (error) {
                     console.error('Error during auto refresh:', error);
                 }
@@ -2222,17 +2119,10 @@ class NationwideControl extends BaseController {
     }
 
     private stopAutoRefresh(): void {
-        console.info('Stopping auto refresh');
         this.isAutoRefreshEnabled = false;
 
         if (this.refreshIntervalPromise) {
-            const cancelled = this.cancelInterval(this.refreshIntervalPromise);
-            if (cancelled) {
-                console.info('Successfully cancelled refresh interval');
-            } else {
-                console.warn('Failed to cancel refresh interval');
-            }
-
+            this.cancelInterval(this.refreshIntervalPromise);
             this.refreshIntervalPromise = undefined;
         }
     }
@@ -2274,7 +2164,6 @@ class NationwideControl extends BaseController {
     }
 
     async refreshDataTimeSpan(dateFilterData: IDateFilterData) {
-        console.log('refreshDataTimeSpan called with data ', dateFilterData);
         this.dateFilterData = dateFilterData;
 
         this.saveDateFilterToStorage();
@@ -2282,41 +2171,38 @@ class NationwideControl extends BaseController {
     }
 
     private saveDateFilterToStorage(): void {
-        if (Modernizr.localstorage && this.dateFilterData) {
-            try {
-                localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
-            } catch (error) {
-                console.error('Error saving date filter to storage:', error);
-            }
+        if (!this.dateFilterData) return;
+
+        try {
+            localStorage.setItem(this.DateFilterKey, JSON.stringify(this.dateFilterData));
+        } catch (error) {
+            console.error('Error saving date filter to storage:', error);
         }
     }
 
     private loadDateFilterFromStorage(): void {
-        if (Modernizr.localstorage) {
-            try {
-                const savedDateFilter = localStorage.getItem(this.DateFilterKey);
-                if (savedDateFilter) {
-                    const parsedDateFilter = JSON.parse(savedDateFilter);
-                    const startDate = dayjs(parsedDateFilter.startDate);
-                    let endDate = dayjs(parsedDateFilter.endDate);
+        try {
+            const savedDateFilter = localStorage.getItem(this.DateFilterKey);
+            if (savedDateFilter) {
+                const parsedDateFilter = JSON.parse(savedDateFilter);
+                const startDate = dayjs(parsedDateFilter.startDate);
+                let endDate = dayjs(parsedDateFilter.endDate);
 
-                    // If "all time" is selected (startDate is epoch), always recalculate
-                    // endDate to be 24 hours from now to include future jobs
-                    if (startDate.valueOf() === 0) {
-                        endDate = dayjs().tz(this.timeZone).add(24, 'hours');
-                    }
-
-                    this.dateFilterData = {
-                        startDate,
-                        endDate,
-                        useTime: parsedDateFilter.useTime ?? false
-                    };
+                // If "all time" is selected (startDate is epoch), always recalculate
+                // endDate to be 24 hours from now to include future jobs
+                if (startDate.valueOf() === 0) {
+                    endDate = dayjs().tz(this.timeZone).add(24, 'hours');
                 }
-            } catch (error) {
-                console.error('Error loading date filter from storage:', error);
-                // Keep default values if parsing fails
-                this.dateFilterData = setDateFilterDefaults();
+
+                this.dateFilterData = {
+                    startDate,
+                    endDate,
+                    useTime: parsedDateFilter.useTime ?? false
+                };
             }
+        } catch (error) {
+            console.error('Error loading date filter from storage:', error);
+            this.dateFilterData = setDateFilterDefaults();
         }
     }
 
@@ -2340,20 +2226,19 @@ class NationwideControl extends BaseController {
     }
 
     // Scroll job data
-    async handleLoadMoreNationwideJobs(page: number, pageSize: number): Promise<{
-        jobs: IDispatchJob[],
-        totalCount: number,
-        hasMore: boolean
-    }> {
+    private async handleLoadMore(
+        filters: IJobQueryParams,
+        fetchFn: (params: IJobQueryParams, internal: boolean, views: DfrntPageViewModel[]) => Promise<IJobSearchResult>,
+        page: number,
+        pageSize: number,
+        errorMessage: string
+    ): Promise<{ jobs: IDispatchJob[], totalCount: number, hasMore: boolean }> {
         try {
-            this.jobFilters.useTime = this.dateFilterData.useTime;
+            filters.useTime = this.dateFilterData.useTime;
 
-            const result = await this.nationwideService.getNationwideJobsNew(
-                {
-                    ...(this.jobFilters || {}),
-                    page: page,
-                    pageSize: pageSize
-                },
+            const result = await fetchFn.call(
+                this.nationwideService,
+                { ...filters, page, pageSize },
                 ClientInternal,
                 this.selectedViews
             );
@@ -2364,70 +2249,22 @@ class NationwideControl extends BaseController {
                 hasMore: result.hasMore || false
             };
         } catch (error) {
-            console.error('Error loading more nationwide jobs:', error);
-            this.toastrService.showErrorToast('Failed to load more jobs');
+            console.error(errorMessage, error);
+            this.toastrService.showErrorToast(errorMessage);
             throw error;
         }
     }
 
-    async handleLoadMorePodJobs(page: number, pageSize: number): Promise<{
-        jobs: IDispatchJob[],
-        totalCount: number,
-        hasMore: boolean
-    }> {
-        try {
-            this.jobPodFilters.useTime = this.dateFilterData.useTime;
-
-            const result = await this.nationwideService.getNationwideJobsPOD(
-                {
-                    ...(this.jobPodFilters || {}),
-                    page: page,
-                    pageSize: pageSize
-                },
-                ClientInternal,
-                this.selectedViews
-            );
-
-            return {
-                jobs: result.jobs || [],
-                totalCount: result.totalCount || 0,
-                hasMore: result.hasMore || false
-            };
-        } catch (error) {
-            console.error('Error loading more POD jobs:', error);
-            this.toastrService.showErrorToast('Failed to load more POD jobs');
-            throw error;
-        }
+    async handleLoadMoreNationwideJobs(page: number, pageSize: number) {
+        return this.handleLoadMore(this.jobFilters, this.nationwideService.getNationwideJobsNew, page, pageSize, 'Failed to load more jobs');
     }
 
-    async handleLoadMoreRepriceJobs(page: number, pageSize: number): Promise<{
-        jobs: IDispatchJob[],
-        totalCount: number,
-        hasMore: boolean
-    }> {
-        try {
-            this.jobRepriceFilters.useTime = this.dateFilterData.useTime;
+    async handleLoadMorePodJobs(page: number, pageSize: number) {
+        return this.handleLoadMore(this.jobPodFilters, this.nationwideService.getNationwideJobsPOD, page, pageSize, 'Failed to load more POD jobs');
+    }
 
-            const result = await this.nationwideService.getNationwideJobsReprice(
-                {
-                    ...(this.jobRepriceFilters || {}),
-                    page: page,
-                    pageSize: pageSize
-                },
-                ClientInternal,
-                this.selectedViews
-            );
-
-            return {
-                jobs: result.jobs || [],
-                totalCount: result.totalCount || 0,
-                hasMore: result.hasMore || false
-            };
-        } catch (error) {
-            console.error('Error loading more reprice jobs:', error);
-            this.toastrService.showErrorToast('Failed to load more reprice jobs');
-            throw error;
-        }
+    async handleLoadMoreRepriceJobs(page: number, pageSize: number) {
+        return this.handleLoadMore(this.jobRepriceFilters, this.nationwideService.getNationwideJobsReprice, page, pageSize, 'Failed to load more reprice jobs');
     }
 
     async updateJobSearchText(searchText: string, jobListType: JobListType): Promise<void> {

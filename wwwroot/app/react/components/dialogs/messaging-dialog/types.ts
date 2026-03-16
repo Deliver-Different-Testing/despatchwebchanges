@@ -4,6 +4,8 @@
  * TypeScript interfaces for the Messaging Dialog component.
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 /**
  * Enum for the type of message party (Courier or Staff)
  */
@@ -123,7 +125,7 @@ export const DEFAULT_QUICK_RESPONSES: QuickResponse[] = [
  * Toast service interface for showing notifications.
  */
 export interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 /**
@@ -139,7 +141,7 @@ export interface OpenMessagingDialogOptions {
 export interface MessagingDialogProps {
     open: boolean;
     onClose: () => void;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
     currentStaffId: number;
     currentStaffName: string;
     timeZone: string;

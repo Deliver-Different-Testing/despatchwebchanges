@@ -1,29 +1,26 @@
 import React, {useState} from 'react';
-import {
-    Box,
-    Chip,
-    IconButton,
-    MenuItem,
-    TextField,
-    Tooltip,
-} from '@mui/material';
-import {
-    DirectionsCar as CarIcon,
-    Download as DownloadIcon,
-    PauseCircle as PauseCircleIcon,
-    PeopleAlt as PeopleAltIcon,
-    Refresh as RefreshIcon,
-    Schedule as ScheduleIcon,
-    WifiTethering as WifiTetheringIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import CarIcon from '@mui/icons-material/DirectionsCar';
+import DownloadIcon from '@mui/icons-material/Download';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
 import {useTodayActiveDrivers} from '../../../hooks';
 import {FleetOption, PaginatedRequest, TodayActiveDriver, TodayActiveDriverFilter} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx, getFleetChipSx} from './shared';
+import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 
 interface TodayActiveTabProps {
-    showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void;
+    showToast: ShowToastFn;
     fleetOptions: FleetOption[];
 }
 

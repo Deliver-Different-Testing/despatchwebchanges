@@ -5,97 +5,85 @@
  * that manages the interaction between them.
  */
 
-import React from 'react';
-import {Box} from '@mui/material';
+import React, {useState, useRef, useCallback, useEffect} from 'react';
+import Box from '@mui/material/Box';
 import {AppToolbar} from '../app-toolbar/AppToolbar';
 import {SideNav} from '../side-nav/SideNav';
-import {AppShellProps, AppShellState} from "./app-shell.types";
+import {AppShellProps} from './app-shell.types';
 
-export class AppShell extends React.Component<AppShellProps, AppShellState> {
-    private closeTimeoutRef: number | null = null;
+export const AppShell: React.FC<AppShellProps> = ({
+    title,
+    firstName,
+    fullName,
+    isUsCustomer,
+    currentState,
+    logoUrl,
+    companyName,
+    children,
+    onLogoClick,
+    onNavigate,
+}) => {
+    const [sidenavOpen, setSidenavOpen] = useState(false);
+    const closeTimeoutRef = useRef<number | null>(null);
 
-    constructor(props: AppShellProps) {
-        super(props);
-        this.state = {
-            sidenavOpen: false,
+    useEffect(() => {
+        return () => {
+            if (closeTimeoutRef.current) {
+                window.clearTimeout(closeTimeoutRef.current);
+            }
         };
-    }
+    }, []);
 
-    componentWillUnmount(): void {
-        if (this.closeTimeoutRef) {
-            window.clearTimeout(this.closeTimeoutRef);
+    const handleMenuHover = useCallback(() => {
+        if (closeTimeoutRef.current) {
+            window.clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
         }
-    }
+        setSidenavOpen(true);
+    }, []);
 
-    private handleMenuHover = (): void => {
-        // Clear any pending close timeout
-        if (this.closeTimeoutRef) {
-            window.clearTimeout(this.closeTimeoutRef);
-            this.closeTimeoutRef = null;
+    const handleSidenavClose = useCallback(() => {
+        setSidenavOpen(false);
+    }, []);
+
+    const handleSidenavMouseEnter = useCallback(() => {
+        if (closeTimeoutRef.current) {
+            window.clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
         }
-        this.setState({sidenavOpen: true});
-    };
+    }, []);
 
-    private handleSidenavClose = (): void => {
-        this.setState({sidenavOpen: false});
-    };
-
-    private handleSidenavMouseEnter = (): void => {
-        // Clear any pending close timeout
-        if (this.closeTimeoutRef) {
-            window.clearTimeout(this.closeTimeoutRef);
-            this.closeTimeoutRef = null;
-        }
-    };
-
-    private handleSidenavMouseLeave = (): void => {
-        // Delay closing to allow for re-entry
-        this.closeTimeoutRef = window.setTimeout(() => {
-            this.setState({sidenavOpen: false});
+    const handleSidenavMouseLeave = useCallback(() => {
+        closeTimeoutRef.current = window.setTimeout(() => {
+            setSidenavOpen(false);
         }, 300);
-    };
+    }, []);
 
-    render(): React.ReactNode {
-        const {
-            title,
-            firstName,
-            fullName,
-            isUsCustomer,
-            currentState,
-            logoUrl,
-            companyName,
-            children,
-            onLogoClick,
-            onNavigate,
-        } = this.props;
-        const {sidenavOpen} = this.state;
+    return (
+        <Box sx={{display: 'flex', flexDirection: 'column'}}>
+            <AppToolbar
+                title={title}
+                firstName={firstName}
+                logoUrl={logoUrl}
+                onLogoClick={onLogoClick}
+                onMenuHover={handleMenuHover}
+            >
+                {children}
+            </AppToolbar>
 
-        return (
-            <Box sx={{display: 'flex', flexDirection: 'column'}}>
-                <AppToolbar
-                    title={title}
-                    firstName={firstName}
-                    logoUrl={logoUrl}
-                    onLogoClick={onLogoClick}
-                    onMenuHover={this.handleMenuHover}
-                >
-                    {children}
-                </AppToolbar>
-
-                <SideNav
-                    open={sidenavOpen}
-                    userName={fullName}
-                    companyName={companyName}
-                    isUsCustomer={isUsCustomer}
-                    currentState={currentState}
-                    onClose={this.handleSidenavClose}
-                    onNavigate={onNavigate}
-                    onMouseEnter={this.handleSidenavMouseEnter}
-                    onMouseLeave={this.handleSidenavMouseLeave}
-                />
-            </Box>
-        );
-    }
-}
+            <SideNav
+                open={sidenavOpen}
+                userName={fullName}
+                companyName={companyName}
+                isUsCustomer={isUsCustomer}
+                currentState={currentState}
+                onClose={handleSidenavClose}
+                onNavigate={onNavigate}
+                onMouseEnter={handleSidenavMouseEnter}
+                onMouseLeave={handleSidenavMouseLeave}
+            />
+        </Box>
+    );
+};
 
 export default AppShell;

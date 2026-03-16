@@ -6,23 +6,19 @@
  */
 
 import React from 'react';
-import {
-    Box,
-    IconButton,
-    Tooltip,
-    LinearProgress,
-    Typography,
-} from '@mui/material';
-import {
-    Sync as SyncIcon,
-    ViewAgenda as ViewAgendaIcon,
-    ViewCompact as ViewCompactIcon,
-    ViewCompactAlt as ViewCompactAltIcon,
-    Notes as NotesIcon,
-    Circle as CircleIcon,
-    SelectAll as SelectAllIcon,
-    Inventory2 as PackageIcon,
-} from '@mui/icons-material';
+import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
+import LinearProgress from '@mui/material/LinearProgress';
+import Typography from '@mui/material/Typography';
+import SyncIcon from '@mui/icons-material/Sync';
+import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
+import ViewCompactIcon from '@mui/icons-material/ViewCompact';
+import ViewCompactAltIcon from '@mui/icons-material/ViewCompactAlt';
+import NotesIcon from '@mui/icons-material/Notes';
+import CircleIcon from '@mui/icons-material/Circle';
+import SelectAllIcon from '@mui/icons-material/SelectAll';
+import PackageIcon from '@mui/icons-material/Inventory2';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {

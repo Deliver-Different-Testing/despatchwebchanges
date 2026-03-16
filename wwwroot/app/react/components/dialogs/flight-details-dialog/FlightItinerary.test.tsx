@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { ThemeProvider, createTheme } from '@mui/material';
+import {ThemeProvider, createTheme} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import { FlightItinerary } from './FlightItinerary';
 import { FlightSegmentData } from './types';

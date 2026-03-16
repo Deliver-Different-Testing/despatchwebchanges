@@ -2,6 +2,8 @@
  * Select Dialog Types
  */
 
+import type {ShowToastFn} from '../../../services/toastService';
+
 /**
  * An item in the select dropdown (mirrors ISuggestion)
  */
@@ -33,7 +35,7 @@ export interface SelectDialogProps {
     checkboxLabel?: string;
     onClose: () => void;
     onSubmit: (result: SelectDialogResult) => void | Promise<void>;
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 /**

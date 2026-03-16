@@ -8,20 +8,22 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { AiAssistantDialog } from './AiAssistantDialog';
 import { AiSummaryPanel } from '../../common/ai-summary-panel/AiSummaryPanel';
 import { AiCourierSuggestionsDialog } from './AiCourierSuggestionsDialog';
 import { OpenAiAssistantDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
 import { summarizeJobNotes, summarizeJob, summarizeOperations, analyzeLateAlert, suggestCouriers, AiSummaryResponse, AiCourierSuggestionResponse } from '../../../services/aiAssistantApi';
+import type { ShowToastFn } from '../../../services/toastService';
 
 // Get current staff info from global variables
 declare const FullName: string;
 
 interface DialogState {
     open: boolean;
-    toastService: { showToast: (message: string, type: 'success' | 'warning' | 'error') => void } | null;
+    toastService: { showToast: ShowToastFn } | null;
     resolve?: (value: void) => void;
 }
 
@@ -56,7 +58,7 @@ class AiAssistantDialogManager {
             this.renderDialog();
         };
 
-        const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+        const handleShowToast: ShowToastFn = (message, type) => {
             if (!this.dialogState.toastService) {
                 console.log(`[Toast ${type}]: ${message}`);
                 return;

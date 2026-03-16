@@ -6,43 +6,39 @@
  */
 
 import React from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogActions,
-    Button,
-    IconButton,
-    Typography,
-    Box,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Paper,
-    CircularProgress,
-    TextField,
-    InputAdornment,
-} from '@mui/material';
-import {
-    Close as CloseIcon,
-    CloudUpload as CloudUploadIcon,
-    Description as DescriptionIcon,
-    Edit as EditIcon,
-    Sync as SyncIcon,
-    AddCircle as AddCircleIcon,
-    EditNote as EditNoteIcon,
-    Info as InfoIcon,
-    CheckCircle as CheckCircleIcon,
-    Search as SearchIcon,
-    SearchOff as SearchOffIcon,
-    ArrowForward as ArrowForwardIcon,
-    ArrowBack as ArrowBackIcon,
-    Check as CheckIcon,
-    UploadFile as UploadFileIcon,
-    Error as ErrorIcon,
-} from '@mui/icons-material';
+import Dialog from '@mui/material/Dialog';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
+import CircularProgress from '@mui/material/CircularProgress';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import CloseIcon from '@mui/icons-material/Close';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DescriptionIcon from '@mui/icons-material/Description';
+import EditIcon from '@mui/icons-material/Edit';
+import SyncIcon from '@mui/icons-material/Sync';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
+import EditNoteIcon from '@mui/icons-material/EditNote';
+import InfoIcon from '@mui/icons-material/Info';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import SearchIcon from '@mui/icons-material/Search';
+import SearchOffIcon from '@mui/icons-material/SearchOff';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckIcon from '@mui/icons-material/Check';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import ErrorIcon from '@mui/icons-material/Error';
 import {
     BulkPriceUploadDialogProps,
     BulkPricePreviewRow,
@@ -504,13 +500,13 @@ export class BulkPriceUploadDialog extends React.Component<
                                 gap: 1.75,
                                 p: 1.75,
                                 border: '2px solid',
-                                borderColor: selectedMode === mode.value ? '#57534e' : 'rgba(0, 0, 0, 0.08)',
+                                borderColor: selectedMode === mode.value ? 'grey.600' : 'rgba(0, 0, 0, 0.08)',
                                 borderRadius: 2.5,
                                 bgcolor: selectedMode === mode.value ? 'rgba(87, 83, 78, 0.06)' : 'white',
                                 cursor: 'pointer',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 '&:hover': {
-                                    borderColor: selectedMode === mode.value ? '#57534e' : 'rgba(0, 0, 0, 0.18)',
+                                    borderColor: selectedMode === mode.value ? 'grey.600' : 'rgba(0, 0, 0, 0.18)',
                                     bgcolor: selectedMode === mode.value ? 'rgba(87, 83, 78, 0.06)' : 'rgba(0, 0, 0, 0.02)',
                                 },
                             }}
@@ -521,7 +517,7 @@ export class BulkPriceUploadDialog extends React.Component<
                                     width: 20,
                                     height: 20,
                                     border: '2px solid',
-                                    borderColor: selectedMode === mode.value ? '#57534e' : 'rgba(0, 0, 0, 0.38)',
+                                    borderColor: selectedMode === mode.value ? 'grey.600' : 'rgba(0, 0, 0, 0.38)',
                                     borderRadius: '50%',
                                     display: 'flex',
                                     alignItems: 'center',
@@ -535,7 +531,7 @@ export class BulkPriceUploadDialog extends React.Component<
                                             width: 10,
                                             height: 10,
                                             borderRadius: '50%',
-                                            bgcolor: '#57534e',
+                                            bgcolor: 'grey.600',
                                         }}
                                     />
                                 )}
@@ -560,7 +556,7 @@ export class BulkPriceUploadDialog extends React.Component<
                                         : 'rgba(0, 0, 0, 0.06)',
                                     color: selectedMode === mode.value
                                         ? mode.colorClass === 'recalculate'
-                                            ? '#57534e'
+                                            ? 'grey.600'
                                             : mode.colorClass === 'base'
                                                 ? '#4caf50'
                                                 : '#9c27b0'
@@ -891,7 +887,7 @@ export class BulkPriceUploadDialog extends React.Component<
                 </Box>
 
                 {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: '#fafafa' }}>
+                <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                     {currentState === 'upload' && this.renderUploadState()}
                     {currentState === 'mode-select' && this.renderModeSelectState()}
                     {currentState === 'loading' && this.renderLoadingState()}

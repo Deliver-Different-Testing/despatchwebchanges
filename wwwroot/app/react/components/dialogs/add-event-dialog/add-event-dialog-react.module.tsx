@@ -8,7 +8,8 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { AddEventDialog, AddEventJob, EventType, JobEventData } from './AddEventDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
@@ -18,9 +19,10 @@ import { JobNoteType } from '../../../../enums/job-note-type.enum';
 import { eventApi } from '../../../services/eventApi';
 import { notesApi } from '../../../services/notesApi';
 import { openVoidJobConfirmationDialog } from '../void-job-confirmation-dialog/void-job-confirmation-dialog-react.module';
+import type { ShowToastFn } from '../../../services/toastService';
 
 interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
+    showToast: ShowToastFn;
 }
 
 interface DialogState {
@@ -133,7 +135,7 @@ class AddEventDialogManager {
             this.renderDialog();
         };
 
-        const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+        const handleShowToast: ShowToastFn = (message, type) => {
             if (!this.dialogState.toastService) {
                 console.log(`[Toast ${type}]: ${message}`);
                 return;

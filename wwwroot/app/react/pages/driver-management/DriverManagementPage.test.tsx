@@ -1,6 +1,6 @@
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
-import {createTheme, ThemeProvider} from '@mui/material';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverManagementPage} from './DriverManagementPage';
 import {useFleetOptions} from '../../hooks';

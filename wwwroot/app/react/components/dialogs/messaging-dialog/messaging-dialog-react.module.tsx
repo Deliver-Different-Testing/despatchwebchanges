@@ -8,11 +8,13 @@
 
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import {ThemeProvider} from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import { MessagingDialog } from './MessagingDialog';
 import { OpenMessagingDialogOptions, ToastService } from './types';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
+import type { ShowToastFn } from '../../../services/toastService';
 
 // Get current staff info from global variables
 declare const ContactID: number;
@@ -56,7 +58,7 @@ class MessagingDialogManager {
             this.renderDialog();
         };
 
-        const handleShowToast = (message: string, type: 'success' | 'warning' | 'error') => {
+        const handleShowToast: ShowToastFn = (message, type) => {
             if (!this.dialogState.toastService) {
                 console.log(`[Toast ${type}]: ${message}`);
                 return;

@@ -6,7 +6,9 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for JobRepository timezone conversion functionality.
-/// Tests that JobViewModel date fields are correctly converted to DateTimeOffset with tenant timezone.
+/// ApplyTimezoneToJobDates is now a no-op — tenant-local datetimes are displayed as-is.
+/// Remaining tests verify that the no-op doesn't mutate values, plus archive mapping and
+/// TimeZoneHelper behavior that's still used by other callers.
 /// </summary>
 public class JobRepositoryTimezoneTests
 {
@@ -15,284 +17,61 @@ public class JobRepositoryTimezoneTests
     private const string UtcTimeZone = "UTC";
 
     /// <summary>
-    /// Helper method that mimics the ApplyTimezoneToJobDates logic from JobMappings.Enrichment.
-    /// This allows us to test the timezone conversion behavior in isolation.
+    /// Mirrors the production ApplyTimezoneToJobDates which is now a no-op.
+    /// Kept to verify the method doesn't mutate job date fields.
     /// </summary>
     private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
     {
-        foreach (var job in jobs)
-        {
-            var pickupTz = job.PickUpTimeZone?.Text ?? tenantTimeZone;
-            var deliveryTz = job.DeliveryTimeZone?.Text ?? tenantTimeZone;
-
-            // Pickup-timezone fields
-            if (job.PuTime.HasValue)
-                job.PuTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PuTime.Value, pickupTz);
-            if (job.PickupArrivalTime.HasValue)
-                job.PickupArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.PickupArrivalTime.Value, pickupTz);
-
-            // Delivery-timezone fields
-            if (job.CompletedTime.HasValue)
-                job.CompletedTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.CompletedTime.Value, deliveryTz);
-            if (job.DeliverByTime.HasValue)
-                job.DeliverByTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliverByTime.Value, deliveryTz);
-            if (job.DeliveryArrivalTime.HasValue)
-                job.DeliveryArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DeliveryArrivalTime.Value, deliveryTz);
-
-            // Tenant-local fields
-            if (job.DispatchTime.HasValue)
-                job.DispatchTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.DispatchTime.Value, tenantTimeZone);
-            if (job.FollowupTime.HasValue)
-                job.FollowupTime = TimeZoneHelper.SetDateTimeWithTimeZone(job.FollowupTime.Value, tenantTimeZone);
-            if (job.CreatedDate.HasValue)
-                job.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(job.CreatedDate.Value, tenantTimeZone);
-        }
+        // No-op: tenant-local datetimes are displayed as-is from the database.
     }
 
-    #region DispatchTime Tests
+    #region No-Op Verification Tests
 
     [Fact]
-    public void ApplyTimezoneToJobDates_DispatchTime_AppliesNzTimezone()
+    public void ApplyTimezoneToJobDates_DoesNotMutateDateFields()
     {
         // Arrange
+        var originalDispatch = new DateTimeOffset(2024, 6, 15, 10, 30, 0, TimeSpan.Zero);
+        var originalPuTime = new DateTimeOffset(2024, 6, 15, 14, 45, 0, TimeSpan.Zero);
+        var originalFollowup = new DateTimeOffset(2024, 1, 15, 9, 0, 0, TimeSpan.Zero);
+        var originalCompleted = new DateTimeOffset(2024, 3, 20, 16, 30, 0, TimeSpan.Zero);
+        var originalCreated = new DateTimeOffset(2024, 12, 25, 8, 0, 0, TimeSpan.Zero);
+        var originalDeliverBy = new DateTimeOffset(2024, 7, 4, 17, 0, 0, TimeSpan.Zero);
+        var originalPickupArrival = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+        var originalDeliveryArrival = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+
         var jobs = new List<JobViewModel>
         {
-            new() { Id = 1, DispatchTime = new DateTimeOffset(2024, 6, 15, 10, 30, 0, TimeSpan.Zero) }
+            new()
+            {
+                Id = 1,
+                DispatchTime = originalDispatch,
+                PuTime = originalPuTime,
+                FollowupTime = originalFollowup,
+                CompletedTime = originalCompleted,
+                CreatedDate = originalCreated,
+                DeliverByTime = originalDeliverBy,
+                PickupArrivalTime = originalPickupArrival,
+                DeliveryArrivalTime = originalDeliveryArrival
+            }
         };
 
         // Act
         ApplyTimezoneToJobDates(jobs, NzTimeZone);
 
-        // Assert - NZ is UTC+12 in winter
-        jobs[0].DispatchTime!.Value.Offset.Should().Be(TimeSpan.FromHours(12));
-        jobs[0].DispatchTime!.Value.DateTime.Should().Be(new DateTime(2024, 6, 15, 10, 30, 0));
+        // Assert — all values should be exactly as they were before
+        jobs[0].DispatchTime.Should().Be(originalDispatch);
+        jobs[0].PuTime.Should().Be(originalPuTime);
+        jobs[0].FollowupTime.Should().Be(originalFollowup);
+        jobs[0].CompletedTime.Should().Be(originalCompleted);
+        jobs[0].CreatedDate.Should().Be(originalCreated);
+        jobs[0].DeliverByTime.Should().Be(originalDeliverBy);
+        jobs[0].PickupArrivalTime.Should().Be(originalPickupArrival);
+        jobs[0].DeliveryArrivalTime.Should().Be(originalDeliveryArrival);
     }
 
     [Fact]
-    public void ApplyTimezoneToJobDates_DispatchTime_WhenNull_RemainsNull()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, DispatchTime = null }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert
-        jobs[0].DispatchTime.Should().BeNull();
-    }
-
-    #endregion
-
-    #region PuTime Tests
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_PuTime_AppliesNzTimezone()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, PuTime = new DateTimeOffset(2024, 6, 15, 14, 45, 0, TimeSpan.Zero) }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert
-        jobs[0].PuTime!.Value.Offset.Should().Be(TimeSpan.FromHours(12));
-        jobs[0].PuTime!.Value.DateTime.Should().Be(new DateTime(2024, 6, 15, 14, 45, 0));
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_PuTime_WhenNull_RemainsNull()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, PuTime = null }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert
-        jobs[0].PuTime.Should().BeNull();
-    }
-
-    #endregion
-
-    #region FollowupTime Tests
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_FollowupTime_AppliesPstTimezone()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, FollowupTime = new DateTimeOffset(2024, 1, 15, 9, 0, 0, TimeSpan.Zero) }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, PstTimeZone);
-
-        // Assert - PST is UTC-8 in winter
-        jobs[0].FollowupTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-8));
-        jobs[0].FollowupTime!.Value.DateTime.Should().Be(new DateTime(2024, 1, 15, 9, 0, 0));
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_FollowupTime_WhenNull_RemainsNull()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, FollowupTime = null }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, PstTimeZone);
-
-        // Assert
-        jobs[0].FollowupTime.Should().BeNull();
-    }
-
-    #endregion
-
-    #region CompletedTime Tests
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CompletedTime_AppliesUtcTimezone()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, CompletedTime = new DateTimeOffset(2024, 3, 20, 16, 30, 0, TimeSpan.Zero) }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, UtcTimeZone);
-
-        // Assert
-        jobs[0].CompletedTime!.Value.Offset.Should().Be(TimeSpan.Zero);
-        jobs[0].CompletedTime!.Value.DateTime.Should().Be(new DateTime(2024, 3, 20, 16, 30, 0));
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CompletedTime_WhenNull_RemainsNull()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, CompletedTime = null }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, UtcTimeZone);
-
-        // Assert
-        jobs[0].CompletedTime.Should().BeNull();
-    }
-
-    #endregion
-
-    #region CreatedDate Tests
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CreatedDate_AppliesNzTimezone()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, CreatedDate = new DateTimeOffset(2024, 12, 25, 8, 0, 0, TimeSpan.Zero) }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert - NZ is UTC+13 in summer (December) due to daylight saving
-        jobs[0].CreatedDate!.Value.Offset.Should().Be(TimeSpan.FromHours(13));
-        jobs[0].CreatedDate!.Value.DateTime.Should().Be(new DateTime(2024, 12, 25, 8, 0, 0));
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CreatedDate_WhenNull_RemainsNull()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, CreatedDate = null }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert
-        jobs[0].CreatedDate.Should().BeNull();
-    }
-
-    #endregion
-
-    #region DeliverByTime Tests
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_DeliverByTime_AppliesPstTimezone()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, DeliverByTime = new DateTimeOffset(2024, 7, 4, 17, 0, 0, TimeSpan.Zero) }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, PstTimeZone);
-
-        // Assert - PST becomes PDT (UTC-7) in summer
-        jobs[0].DeliverByTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-7));
-        jobs[0].DeliverByTime!.Value.DateTime.Should().Be(new DateTime(2024, 7, 4, 17, 0, 0));
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_DeliverByTime_WhenNull_RemainsNull()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, DeliverByTime = null }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, PstTimeZone);
-
-        // Assert
-        jobs[0].DeliverByTime.Should().BeNull();
-    }
-
-    #endregion
-
-    #region Multiple Jobs Tests
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_MultipleJobs_AppliesTimezoneToAll()
-    {
-        // Arrange
-        var jobs = new List<JobViewModel>
-        {
-            new() { Id = 1, DispatchTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero) },
-            new() { Id = 2, DispatchTime = new DateTimeOffset(2024, 6, 15, 11, 0, 0, TimeSpan.Zero) },
-            new() { Id = 3, DispatchTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero) }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert - All jobs should have NZ timezone applied
-        jobs.Should().AllSatisfy(j => j.DispatchTime!.Value.Offset.Should().Be(TimeSpan.FromHours(12)));
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_MixedNullAndPopulatedDates_HandlesCorrectly()
+    public void ApplyTimezoneToJobDates_NullValues_RemainNull()
     {
         // Arrange
         var jobs = new List<JobViewModel>
@@ -300,12 +79,14 @@ public class JobRepositoryTimezoneTests
             new()
             {
                 Id = 1,
-                DispatchTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero),
+                DispatchTime = null,
                 PuTime = null,
-                CompletedTime = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero),
+                FollowupTime = null,
+                CompletedTime = null,
                 CreatedDate = null,
-                DeliverByTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero),
-                FollowupTime = null
+                DeliverByTime = null,
+                PickupArrivalTime = null,
+                DeliveryArrivalTime = null
             }
         };
 
@@ -313,12 +94,14 @@ public class JobRepositoryTimezoneTests
         ApplyTimezoneToJobDates(jobs, NzTimeZone);
 
         // Assert
-        jobs[0].DispatchTime!.Value.Offset.Should().Be(TimeSpan.FromHours(12));
+        jobs[0].DispatchTime.Should().BeNull();
         jobs[0].PuTime.Should().BeNull();
-        jobs[0].CompletedTime!.Value.Offset.Should().Be(TimeSpan.FromHours(12));
-        jobs[0].CreatedDate.Should().BeNull();
-        jobs[0].DeliverByTime!.Value.Offset.Should().Be(TimeSpan.FromHours(12));
         jobs[0].FollowupTime.Should().BeNull();
+        jobs[0].CompletedTime.Should().BeNull();
+        jobs[0].CreatedDate.Should().BeNull();
+        jobs[0].DeliverByTime.Should().BeNull();
+        jobs[0].PickupArrivalTime.Should().BeNull();
+        jobs[0].DeliveryArrivalTime.Should().BeNull();
     }
 
     [Fact]
@@ -334,207 +117,28 @@ public class JobRepositoryTimezoneTests
         act.Should().NotThrow();
     }
 
-    #endregion
-
-    #region All Fields Populated Tests
-
     [Fact]
-    public void ApplyTimezoneToJobDates_AllFieldsPopulated_AppliesTimezoneToAll()
+    public void ApplyTimezoneToJobDates_MultipleJobs_DoesNotMutateAny()
     {
         // Arrange
-        var baseDate = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var dispatch1 = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var dispatch2 = new DateTimeOffset(2024, 6, 15, 11, 0, 0, TimeSpan.Zero);
+        var dispatch3 = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+
         var jobs = new List<JobViewModel>
         {
-            new()
-            {
-                Id = 1,
-                DispatchTime = baseDate,
-                PuTime = baseDate.AddHours(1),
-                FollowupTime = baseDate.AddHours(2),
-                CompletedTime = baseDate.AddHours(3),
-                CreatedDate = baseDate.AddDays(-1),
-                DeliverByTime = baseDate.AddHours(4)
-            }
+            new() { Id = 1, DispatchTime = dispatch1 },
+            new() { Id = 2, DispatchTime = dispatch2 },
+            new() { Id = 3, DispatchTime = dispatch3 }
         };
 
         // Act
         ApplyTimezoneToJobDates(jobs, NzTimeZone);
 
-        // Assert - All fields should have NZ timezone offset
-        var expectedOffset = TimeSpan.FromHours(12);
-        jobs[0].DispatchTime!.Value.Offset.Should().Be(expectedOffset);
-        jobs[0].PuTime!.Value.Offset.Should().Be(expectedOffset);
-        jobs[0].FollowupTime!.Value.Offset.Should().Be(expectedOffset);
-        jobs[0].CompletedTime!.Value.Offset.Should().Be(expectedOffset);
-        jobs[0].CreatedDate!.Value.Offset.Should().Be(expectedOffset);
-        jobs[0].DeliverByTime!.Value.Offset.Should().Be(expectedOffset);
-    }
-
-    #endregion
-
-    #region Cross-Timezone Enrichment Tests
-
-    private const string EstTimeZone = "Eastern Standard Time";
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CrossTimezone_PickupFieldsUsePickupTimezone()
-    {
-        // Arrange — tenant is NZ, pickup is PST (winter: UTC-8)
-        var jobs = new List<JobViewModel>
-        {
-            new()
-            {
-                Id = 1,
-                PuTime = new DateTimeOffset(2024, 1, 15, 9, 0, 0, TimeSpan.Zero),
-                PickupArrivalTime = new DateTimeOffset(2024, 1, 15, 9, 30, 0, TimeSpan.Zero),
-                PickUpTimeZone = new Suggestion { Text = PstTimeZone }
-            }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert — pickup fields should get PST offset (-8), NOT NZ (+12)
-        jobs[0].PuTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-8),
-            "PuTime should use pickup timezone, not tenant timezone");
-        jobs[0].PuTime!.Value.DateTime.Should().Be(new DateTime(2024, 1, 15, 9, 0, 0));
-
-        jobs[0].PickupArrivalTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-8),
-            "PickupArrivalTime should use pickup timezone, not tenant timezone");
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CrossTimezone_DeliveryFieldsUseDeliveryTimezone()
-    {
-        // Arrange — tenant is NZ, delivery is EST (winter: UTC-5)
-        var jobs = new List<JobViewModel>
-        {
-            new()
-            {
-                Id = 1,
-                CompletedTime = new DateTimeOffset(2024, 1, 15, 14, 30, 0, TimeSpan.Zero),
-                DeliverByTime = new DateTimeOffset(2024, 1, 15, 17, 0, 0, TimeSpan.Zero),
-                DeliveryArrivalTime = new DateTimeOffset(2024, 1, 15, 14, 15, 0, TimeSpan.Zero),
-                DeliveryTimeZone = new Suggestion { Text = EstTimeZone }
-            }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert — delivery fields should get EST offset (-5), NOT NZ (+12)
-        jobs[0].CompletedTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-5),
-            "CompletedTime should use delivery timezone, not tenant timezone");
-        jobs[0].DeliverByTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-5),
-            "DeliverByTime should use delivery timezone, not tenant timezone");
-        jobs[0].DeliveryArrivalTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-5),
-            "DeliveryArrivalTime should use delivery timezone, not tenant timezone");
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CrossTimezone_TenantFieldsAlwaysUseTenantTimezone()
-    {
-        // Arrange — tenant is NZ, pickup is PST, delivery is EST
-        // Tenant-local fields should still get NZ offset regardless
-        var jobs = new List<JobViewModel>
-        {
-            new()
-            {
-                Id = 1,
-                DispatchTime = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero),
-                FollowupTime = new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero),
-                CreatedDate = new DateTimeOffset(2024, 1, 15, 8, 0, 0, TimeSpan.Zero),
-                PickUpTimeZone = new Suggestion { Text = PstTimeZone },
-                DeliveryTimeZone = new Suggestion { Text = EstTimeZone }
-            }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert — tenant fields always use NZ (+13 in January due to NZDT)
-        var expectedNzOffset = TimeSpan.FromHours(13);
-        jobs[0].DispatchTime!.Value.Offset.Should().Be(expectedNzOffset,
-            "DispatchTime is a tenant-local field and should use tenant timezone");
-        jobs[0].FollowupTime!.Value.Offset.Should().Be(expectedNzOffset,
-            "FollowupTime is a tenant-local field and should use tenant timezone");
-        jobs[0].CreatedDate!.Value.Offset.Should().Be(expectedNzOffset,
-            "CreatedDate is a tenant-local field and should use tenant timezone");
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CrossTimezone_ProducesCorrectUtcInstant()
-    {
-        // Golden scenario: CompletedTime 09:37 wall-clock in PDT should represent 16:37 UTC
-        // Uses winter PST (UTC-8) for predictable offset
-        var wallClockTime = new DateTime(2024, 1, 15, 9, 37, 0);
-        var jobs = new List<JobViewModel>
-        {
-            new()
-            {
-                Id = 1,
-                CompletedTime = new DateTimeOffset(wallClockTime, TimeSpan.Zero),
-                DeliveryTimeZone = new Suggestion { Text = PstTimeZone }
-            }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert — 09:37 PST (UTC-8) = 17:37 UTC
-        var result = jobs[0].CompletedTime!.Value;
-        result.DateTime.Should().Be(wallClockTime, "wall-clock time should be preserved");
-        result.Offset.Should().Be(TimeSpan.FromHours(-8), "PST winter offset is -8");
-        result.UtcDateTime.Should().Be(new DateTime(2024, 1, 15, 17, 37, 0),
-            "09:37 PST = 17:37 UTC");
-    }
-
-    [Fact]
-    public void ApplyTimezoneToJobDates_CrossTimezone_MultipleJobsDifferentTimezones()
-    {
-        // Arrange — 3 jobs with different pickup/delivery TZs
-        var jobs = new List<JobViewModel>
-        {
-            new()
-            {
-                Id = 1,
-                PuTime = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero),
-                CompletedTime = new DateTimeOffset(2024, 1, 15, 14, 0, 0, TimeSpan.Zero),
-                PickUpTimeZone = new Suggestion { Text = PstTimeZone },
-                DeliveryTimeZone = new Suggestion { Text = EstTimeZone }
-            },
-            new()
-            {
-                Id = 2,
-                PuTime = new DateTimeOffset(2024, 1, 15, 11, 0, 0, TimeSpan.Zero),
-                CompletedTime = new DateTimeOffset(2024, 1, 15, 15, 0, 0, TimeSpan.Zero),
-                PickUpTimeZone = new Suggestion { Text = EstTimeZone },
-                DeliveryTimeZone = new Suggestion { Text = PstTimeZone }
-            },
-            new()
-            {
-                Id = 3,
-                PuTime = new DateTimeOffset(2024, 1, 15, 12, 0, 0, TimeSpan.Zero),
-                CompletedTime = new DateTimeOffset(2024, 1, 15, 16, 0, 0, TimeSpan.Zero)
-                // No timezone overrides — falls back to tenant NZ
-            }
-        };
-
-        // Act
-        ApplyTimezoneToJobDates(jobs, NzTimeZone);
-
-        // Assert — each job gets its own timezone offsets
-        // Job 1: pickup=PST(-8), delivery=EST(-5)
-        jobs[0].PuTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-8));
-        jobs[0].CompletedTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-5));
-
-        // Job 2: pickup=EST(-5), delivery=PST(-8)
-        jobs[1].PuTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-5));
-        jobs[1].CompletedTime!.Value.Offset.Should().Be(TimeSpan.FromHours(-8));
-
-        // Job 3: no overrides — both fall back to NZ (+13 NZDT in January)
-        jobs[2].PuTime!.Value.Offset.Should().Be(TimeSpan.FromHours(13));
-        jobs[2].CompletedTime!.Value.Offset.Should().Be(TimeSpan.FromHours(13));
+        // Assert — values should be unchanged
+        jobs[0].DispatchTime.Should().Be(dispatch1);
+        jobs[1].DispatchTime.Should().Be(dispatch2);
+        jobs[2].DispatchTime.Should().Be(dispatch3);
     }
 
     #endregion

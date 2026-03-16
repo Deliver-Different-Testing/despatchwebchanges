@@ -6,6 +6,7 @@
  */
 
 import { Dayjs } from 'dayjs';
+import type { ShowToastFn } from './toastService';
 
 /**
  * Result returned when the dialog is submitted
@@ -47,7 +48,7 @@ interface ReactEditDateTimeDialogWindow {
     showEditTimeDialog: (options: InternalDialogOptions) => Promise<EditDateTimeDialogResult | null>;
     showEditDateDialog: (options: InternalDialogOptions) => Promise<EditDateTimeDialogResult | null>;
     showEditDateAndTimeDialog: (options: InternalDialogOptions) => Promise<EditDateTimeDialogResult | null>;
-    setToastService: (service: { showToast: (message: string, type: 'success' | 'warning' | 'error') => void }) => void;
+    setToastService: (service: { showToast: ShowToastFn }) => void;
 }
 
 /**
@@ -164,7 +165,7 @@ export async function showEditDateAndTimeDialog(
  * ```
  */
 export function setToastService(
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void
+    showToast: ShowToastFn
 ): void {
     const manager = getDialogManager();
     manager.setToastService({ showToast });
