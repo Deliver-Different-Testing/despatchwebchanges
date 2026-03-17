@@ -102,21 +102,18 @@ public sealed class SplitJobService(
             job.RootParentId ??= jobId;
             job.InformationParentId ??= job.RootParentId;
 
-            // Create both child jobs in parallel — each CreateJobAsync uses its own DbContext
+            // Create both child jobs sequentially on the same transactional context
+            // (DbContext is not thread-safe, so parallel calls are not possible here)
             var pickupInput = BuildPickupInputModel(job, pickupJobNumber, validSpeed, meetingPointAddress, userName,
                 currentTenantTime, originalCourierId);
             var deliveryInput = BuildDeliveryInputModel(job, deliveryJobNumber, validSpeed, meetingPointAddress,
                 userName, currentTenantTime);
 
-            var pickupTask = createJobService.CreateJobAsync(pickupInput);
-            var deliveryTask = createJobService.CreateJobAsync(deliveryInput);
-            await Task.WhenAll(pickupTask, deliveryTask);
-
-            var pickupResult = pickupTask.Result;
+            var pickupResult = await createJobService.CreateJobAsync(pickupInput, context);
             if (!pickupResult.Success)
                 throw new InvalidOperationException($"Failed to create pickup job: {pickupResult.Message}");
 
-            var deliveryResult = deliveryTask.Result;
+            var deliveryResult = await createJobService.CreateJobAsync(deliveryInput, context);
             if (!deliveryResult.Success)
                 throw new InvalidOperationException($"Failed to create delivery job: {deliveryResult.Message}");
 

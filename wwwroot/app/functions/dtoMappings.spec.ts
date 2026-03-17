@@ -213,7 +213,7 @@ describe('transformJobGroupDTO - Ready String', () => {
         const dto = makeJobGroupDto({booked: bookedStr});
         const result = transformJobGroupDTO(dto, false);
 
-        const expected = formatShortDateTime(bookedStr, false);
+        const expected = formatShortDateTime(formatDateFromApi(bookedStr), false);
         expect(result.job._readyStr).toBe(expected);
     });
 
@@ -224,8 +224,9 @@ describe('transformJobGroupDTO - Ready String', () => {
         const usResult = transformJobGroupDTO(makeJobGroupDto({booked: bookedStr}), true);
 
         // NZ format: DD/MMM HH:mm, US format: MMM\DD HH:mm
-        expect(nzResult.job._readyStr).toBe(formatShortDateTime(bookedStr, false));
-        expect(usResult.job._readyStr).toBe(formatShortDateTime(bookedStr, true));
+        const parsed = formatDateFromApi(bookedStr);
+        expect(nzResult.job._readyStr).toBe(formatShortDateTime(parsed, false));
+        expect(usResult.job._readyStr).toBe(formatShortDateTime(parsed, true));
         expect(nzResult.job._readyStr).not.toBe(usResult.job._readyStr);
     });
 });

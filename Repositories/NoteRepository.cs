@@ -138,7 +138,7 @@ public class NoteRepository(
             ArgumentNullException.ThrowIfNull(existingNote);
 
             // Record history before modifying
-            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.BulkNote, staffId, DateTime.UtcNow,
+            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.BulkNote, staffId, clock.UtcNow,
                 existingNote.NoteText, viewModel.NoteText,
                 existingNote.NoteTypeId, viewModel.NoteTypeId,
                 existingNote.IsImportant, viewModel.IsImportant,
@@ -299,7 +299,7 @@ public class NoteRepository(
             ArgumentNullException.ThrowIfNull(archivedNote);
 
             // Record history before modifying
-            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Archive, staffId, DateTime.UtcNow,
+            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Archive, staffId, clock.UtcNow,
                 archivedNote.NoteText, viewModel.NoteText,
                 archivedNote.NoteTypeId, viewModel.NoteTypeId,
                 archivedNote.IsImportant, viewModel.IsImportant,
@@ -325,7 +325,7 @@ public class NoteRepository(
         ArgumentNullException.ThrowIfNull(activeNote);
 
         // Record history before modifying
-        await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Note, staffId, DateTime.UtcNow,
+        await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Note, staffId, clock.UtcNow,
             activeNote.NoteText, viewModel.NoteText,
             activeNote.NoteTypeId, viewModel.NoteTypeId,
             activeNote.IsImportant, viewModel.IsImportant,

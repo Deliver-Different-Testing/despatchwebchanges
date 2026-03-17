@@ -19,7 +19,7 @@ import {
     EventGroupViewModel,
 } from '../interfaces';
 import {formatDateForApi, parseDateFromApi, formatRelativeDateTime} from '../utils/dateUtils';
-import dayjs, {Dayjs} from 'dayjs';
+import {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
 
 /**
@@ -28,7 +28,7 @@ import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-his
 function transformTask(apiTask: TaskApiResponse): Task {
     return {
         ...apiTask,
-        dueDate: dayjs(apiTask.dueDate),
+        dueDate: parseDateFromApi(apiTask.dueDate),
     };
 }
 

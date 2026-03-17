@@ -16,6 +16,11 @@ jest.mock('./apiClient', () => ({
     },
 }));
 
+// Mock date utilities - parseDateFromApi preserves the string as a dayjs object
+jest.mock('../utils/dateUtils', () => ({
+    parseDateFromApi: jest.fn((dateStr: string) => dayjs(dateStr)),
+}));
+
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('notesApi', () => {

@@ -184,7 +184,7 @@ export function formatTime(date: Date | Dayjs | string): string {
 export function formatRelativeDateTime(dateTimeString: string): string {
     if (!dateTimeString) return 'No date';
 
-    const parsed = dayjs(dateTimeString);
+    const parsed = parseDateFromApi(dateTimeString);
     if (!parsed.isValid()) return 'Invalid date';
 
     const ianaTimeZone = getIanaTimezone();

@@ -7,18 +7,20 @@
 
 import {apiClient, RequestOptions} from './apiClient';
 import {CreateNoteRequest, JobNote, JobNoteDto, NoteHistoryDto, NoteHistoryEntry, NoteType, UpdateNoteRequest} from '../interfaces';
-import dayjs from 'dayjs';
+import {parseDateFromApi} from '../utils/dateUtils';
 
 /**
  * Transform a JobNoteDto from API to JobNote with Dayjs dates
  */
 function transformJobNoteDto(dto: JobNoteDto): JobNote {
+    const createdDate = dto.createdDate ? parseDateFromApi(dto.createdDate) : undefined;
+    const updatedDate = dto.updatedDate ? parseDateFromApi(dto.updatedDate) : undefined;
     return {
         ...dto,
-        createdDate: dto.createdDate ? dayjs(dto.createdDate) : undefined,
-        updatedDate: dto.updatedDate ? dayjs(dto.updatedDate) : undefined,
-        _createdDateStr: dto.createdDate ? dayjs(dto.createdDate).format('MMM D, YYYY h:mm A') : undefined,
-        _updatedDateStr: dto.updatedDate ? dayjs(dto.updatedDate).format('MMM D, YYYY h:mm A') : undefined,
+        createdDate,
+        updatedDate,
+        _createdDateStr: createdDate?.format('MMM D, YYYY h:mm A'),
+        _updatedDateStr: updatedDate?.format('MMM D, YYYY h:mm A'),
     };
 }
 
@@ -87,11 +89,14 @@ export async function deleteNote(noteId: number): Promise<void> {
  */
 export async function getNoteHistory(noteId: number, noteSource: string = 'Note', options?: RequestOptions): Promise<NoteHistoryEntry[]> {
     const history = await apiClient.get<NoteHistoryDto[]>('note/GetNoteHistory', {noteId, noteSource}, options);
-    return history?.map(dto => ({
-        ...dto,
-        editedAt: dayjs(dto.editedAt),
-        editedAtStr: dayjs(dto.editedAt).format('MMM D, YYYY h:mm A'),
-    })) ?? [];
+    return history?.map(dto => {
+        const editedAt = parseDateFromApi(dto.editedAt);
+        return {
+            ...dto,
+            editedAt,
+            editedAtStr: editedAt.format('MMM D, YYYY h:mm A'),
+        };
+    }) ?? [];
 }
 
 /**

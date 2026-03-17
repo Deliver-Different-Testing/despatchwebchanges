@@ -683,7 +683,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         record.OldIsImportant.Should().BeFalse();
         record.NewIsImportant.Should().BeTrue();
         record.EditedBy.Should().Be(1);
-        record.EditedAt.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        record.EditedAt.Should().Be(_clock.UtcNow);
     }
 
     [Fact]

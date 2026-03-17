@@ -5,7 +5,7 @@
  */
 
 import {apiClient, RequestOptions} from './apiClient';
-import {formatDateForApiWithTzs, formatLongDateTime} from '../utils/dateUtils';
+import {formatDateForApiWithTzs, formatLongDateTime, parseDateFromApi} from '../utils/dateUtils';
 import type {
     OverviewQueryParams,
     OverviewStatsViewModel,
@@ -74,8 +74,8 @@ async function getOpenJobs(
 
     return dtos.map((dto) => ({
         ...dto,
-        _pickUpTimeStr: dto.pickupTime ? formatLongDateTime(dto.pickupTime) : undefined,
-        _deliveryTimeStr: dto.deliveryTime ? formatLongDateTime(dto.deliveryTime) : undefined,
+        _pickUpTimeStr: dto.pickupTime ? formatLongDateTime(parseDateFromApi(dto.pickupTime)) : undefined,
+        _deliveryTimeStr: dto.deliveryTime ? formatLongDateTime(parseDateFromApi(dto.deliveryTime)) : undefined,
     }));
 }
 

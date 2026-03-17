@@ -65,9 +65,10 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         // Default CreateJobAsync — inserts a TucJob into the shared DB
         // so the service can load it back with FirstOrDefaultAsync.
+        // Uses the DespatchContext overload that SplitJobService calls to share a transaction.
         _createJobServiceMock.Setup(x => x.CreateJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateMinimalTucJobInputModel input, DespatchContext _, CancellationToken __) =>
             {
                 var jobId = Interlocked.Increment(ref _nextCreatedJobId);
                 using var ctx = new DespatchContext(_options);
@@ -303,7 +304,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     {
         SeedJob();
         _createJobServiceMock.Setup(x => x.CreateJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CreateMinimalTucJobResponse
             {
                 Success = false,
@@ -344,7 +345,7 @@ public class SplitJobServiceTests : IAsyncDisposable
         await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
 
         _createJobServiceMock.Verify(
-            x => x.CreateJobAsync(It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()),
+            x => x.CreateJobAsync(It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
     }
 
@@ -607,8 +608,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
         _createJobServiceMock.Setup(x => x.CreateJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateMinimalTucJobInputModel input, DespatchContext _, CancellationToken __) =>
             {
                 capturedInputs.Add(input);
 
@@ -644,8 +645,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
         _createJobServiceMock.Setup(x => x.CreateJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateMinimalTucJobInputModel input, DespatchContext _, CancellationToken __) =>
             {
                 capturedInputs.Add(input);
 
@@ -679,8 +680,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
         _createJobServiceMock.Setup(x => x.CreateJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateMinimalTucJobInputModel input, DespatchContext _, CancellationToken __) =>
             {
                 capturedInputs.Add(input);
 
@@ -709,8 +710,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         var capturedInputs = new System.Collections.Concurrent.ConcurrentBag<CreateMinimalTucJobInputModel>();
 
         _createJobServiceMock.Setup(x => x.CreateJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((CreateMinimalTucJobInputModel input, CancellationToken _) =>
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<DespatchContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CreateMinimalTucJobInputModel input, DespatchContext _, CancellationToken __) =>
             {
                 capturedInputs.Add(input);
 
