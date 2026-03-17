@@ -133,6 +133,31 @@ public class BaseJobRepository(
                 parent.Children.Add(child);
             }
 
+            // Find children whose parents weren't returned by the view query
+            // (e.g. split parents with DisplayInDespatch = false)
+            var orphanedChildParentIds = allJobs
+                .Where(j => !j.IsParentOrSingle && j.ParentId.HasValue
+                            && !parentJobMap.ContainsKey(j.ParentId.Value))
+                .Select(j => j.ParentId!.Value)
+                .Distinct()
+                .ToList();
+
+            if (orphanedChildParentIds.Count > 0)
+            {
+                var missingParents = await Context.TucJobs
+                    .Where(j => orphanedChildParentIds.Contains(j.UcjbId))
+                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
+                    .ToListAsync(cancellationToken);
+
+                foreach (var parent in missingParents)
+                {
+                    parent.Children = allJobs
+                        .Where(c => c.ParentId == parent.Id && !c.IsParentOrSingle)
+                        .ToList();
+                    allJobs.Add(parent);
+                }
+            }
+
             await EnrichJobsWithCollections(allJobs);
 
             var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();

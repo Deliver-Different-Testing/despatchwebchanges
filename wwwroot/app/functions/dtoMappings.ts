@@ -1,5 +1,4 @@
 ﻿import {IFlightViewModel, IFlightViewModelDto} from "../components/Nationwide/nationwide.interfaces";
-import dayjs from "dayjs";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../interfaces/flight-cargo-processing.interface";
@@ -27,33 +26,39 @@ import {
 import {timezoneShortFilter} from "../filters";
 
 export function transformFlightDTO(dto: IFlightViewModelDto): IFlightViewModel {
+    const departureTime = formatDateFromApi(dto.departureTime);
+    const arrivalTime = formatDateFromApi(dto.arrivalTime);
     return {
         ...dto,
-        departureTime: formatDateFromApi(dto.departureTime),
-        arrivalTime: formatDateFromApi(dto.arrivalTime),
-        _departureTimeStr: formatLongDateTime(dto.departureTime),
+        departureTime,
+        arrivalTime,
+        _departureTimeStr: formatLongDateTime(departureTime),
         _departureTimeZoneStr: timezoneShortFilter(dto.departureTimeZone),
-        _arrivalTimeStr: formatLongDateTime(dto.arrivalTime),
-        _arrivalTimeZoneStr: formatLongDateTime(dto.arrivalTime),
-        flightSegments: dto.flightSegments?.map(segment => ({
-            ...segment,
-            departureTime: formatDateFromApi(segment.departureTime),
-            arrivalTime: formatDateFromApi(segment.arrivalTime),
-            _departureTimeStr: formatLongDateTime(segment.departureTime),
-            _arrivalTimeStr: formatLongDateTime(segment.arrivalTime),
-            _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
-            _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
-        })) ?? []
+        _arrivalTimeStr: formatLongDateTime(arrivalTime),
+        _arrivalTimeZoneStr: timezoneShortFilter(dto.arrivalTimeZone),
+        flightSegments: dto.flightSegments?.map(segment => {
+            const segDepartureTime = formatDateFromApi(segment.departureTime);
+            const segArrivalTime = formatDateFromApi(segment.arrivalTime);
+            return {
+                ...segment,
+                departureTime: segDepartureTime,
+                arrivalTime: segArrivalTime,
+                _departureTimeStr: formatLongDateTime(segDepartureTime),
+                _arrivalTimeStr: formatLongDateTime(segArrivalTime),
+                _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
+                _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+            };
+        }) ?? []
     };
 }
 
 export function transformCargoHoursDTO(dto: IFlightCargoProcessingDto): IFlightCargoProcessing {
     return {
         ...dto,
-        arrivalTime: dayjs(dto.arrivalTime),
-        cargoOpeningTime: dayjs(dto.cargoOpeningTime),
-        cargoClosingTime: dayjs(dto.cargoClosingTime),
-        deliverByTime: dto.deliverByTime ? dayjs(dto.deliverByTime) : undefined,
+        arrivalTime: formatDateFromApi(dto.arrivalTime),
+        cargoOpeningTime: formatDateFromApi(dto.cargoOpeningTime),
+        cargoClosingTime: formatDateFromApi(dto.cargoClosingTime),
+        deliverByTime: dto.deliverByTime ? formatDateFromApi(dto.deliverByTime) : undefined,
     };
 }
 
@@ -75,37 +80,52 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
     const pickupArrivalTime = dto.pickupArrivalTime ? formatDateFromApi(dto.pickupArrivalTime) : undefined;
     const deliveryArrivalTime = dto.deliveryArrivalTime ? formatDateFromApi(dto.deliveryArrivalTime) : undefined;
 
+    const time = dto.time ? formatDateFromApi(dto.time) : undefined;
+    const bookedDate = dto.bookedDate ? formatDateFromApi(dto.bookedDate) : undefined;
+    const booked = formatDateFromApi(dto.booked);
+    const truckStartTime = dto.truckStartTime ? formatDateFromApi(dto.truckStartTime) : undefined;
+    const inActiveDate = dto.inActiveDate ? formatDateFromApi(dto.inActiveDate) : undefined;
+    const firstDue = dto.firstDue ? formatDateFromApi(dto.firstDue) : undefined;
+    const nextDue = dto.nextDue ? formatDateFromApi(dto.nextDue) : undefined;
+    const lastDone = dto.lastDone ? formatDateFromApi(dto.lastDone) : undefined;
+    const stopDate = dto.stopDate ? formatDateFromApi(dto.stopDate) : undefined;
+    const restartDate = dto.restartDate ? formatDateFromApi(dto.restartDate) : undefined;
+
     return {
         ...dto,
-        time: dto.time ? dayjs(dto.time) : undefined,
-        bookedDate: dto.bookedDate ? dayjs(dto.bookedDate) : undefined,
+        time,
+        bookedDate,
         dispatchTime,
-        booked: dayjs(dto.booked),
+        booked,
         puTime,
         followupTime,
-        truckStartTime: dto.truckStartTime ? dayjs(dto.truckStartTime) : undefined,
+        truckStartTime,
         completedTime,
         createdDate,
         deliverByTime,
-        inActiveDate: dto.inActiveDate ? dayjs(dto.inActiveDate) : undefined,
-        firstDue: dto.firstDue ? dayjs(dto.firstDue) : undefined,
-        nextDue: dto.nextDue ? dayjs(dto.nextDue) : undefined,
-        lastDone: dto.lastDone ? dayjs(dto.lastDone) : undefined,
-        stopDate: dto.stopDate ? dayjs(dto.stopDate) : undefined,
-        restartDate: dto.restartDate ? dayjs(dto.restartDate) : undefined,
+        inActiveDate,
+        firstDue,
+        nextDue,
+        lastDone,
+        stopDate,
+        restartDate,
         assignedFlight: dto.assignedFlight ? {
             ...dto.assignedFlight,
             expectedArrival: dto.assignedFlight.expectedArrival ? formatDateFromApi(dto.assignedFlight.expectedArrival) : undefined,
             expectedDeparture: dto.assignedFlight.expectedDeparture ? formatDateFromApi(dto.assignedFlight.expectedDeparture) : undefined,
-            flightSegments: dto.assignedFlight.flightSegments?.map(segment => ({
-                ...segment,
-                departureTime: formatDateFromApi(segment.departureTime),
-                arrivalTime: formatDateFromApi(segment.arrivalTime),
-                _departureTimeStr: formatLongDateTime(segment.departureTime, isUsCustomer),
-                _arrivalTimeStr: formatLongDateTime(segment.arrivalTime, isUsCustomer),
-                _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
-                _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
-            })) ?? []
+            flightSegments: dto.assignedFlight.flightSegments?.map(segment => {
+                const segDepartureTime = formatDateFromApi(segment.departureTime);
+                const segArrivalTime = formatDateFromApi(segment.arrivalTime);
+                return {
+                    ...segment,
+                    departureTime: segDepartureTime,
+                    arrivalTime: segArrivalTime,
+                    _departureTimeStr: formatLongDateTime(segDepartureTime, isUsCustomer),
+                    _arrivalTimeStr: formatLongDateTime(segArrivalTime, isUsCustomer),
+                    _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
+                    _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+                };
+            }) ?? []
         } : undefined,
 
         pickupArrivalTime,
@@ -120,17 +140,17 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
 
         readTrackerInfo: dto.readTrackerInfo ? {
             ...dto.readTrackerInfo,
-            readDate: dto.readTrackerInfo.readDate ? dayjs(dto.readTrackerInfo.readDate) : undefined,
-            _readDateStr: dto.readTrackerInfo.readDate ? formatLongDateTime(dto.readTrackerInfo.readDate, isUsCustomer) : undefined,
+            readDate: dto.readTrackerInfo.readDate ? formatDateFromApi(dto.readTrackerInfo.readDate) : undefined,
+            _readDateStr: dto.readTrackerInfo.readDate ? formatLongDateTime(formatDateFromApi(dto.readTrackerInfo.readDate), isUsCustomer) : undefined,
         } : undefined,
 
         // Display strings use parsed Dayjs objects (with correct timezone offset)
         _createdDateStr: createdDate ? formatShortDate(createdDate, isUsCustomer) : undefined,
         _createdDateTimeStr: createdDate ? formatShortDateTime(createdDate, isUsCustomer) : undefined,
-        _readyStr: dto.booked ? formatShortDateTime(dto.booked, isUsCustomer) : undefined,
+        _readyStr: booked ? formatShortDateTime(booked, isUsCustomer) : undefined,
         _pickupArrivalTimeStr: pickupArrivalTime ? formatShortDateTime(pickupArrivalTime, isUsCustomer) : undefined,
         _deliveryArrivalTimeStr: deliveryArrivalTime ? formatShortDateTime(deliveryArrivalTime, isUsCustomer) : undefined,
-        _startTimeStr: dto.time ? formatMins(dto.time) : undefined,
+        _startTimeStr: time ? formatMins(time) : undefined,
         _puTimeStr: puTime ? formatShortDateTime(puTime, isUsCustomer) : undefined,
         _deliverByTimeStr: deliverByTime ? formatShortDateTime(deliverByTime, isUsCustomer) : undefined,
         _dispatchTimeStr: dispatchTime ? formatShortDateTime(dispatchTime, isUsCustomer) : undefined,
@@ -139,8 +159,8 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         _followupTimeStr: followupTime ? formatShortDateTime(followupTime, isUsCustomer) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
         _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
-        _stopDateStr: dto.stopDate ? formatLongDate(dto.stopDate, isUsCustomer) : undefined,
-        _restartDateStr: dto.restartDate ? formatLongDate(dto.restartDate, isUsCustomer) : undefined,
+        _stopDateStr: stopDate ? formatLongDate(stopDate, isUsCustomer) : undefined,
+        _restartDateStr: restartDate ? formatLongDate(restartDate, isUsCustomer) : undefined,
     };
 }
 
@@ -148,13 +168,16 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
     // Transform children recursively if present
     const children = dto.children?.map(transformDispatchJobDTO);
 
+    const time = dto.time ? formatDateFromApi(dto.time) : undefined;
+    const booked = formatDateFromApi(dto.booked);
+
     return {
         ...dto,
-        time: dto.time ? dayjs(dto.time) : undefined,
-        booked: dayjs(dto.booked),
+        time,
+        booked,
         followupTime: dto.followupTime ? formatDateFromApi(dto.followupTime) : undefined,
-        _deliveryTimeString: dto.booked ? formatMins(dto.booked) : undefined,
-        _deliveryDateString: dto.booked ? formatShortDate(dto.booked) : undefined,
+        _deliveryTimeString: booked ? formatMins(booked) : undefined,
+        _deliveryDateString: booked ? formatShortDate(booked) : undefined,
         _pickUpTimeZoneStr: dto.pickUpTimeZone ? timezoneShortFilter(dto.pickUpTimeZone.text) : undefined,
         _deliveryTimeZoneStr: dto.deliveryTimeZone ? timezoneShortFilter(dto.deliveryTimeZone.text) : undefined,
         // Transform assignedFlight with helper fields for display
@@ -162,15 +185,19 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
             ...dto.assignedFlight,
             expectedArrival: dto.assignedFlight.expectedArrival ? formatDateFromApi(dto.assignedFlight.expectedArrival) : undefined,
             expectedDeparture: dto.assignedFlight.expectedDeparture ? formatDateFromApi(dto.assignedFlight.expectedDeparture) : undefined,
-            flightSegments: dto.assignedFlight.flightSegments?.map(segment => ({
-                ...segment,
-                departureTime: formatDateFromApi(segment.departureTime),
-                arrivalTime: formatDateFromApi(segment.arrivalTime),
-                _departureTimeStr: formatLongDateTime(segment.departureTime),
-                _arrivalTimeStr: formatLongDateTime(segment.arrivalTime),
-                _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
-                _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
-            })) ?? []
+            flightSegments: dto.assignedFlight.flightSegments?.map(segment => {
+                const segDepartureTime = formatDateFromApi(segment.departureTime);
+                const segArrivalTime = formatDateFromApi(segment.arrivalTime);
+                return {
+                    ...segment,
+                    departureTime: segDepartureTime,
+                    arrivalTime: segArrivalTime,
+                    _departureTimeStr: formatLongDateTime(segDepartureTime),
+                    _arrivalTimeStr: formatLongDateTime(segArrivalTime),
+                    _arrivalTimeZoneStr: timezoneShortFilter(segment.arrivalAirportTimeZone),
+                    _departureTimeZoneStr: timezoneShortFilter(segment.departureAirportTimeZone),
+                };
+            }) ?? []
         } : undefined,
         // Map backend children to _groupChildren for the UI
         children: children,
@@ -180,11 +207,12 @@ export function transformDispatchJobDTO(dto: IDispatchJobDto): IDispatchJob {
 }
 
 export function transformTaskDTO(dto: ITaskDto): ITask {
+    const dueDate = formatDateFromApi(dto.dueDate);
     return {
         ...dto,
-        dueDate: formatDateFromApi(dto.dueDate),
-        _dueDateString: formatLongDate(dto.dueDate),
-        _dueTimeString: formatMins(dto.dueDate)
+        dueDate,
+        _dueDateString: formatLongDate(dueDate),
+        _dueTimeString: formatMins(dueDate)
     }
 }
 

@@ -196,6 +196,13 @@ describe('dateUtils', () => {
             expect(formatRelativeDateTime(today)).toBe('14:30');
             expect(formatRelativeDateTime(tomorrow)).toBe('Tomorrow 09:00');
         });
+
+        it('preserves wall-clock time from offset-bearing API date', () => {
+            // An API date with a non-UTC offset should still show the wall-clock time
+            // after parseDateFromApi strips and re-applies the offset
+            const today = dayjs.utc().format('YYYY-MM-DD') + 'T14:30:00+00:00';
+            expect(formatRelativeDateTime(today)).toBe('14:30');
+        });
     });
 
     describe('parse-format round-trip', () => {

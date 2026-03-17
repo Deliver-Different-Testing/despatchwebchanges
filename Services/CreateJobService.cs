@@ -83,29 +83,53 @@ public sealed class CreateJobService(
         try
         {
             await using var context = await contextFactory.CreateDbContextAsync(cancellationToken);
-
-            var resolved = new ResolvedJobData();
-
-            await ResolveInitialDataAsync(context, data, resolved, cancellationToken);
-            await ResolveContactAsync(context, data, resolved, cancellationToken);
-            ApplyNullFallbackDefaults(data, resolved);
-
-            var validationError = await ValidateAsync(context, data, resolved, cancellationToken);
-            if (validationError != null)
-                return new CreateMinimalTucJobResponse { Success = false, Message = validationError };
-
-            ParseRecurringBitmasks(data, resolved);
-
-            if (resolved.IsBulkSchedule)
-                return await InsertBulkScheduleJobAsync(context, data, resolved, cancellationToken);
-
-            return await InsertNormalJobAsync(context, data, resolved, cancellationToken);
+            return await CreateJobCoreAsync(data, context, cancellationToken);
         }
         catch (Exception ex)
         {
             Log.Error(ex, "Error creating job via CreateJobService");
             return new CreateMinimalTucJobResponse { Success = false, Message = ex.Message };
         }
+    }
+
+    /// <inheritdoc />
+    public async Task<CreateMinimalTucJobResponse> CreateJobAsync(
+        CreateMinimalTucJobInputModel data,
+        DespatchContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await CreateJobCoreAsync(data, context, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error creating job via CreateJobService (transactional)");
+            return new CreateMinimalTucJobResponse { Success = false, Message = ex.Message };
+        }
+    }
+
+    private static async Task<CreateMinimalTucJobResponse> CreateJobCoreAsync(
+        CreateMinimalTucJobInputModel data,
+        DespatchContext context,
+        CancellationToken cancellationToken)
+    {
+        var resolved = new ResolvedJobData();
+
+        await ResolveInitialDataAsync(context, data, resolved, cancellationToken);
+        await ResolveContactAsync(context, data, resolved, cancellationToken);
+        ApplyNullFallbackDefaults(data, resolved);
+
+        var validationError = await ValidateAsync(context, data, resolved, cancellationToken);
+        if (validationError != null)
+            return new CreateMinimalTucJobResponse { Success = false, Message = validationError };
+
+        ParseRecurringBitmasks(data, resolved);
+
+        if (resolved.IsBulkSchedule)
+            return await InsertBulkScheduleJobAsync(context, data, resolved, cancellationToken);
+
+        return await InsertNormalJobAsync(context, data, resolved, cancellationToken);
     }
 
     /// <summary>

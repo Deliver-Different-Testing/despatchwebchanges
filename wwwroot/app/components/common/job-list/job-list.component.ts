@@ -70,6 +70,7 @@ class JobsListController extends BaseController {
 
     // Local component state
     filteredJobs?: IDispatchJob[] = [];
+    visibleJobs?: IDispatchJob[] = [];
     loading: boolean = false;
     selectedCategory: JobCategory = JobCategory.All;
     searchQuery: string = '';
@@ -525,6 +526,7 @@ class JobsListController extends BaseController {
     private applyFilters() {
         if (!this.jobs) {
             this.filteredJobs = [];
+            this.visibleJobs = [];
             return;
         }
 
@@ -540,24 +542,47 @@ class JobsListController extends BaseController {
             filtered = filtered.filter(job => JobsListController.matchesSearch(job, this.searchQuery));
         }
 
+        // Remove children that are already grouped under a parent via _groupChildren
+        const groupedParentIds = new Set(
+            filtered
+                .filter(j => j.isParentOrSingle && j._groupChildren && j._groupChildren.length > 0)
+                .map(j => j.id)
+        );
+        if (groupedParentIds.size > 0) {
+            filtered = filtered.filter(j =>
+                j.isParentOrSingle || !j.parentId || !groupedParentIds.has(j.parentId));
+        }
+
         // Apply sorting
         filtered = this.sortJobs(filtered);
 
         this.filteredJobs = filtered;
+        this.visibleJobs = this.getVisibleJobs();
     }
 
     private matchesCategory(job: IDispatchJob, category: JobCategory): boolean {
-        switch (category) {
-            case JobCategory.NeedsDispatch:
-                return this.needsDispatch(job);
-            case JobCategory.InProgress:
-                // Show all jobs that are not delivered (both assigned and unassigned)
-                return !this.isDelivered(job);
-            case JobCategory.Delivered:
-                return this.isDelivered(job);
-            default:
-                return true;
+        const selfMatches = (() => {
+            switch (category) {
+                case JobCategory.NeedsDispatch:
+                    return this.needsDispatch(job);
+                case JobCategory.InProgress:
+                    // Show all jobs that are not delivered (both assigned and unassigned)
+                    return !this.isDelivered(job);
+                case JobCategory.Delivered:
+                    return this.isDelivered(job);
+                default:
+                    return true;
+            }
+        })();
+
+        if (selfMatches) return true;
+
+        // Include multi-part parents if any of their children match
+        if (this.isMultiPartJob(job)) {
+            return job._groupChildren!.some(child => this.matchesCategory(child, category));
         }
+
+        return false;
     }
 
     private static matchesSearch(job: IDispatchJob, query: string): boolean {
@@ -657,6 +682,7 @@ class JobsListController extends BaseController {
     toggleJobGroup(job: IDispatchJob): void {
         if (!this.isMultiPartJob(job)) return;
         job._isExpanded = !job._isExpanded;
+        this.visibleJobs = this.getVisibleJobs();
         this.applyScope();
     }
 
@@ -1042,7 +1068,7 @@ class JobsListController extends BaseController {
     }
 
     shouldShowPriorityColumn(job: IDispatchJob): boolean {
-        return !!(job.toAirportId || job.fromAirportId || this.isChilledJob(job));
+        return !!(job.toAirportId || job.fromAirportId || this.isChilledJob(job) || this.isMultiPartJob(job));
     }
 
     private loadColumnWidths(): void {

@@ -679,8 +679,10 @@ class JobContextMenuService implements angular.IServiceProvider {
 
                     if (result.status === "Completed") {
                         this.toastrService.showSuccessToast(`Job ${jobNo} successfully split`);
-                        if (onRefresh) {
-                            await onRefresh();
+                        try {
+                            if (onRefresh) await onRefresh();
+                        } catch (e) {
+                            console.error("Error refreshing after split:", e);
                         }
                         resolve();
                     } else if (result.status === "Failed") {

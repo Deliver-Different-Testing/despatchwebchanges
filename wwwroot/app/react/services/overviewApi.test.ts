@@ -11,6 +11,7 @@ jest.mock('./apiClient', () => ({
 
 jest.mock('../utils/dateUtils', () => ({
     formatDateForApiWithTzs: jest.fn((d: Date) => d.toISOString()),
+    parseDateFromApi: jest.fn((s: string) => `parsed:${s}`),
     formatLongDateTime: jest.fn((s: string) => `formatted:${s}`),
 }));
 
@@ -221,8 +222,8 @@ describe('overviewApi', () => {
                 undefined,
             );
             expect(result).toHaveLength(1);
-            expect(result[0]._pickUpTimeStr).toBe('formatted:2024-01-15T10:00:00');
-            expect(result[0]._deliveryTimeStr).toBe('formatted:2024-01-15T14:00:00');
+            expect(result[0]._pickUpTimeStr).toBe('formatted:parsed:2024-01-15T10:00:00');
+            expect(result[0]._deliveryTimeStr).toBe('formatted:parsed:2024-01-15T14:00:00');
         });
 
         it('handles missing pickup/delivery times', async () => {

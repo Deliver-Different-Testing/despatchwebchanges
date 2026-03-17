@@ -235,13 +235,15 @@
                 </div>
 
                 <!-- Job Rows -->
-                <div ng-repeat="job in ctrl.filteredJobs track by $index"
+                <div ng-repeat="job in ctrl.visibleJobs track by $index"
                      class="job-row {{ctrl.getJobPriorityClass(job)}}"
                      ng-class="{
                              'selected': ctrl.selectedJob && ctrl.selectedJob.id === job.id,
                              'multi-selected': job.selected,
                              'unread': !job.hasBeenRead,
                              'child-job': !job.isParentOrSingle,
+                             'child-job-row': !job.isParentOrSingle && job.parentId,
+                             'multi-part-parent': ctrl.isMultiPartJob(job),
                              'related-job': ctrl.hasRelatedJobs(job),
                              'warning': ctrl.isWarning(job),
                              'direct': job.direct,
@@ -255,17 +257,27 @@
 
                     <!-- Priority Column -->
                     <div class="job-cell {{ctrl.shouldShowPriorityColumn(job) ? 'priority' : ''}}">
+                        <!-- Multi-part parent expand/collapse button -->
+                        <button class="expand-btn"
+                                ng-if="ctrl.isMultiPartJob(job)"
+                                ng-click="ctrl.toggleJobGroup(job); $event.stopPropagation()">
+                            <md-icon md-font-set="material-symbols-outlined"
+                                     class="expand-icon">
+                                {{job._isExpanded ? 'expand_less' : 'expand_more'}}
+                            </md-icon>
+                            <span>{{ctrl.getChildCount(job)}}</span>
+                        </button>
                         <!-- Static indicators -->
                         <md-icon
                                 md-font-set="material-symbols-outlined"
                                 class="airport-icon"
-                                ng-if="job.fromAirportId || job.toAirportId">
+                                ng-if="!ctrl.isMultiPartJob(job) && (job.fromAirportId || job.toAirportId)">
                             {{ ctrl.getFlightIcon(job) }}
                         </md-icon>
                         <md-icon
                                 class="chilled-icon"
                                 md-font-set="material-symbols-outlined"
-                                ng-if="ctrl.isChilledJob(job)">
+                                ng-if="!ctrl.isMultiPartJob(job) && ctrl.isChilledJob(job)">
                             ac_unit
                         </md-icon>
                     </div>
