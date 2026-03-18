@@ -5,8 +5,6 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
 import {SearchCriteriaPanelReactComponent} from "../../react/components/common/search-criteria-panel/search-criteria-panel-react.module";
-import JobsListComponent from "../common/job-list/job-list.component";
-import JobHighlightService from "../common/job-list/job-highlight.service";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
@@ -23,16 +21,14 @@ const jobSearchModule = angular.module('uDispatch.jobSearch', [
     'ngMessages',
     'md.data.table',
     'ui.sortable',
-    'angularResizable',
-    'ui.bootstrap.contextMenu'
+    'angularResizable'
 ]);
 
 // Components
 jobSearchModule
     .component("jobSearchComponent", JobSearchComponent)
     .component("taskHistoryReact", TaskHistoryReactComponent)
-    .component("searchCriteriaPanelReact", SearchCriteriaPanelReactComponent)
-    .component("jobsList", JobsListComponent);
+    .component("searchCriteriaPanelReact", SearchCriteriaPanelReactComponent);
 
 jobSearchModule
     .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
@@ -43,7 +39,6 @@ jobSearchModule
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("jobContextMenuService", JobContextMenuService)
-    .service("jobHighlightService", JobHighlightService)
     .service("createJobDialogService", CreateJobDialogService)
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);

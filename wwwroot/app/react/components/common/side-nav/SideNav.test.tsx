@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {fireEvent, render, screen} from '@testing-library/react';
+import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {SideNav} from './SideNav';
 
 const theme = createTheme();
@@ -54,9 +54,8 @@ describe('SideNav', () => {
             expect(screen.getByText('DFRNT')).toBeInTheDocument();
         });
 
-        it('should render copyright with current year', () => {
+        it('should render copyright', () => {
             renderWithTheme(<SideNav {...defaultProps} />);
-            const currentYear = new Date().getFullYear();
             expect(screen.getByText(/Deliver Different/)).toBeInTheDocument();
         });
     });

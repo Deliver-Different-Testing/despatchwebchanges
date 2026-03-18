@@ -5,7 +5,7 @@
  * States: upload -> mode-select -> loading -> result
  */
 
-import React from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
@@ -47,123 +47,108 @@ import {
     DialogState,
 } from './types';
 
-interface BulkPriceUploadDialogState {
-    currentState: DialogState;
-    selectedMode: PricingMode;
-    uploadedFile: File | null;
-    isDragOver: boolean;
-    resultRows: BulkPricePreviewRow[];
-    filteredRows: BulkPricePreviewRow[];
-    searchTerm: string;
-    totalJobs: number;
-    totalOldAmount: number;
-    totalNewAmount: number;
-    isLoading: boolean;
-    errorMessage: string;
-    loadingMessage: string;
-}
-
 const VALID_EXTENSIONS = ['.xls', '.xlsx', '.csv'];
 
-export class BulkPriceUploadDialog extends React.Component<
-    BulkPriceUploadDialogProps,
-    BulkPriceUploadDialogState
-> {
-    private fileInputRef = React.createRef<HTMLInputElement>();
+export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
+    open,
+    onClose,
+    onSubmit,
+    showToast,
+}) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    constructor(props: BulkPriceUploadDialogProps) {
-        super(props);
-        this.state = this.getInitialState();
-    }
+    const [currentState, setCurrentState] = useState<DialogState>('upload');
+    const [selectedMode, setSelectedMode] = useState<PricingMode>('recalculate');
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
+    const [resultRows, setResultRows] = useState<BulkPricePreviewRow[]>([]);
+    const [filteredRows, setFilteredRows] = useState<BulkPricePreviewRow[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [totalJobs, setTotalJobs] = useState(0);
+    const [totalOldAmount, setTotalOldAmount] = useState(0);
+    const [totalNewAmount, setTotalNewAmount] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [loadingMessage, setLoadingMessage] = useState('');
 
-    private getInitialState(): BulkPriceUploadDialogState {
-        return {
-            currentState: 'upload',
-            selectedMode: 'recalculate',
-            uploadedFile: null,
-            isDragOver: false,
-            resultRows: [],
-            filteredRows: [],
-            searchTerm: '',
-            totalJobs: 0,
-            totalOldAmount: 0,
-            totalNewAmount: 0,
-            isLoading: false,
-            errorMessage: '',
-            loadingMessage: '',
-        };
-    }
-
-    componentDidUpdate(prevProps: BulkPriceUploadDialogProps): void {
-        // Reset state when dialog opens
-        if (this.props.open && !prevProps.open) {
-            this.setState(this.getInitialState());
+    // Reset state when dialog opens
+    useEffect(() => {
+        if (open) {
+            setCurrentState('upload');
+            setSelectedMode('recalculate');
+            setUploadedFile(null);
+            setIsDragOver(false);
+            setResultRows([]);
+            setFilteredRows([]);
+            setSearchTerm('');
+            setTotalJobs(0);
+            setTotalOldAmount(0);
+            setTotalNewAmount(0);
+            setIsLoading(false);
+            setErrorMessage('');
+            setLoadingMessage('');
         }
-    }
+    }, [open]);
 
     // File handling
-    private handleDragOver = (event: React.DragEvent<HTMLDivElement>): void => {
+    const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
         event.preventDefault();
         event.stopPropagation();
-        this.setState({ isDragOver: true });
-    };
+        setIsDragOver(true);
+    }, []);
 
-    private handleDragLeave = (event: React.DragEvent<HTMLDivElement>): void => {
+    const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
         event.preventDefault();
         event.stopPropagation();
-        this.setState({ isDragOver: false });
-    };
+        setIsDragOver(false);
+    }, []);
 
-    private handleDrop = (event: React.DragEvent<HTMLDivElement>): void => {
-        event.preventDefault();
-        event.stopPropagation();
-        this.setState({ isDragOver: false });
-
-        const files = event.dataTransfer?.files;
-        if (files && files.length > 0) {
-            this.handleFileSelect(files[0]);
-        }
-    };
-
-    private handleFileInputClick = (): void => {
-        this.fileInputRef.current?.click();
-    };
-
-    private handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-        const files = event.target.files;
-        if (files && files.length > 0) {
-            this.handleFileSelect(files[0]);
-        }
-        // Reset input so same file can be selected again
-        if (this.fileInputRef.current) {
-            this.fileInputRef.current.value = '';
-        }
-    };
-
-    private handleFileSelect = (file: File): void => {
+    const handleFileSelect = useCallback((file: File): void => {
         const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
 
         if (!VALID_EXTENSIONS.includes(extension)) {
-            this.setState({
-                errorMessage: 'Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.',
-            });
+            setErrorMessage('Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.');
             return;
         }
 
-        this.setState({
-            uploadedFile: file,
-            errorMessage: '',
-            currentState: 'mode-select',
-        });
-    };
+        setUploadedFile(file);
+        setErrorMessage('');
+        setCurrentState('mode-select');
+    }, []);
+
+    const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>): void => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragOver(false);
+
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    }, [handleFileSelect]);
+
+    const handleFileInputClick = useCallback((): void => {
+        fileInputRef.current?.click();
+    }, []);
+
+    const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>): void => {
+        const files = event.target.files;
+        if (files && files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+        // Reset input so same file can be selected again
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }, [handleFileSelect]);
 
     // Mode selection
-    private handleModeSelect = (mode: PricingMode): void => {
-        this.setState({ selectedMode: mode });
-    };
+    const handleModeSelect = useCallback((mode: PricingMode): void => {
+        setSelectedMode(mode);
+    }, []);
 
-    private getModeDescription(): string {
-        switch (this.state.selectedMode) {
+    const modeDescription = useMemo((): string => {
+        switch (selectedMode) {
             case 'recalculate':
                 return 'Prices will be recalculated based on job details and current rates';
             case 'base':
@@ -173,10 +158,10 @@ export class BulkPriceUploadDialog extends React.Component<
             default:
                 return '';
         }
-    }
+    }, [selectedMode]);
 
-    private getApplyButtonText(): string {
-        switch (this.state.selectedMode) {
+    const applyButtonText = useMemo((): string => {
+        switch (selectedMode) {
             case 'recalculate':
                 return 'Recalculate & Save';
             case 'base':
@@ -186,124 +171,111 @@ export class BulkPriceUploadDialog extends React.Component<
             default:
                 return 'Apply';
         }
-    }
+    }, [selectedMode]);
 
     // Apply prices
-    private handleApplyPrices = async (): Promise<void> => {
-        const { uploadedFile, selectedMode } = this.state;
-        const { onSubmit, showToast } = this.props;
-
+    const handleApplyPrices = useCallback(async (): Promise<void> => {
         if (!uploadedFile) return;
 
-        this.setState({
-            currentState: 'loading',
-            isLoading: true,
-            loadingMessage: 'Applying price changes...',
-            errorMessage: '',
-        });
+        setCurrentState('loading');
+        setIsLoading(true);
+        setLoadingMessage('Applying price changes...');
+        setErrorMessage('');
 
         try {
             const response: BulkPricePreviewResponse = await onSubmit(uploadedFile, selectedMode);
 
-            this.setState({
-                resultRows: response.rows,
-                filteredRows: [...response.rows],
-                totalJobs: response.totalJobs,
-                totalOldAmount: response.totalOldAmount,
-                totalNewAmount: response.totalNewAmount,
-                currentState: 'result',
-                isLoading: false,
-                loadingMessage: '',
-            });
+            setResultRows(response.rows);
+            setFilteredRows([...response.rows]);
+            setTotalJobs(response.totalJobs);
+            setTotalOldAmount(response.totalOldAmount);
+            setTotalNewAmount(response.totalNewAmount);
+            setCurrentState('result');
+            setIsLoading(false);
+            setLoadingMessage('');
 
             showToast(`Successfully updated prices for ${response.totalJobs} jobs.`, 'success');
         } catch (error: unknown) {
             console.error('Error applying prices:', error);
-            const errorMessage = error instanceof Error ? error.message : 'Failed to apply prices. Please try again.';
-            this.setState({
-                errorMessage,
-                currentState: 'mode-select',
-                isLoading: false,
-                loadingMessage: '',
-            });
-            showToast(errorMessage, 'error');
+            const msg = error instanceof Error ? error.message : 'Failed to apply prices. Please try again.';
+            setErrorMessage(msg);
+            setCurrentState('mode-select');
+            setIsLoading(false);
+            setLoadingMessage('');
+            showToast(msg, 'error');
         }
-    };
+    }, [uploadedFile, selectedMode, onSubmit, showToast]);
 
     // Search and filter
-    private handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
-        const searchTerm = event.target.value;
-        this.setState({ searchTerm }, () => this.filterByJobNumber());
-    };
-
-    private handleClearSearch = (): void => {
-        this.setState({ searchTerm: '' }, () => this.filterByJobNumber());
-    };
-
-    private filterByJobNumber(): void {
-        const { searchTerm, resultRows } = this.state;
-
-        if (!searchTerm.trim()) {
-            this.setState({ filteredRows: [...resultRows] });
+    const filterByJobNumber = useCallback((term: string, rows: BulkPricePreviewRow[]): void => {
+        if (!term.trim()) {
+            setFilteredRows([...rows]);
             return;
         }
 
-        const search = searchTerm.toLowerCase().trim();
-        const filteredRows = resultRows.filter((row) =>
+        const search = term.toLowerCase().trim();
+        const filtered = rows.filter((row) =>
             row.jobNo.toLowerCase().includes(search)
         );
-        this.setState({ filteredRows });
-    }
+        setFilteredRows(filtered);
+    }, []);
+
+    const handleSearchChange = useCallback((event: React.ChangeEvent<HTMLInputElement>): void => {
+        const newSearchTerm = event.target.value;
+        setSearchTerm(newSearchTerm);
+        filterByJobNumber(newSearchTerm, resultRows);
+    }, [filterByJobNumber, resultRows]);
+
+    const handleClearSearch = useCallback((): void => {
+        setSearchTerm('');
+        filterByJobNumber('', resultRows);
+    }, [filterByJobNumber, resultRows]);
 
     // Navigation
-    private handleBackToUpload = (): void => {
-        this.setState({
-            uploadedFile: null,
-            resultRows: [],
-            filteredRows: [],
-            searchTerm: '',
-            errorMessage: '',
-            currentState: 'upload',
-        });
-    };
+    const handleBackToUpload = useCallback((): void => {
+        setUploadedFile(null);
+        setResultRows([]);
+        setFilteredRows([]);
+        setSearchTerm('');
+        setErrorMessage('');
+        setCurrentState('upload');
+    }, []);
 
-    private handleDone = (): void => {
-        this.props.onClose();
-    };
+    const handleDone = useCallback((): void => {
+        onClose();
+    }, [onClose]);
 
-    private handleCancel = (): void => {
-        this.props.onClose();
-    };
+    const handleCancel = useCallback((): void => {
+        onClose();
+    }, [onClose]);
 
     // Calculations
-    private getAmountChange(): number {
-        return this.state.totalNewAmount - this.state.totalOldAmount;
-    }
+    const amountChange = useMemo((): number => {
+        return totalNewAmount - totalOldAmount;
+    }, [totalNewAmount, totalOldAmount]);
 
-    private formatCurrency(amount: number): string {
+    const formatCurrency = (amount: number): string => {
         return `$${amount.toFixed(2)}`;
-    }
+    };
 
-    private formatChange(amount: number): string {
+    const formatChange = (amount: number): string => {
         if (amount >= 0) {
             return `+$${amount.toFixed(2)}`;
         }
         return `-$${Math.abs(amount).toFixed(2)}`;
-    }
+    };
 
     // Render methods
-    private renderUploadState(): React.ReactNode {
-        const { isDragOver, errorMessage } = this.state;
-
+    const renderUploadState = (): React.ReactNode => {
         return (
             <Box sx={{ p: 3 }}>
                 {/* Dropzone */}
                 <Box sx={{ mb: 2.5 }}>
                     <Box
-                        onClick={this.handleFileInputClick}
-                        onDragOver={this.handleDragOver}
-                        onDragLeave={this.handleDragLeave}
-                        onDrop={this.handleDrop}
+                        onClick={handleFileInputClick}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
                         sx={{
                             display: 'flex',
                             flexDirection: 'column',
@@ -336,11 +308,11 @@ export class BulkPriceUploadDialog extends React.Component<
                         </Typography>
                     </Box>
                     <input
-                        ref={this.fileInputRef}
+                        ref={fileInputRef}
                         type="file"
                         accept=".xls,.xlsx,.csv"
                         style={{ display: 'none' }}
-                        onChange={this.handleFileInputChange}
+                        onChange={handleFileInputChange}
                     />
                 </Box>
 
@@ -397,11 +369,9 @@ export class BulkPriceUploadDialog extends React.Component<
                 </Box>
             </Box>
         );
-    }
+    };
 
-    private renderModeSelectState(): React.ReactNode {
-        const { uploadedFile, selectedMode, errorMessage } = this.state;
-
+    const renderModeSelectState = (): React.ReactNode => {
         const modes: { value: PricingMode; title: string; desc: string; icon: React.ReactNode; colorClass: string }[] = [
             {
                 value: 'recalculate',
@@ -457,7 +427,7 @@ export class BulkPriceUploadDialog extends React.Component<
                     </Typography>
                     <IconButton
                         size="small"
-                        onClick={this.handleBackToUpload}
+                        onClick={handleBackToUpload}
                         sx={{ width: 28, height: 28 }}
                     >
                         <EditIcon sx={{ fontSize: 16 }} />
@@ -493,7 +463,7 @@ export class BulkPriceUploadDialog extends React.Component<
                     {modes.map((mode) => (
                         <Box
                             key={mode.value}
-                            onClick={() => this.handleModeSelect(mode.value)}
+                            onClick={() => handleModeSelect(mode.value)}
                             sx={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -558,8 +528,8 @@ export class BulkPriceUploadDialog extends React.Component<
                                         ? mode.colorClass === 'recalculate'
                                             ? 'grey.600'
                                             : mode.colorClass === 'base'
-                                                ? '#4caf50'
-                                                : '#9c27b0'
+                                                ? 'success.main'
+                                                : 'secondary.main'
                                         : 'text.secondary',
                                     transition: 'all 0.2s ease',
                                     '& svg': { fontSize: 22 },
@@ -595,16 +565,14 @@ export class BulkPriceUploadDialog extends React.Component<
                 >
                     <InfoIcon sx={{ fontSize: 18, color: 'primary.main' }} />
                     <Typography variant="body2" color="text.secondary">
-                        {this.getModeDescription()}
+                        {modeDescription}
                     </Typography>
                 </Box>
             </Box>
         );
-    }
+    };
 
-    private renderLoadingState(): React.ReactNode {
-        const { loadingMessage } = this.state;
-
+    const renderLoadingState = (): React.ReactNode => {
         return (
             <Box
                 sx={{
@@ -623,12 +591,9 @@ export class BulkPriceUploadDialog extends React.Component<
                 </Typography>
             </Box>
         );
-    }
+    };
 
-    private renderResultState(): React.ReactNode {
-        const { filteredRows, resultRows, searchTerm, totalJobs, totalOldAmount, totalNewAmount } = this.state;
-        const amountChange = this.getAmountChange();
-
+    const renderResultState = (): React.ReactNode => {
         return (
             <Box sx={{ p: 2 }}>
                 {/* Success header */}
@@ -682,7 +647,7 @@ export class BulkPriceUploadDialog extends React.Component<
                     </Box>
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
                         <Typography variant="subtitle1" fontWeight={600}>
-                            {this.formatCurrency(totalOldAmount)}
+                            {formatCurrency(totalOldAmount)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Previous Total
@@ -691,7 +656,7 @@ export class BulkPriceUploadDialog extends React.Component<
                     <ArrowForwardIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
                         <Typography variant="subtitle1" fontWeight={600}>
-                            {this.formatCurrency(totalNewAmount)}
+                            {formatCurrency(totalNewAmount)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             New Total
@@ -705,7 +670,7 @@ export class BulkPriceUploadDialog extends React.Component<
                                 color: amountChange > 0 ? 'success.main' : amountChange < 0 ? 'error.main' : 'text.secondary',
                             }}
                         >
-                            {this.formatChange(amountChange)}
+                            {formatChange(amountChange)}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
                             Change
@@ -726,7 +691,7 @@ export class BulkPriceUploadDialog extends React.Component<
                         size="small"
                         placeholder="Search by job number..."
                         value={searchTerm}
-                        onChange={this.handleSearchChange}
+                        onChange={handleSearchChange}
                         sx={{ flex: 1 }}
                         slotProps={{
                             input: {
@@ -737,7 +702,7 @@ export class BulkPriceUploadDialog extends React.Component<
                                 ),
                                 endAdornment: searchTerm ? (
                                     <InputAdornment position="end">
-                                        <IconButton size="small" onClick={this.handleClearSearch}>
+                                        <IconButton size="small" onClick={handleClearSearch}>
                                             <CloseIcon sx={{ fontSize: 16 }} />
                                         </IconButton>
                                     </InputAdornment>
@@ -797,13 +762,13 @@ export class BulkPriceUploadDialog extends React.Component<
                                             align="right"
                                             sx={{ fontFamily: '"Roboto Mono", monospace' }}
                                         >
-                                            {this.formatCurrency(row.oldAmount)}
+                                            {formatCurrency(row.oldAmount)}
                                         </TableCell>
                                         <TableCell
                                             align="right"
                                             sx={{ fontFamily: '"Roboto Mono", monospace' }}
                                         >
-                                            {this.formatCurrency(row.newAmount)}
+                                            {formatCurrency(row.newAmount)}
                                         </TableCell>
                                         <TableCell
                                             align="right"
@@ -812,7 +777,7 @@ export class BulkPriceUploadDialog extends React.Component<
                                                 color: rowChange > 0 ? 'success.main' : rowChange < 0 ? 'error.main' : 'inherit',
                                             }}
                                         >
-                                            {this.formatChange(rowChange)}
+                                            {formatChange(rowChange)}
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -832,120 +797,115 @@ export class BulkPriceUploadDialog extends React.Component<
                 </TableContainer>
             </Box>
         );
-    }
+    };
 
-    render(): React.ReactNode {
-        const { open, onClose } = this.props;
-        const { currentState, isLoading } = this.state;
-
-        return (
-            <Dialog
-                open={open}
-                onClose={!isLoading ? onClose : undefined}
-                maxWidth="sm"
-                fullWidth
-                slotProps={{
-                    paper: {
-                        elevation: 24,
-                        sx: {
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            width: 600,
-                            maxWidth: '95vw',
-                            maxHeight: '90vh',
-                        },
+    return (
+        <Dialog
+            open={open}
+            onClose={!isLoading ? onClose : undefined}
+            maxWidth="sm"
+            fullWidth
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        width: 600,
+                        maxWidth: '95vw',
+                        maxHeight: '90vh',
                     },
-                }}
+                },
+            }}
+        >
+            {/* Header */}
+            <Box
+                sx={(theme) => ({
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: 'white',
+                    px: 3,
+                    py: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1.5,
+                    minHeight: 56,
+                })}
             >
-                {/* Header */}
-                <Box
-                    sx={(theme) => ({
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                <UploadFileIcon sx={{ fontSize: 24 }} />
+                <Typography variant="h6" fontWeight={500} sx={{ flex: 1 }}>
+                    Bulk Price Upload
+                </Typography>
+                <IconButton
+                    onClick={onClose}
+                    disabled={isLoading}
+                    sx={{
                         color: 'white',
-                        px: 3,
-                        py: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 1.5,
-                        minHeight: 56,
-                    })}
+                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+                    }}
                 >
-                    <UploadFileIcon sx={{ fontSize: 24 }} />
-                    <Typography variant="h6" fontWeight={500} sx={{ flex: 1 }}>
-                        Bulk Price Upload
-                    </Typography>
-                    <IconButton
-                        onClick={onClose}
-                        disabled={isLoading}
-                        sx={{
-                            color: 'white',
-                            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                        }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </Box>
+                    <CloseIcon />
+                </IconButton>
+            </Box>
 
-                {/* Content */}
-                <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
-                    {currentState === 'upload' && this.renderUploadState()}
-                    {currentState === 'mode-select' && this.renderModeSelectState()}
-                    {currentState === 'loading' && this.renderLoadingState()}
-                    {currentState === 'result' && this.renderResultState()}
-                </DialogContent>
+            {/* Content */}
+            <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
+                {currentState === 'upload' && renderUploadState()}
+                {currentState === 'mode-select' && renderModeSelectState()}
+                {currentState === 'loading' && renderLoadingState()}
+                {currentState === 'result' && renderResultState()}
+            </DialogContent>
 
-                {/* Actions */}
-                <DialogActions
-                    sx={(theme) => ({
-                        px: 2,
-                        py: 2,
-                        bgcolor: 'white',
-                        borderTop: `1px solid ${theme.palette.divider}`,
-                        gap: 1,
-                    })}
-                >
-                    {currentState === 'upload' && (
-                        <Button onClick={this.handleCancel} color="inherit">
-                            Cancel
-                        </Button>
-                    )}
+            {/* Actions */}
+            <DialogActions
+                sx={(theme) => ({
+                    px: 2,
+                    py: 2,
+                    bgcolor: 'white',
+                    borderTop: `1px solid ${theme.palette.divider}`,
+                    gap: 1,
+                })}
+            >
+                {currentState === 'upload' && (
+                    <Button onClick={handleCancel} color="inherit">
+                        Cancel
+                    </Button>
+                )}
 
-                    {currentState === 'mode-select' && (
-                        <>
-                            <Button
-                                onClick={this.handleBackToUpload}
-                                color="inherit"
-                                startIcon={<ArrowBackIcon />}
-                            >
-                                Back
-                            </Button>
-                            <Button
-                                onClick={this.handleApplyPrices}
-                                variant="contained"
-                                color="primary"
-                                startIcon={<CheckIcon />}
-                                sx={{ minWidth: 140 }}
-                            >
-                                {this.getApplyButtonText()}
-                            </Button>
-                        </>
-                    )}
-
-                    {currentState === 'result' && (
+                {currentState === 'mode-select' && (
+                    <>
                         <Button
-                            onClick={this.handleDone}
+                            onClick={handleBackToUpload}
+                            color="inherit"
+                            startIcon={<ArrowBackIcon />}
+                        >
+                            Back
+                        </Button>
+                        <Button
+                            onClick={handleApplyPrices}
                             variant="contained"
                             color="primary"
                             startIcon={<CheckIcon />}
                             sx={{ minWidth: 140 }}
                         >
-                            Done
+                            {applyButtonText}
                         </Button>
-                    )}
-                </DialogActions>
-            </Dialog>
-        );
-    }
-}
+                    </>
+                )}
+
+                {currentState === 'result' && (
+                    <Button
+                        onClick={handleDone}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<CheckIcon />}
+                        sx={{ minWidth: 140 }}
+                    >
+                        Done
+                    </Button>
+                )}
+            </DialogActions>
+        </Dialog>
+    );
+};
 
 export default BulkPriceUploadDialog;

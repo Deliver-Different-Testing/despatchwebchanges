@@ -15,3 +15,4 @@ export * from './agent';
 export * from './event';
 export * from './tasks';
 export * from './driverManagement';
+export * from './dispatchJob';

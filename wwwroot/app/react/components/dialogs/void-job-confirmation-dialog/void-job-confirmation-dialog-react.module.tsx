@@ -13,11 +13,7 @@ import {VoidJobConfirmationDialog, VoidJobDialogJob, VoidJobResult, RelatedJob} 
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {jobApi} from '../../../services/jobApi';
-import type {ShowToastFn} from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -135,11 +131,11 @@ export function openVoidJobConfirmationDialog(
     });
 }
 
-(window as any).ReactVoidJobConfirmationDialog = {
+window.ReactVoidJobConfirmationDialog = {
     open: openVoidJobConfirmationDialog,
 };
 
-const voidJobConfirmationDialogReactModule = (window as any).angular.module(
+const voidJobConfirmationDialogReactModule = window.angular!.module(
     'uDispatch.voidJobConfirmationDialogReact',
     []
 );

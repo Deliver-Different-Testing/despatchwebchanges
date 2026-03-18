@@ -124,11 +124,11 @@ export function openSendPodDialog(
     });
 }
 
-(window as any).ReactSendPodDialog = {
+window.ReactSendPodDialog = {
     open: openSendPodDialog,
 };
 
-const sendPodDialogReactModule = (window as any).angular.module(
+const sendPodDialogReactModule = window.angular!.module(
     'uDispatch.sendPodDialogReact',
     []
 );

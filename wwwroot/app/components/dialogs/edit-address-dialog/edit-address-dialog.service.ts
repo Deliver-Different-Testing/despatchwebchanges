@@ -4,24 +4,6 @@ import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactEditAddressDialog?: {
-            open: (
-                addressDetails: EditAddressDialogViewModel | null,
-                title: string,
-                submitLabel: string,
-                showContactInfo: boolean,
-                isUsTenant: boolean,
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                }
-            ) => Promise<EditAddressDialogViewModel | null>;
-        };
-    }
-}
-
 export class EditAddressDialogService implements angular.IServiceProvider {
     static $inject = [
         'toastrService',
@@ -148,7 +130,7 @@ export class EditAddressDialogService implements angular.IServiceProvider {
 
             // Create toast service wrapper for UI notifications
             const toastService = {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

@@ -13,11 +13,7 @@ import {SwapPodsDialog} from './SwapPodsDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {jobApi} from '../../../services/jobApi';
-import type {ShowToastFn} from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -109,11 +105,11 @@ export function openSwapPodsDialog(
     });
 }
 
-(window as any).ReactSwapPodsDialog = {
+window.ReactSwapPodsDialog = {
     open: openSwapPodsDialog,
 };
 
-const swapPodsDialogReactModule = (window as any).angular.module(
+const swapPodsDialogReactModule = window.angular!.module(
     'uDispatch.swapPodsDialogReact',
     []
 );

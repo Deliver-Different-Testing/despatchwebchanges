@@ -18,7 +18,7 @@ import {
     EditParcelDimensionsDialogOptions,
     EditParcelDimensionsDialogResult,
 } from './types';
-import type { ShowToastFn } from '../../../services/toastService';
+import type { ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -27,10 +27,6 @@ interface DialogState {
     bulkJobId?: number;
     isUsCustomer: boolean;
     resolve?: (result: ParcelDimensions[] | null) => void;
-}
-
-interface ToastService {
-    showToast: ShowToastFn;
 }
 
 const defaultToastService: ToastService = {
@@ -130,13 +126,13 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactEditParcelDimensionsDialog = {
+window.ReactEditParcelDimensionsDialog = {
     showEditParcelDimensionsDialog,
     setToastService,
 };
 
 // Create AngularJS module for ocLazyLoad
-const editParcelDimensionsDialogReactModule = (window as any).angular.module(
+const editParcelDimensionsDialogReactModule = window.angular!.module(
     'uDispatch.editParcelDimensionsDialogReact',
     []
 );

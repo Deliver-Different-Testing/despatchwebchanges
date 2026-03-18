@@ -44,7 +44,7 @@ import {
     DAYS_OF_WEEK,
     DayOfWeek,
 } from '../../../interfaces';
-import {useCourierSearch, useTimeZoneOptions} from '../../../hooks';
+import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
 import type {ShowToastFn} from '../../../services/toastService';
 
 export interface EditAfterhoursDialogProps {

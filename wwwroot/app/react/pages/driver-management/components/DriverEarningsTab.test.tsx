@@ -4,10 +4,10 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverEarningsTab} from './DriverEarningsTab';
 import {CourierDailyEarningsPaginated} from '../../../interfaces';
-import {useDriverEarnings} from '../../../hooks';
+import {useDriverEarnings} from '../../../hooks/useDriverManagementApi';
 
 // Mock the hooks
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useDriverEarnings: jest.fn(),
 }));
 

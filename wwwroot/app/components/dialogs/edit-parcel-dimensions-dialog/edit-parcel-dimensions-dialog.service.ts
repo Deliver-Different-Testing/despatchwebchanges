@@ -2,23 +2,6 @@ import {IJob, IParcelDimensions} from "../../../interfaces/job.interface";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import angular from 'angular';
 
-// Type for options passed to the React dialog
-interface EditParcelDimensionsDialogOptionsForReact {
-    parcels: IParcelDimensions[];
-    jobId?: number;
-    bulkJobId?: number;
-    isUsCustomer: boolean;
-}
-
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactEditParcelDimensionsDialog?: {
-            showEditParcelDimensionsDialog: (options: EditParcelDimensionsDialogOptionsForReact) => Promise<IParcelDimensions[] | null>;
-        };
-    }
-}
-
 class EditParcelDimensionsDialogService {
     static $inject = [
         '$ocLazyLoad',

@@ -30,6 +30,7 @@ import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import type {ToastType} from "../../react/services/toastService";
+import type {MountJobListConfig} from "../../react/interfaces";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
@@ -51,11 +52,10 @@ import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog
 import {ContactID, TimeZone} from "../../contants";
 import {StatusFilter} from "../../enums/status-filter.enum";
 import TasksService from "../../services/tasks.service";
-import JobListType from "../common/job-list/enums/jobListType";
+import JobListType from "../../enums/job-list-type.enum";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import {formatDateForApiWithTzs, getIanaTimezone} from "../../react/utils/dateUtils";
-import IContextMenuOption from "../../interfaces/context-menu-option.interface";
 import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import timezone from "dayjs/plugin/timezone";
@@ -226,6 +226,7 @@ class NationwideControl extends BaseController {
     flightSearchText: string = '';
     filteredFlightOptions?: IFlightViewModel[] = [];
     private isHandlingJobChange: boolean = false;
+    private reactNationwideMounted = new Set<string>();
 
     constructor(
         private nationwideService: NationwideService,
@@ -320,6 +321,7 @@ class NationwideControl extends BaseController {
         const jobId = this.$stateParams.jobId;
 
         this.loadPageViews();
+        this.mountAllNationwideReactJobLists();
 
         if (jobId) {
             this.registerTimeout(async () => {
@@ -340,6 +342,10 @@ class NationwideControl extends BaseController {
     $onDestroy(): void {
         super.$onDestroy();
         this.stopAutoRefresh();
+        if (window.ReactNationwideJobList) {
+            window.ReactNationwideJobList.unmountAll();
+        }
+        this.reactNationwideMounted.clear();
     }
 
     // Layout system 
@@ -711,6 +717,11 @@ class NationwideControl extends BaseController {
         this.boxes[boxName].collapsed = !this.boxes[boxName].collapsed;
         this.saveBoxVisibility();
         this.applyScope();
+
+        // Re-mount React lists when job list boxes are expanded
+        if (!this.boxes[boxName].collapsed) {
+            this.remountNationwideReactJobList(boxName);
+        }
     }
 
     isDefaultLayout(): boolean {
@@ -962,6 +973,12 @@ class NationwideControl extends BaseController {
             this.currentJob = job;
             this.isDeliveryJobType = this.isDeliveryJob(job);
 
+            if (window.ReactNationwideJobList) {
+                window.ReactNationwideJobList.selectJob('newJobs', job.id);
+                window.ReactNationwideJobList.selectJob('podJobs', job.id);
+                window.ReactNationwideJobList.selectJob('repriceJobs', job.id);
+            }
+
             // Update UI first
             this.updateUIState(job);
             this.updateCurrentSelection(job.jobNo);
@@ -1001,8 +1018,7 @@ class NationwideControl extends BaseController {
             filterType,
             effectiveJobId,
             this.staffFilter,
-            this.eventTypeFilter,
-            this.nationwidePageId
+            this.eventTypeFilter
         );
 
         this.tasksService.loadTasksInBackground(filterRequest, (tasks, error) => {
@@ -1205,6 +1221,13 @@ class NationwideControl extends BaseController {
             return;
         }
 
+        if (!this.selectedOutboundAirport || !this.selectedInboundAirport) {
+            this.flightOptions = [];
+            this.flightMessage = "Please select both outbound and inbound airports to search for flights";
+            this.updateUIState(this.currentJob);
+            return;
+        }
+
         this.flightsLoading = true;
         this.updateUIState(this.currentJob);
 
@@ -1243,9 +1266,12 @@ class NationwideControl extends BaseController {
                 "No flights available for the selected criteria" : undefined);
             this.lastDepartureTime = result.lastDepartureTime;
             this.filteredFlightOptions = this.flightOptions;
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error loading flights:", error);
-            this.flightMessage = "An error occurred while loading flights. Please try again.";
+            const serverMessage = error?.data || error?.message;
+            this.flightMessage = serverMessage
+                ? `Flight search failed: ${serverMessage}`
+                : "An error occurred while loading flights. Please try again.";
             this.flightOptions = [];
         } finally {
             this.flightsLoading = false;
@@ -1478,14 +1504,17 @@ class NationwideControl extends BaseController {
                     this.jobList = data.jobs || [];
                     this.totalJobCount = data.totalCount || 0;
                     this.jobListLoading = false;
+                    this.updateNationwideReactJobList('newJobs', this.jobList, this.totalJobCount);
                 } else if (type === JobDataType.POD) {
                     this.jobListPOD = data.jobs || [];
                     this.totalPodCount = data.totalCount || 0;
                     this.podListLoading = false;
+                    this.updateNationwideReactJobList('podJobs', this.jobListPOD, this.totalPodCount);
                 } else if (type === JobDataType.REPRICE) {
                     this.jobListReprice = data.jobs || [];
                     this.totalRepriceCount = data.totalCount || 0;
                     this.repriceListLoading = false;
+                    this.updateNationwideReactJobList('repriceJobs', this.jobListReprice, this.totalRepriceCount);
                 }
             });
 
@@ -1531,7 +1560,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async createEvent($event: MouseEvent, job: IDispatchJob) {
+    async createEvent(_$event: MouseEvent, job: IDispatchJob) {
         await openAddEventDialog({
             job: {
                 id: job.id,
@@ -1560,18 +1589,6 @@ class NationwideControl extends BaseController {
         });
     }
 
-    getContextMenuOptions(job: IDispatchJob): any[] | IContextMenuOption[] {
-        if (!job) return [];
-
-        const callbacks = {
-            onRefresh: () => this.getData(),
-            onRefreshCourierJobs: (_params: { courierId: number }) => {
-            }
-        };
-
-        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.Domestic);
-    }
-
     // Tasks
     getTasksStatusCount(statusType: string): number {
         return this.tasksService.getTasksStatusCount(this.tasks, statusType);
@@ -1597,8 +1614,7 @@ class NationwideControl extends BaseController {
                 filterType,
                 this.currentJob.id,
                 this.staffFilter,
-                this.eventTypeFilter,
-                this.nationwidePageId
+                this.eventTypeFilter
             );
 
             try {
@@ -1907,7 +1923,7 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openAgentMoreInfo($event: MouseEvent, agent: IAgent): Promise<void> {
+    async openAgentMoreInfo(_$event: MouseEvent, agent: IAgent): Promise<void> {
         await openAgentInfoDialog({
             agentId: agent.agentId,
         });
@@ -2029,10 +2045,6 @@ class NationwideControl extends BaseController {
             default:
                 console.warn(`Unknown job action: ${action}`);
         }
-    }
-
-    getJobContextMenuOptions(): (data: any) => any[] | IContextMenuOption[] {
-        return (data: any) => this.getContextMenuOptions(data.job);
     }
 
     async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
@@ -2317,6 +2329,209 @@ class NationwideControl extends BaseController {
             console.error('Error opening settings dialog:', error);
             this.toastrService.showErrorToast('Failed to open settings dialog');
         }
+    }
+
+    // ── React Nationwide Job List Integration ─────────────────────────
+
+    private mountNationwideReactJobList(instanceId: string, containerId: string, config: MountJobListConfig): void {
+        if (!window.ReactNationwideJobList) {
+            console.warn('[NationwideController] ReactNationwideJobList not loaded');
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 100; // 100 × 50ms = 5s
+
+        const tryMount = () => {
+            const container = document.getElementById(containerId);
+            if (!container) {
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(tryMount, 50);
+                } else {
+                    console.error(`[NationwideController] ${containerId} not found after 5s`);
+                }
+                return;
+            }
+
+            window.ReactNationwideJobList!.mount(instanceId, containerId, config);
+            this.reactNationwideMounted.add(instanceId);
+        };
+
+        tryMount();
+    }
+
+    private mountAllNationwideReactJobLists(): void {
+        if (!window.ReactNationwideJobList) {
+            console.warn('[NationwideController] ReactNationwideJobList not loaded');
+            return;
+        }
+
+        const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+            switch (type) {
+                case 'success': this.toastrService.showSuccessToast(message); break;
+                case 'warning': this.toastrService.showWarningToast(message); break;
+                case 'error': this.toastrService.showErrorToast(message); break;
+                case 'info': this.toastrService.showInfoToast(message); break;
+            }
+        };
+
+        const sharedConfig: Partial<MountJobListConfig> = {
+            showToast,
+            isUsCustomer: this.isUsCustomer,
+            appPage: AppPage.Domestic,
+            onJobSelect: (job) => {
+                this.selectJob(job as any);
+                this.applyScope();
+            },
+            onJobDispatch: (job, courierId) => {
+                this.handleJobDispatch(job as any, courierId);
+                this.applyScope();
+            },
+            onAddStop: (job) => {
+                this.jobAddStopService.addNewStop(job as any);
+            },
+        };
+
+        // New Jobs
+        this.mountNationwideReactJobList('newJobs', 'react-nationwide-new-jobs', {
+            ...sharedConfig,
+            storagePrefix: 'nwNewJobList',
+            onRefresh: () => {
+                this.getJobList([JobDataType.NEW]);
+            },
+            onLoadMoreJobs: (page, pageSize) => {
+                return this.handleLoadMoreNationwideJobs(page, pageSize);
+            },
+            onSearchChange: (searchText) => {
+                this.updateJobSearchText(searchText, JobListType.NationwideJobList);
+            },
+        } as MountJobListConfig);
+
+        // Awaiting POD
+        this.mountNationwideReactJobList('podJobs', 'react-nationwide-pod-jobs', {
+            ...sharedConfig,
+            storagePrefix: 'nwPodJobList',
+            onRefresh: () => {
+                this.getJobList([JobDataType.POD]);
+            },
+            onLoadMoreJobs: (page, pageSize) => {
+                return this.handleLoadMorePodJobs(page, pageSize);
+            },
+            onSearchChange: (searchText) => {
+                this.updateJobSearchText(searchText, JobListType.NationwidePodJobList);
+            },
+        } as MountJobListConfig);
+
+        // Reprice
+        this.mountNationwideReactJobList('repriceJobs', 'react-nationwide-reprice-jobs', {
+            ...sharedConfig,
+            storagePrefix: 'nwRepriceJobList',
+            onRefresh: () => {
+                this.getJobList([JobDataType.REPRICE]);
+            },
+            onLoadMoreJobs: (page, pageSize) => {
+                return this.handleLoadMoreRepriceJobs(page, pageSize);
+            },
+            onSearchChange: (searchText) => {
+                this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList);
+            },
+        } as MountJobListConfig);
+    }
+
+    private updateNationwideReactJobList(instanceId: string, jobs: IDispatchJob[], totalCount: number): void {
+        if (!window.ReactNationwideJobList) return;
+
+        if (this.reactNationwideMounted.has(instanceId)) {
+            window.ReactNationwideJobList.updateJobs(instanceId, jobs as any, totalCount);
+        } else {
+            // Not yet mounted (box may have just expanded) — mount first, then push data after a short delay
+            const configMap: Record<string, { containerId: string; storagePrefix: string; onRefresh: () => void; onLoadMoreJobs: (page: number, pageSize: number) => Promise<any>; onSearchChange: (searchText: string) => void }> = {
+                newJobs: {
+                    containerId: 'react-nationwide-new-jobs',
+                    storagePrefix: 'nwNewJobList',
+                    onRefresh: () => { this.getJobList([JobDataType.NEW]); },
+                    onLoadMoreJobs: (page, pageSize) => this.handleLoadMoreNationwideJobs(page, pageSize),
+                    onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwideJobList); },
+                },
+                podJobs: {
+                    containerId: 'react-nationwide-pod-jobs',
+                    storagePrefix: 'nwPodJobList',
+                    onRefresh: () => { this.getJobList([JobDataType.POD]); },
+                    onLoadMoreJobs: (page, pageSize) => this.handleLoadMorePodJobs(page, pageSize),
+                    onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwidePodJobList); },
+                },
+                repriceJobs: {
+                    containerId: 'react-nationwide-reprice-jobs',
+                    storagePrefix: 'nwRepriceJobList',
+                    onRefresh: () => { this.getJobList([JobDataType.REPRICE]); },
+                    onLoadMoreJobs: (page, pageSize) => this.handleLoadMoreRepriceJobs(page, pageSize),
+                    onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList); },
+                },
+            };
+
+            const cfg = configMap[instanceId];
+            if (!cfg) return;
+
+            const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                switch (type) {
+                    case 'success': this.toastrService.showSuccessToast(message); break;
+                    case 'warning': this.toastrService.showWarningToast(message); break;
+                    case 'error': this.toastrService.showErrorToast(message); break;
+                    case 'info': this.toastrService.showInfoToast(message); break;
+                }
+            };
+
+            this.mountNationwideReactJobList(instanceId, cfg.containerId, {
+                showToast,
+                isUsCustomer: this.isUsCustomer,
+                appPage: AppPage.Domestic,
+                storagePrefix: cfg.storagePrefix,
+                onJobSelect: (job) => {
+                    this.selectJob(job as any);
+                    this.applyScope();
+                },
+                onJobDispatch: (job, courierId) => {
+                    this.handleJobDispatch(job as any, courierId);
+                    this.applyScope();
+                },
+                onAddStop: (job) => {
+                    this.jobAddStopService.addNewStop(job as any);
+                },
+                onRefresh: cfg.onRefresh,
+                onLoadMoreJobs: cfg.onLoadMoreJobs,
+                onSearchChange: cfg.onSearchChange,
+            });
+
+            // Push data after a short delay to allow React to mount
+            setTimeout(() => {
+                if (window.ReactNationwideJobList && this.reactNationwideMounted.has(instanceId)) {
+                    window.ReactNationwideJobList.updateJobs(instanceId, jobs as any, totalCount);
+                }
+            }, 200);
+        }
+    }
+
+    private remountNationwideReactJobList(boxName: string): void {
+        const boxToInstanceMap: Record<string, { instanceId: string; jobs: IDispatchJob[]; totalCount: number }> = {
+            [NationwideBoxes.NewJobs]: { instanceId: 'newJobs', jobs: this.jobList || [], totalCount: this.totalJobCount },
+            [NationwideBoxes.PodJobs]: { instanceId: 'podJobs', jobs: this.jobListPOD || [], totalCount: this.totalPodCount },
+            [NationwideBoxes.RepriceJobs]: { instanceId: 'repriceJobs', jobs: this.jobListReprice || [], totalCount: this.totalRepriceCount },
+        };
+
+        const mapping = boxToInstanceMap[boxName];
+        if (!mapping) return;
+
+        // Clear from mounted set so updateNationwideReactJobList will re-mount
+        this.reactNationwideMounted.delete(mapping.instanceId);
+        if (window.ReactNationwideJobList) {
+            window.ReactNationwideJobList.unmount(mapping.instanceId);
+        }
+
+        // Delay to allow ng-include to render the container
+        setTimeout(() => {
+            this.updateNationwideReactJobList(mapping.instanceId, mapping.jobs, mapping.totalCount);
+        }, 100);
     }
 }
 

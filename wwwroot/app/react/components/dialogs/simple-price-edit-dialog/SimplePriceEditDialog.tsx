@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { alpha } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -61,19 +62,14 @@ const MODE_OPTIONS: ModeOption[] = [
     },
 ];
 
-const getSelectedIconBg = (mode: PricingMode) => {
-    switch (mode) {
-        case 'recalculate': return 'rgba(87, 83, 78, 0.12)';
-        case 'base': return 'rgba(76, 175, 80, 0.12)';
-        case 'gross': return 'rgba(156, 39, 176, 0.12)';
-    }
-};
+/** Purple used exclusively for the "gross" pricing mode (no theme palette equivalent). */
+const GROSS_MODE_COLOR = '#9c27b0';
 
 const getSelectedIconColor = (mode: PricingMode) => {
     switch (mode) {
         case 'recalculate': return 'grey.600';
-        case 'base': return '#4caf50';
-        case 'gross': return '#9c27b0';
+        case 'base': return 'success.main';
+        case 'gross': return GROSS_MODE_COLOR;
     }
 };
 
@@ -153,16 +149,16 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     const renderEditState = () => (
         <Box sx={{ p: '20px 24px 24px' }}>
             {/* Job Reference Badge */}
-            <Box sx={{
+            <Box sx={(theme) => ({
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: 1,
                 px: 1.75,
                 py: 0.75,
-                bgcolor: 'rgba(0, 0, 0, 0.06)',
-                borderRadius: '20px',
+                bgcolor: alpha(theme.palette.common.black, 0.06),
+                borderRadius: 5,
                 mb: 2.5,
-            }}>
+            })}>
                 <LocalShippingIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
                 <Typography variant="body2" fontWeight={600} letterSpacing={0.5}>
                     {jobNumber}
@@ -177,42 +173,49 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         <Box
                             key={opt.mode}
                             onClick={() => setSelectedMode(opt.mode)}
-                            sx={{
+                            sx={(theme) => ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: 1.75,
                                 p: '14px 16px',
                                 border: 2,
-                                borderColor: isSelected ? 'grey.600' : 'rgba(0, 0, 0, 0.08)',
-                                borderRadius: '10px',
+                                borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.08),
+                                borderRadius: 2.5,
                                 cursor: 'pointer',
-                                bgcolor: isSelected ? 'rgba(87, 83, 78, 0.06)' : 'background.paper',
+                                bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : 'background.paper',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                 '&:hover': {
-                                    borderColor: isSelected ? 'grey.600' : 'rgba(0, 0, 0, 0.18)',
-                                    bgcolor: isSelected ? 'rgba(87, 83, 78, 0.06)' : 'rgba(0, 0, 0, 0.02)',
+                                    borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.18),
+                                    bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : alpha(theme.palette.common.black, 0.02),
                                 },
-                            }}
+                            })}
                         >
                             <Radio
                                 checked={isSelected}
                                 sx={{
                                     p: 0,
-                                    color: 'rgba(0, 0, 0, 0.38)',
+                                    color: 'text.disabled',
                                     '&.Mui-checked': { color: 'grey.600' },
                                 }}
                             />
-                            <Box sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: '10px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                bgcolor: isSelected ? getSelectedIconBg(opt.mode) : 'rgba(0, 0, 0, 0.06)',
-                                color: isSelected ? getSelectedIconColor(opt.mode) : 'text.secondary',
-                                transition: 'all 0.2s ease',
+                            <Box sx={(theme) => {
+                                const iconBgMap: Record<PricingMode, string> = {
+                                    recalculate: alpha(theme.palette.grey[600], 0.12),
+                                    base: alpha(theme.palette.success.main, 0.12),
+                                    gross: alpha(GROSS_MODE_COLOR, 0.12),
+                                };
+                                return {
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 2.5,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    flexShrink: 0,
+                                    bgcolor: isSelected ? iconBgMap[opt.mode] : alpha(theme.palette.common.black, 0.06),
+                                    color: isSelected ? getSelectedIconColor(opt.mode) : 'text.secondary',
+                                    transition: 'all 0.2s ease',
+                                };
                             }}>
                                 {opt.icon}
                             </Box>
@@ -231,16 +234,16 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Amount Input (shown for base/gross modes) */}
             {(selectedMode === 'base' || selectedMode === 'gross') && (
-                <Box sx={{
+                <Box sx={(theme) => ({
                     mt: 2.5,
                     pt: 2.5,
-                    borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                    borderTop: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
                     '@keyframes slideDown': {
                         from: { opacity: 0, transform: 'translateY(-8px)' },
                         to: { opacity: 1, transform: 'translateY(0)' },
                     },
                     animation: 'slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                }}>
+                })}>
                     <Typography variant="body2" fontWeight={500} color="text.secondary" sx={{ mb: 1.25 }}>
                         {selectedMode === 'base' ? 'Enter Raw Base Amount' : 'Enter Final Amount'}
                     </Typography>
@@ -271,10 +274,10 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 },
                             },
                         }}
-                        sx={{
+                        sx={(theme) => ({
                             '& .MuiOutlinedInput-root': {
-                                bgcolor: 'rgba(0, 0, 0, 0.04)',
-                                borderRadius: '10px',
+                                bgcolor: alpha(theme.palette.common.black, 0.04),
+                                borderRadius: 2.5,
                                 '& fieldset': { border: '2px solid transparent' },
                                 '&:hover fieldset': { borderColor: 'transparent' },
                                 '&.Mui-focused': {
@@ -290,7 +293,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 WebkitAppearance: 'none',
                                 margin: 0,
                             },
-                        }}
+                        })}
                     />
                 </Box>
             )}
@@ -332,13 +335,13 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             </Typography>
 
             {/* New Price Display */}
-            <Box sx={{
-                bgcolor: 'rgba(76, 175, 80, 0.08)',
-                border: '2px solid rgba(76, 175, 80, 0.2)',
+            <Box sx={(theme) => ({
+                bgcolor: alpha(theme.palette.success.main, 0.08),
+                border: `2px solid ${alpha(theme.palette.success.main, 0.2)}`,
                 borderRadius: 3,
                 p: 2.5,
                 mb: 2.5,
-            }}>
+            })}>
                 <Typography variant="caption" color="text.secondary" sx={{
                     textTransform: 'uppercase',
                     letterSpacing: 0.5,
@@ -354,16 +357,16 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Price Comparison */}
             {currentCharge !== savedAmount && (
-                <Box sx={{
+                <Box sx={(theme) => ({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     gap: 2,
                     p: 2,
-                    bgcolor: 'rgba(0, 0, 0, 0.03)',
-                    borderRadius: '10px',
+                    bgcolor: alpha(theme.palette.common.black, 0.03),
+                    borderRadius: 2.5,
                     mb: 2.5,
-                }}>
+                })}>
                     <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
                             Previous Price
@@ -436,10 +439,10 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 <IconButton
                     onClick={onClose}
                     disabled={isLoading}
-                    sx={{
+                    sx={(theme) => ({
                         color: 'white',
-                        '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
-                    }}
+                        '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.1) },
+                    })}
                 >
                     <CloseIcon />
                 </IconButton>

@@ -241,7 +241,7 @@ function unmountSummaryPanel(container: HTMLElement): void {
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactAiAssistant = {
+window.ReactAiAssistant = {
     open: openAiAssistantDialog,
     summarizeNotes: summarizeNotesForJob,
     summarizeJob: summarizeFullJobForJob,
@@ -254,7 +254,7 @@ function unmountSummaryPanel(container: HTMLElement): void {
 };
 
 // Create AngularJS module
-const aiAssistantDialogReactModule = (window as any).angular.module(
+const aiAssistantDialogReactModule = window.angular!.module(
     'uDispatch.aiAssistantDialogReact',
     []
 );

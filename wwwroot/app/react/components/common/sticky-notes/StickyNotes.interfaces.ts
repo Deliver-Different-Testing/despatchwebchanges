@@ -18,5 +18,4 @@ export interface StickyNotesProps {
     showSuccessToast?: (message: string) => void;
     showErrorToast?: (message: string) => void;
     showInfoToast?: (message: string) => void;
-    isUsCustomer?: boolean;
 }

@@ -8,27 +8,6 @@ interface PortionJobInfo {
     accessorialChargeGroupId?: number;
 }
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactAccessorialChargesDialog?: {
-            open: (options: {
-                job: {
-                    id: number;
-                    accessorialChargeGroupId: number;
-                    amount?: number;
-                    weight?: number;
-                    quantity?: number;
-                    portionJobs?: PortionJobInfo[];
-                };
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                };
-            }) => Promise<boolean>;
-        };
-    }
-}
-
 class AccessorialChargesDialogService implements angular.IServiceProvider {
     static $inject = [
         'toastrService',
@@ -97,7 +76,7 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
             }
 
             const toastService = {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

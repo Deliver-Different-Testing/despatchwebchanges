@@ -1,15 +1,6 @@
 import { IFlightViewModel } from "../../Nationwide/nationwide.interfaces";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactFlightDetailsDialog?: {
-            openFlightDetailsDialog: (flightData: IFlightViewModel) => Promise<void>;
-        };
-    }
-}
-
 class FlightDetailsDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',

@@ -22,6 +22,20 @@ class JobAddStopService implements angular.IServiceProvider {
         return this;
     }
 
+    async addRecurringJobStop(job: { id: number; pickupAddress: unknown; deliveryAddress: unknown }, isPickup: boolean): Promise<number | undefined> {
+        if (!job.pickupAddress || !job.deliveryAddress) return;
+
+        const newAddress = this.generateBlankAddress();
+        const title = isPickup ? "Add Pick Up Stop" : "Add Delivery Stop";
+        const address = await this.editAddressDialogService.openEditAddressDialog(newAddress,
+            undefined, title, "Add Stop", true);
+        if (!address) return;
+
+        return isPickup
+            ? await this.DispatchData.addStopToJob(job.id, address, undefined)
+            : await this.DispatchData.addStopToJob(job.id, undefined, address);
+    }
+
     async addNewStop(job: IDispatchJob, $event?: MouseEvent): Promise<number | undefined> {
         const lastChar = this.getJobSuffix(job.jobNo);
 

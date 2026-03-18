@@ -99,7 +99,7 @@ window.ReactErrorPage = {
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const errorPageReactModule = (window as any).angular.module(
+const errorPageReactModule = window.angular!.module(
     'uDispatch.errorPageReact',
     []
 );

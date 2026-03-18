@@ -14,12 +14,7 @@ import {EditAfterhoursDialog} from './EditAfterhoursDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
-import type {ShowToastFn} from '../../../services/toastService';
-
-// Toast service interface (still provided by AngularJS for UI consistency)
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 // State management for the dialog
 interface DialogState {
@@ -128,12 +123,12 @@ export function openEditAfterhoursDialog(
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactEditAfterhoursDialog = {
+window.ReactEditAfterhoursDialog = {
     open: openEditAfterhoursDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const editAfterhoursDialogReactModule = (window as any).angular.module(
+const editAfterhoursDialogReactModule = window.angular!.module(
     'uDispatch.editAfterhoursDialogReact',
     []
 );

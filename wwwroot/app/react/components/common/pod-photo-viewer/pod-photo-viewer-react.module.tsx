@@ -110,13 +110,13 @@ export function closePodPhotoViewer(): void {
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactPodPhotoViewer = {
+window.ReactPodPhotoViewer = {
     open: openPodPhotoViewer,
     close: closePodPhotoViewer,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)w
-const podPhotoViewerReactModule = (window as any).angular.module(
+const podPhotoViewerReactModule = window.angular!.module(
     'uDispatch.podPhotoViewerReact',
     []
 );

@@ -99,7 +99,7 @@ export const TaskItemReactComponent: angular.IComponentOptions = {
 };
 
 // Register as AngularJS module
-const taskItemReactModule = (window as any).angular.module(
+const taskItemReactModule = window.angular!.module(
     'uDispatch.taskItemReact',
     []
 );

@@ -7,7 +7,6 @@
 
 import React, {useState, useEffect, useCallback} from 'react';
 import Autocomplete from '@mui/material/Autocomplete';
-import Chip from '@mui/material/Chip';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import {ISuggestion} from '../../../../interfaces/job.interface';
@@ -79,24 +78,16 @@ export const ChipsAutocomplete: React.FC<ChipsAutocompleteProps> = ({
                     ? `No ${label.toLowerCase()} found`
                     : `Type at least ${minInputLength} character${minInputLength > 1 ? 's' : ''} to search`
             }
-            renderTags={(tagValue, getTagProps) =>
-                tagValue.map((option, index) => {
-                    const {key, ...chipProps} = getTagProps({index});
-                    return (
-                        <Chip
-                            key={key}
-                            label={option.text}
-                            size="small"
-                            {...chipProps}
-                            sx={{
-                                height: 22,
-                                fontSize: '0.75rem',
-                                bgcolor: 'rgba(0, 0, 0, 0.08)',
-                            }}
-                        />
-                    );
-                })
-            }
+            slotProps={{
+                chip: {
+                    size: 'small' as const,
+                    sx: {
+                        height: 22,
+                        fontSize: '0.75rem',
+                        bgcolor: 'action.hover',
+                    },
+                },
+            }}
             renderInput={(params) => (
                 <TextField
                     {...params}
@@ -120,10 +111,10 @@ export const ChipsAutocomplete: React.FC<ChipsAutocompleteProps> = ({
                     padding: '2px 10px',
                     bgcolor: 'background.paper',
                     '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(0, 0, 0, 0.12)',
+                        borderColor: 'divider',
                     },
                     '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: 'rgba(0, 0, 0, 0.3)',
+                        borderColor: 'text.disabled',
                     },
                 },
             }}

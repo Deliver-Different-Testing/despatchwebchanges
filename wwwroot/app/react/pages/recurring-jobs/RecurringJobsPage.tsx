@@ -19,7 +19,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import TuneIcon from '@mui/icons-material/Tune';
-import {useRecurringJobsList} from '../../hooks';
+import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 import {
     PrebookListModel,
@@ -207,6 +207,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     return (
         <Box sx={{
             height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
+            p: 2,
             bgcolor: 'background.default',
         }}>
             {/* Filters Card */}

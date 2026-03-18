@@ -142,13 +142,13 @@ export function closeNoteManagementDialog(): void {
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactNoteManagementDialog = {
+window.ReactNoteManagementDialog = {
     open: openNoteManagementDialog,
     close: closeNoteManagementDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const noteManagementDialogReactModule = (window as any).angular.module(
+const noteManagementDialogReactModule = window.angular!.module(
     'uDispatch.noteManagementDialogReact',
     []
 );

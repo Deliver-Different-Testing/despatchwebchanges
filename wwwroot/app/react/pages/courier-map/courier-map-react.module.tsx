@@ -12,6 +12,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {CourierMapPage} from './CourierMapPage';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
+import {ErrorBoundary} from '../../components/common/error-boundary';
 
 export interface MountCourierMapConfig {
     isUsCustomer: boolean;
@@ -63,11 +64,13 @@ export function mountCourierMapPage(
         <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
                 <CssBaseline />
-                <CourierMapPage
-                    isUsCustomer={config.isUsCustomer}
-                    mapCenter={config.mapCenter}
-                    apiKey={config.apiKey}
-                />
+                <ErrorBoundary>
+                    <CourierMapPage
+                        isUsCustomer={config.isUsCustomer}
+                        mapCenter={config.mapCenter}
+                        apiKey={config.apiKey}
+                    />
+                </ErrorBoundary>
             </ThemeProvider>
         </ReactQueryProvider>
     );
@@ -96,7 +99,7 @@ window.ReactCourierMap = {
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const courierMapReactModule = (window as any).angular.module(
+const courierMapReactModule = window.angular!.module(
     'uDispatch.courierMapReact',
     []
 );

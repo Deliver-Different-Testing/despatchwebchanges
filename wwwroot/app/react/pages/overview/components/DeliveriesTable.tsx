@@ -7,6 +7,14 @@ import LinearProgress from '@mui/material/LinearProgress';
 import Chip from '@mui/material/Chip';
 import TablePagination from '@mui/material/TablePagination';
 import Tooltip from '@mui/material/Tooltip';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
+import {alpha, useTheme, type Theme} from '@mui/material/styles';
 import type {OverviewTableParentJob, TableSort} from '../OverviewPage.interfaces';
 
 interface DeliveriesTableProps {
@@ -36,58 +44,58 @@ const COLUMNS = [
     {key: 'actions', label: 'Actions', sortable: false},
 ];
 
-const STATUS_COLORS: Record<string, {bg: string; color?: string}> = {
-    NEW: {bg: '#BFDBFE'},
-    PREASSIGNED: {bg: '#BFDBFE'},
-    DESPATCHED: {bg: '#BBF7D0'},
-    ACCEPTED: {bg: '#BBF7D0'},
-    PICKED_UP: {bg: '#86EFAC'},
-    IN_TRANSIT: {bg: '#86EFAC'},
-    OUT_FOR_DELIVERY: {bg: '#86EFAC'},
-    REJECTED: {bg: '#FCA5A5'},
-    LATE_PICKUP: {bg: '#FCA5A5'},
-    LATE_DELIVERY: {bg: '#FCA5A5'},
-    WARNING: {bg: '#FCA5A5'},
-    UNDELIVERABLE: {bg: '#DC2626', color: '#fff'},
-    COMPLETED: {bg: '#9CA3AF', color: '#fff'},
-    AWAITING_POD: {bg: '#9CA3AF', color: '#fff'},
-    ASSUMING_COMPLETED: {bg: '#9CA3AF', color: '#fff'},
-};
-
-function getStatusChipStyle(status: string) {
+function getStatusChipStyle(status: string, theme: Theme) {
     const normalized = status.toUpperCase().replace(/[\s-]/g, '_');
-    return STATUS_COLORS[normalized] ?? {bg: '#E5E7EB'};
+    const p = theme.palette;
+    const map: Record<string, {bg: string; color?: string}> = {
+        NEW: {bg: alpha(p.info.main, 0.25)},
+        PREASSIGNED: {bg: alpha(p.info.main, 0.25)},
+        DESPATCHED: {bg: alpha(p.success.main, 0.2)},
+        ACCEPTED: {bg: alpha(p.success.main, 0.2)},
+        PICKED_UP: {bg: alpha(p.success.main, 0.35)},
+        IN_TRANSIT: {bg: alpha(p.success.main, 0.35)},
+        OUT_FOR_DELIVERY: {bg: alpha(p.success.main, 0.35)},
+        REJECTED: {bg: alpha(p.error.main, 0.25)},
+        LATE_PICKUP: {bg: alpha(p.error.main, 0.25)},
+        LATE_DELIVERY: {bg: alpha(p.error.main, 0.25)},
+        WARNING: {bg: alpha(p.error.main, 0.25)},
+        UNDELIVERABLE: {bg: p.error.dark, color: p.error.contrastText},
+        COMPLETED: {bg: p.grey[500], color: '#fff'},
+        AWAITING_POD: {bg: p.grey[500], color: '#fff'},
+        ASSUMING_COMPLETED: {bg: p.grey[500], color: '#fff'},
+    };
+    return map[normalized] ?? {bg: p.grey[300]};
 }
 
-function getProgressColor(completion: number): string {
-    if (completion < 30) return '#4CAF50';
-    if (completion < 70) return '#86EFAC';
-    return '#9CA3AF';
+function getProgressColor(completion: number, theme: Theme): string {
+    if (completion < 30) return theme.palette.success.main;
+    if (completion < 70) return theme.palette.success.light;
+    return theme.palette.grey[400];
 }
 
 function transformStatus(status: string): string {
     return status.toUpperCase().replace(/[\s-]/g, '_');
 }
 
-const StatusChip: React.FC<{status: string}> = ({status}) => {
+const StatusChip: React.FC<{status: string; theme: Theme}> = ({status, theme}) => {
     const display = transformStatus(status);
-    const style = getStatusChipStyle(display);
+    const style = getStatusChipStyle(display, theme);
     return (
         <Chip
             label={display}
             size="small"
             sx={{
                 bgcolor: style.bg,
-                color: style.color ?? 'rgba(0,0,0,0.87)',
+                color: style.color ?? 'text.primary',
                 fontWeight: 500,
-                fontSize: '0.7rem',
+                fontSize: '0.75rem',
                 height: 24,
             }}
         />
     );
 };
 
-const ProgressBar: React.FC<{value: number}> = ({value}) => (
+const ProgressBar: React.FC<{value: number; theme: Theme}> = ({value, theme}) => (
     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, minWidth: 100}}>
         <LinearProgress
             variant="determinate"
@@ -97,7 +105,7 @@ const ProgressBar: React.FC<{value: number}> = ({value}) => (
                 height: 6,
                 borderRadius: 3,
                 bgcolor: 'grey.200',
-                '& .MuiLinearProgress-bar': {bgcolor: getProgressColor(value)},
+                '& .MuiLinearProgress-bar': {bgcolor: getProgressColor(value, theme)},
             }}
         />
         <Typography variant="caption" sx={{minWidth: 32, textAlign: 'right'}}>
@@ -120,14 +128,11 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
     onOpenJobDetail,
     onToggleExpand,
 }) => {
+    const theme = useTheme();
+
     const handleSort = (columnKey: string) => {
         const newDirection = sort.column === columnKey && sort.direction === 'asc' ? 'desc' : 'asc';
         onSort({column: columnKey, direction: newDirection});
-    };
-
-    const getSortIcon = (columnKey: string): string => {
-        if (sort.column !== columnKey) return 'unfold_more';
-        return sort.direction === 'asc' ? 'arrow_upward' : 'arrow_downward';
     };
 
     return (
@@ -138,7 +143,7 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
                     sx={{
                         position: 'absolute',
                         inset: 0,
-                        bgcolor: 'rgba(255,255,255,0.7)',
+                        bgcolor: alpha(theme.palette.background.paper, 0.7),
                         zIndex: 10,
                         display: 'flex',
                         alignItems: 'center',
@@ -150,62 +155,42 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
             )}
 
             {/* Table */}
-            <Box sx={{overflowX: 'auto'}}>
-                <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                    <thead>
-                        <tr>
+            <TableContainer>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
                             {COLUMNS.map((col) => (
-                                <th
+                                <TableCell
                                     key={col.key}
-                                    onClick={col.sortable ? () => handleSort(col.key) : undefined}
-                                    style={{
-                                        padding: '12px 16px',
-                                        textAlign: 'left',
-                                        fontWeight: 500,
-                                        fontSize: '0.75rem',
-                                        color: 'rgba(0,0,0,0.54)',
-                                        borderBottom: '1px solid rgba(0,0,0,0.12)',
-                                        cursor: col.sortable ? 'pointer' : 'default',
+                                    sx={{
+                                        fontWeight: 600,
+                                        bgcolor: 'grey.100',
+                                        borderBottom: 2,
+                                        borderColor: 'grey.300',
                                         width: col.width,
-                                        userSelect: 'none',
                                         whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    <Box
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 0.5,
-                                        }}
-                                    >
-                                        {col.label}
-                                        {col.sortable && (
-                                            <span
-                                                className="material-symbols-outlined"
-                                                style={{
-                                                    fontSize: 16,
-                                                    opacity: sort.column === col.key ? 1 : 0.4,
-                                                }}
-                                            >
-                                                {getSortIcon(col.key)}
-                                            </span>
-                                        )}
-                                    </Box>
-                                </th>
+                                    {col.sortable ? (
+                                        <TableSortLabel
+                                            active={sort.column === col.key}
+                                            direction={sort.column === col.key ? sort.direction : 'asc'}
+                                            onClick={() => handleSort(col.key)}
+                                        >
+                                            {col.label}
+                                        </TableSortLabel>
+                                    ) : (
+                                        col.label
+                                    )}
+                                </TableCell>
                             ))}
-                        </tr>
-                    </thead>
-                    <tbody>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
                         {deliveries.map((delivery) => (
                             <React.Fragment key={delivery.jobId}>
-                                {/* Parent row */}
-                                <tr
-                                    style={{
-                                        height: 48,
-                                        borderBottom: '1px solid rgba(0,0,0,0.12)',
-                                    }}
-                                >
-                                    <td style={{padding: '8px 16px', verticalAlign: 'middle'}}>
+                                <TableRow hover sx={{height: 48}}>
+                                    <TableCell sx={{py: 1}}>
                                         {delivery.childJobs?.length > 0 && (
                                             <IconButton
                                                 size="small"
@@ -216,99 +201,67 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
                                                 </span>
                                             </IconButton>
                                         )}
-                                    </td>
-                                    <td style={{padding: '8px 16px', fontSize: '0.8125rem', verticalAlign: 'middle'}}>
-                                        {delivery.jobName}
-                                    </td>
-                                    <td style={{padding: '8px 16px', verticalAlign: 'middle'}}>
-                                        <StatusChip status={delivery.status} />
-                                    </td>
-                                    <td style={{padding: '8px 16px', verticalAlign: 'middle'}}>
-                                        <ProgressBar value={delivery.completion} />
-                                    </td>
-                                    <td style={{padding: '8px 16px', fontSize: '0.8125rem', verticalAlign: 'middle'}}>
-                                        {delivery.pickup}
-                                    </td>
-                                    <td style={{padding: '8px 16px', fontSize: '0.8125rem', verticalAlign: 'middle'}}>
-                                        {delivery.delivery}
-                                    </td>
-                                    <td style={{padding: '8px 16px', fontSize: '0.8125rem', verticalAlign: 'middle'}}>
-                                        {delivery.driver}
-                                    </td>
-                                    <td style={{padding: '8px 16px', fontSize: '0.8125rem', verticalAlign: 'middle'}}>
-                                        {delivery.region}
-                                    </td>
-                                    <td style={{padding: '8px 16px', whiteSpace: 'nowrap', verticalAlign: 'middle'}}>
+                                    </TableCell>
+                                    <TableCell sx={{py: 1}}>{delivery.jobName}</TableCell>
+                                    <TableCell sx={{py: 1}}>
+                                        <StatusChip status={delivery.status} theme={theme} />
+                                    </TableCell>
+                                    <TableCell sx={{py: 1}}>
+                                        <ProgressBar value={delivery.completion} theme={theme} />
+                                    </TableCell>
+                                    <TableCell sx={{py: 1}}>{delivery.pickup}</TableCell>
+                                    <TableCell sx={{py: 1}}>{delivery.delivery}</TableCell>
+                                    <TableCell sx={{py: 1}}>{delivery.driver}</TableCell>
+                                    <TableCell sx={{py: 1}}>{delivery.region}</TableCell>
+                                    <TableCell sx={{py: 1, whiteSpace: 'nowrap'}}>
                                         <Tooltip title="Open Map">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => onShowMap(delivery)}
-                                            >
+                                            <IconButton size="small" onClick={() => onShowMap(delivery)}>
                                                 <span className="material-symbols-outlined" style={{fontSize: 20}}>
                                                     map
                                                 </span>
                                             </IconButton>
                                         </Tooltip>
                                         <Tooltip title="View Job Details">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => onOpenJobDetail(delivery)}
-                                            >
+                                            <IconButton size="small" onClick={() => onOpenJobDetail(delivery)}>
                                                 <span className="material-symbols-outlined" style={{fontSize: 20}}>
                                                     visibility
                                                 </span>
                                             </IconButton>
                                         </Tooltip>
-                                    </td>
-                                </tr>
+                                    </TableCell>
+                                </TableRow>
 
                                 {/* Child rows */}
                                 {delivery.expanded &&
                                     delivery.childJobs?.map((child) => (
-                                        <tr
-                                            key={child.jobId}
-                                            style={{
-                                                borderBottom: '1px solid rgba(0,0,0,0.06)',
-                                                backgroundColor: 'rgba(0,0,0,0.02)',
-                                            }}
-                                        >
-                                            <td style={{padding: '10px 16px', verticalAlign: 'middle'}} />
-                                            <td style={{padding: '10px 16px', fontSize: '0.875rem', verticalAlign: 'middle'}}>
-                                                {child.jobName}
-                                            </td>
-                                            <td style={{padding: '10px 16px', verticalAlign: 'middle'}}>
-                                                <StatusChip status={child.status} />
-                                            </td>
-                                            <td style={{padding: '10px 16px', verticalAlign: 'middle'}}>
-                                                <ProgressBar value={child.completion} />
-                                            </td>
-                                            <td style={{padding: '10px 16px', fontSize: '0.875rem', verticalAlign: 'middle'}}>
-                                                {child.pickup}
-                                            </td>
-                                            <td style={{padding: '10px 16px', fontSize: '0.875rem', verticalAlign: 'middle'}}>
-                                                {child.delivery}
-                                            </td>
-                                            <td style={{padding: '10px 16px', fontSize: '0.875rem', verticalAlign: 'middle'}}>
-                                                {child.driver}
-                                            </td>
-                                            <td style={{padding: '10px 16px', fontSize: '0.875rem', verticalAlign: 'middle'}}>
-                                                {child.region}
-                                            </td>
-                                            <td style={{padding: '10px 16px', verticalAlign: 'middle'}} />
-                                        </tr>
+                                        <TableRow key={child.jobId} sx={{bgcolor: 'grey.50'}}>
+                                            <TableCell sx={{py: 1}} />
+                                            <TableCell sx={{py: 1}}>{child.jobName}</TableCell>
+                                            <TableCell sx={{py: 1}}>
+                                                <StatusChip status={child.status} theme={theme} />
+                                            </TableCell>
+                                            <TableCell sx={{py: 1}}>
+                                                <ProgressBar value={child.completion} theme={theme} />
+                                            </TableCell>
+                                            <TableCell sx={{py: 1}}>{child.pickup}</TableCell>
+                                            <TableCell sx={{py: 1}}>{child.delivery}</TableCell>
+                                            <TableCell sx={{py: 1}}>{child.driver}</TableCell>
+                                            <TableCell sx={{py: 1}}>{child.region}</TableCell>
+                                            <TableCell sx={{py: 1}} />
+                                        </TableRow>
                                     ))}
                             </React.Fragment>
                         ))}
-                    </tbody>
-                </table>
-            </Box>
+                    </TableBody>
+                </Table>
+            </TableContainer>
 
             {/* Empty state */}
             {deliveries.length === 0 && !isLoading && (
-                <Box sx={{textAlign: 'center', py: 6}}>
+                <Box sx={{textAlign: 'center', py: 6, color: 'text.disabled'}}>
                     <span
                         className="material-symbols-outlined"
-                        style={{fontSize: 48, color: 'rgba(0,0,0,0.26)', display: 'block'}}
+                        style={{fontSize: 48, display: 'block'}}
                     >
                         local_shipping
                     </span>
@@ -333,7 +286,8 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
                     onRowsPerPageChange={(e) => onLimitChange(parseInt(e.target.value, 10))}
                     rowsPerPageOptions={[10, 20, 30, 50]}
                     sx={{
-                        borderTop: '1px solid rgba(0,0,0,0.12)',
+                        borderTop: 1,
+                        borderColor: 'divider',
                         '& .MuiTablePagination-toolbar': {
                             minHeight: 40,
                             px: 1,

@@ -137,7 +137,7 @@ public class BaseJobRepository(
             // (e.g. split parents with DisplayInDespatch = false)
             var orphanedChildParentIds = allJobs
                 .Where(j => !j.IsParentOrSingle && j.ParentId.HasValue
-                            && !parentJobMap.ContainsKey(j.ParentId.Value))
+                                                && !parentJobMap.ContainsKey(j.ParentId.Value))
                 .Select(j => j.ParentId!.Value)
                 .Distinct()
                 .ToList();
@@ -424,7 +424,8 @@ public class BaseJobRepository(
              (!j.UcjbTime.HasValue || j.UcjbTime.Value.TimeOfDay <= filterTime)));
     }
 
-    protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds, CancellationToken cancellationToken = default)
+    protected async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
+        CancellationToken cancellationToken = default)
     {
         const int maxMapCoordinates = 5000;
 
@@ -467,7 +468,8 @@ public class BaseJobRepository(
         }
     }
 
-    protected async Task SaveMultipleBulkNotesAsync(IReadOnlyList<int> bulkJobIds, string noteText, bool isImportant = false,
+    protected async Task SaveMultipleBulkNotesAsync(IReadOnlyList<int> bulkJobIds, string noteText,
+        bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
@@ -480,8 +482,10 @@ public class BaseJobRepository(
         var currentTime = clock.TenantNow;
 
         var newNotes = bulkJobIds.Select(bulkJobId => new TblBulkJobNote
-                { BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType,
-                  CreatedBy = staffId, CreatedDate = currentTime })
+            {
+                BulkJobId = bulkJobId, IsImportant = isImportant, NoteText = noteText, NoteTypeId = (int)noteType,
+                CreatedBy = staffId, CreatedDate = currentTime
+            })
             .ToList();
 
         await Context.TblBulkJobNotes.AddRangeAsync(newNotes);
@@ -496,7 +500,8 @@ public class BaseJobRepository(
         return noteType;
     }
 
-    protected async Task SaveNoteToMultipleJobsAsync(IReadOnlyList<int> jobIds, string noteText, bool isImportant = false,
+    protected async Task SaveNoteToMultipleJobsAsync(IReadOnlyList<int> jobIds, string noteText,
+        bool isImportant = false,
         bool isRecurringJobs = false, NoteType noteType = NoteType.InternalNote)
     {
         try
@@ -507,7 +512,8 @@ public class BaseJobRepository(
             noteType = await ConfirmNoteTypeExists(noteType);
 
             var now = clock.TenantNow;
-            
+            var staffId = infoService.GetStaffId();
+
             var newNotes = jobIds.Select(jobId => new TucNote
                 {
                     JobId = isRecurringJobs ? null : jobId,
@@ -515,7 +521,10 @@ public class BaseJobRepository(
                     NoteText = noteText,
                     IsImportant = isImportant,
                     NoteTypeId = (int)noteType,
-                    CreatedDate = now
+                    CreatedDate = now,
+                    CreatedBy = staffId,
+                    UpdatedBy = staffId,
+                    UpdatedDate = now
                 })
                 .ToList();
 
@@ -542,6 +551,7 @@ public class BaseJobRepository(
             noteType = await ConfirmNoteTypeExists(noteType);
 
             var now = clock.TenantNow;
+            var staffId = infoService.GetStaffId();
 
             var newNotes = jobIds.Select(jobId => new TucNoteArchive
                 {
@@ -549,7 +559,10 @@ public class BaseJobRepository(
                     NoteText = noteText,
                     IsImportant = isImportant,
                     NoteTypeId = (int)noteType,
-                    CreatedDate = now
+                    CreatedDate = now,
+                    CreatedBy = staffId,
+                    UpdatedBy = staffId,
+                    UpdatedDate = now
                 })
                 .ToList();
 
@@ -558,7 +571,8 @@ public class BaseJobRepository(
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteToMultipleArchivedJobsAsync)));
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
+                    nameof(SaveNoteToMultipleArchivedJobsAsync)));
         }
     }
 
@@ -573,6 +587,7 @@ public class BaseJobRepository(
             noteType = await ConfirmNoteTypeExists(noteType);
 
             var now = clock.TenantNow;
+            var staffId = infoService.GetStaffId();
 
             var newNote = new TucNote
             {
@@ -581,7 +596,10 @@ public class BaseJobRepository(
                 NoteText = noteText,
                 IsImportant = isImportant,
                 NoteTypeId = (int)noteType,
-                CreatedDate = now
+                CreatedDate = now,
+                CreatedBy = staffId,
+                UpdatedBy = staffId,
+                UpdatedDate = now
             };
 
             await Context.TucNotes.AddAsync(newNote);
@@ -763,11 +781,12 @@ public class BaseJobRepository(
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
     }
 
-    protected async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false)
+    protected async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
+        bool isBulkJob = false)
     {
         if (isBulkJob)
         {
-            // Get parent bulk job ID (self if parent, or BulkParentId if child)
+            // Get parent bulk job ID (self if parented, or BulkParentId if child)
             var parentBulkJobId = await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == jobId)
                 .Select(j => j.BulkParentId ?? j.BulkJobId)

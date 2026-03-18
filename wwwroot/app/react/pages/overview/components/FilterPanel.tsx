@@ -15,15 +15,6 @@ import dayjs from 'dayjs';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {useCourierSearch} from '../../../hooks/useOverviewApi';
 
-// Type declarations for React modules on window
-declare global {
-    interface Window {
-        ReactDateRangeDialog?: {
-            open: (initialRange?: {start?: Date; end?: Date}) => Promise<{start: Date; end: Date} | null>;
-        };
-    }
-}
-
 interface FilterPanelProps {
     regions: ISuggestion[];
     regionsLoading: boolean;
@@ -57,16 +48,18 @@ const ToolbarHeader: React.FC<{icon: string; title: string; actions?: React.Reac
             display: 'flex',
             alignItems: 'center',
             px: 2,
-            py: 1,
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            minHeight: 40,
+            py: 0.75,
+            bgcolor: 'grey.100',
+            color: 'text.primary',
+            borderTop: 1,
+            borderColor: 'divider',
+            minHeight: 36,
         }}
     >
-        <span className="material-symbols-outlined" style={{fontSize: 20}}>
+        <span className="material-symbols-outlined" style={{fontSize: 18}}>
             {icon}
         </span>
-        <Typography variant="subtitle2" sx={{ml: 1, flex: 1, fontWeight: 500}}>
+        <Typography variant="caption" sx={{ml: 1, flex: 1, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em'}}>
             {title}
         </Typography>
         {actions}
@@ -134,7 +127,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
     );
 
     return (
-        <Card>
+        <Card variant="outlined">
             {/* Card Header */}
             <Box
                 sx={{
@@ -195,11 +188,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                                 checked={allRegionsSelected}
                                 onChange={onToggleAllRegions}
                                 size="small"
-                                sx={{color: 'white', '&.Mui-checked': {color: 'white'}}}
+                                color="primary"
                             />
                         }
                         label={
-                            <Typography variant="caption" sx={{color: 'white'}}>
+                            <Typography variant="caption" color="text.secondary">
                                 {allRegionsSelected ? 'Unselect All' : 'Select All'}
                             </Typography>
                         }
@@ -249,11 +242,11 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                                 checked={allSpeedsSelected}
                                 onChange={onToggleAllSpeeds}
                                 size="small"
-                                sx={{color: 'white', '&.Mui-checked': {color: 'white'}}}
+                                color="primary"
                             />
                         }
                         label={
-                            <Typography variant="caption" sx={{color: 'white'}}>
+                            <Typography variant="caption" color="text.secondary">
                                 {allSpeedsSelected ? 'Unselect All' : 'Select All'}
                             </Typography>
                         }

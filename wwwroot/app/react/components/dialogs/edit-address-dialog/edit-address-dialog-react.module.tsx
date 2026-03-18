@@ -14,12 +14,7 @@ import {EditAddressDialog} from './EditAddressDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {EditAddressDialogViewModel} from '../../../interfaces';
-import type {ShowToastFn} from '../../../services/toastService';
-
-// Toast service interface (still provided by AngularJS for UI consistency)
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 // State management for the dialog
 interface DialogState {
@@ -146,12 +141,12 @@ export function openEditAddressDialog(
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactEditAddressDialog = {
+window.ReactEditAddressDialog = {
     open: openEditAddressDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const editAddressDialogReactModule = (window as any).angular.module(
+const editAddressDialogReactModule = window.angular!.module(
     'uDispatch.editAddressDialogReact',
     []
 );

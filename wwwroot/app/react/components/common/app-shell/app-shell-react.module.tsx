@@ -373,7 +373,7 @@ export function unmountAppShell(): void {
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactAppShell = {
+window.ReactAppShell = {
     mount: mountAppShell,
     update: updateAppShell,
     updateState: updateCurrentState,
@@ -384,7 +384,7 @@ export function unmountAppShell(): void {
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const appShellReactModule = (window as any).angular.module(
+const appShellReactModule = window.angular!.module(
     'uDispatch.appShellReact',
     []
 );
@@ -408,8 +408,8 @@ appShellReactModule.service('reactAppShellService', [
              * Mount the React App Shell
              */
             mount: (containerId: string, title: string) => {
-                const firstName = (window as any).FirstName || 'User';
-                const fullName = (window as any).FullName || 'User';
+                const firstName = window.FirstName || 'User';
+                const fullName = window.FullName || 'User';
 
                 mountAppShell(containerId, {
                     title,

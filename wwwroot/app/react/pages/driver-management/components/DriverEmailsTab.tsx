@@ -8,7 +8,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ContactMailIcon from '@mui/icons-material/ContactMail';
 import DownloadIcon from '@mui/icons-material/Download';
 import EmailIcon from '@mui/icons-material/Email';
-import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks';
+import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks/useDriverManagementApi';
 import {DriverEmail, GroupEmailData, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {

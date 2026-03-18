@@ -6,6 +6,7 @@
  */
 
 import React, {useState, useEffect, useCallback, useMemo} from 'react';
+import {alpha} from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
@@ -97,9 +98,9 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                     },
                 },
                 backdrop: {
-                    sx: {
-                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    },
+                    sx: (theme) => ({
+                        backgroundColor: alpha(theme.palette.common.black, 0.8),
+                    }),
                 },
             }}
         >
@@ -125,7 +126,7 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                     <IconButton
                         onClick={onClose}
                         aria-label="Close photo viewer"
-                        sx={{
+                        sx={(theme) => ({
                             position: 'absolute',
                             top: -48,
                             right: 0,
@@ -133,9 +134,9 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                             backgroundColor: 'transparent',
                             zIndex: 2,
                             '&:hover': {
-                                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                                backgroundColor: alpha(theme.palette.common.white, 0.1),
                             },
-                        }}
+                        })}
                     >
                         <CloseIcon sx={{fontSize: 24}} />
                     </IconButton>
@@ -163,20 +164,20 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                         <IconButton
                             onClick={prevPhoto}
                             aria-label="Previous photo"
-                            sx={{
+                            sx={(theme) => ({
                                 position: 'absolute',
                                 left: 16,
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                backgroundColor: alpha(theme.palette.common.black, 0.5),
                                 color: 'white',
                                 borderRadius: '50%',
                                 width: 40,
                                 height: 40,
                                 '&:hover': {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                    backgroundColor: alpha(theme.palette.common.black, 0.75),
                                 },
-                            }}
+                            })}
                         >
                             <ChevronLeftIcon sx={{fontSize: 24}} />
                         </IconButton>
@@ -185,20 +186,20 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                         <IconButton
                             onClick={nextPhoto}
                             aria-label="Next photo"
-                            sx={{
+                            sx={(theme) => ({
                                 position: 'absolute',
                                 right: 16,
                                 top: '50%',
                                 transform: 'translateY(-50%)',
-                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                backgroundColor: alpha(theme.palette.common.black, 0.5),
                                 color: 'white',
                                 borderRadius: '50%',
                                 width: 40,
                                 height: 40,
                                 '&:hover': {
-                                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                                    backgroundColor: alpha(theme.palette.common.black, 0.75),
                                 },
-                            }}
+                            })}
                         >
                             <ChevronRightIcon sx={{fontSize: 24}} />
                         </IconButton>
@@ -219,13 +220,13 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                                 component="button"
                                 onClick={() => setPhotoIndex(index)}
                                 aria-label={`Go to photo ${index + 1}`}
-                                sx={{
+                                sx={(theme) => ({
                                     width: 8,
                                     height: 8,
                                     borderRadius: '50%',
                                     backgroundColor: currentIndex === index
                                         ? 'white'
-                                        : 'rgba(255, 255, 255, 0.5)',
+                                        : alpha(theme.palette.common.white, 0.5),
                                     border: 'none',
                                     padding: 0,
                                     cursor: 'pointer',
@@ -233,9 +234,9 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                                     '&:hover': {
                                         backgroundColor: currentIndex === index
                                             ? 'white'
-                                            : 'rgba(255, 255, 255, 0.7)',
+                                            : alpha(theme.palette.common.white, 0.7),
                                     },
-                                }}
+                                })}
                             />
                         ))}
                     </Box>
@@ -261,7 +262,7 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                                 variant="body2"
                                 sx={{
                                     fontSize: 12,
-                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    color: (theme) => alpha(theme.palette.common.white, 0.7),
                                     mt: 0.5,
                                 }}
                             >
@@ -273,7 +274,7 @@ export const PodPhotoViewer: React.FC<PodPhotoViewerProps> = ({
                                 variant="body2"
                                 sx={{
                                     fontSize: 12,
-                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    color: (theme) => alpha(theme.palette.common.white, 0.7),
                                     mt: 0.5,
                                 }}
                             >

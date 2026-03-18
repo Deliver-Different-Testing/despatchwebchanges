@@ -12,7 +12,7 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import WifiTetheringIcon from '@mui/icons-material/WifiTethering';
-import {useTodayActiveDrivers} from '../../../hooks';
+import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
 import {FleetOption, PaginatedRequest, TodayActiveDriver, TodayActiveDriverFilter} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx, getFleetChipSx} from './shared';

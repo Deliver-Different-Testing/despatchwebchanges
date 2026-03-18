@@ -2,20 +2,6 @@ import {IDispatchJob} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactSwapPodsDialog?: {
-            open: (
-                jobNo: string,
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                }
-            ) => Promise<boolean | null>;
-        };
-    }
-}
-
 class SwapPodsDialogService implements angular.IServiceProvider {
     static $inject = [
         'toastrService',
@@ -69,7 +55,7 @@ class SwapPodsDialogService implements angular.IServiceProvider {
             }
 
             const toastService = {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

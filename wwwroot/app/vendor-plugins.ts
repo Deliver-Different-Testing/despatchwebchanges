@@ -6,21 +6,16 @@
 import "../css/udispatch.less";
 import "../css/toasts.less";
 import "angular-resizable/angular-resizable.min.css";
-import "ng-material-datetimepicker/css/material-datetimepicker.css";
 import "angular-material-data-table/dist/md-data-table.css";
-import "angular-hotkeys/build/hotkeys.css";
-
-// Bootstrap (CSS only - JS not needed, using Angular Material for UI)
-import "bootstrap/dist/css/bootstrap.css";
 
 // Third-party Angular plugins
 import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";
 import "angular-resizable/angular-resizable.min";
-import "ng-material-datetimepicker/js/angular-material-datetimepicker";
 import "angular-material-data-table";
-import "angular-hotkeys/build/hotkeys";
-import "angular-bootstrap-contextmenu/contextMenu";
+
+// Bootstrap (CSS only - JS not needed, using Angular Material for UI)
+import "bootstrap/dist/css/bootstrap.css";
 
 // Local libs
 import "../lib/ModernizerLocalStorage";
@@ -38,15 +33,12 @@ const app = angular.module("uDispatch", [
     "oc.lazyLoad",
     "angularResizable",
     "ui.sortable",
-    "ui.bootstrap.contextMenu",
-    "cfp.hotkeys",
     "ngAnimate",
     "ngMessages",
     "ngSanitize",
     "ngMaterial",
     "md.data.table",
-    "ngFileUpload",
-    "ngMaterialDatePicker"
+    "ngFileUpload"
 ]);
 
 // Register React HereMap component

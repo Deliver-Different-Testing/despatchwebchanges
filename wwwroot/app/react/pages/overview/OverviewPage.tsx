@@ -303,6 +303,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                 display: 'flex',
                 flexDirection: {xs: 'column', md: 'row'},
                 gap: 2,
+                bgcolor: 'background.default',
             }}
         >
             {/* Left Panel — Filters */}
@@ -330,7 +331,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
             {/* Right Panel — Overview + Open Jobs */}
             <Box sx={{flex: 1, minWidth: 0}}>
-                <Card>
+                <Card variant="outlined">
                     {/* Card Header */}
                     <Box
                         sx={{

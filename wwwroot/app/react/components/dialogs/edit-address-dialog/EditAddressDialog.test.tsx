@@ -11,11 +11,11 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAddressDialog, EditAddressDialogProps} from './EditAddressDialog';
 import {EditAddressDialogViewModel, HereMapsLocationResult, HereMapsLookupResponse,} from '../../../interfaces';
-import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
+import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../services/addressApi';
 
 // Mock the React Query hooks
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useAddressApi', () => ({
     useAddressSearch: jest.fn(),
     useHereMapsApiKey: jest.fn(),
 }));

@@ -30,7 +30,7 @@ import SmsIcon from '@mui/icons-material/Sms';
 import TuneIcon from '@mui/icons-material/Tune';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import type {Theme} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material/styles';
 
 // Re-export DateFilterMenu
 export {DateFilterMenu} from '../date-filter-menu/DateFilterMenu';
@@ -40,8 +40,8 @@ export type {DateFilterData, DateFilterMenuProps, DateRangeOption} from '../date
 export {ActionsMenu} from './ActionsMenu';
 export type {ActionsMenuProps} from './ActionsMenu';
 
-// Shared icon button styles for consistent appearance
-const toolbarIconButtonSx = {
+// Shared icon button styles for consistent appearance across toolbar actions
+export const toolbarIconButtonSx: SxProps<Theme> = {
     p: 1,
     '&:hover': {
         bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),

@@ -42,21 +42,22 @@ function ControlButton({
                     onClick={onClick}
                     disabled={disabled}
                     aria-label={ariaLabel}
-                    sx={{
+                    data-active={active}
+                    sx={(theme) => ({
                         width: 40,
                         height: 40,
-                        backgroundColor: active ? '#3f51b5' : '#f44336',
-                        color: 'white',
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.3)',
+                        bgcolor: active ? theme.palette.primary.main : theme.palette.error.main,
+                        color: active ? theme.palette.primary.contrastText : theme.palette.error.contrastText,
+                        boxShadow: 3,
                         '&:hover': {
-                            backgroundColor: active ? '#303f9f' : '#d32f2f',
+                            bgcolor: active ? theme.palette.primary.dark : theme.palette.error.dark,
                         },
                         '&:disabled': {
                             opacity: 0.5,
-                            backgroundColor: active ? '#3f51b5' : '#f44336',
-                            color: 'white',
+                            bgcolor: active ? theme.palette.primary.main : theme.palette.error.main,
+                            color: active ? theme.palette.primary.contrastText : theme.palette.error.contrastText,
                         },
-                    }}
+                    })}
                 >
                     <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
                         {displayIcon}

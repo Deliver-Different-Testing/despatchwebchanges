@@ -7,6 +7,7 @@
  */
 
 import React, {useState, useCallback} from 'react';
+import type {SxProps, Theme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
@@ -40,13 +41,14 @@ export interface SearchCriteriaPanelProps {
     onSpeedSearch: (searchText: string) => Promise<ISuggestion[]>;
 }
 
-const groupLabelSx = {
-    fontSize: '0.675rem',
-    fontWeight: 600,
+const groupLabelSx: SxProps<Theme> = {
+    fontSize: '0.625rem',
+    fontWeight: 500,
     color: 'text.secondary',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
-} as const;
+    letterSpacing: '0.08333em',
+    lineHeight: 2.5,
+};
 
 export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     dateSearchRange,
@@ -120,14 +122,14 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
         <Box sx={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
-            padding: '16px',
+            gap: 2,
+            p: 2,
             height: '100%',
             boxSizing: 'border-box',
             overflowY: 'auto',
         }}>
             {/* Date Range */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>Date Range</Typography>
                 <DateRangePicker
                     dateSearchRange={dateSearchRange}
@@ -140,7 +142,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
             </Box>
 
             {/* Clients */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>Clients</Typography>
                 <ChipsAutocomplete
                     label="Clients"
@@ -153,7 +155,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
             </Box>
 
             {/* Couriers */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>Couriers</Typography>
                 <ChipsAutocomplete
                     label="Couriers"
@@ -166,7 +168,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
             </Box>
 
             {/* Speeds */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>Speeds</Typography>
                 <ChipsAutocomplete
                     label="Speeds"
@@ -179,7 +181,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
             </Box>
 
             {/* Job ID */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>Job ID</Typography>
                 <TextField
                     type="number"
@@ -194,10 +196,10 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                             fontSize: '0.8125rem',
                             bgcolor: 'background.paper',
                             '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'rgba(0, 0, 0, 0.12)',
+                                borderColor: 'divider',
                             },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'rgba(0, 0, 0, 0.3)',
+                                borderColor: 'text.disabled',
                             },
                         },
                     }}
@@ -205,7 +207,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
             </Box>
 
             {/* Job Number */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>Job Number</Typography>
                 <TextField
                     size="small"
@@ -219,10 +221,10 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                             fontSize: '0.8125rem',
                             bgcolor: 'background.paper',
                             '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'rgba(0, 0, 0, 0.12)',
+                                borderColor: 'divider',
                             },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'rgba(0, 0, 0, 0.3)',
+                                borderColor: 'text.disabled',
                             },
                         },
                     }}
@@ -230,7 +232,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
             </Box>
 
             {/* General Search */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
                 <Typography sx={groupLabelSx}>General Search</Typography>
                 <TextField
                     size="small"
@@ -244,10 +246,10 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                             fontSize: '0.8125rem',
                             bgcolor: 'background.paper',
                             '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'rgba(0, 0, 0, 0.12)',
+                                borderColor: 'divider',
                             },
                             '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'rgba(0, 0, 0, 0.3)',
+                                borderColor: 'text.disabled',
                             },
                         },
                     }}
@@ -259,10 +261,11 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
-                gap: '8px',
-                marginTop: 'auto',
-                paddingTop: '16px',
-                borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                gap: 1,
+                mt: 'auto',
+                pt: 2,
+                borderTop: 1,
+                borderColor: 'divider',
             }}>
                 <Button
                     variant="contained"
@@ -277,7 +280,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 >
                     Search
                 </Button>
-                <Box sx={{display: 'flex', gap: '4px'}}>
+                <Box sx={{display: 'flex', gap: 0.5}}>
                     <Tooltip title="Download">
                         <IconButton onClick={onDownload} size="small" sx={{width: 36, height: 36}}>
                             <DownloadIcon sx={{fontSize: 20, color: 'text.secondary'}} />
@@ -291,7 +294,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                                 size="small"
                                 sx={{width: 36, height: 36}}
                             >
-                                <DescriptionIcon sx={{fontSize: 20, color: isClientReportEnabled ? 'text.secondary' : 'rgba(0, 0, 0, 0.2)'}} />
+                                <DescriptionIcon sx={{fontSize: 20, color: isClientReportEnabled ? 'text.secondary' : 'text.disabled'}} />
                             </IconButton>
                         </span>
                     </Tooltip>

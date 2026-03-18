@@ -19,7 +19,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import EventNoteIcon from '@mui/icons-material/EventNote';
 import NightsStayIcon from '@mui/icons-material/NightsStay';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks';
+import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks/useDriverManagementApi';
 import {AfterHoursCourierScheduleItem, AfterHoursFilter, PaginatedRequest} from '../../../interfaces';
 import {AfterHoursCourierSchedule} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';

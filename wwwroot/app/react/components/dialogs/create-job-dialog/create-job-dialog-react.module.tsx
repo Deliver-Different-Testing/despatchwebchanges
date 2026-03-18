@@ -13,12 +13,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {CreateJobDialog} from './CreateJobDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
-import type {ShowToastFn} from '../../../services/toastService';
-
-// Toast service interface (still provided by AngularJS for UI consistency)
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 // State management for the dialog
 interface DialogState {
@@ -119,12 +114,12 @@ export function openCreateJobDialog(
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactCreateJobDialog = {
+window.ReactCreateJobDialog = {
     open: openCreateJobDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const createJobDialogReactModule = (window as any).angular.module(
+const createJobDialogReactModule = window.angular!.module(
     'uDispatch.createJobDialogReact',
     []
 );

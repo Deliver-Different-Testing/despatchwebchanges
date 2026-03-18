@@ -11,9 +11,12 @@ import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
 
 // Mock the hooks
-jest.mock('../../hooks', () => ({
+jest.mock('../../hooks/useRecurringJobsApi', () => ({
     useRecurringJobsList: jest.fn(),
     useSpeedList: jest.fn(),
+}));
+
+jest.mock('../../hooks/useCourierApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
@@ -25,7 +28,8 @@ jest.mock('../../services/recurringJobsApi', () => ({
     },
 }));
 
-import {useRecurringJobsList, useSpeedList, useCourierSearch} from '../../hooks';
+import {useRecurringJobsList, useSpeedList} from '../../hooks/useRecurringJobsApi';
+import {useCourierSearch} from '../../hooks/useCourierApi';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 
 const mockUseRecurringJobsList = useRecurringJobsList as jest.MockedFunction<typeof useRecurringJobsList>;

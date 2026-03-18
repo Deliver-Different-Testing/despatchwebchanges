@@ -4,9 +4,9 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {TodayActiveTab} from './TodayActiveTab';
 import {TodayActiveDriverPaginated} from '../../../interfaces';
-import {useTodayActiveDrivers} from '../../../hooks';
+import {useTodayActiveDrivers} from '../../../hooks/useDriverManagementApi';
 
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useTodayActiveDrivers: jest.fn(),
 }));
 

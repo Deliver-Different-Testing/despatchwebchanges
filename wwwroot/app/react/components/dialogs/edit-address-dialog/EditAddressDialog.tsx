@@ -38,7 +38,7 @@ import {
     HereMapsLookupResponse,
     ShipmentDetails,
 } from '../../../interfaces';
-import {useAddressSearch, useHereMapsApiKey} from '../../../hooks';
+import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../services/addressApi';
 import {US_STATES} from '../../../utils/usStates';
 import type {ShowToastFn} from '../../../services/toastService';

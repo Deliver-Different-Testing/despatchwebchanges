@@ -43,103 +43,99 @@ function greetUser(userName: string): string {
     return `${greeting}, ${userName}`;
 }
 
-export class AppToolbar extends React.Component<AppToolbarProps> {
-    static defaultProps: Partial<AppToolbarProps> = {
-        logoUrl: 'images/dfrnt_logo.png',
-    };
+export const AppToolbar: React.FC<AppToolbarProps> = ({
+    title,
+    firstName,
+    logoUrl = 'images/dfrnt_logo.png',
+    children,
+    onLogoClick,
+    onMenuHover,
+}) => {
+    const greeting = greetUser(firstName);
 
-    private get greeting(): string {
-        return greetUser(this.props.firstName);
-    }
-
-    render(): React.ReactNode {
-        const {title, logoUrl, children, onLogoClick, onMenuHover} = this.props;
-        const greeting = this.greeting;
-
-        return (
-        <AppBar
-            position="static"
-            elevation={1}
-            sx={(theme) => ({
-                bgcolor: theme.palette.primary.main,
-                // Ensure proper contrast for both themes
-                color: theme.palette.primary.contrastText,
-            })}
+    return (
+    <AppBar
+        position="static"
+        elevation={1}
+        sx={(theme) => ({
+            bgcolor: theme.palette.primary.main,
+            // Ensure proper contrast for both themes
+            color: theme.palette.primary.contrastText,
+        })}
+    >
+        <Toolbar
+            sx={{
+                minHeight: {xs: 56, sm: 64},
+                px: {xs: 1.5, sm: 2},
+                gap: 1,
+            }}
         >
-            <Toolbar
+            {/* Logo - Brand Identity */}
+            <Box
+                component="img"
+                src={logoUrl}
+                alt="DFRNT"
+                onClick={onLogoClick}
                 sx={{
-                    minHeight: {xs: 56, sm: 64},
-                    px: {xs: 1.5, sm: 2},
-                    gap: 1,
+                    height: {xs: 32, sm: 36},
+                    cursor: onLogoClick ? 'pointer' : 'default',
+                    transition: 'opacity 0.2s',
+                    '&:hover': onLogoClick ? {
+                        opacity: 0.85,
+                    } : {},
+                }}
+            />
+
+            {/* Title - Page Context */}
+            <Typography
+                variant="h6"
+                component="h1"
+                noWrap
+                sx={{
+                    fontWeight: 500,
+                    fontSize: {xs: '1rem', sm: '1.125rem'},
+                    ml: 1.5,
+                    letterSpacing: '0.01em',
                 }}
             >
-                {/* Logo - Brand Identity */}
-                <Box
-                    component="img"
-                    src={logoUrl}
-                    alt="DFRNT"
-                    onClick={onLogoClick}
-                    sx={{
-                        height: {xs: 32, sm: 36},
-                        cursor: onLogoClick ? 'pointer' : 'default',
-                        transition: 'opacity 0.2s',
-                        '&:hover': onLogoClick ? {
-                            opacity: 0.85,
-                        } : {},
-                    }}
-                />
+                {title}
+            </Typography>
 
-                {/* Title - Page Context */}
-                <Typography
-                    variant="h6"
-                    component="h1"
-                    noWrap
+            {/* Spacer */}
+            <Box sx={{flexGrow: 1}} />
+
+            {/* Actions Container - Consistent spacing */}
+            {children && (
+                <Box
                     sx={{
-                        fontWeight: 500,
-                        fontSize: {xs: '1rem', sm: '1.125rem'},
-                        ml: 1.5,
-                        letterSpacing: '0.01em',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
                     }}
                 >
-                    {title}
-                </Typography>
+                    {children}
+                </Box>
+            )}
 
-                {/* Spacer */}
-                <Box sx={{flexGrow: 1}} />
-
-                {/* Actions Container - Consistent spacing */}
-                {children && (
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.5,
-                        }}
-                    >
-                        {children}
-                    </Box>
-                )}
-
-                {/* Menu Button */}
-                <Tooltip title={greeting}>
-                    <IconButton
-                        color="inherit"
-                        aria-label="Open navigation menu"
-                        onMouseEnter={onMenuHover}
-                        sx={(theme) => ({
-                            ml: 0.5,
-                            '&:hover': {
-                                bgcolor: alpha(theme.palette.common.white, 0.12),
-                            },
-                        })}
-                    >
-                        <MenuIcon />
-                    </IconButton>
-                </Tooltip>
-            </Toolbar>
-        </AppBar>
-        );
-    }
-}
+            {/* Menu Button */}
+            <Tooltip title={greeting}>
+                <IconButton
+                    color="inherit"
+                    aria-label="Open navigation menu"
+                    onMouseEnter={onMenuHover}
+                    sx={(theme) => ({
+                        ml: 0.5,
+                        '&:hover': {
+                            bgcolor: alpha(theme.palette.common.white, 0.12),
+                        },
+                    })}
+                >
+                    <MenuIcon />
+                </IconButton>
+            </Tooltip>
+        </Toolbar>
+    </AppBar>
+    );
+};
 
 export default AppToolbar;

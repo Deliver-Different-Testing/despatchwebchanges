@@ -3,20 +3,6 @@ import ToastrService from "../../../services/toastr.service";
 import {VoidJobResult, VoidJobDialogJob} from "../../../react/interfaces";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactVoidJobConfirmationDialog?: {
-            open: (
-                job: VoidJobDialogJob,
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                }
-            ) => Promise<VoidJobResult | null>;
-        };
-    }
-}
-
 class VoidJobConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [
         'toastrService',
@@ -79,7 +65,7 @@ class VoidJobConfirmationDialogService implements angular.IServiceProvider {
 
             // Create toast service wrapper for UI notifications
             const toastService = {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

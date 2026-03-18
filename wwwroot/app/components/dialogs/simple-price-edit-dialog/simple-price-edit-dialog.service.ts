@@ -8,24 +8,6 @@ export interface PriceEditResult {
     amount: number;
 }
 
-// Type for options passed to the React dialog
-interface SimplePriceEditDialogOptionsForReact {
-    jobId: number;
-    jobNumber: string;
-    currentCharge: number;
-    isPrebook: boolean;
-}
-
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactSimplePriceEditDialog?: {
-            open: (options: SimplePriceEditDialogOptionsForReact) => Promise<PriceEditResult | null>;
-            setToastService: (service: { showToast: (message: string, type: 'success' | 'warning' | 'error') => void }) => void;
-        };
-    }
-}
-
 class SimplePriceEditDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',
@@ -82,7 +64,7 @@ class SimplePriceEditDialogService implements angular.IServiceProvider {
 
             // Create toast bridge
             window.ReactSimplePriceEditDialog.setToastService({
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

@@ -4,34 +4,6 @@ import { JobProperty } from "../../../enums/job-property.enum";
 import dayjs from "dayjs";
 import angular from 'angular';
 
-// Type for the result from React dialog
-interface EditDateTimeDialogResultFromReact {
-    fieldName: string;
-    value: dayjs.Dayjs;
-    timezone: string;
-}
-
-// Type for the options passed to React dialog
-interface EditDateTimeDialogOptions {
-    title: string;
-    fieldName: string;
-    dateTime?: dayjs.Dayjs;
-    defaultTimeZone?: string;
-    showDate: boolean;
-    showTime: boolean;
-}
-
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactEditDateTimeDialog?: {
-            showEditTimeDialog: (options: EditDateTimeDialogOptions) => Promise<EditDateTimeDialogResultFromReact | null>;
-            showEditDateDialog: (options: EditDateTimeDialogOptions) => Promise<EditDateTimeDialogResultFromReact | null>;
-            showEditDateAndTimeDialog: (options: EditDateTimeDialogOptions) => Promise<EditDateTimeDialogResultFromReact | null>;
-        };
-    }
-}
-
 export class EditDateTimeDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',

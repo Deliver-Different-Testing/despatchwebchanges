@@ -1,4 +1,4 @@
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useMutation, useQueryClient, keepPreviousData} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {driverManagementApi} from '../services/driverManagementApi';
 import {
@@ -50,6 +50,7 @@ export function useTodayActiveDrivers(query: PaginatedRequest, filters: TodayAct
     return useQuery<TodayActiveDriverPaginated, Error>({
         queryKey: queryKeys.driverManagement.todayActive(query, filters),
         queryFn: ({signal}) => driverManagementApi.getTodayActiveDrivers(query, filters, {signal}),
+        placeholderData: keepPreviousData,
     });
 }
 
@@ -57,6 +58,7 @@ export function useComplianceList(query: PaginatedRequest, filters: ComplianceFi
     return useQuery<CourierCompliancePaginated, Error>({
         queryKey: queryKeys.driverManagement.compliance(query, filters),
         queryFn: ({signal}) => driverManagementApi.getCourierComplianceList(query, filters, {signal}),
+        placeholderData: keepPreviousData,
     });
 }
 
@@ -64,6 +66,7 @@ export function useAfterHoursSchedule(query: PaginatedRequest, filters: AfterHou
     return useQuery<AfterHoursPaginated, Error>({
         queryKey: queryKeys.driverManagement.afterHours(query, filters),
         queryFn: ({signal}) => driverManagementApi.getAfterHoursSchedule(query, filters, {signal}),
+        placeholderData: keepPreviousData,
     });
 }
 
@@ -71,6 +74,7 @@ export function useDriverEmails(query: PaginatedRequest) {
     return useQuery<PaginatedResponse<DriverEmail>, Error>({
         queryKey: queryKeys.driverManagement.driverEmails(query),
         queryFn: ({signal}) => driverManagementApi.getDriverEmails(query, {signal}),
+        placeholderData: keepPreviousData,
     });
 }
 
@@ -78,6 +82,7 @@ export function useDriverEarnings(query: PaginatedRequest) {
     return useQuery<CourierDailyEarningsPaginated, Error>({
         queryKey: queryKeys.driverManagement.earnings(query),
         queryFn: ({signal}) => driverManagementApi.getDriverDailyEarnings(query, {signal}),
+        placeholderData: keepPreviousData,
     });
 }
 

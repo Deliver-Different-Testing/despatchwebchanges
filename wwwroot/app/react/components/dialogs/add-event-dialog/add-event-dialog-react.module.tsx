@@ -19,11 +19,7 @@ import { JobNoteType } from '../../../../enums/job-note-type.enum';
 import { eventApi } from '../../../services/eventApi';
 import { notesApi } from '../../../services/notesApi';
 import { openVoidJobConfirmationDialog } from '../void-job-confirmation-dialog/void-job-confirmation-dialog-react.module';
-import type { ShowToastFn } from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -186,12 +182,12 @@ export function openAddEventDialog(options: OpenAddEventDialogOptions): Promise<
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactAddEventDialog = {
+window.ReactAddEventDialog = {
     open: openAddEventDialog,
 };
 
 // Create AngularJS module
-const addEventDialogReactModule = (window as any).angular.module(
+const addEventDialogReactModule = window.angular!.module(
     'uDispatch.addEventDialogReact',
     []
 );

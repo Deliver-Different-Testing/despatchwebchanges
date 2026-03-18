@@ -13,11 +13,7 @@ import { AccessorialChargesDialog } from './AccessorialChargesDialog';
 import { AccessorialChargesJob, OpenAccessorialChargesDialogOptions } from './types';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
-import type { ShowToastFn } from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -107,12 +103,12 @@ export function openAccessorialChargesDialog(options: OpenAccessorialChargesDial
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactAccessorialChargesDialog = {
+window.ReactAccessorialChargesDialog = {
     open: openAccessorialChargesDialog,
 };
 
 // Create AngularJS module
-const accessorialChargesDialogReactModule = (window as any).angular.module(
+const accessorialChargesDialogReactModule = window.angular!.module(
     'uDispatch.accessorialChargesDialogReact',
     []
 );

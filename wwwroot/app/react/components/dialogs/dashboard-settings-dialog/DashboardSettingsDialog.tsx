@@ -27,6 +27,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import {aiAccentColor} from '../../../theme/designTokens';
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -309,13 +310,13 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     width: 36,
                                     height: 36,
                                     borderRadius: 1.5,
-                                    bgcolor: 'rgba(124, 77, 255, 0.1)',
+                                    bgcolor: alpha(aiAccentColor, 0.1),
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                 }}
                             >
-                                <AutoAwesomeIcon sx={{color: '#7c4dff'}} />
+                                <AutoAwesomeIcon sx={{color: aiAccentColor}} />
                             </Box>
                             <Typography variant="h6" fontWeight={600}>
                                 AI Features
@@ -333,8 +334,8 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 cursor: 'pointer',
                                 transition: 'all 0.2s ease',
                                 '&:hover': {
-                                    borderColor: '#7c4dff',
-                                    bgcolor: 'rgba(124, 77, 255, 0.02)',
+                                    borderColor: aiAccentColor,
+                                    bgcolor: alpha(aiAccentColor, 0.02),
                                 },
                             })}
                         >
@@ -353,11 +354,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                             size="small"
                                             sx={{
                                                 height: 18,
-                                                fontSize: '0.6rem',
+                                                fontSize: '0.625rem',
                                                 fontWeight: 700,
-                                                bgcolor: '#7c4dff',
+                                                bgcolor: aiAccentColor,
                                                 color: '#fff',
-                                                letterSpacing: '0.05em',
                                             }}
                                         />
                                     </Box>
@@ -371,10 +371,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     onChange={() => setAiEnabled((prev) => !prev)}
                                     sx={{
                                         '& .MuiSwitch-switchBase.Mui-checked': {
-                                            color: '#7c4dff',
+                                            color: aiAccentColor,
                                         },
                                         '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                                            backgroundColor: '#7c4dff',
+                                            backgroundColor: aiAccentColor,
                                         },
                                     }}
                                 />

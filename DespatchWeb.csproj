@@ -283,6 +283,16 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.component.ts"/>
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.styles.less"/>
     <_ContentIncludedByDefault Remove="wwwroot\app\components\common\table-pagination\table-pagination.template.html"/>
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\enums\jobListType.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-highlight.service.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.component.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.highlighting.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.loggedInCouriersOnly.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.sortBy.spec.ts" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.styles.less" />
+    <_ContentIncludedByDefault Remove="wwwroot\app\components\common\job-list\job-list.template.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
@@ -321,9 +331,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\enums\jobCategory.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-highlight.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-list\job-list.component.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\app-shell\app-shell.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\pod-photo-viewer\pod-photo-viewer.types.ts" />
@@ -394,7 +401,6 @@
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\formatDates.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />

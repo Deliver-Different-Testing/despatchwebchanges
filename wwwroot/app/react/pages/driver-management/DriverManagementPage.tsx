@@ -3,7 +3,7 @@ import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import {useFleetOptions} from '../../hooks';
+import {useFleetOptions} from '../../hooks/useDriverManagementApi';
 import {DriverManagementPageProps} from '../../interfaces';
 import {DriverDetailsTab} from './components/DriverDetailsTab';
 import {TodayActiveTab} from './components/TodayActiveTab';
@@ -57,15 +57,15 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
     }, [setRefreshCallback]);
 
     return (
-        <Box sx={{height: '100%', bgcolor: '#f5f7fa'}}>
+        <Box sx={{height: '100%', bgcolor: 'background.default'}}>
         <Box sx={{
             height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
             maxWidth: 1400, mx: 'auto', p: {xs: 2, md: 3},
             '& .MuiCard-root': {
-                borderRadius: '12px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                borderRadius: 3,
+                boxShadow: 1,
                 transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                '&:hover': {boxShadow: '0 4px 12px rgba(0,0,0,0.15)'},
+                '&:hover': {boxShadow: 3},
             },
         }}>
             {/* Page Header */}

@@ -2,26 +2,6 @@ import {IDispatchJob, IJob} from "../../../interfaces/job.interface";
 import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactAdditionalServicesDialog?: {
-            open: (options: {
-                job: {
-                    id: number;
-                    clientId: number;
-                    speedId: number;
-                    items: number;
-                    speedName: string;
-                };
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                };
-            }) => Promise<boolean>;
-        };
-    }
-}
-
 class AdditionalServicesDialogService implements angular.IServiceProvider {
     static $inject = [
         'toastrService',
@@ -87,7 +67,7 @@ class AdditionalServicesDialogService implements angular.IServiceProvider {
 
             // Create toast service wrapper for UI notifications
             const toastService = {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

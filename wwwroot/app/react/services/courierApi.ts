@@ -7,7 +7,7 @@
 import {apiClient, RequestOptions} from './apiClient';
 import {CourierSuggestion, TimeZoneOption} from '../interfaces';
 import type {IAvailableCourierPosition} from '../../interfaces/courier.interface';
-import type {ClearListEnvelopeData} from '../components/common/dispatch-map';
+import type {ClearListEnvelopeData} from '../components/common/dispatch-map/DispatchMap.types';
 
 /**
  * Search for active couriers
@@ -16,6 +16,19 @@ export async function searchActiveCouriers(searchText: string, options?: Request
     return apiClient.get<CourierSuggestion[]>('courier/AllActiveSearch', {
         searchText,
     }, options);
+}
+
+/**
+ * Search for active couriers with extended filtering (dgOnly, loggedInOnly)
+ */
+export async function searchActiveCouriersExtended(
+    searchText: string,
+    options?: { dgOnly?: boolean; loggedInOnly?: boolean } & RequestOptions
+): Promise<CourierSuggestion[]> {
+    const params: Record<string, any> = { searchText };
+    if (options?.dgOnly) params.dgOnly = true;
+    if (options?.loggedInOnly) params.loggedInOnly = true;
+    return apiClient.get<CourierSuggestion[]>('courier/AllActiveSearch', params, options);
 }
 
 /**
@@ -54,6 +67,7 @@ export async function getClearListEnvelope(clearListId: number, options?: Reques
 
 export const courierApi = {
     searchActiveCouriers,
+    searchActiveCouriersExtended,
     getTimeZoneOptions,
     getAvailableCourierLocations,
     getClearListEnvelope,

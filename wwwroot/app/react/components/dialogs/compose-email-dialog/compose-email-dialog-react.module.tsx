@@ -78,11 +78,11 @@ export function openComposeEmailDialog(
     });
 }
 
-(window as any).ReactComposeEmailDialog = {
+window.ReactComposeEmailDialog = {
     open: openComposeEmailDialog,
 };
 
-const composeEmailDialogReactModule = (window as any).angular.module(
+const composeEmailDialogReactModule = window.angular!.module(
     'uDispatch.composeEmailDialogReact',
     []
 );

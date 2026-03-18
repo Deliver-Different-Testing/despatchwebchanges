@@ -4,9 +4,9 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverComplianceTab} from './DriverComplianceTab';
 import {CourierCompliancePaginated} from '../../../interfaces';
-import {useComplianceList, useSendComplianceReminder, useSendBulkComplianceReminders} from '../../../hooks';
+import {useComplianceList, useSendComplianceReminder, useSendBulkComplianceReminders} from '../../../hooks/useDriverManagementApi';
 
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useComplianceList: jest.fn(),
     useSendComplianceReminder: jest.fn(),
     useSendBulkComplianceReminders: jest.fn(),

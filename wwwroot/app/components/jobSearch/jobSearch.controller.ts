@@ -20,7 +20,7 @@ import {IDeliveryHistoryConfig} from "../../react/components/common/task-history
 import DensityMode from "../../enums/densityMode";
 import ISearchCriteria from "./interfaces/ISearchCriteria";
 import dayjs, {Dayjs} from "dayjs";
-import JobListType from "../common/job-list/enums/jobListType";
+import JobListType from "../../enums/job-list-type.enum";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
@@ -106,6 +106,9 @@ class JobSearchController extends BaseController {
     currentSortColumn?: string;
     currentSortDirection?: string;
 
+    // React job list integration
+    private reactJobSearchMounted = new Set<string>();
+
     constructor(
         private jobSearchService: JobSearchService,
         private $mdDialog: angular.material.IDialogService,
@@ -173,6 +176,155 @@ class JobSearchController extends BaseController {
 
         // Default to a fortnight
         this.onSearchRangeChange(this.dateSearchRange);
+    }
+
+    $onInit(): void {
+        this.mountReactJobList();
+        this.mountReactBulkJobList();
+    }
+
+    $onDestroy(): void {
+        super.$onDestroy();
+        if (window.ReactJobSearchJobList) {
+            window.ReactJobSearchJobList.unmountAll();
+        }
+        this.reactJobSearchMounted.clear();
+    }
+
+    // ── React Job List Integration ───────────────────────────────────
+
+    private mountReactJobList(): void {
+        if (!window.ReactJobSearchJobList) {
+            console.warn('[JobSearchController] ReactJobSearchJobList not loaded');
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 100; // 100 × 50ms = 5s
+
+        const tryMount = () => {
+            const container = document.getElementById('react-job-search-job-list');
+            if (!container) {
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(tryMount, 50);
+                } else {
+                    console.error('[JobSearchController] react-job-search-job-list not found after 5s');
+                }
+                return;
+            }
+            this.doMountReactJobList();
+        };
+
+        tryMount();
+    }
+
+    private doMountReactJobList(): void {
+        if (this.reactJobSearchMounted.has('main') || !window.ReactJobSearchJobList) return;
+
+        const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+            switch (type) {
+                case 'success': this.toastrService.showSuccessToast(message); break;
+                case 'warning': this.toastrService.showWarningToast(message); break;
+                case 'error': this.toastrService.showErrorToast(message); break;
+                case 'info': this.toastrService.showInfoToast(message); break;
+            }
+        };
+
+        window.ReactJobSearchJobList.mount('main', 'react-job-search-job-list', {
+            showToast,
+            isUsCustomer: this.isUsCustomer,
+            appPage: AppPage.JobSearch,
+            storagePrefix: 'jobSearchJobList',
+            onJobSelect: (job) => {
+                this.selectJobDetail(job.id as number);
+                this.applyScope();
+            },
+            onJobDispatch: (job, courierId) => {
+                this.handleJobDispatch(job as any, courierId);
+                this.applyScope();
+            },
+            onRefresh: () => {
+                this.refreshData();
+            },
+            onBackendFilter: (column, direction) => {
+                this.handleBackendSort({column, direction});
+            },
+            onSplitJob: ($event, job) => {
+                this.jobContextMenuService.splitJob($event, job as any, () => this.refreshAllData());
+            },
+        });
+
+        this.reactJobSearchMounted.add('main');
+        console.log('[JobSearchController] React main job list mounted');
+    }
+
+    private mountReactBulkJobList(): void {
+        if (!window.ReactJobSearchJobList) {
+            console.warn('[JobSearchController] ReactJobSearchJobList not loaded');
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 100;
+
+        const tryMount = () => {
+            const container = document.getElementById('react-job-search-bulk-job-list');
+            if (!container) {
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(tryMount, 50);
+                } else {
+                    console.error('[JobSearchController] react-job-search-bulk-job-list not found after 5s');
+                }
+                return;
+            }
+            this.doMountReactBulkJobList();
+        };
+
+        tryMount();
+    }
+
+    private doMountReactBulkJobList(): void {
+        if (this.reactJobSearchMounted.has('bulk') || !window.ReactJobSearchJobList) return;
+
+        const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+            switch (type) {
+                case 'success': this.toastrService.showSuccessToast(message); break;
+                case 'warning': this.toastrService.showWarningToast(message); break;
+                case 'error': this.toastrService.showErrorToast(message); break;
+                case 'info': this.toastrService.showInfoToast(message); break;
+            }
+        };
+
+        window.ReactJobSearchJobList.mount('bulk', 'react-job-search-bulk-job-list', {
+            showToast,
+            isUsCustomer: this.isUsCustomer,
+            appPage: AppPage.JobSearch,
+            storagePrefix: 'jobSearchBulkJobList',
+            onJobSelect: (job) => {
+                this.selectBulkJobDetail(job.id as number);
+                this.applyScope();
+            },
+            onRefresh: () => {
+                this.refreshBulkData();
+            },
+        });
+
+        this.reactJobSearchMounted.add('bulk');
+        console.log('[JobSearchController] React bulk job list mounted');
+    }
+
+    private updateReactJobList(): void {
+        if (window.ReactJobSearchJobList && this.reactJobSearchMounted.has('main')) {
+            window.ReactJobSearchJobList.updateJobs('main', this.jobList as any ?? [], this.totalJobs ?? 0);
+        }
+    }
+
+    private updateReactBulkJobList(): void {
+        if (window.ReactJobSearchJobList && this.reactJobSearchMounted.has('bulk')) {
+            window.ReactJobSearchJobList.updateJobs('bulk', this.bulkJobList as any ?? [], this.bulkJobList?.length ?? 0);
+        }
     }
 
     // Layout system
@@ -831,6 +983,8 @@ class JobSearchController extends BaseController {
             const response = await this.handleLoadMoreJobs(0, 50);
             this.jobList = response.jobs;
             this.totalJobs = response.totalCount;
+
+            this.updateReactJobList();
         } catch (error) {
             this.handleError(error);
         } finally {
@@ -845,6 +999,8 @@ class JobSearchController extends BaseController {
 
             const response = await this.handleLoadMoreBulkJobs(0, 50);
             this.bulkJobList = response.jobs;
+
+            this.updateReactBulkJobList();
         } catch (error) {
             console.error('Error in refreshBulkData:', error);
         } finally {
@@ -1050,16 +1206,6 @@ class JobSearchController extends BaseController {
         } catch (error) {
             console.log("Error: ", error);
         }
-    }
-
-    getContextMenuOptions(job: IDispatchJob) {
-        if (!job) return [];
-
-        const callbacks = {
-            onRefresh: () => this.refreshAllData()
-        };
-
-        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.JobSearch);
     }
 
     async openHubUrl() {

@@ -34,44 +34,6 @@ interface FlightViewModelForReact {
     }>;
 }
 
-interface FlightAgentDialogResultFromReact {
-    shouldAssign: boolean;
-    awb?: string;
-    shouldAssignToStopJobs: boolean;
-    packageReadyTime?: Dayjs;
-    packageDeliverByTime?: Dayjs;
-    packageDeliveryNotes?: string;
-}
-
-interface ToastService {
-    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-}
-
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactFlightAgentConfirmationDialog?: {
-            openFlightDialog: (options: {
-                jobId: number;
-                jobNumber: string;
-                flight: FlightViewModelForReact;
-                existingAwb?: string;
-                dgClass?: number;
-                toastService?: ToastService;
-            }) => Promise<FlightAgentDialogResultFromReact>;
-            openAgentDialog: (options: {
-                jobId: number;
-                jobNumber: string;
-                agent: ISuggestion;
-                existingAwb?: string;
-                dgClass?: number;
-                stopJobCount?: number;
-                toastService?: ToastService;
-            }) => Promise<FlightAgentDialogResultFromReact>;
-        };
-    }
-}
-
 class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',
@@ -121,7 +83,7 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         }
     }
 
-    async flightConfirmationDialog($event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel): Promise<FlightAgentConfirmationDialogResult> {
+    async flightConfirmationDialog(_$event: MouseEvent, job: IDispatchJob, flight: IFlightViewModel): Promise<FlightAgentConfirmationDialogResult> {
         console.debug('FlightAgentConfirmationDialogService: flightConfirmationDialog called');
 
         try {
@@ -161,7 +123,7 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
         }
     }
 
-    async agentConfirmationDialog($event: MouseEvent, job: IDispatchJob, agent: ISuggestion): Promise<FlightAgentConfirmationDialogResult> {
+    async agentConfirmationDialog(_$event: MouseEvent, job: IDispatchJob, agent: ISuggestion): Promise<FlightAgentConfirmationDialogResult> {
         console.debug('FlightAgentConfirmationDialogService: agentConfirmationDialog called');
         const stopJobCount = job.relatedJobs ? countSubJobs(job.jobNo, job.relatedJobs) : 0;
 
