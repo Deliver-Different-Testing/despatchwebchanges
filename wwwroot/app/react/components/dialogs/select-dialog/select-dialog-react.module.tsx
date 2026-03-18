@@ -14,7 +14,7 @@ import { SelectDialog } from './SelectDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { SelectDialogResult, SelectDialogOptions, SelectDialogItem } from './types';
-import type { ShowToastFn } from '../../../services/toastService';
+import type { ToastService } from '../../../services/toastService';
 
 /** Warning message displayed when changing a job's Status field */
 const STATUS_WARNING_MESSAGE =
@@ -31,13 +31,6 @@ interface DialogState {
     showCheckbox: boolean;
     checkboxLabel: string;
     resolve?: (result: SelectDialogResult | null) => void;
-}
-
-/**
- * Toast service interface for showing notifications
- */
-interface ToastService {
-    showToast: ShowToastFn;
 }
 
 // Default toast service that logs to console
@@ -154,13 +147,13 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactSelectDialog = {
+window.ReactSelectDialog = {
     showSelectDialog,
     setToastService,
 };
 
 // Create AngularJS module for ocLazyLoad
-const selectDialogReactModule = (window as any).angular.module(
+const selectDialogReactModule = window.angular!.module(
     'uDispatch.selectDialogReact',
     []
 );

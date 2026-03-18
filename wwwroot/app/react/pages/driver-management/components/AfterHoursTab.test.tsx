@@ -4,9 +4,9 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {AfterHoursTab} from './AfterHoursTab';
 import {AfterHoursPaginated} from '../../../interfaces';
-import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks';
+import {useAfterHoursSchedule, useCreateAfterHoursSchedule, useUpdateAfterHoursSchedule, useDeleteAfterHoursSchedule} from '../../../hooks/useDriverManagementApi';
 
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useAfterHoursSchedule: jest.fn(),
     useCreateAfterHoursSchedule: jest.fn(),
     useUpdateAfterHoursSchedule: jest.fn(),

@@ -2,23 +2,6 @@ import {ISuggestion} from "../../../interfaces/job.interface";
 import DispatchCoreService from "../../../services/dispatch-core.service";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactAutoCompleteDialog?: {
-            open: (
-                title: string,
-                placeholder: string,
-                searchFn: (searchTerm: string) => Promise<ISuggestion[]>,
-                existingItem?: ISuggestion,
-                showRerateOption?: boolean,
-                itemIcon?: string,
-                minInputLength?: number
-            ) => Promise<{ item: ISuggestion; shouldRerate: boolean } | null>;
-        };
-    }
-}
-
 class AutoCompleteDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',

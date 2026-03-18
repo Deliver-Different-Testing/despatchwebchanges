@@ -7,6 +7,7 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -23,6 +24,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StopIcon from '@mui/icons-material/Stop';
 import {AiSummaryResponse} from '../../../services/aiAssistantApi';
+import {aiAccentColor} from '../../../theme/designTokens';
 import {AiMarkdownRenderer} from './AiMarkdownRenderer';
 
 interface AiSummaryPanelProps {
@@ -49,7 +51,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
     title,
     fetchSummary,
     autoFetch = false,
-    accentColor = '#7c4dff',
+    accentColor = aiAccentColor,
 }) => {
     const [expanded, setExpanded] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -57,17 +59,18 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [hasFetched, setHasFetched] = useState(false);
     const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
-    const [relativeTime, setRelativeTime] = useState<string>('');
+    const [, setTick] = useState(0);
     const [copyTooltip, setCopyTooltip] = useState('Copy to clipboard');
     const abortControllerRef = useRef<AbortController | null>(null);
 
-    // Update relative time every 30 seconds
+    // Compute relative time during render — cheap arithmetic, no need for useMemo.
+    // The interval below forces periodic re-renders to keep it fresh.
+    const relativeTime = generatedAt ? formatRelativeTime(generatedAt) : '';
+
+    // Periodic tick to refresh relative time display
     useEffect(() => {
         if (!generatedAt) return;
-        setRelativeTime(formatRelativeTime(generatedAt));
-        const interval = setInterval(() => {
-            setRelativeTime(formatRelativeTime(generatedAt));
-        }, 30000);
+        const interval = setInterval(() => setTick(t => t + 1), 30000);
         return () => clearInterval(interval);
     }, [generatedAt]);
 
@@ -153,8 +156,8 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
     return (
         <Card
             sx={{
-                borderRadius: '12px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
+                borderRadius: 3,
+                boxShadow: 1,
                 overflow: 'hidden',
                 borderLeft: `4px solid ${accentColor}`,
             }}
@@ -170,8 +173,8 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     py: 1.25,
                     cursor: 'pointer',
                     userSelect: 'none',
-                    bgcolor: 'rgba(124, 77, 255, 0.04)',
-                    '&:hover': {bgcolor: 'rgba(124, 77, 255, 0.08)'},
+                    bgcolor: alpha(accentColor, 0.04),
+                    '&:hover': {bgcolor: alpha(accentColor, 0.08)},
                 }}
             >
                 <Box display="flex" alignItems="center" gap={1}>
@@ -184,11 +187,10 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         size="small"
                         sx={{
                             height: 18,
-                            fontSize: '0.6rem',
+                            fontSize: '0.625rem',
                             fontWeight: 700,
                             bgcolor: accentColor,
                             color: '#fff',
-                            letterSpacing: '0.05em',
                         }}
                     />
                 </Box>

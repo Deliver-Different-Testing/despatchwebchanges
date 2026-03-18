@@ -4,7 +4,7 @@
  * Custom hooks for fetching overview data using React Query.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, keepPreviousData} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {overviewApi} from '../services/overviewApi';
 import type {
@@ -15,6 +15,7 @@ export function useOverviewJobs(params: OverviewQueryParams) {
     return useQuery({
         queryKey: queryKeys.overview.jobs(params),
         queryFn: ({signal}) => overviewApi.getAllJobs(params, {signal}),
+        placeholderData: keepPreviousData,
     });
 }
 

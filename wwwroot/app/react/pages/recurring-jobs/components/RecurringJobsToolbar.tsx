@@ -25,7 +25,8 @@ import ExportIcon from '@mui/icons-material/FileDownload';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey} from '../../../interfaces';
-import {useCourierSearch, useSpeedList} from '../../../hooks';
+import {useCourierSearch} from '../../../hooks/useCourierApi';
+import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 
 export interface RecurringJobsFilters {
     speedId?: number;
@@ -282,7 +283,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                             textTransform: 'none',
                             '&.Mui-selected': {
                                 bgcolor: 'grey.600',
-                                color: 'secondary.contrastText',
+                                color: 'common.white',
                                 '&:hover': {
                                     bgcolor: 'grey.700',
                                 },
@@ -412,7 +413,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
 
                 {/* Days of Week Filter */}
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                    <Box component="span" sx={{color: 'text.secondary', fontSize: 14, mr: 0.5}}>
+                    <Box component="span" sx={{color: 'text.secondary', fontSize: '0.875rem', mr: 0.5}}>
                         Days:
                     </Box>
                     <ToggleButtonGroup size="small" disabled={isLoading}>
@@ -427,7 +428,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                     py: 0.5,
                                     minWidth: 32,
                                     textTransform: 'none',
-                                    fontSize: 12,
+                                    fontSize: '0.75rem',
                                     '&.Mui-selected': {
                                         bgcolor: 'primary.main',
                                         color: 'primary.contrastText',

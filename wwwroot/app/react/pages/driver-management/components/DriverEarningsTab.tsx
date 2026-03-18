@@ -8,7 +8,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import {useDriverEarnings} from '../../../hooks';
+import {useDriverEarnings} from '../../../hooks/useDriverManagementApi';
 import {CourierDailyEarnings, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx} from './shared';

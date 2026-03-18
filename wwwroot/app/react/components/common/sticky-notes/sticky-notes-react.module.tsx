@@ -77,7 +77,6 @@ class StickyNotesReactController implements angular.IController {
                     showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
                     showErrorToast={(msg) => toastService.showErrorToast(msg)}
                     showInfoToast={(msg) => toastService.showInfoToast(msg)}
-                    isUsCustomer={this.appConfig.US_Customer}
                 />
             </ThemeProvider>
         );

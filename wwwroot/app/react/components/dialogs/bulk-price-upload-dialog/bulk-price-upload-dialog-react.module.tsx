@@ -15,11 +15,7 @@ import { OpenBulkPriceUploadDialogOptions, PricingMode, BulkPricePreviewResponse
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { bulkPriceApi } from '../../../services/bulkPriceApi';
-import type { ShowToastFn } from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -119,12 +115,12 @@ export function openBulkPriceUploadDialog(options: OpenBulkPriceUploadDialogOpti
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactBulkPriceUploadDialog = {
+window.ReactBulkPriceUploadDialog = {
     open: openBulkPriceUploadDialog,
 };
 
 // Create AngularJS module
-const bulkPriceUploadDialogReactModule = (window as any).angular.module(
+const bulkPriceUploadDialogReactModule = window.angular!.module(
     'uDispatch.bulkPriceUploadDialogReact',
     []
 );

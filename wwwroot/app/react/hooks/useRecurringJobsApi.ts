@@ -5,7 +5,7 @@
  * For mutations (void, export), use recurringJobsApi directly.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {useQuery, keepPreviousData} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {recurringJobsApi} from '../services/recurringJobsApi';
 import {PaginatedRecurringJobsResponse, RecurringJobQuery, SpeedOption} from '../interfaces';
@@ -39,6 +39,7 @@ export function useRecurringJobsList(
         queryKey: queryKeys.recurringJobs.list(query),
         queryFn: ({signal}) => recurringJobsApi.getPreBookJobs(query, {signal}),
         enabled: options?.enabled ?? true,
+        placeholderData: keepPreviousData,
     });
 }
 

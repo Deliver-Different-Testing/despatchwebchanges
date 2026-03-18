@@ -3,7 +3,6 @@ import NationwideService from "./nationwide.service";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
-import JobsListComponent from "../common/job-list/job-list.component";
 import TasksService from "../../services/tasks.service";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
@@ -11,7 +10,6 @@ import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 import JobContextMenuService from "../../services/job-context-menu.service";
-import JobHighlightService from "../common/job-list/job-highlight.service";
 import RecoveryAgentManagementController
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.controller";
 import RecoveryAgentManagementService
@@ -27,14 +25,12 @@ const nationwideModule = angular.module('uDispatch.nationwide', [
     'ngMessages',
     'md.data.table',
     'ui.sortable',
-    'angularResizable',
-    'ui.bootstrap.contextMenu'
+    'angularResizable'
 ]);
 
 // Register components
 nationwideModule
-    .component("nationwideComponent", NationwideComponent)
-    .component("jobsList", JobsListComponent);
+    .component("nationwideComponent", NationwideComponent);
 
 // Register services
 nationwideModule
@@ -46,7 +42,6 @@ nationwideModule
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("jobContextMenuService", JobContextMenuService)
-    .service("jobHighlightService", JobHighlightService)
     .service("recoveryAgentManagementService", RecoveryAgentManagementService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 

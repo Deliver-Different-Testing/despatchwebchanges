@@ -8,25 +8,6 @@ import {IAppConfig} from "../../../interfaces/app-config.interface";
 import {pricingBreakdownApi} from "../../../react/services/pricingBreakdownApi";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactPriceBreakdownDialog?: {
-            open: (
-                priceBreakdowns: PriceBreakdown[],
-                jobId: number,
-                isPrebook: boolean,
-                isArchived: boolean,
-                apiService?: {
-                    addPriceBreakdown: (breakdown: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
-                    updatePriceBreakdown: (breakdown: PriceBreakdown) => Promise<void>;
-                    deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
-                }
-            ) => Promise<number | null>;
-        };
-    }
-}
-
 class PriceBreakdownDialogService implements angular.IServiceProvider {
     static $inject = [
         'DispatchData',

@@ -149,56 +149,54 @@ describe('MapControlButtons Component', () => {
     });
 
     describe('Active State Visual Feedback', () => {
-        it('renders auto zoom button with active styling when enabled', () => {
+        it('renders auto zoom button with active state when enabled', () => {
             const props = createDefaultProps({
                 controlState: createDefaultControlState({autoZoomEnabled: true}),
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
             const button = screen.getByLabelText('Toggle Auto Zoom');
-            // Active buttons should have blue background (#3f51b5)
-            expect(button).toHaveStyle({backgroundColor: 'rgb(63, 81, 181)'});
+            expect(button).toHaveAttribute('data-active', 'true');
         });
 
-        it('renders auto zoom button with inactive styling when disabled', () => {
+        it('renders auto zoom button with inactive state when disabled', () => {
             const props = createDefaultProps({
                 controlState: createDefaultControlState({autoZoomEnabled: false}),
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
             const button = screen.getByLabelText('Toggle Auto Zoom');
-            // Inactive buttons should have red background (#f44336)
-            expect(button).toHaveStyle({backgroundColor: 'rgb(244, 67, 54)'});
+            expect(button).toHaveAttribute('data-active', 'false');
         });
 
-        it('renders couriers only button with active styling when enabled', () => {
+        it('renders couriers only button with active state when enabled', () => {
             const props = createDefaultProps({
                 controlState: createDefaultControlState({couriersOnlyEnabled: true}),
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
             const button = screen.getByLabelText('Toggle Couriers Only');
-            expect(button).toHaveStyle({backgroundColor: 'rgb(63, 81, 181)'});
+            expect(button).toHaveAttribute('data-active', 'true');
         });
 
-        it('renders urgent army button with active styling when enabled', () => {
+        it('renders urgent army button with active state when enabled', () => {
             const props = createDefaultProps({
                 controlState: createDefaultControlState({urgentArmyOnlyEnabled: true}),
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
             const button = screen.getByLabelText('Toggle Urgent Army Filter');
-            expect(button).toHaveStyle({backgroundColor: 'rgb(63, 81, 181)'});
+            expect(button).toHaveAttribute('data-active', 'true');
         });
 
-        it('renders large view button with active styling when enabled', () => {
+        it('renders large view button with active state when enabled', () => {
             const props = createDefaultProps({
                 controlState: createDefaultControlState({couriersLargeViewEnabled: true}),
             });
             renderWithTheme(<MapControlButtons {...props} />);
 
             const button = screen.getByLabelText('Toggle Couriers Large View');
-            expect(button).toHaveStyle({backgroundColor: 'rgb(63, 81, 181)'});
+            expect(button).toHaveAttribute('data-active', 'true');
         });
     });
 

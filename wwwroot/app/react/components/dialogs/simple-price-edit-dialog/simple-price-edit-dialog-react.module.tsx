@@ -15,7 +15,7 @@ import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions } from './types';
 import { apiClient } from '../../../services/apiClient';
-import type { ShowToastFn } from '../../../services/toastService';
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -24,10 +24,6 @@ interface DialogState {
     currentCharge: number;
     isPrebook: boolean;
     resolve?: (result: PriceEditResult | null) => void;
-}
-
-interface ToastService {
-    showToast: ShowToastFn;
 }
 
 const defaultToastService: ToastService = {
@@ -167,13 +163,13 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactSimplePriceEditDialog = {
+window.ReactSimplePriceEditDialog = {
     open: openSimplePriceEditDialog,
     setToastService,
 };
 
 // Create AngularJS module for ocLazyLoad
-const simplePriceEditDialogReactModule = (window as any).angular.module(
+const simplePriceEditDialogReactModule = window.angular!.module(
     'uDispatch.simplePriceEditDialogReact',
     []
 );

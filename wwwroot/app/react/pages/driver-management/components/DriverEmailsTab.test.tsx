@@ -4,10 +4,10 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverEmailsTab} from './DriverEmailsTab';
 import {DriverEmail, PaginatedResponse} from '../../../interfaces';
-import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks';
+import {useDriverEmails, useSendEmailToCouriers} from '../../../hooks/useDriverManagementApi';
 
 // Mock the hooks
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useDriverEmails: jest.fn(),
     useSendEmailToCouriers: jest.fn(),
 }));

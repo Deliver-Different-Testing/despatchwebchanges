@@ -47,8 +47,6 @@ public class NoteRepository(
         return bulkNotes;
     }
 
-    private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
-
     public async Task<IReadOnlyList<TucNoteViewModel>> GetNotesByJobIdAsync(int jobId) =>
         await IsJobArchived(jobId)
             ? await GetArchivedNotesByJobIdAsync(jobId)
@@ -182,27 +180,14 @@ public class NoteRepository(
             .ExecuteDeleteAsync(cancellationToken);
     }
 
-    public async Task DeleteBulkNoteAsync(int noteId, CancellationToken cancellationToken = default)
-    {
-        await Context.TucNoteHistories
-            .Where(h => h.BulkNoteId == noteId)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        await Context.TblBulkJobNotes
-            .Where(note => note.NoteId == noteId)
-            .ExecuteDeleteAsync(cancellationToken);
-    }
-
-    public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
-
     public async Task<IReadOnlyList<NoteTypeViewModel>> GetNoteTypesAsync() =>
         await Context.TucNoteTypes
-            .Where(x => x.IsActive)
-            .Select(x => new NoteTypeViewModel
+            .Where(nt => nt.IsActive)
+            .Select(nt => new NoteTypeViewModel
             {
-                Id = x.NoteTypeId,
-                Text = x.NoteTypeName,
-                IsPublic = x.IsPublic
+                Id = nt.NoteTypeId,
+                Text = nt.NoteTypeName,
+                IsPublic = nt.IsPublic
             })
             .ToListAsync();
 
@@ -219,6 +204,90 @@ public class NoteRepository(
         await Context.TucNoteTypes.AddAsync(newType);
         await Context.SaveChangesAsync();
     }
+
+    public async Task<IReadOnlyList<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source)
+    {
+        var query = source switch
+        {
+            NoteHistorySource.Note => Context.TucNoteHistories.Where(h => h.NoteId == noteId),
+            NoteHistorySource.BulkNote => Context.TucNoteHistories.Where(h => h.BulkNoteId == noteId),
+            NoteHistorySource.Archive => Context.TucNoteHistories.Where(h => h.ArchiveNoteId == noteId),
+            _ => throw new ArgumentOutOfRangeException(nameof(source))
+        };
+
+        var history = await query
+            .OrderByDescending(h => h.EditedAt)
+            .Select(h => new NoteHistoryViewModel
+            {
+                NoteHistoryId = h.NoteHistoryId,
+                NoteId = h.NoteId ?? h.BulkNoteId ?? h.ArchiveNoteId ?? 0,
+                EditedBy = h.EditedBy,
+                EditedByName = h.EditedByNavigation != null
+                    ? h.EditedByNavigation.UcstFirstName + Space + h.EditedByNavigation.UcstLastName
+                    : string.Empty,
+                EditedAt = h.EditedAt,
+                OldNoteText = h.OldNoteText,
+                NewNoteText = h.NewNoteText,
+                OldNoteTypeId = h.OldNoteTypeId,
+                NewNoteTypeId = h.NewNoteTypeId,
+                OldIsImportant = h.OldIsImportant,
+                NewIsImportant = h.NewIsImportant
+            })
+            .ToListAsync();
+
+        // Join note type names
+        var noteTypeIds = history
+            .SelectMany(h => new[] { h.OldNoteTypeId, h.NewNoteTypeId })
+            .Where(id => id.HasValue)
+            .Select(id => id.Value)
+            .Distinct()
+            .ToList();
+
+        Dictionary<int, string> noteTypes = [];
+        if (noteTypeIds.Count > 0)
+        {
+            noteTypes = await Context.TucNoteTypes
+                .Where(nt => noteTypeIds.Contains(nt.NoteTypeId))
+                .ToDictionaryAsync(nt => nt.NoteTypeId, nt => nt.NoteTypeName);
+        }
+
+        // Join note type names and convert UTC to tenant timezone
+        return history.Select(h => new NoteHistoryViewModel
+        {
+            NoteHistoryId = h.NoteHistoryId,
+            NoteId = h.NoteId,
+            EditedBy = h.EditedBy,
+            EditedByName = h.EditedByName,
+            EditedAt = infoService.ConvertUtcToTenantTimeZone(h.EditedAt.DateTime),
+            OldNoteText = h.OldNoteText,
+            NewNoteText = h.NewNoteText,
+            OldNoteTypeId = h.OldNoteTypeId,
+            OldNoteTypeName = h.OldNoteTypeId.HasValue && noteTypes.TryGetValue(h.OldNoteTypeId.Value, out var oldName)
+                ? oldName
+                : h.OldNoteTypeName,
+            NewNoteTypeId = h.NewNoteTypeId,
+            NewNoteTypeName = h.NewNoteTypeId.HasValue && noteTypes.TryGetValue(h.NewNoteTypeId.Value, out var newName)
+                ? newName
+                : h.NewNoteTypeName,
+            OldIsImportant = h.OldIsImportant,
+            NewIsImportant = h.NewIsImportant
+        }).ToList();
+    }
+
+    private static string FormatName(string firstName, string lastName) => string.Concat(firstName, " ", lastName);
+
+    public async Task DeleteBulkNoteAsync(int noteId, CancellationToken cancellationToken = default)
+    {
+        await Context.TucNoteHistories
+            .Where(h => h.BulkNoteId == noteId)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await Context.TblBulkJobNotes
+            .Where(note => note.NoteId == noteId)
+            .ExecuteDeleteAsync(cancellationToken);
+    }
+
+    public async Task<bool> IsJobArchived(int jobId) => await Context.IsJobArchivedAsync(jobId);
 
     // Helper Methods
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
@@ -378,71 +447,6 @@ public class NoteRepository(
         };
 
         await Context.TucNoteHistories.AddAsync(history, cancellationToken);
-    }
-
-    public async Task<IReadOnlyList<NoteHistoryViewModel>> GetNoteHistoryAsync(int noteId, NoteHistorySource source)
-    {
-        var query = source switch
-        {
-            NoteHistorySource.Note => Context.TucNoteHistories.Where(h => h.NoteId == noteId),
-            NoteHistorySource.BulkNote => Context.TucNoteHistories.Where(h => h.BulkNoteId == noteId),
-            NoteHistorySource.Archive => Context.TucNoteHistories.Where(h => h.ArchiveNoteId == noteId),
-            _ => throw new ArgumentOutOfRangeException(nameof(source))
-        };
-
-        var history = await query
-            .OrderByDescending(h => h.EditedAt)
-            .Select(h => new NoteHistoryViewModel
-            {
-                NoteHistoryId = h.NoteHistoryId,
-                NoteId = h.NoteId ?? h.BulkNoteId ?? h.ArchiveNoteId ?? 0,
-                EditedBy = h.EditedBy,
-                EditedByName = h.EditedByNavigation != null
-                    ? h.EditedByNavigation.UcstFirstName + Space + h.EditedByNavigation.UcstLastName
-                    : string.Empty,
-                EditedAt = h.EditedAt,
-                OldNoteText = h.OldNoteText,
-                NewNoteText = h.NewNoteText,
-                OldNoteTypeId = h.OldNoteTypeId,
-                NewNoteTypeId = h.NewNoteTypeId,
-                OldIsImportant = h.OldIsImportant,
-                NewIsImportant = h.NewIsImportant
-            })
-            .ToListAsync();
-
-        // Join note type names
-        var noteTypeIds = history
-            .SelectMany(h => new[] { h.OldNoteTypeId, h.NewNoteTypeId })
-            .Where(id => id.HasValue)
-            .Select(id => id.Value)
-            .Distinct()
-            .ToList();
-
-        Dictionary<int, string> noteTypes = [];
-        if (noteTypeIds.Count > 0)
-        {
-            noteTypes = await Context.TucNoteTypes
-                .Where(nt => noteTypeIds.Contains(nt.NoteTypeId))
-                .ToDictionaryAsync(nt => nt.NoteTypeId, nt => nt.NoteTypeName);
-        }
-
-        // Join note type names and convert UTC to tenant timezone
-        return history.Select(h => new NoteHistoryViewModel
-        {
-            NoteHistoryId = h.NoteHistoryId,
-            NoteId = h.NoteId,
-            EditedBy = h.EditedBy,
-            EditedByName = h.EditedByName,
-            EditedAt = infoService.ConvertUtcToTenantTimeZone(h.EditedAt.DateTime),
-            OldNoteText = h.OldNoteText,
-            NewNoteText = h.NewNoteText,
-            OldNoteTypeId = h.OldNoteTypeId,
-            OldNoteTypeName = h.OldNoteTypeId.HasValue && noteTypes.TryGetValue(h.OldNoteTypeId.Value, out var oldName) ? oldName : h.OldNoteTypeName,
-            NewNoteTypeId = h.NewNoteTypeId,
-            NewNoteTypeName = h.NewNoteTypeId.HasValue && noteTypes.TryGetValue(h.NewNoteTypeId.Value, out var newName) ? newName : h.NewNoteTypeName,
-            OldIsImportant = h.OldIsImportant,
-            NewIsImportant = h.NewIsImportant
-        }).ToList();
     }
 
     // Query Methods

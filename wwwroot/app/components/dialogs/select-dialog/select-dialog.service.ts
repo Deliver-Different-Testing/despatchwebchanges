@@ -2,32 +2,6 @@ import {ISuggestion} from "../../../interfaces/job.interface";
 import {ISelectDialogResult} from "../../../interfaces/dialog-result.interfaces";
 import angular from 'angular';
 
-// Type for the result from the React dialog
-interface SelectDialogResultFromReact {
-    fieldName: string;
-    value: number;
-    checkboxValue?: boolean;
-}
-
-// Type for options passed to the React dialog
-interface SelectDialogOptionsForReact {
-    title: string;
-    fieldName: string;
-    items: Array<{ id: number; text: string }>;
-    initialValue?: string | number | null;
-    showCheckbox?: boolean;
-    checkboxLabel?: string;
-}
-
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactSelectDialog?: {
-            showSelectDialog: (options: SelectDialogOptionsForReact) => Promise<SelectDialogResultFromReact | null>;
-        };
-    }
-}
-
 export class SelectDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',

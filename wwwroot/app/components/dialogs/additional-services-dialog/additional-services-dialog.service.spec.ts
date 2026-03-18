@@ -254,7 +254,7 @@ describe('AdditionalServicesDialogService', () => {
     });
 
     describe('Toast Wrapper', () => {
-        let toastService: { showToast: (message: string, type: 'success' | 'warning' | 'error') => void };
+        let toastService: { showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => void };
 
         beforeEach(async () => {
             setupWindowGlobal();

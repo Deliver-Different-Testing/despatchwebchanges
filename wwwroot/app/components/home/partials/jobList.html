@@ -4,20 +4,4 @@
         class="md-primary">
 </md-progress-linear>
 
-<jobs-list
-        jobs="$parent.ctrl.jobList"
-        selected-job="$parent.ctrl.currentJob"
-        on-job-select="$parent.ctrl.selectJob(job)"
-        on-job-dispatch="$parent.ctrl.handleJobDispatch(job, courierId)"
-        on-job-action="$parent.ctrl.handleJobAction(action, job, params)"
-        get-context-menu-options="$parent.ctrl.getJobContextMenuOptions()"
-        on-refresh="$parent.ctrl.getData()"
-        job-list-type="$parent.ctrl.dispatchListName"
-        on-load-more-jobs="$parent.ctrl.handleLoadMoreJobs(page, pageSize)"
-        enable-virtual-scrolling="true"
-        total-jobs-count="$parent.ctrl.totalJobCount"
-        on-search-change="$parent.ctrl.updateJobSearchText(searchText)"
-        on-category-change="$parent.ctrl.handleCategoryChange(category)"
-        set-backend-filter="$parent.ctrl.handleBackendFilter(column, direction)"
-        default-category="$parent.ctrl.defaultJobCategory">
-</jobs-list>
+<div id="react-dispatch-job-list" style="height: 100%;"></div>

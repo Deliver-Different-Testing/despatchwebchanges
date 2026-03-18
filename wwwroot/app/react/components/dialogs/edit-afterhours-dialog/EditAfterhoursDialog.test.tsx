@@ -11,10 +11,10 @@ import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {EditAfterhoursDialog, EditAfterhoursDialogProps} from './EditAfterhoursDialog';
 import {AfterHoursCourierSchedule, CourierSuggestion, TimeZoneOption,} from '../../../interfaces';
-import {useCourierSearch, useTimeZoneOptions} from '../../../hooks';
+import {useCourierSearch, useTimeZoneOptions} from '../../../hooks/useCourierApi';
 
 // Mock the React Query hooks
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useCourierApi', () => ({
     useCourierSearch: jest.fn(),
     useTimeZoneOptions: jest.fn(),
 }));

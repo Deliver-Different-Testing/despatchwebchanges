@@ -16,11 +16,7 @@ import { ReactQueryProvider } from '../../../query';
 import { getIanaTimezone, getTenantTimezone } from '../../../utils/dateUtils';
 import { getEventTypeGroups, addTasks, getActiveStaff } from '../../../services/tasksApi';
 import { EventGroupViewModel, StaffSuggestion } from '../../../interfaces';
-import type { ShowToastFn } from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -152,12 +148,12 @@ export function openEventGroupDialog(options: OpenEventGroupDialogOptions): Prom
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactEventGroupDialog = {
+window.ReactEventGroupDialog = {
     open: openEventGroupDialog,
 };
 
 // Create AngularJS module
-const eventGroupDialogReactModule = (window as any).angular.module(
+const eventGroupDialogReactModule = window.angular!.module(
     'uDispatch.eventGroupDialogReact',
     []
 );

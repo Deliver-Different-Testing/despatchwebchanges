@@ -6,6 +6,7 @@ import {DriverManagementPage} from './DriverManagementPage';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
 import {MountDriverManagementConfig} from '../../interfaces';
+import {ErrorBoundary} from '../../components/common/error-boundary';
 
 let driverManagementRoot: Root | null = null;
 let driverManagementContainer: HTMLElement | null = null;
@@ -46,13 +47,15 @@ export function mountDriverManagementPage(
         <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
                 <CssBaseline />
-                <DriverManagementPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
+                <ErrorBoundary>
+                    <DriverManagementPage
+                        showToast={config.showToast}
+                        isUsCustomer={config.isUsCustomer}
+                        setRefreshCallback={(cb) => {
+                            refreshCallback = cb;
+                        }}
+                    />
+                </ErrorBoundary>
             </ThemeProvider>
         </ReactQueryProvider>
     );
@@ -84,7 +87,7 @@ window.ReactDriverManagement = {
     refresh: refreshDriverManagement,
 };
 
-const driverManagementReactModule = (window as any).angular.module(
+const driverManagementReactModule = window.angular!.module(
     'uDispatch.driverManagementReact',
     []
 );

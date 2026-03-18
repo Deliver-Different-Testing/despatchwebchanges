@@ -114,7 +114,7 @@ const StreamingIndicator: React.FC = () => (
 );
 
 /** Individual chat message bubble */
-const MessageBubble: React.FC<{ message: AiMessage }> = ({ message }) => {
+const MessageBubble: React.FC<{ message: AiMessage }> = React.memo(({ message }) => {
     const isUser = message.role === 'user';
 
     return (
@@ -154,10 +154,10 @@ const MessageBubble: React.FC<{ message: AiMessage }> = ({ message }) => {
             </Paper>
         </Box>
     );
-};
+});
 
 /** Empty state with suggested prompts */
-const EmptyState: React.FC<{ onSelectPrompt: (prompt: string) => void }> = ({ onSelectPrompt }) => (
+const EmptyState: React.FC<{ onSelectPrompt: (prompt: string) => void }> = React.memo(({ onSelectPrompt }) => (
     <Box
         sx={{
             display: 'flex',
@@ -211,7 +211,7 @@ const EmptyState: React.FC<{ onSelectPrompt: (prompt: string) => void }> = ({ on
             ))}
         </Box>
     </Box>
-);
+));
 
 export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
     open,

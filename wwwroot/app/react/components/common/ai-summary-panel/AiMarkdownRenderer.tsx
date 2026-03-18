@@ -58,7 +58,7 @@ const components: Components = {
             sx={{
                 px: 0.75,
                 py: 0.25,
-                borderRadius: '4px',
+                borderRadius: 1,
                 bgcolor: 'action.hover',
                 fontSize: '0.8125rem',
                 fontFamily: 'monospace',

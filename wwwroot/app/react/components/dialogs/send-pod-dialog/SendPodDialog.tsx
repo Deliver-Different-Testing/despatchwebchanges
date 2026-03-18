@@ -190,7 +190,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
             slotProps={{
                 paper: {
                     sx: {
-                        borderRadius: '14px',
+                        borderRadius: 3.5,
                         overflow: 'hidden',
                         maxHeight: 'calc(100vh - 48px)',
                     },
@@ -212,7 +212,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                         sx={{
                             width: 42,
                             height: 42,
-                            borderRadius: '10px',
+                            borderRadius: 2.5,
                             background: alpha(theme.palette.primary.contrastText, 0.15),
                             display: 'flex',
                             alignItems: 'center',
@@ -268,7 +268,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                             fontWeight: 700,
                             textTransform: 'uppercase',
                             letterSpacing: '0.08em',
-                            color: '#8a9099',
+                            color: 'text.secondary',
                             mb: 0,
                         }}
                     >
@@ -282,12 +282,13 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 alignItems: 'center',
                                 gap: '10px',
                                 p: '9px 12px',
-                                borderRadius: '8px',
+                                borderRadius: 2,
                                 cursor: 'pointer',
                                 userSelect: 'none',
-                                border: '1.5px solid #eef0f3',
+                                border: '1.5px solid',
+                                borderColor: 'grey.200',
                                 mb: '6px',
-                                background: '#fafbfc',
+                                background: 'grey.50',
                             }}
                             onClick={toggleBooking}
                         >
@@ -296,16 +297,16 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 size="small"
                                 sx={{
                                     p: 0,
-                                    color: '#c5c9d0',
+                                    color: 'text.disabled',
                                     '&.Mui-checked': {color: theme.palette.primary.main},
                                 }}
                             />
                             <Box>
-                                <Typography sx={{fontSize: 14, fontWeight: 500, color: '#1a1d23'}}>
+                                <Typography sx={{fontSize: 14, fontWeight: 500, color: 'text.primary'}}>
                                     Booking {bookingEmails.length > 1 ? 'emails' : 'email'}
                                 </Typography>
                                 {bookingEmails.map((email) => (
-                                    <Typography key={email} sx={{fontSize: 12, color: '#6b7280', fontFamily: 'monospace'}}>
+                                    <Typography key={email} sx={{fontSize: 12, color: 'text.secondary', fontFamily: 'monospace'}}>
                                         {email}
                                     </Typography>
                                 ))}
@@ -320,12 +321,13 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 alignItems: 'center',
                                 gap: '10px',
                                 p: '9px 12px',
-                                borderRadius: '8px',
+                                borderRadius: 2,
                                 cursor: 'pointer',
                                 userSelect: 'none',
-                                border: '1.5px solid #eef0f3',
+                                border: '1.5px solid',
+                                borderColor: 'grey.200',
                                 mb: '6px',
-                                background: '#fafbfc',
+                                background: 'grey.50',
                             }}
                             onClick={toggleTracking}
                         >
@@ -334,16 +336,16 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 size="small"
                                 sx={{
                                     p: 0,
-                                    color: '#c5c9d0',
+                                    color: 'text.disabled',
                                     '&.Mui-checked': {color: theme.palette.primary.main},
                                 }}
                             />
                             <Box>
-                                <Typography sx={{fontSize: 14, fontWeight: 500, color: '#1a1d23'}}>
+                                <Typography sx={{fontSize: 14, fontWeight: 500, color: 'text.primary'}}>
                                     Tracking {uniqueTrackingEmails.length > 1 ? 'emails' : 'email'}
                                 </Typography>
                                 {uniqueTrackingEmails.map((email) => (
-                                    <Typography key={email} sx={{fontSize: 12, color: '#6b7280', fontFamily: 'monospace'}}>
+                                    <Typography key={email} sx={{fontSize: 12, color: 'text.secondary', fontFamily: 'monospace'}}>
                                         {email}
                                     </Typography>
                                 ))}
@@ -351,7 +353,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                         </Box>
                     )}
 
-                    <Box sx={{borderTop: '1px solid #eef0f3', my: '10px'}}/>
+                    <Box sx={{borderTop: '1px solid', borderColor: 'grey.200', my: '10px'}}/>
 
                     <Box sx={{display: 'flex', gap: '8px'}}>
                         <TextField
@@ -368,8 +370,8 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                             sx={{
                                 flex: 1,
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: '8px',
-                                    background: '#fafbfc',
+                                    borderRadius: 2,
+                                    background: 'grey.50',
                                     fontSize: 14,
                                 },
                             }}
@@ -378,26 +380,27 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                             variant="outlined"
                             onClick={addFreeEmail}
                             sx={{
-                                borderRadius: '8px',
-                                border: '1.5px solid #dde1e7',
-                                background: '#f3f4f6',
-                                color: '#374151',
+                                borderRadius: 2,
+                                border: '1.5px solid',
+                                borderColor: 'grey.300',
+                                background: 'grey.100',
+                                color: 'text.primary',
                                 fontSize: 14,
                                 fontWeight: 600,
                                 textTransform: 'none',
                                 whiteSpace: 'nowrap',
-                                '&:hover': {background: '#e5e7eb', border: '1.5px solid #dde1e7'},
+                                '&:hover': {background: 'grey.200', borderColor: 'grey.300'},
                             }}
                         >
                             Add
                         </Button>
                     </Box>
                     {freeError ? (
-                        <Typography sx={{fontSize: 12, color: '#e05252', mt: '5px'}}>
+                        <Typography sx={{fontSize: 12, color: 'error.main', mt: '5px'}}>
                             {freeError}
                         </Typography>
                     ) : (
-                        <Typography sx={{fontSize: 12, color: '#9ca3af', mt: '5px'}}>
+                        <Typography sx={{fontSize: 12, color: 'text.disabled', mt: '5px'}}>
                             Press Enter or comma to add multiple
                         </Typography>
                     )}
@@ -412,7 +415,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 fontWeight: 700,
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.08em',
-                                color: '#8a9099',
+                                color: 'text.secondary',
                                 mb: '6px',
                             }}
                         >
@@ -428,7 +431,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                         background: alpha(theme.palette.primary.main, 0.08),
                                         color: theme.palette.primary.dark,
                                         border: `1.5px solid ${alpha(theme.palette.primary.main, 0.3)}`,
-                                        borderRadius: '20px',
+                                        borderRadius: 5,
                                         fontSize: 13,
                                         fontWeight: 500,
                                         '& .MuiChip-deleteIcon': {
@@ -450,7 +453,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                             fontWeight: 700,
                             textTransform: 'uppercase',
                             letterSpacing: '0.08em',
-                            color: '#8a9099',
+                            color: 'text.secondary',
                             mb: '6px',
                         }}
                     >
@@ -459,9 +462,10 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
 
                     <Box
                         sx={{
-                            border: '1.5px solid #e2e6ec',
-                            borderRadius: '10px',
-                            background: '#f8fafb',
+                            border: '1.5px solid',
+                            borderColor: 'grey.300',
+                            borderRadius: 2.5,
+                            background: 'grey.50',
                             overflow: 'hidden',
                             position: 'relative',
                         }}
@@ -474,7 +478,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                     fontWeight: 700,
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.07em',
-                                    color: '#9ca3af',
+                                    color: 'text.disabled',
                                     minWidth: 72,
                                     pt: '1px',
                                     flexShrink: 0,
@@ -482,11 +486,11 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                             >
                                 Subject
                             </Typography>
-                            <Typography sx={{fontSize: 13, fontWeight: 600, color: '#1a1d23', lineHeight: 1.45}}>
+                            <Typography sx={{fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1.45}}>
                                 {subject}
                             </Typography>
                         </Box>
-                        <Box sx={{borderTop: '1px solid #e2e6ec', mx: '14px'}}/>
+                        <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
 
                         {/* Attachment */}
                         <Box sx={{display: 'flex', alignItems: 'flex-start', gap: '12px', p: '10px 14px'}}>
@@ -496,7 +500,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                     fontWeight: 700,
                                     textTransform: 'uppercase',
                                     letterSpacing: '0.07em',
-                                    color: '#9ca3af',
+                                    color: 'text.disabled',
                                     minWidth: 72,
                                     pt: '1px',
                                     flexShrink: 0,
@@ -509,27 +513,28 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     gap: '5px',
-                                    background: '#fff',
-                                    border: '1.5px solid #dde1e7',
-                                    borderRadius: '6px',
+                                    background: 'background.paper',
+                                    border: '1.5px solid',
+                                    borderColor: 'grey.300',
+                                    borderRadius: 1.5,
                                     p: '3px 9px',
                                     fontSize: 12,
                                     fontWeight: 500,
-                                    color: '#374151',
+                                    color: 'text.primary',
                                 }}
                             >
                                 <AttachFileIcon sx={{fontSize: 13}}/>
                                 POD_{jobData.jobNo}.pdf
                             </Box>
                         </Box>
-                        <Box sx={{borderTop: '1px solid #e2e6ec', mx: '14px'}}/>
+                        <Box sx={{borderTop: '1px solid', borderColor: 'grey.300', mx: '14px'}}/>
 
                         {/* Body */}
                         <Box
                             sx={{
                                 p: '12px 14px 40px',
                                 fontSize: 13,
-                                color: '#374151',
+                                color: 'text.primary',
                                 lineHeight: 1.7,
                                 whiteSpace: 'pre-wrap',
                             }}
@@ -547,7 +552,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                                 alignItems: 'center',
                                 gap: '5px',
                                 fontSize: 11,
-                                color: '#9ca3af',
+                                color: 'text.disabled',
                                 fontWeight: 600,
                                 letterSpacing: '0.04em',
                             }}
@@ -563,16 +568,18 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
             <DialogActions
                 sx={{
                     p: '14px 22px 18px',
-                    borderTop: '1px solid #f0f1f3',
+                    borderTop: '1px solid',
+                    borderColor: 'grey.200',
                 }}
             >
                 <Button
                     onClick={handleClose}
                     sx={{
-                        borderRadius: '8px',
-                        border: '1.5px solid #dde1e7',
+                        borderRadius: 2,
+                        border: '1.5px solid',
+                        borderColor: 'grey.300',
                         background: 'transparent',
-                        color: '#6b7280',
+                        color: 'text.secondary',
                         fontSize: 14,
                         fontWeight: 600,
                         textTransform: 'none',
@@ -585,7 +592,7 @@ export const SendPodDialog: React.FC<SendPodDialogProps> = ({
                     onClick={handleSend}
                     disabled={recipients.length === 0 || sending}
                     sx={{
-                        borderRadius: '8px',
+                        borderRadius: 2,
                         background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
                         color: theme.palette.primary.contrastText,
                         fontSize: 14,

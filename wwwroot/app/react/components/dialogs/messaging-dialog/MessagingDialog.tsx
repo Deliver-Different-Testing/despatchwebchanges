@@ -5,7 +5,8 @@
  * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
  */
 
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import {accentPalette, sharedColors} from '../../../theme/muiTheme';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import Box from '@mui/material/Box';
@@ -62,86 +63,25 @@ import {
 } from './useMessaging';
 import { messagingApi } from '../../../services/messagingApi';
 
-interface MessagingDialogState {
-    selectedConversation: RecentConversation | null;
-    showNewChatView: boolean;
-    newMessage: string;
-    messageDeliveryType: MessageDeliveryType;
-    isSending: boolean;
-    showQuickResponses: boolean;
-    isMultiSelectMode: boolean;
-    selectedContacts: MessageContactOption[];
-}
-
-export class MessagingDialog extends React.Component<MessagingDialogProps, MessagingDialogState> {
-    private messagesEndRef = React.createRef<HTMLDivElement>();
-    
-    constructor(props: MessagingDialogProps) {
-        super(props);
-        this.state = {
-            selectedConversation: null,
-            showNewChatView: false,
-            newMessage: '',
-            messageDeliveryType: MessageDeliveryType.SmartDelivery,
-            isSending: false,
-            showQuickResponses: false,
-            isMultiSelectMode: false,
-            selectedContacts: [],
-        };
-    }
-
-    render() {
-        const { open, onClose } = this.props;
-
-        return (
-            <Dialog
-                open={open}
-                onClose={onClose}
-                maxWidth={false}
-                slotProps={{
-                    paper: {
-                        sx: {
-                            width: '90vw',
-                            maxWidth: 1100,
-                            height: '80vh',
-                            maxHeight: 800,
-                            minWidth: 700,
-                            minHeight: 500,
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: 'column',
-                        },
-                    },
-                }}
-            >
-                <MessagingDialogContent
-                    {...this.props}
-                    state={this.state}
-                    setState={(updates) => this.setState(updates as MessagingDialogState)}
-                    messagesEndRef={this.messagesEndRef}
-                />
-            </Dialog>
-        );
-    }
-}
-
-// Functional component for the dialog content (uses hooks)
-interface MessagingDialogContentProps extends MessagingDialogProps {
-    state: MessagingDialogState;
-    setState: (updates: Partial<MessagingDialogState>) => void;
-    messagesEndRef: React.RefObject<HTMLDivElement | null>;
-}
-
-function MessagingDialogContent({
+export const MessagingDialog: React.FC<MessagingDialogProps> = ({
     open,
     onClose,
     showToast,
     currentStaffId,
-    state,
-    setState,
-    messagesEndRef,
-}: MessagingDialogContentProps) {
+    currentStaffName,
+    timeZone,
+}) => {
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const [selectedConversation, setSelectedConversation] = useState<RecentConversation | null>(null);
+    const [showNewChatView, setShowNewChatView] = useState(false);
+    const [newMessage, setNewMessage] = useState('');
+    const [messageDeliveryType, setMessageDeliveryType] = useState<MessageDeliveryType>(MessageDeliveryType.SmartDelivery);
+    const [isSending, setIsSending] = useState(false);
+    const [showQuickResponses, setShowQuickResponses] = useState(false);
+    const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+    const [selectedContacts, setSelectedContacts] = useState<MessageContactOption[]>([]);
+
     const {
         conversations,
         isLoading: isConversationsLoading,
@@ -173,7 +113,7 @@ function MessagingDialogContent({
     } = useContactSearch();
 
     // Load initial data
-    React.useEffect(() => {
+    useEffect(() => {
         if (open) {
             loadConversations().then(_ => {
                 return loadQuickResponses();
@@ -183,44 +123,44 @@ function MessagingDialogContent({
 
     // Auto-refresh conversations every 20 seconds
     useAutoRefresh(
-        React.useCallback(async () => {
+        useCallback(async () => {
             await loadConversations(true);
         }, [loadConversations]),
         20000,
-        open && !state.showNewChatView
+        open && !showNewChatView
     );
 
     // Auto-refresh messages every 10 seconds when a conversation is selected
     useAutoRefresh(
-        React.useCallback(async () => {
-            if (state.selectedConversation) {
+        useCallback(async () => {
+            if (selectedConversation) {
                 await loadMessages(
-                    state.selectedConversation.otherPartyId,
-                    state.selectedConversation.otherPartyType,
+                    selectedConversation.otherPartyId,
+                    selectedConversation.otherPartyType,
                     true
                 );
             }
-        }, [state.selectedConversation, loadMessages]),
+        }, [selectedConversation, loadMessages]),
         10000,
-        open && !!state.selectedConversation
+        open && !!selectedConversation
     );
 
     // Scroll to bottom when messages change
-    React.useEffect(() => {
+    useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages, messagesEndRef]);
+    }, [messages]);
 
     const handleSelectConversation = async (conversation: RecentConversation) => {
         if (
-            state.selectedConversation?.otherPartyId === conversation.otherPartyId &&
-            state.selectedConversation?.otherPartyType === conversation.otherPartyType
+            selectedConversation?.otherPartyId === conversation.otherPartyId &&
+            selectedConversation?.otherPartyType === conversation.otherPartyType
         ) {
             return;
         }
 
-        setState({ selectedConversation: conversation });
+        setSelectedConversation(conversation);
         clearMessages();
         await loadMessages(conversation.otherPartyId, conversation.otherPartyType);
 
@@ -236,11 +176,10 @@ function MessagingDialogContent({
     };
 
     const handleSendMessage = async () => {
-        const { selectedConversation, newMessage, messageDeliveryType } = state;
-        if (!newMessage.trim() || !selectedConversation || state.isSending) return;
+        if (!newMessage.trim() || !selectedConversation || isSending) return;
 
         const messageContent = newMessage.trim();
-        setState({ isSending: true });
+        setIsSending(true);
 
         try {
             const data: SendMessageRequest = {
@@ -268,7 +207,7 @@ function MessagingDialogContent({
             };
 
             addOptimisticMessage(optimisticMessage);
-            setState({ newMessage: '' });
+            setNewMessage('');
 
             // Update conversation preview
             updateConversation(
@@ -285,16 +224,15 @@ function MessagingDialogContent({
             console.error('Failed to send message:', err);
             showToast('Failed to send message', 'error');
         } finally {
-            setState({ isSending: false });
+            setIsSending(false);
         }
     };
 
     const handleSendMultiMessage = async () => {
-        const { selectedContacts, newMessage, messageDeliveryType } = state;
-        if (!newMessage.trim() || selectedContacts.length === 0 || state.isSending) return;
+        if (!newMessage.trim() || selectedContacts.length === 0 || isSending) return;
 
         const messageContent = newMessage.trim();
-        setState({ isSending: true });
+        setIsSending(true);
 
         try {
             const courierIds = selectedContacts
@@ -314,19 +252,17 @@ function MessagingDialogContent({
 
             await messagingApi.sendMultiMessage(data);
 
-            setState({
-                newMessage: '',
-                selectedContacts: [],
-                isMultiSelectMode: false,
-                showNewChatView: false,
-            });
+            setNewMessage('');
+            setSelectedContacts([]);
+            setIsMultiSelectMode(false);
+            setShowNewChatView(false);
 
             showToast(`Message sent to ${courierIds.length + staffIds.length} contacts`, 'success');
         } catch (err) {
             console.error('Failed to send multi message:', err);
             showToast('Failed to send message to all contacts', 'error');
         } finally {
-            setState({ isSending: false });
+            setIsSending(false);
         }
     };
 
@@ -338,16 +274,14 @@ function MessagingDialogContent({
     };
 
     const handleShowNewChat = () => {
-        setState({ showNewChatView: true });
+        setShowNewChatView(true);
         clearSearch();
     };
 
     const handleBackToMessaging = () => {
-        setState({
-            showNewChatView: false,
-            selectedContacts: [],
-            isMultiSelectMode: false,
-        });
+        setShowNewChatView(false);
+        setSelectedContacts([]);
+        setIsMultiSelectMode(false);
         clearSearch();
     };
 
@@ -385,7 +319,6 @@ function MessagingDialogContent({
 
     const handleToggleContactSelection = (contact: MessageContactOption | RecentConversation) => {
         const normalizedContact = normalizeContact(contact);
-        const { selectedContacts } = state;
 
         const index = selectedContacts.findIndex(
             c => c.recordId === normalizedContact.recordId &&
@@ -393,29 +326,23 @@ function MessagingDialogContent({
         );
 
         if (index > -1) {
-            setState({
-                selectedContacts: selectedContacts.filter((_, i) => i !== index),
-            });
+            setSelectedContacts(selectedContacts.filter((_, i) => i !== index));
         } else {
-            setState({
-                selectedContacts: [...selectedContacts, normalizedContact],
-            });
+            setSelectedContacts([...selectedContacts, normalizedContact]);
         }
     };
 
     const isContactSelected = (contact: MessageContactOption | RecentConversation): boolean => {
         const normalizedContact = normalizeContact(contact);
-        return state.selectedContacts.some(
+        return selectedContacts.some(
             c => c.recordId === normalizedContact.recordId &&
                  c.otherMessagePartyType === normalizedContact.otherMessagePartyType
         );
     };
 
     const handleSelectQuickResponse = (response: QuickResponse) => {
-        setState({
-            newMessage: response.text,
-            showQuickResponses: false,
-        });
+        setNewMessage(response.text);
+        setShowQuickResponses(false);
     };
 
     const getTotalUnreadCount = (): number => {
@@ -427,93 +354,121 @@ function MessagingDialogContent({
         .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime())
         .slice(0, 5);
 
-    // Show New Chat View
-    if (state.showNewChatView) {
+    const renderContent = () => {
+        // Show New Chat View
+        if (showNewChatView) {
+            return (
+                <>
+                    <DialogHeader
+                        title="New Conversation"
+                        showBackButton
+                        onBack={handleBackToMessaging}
+                        onClose={onClose}
+                    />
+                    <NewChatView
+                        searchTerm={searchTerm}
+                        searchResults={searchResults}
+                        isSearching={isSearching}
+                        recentConversations={recentForNewChat}
+                        isMultiSelectMode={isMultiSelectMode}
+                        selectedContacts={selectedContacts}
+                        newMessage={newMessage}
+                        isSending={isSending}
+                        onSearch={search}
+                        onClearSearch={clearSearch}
+                        onToggleMultiSelect={() => { setIsMultiSelectMode(!isMultiSelectMode); setSelectedContacts([]); }}
+                        onToggleContactSelection={handleToggleContactSelection}
+                        onStartConversation={handleStartConversationWith}
+                        onClearSelectedContacts={() => setSelectedContacts([])}
+                        onMessageChange={(value) => setNewMessage(value)}
+                        onSendMultiMessage={handleSendMultiMessage}
+                        isContactSelected={isContactSelected}
+                    />
+                </>
+            );
+        }
+
+        // Show Main Messaging View
         return (
             <>
                 <DialogHeader
-                    title="New Conversation"
-                    showBackButton
-                    onBack={handleBackToMessaging}
+                    title="Message Center"
                     onClose={onClose}
                 />
-                <NewChatView
-                    searchTerm={searchTerm}
-                    searchResults={searchResults}
-                    isSearching={isSearching}
-                    recentConversations={recentForNewChat}
-                    isMultiSelectMode={state.isMultiSelectMode}
-                    selectedContacts={state.selectedContacts}
-                    newMessage={state.newMessage}
-                    isSending={state.isSending}
-                    onSearch={search}
-                    onClearSearch={clearSearch}
-                    onToggleMultiSelect={() => setState({ isMultiSelectMode: !state.isMultiSelectMode, selectedContacts: [] })}
-                    onToggleContactSelection={handleToggleContactSelection}
-                    onStartConversation={handleStartConversationWith}
-                    onClearSelectedContacts={() => setState({ selectedContacts: [] })}
-                    onMessageChange={(value) => setState({ newMessage: value })}
-                    onSendMultiMessage={handleSendMultiMessage}
-                    isContactSelected={isContactSelected}
-                />
+                <DialogContent sx={{ p: 0, display: 'flex', flex: 1, overflow: 'hidden' }}>
+                    {conversationsError ? (
+                        <ErrorState
+                            message={conversationsError}
+                            onRetry={() => loadConversations()}
+                        />
+                    ) : (
+                        <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+                            {/* Conversations Panel */}
+                            <ConversationsPanel
+                                conversations={conversations}
+                                selectedConversation={selectedConversation}
+                                isLoading={isConversationsLoading}
+                                totalUnreadCount={getTotalUnreadCount()}
+                                onSelectConversation={handleSelectConversation}
+                                onRefresh={() => loadConversations()}
+                                onNewChat={handleShowNewChat}
+                            />
+
+                            {/* Chat Panel */}
+                            <ChatPanel
+                                selectedConversation={selectedConversation}
+                                messages={messages}
+                                isMessagesLoading={isMessagesLoading}
+                                newMessage={newMessage}
+                                messageDeliveryType={messageDeliveryType}
+                                isSending={isSending}
+                                showQuickResponses={showQuickResponses}
+                                quickResponses={quickResponses}
+                                onMessageChange={(value) => setNewMessage(value)}
+                                onDeliveryTypeChange={(value) => setMessageDeliveryType(value)}
+                                onSendMessage={handleSendMessage}
+                                onKeyPress={handleKeyPress}
+                                onRefreshMessages={() => selectedConversation && loadMessages(
+                                    selectedConversation.otherPartyId,
+                                    selectedConversation.otherPartyType
+                                )}
+                                onToggleQuickResponses={() => setShowQuickResponses(!showQuickResponses)}
+                                onSelectQuickResponse={handleSelectQuickResponse}
+                                messagesEndRef={messagesEndRef}
+                            />
+                        </Box>
+                    )}
+                </DialogContent>
             </>
         );
-    }
+    };
 
-    // Show Main Messaging View
     return (
-        <>
-            <DialogHeader
-                title="Message Center"
-                onClose={onClose}
-            />
-            <DialogContent sx={{ p: 0, display: 'flex', flex: 1, overflow: 'hidden' }}>
-                {conversationsError ? (
-                    <ErrorState
-                        message={conversationsError}
-                        onRetry={() => loadConversations()}
-                    />
-                ) : (
-                    <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
-                        {/* Conversations Panel */}
-                        <ConversationsPanel
-                            conversations={conversations}
-                            selectedConversation={state.selectedConversation}
-                            isLoading={isConversationsLoading}
-                            totalUnreadCount={getTotalUnreadCount()}
-                            onSelectConversation={handleSelectConversation}
-                            onRefresh={() => loadConversations()}
-                            onNewChat={handleShowNewChat}
-                        />
-
-                        {/* Chat Panel */}
-                        <ChatPanel
-                            selectedConversation={state.selectedConversation}
-                            messages={messages}
-                            isMessagesLoading={isMessagesLoading}
-                            newMessage={state.newMessage}
-                            messageDeliveryType={state.messageDeliveryType}
-                            isSending={state.isSending}
-                            showQuickResponses={state.showQuickResponses}
-                            quickResponses={quickResponses}
-                            onMessageChange={(value) => setState({ newMessage: value })}
-                            onDeliveryTypeChange={(value) => setState({ messageDeliveryType: value })}
-                            onSendMessage={handleSendMessage}
-                            onKeyPress={handleKeyPress}
-                            onRefreshMessages={() => state.selectedConversation && loadMessages(
-                                state.selectedConversation.otherPartyId,
-                                state.selectedConversation.otherPartyType
-                            )}
-                            onToggleQuickResponses={() => setState({ showQuickResponses: !state.showQuickResponses })}
-                            onSelectQuickResponse={handleSelectQuickResponse}
-                            messagesEndRef={messagesEndRef}
-                        />
-                    </Box>
-                )}
-            </DialogContent>
-        </>
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth={false}
+            slotProps={{
+                paper: {
+                    sx: {
+                        width: '90vw',
+                        maxWidth: 1100,
+                        height: '80vh',
+                        maxHeight: 800,
+                        minWidth: 700,
+                        minHeight: 500,
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                    },
+                },
+            }}
+        >
+            {renderContent()}
+        </Dialog>
     );
-}
+};
 
 // Helper Components
 
@@ -808,7 +763,7 @@ function ChatPanel({
                     flex: 1,
                     overflow: 'auto',
                     p: 2,
-                    bgcolor: '#f5f5f5',
+                    bgcolor: 'grey.100',
                     display: 'flex',
                     flexDirection: 'column',
                 }}
@@ -839,7 +794,7 @@ function ChatPanel({
                                                 my: 2,
                                                 px: 2,
                                                 py: 0.5,
-                                                bgcolor: '#f5f5f5',
+                                                bgcolor: 'grey.100',
                                                 alignSelf: 'center',
                                                 borderRadius: 2,
                                                 border: '1px solid',
@@ -1221,7 +1176,7 @@ function NewChatView({
 
                 {/* Multi-select Compose */}
                 {isMultiSelectMode && selectedContacts.length > 0 && (
-                    <Box sx={{ m: 2, p: 2, bgcolor: '#f5f5f5', borderRadius: 2 }}>
+                    <Box sx={{ m: 2, p: 2, bgcolor: 'grey.100', borderRadius: 2 }}>
                         <Typography fontWeight={500} sx={{ mb: 1.5 }}>
                             Send to {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}
                         </Typography>
@@ -1399,9 +1354,9 @@ function generateInitials(name: string): string {
 
 function getStatusColor(status: string): string {
     const normalizedStatus = status?.toLowerCase() || '';
-    if (normalizedStatus === 'online' || normalizedStatus === 'active') return '#4caf50';
-    if (normalizedStatus === 'away' || normalizedStatus === 'busy') return '#ff9800';
-    return '#9e9e9e';
+    if (normalizedStatus === 'online' || normalizedStatus === 'active') return sharedColors.success.main;
+    if (normalizedStatus === 'away' || normalizedStatus === 'busy') return sharedColors.warning.main;
+    return accentPalette[400];
 }
 
 function formatMessageTime(messageTime: string): string {

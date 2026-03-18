@@ -13,6 +13,7 @@ import {OverviewPage} from './OverviewPage';
 import {getTheme} from '../../theme/muiTheme';
 import {MountOverviewConfig} from './OverviewPage.interfaces';
 import {ReactQueryProvider} from '../../query';
+import {ErrorBoundary} from '../../components/common/error-boundary';
 
 let overviewRoot: Root | null = null;
 let overviewContainer: HTMLElement | null = null;
@@ -59,14 +60,16 @@ export function mountOverviewPage(
         <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
                 <CssBaseline />
-                <OverviewPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    onOpenJobDetail={config.onOpenJobDetail}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
+                <ErrorBoundary>
+                    <OverviewPage
+                        showToast={config.showToast}
+                        isUsCustomer={config.isUsCustomer}
+                        onOpenJobDetail={config.onOpenJobDetail}
+                        setRefreshCallback={(cb) => {
+                            refreshCallback = cb;
+                        }}
+                    />
+                </ErrorBoundary>
             </ThemeProvider>
         </ReactQueryProvider>,
     );
@@ -106,7 +109,7 @@ window.ReactOverview = {
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const overviewReactModule = (window as any).angular.module(
+const overviewReactModule = window.angular!.module(
     'uDispatch.overviewReact',
     [],
 );

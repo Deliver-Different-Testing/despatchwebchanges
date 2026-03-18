@@ -19,6 +19,11 @@ export type ToastType = 'success' | 'warning' | 'error' | 'info';
 /** Shared callback type for showing a toast notification */
 export type ShowToastFn = (message: string, type: ToastType) => void;
 
+/** Minimal toast service interface used by dialog modules */
+export interface ToastService {
+    showToast: ShowToastFn;
+}
+
 interface Toast {
     id: number;
     message: string;

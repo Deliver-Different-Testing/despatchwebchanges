@@ -73,7 +73,6 @@ const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesP
         showSuccessToast: jest.fn(),
         showErrorToast: jest.fn(),
         showInfoToast: jest.fn(),
-        isUsCustomer: true,
         ...overrides,
     };
 };
@@ -397,16 +396,21 @@ describe('StickyNotes', () => {
     });
 
     describe('Theme Support', () => {
-        it('renders with US theme when isUsCustomer is true', async () => {
-            const props = createDefaultProps({isUsCustomer: true});
+        it('renders with US theme via ThemeProvider', async () => {
+            const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
             expect(await screen.findByText('Notes')).toBeInTheDocument();
         });
 
-        it('renders with NZ theme when isUsCustomer is false', async () => {
-            const props = createDefaultProps({isUsCustomer: false});
-            renderWithProviders(<StickyNotes {...props} />);
+        it('renders with NZ theme via ThemeProvider', async () => {
+            const nzTheme = createTheme({palette: {primary: {main: '#f4c430'}}});
+            const props = createDefaultProps();
+            render(
+                <ThemeProvider theme={nzTheme}>
+                    <StickyNotes {...props} />
+                </ThemeProvider>
+            );
 
             expect(await screen.findByText('Notes')).toBeInTheDocument();
         });

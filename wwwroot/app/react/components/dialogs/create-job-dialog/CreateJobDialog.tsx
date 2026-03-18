@@ -36,7 +36,10 @@ import {
     HereMapsLookupResponse,
     Suggestion,
 } from '../../../interfaces';
-import {useAddressSearch, useClientSearch, useCourierSearch, useSpeedList, useVehicleSizes} from '../../../hooks';
+import {useAddressSearch} from '../../../hooks/useAddressApi';
+import {useClientSearch, useVehicleSizes} from '../../../hooks/useJobApi';
+import {useCourierSearch} from '../../../hooks/useCourierApi';
+import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {addressApi} from '../../../services/addressApi';
 import {jobApi} from '../../../services/jobApi';
 import {dayjs, formatDateForApi, getIanaTimezone} from '../../../utils/dateUtils';

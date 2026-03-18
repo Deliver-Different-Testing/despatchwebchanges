@@ -13,6 +13,7 @@ import {TaskDashboardPage} from './TaskDashboardPage';
 import {getTheme} from '../../theme/muiTheme';
 import {MountTaskDashboardConfig} from './TaskDashboardPage.interfaces';
 import {ReactQueryProvider} from '../../query';
+import {ErrorBoundary} from '../../components/common/error-boundary';
 
 let taskDashboardRoot: Root | null = null;
 let taskDashboardContainer: HTMLElement | null = null;
@@ -61,15 +62,17 @@ export function mountTaskDashboardPage(
         <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
                 <CssBaseline />
-                <TaskDashboardPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    onTaskSelect={config.onTaskSelect}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                    onLayoutActionsChange={config.onLayoutActionsChange}
-                />
+                <ErrorBoundary>
+                    <TaskDashboardPage
+                        showToast={config.showToast}
+                        isUsCustomer={config.isUsCustomer}
+                        onTaskSelect={config.onTaskSelect}
+                        setRefreshCallback={(cb) => {
+                            refreshCallback = cb;
+                        }}
+                        onLayoutActionsChange={config.onLayoutActionsChange}
+                    />
+                </ErrorBoundary>
             </ThemeProvider>
         </ReactQueryProvider>
     );
@@ -109,7 +112,7 @@ window.ReactTaskDashboard = {
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const taskDashboardReactModule = (window as any).angular.module(
+const taskDashboardReactModule = window.angular!.module(
     'uDispatch.taskDashboardReact',
     []
 );

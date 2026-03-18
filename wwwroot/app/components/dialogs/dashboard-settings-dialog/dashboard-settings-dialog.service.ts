@@ -7,21 +7,6 @@ import isDefaultLayout from "../../../functions/isDefaultLayout";
 import {isAiEnabled, isAiServerEnabled} from "../../../functions/aiSettings";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactDashboardSettingsDialog?: {
-            open: (
-                config: IDashboardSettingsConfig,
-                boxes: Record<string, IBox>,
-                selectedRefreshInterval?: ISuggestion,
-                selectedDriverLocationRefreshInterval?: ISuggestion,
-                aiEnabled?: boolean
-            ) => Promise<ISettingsDialogResult | null>;
-        };
-    }
-}
-
 class DashboardSettingsDialogService implements angular.IServiceProvider {
     static $inject = [
         '$ocLazyLoad',

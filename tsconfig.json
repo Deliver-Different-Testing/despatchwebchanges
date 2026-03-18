@@ -6,7 +6,8 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "allowJs": true,
+    "incremental": true,
+    "tsBuildInfoFile": ".tsbuildinfo",
     "allowSyntheticDefaultImports": true,
     "allowUmdGlobalAccess": true,
     "moduleResolution": "bundler",
@@ -18,7 +19,6 @@
   "include": [
     "wwwroot/**/*.ts",
     "wwwroot/**/*.tsx",
-    "wwwroot/**/*.js",
     "wwwroot/types/*.d.ts",
     "*.ts"
   ]

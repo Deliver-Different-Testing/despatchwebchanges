@@ -15,105 +15,72 @@ import {NoDataProps} from "./types";
 /**
  * NoData Component - displays an empty state with icon, title, message, and optional action
  */
-export class NoData extends React.Component<NoDataProps> {
-    static defaultProps: Partial<NoDataProps> = {
-        title: 'No Data',
-        message: 'No items to display.',
-        icon: 'info',
-        showAction: false,
-        actionText: 'Refresh',
-        isUsCustomer: false,
-    };
-
-    handleAction = () => {
-        const { onAction } = this.props;
-        if (onAction) {
-            onAction();
-        }
-    };
-
-    render() {
-        const {
-            title = 'No Data',
-            message = 'No items to display.',
-            icon = 'info',
-            showAction = false,
-            actionText = 'Refresh',
-            isUsCustomer = false,
-        } = this.props;
-
-        // Theme colors
-        const primaryColor = isUsCustomer ? '#1976d2' : '#ffeb3b';
-        const primaryHoverColor = isUsCustomer ? '#1565c0' : '#fdd835';
-        const buttonTextColor = isUsCustomer ? '#fff' : '#000';
-
-        return (
-            <Box
+export const NoData: React.FC<NoDataProps> = ({
+                                                  title = 'No Data',
+                                                  message = 'No items to display.',
+                                                  icon = 'info',
+                                                  showAction = false,
+                                                  actionText = 'Refresh',
+                                                  onAction,
+                                              }) => {
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                minHeight: 200,
+                bgcolor: 'transparent',
+                p: 3,
+            }}
+        >
+            <Icon
                 sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    minHeight: '200px',
-                    backgroundColor: 'transparent',
-                    padding: 3,
+                    fontSize: 48,
+                    height: 'auto',
+                    width: 'auto',
+                    mb: 1,
+                    color: 'text.secondary',
+                    opacity: 0.7,
+                    fontFamily: 'Material Symbols Outlined',
+                    overflow: 'visible',
                 }}
             >
-                <Icon
-                    sx={{
-                        fontSize: '48px',
-                        height: 'auto',
-                        width: 'auto',
-                        marginBottom: 1,
-                        color: 'text.secondary',
-                        opacity: 0.7,
-                        fontFamily: 'Material Symbols Outlined',
-                        overflow: 'visible',
-                    }}
+                {icon}
+            </Icon>
+            <Typography
+                variant="h6"
+                sx={{
+                    fontWeight: 600,
+                    color: 'text.primary',
+                    mb: 1,
+                }}
+            >
+                {title}
+            </Typography>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: 'text.secondary',
+                    mb: 2,
+                    maxWidth: 240,
+                }}
+            >
+                {message}
+            </Typography>
+            {showAction && (
+                <Button
+                    variant="contained"
+                    onClick={() => onAction?.()}
+                    sx={{borderRadius: 2}}
                 >
-                    {icon}
-                </Icon>
-                <Typography
-                    variant="h6"
-                    sx={{
-                        fontWeight: 600,
-                        color: 'text.primary',
-                        marginBottom: 1,
-                    }}
-                >
-                    {title}
-                </Typography>
-                <Typography
-                    variant="body2"
-                    sx={{
-                        color: 'text.secondary',
-                        marginBottom: 2,
-                        maxWidth: '240px',
-                        lineHeight: 1.5,
-                    }}
-                >
-                    {message}
-                </Typography>
-                {showAction && (
-                    <Button
-                        variant="contained"
-                        onClick={this.handleAction}
-                        sx={{
-                            backgroundColor: primaryColor,
-                            color: buttonTextColor,
-                            borderRadius: '8px',
-                            '&:hover': {
-                                backgroundColor: primaryHoverColor,
-                            },
-                        }}
-                    >
-                        {actionText}
-                    </Button>
-                )}
-            </Box>
-        );
-    }
-}
+                    {actionText}
+                </Button>
+            )}
+        </Box>
+    );
+};
 
 export default NoData;

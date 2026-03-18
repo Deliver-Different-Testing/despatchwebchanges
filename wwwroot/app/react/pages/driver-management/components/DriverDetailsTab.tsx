@@ -17,7 +17,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import InfoIcon from '@mui/icons-material/Info';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import SearchIcon from '@mui/icons-material/Search';
-import {useDriverSearch, useCourierDetails} from '../../../hooks';
+import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
 import {FleetOption} from '../../../interfaces';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';

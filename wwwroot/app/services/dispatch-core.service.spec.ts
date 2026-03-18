@@ -22,19 +22,7 @@ describe('DispatchCoreService', () => {
         data?: any;
         params?: Record<string, any>;
     }
-
-    let lastCall: HttpCall;
-
-    const mockHttpGet = <T>(url: string, config?: { params?: Record<string, any> }) => {
-        lastCall = { method: 'GET', url, params: config?.params };
-        return Promise.resolve({ data: undefined as unknown as T });
-    };
-
-    const mockHttpPost = <T>(url: string, data?: any, config?: { params?: Record<string, any> }) => {
-        lastCall = { method: 'POST', url, data, params: config?.params };
-        return Promise.resolve({ data: undefined as unknown as T });
-    };
-
+    
     /** Reusable helper to build a mock $http that records calls and resolves with `responseData`. */
     const createMockHttp = (responseData: any = undefined) => {
         const calls: HttpCall[] = [];

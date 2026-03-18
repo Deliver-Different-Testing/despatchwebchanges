@@ -1094,7 +1094,7 @@ public class JobController(
             // Suppress ExecutionContext flow so the background task starts with a clean
             // AsyncLocal state — prevents the request thread's HttpContext cleanup from
             // racing with our synthetic context setup via the shared AsyncLocal holder.
-            using (System.Threading.ExecutionContext.SuppressFlow())
+            using (ExecutionContext.SuppressFlow())
             {
                 _ = Task.Run(async () =>
                 {
@@ -1384,11 +1384,21 @@ public class JobController(
         try
         {
             await jobRepository.UpdateJobAsync(jobId, field, value);
+        }
+        catch (Exception e)
+        {
+            Log.Error(
+                e,
+                "An error occured updating field {JobProperty} with value {Value} for job {JobId}. Error: {Message}",
+                field, value, jobId, e.Message
+            );
 
-            // Skip rerating if debug
-            if (Debugger.IsAttached) return Ok();
+            return StatusCode(500, e.Message + e.InnerException?.Message);
+        }
 
-            // Recalculate a job
+        // Re-rate after successful update — failures are logged but do not fail the request
+        try
+        {
             var shouldRecalculateRate = ShouldRecalculateRate(field);
             if (!shouldRecalculateRate) return Ok();
 
@@ -1409,19 +1419,17 @@ public class JobController(
 
                 await rateJobService.RateJobNzAsync(jobDetails);
             }
-
-            return Ok();
         }
         catch (Exception e)
         {
             Log.Error(
                 e,
-                "An error occured updating field {JobProperty} with value {Value} for job {JobId}. Error: {Message}",
-                field, value, jobId, e.Message
+                "Re-rating failed after updating field {JobProperty} for job {JobId}. The field update succeeded. Error: {Message}",
+                field, jobId, e.Message
             );
-
-            return StatusCode(500, e.Message + e.InnerException?.Message);
         }
+
+        return Ok();
     }
 
     private static bool ShouldRecalculateRate(JobProperty property) =>

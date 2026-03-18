@@ -171,12 +171,12 @@ export function openDashboardSettingsDialog(
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactDashboardSettingsDialog = {
+window.ReactDashboardSettingsDialog = {
     open: openDashboardSettingsDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const dashboardSettingsDialogReactModule = (window as any).angular.module(
+const dashboardSettingsDialogReactModule = window.angular!.module(
     'uDispatch.dashboardSettingsDialogReact',
     []
 );

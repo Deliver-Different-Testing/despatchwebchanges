@@ -2,7 +2,7 @@
  * Courier API Service Tests
  */
 
-import {courierApi, getAvailableCourierLocations, getClearListEnvelope} from './courierApi';
+import {courierApi, getAvailableCourierLocations, getClearListEnvelope, searchActiveCouriersExtended} from './courierApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 
@@ -62,6 +62,85 @@ describe('courierApi', () => {
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.get.mockRejectedValueOnce(error);
             await expect(courierApi.searchActiveCouriers('test')).rejects.toEqual(error);
+        });
+    });
+
+    describe('searchActiveCouriersExtended', () => {
+        it('should call apiClient.get with searchText only when no options', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await searchActiveCouriersExtended('test');
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'courier/AllActiveSearch',
+                {searchText: 'test'},
+                undefined,
+            );
+        });
+
+        it('should include dgOnly param when true', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await searchActiveCouriersExtended('test', {dgOnly: true});
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'courier/AllActiveSearch',
+                {searchText: 'test', dgOnly: true},
+                expect.objectContaining({dgOnly: true}),
+            );
+        });
+
+        it('should include loggedInOnly param when true', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await searchActiveCouriersExtended('test', {loggedInOnly: true});
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'courier/AllActiveSearch',
+                {searchText: 'test', loggedInOnly: true},
+                expect.objectContaining({loggedInOnly: true}),
+            );
+        });
+
+        it('should include both params when both are set', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await searchActiveCouriersExtended('test', {dgOnly: true, loggedInOnly: true});
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                'courier/AllActiveSearch',
+                {searchText: 'test', dgOnly: true, loggedInOnly: true},
+                expect.objectContaining({dgOnly: true, loggedInOnly: true}),
+            );
+        });
+
+        it('should not include dgOnly when false', async () => {
+            mockApiClient.get.mockResolvedValueOnce([]);
+
+            await searchActiveCouriersExtended('test', {dgOnly: false});
+
+            const params = mockApiClient.get.mock.calls[0][1];
+            expect(params).not.toHaveProperty('dgOnly');
+        });
+
+        it('should return the API response', async () => {
+            const mockResponse = [{id: 1, text: '101 - John'}, {id: 2, text: '102 - Jane'}];
+            mockApiClient.get.mockResolvedValueOnce(mockResponse);
+
+            const result = await searchActiveCouriersExtended('J');
+
+            expect(result).toEqual(mockResponse);
+        });
+
+        it('should propagate API errors', async () => {
+            const error = createMockApiError({status: 500, message: 'Server error'});
+            mockApiClient.get.mockRejectedValueOnce(error);
+
+            await expect(searchActiveCouriersExtended('test')).rejects.toEqual(error);
+        });
+
+        it('should be available on courierApi object', () => {
+            expect(courierApi.searchActiveCouriersExtended).toBe(searchActiveCouriersExtended);
         });
     });
 

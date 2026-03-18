@@ -15,7 +15,7 @@ import { EditDateTimeDialog } from './EditDateTimeDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { EditDateTimeDialogResult, EditDateTimeDialogOptions } from './types';
-import type { ShowToastFn } from '../../../services/toastService';
+import type { ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -33,14 +33,7 @@ interface DialogState {
  * Get the US customer flag from server config
  */
 function getIsUSCustomer(): boolean {
-    return (window as any).serverConfig?.isUSCustomer ?? false;
-}
-
-/**
- * Toast service interface for showing notifications
- */
-interface ToastService {
-    showToast: ShowToastFn;
+    return window.serverConfig?.isUSCustomer ?? false;
 }
 
 // Default toast service that logs to console
@@ -196,7 +189,7 @@ export function setToastService(service: ToastService): void {
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactEditDateTimeDialog = {
+window.ReactEditDateTimeDialog = {
     showEditTimeDialog,
     showEditDateDialog,
     showEditDateAndTimeDialog,
@@ -204,7 +197,7 @@ export function setToastService(service: ToastService): void {
 };
 
 // Create AngularJS module for ocLazyLoad
-const editDateTimeDialogReactModule = (window as any).angular.module(
+const editDateTimeDialogReactModule = window.angular!.module(
     'uDispatch.editDateTimeDialogReact',
     []
 );

@@ -10,12 +10,16 @@ import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsToolbar, RecurringJobsToolbarProps, RecurringJobsFilters} from './RecurringJobsToolbar';
 
 // Mock the hooks
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useRecurringJobsApi', () => ({
     useSpeedList: jest.fn(),
+}));
+
+jest.mock('../../../hooks/useCourierApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
-import {useSpeedList, useCourierSearch} from '../../../hooks';
+import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
+import {useCourierSearch} from '../../../hooks/useCourierApi';
 
 const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;

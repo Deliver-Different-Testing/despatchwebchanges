@@ -355,9 +355,11 @@ healthchecksdb
 /logs-insights-results.csv
 /.claude/settings.local.json
 .jest-cache
+.tsbuildinfo
 nul
 /test-output.txt
 /test-results.txt
 
 # Claude Code local config and skills
 .claude/
+.agents/

@@ -15,11 +15,7 @@ import { AdditionalService, AdditionalServicesJob, OpenAdditionalServicesDialogO
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
 import { additionalServicesApi } from '../../../services/additionalServicesApi';
-import type { ShowToastFn } from '../../../services/toastService';
-
-interface ToastService {
-    showToast: ShowToastFn;
-}
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 interface DialogState {
     open: boolean;
@@ -181,12 +177,12 @@ export function openAdditionalServicesDialog(options: OpenAdditionalServicesDial
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactAdditionalServicesDialog = {
+window.ReactAdditionalServicesDialog = {
     open: openAdditionalServicesDialog,
 };
 
 // Create AngularJS module
-const additionalServicesDialogReactModule = (window as any).angular.module(
+const additionalServicesDialogReactModule = window.angular!.module(
     'uDispatch.additionalServicesDialogReact',
     []
 );

@@ -145,12 +145,12 @@ export function openAutoCompleteDialog(
 }
 
 // Expose globally for AngularJS access
-(window as any).ReactAutoCompleteDialog = {
+window.ReactAutoCompleteDialog = {
     open: openAutoCompleteDialog,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const autoCompleteDialogReactModule = (window as any).angular.module(
+const autoCompleteDialogReactModule = window.angular!.module(
     'uDispatch.autoCompleteDialogReact',
     []
 );

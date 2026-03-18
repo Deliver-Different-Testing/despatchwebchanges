@@ -7,6 +7,8 @@
  */
 
 import React from 'react';
+import {alpha} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -32,29 +34,14 @@ const RANGE_OPTIONS = [
     {value: 'custom', label: 'Custom'},
 ] as const;
 
-const toggleButtonSx = {
+const toggleButtonSx: SxProps<Theme> = {
     flex: '1 1 auto',
     minWidth: 70,
     height: 32,
     fontSize: '0.75rem',
     fontWeight: 500,
     textTransform: 'none',
-    borderRadius: '4px !important',
-    border: 'none !important',
-    bgcolor: 'rgba(0, 0, 0, 0.04)',
-    color: 'text.primary',
-    '&:hover': {
-        bgcolor: 'rgba(0, 0, 0, 0.08)',
-    },
-    '&.Mui-selected': {
-        bgcolor: 'primary.main',
-        color: 'primary.contrastText',
-        boxShadow: 'none',
-        '&:hover': {
-            bgcolor: 'primary.dark',
-        },
-    },
-} as const;
+};
 
 const datePickerSlotProps = {
     textField: {
@@ -84,7 +71,28 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     value={dateSearchRange}
                     exclusive
                     onChange={handleRangeChange}
-                    sx={{display: 'flex', flexWrap: 'wrap', gap: '6px'}}
+                    sx={(theme) => ({
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '6px',
+                        '& .MuiToggleButtonGroup-grouped': {
+                            border: 'none',
+                            borderRadius: 1,
+                            bgcolor: alpha(theme.palette.text.primary, 0.04),
+                            color: 'text.primary',
+                            '&:hover': {
+                                bgcolor: alpha(theme.palette.text.primary, 0.08),
+                            },
+                            '&.Mui-selected': {
+                                bgcolor: 'primary.main',
+                                color: 'primary.contrastText',
+                                boxShadow: 'none',
+                                '&:hover': {
+                                    bgcolor: 'primary.dark',
+                                },
+                            },
+                        },
+                    })}
                 >
                     {RANGE_OPTIONS.map(({value, label}) => (
                         <ToggleButton key={value} value={value} sx={toggleButtonSx}>
@@ -100,7 +108,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                         gap: '12px',
                         mt: 1,
                         pt: 1.5,
-                        borderTop: '1px solid rgba(0, 0, 0, 0.08)',
+                        borderTop: 1,
+                        borderColor: 'divider',
                     }}>
                         <Box sx={{flex: '1 1 120px', minWidth: 0}}>
                             <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>

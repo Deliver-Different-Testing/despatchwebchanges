@@ -291,7 +291,7 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                         ) : jobs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={columns.length} align="center" sx={{py: 8}}>
-                                    <EventRepeatIcon sx={{fontSize: 48, color: 'grey.400', mb: 1}}/>
+                                    <EventRepeatIcon sx={{fontSize: 48, color: 'text.disabled', mb: 1}}/>
                                     <Typography variant="body1" color="text.secondary">
                                         No recurring jobs available
                                     </Typography>

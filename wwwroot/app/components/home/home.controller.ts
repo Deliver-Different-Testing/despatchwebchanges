@@ -41,8 +41,7 @@ import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog
 import timezone from 'dayjs/plugin/timezone';
 import {StatusFilter} from "../../enums/status-filter.enum";
 import TasksService from "../../services/tasks.service";
-import JobListType from "../common/job-list/enums/jobListType";
-import IContextMenuOption from "../../interfaces/context-menu-option.interface";
+import JobListType from "../../enums/job-list-type.enum";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
@@ -295,6 +294,8 @@ class HomeController extends BaseController {
     }
 
     $onInit(): void {
+        this.mountReactJobList();
+
         this.registerInterval(async () => {
             await this.getUnreadMessageCount();
         }, 60000);
@@ -332,6 +333,17 @@ class HomeController extends BaseController {
         super.$onDestroy();
         this.stopAutoRefresh();
         this.stopDriverLocationAutoRefresh();
+
+        // Unmount React job list
+        if (window.ReactJobList) {
+            window.ReactJobList.unmount();
+        }
+
+        // Unmount React current work job list
+        if (window.ReactCurrentWorkJobList) {
+            window.ReactCurrentWorkJobList.unmount();
+            this.reactCurrentWorkMounted = false;
+        }
     }
 
     private initializeTaskService(): void {
@@ -935,10 +947,12 @@ class HomeController extends BaseController {
                 this.jobsCurrentList = undefined;
             }
             this.totalJobCount = result.totalCount;
+            this.updateReactJobList();
 
         } catch (error) {
             console.error("Error fetching jobs for clear list:", error);
             this.jobList = [];
+            this.updateReactJobList();
         }
     }
 
@@ -1221,6 +1235,9 @@ class HomeController extends BaseController {
             } else {
                 console.debug(`No jobs found for courier ${courierId}`);
             }
+
+            // Push data to React current work panel
+            this.updateReactCurrentWorkJobList();
         } catch (error) {
             console.error("Error getting current jobs:", error);
             this.jobsCurrentList = [];
@@ -1293,6 +1310,11 @@ class HomeController extends BaseController {
         // Create a new reference to trigger change detection
         this.currentJob = angular.copy(job);
         this.currentJobId = job.id;
+
+        // Sync selection to React job list
+        if (window.ReactJobList) {
+            window.ReactJobList.selectJob(job.id);
+        }
 
         // Set the currentSelection to job-specific information
         this.currentSelection = ` for Job ${job.jobNo}`;
@@ -1422,8 +1444,7 @@ class HomeController extends BaseController {
             filterType,
             effectiveJobId,
             this.staffFilter,
-            this.eventTypeFilter,
-            this.currentAppPage
+            this.eventTypeFilter
         );
 
         this.tasksService.loadTasksInBackground(filterRequest, (tasks, error) => {
@@ -1584,6 +1605,7 @@ class HomeController extends BaseController {
                 this.jobsCurrentList = undefined;
             }
             this.totalJobCount = result.totalCount;
+            this.updateReactJobList();
         } catch (error: unknown) {
             console.error("Error getting job list:", error);
 
@@ -1605,6 +1627,7 @@ class HomeController extends BaseController {
             this.toastrService.showErrorToast(toastMessage);
 
             this.jobList = [];
+            this.updateReactJobList();
 
             if (!this.currentCourier) {
                 this.mapJobList = [];
@@ -1816,35 +1839,6 @@ class HomeController extends BaseController {
         }
     }
 
-    getContextMenuOptions(job: IDispatchJob): any[] | IContextMenuOption[] {
-        if (!job) return [];
-
-        const callbacks = {
-            onRefresh: async () => {
-                // getData() now automatically handles courier context and refreshes courier jobs if needed
-                if (this.currentCourier) {
-                    this.currentListLoading = true;
-                    this.applyScope();
-                    try {
-                        await this.getData();
-                    } finally {
-                        this.currentListLoading = false;
-                        this.applyScope();
-                    }
-                } else {
-                    return this.getData();
-                }
-            },
-            onRefreshCourierJobs: (params: { courierId: number }) => {
-                if (this.currentCourier) {
-                    return this.getCurrentJobs(params.courierId);
-                }
-            }
-        };
-
-        return this.jobContextMenuService.getMenuOptions(job, callbacks, AppPage.Dispatch);
-    }
-
     getTasksStatusCount(statusType: string): number {
         return this.tasksService.getTasksStatusCount(this.supports, statusType);
     }
@@ -1979,10 +1973,6 @@ class HomeController extends BaseController {
             console.error("Error in dispatch:", error);
             throw error;
         }
-    }
-
-    getJobContextMenuOptions(): (data: any) => any[] | IContextMenuOption[] {
-        return (data: any) => this.getContextMenuOptions(data.job);
     }
 
     initRefreshIntervalOptions(): void {
@@ -2406,8 +2396,235 @@ class HomeController extends BaseController {
     async switchCurrentWorkViewMode(): Promise<void> {
         if (this.currentWorkViewMode === CurrentWorkLists.Overview) {
             this.currentWorkSelection = '';
+
+            // Unmount React current work panel when switching to overview
+            if (window.ReactCurrentWorkJobList && this.reactCurrentWorkMounted) {
+                window.ReactCurrentWorkJobList.unmount();
+                this.reactCurrentWorkMounted = false;
+            }
+
             // Refresh driver job counts when switching to All Drivers view
             await this.loadDriversWithJobCounts();
+        } else if (this.jobsCurrentList) {
+            // Switching to selected driver mode with data — mount and push
+            this.updateReactCurrentWorkJobList();
+        }
+    }
+
+    // ── React Job List Integration ───────────────────────────────────
+
+    private reactJobListMounted = false;
+
+    /**
+     * Mounts the React job list once the container element exists in the DOM.
+     * The container lives inside an ng-include template that loads async,
+     * so we poll until it appears (up to ~5 seconds).
+     */
+    private mountReactJobList(): void {
+        if (this.reactJobListMounted) return;
+
+        if (!window.ReactJobList) {
+            console.warn('[HomeController] ReactJobList not loaded');
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 100; // 100 × 50ms = 5s
+
+        const tryMount = () => {
+            const container = document.getElementById('react-dispatch-job-list');
+            if (!container) {
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(tryMount, 50);
+                } else {
+                    console.error('[HomeController] react-dispatch-job-list not found after 5s');
+                }
+                return;
+            }
+
+            this.doMountReactJobList();
+        };
+
+        tryMount();
+    }
+
+    private doMountReactJobList(): void {
+        if (this.reactJobListMounted || !window.ReactJobList) return;
+
+        const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+            switch (type) {
+                case 'success': this.toastrService.showSuccessToast(message); break;
+                case 'warning': this.toastrService.showWarningToast(message); break;
+                case 'error': this.toastrService.showErrorToast(message); break;
+                case 'info': this.toastrService.showInfoToast(message); break;
+            }
+        };
+
+        window.ReactJobList.mount('react-dispatch-job-list', {
+            showToast,
+            isUsCustomer: this.isUsCustomer,
+            appPage: AppPage.Dispatch,
+            defaultCategory: this.defaultJobCategory as any,
+            onJobSelect: (job) => {
+                // Bridge back to AngularJS job selection
+                this.selectJob(job as any);
+                this.applyScope();
+            },
+            onJobDispatch: (job, courierId) => {
+                this.handleJobDispatch(job as any, courierId);
+                this.applyScope();
+            },
+            onRefresh: () => {
+                this.getData();
+            },
+            onSearchChange: (searchText) => {
+                this.updateJobSearchText(searchText);
+            },
+            onCategoryChange: (category) => {
+                this.handleCategoryChange(category);
+            },
+            onBackendFilter: (column, direction) => {
+                this.handleBackendFilter(column, direction);
+            },
+            onSplitJob: ($event, job) => {
+                this.jobContextMenuService.splitJob($event, job as any, () => this.getData());
+            },
+            onAddStop: (job) => {
+                this.jobAddStopService.addNewStop(job as any);
+            },
+        });
+
+        this.reactJobListMounted = true;
+
+        // Sync initial selection if a job was already selected
+        if (this.currentJobId) {
+            window.ReactJobList!.selectJob(this.currentJobId);
+        }
+
+        console.log('[HomeController] React job list mounted');
+    }
+
+    private updateReactJobList(): void {
+        if (window.ReactJobList) {
+            window.ReactJobList.updateJobs(this.jobList as any, this.totalJobCount);
+        }
+    }
+
+    // ── React Current Work Job List Integration ─────────────────────
+
+    private reactCurrentWorkMounted = false;
+
+    /**
+     * Mounts the React current work job list once the container element exists in the DOM.
+     * The container lives inside ng-if="ctrl.jobsCurrentList", so we poll until it appears.
+     */
+    private mountReactCurrentWorkJobList(): void {
+        if (this.reactCurrentWorkMounted) return;
+
+        if (!window.ReactCurrentWorkJobList) {
+            console.warn('[HomeController] ReactCurrentWorkJobList not loaded');
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 100; // 100 × 50ms = 5s
+
+        const tryMount = () => {
+            const container = document.getElementById('react-current-work-job-list');
+            if (!container) {
+                attempts++;
+                if (attempts < maxAttempts) {
+                    setTimeout(tryMount, 50);
+                } else {
+                    console.error('[HomeController] react-current-work-job-list not found after 5s');
+                }
+                return;
+            }
+
+            this.doMountReactCurrentWorkJobList();
+        };
+
+        tryMount();
+    }
+
+    private doMountReactCurrentWorkJobList(): void {
+        if (this.reactCurrentWorkMounted || !window.ReactCurrentWorkJobList) return;
+
+        const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+            switch (type) {
+                case 'success': this.toastrService.showSuccessToast(message); break;
+                case 'warning': this.toastrService.showWarningToast(message); break;
+                case 'error': this.toastrService.showErrorToast(message); break;
+                case 'info': this.toastrService.showInfoToast(message); break;
+            }
+        };
+
+        window.ReactCurrentWorkJobList.mount('react-current-work-job-list', {
+            showToast,
+            isUsCustomer: this.isUsCustomer,
+            appPage: AppPage.Dispatch,
+            defaultCategory: 'in-progress',
+            storagePrefix: 'currentWorkJobList',
+            onJobSelect: (job) => {
+                this.selectJob(job as any);
+                this.applyScope();
+            },
+            onJobDispatch: (job, courierId) => {
+                this.handleJobDispatch(job as any, courierId);
+                this.applyScope();
+            },
+            onRefresh: () => {
+                if (this.currentCourier) {
+                    this.getCurrentJobs(this.currentCourier.id);
+                }
+            },
+            onSplitJob: ($event, job) => {
+                this.jobContextMenuService.splitJob($event, job as any, () => {
+                    if (this.currentCourier) {
+                        this.getCurrentJobs(this.currentCourier.id);
+                    }
+                });
+            },
+            onAddStop: (job) => {
+                this.jobAddStopService.addNewStop(job as any);
+            },
+        });
+
+        this.reactCurrentWorkMounted = true;
+        console.log('[HomeController] React current work job list mounted');
+    }
+
+    /**
+     * Pushes current work job data to the React panel.
+     * If not yet mounted (ng-if timing), triggers mount first.
+     */
+    private updateReactCurrentWorkJobList(): void {
+        if (!this.jobsCurrentList) return;
+
+        if (!this.reactCurrentWorkMounted) {
+            // Container just appeared via ng-if — mount first, then push data
+            this.mountReactCurrentWorkJobList();
+
+            // Wait for mount to complete before pushing data
+            let attempts = 0;
+            const pushData = () => {
+                if (this.reactCurrentWorkMounted && window.ReactCurrentWorkJobList) {
+                    window.ReactCurrentWorkJobList.updateJobs(
+                        this.jobsCurrentList as any,
+                        this.jobsCurrentList!.length
+                    );
+                } else if (attempts < 100) {
+                    attempts++;
+                    setTimeout(pushData, 50);
+                }
+            };
+            setTimeout(pushData, 100);
+        } else if (window.ReactCurrentWorkJobList) {
+            window.ReactCurrentWorkJobList.updateJobs(
+                this.jobsCurrentList as any,
+                this.jobsCurrentList.length
+            );
         }
     }
 }

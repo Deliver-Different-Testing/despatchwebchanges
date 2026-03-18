@@ -56,12 +56,24 @@ class RouterConfig {
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
+                    await $ocLazyLoad.load([
                         getAssetPath('home.js'),
                         getAssetPath('home.css')
                     ]);
+                    // Load React job list for the dispatch page
+                    if (!window.React) {
+                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    }
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.jobListReact',
+                        files: [getAssetPath('jobListReact.js')]
+                    });
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.currentWorkJobListReact',
+                        files: [getAssetPath('currentWorkJobListReact.js')]
+                    });
                 }]
             },
             component: "homeComponent"
@@ -91,16 +103,25 @@ class RouterConfig {
                         console.warn('[ROUTES] Failed to load manifest for nationwide state, using fallback names');
                         return {
                             'nationwide.js': 'nationwide.js',
-                            'nationwide.css': 'nationwide.css'
+                            'nationwide.css': 'nationwide.css',
+                            'vendor-react.js': 'vendor-react.js',
+                            'nationwideJobListReact.js': 'nationwideJobListReact.js'
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
+                    await $ocLazyLoad.load([
                         getAssetPath('nationwide.js'),
                         getAssetPath('nationwide.css')
                     ]);
+                    if (!window.React) {
+                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    }
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.nationwideJobListReact',
+                        files: [getAssetPath('nationwideJobListReact.js')]
+                    });
                 }]
             }
         });
@@ -131,12 +152,20 @@ class RouterConfig {
                         };
                     }
                 }],
-                loadModule: ['$ocLazyLoad', 'manifest', ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
+                loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    return $ocLazyLoad.load([
+                    await $ocLazyLoad.load([
                         getAssetPath('jobSearch.js'),
                         getAssetPath('jobSearch.css')
                     ]);
+                    // Load React job list for the job search page
+                    if (!window.React) {
+                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    }
+                    await $ocLazyLoad.load({
+                        name: 'uDispatch.jobSearchJobListReact',
+                        files: [getAssetPath('jobSearchJobListReact.js')]
+                    });
                 }]
             },
             component: "jobSearchComponent",
@@ -197,7 +226,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'jobAddStopService', 'APP_CONFIG',
-                function (
+                (
                     $scope: angular.IScope & { selectedJobId?: number; onJobUpdate: () => void },
                     toastrService: {
                         showSuccessToast: (m: string) => void;
@@ -207,7 +236,7 @@ class RouterConfig {
                     },
                     jobAddStopService: { addRecurringJobStop: (job: unknown, isPickup: boolean) => Promise<void> },
                     appConfig: { US_Customer: boolean }
-                ) {
+                ) => {
                     $scope.selectedJobId = undefined;
                     $scope.onJobUpdate = () => {
                         // Trigger React refresh
@@ -291,7 +320,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG', 'navigationService',
-                function (
+                (
                     $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
@@ -301,7 +330,7 @@ class RouterConfig {
                     },
                     appConfig: { US_Customer: boolean },
                     navigationService: { openJobDetail: (jobId: number) => void }
-                ) {
+                ) => {
                     const showToast = {
                         showSuccessToast: (m: string) => toastrService.showSuccessToast(m),
                         showWarningToast: (m: string) => toastrService.showWarningToast(m),
@@ -381,7 +410,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
-                function (
+                (
                     $scope: angular.IScope & {
                         selectedJobId?: number;
                         layouts: { name: string }[];
@@ -397,7 +426,7 @@ class RouterConfig {
                         showInfoToast: (m: string) => void
                     },
                     appConfig: { US_Customer: boolean }
-                ) {
+                ) => {
                     $scope.selectedJobId = undefined;
 
                     // Layout state - will be updated by React component
@@ -529,7 +558,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
-                function (
+                (
                     $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
@@ -538,7 +567,7 @@ class RouterConfig {
                         showInfoToast: (m: string) => void
                     },
                     appConfig: { US_Customer: boolean }
-                ) {
+                ) => {
                     const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                         switch (type) {
                             case 'success': toastrService.showSuccessToast(message); break;
@@ -602,11 +631,15 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'APP_CONFIG', 'hereMapsApiKey',
-                function (
+                (
                     $scope: angular.IScope,
-                    appConfig: { US_Customer: boolean; US_Coordinates_Center?: { lat: number; lng: number }; NZ_Coordinates_Center?: { lat: number; lng: number } },
+                    appConfig: {
+                        US_Customer: boolean;
+                        US_Coordinates_Center?: { lat: number; lng: number };
+                        NZ_Coordinates_Center?: { lat: number; lng: number }
+                    },
                     hereMapsApiKey: string | null
-                ) {
+                ) => {
                     const isUsCustomer = appConfig?.US_Customer ?? false;
                     const mapCenter = isUsCustomer
                         ? appConfig?.US_Coordinates_Center ?? { lat: 39.8097343, lng: -98.5556199 }
@@ -646,7 +679,7 @@ class RouterConfig {
                     return $ocLazyLoad.load(getAssetPath('errorPageReact.js'));
                 }]
             },
-            controller: ['$scope', '$state', function ($scope: angular.IScope, $state: angular.ui.IStateService) {
+            controller: ['$scope', '$state', ($scope: angular.IScope, $state: angular.ui.IStateService) => {
                 const containerId = `react-error-page-${errorType}`;
                 window.ReactErrorPage!.mount(containerId, {
                     errorType,

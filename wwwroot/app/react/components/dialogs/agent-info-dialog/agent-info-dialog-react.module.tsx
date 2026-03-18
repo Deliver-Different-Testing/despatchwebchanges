@@ -110,12 +110,12 @@ export async function openAgentInfoDialog(options: OpenAgentInfoDialogOptions): 
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactAgentInfoDialog = {
+window.ReactAgentInfoDialog = {
     open: openAgentInfoDialog,
 };
 
 // Create AngularJS module
-const agentInfoDialogReactModule = (window as any).angular.module(
+const agentInfoDialogReactModule = window.angular!.module(
     'uDispatch.agentInfoDialogReact',
     []
 );

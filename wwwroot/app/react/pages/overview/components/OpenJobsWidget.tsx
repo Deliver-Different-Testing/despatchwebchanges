@@ -8,6 +8,13 @@ import IconButton from '@mui/material/IconButton';
 import Switch from '@mui/material/Switch';
 import TablePagination from '@mui/material/TablePagination';
 import Tooltip from '@mui/material/Tooltip';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TableSortLabel from '@mui/material/TableSortLabel';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import {formatMins} from '../../../utils/dateUtils';
@@ -197,7 +204,7 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
     };
 
     return (
-        <Card sx={{mt: 2}}>
+        <Card variant="outlined" sx={{mt: 2}}>
             {/* Toolbar */}
             <Box
                 sx={{
@@ -243,10 +250,10 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                 <Box sx={{p: 2}}>
                     {/* Empty state */}
                     {viewJobs.length === 0 && !isLoading && (
-                        <Box sx={{textAlign: 'center', py: 4}}>
+                        <Box sx={{textAlign: 'center', py: 4, color: 'text.disabled'}}>
                             <span
                                 className="material-symbols-outlined"
-                                style={{fontSize: 48, color: 'rgba(0,0,0,0.26)', display: 'block'}}
+                                style={{fontSize: 48, display: 'block'}}
                             >
                                 inventory_2
                             </span>
@@ -259,108 +266,84 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                     {/* Table View */}
                     {isTableView && viewJobs.length > 0 && (
                         <Box sx={{overflowX: 'auto'}}>
-                            <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                                <thead>
-                                    <tr>
-                                        {TABLE_COLUMNS.map((col) => (
-                                            <th
-                                                key={col.key}
-                                                onClick={col.sortable ? () => handleSort(col.key) : undefined}
-                                                style={{
-                                                    padding: '10px 12px',
-                                                    textAlign: col.key === 'mileage' ? 'right' : 'left',
-                                                    fontWeight: 500,
-                                                    fontSize: '0.75rem',
-                                                    color: 'rgba(0,0,0,0.54)',
-                                                    borderBottom: '1px solid rgba(0,0,0,0.12)',
-                                                    cursor: col.sortable ? 'pointer' : 'default',
-                                                    userSelect: 'none',
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
-                                                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
-                                                    {col.label}
-                                                    {col.sortable && (
-                                                        <span
-                                                            className="material-symbols-outlined"
-                                                            style={{
-                                                                fontSize: 16,
-                                                                opacity: tableSort.column === col.key ? 1 : 0.4,
-                                                            }}
+                            <TableContainer>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            {TABLE_COLUMNS.map((col) => (
+                                                <TableCell
+                                                    key={col.key}
+                                                    align={col.key === 'mileage' ? 'right' : 'left'}
+                                                    sx={{
+                                                        fontWeight: 600,
+                                                        bgcolor: 'grey.100',
+                                                        borderBottom: 2,
+                                                        borderColor: 'grey.300',
+                                                        whiteSpace: 'nowrap',
+                                                        cursor: col.sortable ? 'pointer' : 'default',
+                                                    }}
+                                                    onClick={col.sortable ? () => handleSort(col.key) : undefined}
+                                                >
+                                                    {col.sortable ? (
+                                                        <TableSortLabel
+                                                            active={tableSort.column === col.key}
+                                                            direction={tableSort.column === col.key ? tableSort.direction : 'asc'}
+                                                            onClick={() => handleSort(col.key)}
                                                         >
-                                                            {tableSort.column === col.key
-                                                                ? tableSort.direction === 'asc'
-                                                                    ? 'arrow_upward'
-                                                                    : 'arrow_downward'
-                                                                : 'unfold_more'}
-                                                        </span>
+                                                            {col.label}
+                                                        </TableSortLabel>
+                                                    ) : (
+                                                        col.label
                                                     )}
-                                                </Box>
-                                            </th>
+                                                </TableCell>
+                                            ))}
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {paginatedTableJobs.map((job) => (
+                                            <TableRow key={job.reference} hover>
+                                                <TableCell sx={{py: 1}}>{job.reference}</TableCell>
+                                                <TableCell sx={{py: 1}}>{job.driverName || 'Unassigned'}</TableCell>
+                                                <TableCell sx={{py: 1}}>
+                                                    <Chip
+                                                        label={job.status}
+                                                        size="small"
+                                                        sx={{fontSize: '0.75rem', height: 24}}
+                                                    />
+                                                </TableCell>
+                                                <TableCell sx={{py: 1}}>{job.pickup.timeString}</TableCell>
+                                                <TableCell sx={{py: 1, maxWidth: 180}}>
+                                                    <Box sx={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                                                        <Typography variant="body2" noWrap>
+                                                            {job.pickup.name}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary" noWrap>
+                                                            {job.pickup.address}
+                                                        </Typography>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell sx={{py: 1}}>{job.delivery.timeString}</TableCell>
+                                                <TableCell sx={{py: 1, maxWidth: 180}}>
+                                                    <Box sx={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
+                                                        <Typography variant="body2" noWrap>
+                                                            {job.delivery.name}
+                                                        </Typography>
+                                                        <Typography variant="caption" color="text.secondary" noWrap>
+                                                            {job.delivery.address}
+                                                        </Typography>
+                                                    </Box>
+                                                </TableCell>
+                                                <TableCell sx={{py: 1}}>
+                                                    {job.quantity} {job.packageType}
+                                                </TableCell>
+                                                <TableCell align="right" sx={{py: 1}}>
+                                                    {job.mileage}
+                                                </TableCell>
+                                            </TableRow>
                                         ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {paginatedTableJobs.map((job) => (
-                                        <tr
-                                            key={job.reference}
-                                            style={{borderBottom: '1px solid rgba(0,0,0,0.12)'}}
-                                        >
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem'}}>
-                                                {job.reference}
-                                            </td>
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem'}}>
-                                                {job.driverName || 'Unassigned'}
-                                            </td>
-                                            <td style={{padding: '8px 12px'}}>
-                                                <Chip
-                                                    label={job.status}
-                                                    size="small"
-                                                    sx={{fontSize: '0.7rem', height: 22}}
-                                                />
-                                            </td>
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem'}}>
-                                                {job.pickup.timeString}
-                                            </td>
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem', maxWidth: 180}}>
-                                                <Box sx={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                                    <Typography variant="body2" noWrap>
-                                                        {job.pickup.name}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary" noWrap>
-                                                        {job.pickup.address}
-                                                    </Typography>
-                                                </Box>
-                                            </td>
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem'}}>
-                                                {job.delivery.timeString}
-                                            </td>
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem', maxWidth: 180}}>
-                                                <Box sx={{overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                                    <Typography variant="body2" noWrap>
-                                                        {job.delivery.name}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary" noWrap>
-                                                        {job.delivery.address}
-                                                    </Typography>
-                                                </Box>
-                                            </td>
-                                            <td style={{padding: '8px 12px', fontSize: '0.8125rem'}}>
-                                                {job.quantity} {job.packageType}
-                                            </td>
-                                            <td
-                                                style={{
-                                                    padding: '8px 12px',
-                                                    fontSize: '0.8125rem',
-                                                    textAlign: 'right',
-                                                }}
-                                            >
-                                                {job.mileage}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
 
                             <TablePagination
                                 component="div"
@@ -377,7 +360,8 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                                 }}
                                 rowsPerPageOptions={[5, 10, 15, 20]}
                                 sx={{
-                                    borderTop: '1px solid rgba(0,0,0,0.12)',
+                                    borderTop: 1,
+                                    borderColor: 'divider',
                                     '& .MuiTablePagination-toolbar': {
                                         minHeight: 40,
                                         px: 1,
@@ -435,24 +419,23 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = ({driver: initialDriver}
                     minHeight: 44,
                 }}
             >
-                <span className="material-symbols-outlined" style={{fontSize: 20, color: 'black'}}>
+                <span className="material-symbols-outlined" style={{fontSize: 20}}>
                     {expanded ? 'expand_less' : 'expand_more'}
                 </span>
                 <Typography variant="subtitle2" sx={{ml: 1, fontWeight: 600}}>
                     {initialDriver.name || 'Unassigned'}
                 </Typography>
-                <Divider orientation="vertical" flexItem sx={{mx: 1, borderColor: 'rgba(0,0,0,0.2)'}} />
+                <Divider orientation="vertical" flexItem sx={{mx: 1, borderColor: 'divider'}} />
                 <Typography variant="caption">({initialDriver.jobs.length} open jobs)</Typography>
 
                 <Box sx={{flex: 1}} />
 
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 2}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, color: initialDriver.completedToday > 0 ? 'success.main' : 'error.main'}}>
                         <span
                             className="material-symbols-outlined"
                             style={{
                                 fontSize: 18,
-                                color: initialDriver.completedToday > 0 ? '#4CAF50' : '#F44336',
                             }}
                         >
                             check_circle
@@ -460,19 +443,19 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = ({driver: initialDriver}
                         <Typography variant="caption">{initialDriver.completedToday} completed today</Typography>
                     </Box>
 
-                    <Divider orientation="vertical" flexItem sx={{borderColor: 'rgba(0,0,0,0.2)'}} />
+                    <Divider orientation="vertical" flexItem sx={{borderColor: 'divider'}} />
 
                     <Box>
                         <Typography variant="caption">
                             Last completed:{' '}
                             {initialDriver.lastCompleted === 'N/A' ? (
-                                <span style={{color: '#FF9800'}}>N/A</span>
+                                <Typography component="span" variant="caption" color="warning.main">N/A</Typography>
                             ) : (
                                 initialDriver.lastCompleted
                             )}
                         </Typography>
                         {initialDriver.lastCompleted !== 'N/A' && (
-                            <Typography variant="caption" display="block" sx={{fontSize: '0.65rem'}}>
+                            <Typography variant="caption" display="block" sx={{fontSize: '0.625rem'}}>
                                 {getTimeSinceLastCompleted(initialDriver.lastCompleted)} mins ago
                             </Typography>
                         )}
@@ -510,7 +493,7 @@ const JobCard: React.FC<{job: ViewJob}> = ({job}) => (
                     }
                     label={job.status}
                     size="small"
-                    sx={{fontSize: '0.7rem'}}
+                    sx={{fontSize: '0.75rem'}}
                 />
             </Box>
 
@@ -519,11 +502,11 @@ const JobCard: React.FC<{job: ViewJob}> = ({job}) => (
             {/* Pickup / Delivery */}
             <Box sx={{display: 'flex', gap: 2}}>
                 <Box sx={{flex: 1}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 16, color: '#1976d2'}}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
+                        <span className="material-symbols-outlined" style={{fontSize: 16}}>
                             pin_drop
                         </span>
-                        <Typography variant="body2" sx={{fontWeight: 500}}>
+                        <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
                             Pickup: {job.pickup.timeString}
                         </Typography>
                     </Box>
@@ -535,11 +518,11 @@ const JobCard: React.FC<{job: ViewJob}> = ({job}) => (
                     </Typography>
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 16, color: '#1976d2'}}>
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, color: 'primary.main'}}>
+                        <span className="material-symbols-outlined" style={{fontSize: 16}}>
                             pin_drop
                         </span>
-                        <Typography variant="body2" sx={{fontWeight: 500}}>
+                        <Typography variant="body2" sx={{fontWeight: 500, color: 'text.primary'}}>
                             Delivery: {job.delivery.timeString}
                         </Typography>
                     </Box>

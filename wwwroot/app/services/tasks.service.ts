@@ -187,8 +187,7 @@ class TasksService implements angular.IServiceProvider {
         filterType: string,
         currentJobId?: number,
         staffFilter?: string,
-        eventTypeFilter?: string,
-        appPage?: AppPage
+        eventTypeFilter?: string
     ): TaskTableFiltersRequest {
         const filters: TaskTableFiltersRequest = {};
         filters.jobId = currentJobId;

@@ -4,7 +4,7 @@
  * TypeScript interfaces for the Messaging Dialog component.
  */
 
-import type {ShowToastFn} from '../../../services/toastService';
+import type {ShowToastFn, ToastService} from '../../../services/toastService';
 
 /**
  * Enum for the type of message party (Courier or Staff)
@@ -121,12 +121,7 @@ export const DEFAULT_QUICK_RESPONSES: QuickResponse[] = [
     { id: -15, text: 'Returning package to depot' },
 ];
 
-/**
- * Toast service interface for showing notifications.
- */
-export interface ToastService {
-    showToast: ShowToastFn;
-}
+export type {ToastService};
 
 /**
  * Options for opening the Messaging Dialog.

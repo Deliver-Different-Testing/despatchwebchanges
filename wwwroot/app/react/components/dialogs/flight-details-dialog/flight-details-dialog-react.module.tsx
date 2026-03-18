@@ -138,12 +138,12 @@ export function openFlightDetailsDialog(flightData: IFlightViewModel): Promise<v
 }
 
 // Expose to window for AngularJS access
-(window as any).ReactFlightDetailsDialog = {
+window.ReactFlightDetailsDialog = {
     openFlightDetailsDialog: openFlightDetailsDialog,
 };
 
 // Create AngularJS module for ocLazyLoad
-const flightDetailsDialogReactModule = (window as any).angular.module(
+const flightDetailsDialogReactModule = window.angular!.module(
     'uDispatch.flightDetailsDialogReact',
     []
 );

@@ -65,24 +65,23 @@ export const accentPalette = {
 export const tokens = {
     radius: {
         xs: 2,
-        sm: 4,
-        md: 4,   // Angular Material default
-        lg: 8,
+        sm: 6,
+        md: 8,
+        lg: 12,
         xl: 16,
         full: 9999,
     },
     duration: {
         instant: 100,
         fast: 150,
-        normal: 280,  // Angular Material standard
-        slow: 400,
+        normal: 200,
+        slow: 350,
     },
     shadow: {
-        // Matching Angular Material elevation shadows
-        sm: '0 2px 1px -1px rgba(0,0,0,.2), 0 1px 1px 0 rgba(0,0,0,.14), 0 1px 3px 0 rgba(0,0,0,.12)',
-        md: '0 3px 3px -2px rgba(0,0,0,.2), 0 3px 4px 0 rgba(0,0,0,.14), 0 1px 8px 0 rgba(0,0,0,.12)',
-        lg: '0 5px 5px -3px rgba(0,0,0,.2), 0 8px 10px 1px rgba(0,0,0,.14), 0 3px 14px 2px rgba(0,0,0,.12)',
-        xl: '0 8px 10px -5px rgba(0,0,0,.2), 0 16px 24px 2px rgba(0,0,0,.14), 0 6px 30px 5px rgba(0,0,0,.12)',
+        sm: '0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1)',
+        md: '0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1)',
+        lg: '0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1)',
+        xl: '0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1)',
     },
 };
 
@@ -297,8 +296,8 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             button: {
                 fontSize: '0.875rem',
                 fontWeight: 500,
-                textTransform: 'uppercase',
-                letterSpacing: '0.02857em',
+                textTransform: 'none',
+                letterSpacing: '0.01em',
             },
         },
         shape: {
@@ -343,7 +342,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             },
             MuiButton: {
                 defaultProps: {
-                    disableElevation: false,
+                    disableElevation: true,
                 },
                 styleOverrides: {
                     root: {
@@ -351,13 +350,13 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         padding: '6px 16px',
                         fontWeight: 500,
                         fontSize: '0.875rem',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.02857em',
+                        textTransform: 'none' as const,
+                        letterSpacing: '0.01em',
                         minHeight: 36,
                         transition: `all ${tokens.duration.normal}ms cubic-bezier(0.4, 0, 0.2, 1)`,
                     },
                     sizeSmall: {
-                        padding: '4px 10px',
+                        padding: '4px 12px',
                         fontSize: '0.8125rem',
                         minHeight: 32,
                     },
@@ -367,12 +366,8 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         minHeight: 42,
                     },
                     contained: {
-                        boxShadow: tokens.shadow.sm,
                         '&:hover': {
-                            boxShadow: tokens.shadow.md,
-                        },
-                        '&:active': {
-                            boxShadow: tokens.shadow.lg,
+                            boxShadow: tokens.shadow.sm,
                         },
                     },
                     outlined: {
@@ -390,14 +385,14 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         borderRadius: '50%',
                         transition: `background-color ${tokens.duration.fast}ms`,
                         '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            backgroundColor: alpha(colors.primary.main, 0.04),
                         },
                     },
                 },
             },
             MuiPaper: {
                 defaultProps: {
-                    elevation: 1,
+                    elevation: 0,
                 },
                 styleOverrides: {
                     root: {
@@ -422,18 +417,22 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             },
             MuiCard: {
                 defaultProps: {
-                    elevation: 1,
+                    variant: 'outlined',
                 },
                 styleOverrides: {
                     root: {
                         borderRadius: tokens.radius.md,
+                        transition: `box-shadow ${tokens.duration.normal}ms cubic-bezier(0.4, 0, 0.2, 1), border-color ${tokens.duration.normal}ms cubic-bezier(0.4, 0, 0.2, 1)`,
+                        '&:hover': {
+                            boxShadow: tokens.shadow.sm,
+                        },
                     },
                 },
             },
             MuiDialog: {
                 styleOverrides: {
                     paper: {
-                        borderRadius: tokens.radius.md,
+                        borderRadius: tokens.radius.lg,
                         boxShadow: tokens.shadow.xl,
                     },
                 },
@@ -441,10 +440,9 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiDialogTitle: {
                 styleOverrides: {
                     root: {
-                        fontSize: '1.25rem',
-                        fontWeight: 500,
+                        fontSize: '1.125rem',
+                        fontWeight: 600,
                         padding: '16px 24px',
-                        // Match Angular Material dialog toolbar style
                         backgroundColor: accentPalette[100],
                         color: colors.text.primary,
                     },
@@ -460,7 +458,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiDialogActions: {
                 styleOverrides: {
                     root: {
-                        padding: '8px 24px 16px',
+                        padding: '12px 24px 16px',
                         gap: 8,
                     },
                 },
@@ -522,10 +520,10 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiTab: {
                 styleOverrides: {
                     root: {
-                        textTransform: 'uppercase',
+                        textTransform: 'none' as const,
                         fontWeight: 500,
                         fontSize: '0.875rem',
-                        letterSpacing: '0.02857em',
+                        letterSpacing: '0.01em',
                         minHeight: 48,
                         padding: '12px 16px',
                     },
@@ -558,8 +556,9 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiTableRow: {
                 styleOverrides: {
                     root: {
+                        transition: `background-color ${tokens.duration.fast}ms`,
                         '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            backgroundColor: alpha(colors.primary.main, 0.04),
                         },
                     },
                 },
@@ -568,9 +567,9 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 styleOverrides: {
                     tooltip: {
                         backgroundColor: accentPalette[700],
-                        fontSize: '0.625rem',
-                        fontWeight: 500,
-                        padding: '6px 8px',
+                        fontSize: '0.75rem',
+                        fontWeight: 400,
+                        padding: '6px 10px',
                         borderRadius: tokens.radius.sm,
                     },
                 },
@@ -595,9 +594,9 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                     root: {
                         fontSize: '0.875rem',
                         padding: '8px 16px',
-                        minHeight: 48,
+                        minHeight: 40,
                         '&:hover': {
-                            backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                            backgroundColor: alpha(colors.primary.main, 0.04),
                         },
                     },
                 },
@@ -620,9 +619,12 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             MuiLinearProgress: {
                 styleOverrides: {
                     root: {
-                        borderRadius: 2,
-                        height: 4,
-                        backgroundColor: alpha(colors.primary.main, 0.2),
+                        borderRadius: tokens.radius.full,
+                        height: 6,
+                        backgroundColor: alpha(colors.primary.main, 0.12),
+                    },
+                    bar: {
+                        borderRadius: tokens.radius.full,
                     },
                 },
             },

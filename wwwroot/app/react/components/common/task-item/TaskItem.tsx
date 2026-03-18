@@ -212,25 +212,27 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                 sx={(theme) => ({
                     display: 'flex',
                     alignItems: 'flex-start',
-                    padding: '12px 16px',
+                    py: 1.5,
+                    px: 2,
                     minHeight: 64,
-                    borderRadius: '6px',
-                    margin: '0 0 1px 0',
-                    backgroundColor: task.closed ? '#f8fafc' : '#ffffff',
-                    border: '1px solid #e2e8f0',
+                    borderRadius: 1.5,
+                    mb: 0.25,
+                    bgcolor: task.closed ? 'grey.50' : 'background.paper',
+                    border: 1,
+                    borderColor: 'divider',
                     borderLeft: `4px solid ${getStatusBorderColor(theme, task, isOverdue)}`,
-                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                    transition: 'all 150ms ease',
+                    boxShadow: 1,
+                    transition: `all ${theme.transitions.duration.short}ms ease`,
                     cursor: config.onTaskClick ? 'pointer' : 'default',
-                    opacity: task.closed ? 0.55 : 1,
+                    color: task.closed ? 'text.disabled' : 'text.primary',
                     '&:hover': config.onTaskClick ? {
                         transform: 'translateY(-1px)',
-                        backgroundColor: '#f8fafc',
-                        borderColor: '#cbd5e1',
+                        bgcolor: 'grey.50',
+                        borderColor: 'grey.300',
                         borderLeftColor: getStatusBorderColor(theme, task, isOverdue),
-                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                        boxShadow: 3,
                         '& .task-title': {
-                            color: theme.palette.primary.main,
+                            color: 'primary.main',
                         },
                     } : {},
                 })}
@@ -252,7 +254,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                 )}
 
                 {/* Task Content */}
-                <Box sx={{flex: 1, minWidth: 0, marginBottom: '10px'}}>
+                <Box sx={{flex: 1, minWidth: 0, mb: 1.25}}>
                     {/* Title with Status Chips */}
                     <Box
                         sx={{
@@ -260,19 +262,17 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                             alignItems: 'center',
                             flexWrap: 'wrap',
                             gap: 1,
-                            marginBottom: 0.5,
+                            mb: 0.5,
                         }}
                     >
                         <Typography
                             className="task-title"
-                            variant="subtitle1"
+                            variant="subtitle2"
                             sx={{
                                 fontWeight: 600,
-                                fontSize: '15px',
-                                lineHeight: 1.3,
-                                color: '#1e293b',
+                                color: 'text.primary',
                                 textDecoration: task.closed ? 'line-through' : 'none',
-                                transition: 'color 150ms ease',
+                                transition: (theme) => `color ${theme.transitions.duration.short}ms ease`,
                             }}
                         >
                             {task.title}
@@ -285,10 +285,9 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 size="small"
                                 sx={{
                                     height: 20,
-                                    fontSize: '11px',
+                                    fontSize: '0.75rem',
                                     fontWeight: 600,
                                     textTransform: 'uppercase',
-                                    letterSpacing: '0.03em',
                                 }}
                             />
                         )}
@@ -297,13 +296,11 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                     {/* Description */}
                     {config.showDescription !== false && task.description && (
                         <Typography
-                            variant="body2"
+                            variant="caption"
                             sx={{
-                                fontSize: '12px',
-                                lineHeight: 1.4,
-                                color: task.closed ? '#cbd5e1' : '#64748b',
-                                marginBottom: 1,
                                 display: '-webkit-box',
+                                color: task.closed ? 'text.disabled' : 'text.secondary',
+                                mb: 1,
                                 WebkitLineClamp: 2,
                                 WebkitBoxOrient: 'vertical',
                                 overflow: 'hidden',
@@ -320,7 +317,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                             flexWrap: 'wrap',
                             alignItems: 'center',
                             gap: 1,
-                            marginTop: 0.5,
+                            mt: 0.5,
                         }}
                     >
                         {/* Assignee Button */}
@@ -331,20 +328,22 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 startIcon={<PersonIcon sx={{fontSize: 14}} />}
                                 sx={{
                                     height: 24,
-                                    padding: '2px 10px',
-                                    borderRadius: '9999px',
-                                    backgroundColor: '#f1f5f9',
-                                    border: '1px solid #e2e8f0',
-                                    color: '#1e293b',
-                                    fontSize: '11px',
+                                    py: 0.25,
+                                    px: 1.25,
+                                    borderRadius: 9999,
+                                    bgcolor: 'grey.100',
+                                    border: 1,
+                                    borderColor: 'divider',
+                                    color: 'text.primary',
+                                    fontSize: '0.75rem',
                                     fontWeight: 500,
                                     textTransform: 'none',
                                     '&:hover': {
-                                        backgroundColor: '#e2e8f0',
-                                        borderColor: '#cbd5e1',
+                                        bgcolor: 'grey.200',
+                                        borderColor: 'grey.300',
                                     },
                                     '& .MuiButton-startIcon': {
-                                        marginRight: 0.5,
+                                        mr: 0.5,
                                     },
                                 }}
                             >
@@ -359,10 +358,10 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 size="small"
                                 sx={(theme) => ({
                                     height: 24,
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
                                     border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
-                                    color: theme.palette.primary.dark,
-                                    fontSize: '11px',
+                                    color: 'primary.dark',
+                                    fontSize: '0.75rem',
                                     fontWeight: 600,
                                     fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
                                 })}
@@ -376,10 +375,11 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 size="small"
                                 sx={{
                                     height: 24,
-                                    backgroundColor: '#f1f5f9',
-                                    border: '1px solid #e2e8f0',
-                                    color: '#64748b',
-                                    fontSize: '11px',
+                                    bgcolor: 'grey.100',
+                                    border: 1,
+                                    borderColor: 'divider',
+                                    color: 'text.secondary',
+                                    fontSize: '0.75rem',
                                     fontWeight: 500,
                                 }}
                             />
@@ -393,7 +393,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                         sx={{
                             minWidth: 130,
                             maxWidth: 160,
-                            paddingLeft: 1.5,
+                            pl: 1.5,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 0.5,
@@ -405,27 +405,29 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                             size="small"
                             onClick={openDatePopover}
                             startIcon={<CalendarIcon sx={{fontSize: 14}} />}
-                            sx={{
+                            sx={(theme) => ({
                                 width: '100%',
                                 height: 28,
                                 justifyContent: 'flex-start',
-                                padding: '0 8px',
-                                borderRadius: '4px',
-                                backgroundColor: isOverdue ? 'rgba(229, 57, 53, 0.08)' : '#f1f5f9',
-                                border: `1px solid ${isOverdue ? 'rgba(229, 57, 53, 0.2)' : '#e2e8f0'}`,
-                                color: isOverdue ? '#c62828' : '#1e293b',
-                                fontSize: '11px',
+                                px: 1,
+                                py: 0,
+                                borderRadius: 1,
+                                bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.08) : 'grey.100',
+                                border: 1,
+                                borderColor: isOverdue ? alpha(theme.palette.error.main, 0.2) : 'divider',
+                                color: isOverdue ? 'error.dark' : 'text.primary',
+                                fontSize: '0.75rem',
                                 fontWeight: 500,
                                 textTransform: 'none',
                                 '&:hover': {
-                                    backgroundColor: isOverdue ? 'rgba(229, 57, 53, 0.12)' : '#e2e8f0',
-                                    borderColor: isOverdue ? 'rgba(229, 57, 53, 0.3)' : '#cbd5e1',
+                                    bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.12) : 'grey.200',
+                                    borderColor: isOverdue ? alpha(theme.palette.error.main, 0.3) : 'grey.300',
                                 },
                                 '& .MuiButton-startIcon': {
-                                    marginRight: 1,
-                                    color: isOverdue ? '#e53935' : '#64748b',
+                                    mr: 1,
+                                    color: isOverdue ? 'error.main' : 'text.secondary',
                                 },
-                            }}
+                            })}
                         >
                             {task._dueDateString} {timeZoneShort}
                         </Button>
@@ -435,27 +437,29 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                             size="small"
                             onClick={openTimePopover}
                             startIcon={<ScheduleIcon sx={{fontSize: 14}} />}
-                            sx={{
+                            sx={(theme) => ({
                                 width: '100%',
                                 height: 28,
                                 justifyContent: 'flex-start',
-                                padding: '0 8px',
-                                borderRadius: '4px',
-                                backgroundColor: isOverdue ? 'rgba(229, 57, 53, 0.08)' : '#f1f5f9',
-                                border: `1px solid ${isOverdue ? 'rgba(229, 57, 53, 0.2)' : '#e2e8f0'}`,
-                                color: isOverdue ? '#c62828' : '#1e293b',
-                                fontSize: '11px',
+                                px: 1,
+                                py: 0,
+                                borderRadius: 1,
+                                bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.08) : 'grey.100',
+                                border: 1,
+                                borderColor: isOverdue ? alpha(theme.palette.error.main, 0.2) : 'divider',
+                                color: isOverdue ? 'error.dark' : 'text.primary',
+                                fontSize: '0.75rem',
                                 fontWeight: 500,
                                 textTransform: 'none',
                                 '&:hover': {
-                                    backgroundColor: isOverdue ? 'rgba(229, 57, 53, 0.12)' : '#e2e8f0',
-                                    borderColor: isOverdue ? 'rgba(229, 57, 53, 0.3)' : '#cbd5e1',
+                                    bgcolor: isOverdue ? alpha(theme.palette.error.main, 0.12) : 'grey.200',
+                                    borderColor: isOverdue ? alpha(theme.palette.error.main, 0.3) : 'grey.300',
                                 },
                                 '& .MuiButton-startIcon': {
-                                    marginRight: 1,
-                                    color: isOverdue ? '#e53935' : '#64748b',
+                                    mr: 1,
+                                    color: isOverdue ? 'error.main' : 'text.secondary',
                                 },
-                            }}
+                            })}
                         >
                             {task._dueTimeString} {timeZoneShort}
                         </Button>
@@ -502,7 +506,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                 transformOrigin={{vertical: 'top', horizontal: 'left'}}
             >
                 <Box sx={{width: 280, maxHeight: 400}}>
-                    <Box sx={{p: 1.5, borderBottom: '1px solid #e2e8f0'}}>
+                    <Box sx={{p: 1.5, borderBottom: 1, borderColor: 'divider'}}>
                         <TextField
                             fullWidth
                             size="small"
@@ -513,14 +517,14 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 input: {
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <SearchIcon sx={{fontSize: 18, color: '#64748b'}} />
+                                            <SearchIcon sx={{fontSize: 18, color: 'text.secondary'}} />
                                         </InputAdornment>
                                     ),
                                 },
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
-                                    fontSize: '13px',
+                                    fontSize: '0.8125rem',
                                 },
                             }}
                         />
@@ -540,12 +544,12 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 >
                                     <ListItemText
                                         primary={staff.text}
-                                        slotProps={{primary: {fontSize: '13px'}}}
+                                        slotProps={{primary: {fontSize: '0.8125rem'}}}
                                     />
                                 </ListItemButton>
                             ))}
                             {filteredStaff.length === 0 && !loadingStaff && (
-                                <Box sx={{p: 2, textAlign: 'center', color: '#64748b'}}>
+                                <Box sx={{p: 2, textAlign: 'center', color: 'text.secondary'}}>
                                     <Typography variant="body2">No staff found</Typography>
                                 </Box>
                             )}

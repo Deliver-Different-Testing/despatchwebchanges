@@ -19,13 +19,27 @@ import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import SendIcon from '@mui/icons-material/Send';
 import VerifiedIcon from '@mui/icons-material/VerifiedUser';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import {useComplianceList, useSendComplianceReminder, useSendBulkComplianceReminders} from '../../../hooks';
+import {
+    useComplianceList,
+    useSendBulkComplianceReminders,
+    useSendComplianceReminder
+} from '../../../hooks/useDriverManagementApi';
 import {ComplianceFilter, CourierCompliance, FleetOption, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {summarizeCompliance} from '../../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../../components/common/ai-summary-panel/AiSummaryPanel';
 import {isAiEnabled} from '../../../../functions/aiSettings';
-import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarButtonSx, toolbarIconButtonSx, getComplianceTypeColor} from './shared';
+import {
+    DataTable,
+    DataTableColumn,
+    FilterToolbar,
+    getComplianceTypeColor,
+    SearchField,
+    SortState,
+    StatCard,
+    toolbarButtonSx,
+    toolbarIconButtonSx
+} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
 
@@ -137,7 +151,10 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
         col.key === 'actions'
             ? {...col, render: (row: CourierCompliance) => (
                 <Tooltip title="Send Reminder">
-                    <IconButton size="small" onClick={(e) => { e.stopPropagation(); handleSendReminder(row); }}>
+                    <IconButton size="small" onClick={(e) => {
+                        e.stopPropagation();
+                        return handleSendReminder(row);
+                    }}>
                         <EmailIcon fontSize="small" />
                     </IconButton>
                 </Tooltip>

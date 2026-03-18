@@ -40,7 +40,11 @@ type EntryPointName =
     | 'selectDialogReact'
     | 'editParcelDimensionsDialogReact'
     | 'simplePriceEditDialogReact'
-    | 'overviewReact';
+    | 'overviewReact'
+    | 'jobListReact'
+    | 'currentWorkJobListReact'
+    | 'nationwideJobListReact'
+    | 'jobSearchJobListReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -87,6 +91,10 @@ const entryPoints: EntryPoints = {
     editParcelDimensionsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog-react.module.tsx"),
     simplePriceEditDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog-react.module.tsx"),
     overviewReact: path.join(rootDir, "wwwroot/app/react/pages/overview/overview-react.module.tsx"),
+    jobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-list-react.module.tsx"),
+    currentWorkJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/current-work-job-list-react.module.tsx"),
+    nationwideJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/nationwide-job-list-react.module.tsx"),
+    jobSearchJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-search-job-list-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)
@@ -356,6 +364,7 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 contents: `
                     export const QueryClient = window.QueryClient;
                     export const QueryClientProvider = window.QueryClientProvider;
+                    export const keepPreviousData = window.keepPreviousData;
                     export const useQuery = window.useQuery;
                     export const useMutation = window.useMutation;
                     export const useQueryClient = window.useQueryClient;
@@ -602,17 +611,17 @@ async function buildProd(): Promise<void> {
     }
 
     // Build all bundle types in parallel
-    const buildPromises = [
-        await esbuild.build(getBuildConfig(true, {"vendor-core": vendorEntries["vendor-core"]}, "vendor-core")),
-        await esbuild.build(getBuildConfig(true, {"vendor-plugins": vendorEntries["vendor-plugins"]}, "vendor-plugins")),
-        await esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
-        await esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
+    const buildPromises: Promise<esbuild.BuildResult>[] = [
+        esbuild.build(getBuildConfig(true, {"vendor-core": vendorEntries["vendor-core"]}, "vendor-core")),
+        esbuild.build(getBuildConfig(true, {"vendor-plugins": vendorEntries["vendor-plugins"]}, "vendor-plugins")),
+        esbuild.build(getBuildConfig(true, {"vendor-react": vendorEntries["vendor-react"]}, "vendor-react")),
+        esbuild.build(getBuildConfig(true, moduleEntries, "modules")),
     ];
 
     // Add React modules build if there are any
     if (Object.keys(reactModuleEntries).length > 0) {
         buildPromises.push(
-           await esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
+            esbuild.build(getBuildConfig(true, reactModuleEntries, "react-modules"))
         );
     }
 

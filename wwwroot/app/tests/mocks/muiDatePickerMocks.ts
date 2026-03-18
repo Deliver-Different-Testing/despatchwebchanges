@@ -171,7 +171,7 @@ export const TimePicker = forwardRef<HTMLInputElement, any>(
 
 // Mock DateCalendar - includes gridcells for day selection
 export const DateCalendar = forwardRef<HTMLDivElement, any>(
-    ({value, onChange, disabled, ..._props}, ref) => {
+    ({value, onChange, disabled}, ref) => {
         const handleDayClick = (day: number) => {
             const currentValue = value?.format?.('YYYY-MM') ?? new Date().toISOString().slice(0, 7);
             const newDate = `${currentValue}-${String(day).padStart(2, '0')}`;

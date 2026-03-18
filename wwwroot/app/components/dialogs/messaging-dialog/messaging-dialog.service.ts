@@ -1,19 +1,6 @@
 import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
 
-// Type declaration for the React dialog on window
-declare global {
-    interface Window {
-        ReactMessagingDialog?: {
-            open: (options?: {
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                };
-            }) => Promise<void>;
-        };
-    }
-}
-
 class MessagingDialogService implements angular.IServiceProvider {
     static $inject = [
         '$log',
@@ -88,7 +75,7 @@ class MessagingDialogService implements angular.IServiceProvider {
 
             // Create toast service wrapper for UI notifications
             const toastService = {
-                showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
                         case 'success':
                             this.toastrService.showSuccessToast(message);

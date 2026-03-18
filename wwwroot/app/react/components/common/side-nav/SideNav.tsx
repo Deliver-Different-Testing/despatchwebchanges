@@ -4,7 +4,7 @@
  * A modern replacement for the AngularJS side-nav component using MUI Drawer.
  */
 
-import React from 'react';
+import React, {useMemo, useCallback} from 'react';
 import {alpha} from '@mui/material/styles';
 import Drawer from '@mui/material/Drawer';
 import Box from '@mui/material/Box';
@@ -29,23 +29,26 @@ import {NavItem, SideNavProps} from "./SideNav.types";
 
 const drawerWidth = 280;
 
-export class SideNav extends React.Component<SideNavProps> {
-    static defaultProps: Partial<SideNavProps> = {
-        companyName: 'DFRNT',
-    };
+export const SideNav: React.FC<SideNavProps> = ({
+    open,
+    userName,
+    companyName = 'DFRNT',
+    isUsCustomer,
+    currentState,
+    onClose,
+    onNavigate,
+    onMouseEnter,
+    onMouseLeave,
+}) => {
+    const currentYear = dayjs().year();
 
-    private get currentYear(): number {
-        return dayjs().year();
-    }
-
-    private get currentDate(): string {
-        const locale = this.props.isUsCustomer ? 'en' : 'en-nz';
+    const currentDate = useMemo(() => {
+        const locale = isUsCustomer ? 'en' : 'en-nz';
         return dayjs().locale(locale).format('dddd, MMMM D, YYYY');
-    }
+    }, [isUsCustomer]);
 
-    private get navItems(): NavItem[] {
-        const {isUsCustomer} = this.props;
-        return [
+    const filteredNavItems = useMemo((): NavItem[] => {
+        const navItems: NavItem[] = [
             {
                 id: 'dashboard',
                 label: 'Dashboard',
@@ -96,40 +99,21 @@ export class SideNav extends React.Component<SideNavProps> {
                 nzOnly: true,
             },
         ];
-    }
 
-    private get filteredNavItems(): NavItem[] {
-        const {isUsCustomer} = this.props;
-        return this.navItems.filter(item => {
+        return navItems.filter(item => {
             if (item.usOnly && !isUsCustomer) return false;
             return !(item.nzOnly && isUsCustomer);
         });
-    }
+    }, [isUsCustomer]);
 
-    private handleNavClick = (state: string): void => {
-        const {onNavigate, onClose} = this.props;
+    const handleNavClick = useCallback((state: string): void => {
         onNavigate(state);
         onClose();
-    };
+    }, [onNavigate, onClose]);
 
-    render(): React.ReactNode {
-        const {
-            open,
-            userName,
-            companyName,
-            isUsCustomer,
-            currentState,
-            onClose,
-            onMouseEnter,
-            onMouseLeave,
-        } = this.props;
-        const currentYear = this.currentYear;
-        const currentDate = this.currentDate;
-        const filteredNavItems = this.filteredNavItems;
-
-        return (
-            <Drawer
-                anchor="right"
+    return (
+        <Drawer
+            anchor="right"
             open={open}
             onClose={onClose}
             variant="temporary"
@@ -191,7 +175,7 @@ export class SideNav extends React.Component<SideNavProps> {
                         return (
                             <ListItem key={item.id} disablePadding>
                                 <ListItemButton
-                                    onClick={() => this.handleNavClick(item.state)}
+                                    onClick={() => handleNavClick(item.state)}
                                     sx={(theme) => ({
                                         py: 1.5,
                                         px: 2,
@@ -259,8 +243,7 @@ export class SideNav extends React.Component<SideNavProps> {
                 )}
             </Box>
         </Drawer>
-        );
-    }
-}
+    );
+};
 
 export default SideNav;

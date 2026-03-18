@@ -4,10 +4,10 @@
  * Query and mutation hooks for task-related operations.
  */
 
-import {useQuery, useMutation, useQueryClient} from '@tanstack/react-query';
+import {useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {tasksApi} from '../services/tasksApi';
-import {Task, TaskFiltersRequest, StaffSuggestion, EventTypeSuggestion} from '../interfaces';
+import {EventTypeSuggestion, StaffSuggestion, Task, TaskFiltersRequest} from '../interfaces';
 import type {DeliveryJourney} from '../components/common/task-history/TaskHistory.interfaces';
 import {Dayjs} from 'dayjs';
 
@@ -72,6 +72,7 @@ export function useEventTypes(options?: {enabled?: boolean}) {
  * Hook to fetch delivery journey for a job
  *
  * @param jobId - The job ID to get delivery journey for
+ * @param options
  * @returns Query result with delivery journey events
  */
 export function useDeliveryJourney(jobId?: number, options?: {enabled?: boolean}) {
@@ -92,9 +93,9 @@ export function useMarkTaskAsClosed() {
 
     return useMutation<void, Error, {eventId: number; closed: boolean}>({
         mutationFn: ({eventId, closed}) => tasksApi.markTaskAsClosed(eventId, closed),
-        onSuccess: () => {
+        onSuccess: async () => {
             // Invalidate all task queries to refetch
-            queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+            await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },
     });
 }
@@ -109,8 +110,8 @@ export function useUpdateTaskDate() {
 
     return useMutation<void, Error, {eventId: number; date: Dayjs; timezone?: string}>({
         mutationFn: ({eventId, date, timezone}) => tasksApi.updateTaskDate(eventId, date, timezone),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },
     });
 }
@@ -125,8 +126,8 @@ export function useUpdateTaskTime() {
 
     return useMutation<void, Error, {eventId: number; time: Dayjs; timezone?: string}>({
         mutationFn: ({eventId, time, timezone}) => tasksApi.updateTaskTime(eventId, time, timezone),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },
     });
 }
@@ -141,8 +142,8 @@ export function useReassignTask() {
 
     return useMutation<void, Error, {eventId: number; staffId: number}>({
         mutationFn: ({eventId, staffId}) => tasksApi.reassignTaskToStaff(eventId, staffId),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.tasks.all});
         },
     });
 }

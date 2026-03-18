@@ -33,7 +33,7 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import WarningIcon from '@mui/icons-material/Warning';
 import dayjs, {Dayjs} from 'dayjs';
-
+import {aiAccentColor} from '../../theme/designTokens';
 import {
     DateFilterData,
     ExtendedTask,
@@ -56,7 +56,7 @@ import {
     useTasks,
     useUpdateTaskDate,
     useUpdateTaskTime,
-} from '../../hooks';
+} from '../../hooks/useTasksApi';
 import {tasksApi} from '../../services/tasksApi';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../components/common/ai-summary-panel/AiSummaryPanel';
@@ -487,7 +487,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                             }}
                         >
                             <Box>
-                                <Typography sx={{fontSize: 28, fontWeight: 700, lineHeight: 1.2}}>
+                                <Typography sx={{fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.2}}>
                                     {count}
                                 </Typography>
                                 <Typography variant="overline">
@@ -593,7 +593,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     <AiSummaryPanel
                         title="AI Daily Briefing"
                         fetchSummary={summarizeTaskDashboard}
-                        accentColor="#7c4dff"
+                        accentColor={aiAccentColor}
                     />
                 </Box>
             )}
@@ -652,7 +652,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                 key={i}
                                                 variant="rounded"
                                                 height={72}
-                                                sx={{borderRadius: '6px'}}
+                                                sx={{borderRadius: 1.5}}
                                             />
                                         ))}
                                     </Box>
@@ -661,7 +661,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                 {/* Empty State */}
                                 {!tasksLoading && filteredTasks.length === 0 && (
                                     <Box display="flex" alignItems="center" justifyContent="center" p={3}>
-                                        <InfoIcon sx={{mr: 1, color: 'grey.500'}} />
+                                        <InfoIcon sx={{mr: 1, color: 'text.disabled'}} />
                                         <Typography color="text.secondary">
                                             No tasks match your filters
                                         </Typography>
@@ -708,11 +708,11 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                     <Box
                                                         sx={{
                                                             bgcolor: group.accent,
-                                                            color: '#fff',
-                                                            borderRadius: '10px',
+                                                            color: 'common.white',
+                                                            borderRadius: 2.5,
                                                             px: 1,
                                                             py: 0.125,
-                                                            fontSize: '11px',
+                                                            fontSize: '0.75rem',
                                                             fontWeight: 600,
                                                             lineHeight: '18px',
                                                             minWidth: 20,

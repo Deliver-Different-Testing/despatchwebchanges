@@ -13,6 +13,7 @@ import {RecurringJobsPage} from './RecurringJobsPage';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
 import {MountRecurringJobsConfig} from "../../interfaces";
+import {ErrorBoundary} from '../../components/common/error-boundary';
 
 let recurringJobsRoot: Root | null = null;
 let recurringJobsContainer: HTMLElement | null = null;
@@ -61,15 +62,17 @@ export function mountRecurringJobsPage(
         <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
                 <CssBaseline/>
-                <RecurringJobsPage
-                    showToast={config.showToast}
-                    isUsCustomer={config.isUsCustomer}
-                    onAddStop={config.onAddStop}
-                    onJobSelect={config.onJobSelect}
-                    setRefreshCallback={(cb) => {
-                        refreshCallback = cb;
-                    }}
-                />
+                <ErrorBoundary>
+                    <RecurringJobsPage
+                        showToast={config.showToast}
+                        isUsCustomer={config.isUsCustomer}
+                        onAddStop={config.onAddStop}
+                        onJobSelect={config.onJobSelect}
+                        setRefreshCallback={(cb) => {
+                            refreshCallback = cb;
+                        }}
+                    />
+                </ErrorBoundary>
             </ThemeProvider>
         </ReactQueryProvider>
     );
@@ -108,7 +111,7 @@ window.ReactRecurringJobs = {
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)
-const recurringJobsReactModule = (window as any).angular.module(
+const recurringJobsReactModule = window.angular!.module(
     'uDispatch.recurringJobsReact',
     []
 );

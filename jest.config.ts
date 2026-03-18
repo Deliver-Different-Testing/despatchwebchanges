@@ -1,15 +1,17 @@
-import type { JestConfigWithTsJest } from 'ts-jest';
+import type { Config } from 'jest';
 
-const config: JestConfigWithTsJest = {
-    preset: 'ts-jest',
+const config: Config = {
     testEnvironment: 'jest-environment-jsdom',
     roots: ['<rootDir>/wwwroot'],
     testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 
     transform: {
-        '^.+\\.(ts|tsx)$': ['ts-jest', {
-            tsconfig: 'tsconfig.test.json',
+        '^.+\\.(ts|tsx)$': ['@swc/jest', {
+            jsc: {
+                parser: { syntax: 'typescript', tsx: true, decorators: true },
+                transform: { react: { runtime: 'automatic' } },
+            },
         }]
     },
 

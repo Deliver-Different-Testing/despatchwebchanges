@@ -1458,7 +1458,7 @@ class JobDetailController extends BaseController {
             pickVehicleSizes,
             JobProperty.Size,
             "Size",
-            job.size.text
+            job.size?.text ?? null
         );
     }
 

@@ -6,7 +6,6 @@
  */
 
 import React, {useState} from 'react';
-import {alpha} from '@mui/material/styles';
 import IconButton from '@mui/material/IconButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
@@ -15,15 +14,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import AddIcon from '@mui/icons-material/Add';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import type {Theme} from '@mui/material/styles';
-
-// Shared icon button styles (matching ToolbarActions.tsx)
-const toolbarIconButtonSx = {
-    p: 1,
-    '&:hover': {
-        bgcolor: (theme: Theme) => alpha(theme.palette.common.white, 0.12),
-    },
-};
+import {toolbarIconButtonSx} from './ToolbarActions';
 
 export interface ActionsMenuProps {
     onCreateNewJob: (event: React.MouseEvent) => void;

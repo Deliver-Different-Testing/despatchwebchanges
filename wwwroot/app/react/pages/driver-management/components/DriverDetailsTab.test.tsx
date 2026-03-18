@@ -3,10 +3,10 @@ import {render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverDetailsTab} from './DriverDetailsTab';
-import {useDriverSearch, useCourierDetails} from '../../../hooks';
+import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
 import type {CourierDataDashboard} from '../../../interfaces';
 
-jest.mock('../../../hooks', () => ({
+jest.mock('../../../hooks/useDriverManagementApi', () => ({
     useDriverSearch: jest.fn(),
     useCourierDetails: jest.fn(),
 }));

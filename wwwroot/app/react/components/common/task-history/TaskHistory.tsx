@@ -5,7 +5,7 @@
  * Supports multiple density modes for different viewing preferences.
  */
 
-import React from 'react';
+import React, {useState, useMemo, useEffect, useCallback, useRef} from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -19,6 +19,8 @@ import NotesIcon from '@mui/icons-material/Notes';
 import CircleIcon from '@mui/icons-material/Circle';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import PackageIcon from '@mui/icons-material/Inventory2';
+import {useTheme, type Theme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
@@ -32,6 +34,7 @@ import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../..
 dayjs.extend(relativeTime);
 
 // Icon color classes mapped to actual colors
+// These are intentional design data for differentiating user avatars/icons, not a theme concern.
 const ICON_COLORS = [
     '#3b82f6', // Blue
     '#10b981', // Emerald
@@ -43,138 +46,108 @@ const ICON_COLORS = [
     '#ec4899', // Pink
 ];
 
-// Status colors
-const STATUS_COLORS = {
-    completed: {main: '#10b981', light: '#d1fae5'},
-    current: {main: '#3b82f6', light: '#dbeafe'},
-    todo: {main: '#ef4444', light: '#fef2f2'},
-    pending: {main: '#f59e0b', light: '#fef3c7'},
-    waiting: {main: '#9ca3af', light: '#f3f4f6'},
-};
+// Status colors derived from theme palette
+function getStatusColors(theme: Theme) {
+    return {
+        completed: {main: theme.palette.success.main, light: alpha(theme.palette.success.main, 0.12)},
+        current: {main: theme.palette.info.main, light: alpha(theme.palette.info.main, 0.12)},
+        todo: {main: theme.palette.error.main, light: alpha(theme.palette.error.main, 0.08)},
+        pending: {main: theme.palette.warning.main, light: alpha(theme.palette.warning.main, 0.12)},
+        waiting: {main: theme.palette.text.disabled, light: theme.palette.grey[100]},
+    };
+}
 
 const defaultConfig: DeliveryHistoryConfig = {
     showSummaryStats: false,
     densityMode: DensityMode.Normal,
 };
 
-interface TaskHistoryState {
-    deliveryEvents: DeliveryJourney[];
-    loading: boolean;
-    densityMode: DensityMode;
-    shouldAnimate: boolean;
+function getIconColor(index: number): string {
+    return ICON_COLORS[index % ICON_COLORS.length];
 }
 
-export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistoryState> {
-    static defaultProps: Partial<TaskHistoryProps> = {
-        isUsCustomer: true,
-    };
+function getStatusColor(theme: Theme, status: string): {main: string; light: string} {
+    const statusColors = getStatusColors(theme);
+    return statusColors[status as keyof typeof statusColors] || statusColors.waiting;
+}
 
-    private readonly timeZoneShort: string;
-    private refreshIntervalRef: NodeJS.Timeout | null = null;
-    private animationTimerRef: NodeJS.Timeout | null = null;
+export const TaskHistory: React.FC<TaskHistoryProps> = ({
+    jobId,
+    isUsCustomer = true,
+    config: propConfig,
+    dispatchService,
+    showErrorToast,
+    showInfoToast,
+    showSuccessToast,
+    onDeliveryEventClick,
+}) => {
+    const theme = useTheme();
+    const config = useMemo(() => ({...defaultConfig, ...propConfig}), [propConfig]);
 
-    constructor(props: TaskHistoryProps) {
-        super(props);
-        const config = {...defaultConfig, ...props.config};
-        this.state = {
-            deliveryEvents: [],
-            loading: false,
-            densityMode: config.densityMode || DensityMode.Normal,
-            shouldAnimate: false,
-        };
+    const [deliveryEvents, setDeliveryEvents] = useState<DeliveryJourney[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [densityMode, setDensityMode] = useState<DensityMode>(config.densityMode || DensityMode.Normal);
+    const [shouldAnimate, setShouldAnimate] = useState(false);
 
+    const timeZoneShort = useMemo(() => {
         const ianaTimeZone = getIanaTimezone(getTenantTimezone());
-        this.timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
-    }
+        return getTimezoneAbbreviation(ianaTimeZone);
+    }, []);
 
-    componentDidMount(): void {
-        this.loadDeliveryJourney();
-        this.startAnimationTimer();
-        this.setupRefreshInterval();
-    }
-
-    componentDidUpdate(prevProps: TaskHistoryProps): void {
-        if (prevProps.jobId !== this.props.jobId) {
-            this.loadDeliveryJourney();
-        }
-    }
-
-    componentWillUnmount(): void {
-        if (this.refreshIntervalRef) {
-            clearInterval(this.refreshIntervalRef);
-        }
-        if (this.animationTimerRef) {
-            clearTimeout(this.animationTimerRef);
-        }
-    }
-
-    private get config(): DeliveryHistoryConfig {
-        return {...defaultConfig, ...this.props.config};
-    }
-
-    private get themeColors() {
-        const {isUsCustomer} = this.props;
-        if (isUsCustomer) {
-            return {
-                primary: '#2196f3',
-                primaryLight: '#e3f2fd',
-                headerBg: '#2196f3',
-                headerText: '#ffffff',
-            };
-        }
-        return {
-            primary: '#f4c430',
-            primaryLight: '#fef9e7',
-            headerBg: '#f4c430',
-            headerText: 'rgba(0, 0, 0, 0.87)',
-        };
-    }
-
-    private startAnimationTimer = (): void => {
-        this.animationTimerRef = setTimeout(() => {
-            this.setState({shouldAnimate: true});
-        }, 100);
-    };
-
-    private setupRefreshInterval = (): void => {
-        this.refreshIntervalRef = setInterval(async () => {
-            if (this.props.jobId) {
-                await this.loadDeliveryJourney();
-            }
-        }, 120000);
-    };
-
-    private loadDeliveryJourney = async (): Promise<void> => {
-        const {jobId, dispatchService, showErrorToast} = this.props;
-
+    const loadDeliveryJourney = useCallback(async (): Promise<void> => {
         if (!jobId) {
-            this.setState({deliveryEvents: []});
+            setDeliveryEvents([]);
             return;
         }
 
-        this.setState({loading: true});
+        setLoading(true);
         try {
             const journey = await dispatchService.getDeliveryJourney(jobId);
-            this.setState({deliveryEvents: journey});
+            setDeliveryEvents(journey);
         } catch (error) {
             console.error('Error loading delivery journey:', error);
             showErrorToast?.('Failed to load delivery journey');
-            this.setState({deliveryEvents: []});
+            setDeliveryEvents([]);
         } finally {
-            this.setState({loading: false});
+            setLoading(false);
         }
-    };
+    }, [jobId, dispatchService, showErrorToast]);
 
-    private cycleDensityMode = (): void => {
-        this.setState(prevState => {
+    // Load delivery journey on mount and when jobId changes
+    useEffect(() => {
+        loadDeliveryJourney();
+    }, [loadDeliveryJourney]);
+
+    // Start animation timer on mount
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setShouldAnimate(true);
+        }, 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Setup refresh interval (2 minute polling)
+    const jobIdRef = useRef(jobId);
+    jobIdRef.current = jobId;
+
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            if (jobIdRef.current) {
+                await loadDeliveryJourney();
+            }
+        }, 120000);
+        return () => clearInterval(interval);
+    }, [loadDeliveryJourney]);
+
+    const cycleDensityMode = (): void => {
+        setDensityMode(prev => {
             const modes = [DensityMode.Normal, DensityMode.Dense, DensityMode.UltraDense];
-            const currentIndex = modes.indexOf(prevState.densityMode);
-            return {densityMode: modes[(currentIndex + 1) % modes.length]};
+            const currentIndex = modes.indexOf(prev);
+            return modes[(currentIndex + 1) % modes.length];
         });
     };
 
-    private getDensityModeIcon = (): React.ReactNode => {
-        const {densityMode} = this.state;
+    const getDensityModeIcon = (): React.ReactNode => {
         switch (densityMode) {
             case DensityMode.Normal:
                 return <ViewAgendaIcon />;
@@ -187,8 +160,7 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
         }
     };
 
-    private getDensityModeLabel = (): string => {
-        const {densityMode} = this.state;
+    const getDensityModeLabel = (): string => {
         switch (densityMode) {
             case DensityMode.Normal:
                 return 'Normal View';
@@ -201,35 +173,22 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
         }
     };
 
-    private handleRefresh = async (): Promise<void> => {
-        const {showInfoToast, showSuccessToast} = this.props;
-
+    const handleRefresh = async (): Promise<void> => {
         showInfoToast?.('Refreshing delivery journey...');
-        this.setState({deliveryEvents: [], shouldAnimate: false});
+        setShouldAnimate(false);
 
-        setTimeout(async () => {
-            await this.loadDeliveryJourney();
-            this.setState({shouldAnimate: true});
-            showSuccessToast?.('Delivery journey updated');
-        }, 300);
+        await loadDeliveryJourney();
+        setShouldAnimate(true);
+        showSuccessToast?.('Delivery journey updated');
     };
 
-    private handleEventClick = (event: React.MouseEvent, deliveryEvent: DeliveryJourney): void => {
+    const handleEventClick = (event: React.MouseEvent, deliveryEvent: DeliveryJourney): void => {
         event.preventDefault();
         event.stopPropagation();
-        this.props.onDeliveryEventClick?.(deliveryEvent);
+        onDeliveryEventClick?.(deliveryEvent);
     };
 
-    private getIconColor = (index: number): string => {
-        return ICON_COLORS[index % ICON_COLORS.length];
-    };
-
-    private getStatusColor = (status: string): {main: string; light: string} => {
-        return STATUS_COLORS[status as keyof typeof STATUS_COLORS] || STATUS_COLORS.waiting;
-    };
-
-    private getDensitySizes = () => {
-        const {densityMode} = this.state;
+    const getDensitySizes = () => {
         switch (densityMode) {
             case DensityMode.Dense:
                 return {
@@ -273,46 +232,42 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
         }
     };
 
-    render(): React.ReactNode {
-        const {jobId} = this.props;
-        const {deliveryEvents, loading, densityMode, shouldAnimate} = this.state;
-        const themeColors = this.themeColors;
-        const sizes = this.getDensitySizes();
+    const sizes = getDensitySizes();
 
-        // No job selected state
-        if (!jobId) {
-            return (
+    // No job selected state
+    if (!jobId) {
+        return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                backgroundColor: 'background.paper',
+                borderRadius: 2,
+                overflow: 'hidden',
+            }}
+        >
             <Box
                 sx={{
+                    flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    height: '100%',
-                    backgroundColor: '#fff',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 4,
+                    textAlign: 'center',
                 }}
             >
-                <Box
-                    sx={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 4,
-                        textAlign: 'center',
-                    }}
-                >
-                    <SelectAllIcon sx={{fontSize: 48, color: '#9ca3af', mb: 2}} />
-                    <Typography variant="h6" sx={{color: '#1f2937', mb: 1}}>
-                        Select a Job
-                    </Typography>
-                    <Typography variant="body2" sx={{color: '#6b7280'}}>
-                        Select a job to view its delivery journey.
-                    </Typography>
-                </Box>
+                <SelectAllIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}} />
+                <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
+                    Select a Job
+                </Typography>
+                <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                    Select a job to view its delivery journey.
+                </Typography>
             </Box>
-        );
+        </Box>
+    );
     }
 
     return (
@@ -321,8 +276,8 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
-                backgroundColor: '#fff',
-                borderRadius: '8px',
+                backgroundColor: 'background.paper',
+                borderRadius: 2,
                 overflow: 'hidden',
             }}
         >
@@ -333,31 +288,32 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                     justifyContent: 'flex-end',
                     alignItems: 'center',
                     padding: '6px 12px',
-                    backgroundColor: themeColors.headerBg,
-                    borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+                    backgroundColor: 'primary.main',
+                    borderBottom: 1,
+                    borderColor: 'divider',
                 }}
             >
                 <Box sx={{display: 'flex', gap: 0.25}}>
-                    <Tooltip title={this.getDensityModeLabel()}>
+                    <Tooltip title={getDensityModeLabel()}>
                         <IconButton
                             size="small"
-                            onClick={this.cycleDensityMode}
+                            onClick={cycleDensityMode}
                             sx={{
-                                color: themeColors.headerText,
-                                '&:hover': {backgroundColor: 'rgba(255, 255, 255, 0.15)'},
+                                color: 'primary.contrastText',
+                                '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)},
                             }}
                         >
-                            {this.getDensityModeIcon()}
+                            {getDensityModeIcon()}
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Refresh">
                         <IconButton
                             size="small"
-                            onClick={this.handleRefresh}
+                            onClick={handleRefresh}
                             disabled={loading}
                             sx={{
-                                color: themeColors.headerText,
-                                '&:hover': {backgroundColor: 'rgba(255, 255, 255, 0.15)'},
+                                color: 'primary.contrastText',
+                                '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)},
                                 '@keyframes spin': {
                                     from: {transform: 'rotate(0deg)'},
                                     to: {transform: 'rotate(360deg)'},
@@ -404,14 +360,14 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                     top: 0,
                                     bottom: 0,
                                     width: densityMode === DensityMode.UltraDense ? 1 : 2,
-                                    backgroundColor: '#e5e7eb',
+                                    backgroundColor: 'divider',
                                 }}
                             />
 
                             {/* Events */}
                             {deliveryEvents.map((event, index) => {
-                                const statusColor = this.getStatusColor(event.status);
-                                const iconColor = this.getIconColor(index);
+                                const statusColor = getStatusColor(theme, event.status);
+                                const iconColor = getIconColor(index);
                                 const isLast = index === deliveryEvents.length - 1;
                                 const tagsToShow = event.tags?.slice(0, sizes.tagLimit) || [];
                                 const remainingTags = (event.tags?.length || 0) - sizes.tagLimit;
@@ -419,7 +375,7 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                 return (
                                     <Box
                                         key={event.id}
-                                        onClick={(e) => this.handleEventClick(e, event)}
+                                        onClick={(e) => handleEventClick(e, event)}
                                         sx={{
                                             display: 'flex',
                                             gap: `${sizes.eventGap}px`,
@@ -430,8 +386,8 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                             transition: 'opacity 0.4s ease, transform 0.4s ease',
                                             transitionDelay: `${index * 0.08}s`,
                                             '&:hover .event-card': {
-                                                borderColor: themeColors.primary,
-                                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                                                borderColor: 'primary.main',
+                                                boxShadow: 2,
                                             },
                                         }}
                                     >
@@ -455,7 +411,7 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                     justifyContent: 'center',
                                                     backgroundColor: iconColor,
                                                     border: `${densityMode === DensityMode.UltraDense ? 2 : 3}px solid white`,
-                                                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                                    boxShadow: 1,
                                                     '& svg': {
                                                         color: 'white',
                                                         fontSize: sizes.iconSize,
@@ -470,7 +426,7 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                         width: densityMode === DensityMode.UltraDense ? 1 : 2,
                                                         flex: 1,
                                                         minHeight: densityMode === DensityMode.UltraDense ? 8 : 16,
-                                                        backgroundColor: '#e5e7eb',
+                                                        backgroundColor: 'divider',
                                                         marginTop: '-2px',
                                                     }}
                                                 />
@@ -482,10 +438,11 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                             className="event-card"
                                             sx={{
                                                 flex: 1,
-                                                backgroundColor: '#fff',
-                                                border: '1px solid #e5e7eb',
+                                                backgroundColor: 'background.paper',
+                                                border: 1,
+                                                borderColor: 'divider',
                                                 borderLeft: `3px solid ${statusColor.main}`,
-                                                borderRadius: '8px',
+                                                borderRadius: 2,
                                                 padding: sizes.cardPadding,
                                                 background: `linear-gradient(to right, ${statusColor.light}, white 20%)`,
                                                 transition: 'all 0.2s ease',
@@ -496,7 +453,7 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                 sx={{
                                                     display: 'flex',
                                                     justifyContent: 'space-between',
-                                                    alignItems: densityMode === DensityMode.UltraDense ? 'flex-start' : 'flex-start',
+                                                    alignItems: 'flex-start',
                                                     flexDirection: densityMode === DensityMode.UltraDense ? 'column' : 'row',
                                                     gap: densityMode === DensityMode.UltraDense ? '2px' : '8px',
                                                     marginBottom: '6px',
@@ -506,7 +463,7 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                     sx={{
                                                         fontSize: sizes.titleSize,
                                                         fontWeight: densityMode === DensityMode.UltraDense ? 500 : 600,
-                                                        color: '#1f2937',
+                                                        color: 'text.primary',
                                                         lineHeight: 1.3,
                                                     }}
                                                 >
@@ -516,17 +473,17 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                     <Typography
                                                         sx={{
                                                             fontSize: sizes.timeSize,
-                                                            color: '#6b7280',
-                                                            backgroundColor: '#f9fafb',
+                                                            color: 'text.secondary',
+                                                            backgroundColor: 'grey.50',
                                                             padding: densityMode === DensityMode.Dense ? '1px 6px' : '2px 8px',
-                                                            borderRadius: '4px',
+                                                            borderRadius: 1,
                                                             whiteSpace: 'nowrap',
                                                             flexShrink: 0,
                                                         }}
                                                     >
                                                         {event._dateStr}
                                                         {densityMode === DensityMode.Normal && (
-                                                            <span style={{color: '#9ca3af', marginLeft: 2}}>{this.timeZoneShort}</span>
+                                                            <Box component="span" sx={{color: 'text.disabled', ml: 0.25}}>{timeZoneShort}</Box>
                                                         )}
                                                     </Typography>
                                                 )}
@@ -541,11 +498,12 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                             component="span"
                                                             sx={{
                                                                 fontSize: sizes.tagSize,
-                                                                color: '#6b7280',
-                                                                backgroundColor: '#f9fafb',
+                                                                color: 'text.secondary',
+                                                                backgroundColor: 'grey.50',
                                                                 padding: densityMode === DensityMode.UltraDense ? '0 3px' : '2px 6px',
-                                                                borderRadius: '4px',
-                                                                border: '1px solid #e5e7eb',
+                                                                borderRadius: 1,
+                                                                border: 1,
+                                                                borderColor: 'divider',
                                                             }}
                                                         >
                                                             {tag}
@@ -556,11 +514,12 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                             component="span"
                                                             sx={{
                                                                 fontSize: sizes.tagSize,
-                                                                color: '#9ca3af',
-                                                                backgroundColor: '#f9fafb',
+                                                                color: 'text.disabled',
+                                                                backgroundColor: 'grey.50',
                                                                 padding: densityMode === DensityMode.UltraDense ? '0 3px' : '2px 6px',
-                                                                borderRadius: '4px',
-                                                                border: '1px solid #e5e7eb',
+                                                                borderRadius: 1,
+                                                                border: 1,
+                                                                borderColor: 'divider',
                                                                 fontStyle: 'italic',
                                                             }}
                                                         >
@@ -579,14 +538,14 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                                                         gap: '6px',
                                                         marginTop: '8px',
                                                         padding: '8px',
-                                                        backgroundColor: '#f9fafb',
-                                                        borderRadius: '4px',
+                                                        backgroundColor: 'grey.50',
+                                                        borderRadius: 1,
                                                         fontSize: '0.75rem',
-                                                        color: '#6b7280',
+                                                        color: 'text.secondary',
                                                         fontStyle: 'italic',
                                                     }}
                                                 >
-                                                    <NotesIcon sx={{color: '#9ca3af', fontSize: 16, flexShrink: 0}} />
+                                                    <NotesIcon sx={{color: 'text.disabled', fontSize: 16, flexShrink: 0}} />
                                                     <span>{event.notes}</span>
                                                 </Box>
                                             )}
@@ -609,19 +568,18 @@ export class TaskHistory extends React.Component<TaskHistoryProps, TaskHistorySt
                             textAlign: 'center',
                         }}
                     >
-                        <PackageIcon sx={{fontSize: 48, color: '#9ca3af', mb: 2}} />
-                        <Typography variant="h6" sx={{color: '#1f2937', mb: 1}}>
+                        <PackageIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}} />
+                        <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
                             No Journey Events
                         </Typography>
-                        <Typography variant="body2" sx={{color: '#6b7280'}}>
+                        <Typography variant="body2" sx={{color: 'text.secondary'}}>
                             No delivery journey events found for this job.
                         </Typography>
                     </Box>
                 ) : null}
             </Box>
         </Box>
-        );
-    }
-}
+    );
+};
 
 export default TaskHistory;

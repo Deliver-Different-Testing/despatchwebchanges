@@ -12,6 +12,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import ClearIcon from '@mui/icons-material/Clear';
 import { NoData } from '../no-data/NoData';
+import { driverLocationColors } from '../../../theme/designTokens';
 import type {
     DriverLocationsProps,
     IAreaClearList,
@@ -21,38 +22,8 @@ import type {
 } from './DriverLocations.types';
 import { shouldShowCourier } from './DriverLocations.types';
 
-// Color constants matching the original LESS styles
-const COLORS = {
-    // Area title colors
-    titleBackground: '#5d5d5d',
-    titleBackgroundHover: '#707070',
-    titleActiveBackground: '#ffeb3b', // @primary-color
-    titleActiveBackgroundHover: '#fdd835',
-
-    // Top section (blue)
-    topBackground: '#bae1ff',
-    topBackgroundHover: '#a8d4f5',
-    topBackgroundActive: '#96c7eb',
-    topNumberBackground: '#94c5ea',
-    topNumberBackgroundActive: '#82b8e0',
-
-    // Middle section (purple)
-    middleBackground: '#d4c7ff',
-    middleBackgroundHover: '#c6b6fd',
-    middleNumberBackground: '#bdaeef',
-    middleNumberBackgroundActive: '#ab9ce5',
-
-    // Bottom section (orange)
-    bottomBackground: '#ffdfba',
-    bottomBackgroundHover: '#f5d0a5',
-    bottomNumberBackground: '#ffc888',
-    bottomNumberBackgroundActive: '#f5b870',
-
-    // Other
-    areaBackground: '#bfbfbf',
-    destinationBackground: '#f5f5f5',
-    destinationBorder: '#e0e0e0',
-};
+// Domain-specific board section colors imported from design tokens
+const C = driverLocationColors;
 
 /**
  * Get background color for a driver row based on variant and state
@@ -60,15 +31,15 @@ const COLORS = {
 function getRowBackgroundColor(variant: 'top' | 'middle' | 'bottom', isActive: boolean, isHover: boolean): string {
     switch (variant) {
         case 'top':
-            if (isActive) return COLORS.topBackgroundActive;
-            if (isHover) return COLORS.topBackgroundHover;
-            return COLORS.topBackground;
+            if (isActive) return C.top.bgActive;
+            if (isHover) return C.top.bgHover;
+            return C.top.bg;
         case 'middle':
-            if (isHover) return COLORS.middleBackgroundHover;
-            return COLORS.middleBackground;
+            if (isHover) return C.middle.bgHover;
+            return C.middle.bg;
         case 'bottom':
-            if (isHover) return COLORS.bottomBackgroundHover;
-            return COLORS.bottomBackground;
+            if (isHover) return C.bottom.bgHover;
+            return C.bottom.bg;
     }
 }
 
@@ -78,11 +49,11 @@ function getRowBackgroundColor(variant: 'top' | 'middle' | 'bottom', isActive: b
 function getNumberBackgroundColor(variant: 'top' | 'middle' | 'bottom', isActive: boolean): string {
     switch (variant) {
         case 'top':
-            return isActive ? COLORS.topNumberBackgroundActive : COLORS.topNumberBackground;
+            return isActive ? C.top.numberBgActive : C.top.numberBg;
         case 'middle':
-            return isActive ? COLORS.middleNumberBackgroundActive : COLORS.middleNumberBackground;
+            return isActive ? C.middle.numberBgActive : C.middle.numberBg;
         case 'bottom':
-            return isActive ? COLORS.bottomNumberBackgroundActive : COLORS.bottomNumberBackground;
+            return isActive ? C.bottom.numberBgActive : C.bottom.numberBg;
     }
 }
 
@@ -121,8 +92,8 @@ const DriverRow = React.memo(function DriverRow({
                 alignItems: 'center',
                 backgroundColor: getRowBackgroundColor(variant, isActive, isHovered),
                 borderBottom: '1px solid',
-                borderColor: variant === 'top' ? '#a4d2f5' :
-                    variant === 'middle' ? '#c6b6fd' : '#efcea9',
+                borderColor: variant === 'top' ? C.top.border :
+                    variant === 'middle' ? C.middle.border : C.bottom.border,
                 cursor: 'pointer',
                 transition: 'background-color 0.15s ease',
             }}
@@ -135,7 +106,7 @@ const DriverRow = React.memo(function DriverRow({
                     backgroundColor: getNumberBackgroundColor(variant, isActive),
                     textAlign: 'center',
                     fontWeight: 700,
-                    fontSize: '12px',
+                    fontSize: '0.75rem',
                 }}
             >
                 {section.courierNumber}
@@ -147,11 +118,11 @@ const DriverRow = React.memo(function DriverRow({
                         sx={{
                             padding: '2px 4px',
                             display: 'inline-block',
-                            backgroundColor: COLORS.destinationBackground,
-                            border: `1px solid ${COLORS.destinationBorder}`,
+                            backgroundColor: C.destination.bg,
+                            border: `1px solid ${C.destination.border}`,
                             margin: '2px 0 2px 4px',
-                            borderRadius: '4px',
-                            fontSize: '11px',
+                            borderRadius: 1,
+                            fontSize: '0.75rem',
                         }}
                     >
                         {destination.label}
@@ -199,11 +170,11 @@ const AreaSection = React.memo(function AreaSection({
     );
 
     // Calculate title background color
-    let titleBgColor = COLORS.titleBackground;
+    let titleBgColor = C.title.bg;
     if (isActive) {
-        titleBgColor = isTitleHovered ? COLORS.titleActiveBackgroundHover : COLORS.titleActiveBackground;
+        titleBgColor = isTitleHovered ? C.title.activeBgHover : C.title.activeBg;
     } else if (isTitleHovered) {
-        titleBgColor = COLORS.titleBackgroundHover;
+        titleBgColor = C.title.bgHover;
     }
 
     return (
@@ -211,10 +182,10 @@ const AreaSection = React.memo(function AreaSection({
             sx={{
                 height: `${area.percentHeight}%`,
                 marginBottom: '10px',
-                backgroundColor: COLORS.areaBackground,
-                borderRadius: '4px',
+                backgroundColor: C.area,
+                borderRadius: 1,
                 overflow: 'hidden',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
+                boxShadow: 1,
                 display: 'flex',
                 flexDirection: 'column',
             }}

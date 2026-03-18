@@ -8,18 +8,6 @@
 import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
 
-declare global {
-    interface Window {
-        ReactBulkPriceUploadDialog?: {
-            open: (options: {
-                toastService?: {
-                    showToast: (message: string, type: 'success' | 'warning' | 'error') => void;
-                };
-            }) => Promise<boolean>;
-        };
-    }
-}
-
 class BulkPriceUploadDialogService implements angular.IServiceProvider {
     static $inject = ['$log', 'toastrService', '$ocLazyLoad', '$http'];
 
@@ -59,7 +47,7 @@ class BulkPriceUploadDialogService implements angular.IServiceProvider {
         }
 
         const toastService = {
-            showToast: (message: string, type: 'success' | 'warning' | 'error') => {
+            showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                 switch (type) {
                     case 'success': this.toastrService.showSuccessToast(message); break;
                     case 'warning': this.toastrService.showWarningToast(message); break;

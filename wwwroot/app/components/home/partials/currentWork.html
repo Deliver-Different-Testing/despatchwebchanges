@@ -27,17 +27,9 @@
 
     <!-- Selected Driver Mode -->
     <div ng-if="!ctrl.isUsCustomer || ctrl.currentWorkViewMode === 'selected'">
-        <jobs-list
-                ng-if="ctrl.jobsCurrentList"
-                jobs="ctrl.jobsCurrentList"
-                selected-job="ctrl.selectedJob"
-                on-job-select="ctrl.selectJob(job)"
-                on-job-dispatch="ctrl.handleJobDispatch(job, courierId)"
-                on-job-action="ctrl.handleJobAction(action, job, params)"
-                get-context-menu-options="ctrl.getJobContextMenuOptions()"
-                refresh-interval="30000"
-                job-list-type="ctrl.currentWorkListName">
-        </jobs-list>
+        <div id="react-current-work-job-list"
+             ng-if="ctrl.jobsCurrentList"
+             style="height: 100%;"></div>
 
         <no-data-react
                 ng-if="!ctrl.jobsCurrentList"

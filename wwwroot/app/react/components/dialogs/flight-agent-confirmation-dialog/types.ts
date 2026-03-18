@@ -3,7 +3,7 @@
  */
 
 import { Dayjs } from 'dayjs';
-import type { ShowToastFn } from '../../../services/toastService';
+import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
 // Re-export flight interfaces for convenience
 export interface FlightSegment {
@@ -138,7 +138,4 @@ export interface FlightAgentConfirmationDialogProps {
     showToast: ShowToastFn;
 }
 
-// Toast service interface
-export interface ToastService {
-    showToast: ShowToastFn;
-}
+export type {ToastService};
