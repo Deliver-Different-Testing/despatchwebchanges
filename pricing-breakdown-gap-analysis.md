@@ -193,7 +193,126 @@ This gives users the behaviour they expect: **edit a cost line item → courier 
 
 ---
 
-## 6. Where the Code Lives
+## 6. Parent/Child Job Breakdown — The Nationwide Problem
+
+### The Challenge
+
+A nationwide/Excelerator job typically has **three or more legs**:
+
+```
+Parent Job (KT1234NW) ← Client sees this on invoice
+  ├── Child A: Pickup leg        (local courier, own base rate + accessorials)
+  ├── Child B: Linehaul leg      (linehaul courier, own base rate + accessorials)
+  └── Child C: Delivery leg      (local courier, own base rate + accessorials)
+```
+
+Each child leg has its own:
+- Base courier rate (from distance/zone rates)
+- FAF / fuel surcharge
+- Weight excess charges
+- After hours / holiday charges
+- Congestion charges
+- Wait time charges
+
+**The client only sees the parent job on their invoice.** They don't know about the legs. They expect a single coherent price breakdown — not three sets of duplicated charge names.
+
+### What the Client Should NOT See
+
+```
+❌ Base (Pickup) = $45.00
+❌ Base (Linehaul) = $150.00  
+❌ Base (Delivery) = $55.00
+❌ FAF (Pickup) = $6.75
+❌ FAF (Linehaul) = $22.50
+❌ FAF (Delivery) = $8.25
+❌ Weight Excess (Pickup) = $9.45
+❌ Weight Excess (Delivery) = $9.45
+```
+
+Three FAF lines, three weight charges — confusing and looks like errors or double-billing.
+
+### What the Client SHOULD See
+
+```
+✅ Base = $250.00                   (the rated price for this service)
+✅ Fuel Surcharge = $37.50          (single consolidated FAF)
+✅ Weight Excess = $18.90           (one charge, covers all legs)
+✅ After Hours = $15.00             (if applicable)
+```
+
+Clean, consolidated — matches their rate card expectations.
+
+### Proposed Data Model
+
+Add two columns to `PricingBreakdown`:
+
+| Column | Type | Purpose |
+|---|---|---|
+| `Purpose` | `nvarchar(10)` | `Invoice`, `CourierPay`, or `Both` |
+| `ChildJobID` | `int NULL` | Which child job this cost belongs to (NULL = parent-level / simple job) |
+
+**How it works:**
+
+**For simple A→B jobs (no children):**
+- `Purpose = 'Both'` — the same row is used for both client invoicing and courier pay
+- `ChildJobID = NULL`
+- Works exactly as today, no change
+
+**For parent/child nationwide jobs:**
+
+The parent job gets **two types** of PricingBreakdown rows:
+
+1. **Invoice rows** (`Purpose = 'Invoice'`, `ChildJobID = NULL`):
+   - Consolidated view for the client
+   - `ChargeAmount` = sum of all children's charges for that type
+   - `CostAmount` = sum of all children's costs for that type
+   - These appear on the invoice and in the client-facing breakdown
+
+2. **Courier pay rows** (`Purpose = 'CourierPay'`, `ChildJobID = <child>`):
+   - One set per child leg
+   - `CostAmount` = what that specific courier gets paid for that component
+   - `ChargeAmount` = that leg's portion of the client charge (for internal GP tracking)
+   - These drive courier settlements and the internal cost audit view
+
+**Example — Nationwide job KT1234NW:**
+
+| PricingBreakdownID | JobID (Parent) | ChildJobID | Purpose | ChargeName | ChargeAmount | CostAmount |
+|---|---|---|---|---|---|---|
+| 1 | 5001 | NULL | Invoice | Base | $250.00 | $145.00 |
+| 2 | 5001 | NULL | Invoice | Fuel Surcharge | $37.50 | $26.25 |
+| 3 | 5001 | NULL | Invoice | Weight Excess | $18.90 | $9.46 |
+| 4 | 5001 | 5002 | CourierPay | Base (Pickup) | $45.00 | $28.00 |
+| 5 | 5001 | 5002 | CourierPay | FAF (Pickup) | $6.75 | $4.20 |
+| 6 | 5001 | 5002 | CourierPay | Weight (Pickup) | $9.45 | $4.73 |
+| 7 | 5001 | 5003 | CourierPay | Base (Linehaul) | $150.00 | $95.00 |
+| 8 | 5001 | 5003 | CourierPay | FAF (Linehaul) | $22.50 | $15.75 |
+| 9 | 5001 | 5004 | CourierPay | Base (Delivery) | $55.00 | $22.00 |
+| 10 | 5001 | 5004 | CourierPay | FAF (Delivery) | $8.25 | $6.30 |
+| 11 | 5001 | 5004 | CourierPay | Weight (Delivery) | $9.45 | $4.73 |
+
+**Rules:**
+- Invoice view: filter `WHERE Purpose IN ('Invoice', 'Both')` — client sees consolidated lines
+- Courier settlement: filter `WHERE Purpose IN ('CourierPay', 'Both') AND ChildJobID = @CourierChildJobID` — courier sees their leg only
+- Internal audit: show all rows — full visibility of both views
+- `SUM(CostAmount) WHERE Purpose = 'Invoice'` should equal `SUM(CostAmount) WHERE Purpose = 'CourierPay'` — cross-check
+
+### How Invoice Rows Get Created
+
+When a parent job's children are all rated:
+1. Group all children's PricingBreakdown rows by charge type (Base, FAF, Weight, etc.)
+2. Sum `ChargeAmount` and `CostAmount` per type
+3. Insert consolidated rows on the parent with `Purpose = 'Invoice'`
+4. This could be done in the archive process, or triggered when the last child is completed
+
+### Edge Cases
+
+- **Parent-specific charges** (e.g. a booking fee that only applies to the parent): `Purpose = 'Invoice'`, `ChildJobID = NULL`, not derived from children
+- **One leg has after hours, others don't**: Only that leg's courier pay row shows after hours. The Invoice row still shows a single "After Hours" line with just that amount
+- **Repricing a child**: Recalculate that child's CourierPay rows, then regenerate the parent's Invoice rows by re-summing
+
+---
+
+## 7. Where the Code Lives
 
 | Component | Location | Notes |
 |---|---|---|
@@ -208,7 +327,7 @@ This gives users the behaviour they expect: **edit a cost line item → courier 
 
 ---
 
-## 7. Open Questions
+## 8. Open Questions
 
 1. **Trigger definition:** We still need the source of `tucJob_InsertUpdate_CalculateCourierPayment` from the live DB. This is where base courier pay is calculated. Without it, we can't wire the base rate into the breakdown string.
 
@@ -220,9 +339,15 @@ This gives users the behaviour they expect: **edit a cost line item → courier 
 
 5. **Rerate interaction:** When a job is rerated (speed change), the charge changes. Does the courier pay also change? If so, PricingBreakdown needs to be regenerated with new cost values.
 
+6. **Parent Invoice row generation:** When should consolidated Invoice rows be created on the parent — at booking time, when the last child is completed, during the archive process, or on-demand when the invoice is generated?
+
+7. **Existing nationwide jobs:** The Excelerator path already builds breakdown strings with `Amount~DriverPay` per leg. Are these currently stored on the child jobs' PricingBreakdown, on the parent, or both? This determines how much of the parent/child consolidation already works.
+
+8. **Split jobs:** Split jobs also create parent/child relationships. Do they need the same Invoice vs CourierPay separation, or is the split logic different enough to handle separately?
+
 ---
 
-## 8. Summary
+## 9. Summary
 
 The infrastructure for granular cost tracking **already exists** — `ExtraCharges` has driver pay columns, `UTL_fncJob_ExtraRate` calculates both sides, `DD_InsertPricingBreakdown` stores both sides, the Excelerator path includes base driver pay in the breakdown string. 
 
