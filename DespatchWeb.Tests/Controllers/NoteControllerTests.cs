@@ -2,7 +2,6 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -17,8 +16,6 @@ public class NoteControllerTests
         _noteRepositoryMock.Object,
         _recurringJobRepositoryMock.Object
     );
-
-    #region GetNoteHistory - String-to-Enum Parsing Tests
 
     [Theory]
     [InlineData("Note", NoteHistorySource.Note)]
@@ -38,7 +35,7 @@ public class NoteControllerTests
         var result = await controller.GetNoteHistory(noteId, noteSource);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         _noteRepositoryMock.Verify(x => x.GetNoteHistoryAsync(noteId, expectedSource), Times.Once);
     }
 
@@ -61,7 +58,7 @@ public class NoteControllerTests
         var result = await controller.GetNoteHistory(noteId, noteSource);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Theory]
@@ -78,8 +75,8 @@ public class NoteControllerTests
         var result = await controller.GetNoteHistory(1, noteSource);
 
         // Assert
-        var badRequest = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequest.Value.Should().Be($"Invalid noteSource: {noteSource}");
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal($"Invalid noteSource: {noteSource}", badRequest.Value);
     }
 
     [Fact]
@@ -97,7 +94,7 @@ public class NoteControllerTests
         var result = await controller.GetNoteHistory(noteId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         _noteRepositoryMock.Verify(x => x.GetNoteHistoryAsync(noteId, NoteHistorySource.Note), Times.Once);
     }
 
@@ -121,8 +118,8 @@ public class NoteControllerTests
         var result = await controller.GetNoteHistory(noteId);
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().BeEquivalentTo(expectedHistory);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equivalent(expectedHistory, jsonResult.Value);
     }
 
     [Fact]
@@ -139,9 +136,8 @@ public class NoteControllerTests
         var result = await controller.GetNoteHistory(1);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
 
-    #endregion
 }

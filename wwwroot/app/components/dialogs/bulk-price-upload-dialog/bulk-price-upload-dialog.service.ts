@@ -9,10 +9,9 @@ import ToastrService from "../../../services/toastr.service";
 import angular from 'angular';
 
 class BulkPriceUploadDialogService implements angular.IServiceProvider {
-    static $inject = ['$log', 'toastrService', '$ocLazyLoad', '$http'];
+    static $inject = ['toastrService', '$ocLazyLoad', '$http'];
 
     constructor(
-        private $log: angular.ILogService,
         private toastrService: ToastrService,
         private $ocLazyLoad: oc.ILazyLoad,
         private $http: angular.IHttpService,

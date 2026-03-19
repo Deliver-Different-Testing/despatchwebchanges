@@ -1,5 +1,4 @@
 using System.Globalization;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -9,7 +8,6 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class CsvFormattingTests
 {
-    #region FormatCsvField Tests
 
     [Theory]
     [InlineData("Simple text", "Simple text")]
@@ -21,7 +19,7 @@ public class CsvFormattingTests
     {
         // Test the CSV escaping logic
         var result = FormatCsvField(input);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -29,7 +27,7 @@ public class CsvFormattingTests
     {
         const string input = "Line1\nLine2";
         var result = FormatCsvField(input);
-        result.Should().Be("\"Line1\nLine2\"");
+        Assert.Equal("\"Line1\nLine2\"", result);
     }
 
     [Fact]
@@ -37,7 +35,7 @@ public class CsvFormattingTests
     {
         const string input = "Line1\rLine2";
         var result = FormatCsvField(input);
-        result.Should().Be("\"Line1\rLine2\"");
+        Assert.Equal("\"Line1\rLine2\"", result);
     }
 
     [Fact]
@@ -45,7 +43,7 @@ public class CsvFormattingTests
     {
         const string input = "Value, with \"quotes\" and\nnewlines";
         var result = FormatCsvField(input);
-        result.Should().Be("\"Value, with \"\"quotes\"\" and\nnewlines\"");
+        Assert.Equal("\"Value, with \"\"quotes\"\" and\nnewlines\"", result);
     }
 
     [Fact]
@@ -53,7 +51,7 @@ public class CsvFormattingTests
     {
         const string input = "   ";
         var result = FormatCsvField(input);
-        result.Should().Be("   ", "spaces don't require quoting");
+        Assert.Equal("   ", result);
     }
 
     [Fact]
@@ -61,19 +59,15 @@ public class CsvFormattingTests
     {
         const string input = "  value  ";
         var result = FormatCsvField(input);
-        result.Should().Be("  value  ", "leading/trailing spaces don't require quoting");
+        Assert.Equal("  value  ", result);
     }
-
-    #endregion
-
-    #region CSV Row Generation Tests
 
     [Fact]
     public void GenerateCsvRow_SimpleValues_JoinsWithComma()
     {
         var values = new[] { "A", "B", "C" };
         var result = string.Join(",", values.Select(FormatCsvField));
-        result.Should().Be("A,B,C");
+        Assert.Equal("A,B,C", result);
     }
 
     [Fact]
@@ -81,7 +75,7 @@ public class CsvFormattingTests
     {
         var values = new[] { "Normal", "Has, comma", "Has \"quote\"" };
         var result = string.Join(",", values.Select(FormatCsvField));
-        result.Should().Be("Normal,\"Has, comma\",\"Has \"\"quote\"\"\"");
+        Assert.Equal("Normal,\"Has, comma\",\"Has \"\"quote\"\"\"", result);
     }
 
     [Fact]
@@ -89,7 +83,7 @@ public class CsvFormattingTests
     {
         var values = new[] { "A", null, "C" };
         var result = string.Join(",", values.Select(FormatCsvField));
-        result.Should().Be("A,,C");
+        Assert.Equal("A,,C", result);
     }
 
     [Fact]
@@ -97,12 +91,8 @@ public class CsvFormattingTests
     {
         var values = new[] { "", "", "" };
         var result = string.Join(",", values.Select(FormatCsvField));
-        result.Should().Be(",,");
+        Assert.Equal(",,", result);
     }
-
-    #endregion
-
-    #region Decimal Formatting Tests
 
     [Theory]
     [InlineData(100.00, "100")]
@@ -113,7 +103,7 @@ public class CsvFormattingTests
     public void DecimalFormatting_FormatsCorrectly(decimal value, string expected)
     {
         var result = value.ToString(CultureInfo.InvariantCulture);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -121,19 +111,15 @@ public class CsvFormattingTests
     {
         decimal? value = null;
         var result = value?.ToString() ?? string.Empty;
-        result.Should().Be(string.Empty);
+        Assert.Equal(string.Empty, result);
     }
-
-    #endregion
-
-    #region Date Formatting Tests
 
     [Fact]
     public void DateTimeFormatting_StandardFormat_FormatsCorrectly()
     {
         var date = new DateTime(2024, 1, 15, 10, 30, 45);
         var result = date.ToString("yyyy-MM-dd HH:mm:ss");
-        result.Should().Be("2024-01-15 10:30:45");
+        Assert.Equal("2024-01-15 10:30:45", result);
     }
 
     [Fact]
@@ -141,7 +127,7 @@ public class CsvFormattingTests
     {
         DateTime? date = null;
         var result = date?.ToString("yyyy-MM-dd HH:mm:ss") ?? string.Empty;
-        result.Should().Be(string.Empty);
+        Assert.Equal(string.Empty, result);
     }
 
     [Fact]
@@ -149,7 +135,7 @@ public class CsvFormattingTests
     {
         var date = new DateTime(2024, 1, 15, 0, 0, 0);
         var result = date.ToString("yyyy-MM-dd HH:mm:ss");
-        result.Should().Be("2024-01-15 00:00:00");
+        Assert.Equal("2024-01-15 00:00:00", result);
     }
 
     [Fact]
@@ -158,7 +144,7 @@ public class CsvFormattingTests
         // The client jobs report now uses dd-MMM-yy format for dates
         var date = new DateTime(2024, 1, 15);
         var result = date.ToString("dd-MMM-yy");
-        result.Should().Be("15-Jan-24");
+        Assert.Equal("15-Jan-24", result);
     }
 
     [Fact]
@@ -167,7 +153,7 @@ public class CsvFormattingTests
         // The client jobs report now uses HH:mm format for booked time
         var date = new DateTime(2024, 1, 15, 9, 30, 0);
         var result = date.ToString("HH:mm");
-        result.Should().Be("09:30");
+        Assert.Equal("09:30", result);
     }
 
     [Theory]
@@ -179,7 +165,7 @@ public class CsvFormattingTests
     {
         var date = new DateTime(year, month, day);
         var result = date.ToString("dd-MMM-yy");
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Theory]
@@ -191,12 +177,8 @@ public class CsvFormattingTests
     {
         var date = new DateTime(2024, 1, 15, hour, minute, 0);
         var result = date.ToString("HH:mm");
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     /// <summary>
     /// Formats a value for CSV output, escaping special characters as needed.
@@ -212,7 +194,6 @@ public class CsvFormattingTests
         return value;
     }
 
-    #endregion
 }
 
 /// <summary>
@@ -240,7 +221,7 @@ public class FileExtensionValidationTests
     public void IsValidExtension_ReturnsExpected(string fileName, bool expected)
     {
         var result = IsValidBulkPriceExtension(fileName);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     private static bool IsValidBulkPriceExtension(string fileName)

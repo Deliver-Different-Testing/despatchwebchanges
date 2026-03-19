@@ -13,8 +13,6 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
-using TimeZone = DespatchWeb.EntityClasses.TimeZone;
-
 namespace DespatchWeb.Repositories;
 
 public class NationwideJobRepository(
@@ -67,22 +65,25 @@ public class NationwideJobRepository(
                 .FirstOrDefaultAsync(cancellationToken);
             ArgumentNullException.ThrowIfNull(job);
 
-            var timeZones = await Context.TimeZones.ToListAsync(cancellationToken);
+            var timeZoneLookup = await BuildTimeZoneLookupAsync(cancellationToken);
 
             Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
                 job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
 
             var firstFlightDepartureTimeZoneId =
-                GetTimeZoneIdFromList(timeZones, primaryFlight.DepartureAirportTimeZone);
-            var lastFlightArrivalTimeZoneId = GetTimeZoneIdFromList(timeZones, lastFlight.ArrivalAirportTimeZone);
-
-            var airports = await GetAirportAddressInfosAsync();
+                GetTimeZoneId(timeZoneLookup, primaryFlight.DepartureAirportTimeZone);
+            var lastFlightArrivalTimeZoneId = GetTimeZoneId(timeZoneLookup, lastFlight.ArrivalAirportTimeZone);
 
             var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
-            if (!departureAirportId.HasValue) throw new ArgumentNullException(nameof(departureAirportId));
+            if (!departureAirportId.HasValue)
+                throw new InvalidOperationException("Departure airport ID is required but was not set on the job or request.");
 
             var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
-            if (!arrivalAirportId.HasValue) throw new ArgumentNullException(nameof(arrivalAirportId));
+            if (!arrivalAirportId.HasValue)
+                throw new InvalidOperationException("Arrival airport ID is required but was not set on the job or request.");
+
+            var airports = await GetAirportAddressInfosAsync(
+                [departureAirportId.Value, arrivalAirportId.Value]);
 
             Log.Debug(
                 "Processing airports for PrimaryFlight: {PrimaryFlightNumber}, DepartureAirportId: {DepartureAirportId}, ArrivalAirportId: {ArrivalAirportId}",
@@ -136,7 +137,7 @@ public class NationwideJobRepository(
 
             // Create all flight records
             var primaryFlightRecord = await CreateFlightRecordsAsync(
-                job, orderedSegments, webhookIds, timeZones,
+                job, orderedSegments, webhookIds, timeZoneLookup,
                 firstFlightDepartureTimeZoneId, lastFlight.ArrivalTime, primaryFlightNumber);
 
             await SaveNoteAsync(requestData.JobId,
@@ -196,9 +197,20 @@ public class NationwideJobRepository(
         var jobLatitude = jobCoords.Latitude.Value;
         var jobLongitude = jobCoords.Longitude.Value;
 
-        // Query 2: Get all active airports with coordinates
+        // Coarse bounding box: ~8 degrees ≈ 550 miles latitude, adjusted for longitude
+        const double boundingBoxDegrees = 8.0;
+        var cosLat = Math.Cos((double)jobLatitude * Math.PI / 180.0);
+        var lonDegrees = cosLat > 0.01 ? boundingBoxDegrees / cosLat : 180.0;
+        var minLat = jobLatitude - (decimal)boundingBoxDegrees;
+        var maxLat = jobLatitude + (decimal)boundingBoxDegrees;
+        var minLon = jobLongitude - (decimal)lonDegrees;
+        var maxLon = jobLongitude + (decimal)lonDegrees;
+
+        // Query 2: Get active airports within bounding box
         var airports = await Context.TblAirports
-            .Where(a => a.Active && a.Latitude != null && a.Longitude != null)
+            .Where(a => a.Active && a.Latitude != null && a.Longitude != null
+                        && a.Latitude >= minLat && a.Latitude <= maxLat
+                        && a.Longitude >= minLon && a.Longitude <= maxLon)
             .Select(a => new
             {
                 a.AirportId,
@@ -257,9 +269,6 @@ public class NationwideJobRepository(
     {
         var job = await Context.TucJobs
             .AsTracking()
-            .Include(j => j.Parent)
-            .ThenInclude(j => j.InverseParent)
-            .Include(j => j.InverseParent)
             .FirstOrDefaultAsync(j => j.UcjbId == jobId);
         ArgumentNullException.ThrowIfNull(job);
 
@@ -285,21 +294,18 @@ public class NationwideJobRepository(
             ArgumentException.ThrowIfNullOrEmpty(mainJobNumber);
 
             // Stop jobs have the pattern: mainJobNumber + letter (e.g., KT22451a, KT22451b, KT22451c)
-            var stopJobs = job.Parent != null
-                ? job.Parent.InverseParent.Where(j =>
-                    !string.IsNullOrEmpty(j.UcjbNumber) &&
-                    j.UcjbNumber.StartsWith(mainJobNumber) &&
-                    j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
-                    char.IsLetter(j.UcjbNumber.Last()) &&
-                    j.UcjbId != jobId) // Exclude the main job itself
-                : job.InverseParent.Where(j =>
-                    !string.IsNullOrEmpty(j.UcjbNumber) &&
-                    j.UcjbNumber.StartsWith(mainJobNumber) &&
-                    j.UcjbNumber.Length == mainJobNumber.Length + 1 &&
-                    char.IsLetter(j.UcjbNumber.Last()) &&
-                    j.UcjbId != jobId); // Exclude the main job itself
+            // Query stop jobs directly instead of using eager-loaded includes
+            var parentId = job.ParentId ?? job.UcjbId;
+            var stopJobs = await Context.TucJobs
+                .AsTracking()
+                .Where(j => j.ParentId == parentId &&
+                            j.UcjbId != jobId &&
+                            j.UcjbNumber != null &&
+                            j.UcjbNumber.StartsWith(mainJobNumber) &&
+                            j.UcjbNumber.Length == mainJobNumber.Length + 1)
+                .ToListAsync();
 
-            foreach (var stopJob in stopJobs)
+            foreach (var stopJob in stopJobs.Where(j => char.IsLetter(j.UcjbNumber!.Last())))
             {
                 stopJob.AgentId = agentId;
                 stopJob.UcjbStatus = isGroundJob ? (int)JobStatus.GroundAgentAssigned
@@ -321,8 +327,6 @@ public class NationwideJobRepository(
             }
         }
 
-        await Context.SaveChangesAsync();
-
         // Note Record
         var note = new TucNote
         {
@@ -333,7 +337,6 @@ public class NationwideJobRepository(
             CreatedDate = currentDate
         };
         await Context.TucNotes.AddAsync(note);
-        await Context.SaveChangesAsync();
 
         var journeyRecord = new JobDeliveryJourney
         {
@@ -344,8 +347,8 @@ public class NationwideJobRepository(
             StaffId = _infoService.GetStaffId(),
             UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
         };
-
         await Context.AddAsync(journeyRecord);
+
         await Context.SaveChangesAsync();
     }
 
@@ -1129,7 +1132,7 @@ public class NationwideJobRepository(
         FlightSegmentViewModel segment,
         string webhookId,
         int legNumber,
-        List<TimeZone> timeZones,
+        IReadOnlyDictionary<string, int> timeZoneLookup,
         DateTimeOffset? overrideEta = null)
     {
         Log.Debug(
@@ -1154,13 +1157,13 @@ public class NationwideJobRepository(
             DepartureAirportCity = segment.DepartureAirportCity,
             DepartureAirportCountry = segment.DepartureAirportCountry,
             DepartureAirportTimeZone = segment.DepartureAirportTimeZone,
-            DepartureAirportTimeZoneId = GetTimeZoneIdFromList(timeZones, segment.DepartureAirportTimeZone),
+            DepartureAirportTimeZoneId = GetTimeZoneId(timeZoneLookup, segment.DepartureAirportTimeZone),
             ArrivalAirportFsCode = segment.ArrivalAirportFsCode,
             ArrivalAirportName = segment.ArrivalAirportName,
             ArrivalAirportCity = segment.ArrivalAirportCity,
             ArrivalAirportCountry = segment.ArrivalAirportCountry,
             ArrivalAirportTimeZone = segment.ArrivalAirportTimeZone,
-            ArrivalAirportTimeZoneId = GetTimeZoneIdFromList(timeZones, segment.ArrivalAirportTimeZone),
+            ArrivalAirportTimeZoneId = GetTimeZoneId(timeZoneLookup, segment.ArrivalAirportTimeZone),
             DepartureTerminal = segment.DepartureTerminal,
             ArrivalTerminal = segment.ArrivalTerminal,
             AircraftName = segment.AircraftName
@@ -1171,7 +1174,7 @@ public class NationwideJobRepository(
         TucJob job,
         List<FlightSegmentViewModel> segments,
         IReadOnlyList<string> webhookIds,
-        List<TimeZone> timeZones,
+        IReadOnlyDictionary<string, int> timeZoneLookup,
         int? departureTimeZoneId,
         DateTimeOffset lastFlightArrivalTime,
         string primaryFlightNumber)
@@ -1181,7 +1184,7 @@ public class NationwideJobRepository(
         // Create primary flight record with ETA set to the last flight's arrival time
         var primaryFlightRecord = CreateFlightRecord(
             job, primarySegment, webhookIds[0],
-            NationwideJobConstants.PrimaryFlightLegNumber, timeZones,
+            NationwideJobConstants.PrimaryFlightLegNumber, timeZoneLookup,
             lastFlightArrivalTime);
 
         // Override departure timezone for primary flight
@@ -1206,22 +1209,37 @@ public class NationwideJobRepository(
                 "Adding connection leg {LegNumber} for PrimaryFlight: {PrimaryFlightNumber}, Flight: {ConnectionFlight}",
                 legNumber, primaryFlightNumber, leg.FlightNumber);
 
-            var connectionRecord = CreateFlightRecord(job, leg, webhookIds[i], legNumber, timeZones);
+            var connectionRecord = CreateFlightRecord(job, leg, webhookIds[i], legNumber, timeZoneLookup);
             await Context.AddAsync(connectionRecord);
         }
 
         return primaryFlightRecord;
     }
 
-    private static int? GetTimeZoneIdFromList(List<TimeZone> timeZones, string timeZoneName) =>
-        timeZones
-            .Where(tz => tz.Name == timeZoneName || tz.Code == timeZoneName)
-            .Select(tz => tz.Id)
-            .FirstOrDefault();
+    private static int? GetTimeZoneId(IReadOnlyDictionary<string, int> timeZoneLookup, string timeZoneName) =>
+        !string.IsNullOrEmpty(timeZoneName) && timeZoneLookup.TryGetValue(timeZoneName, out var id) ? id : null;
 
-    private async Task<IReadOnlyList<AirportAddressInfoDto>> GetAirportAddressInfosAsync() =>
+    private async Task<IReadOnlyDictionary<string, int>> BuildTimeZoneLookupAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var timeZones = await Context.TimeZones
+            .Select(tz => new { tz.Id, tz.Name, tz.Code })
+            .ToListAsync(cancellationToken);
+
+        var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tz in timeZones)
+        {
+            if (!string.IsNullOrEmpty(tz.Name)) lookup.TryAdd(tz.Name, tz.Id);
+            if (!string.IsNullOrEmpty(tz.Code)) lookup.TryAdd(tz.Code, tz.Id);
+        }
+
+        return lookup;
+    }
+
+    private async Task<IReadOnlyList<AirportAddressInfoDto>> GetAirportAddressInfosAsync(
+        IReadOnlyCollection<int> airportIds) =>
         await Context.TblAirports
-            .Where(a => a.Active)
+            .Where(a => a.Active && airportIds.Contains(a.AirportId))
             .Select(a => new AirportAddressInfoDto
             {
                 AirportId = a.AirportId,
@@ -1330,9 +1348,11 @@ public class NationwideJobRepository(
             new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },
             async (batch, ct) =>
             {
+                // Each parallel batch gets its own DbContext to avoid concurrency issues
+                await using var batchContext = CreateNewContext();
                 foreach (var agent in batch)
                 {
-                    var agentRate = await GetAgentRatesAsync(nationwideJob, agent, ct);
+                    var agentRate = await GetAgentRateAsync(batchContext, nationwideJob, agent, ct);
                     var viewModel = new AgentViewModel
                     {
                         AgentId = agent.AgentId,
@@ -1349,10 +1369,10 @@ public class NationwideJobRepository(
         return agentResults.ToList();
     }
 
-    private async Task<decimal?> GetAgentRatesAsync(NationwideJobDetail nationwideJob,
-        AgentDto agent, CancellationToken ct)
+    private static async Task<decimal?> GetAgentRateAsync(DespatchContext context,
+        NationwideJobDetail nationwideJob, AgentDto agent, CancellationToken ct)
     {
-        var rates = await Context.Procedures.DD_stpGetAgentDistanceRateAsync(
+        var rates = await context.Procedures.DD_stpGetAgentDistanceRateAsync(
             nationwideJob.ClientId,
             int.Parse(nationwideJob.FromZipCode),
             nationwideJob.FromState,

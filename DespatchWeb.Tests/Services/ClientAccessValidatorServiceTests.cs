@@ -1,7 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -30,11 +29,9 @@ public class ClientAccessValidatorServiceTests
                 new Suggestion { Id = 3, Text = "Client 3" }
             ]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - Should not throw
-        await act.Should().NotThrowAsync();
+        // Act & Assert - Should not throw
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -50,11 +47,9 @@ public class ClientAccessValidatorServiceTests
                 new Suggestion { Id = 5, Text = "Client 5" }
             ]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - Should not throw, valid IDs (1, 3, 5) are parsed and validated
-        await act.Should().NotThrowAsync();
+        // Act & Assert - Should not throw, valid IDs (1, 3, 5) are parsed and validated
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -64,11 +59,9 @@ public class ClientAccessValidatorServiceTests
         const int contactId = 1;
         const string clientIds = "";
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - Should return early without calling repository
-        await act.Should().NotThrowAsync();
+        // Act & Assert - Should return early without calling repository
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
         _clientRepoMock.Verify(x => x.ClientContactsAsync(It.IsAny<int>()), Times.Never);
     }
 
@@ -79,11 +72,9 @@ public class ClientAccessValidatorServiceTests
         const int contactId = 1;
         string clientIds = null!;
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert
-        await act.Should().NotThrowAsync();
+        // Act & Assert
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
         _clientRepoMock.Verify(x => x.ClientContactsAsync(It.IsAny<int>()), Times.Never);
     }
 
@@ -99,11 +90,9 @@ public class ClientAccessValidatorServiceTests
                 new Suggestion { Id = 2, Text = "Client 2" }
             ]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - Should parse trimmed values correctly
-        await act.Should().NotThrowAsync();
+        // Act & Assert - Should parse trimmed values correctly
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -113,11 +102,9 @@ public class ClientAccessValidatorServiceTests
         const int contactId = 1;
         const string clientIds = "abc,xyz,!!!";
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - Should return early (empty set after parsing)
-        await act.Should().NotThrowAsync();
+        // Act & Assert - Should return early (empty set after parsing)
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
         // Repository is called but no exception since requestedClientIds is empty
     }
 
@@ -133,11 +120,9 @@ public class ClientAccessValidatorServiceTests
                 new Suggestion { Id = 2, Text = "Client 2" }
             ]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _sut.ValidateClientAccessAsync(contactId, clientIds));
     }
 
     [Fact]
@@ -149,11 +134,9 @@ public class ClientAccessValidatorServiceTests
         _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
             .ReturnsAsync([new Suggestion { Id = 1, Text = "Client 1" }]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - Has access to at least one, so should not throw
-        await act.Should().NotThrowAsync();
+        // Act & Assert - Has access to at least one, so should not throw
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -165,11 +148,9 @@ public class ClientAccessValidatorServiceTests
         _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
             .ReturnsAsync((List<Suggestion>)null!);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _sut.ValidateClientAccessAsync(contactId, clientIds));
     }
 
     [Fact]
@@ -181,11 +162,9 @@ public class ClientAccessValidatorServiceTests
         _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
             .ReturnsAsync([]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+        // Act & Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(
+            () => _sut.ValidateClientAccessAsync(contactId, clientIds));
     }
 
     [Fact]
@@ -197,11 +176,9 @@ public class ClientAccessValidatorServiceTests
         _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
             .ReturnsAsync([new Suggestion { Id = -1, Text = "Client -1" }]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert
-        await act.Should().NotThrowAsync();
+        // Act & Assert
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -213,10 +190,8 @@ public class ClientAccessValidatorServiceTests
         _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
             .ReturnsAsync([new Suggestion { Id = 1, Text = "Client 1" }]);
 
-        // Act
-        var act = () => _sut.ValidateClientAccessAsync(contactId, clientIds);
-
-        // Assert - HashSet deduplicates, should still work
-        await act.Should().NotThrowAsync();
+        // Act & Assert - HashSet deduplicates, should still work
+        var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
+        Assert.Null(exception);
     }
 }

@@ -2,8 +2,6 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -14,38 +12,19 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class PricingPermissionServiceTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
-    private readonly DbContextOptions<DespatchContext> _dbOptions;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClientRepository> _clientRepositoryMock = new();
+    private static readonly int[] Expected = [100, 101];
 
     public PricingPermissionServiceTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _dbOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using (var context = new DespatchContext(_dbOptions))
-        {
-            context.Database.EnsureCreated();
-        }
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Create tblJob view that maps to tucJob table for query compatibility
         // The service queries TblJobs (keyless view) which needs to read from the tucJob table
-        using (var command = _connection.CreateCommand())
+        using (var command = _db.Connection.CreateCommand())
         {
             command.CommandText = """
                 CREATE VIEW IF NOT EXISTS tblJob AS
@@ -245,16 +224,11 @@ public class PricingPermissionServiceTests : IAsyncDisposable
             command.ExecuteNonQuery();
         }
 
-        _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_dbOptions));
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await _connection.DisposeAsync();
-    }
+    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
-    private DespatchContext CreateContext() => new(_dbOptions);
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     private PricingPermissionService CreateService() => new(
         _tenantInfoServiceMock.Object,
@@ -294,43 +268,29 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(0);
     }
 
-    #region CanModifyPricesAsync
-
     [Fact]
     public async Task CanModifyPricesAsync_ReturnsTrue()
     {
         var service = CreateService();
         var result = await service.CanModifyPricesAsync();
-        result.Should().BeTrue();
+        Assert.True(result);
     }
-
-    #endregion
-
-    #region CanBulkUpdatePricesAsync
 
     [Fact]
     public async Task CanBulkUpdatePricesAsync_ReturnsTrue()
     {
         var service = CreateService();
         var result = await service.CanBulkUpdatePricesAsync();
-        result.Should().BeTrue();
+        Assert.True(result);
     }
-
-    #endregion
-
-    #region CanModifyPriceBreakdownAsync
 
     [Fact]
     public async Task CanModifyPriceBreakdownAsync_ReturnsTrue()
     {
         var service = CreateService();
         var result = await service.CanModifyPriceBreakdownAsync();
-        result.Should().BeTrue();
+        Assert.True(result);
     }
-
-    #endregion
-
-    #region CanUsePricingModeAsync
 
     [Theory]
     [InlineData("recalculate")]
@@ -340,7 +300,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     {
         var service = CreateService();
         var result = await service.CanUsePricingModeAsync(mode);
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Theory]
@@ -351,7 +311,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     {
         var service = CreateService();
         var result = await service.CanUsePricingModeAsync(mode);
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Theory]
@@ -362,7 +322,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     {
         var service = CreateService();
         var result = await service.CanUsePricingModeAsync(mode);
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -370,7 +330,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     {
         var service = CreateService();
         var result = await service.CanUsePricingModeAsync(null!);
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -378,12 +338,8 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     {
         var service = CreateService();
         var result = await service.CanUsePricingModeAsync("");
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region ValidatePricingMode
 
     [Theory]
     [InlineData("recalculate")]
@@ -392,8 +348,9 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     public void ValidatePricingMode_ValidModes_DoesNotThrow(string mode)
     {
         var service = CreateService();
-        var act = () => service.ValidatePricingMode(mode);
-        act.Should().NotThrow();
+        Act();
+        return;
+        void Act() => service.ValidatePricingMode(mode);
     }
 
     [Theory]
@@ -403,40 +360,41 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     public void ValidatePricingMode_CaseInsensitive_DoesNotThrow(string mode)
     {
         var service = CreateService();
-        var act = () => service.ValidatePricingMode(mode);
-        act.Should().NotThrow();
+        Act();
+        return;
+        void Act() => service.ValidatePricingMode(mode);
     }
 
     [Fact]
     public void ValidatePricingMode_InvalidMode_ThrowsArgumentException()
     {
         var service = CreateService();
-        var act = () => service.ValidatePricingMode("invalid");
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Invalid pricing mode*invalid*");
+        var ex = Assert.Throws<ArgumentException>((Action?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Invalid pricing mode", ex.Message);
+        Assert.Contains("invalid", ex.Message);
+        return;
+        void Act() => service.ValidatePricingMode("invalid");
     }
 
     [Fact]
     public void ValidatePricingMode_NullMode_ThrowsArgumentException()
     {
         var service = CreateService();
-        var act = () => service.ValidatePricingMode(null!);
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Pricing mode is required*");
+        var ex = Assert.Throws<ArgumentException>((Action?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Pricing mode is required", ex.Message);
+        return;
+        void Act() => service.ValidatePricingMode(null!);
     }
 
     [Fact]
     public void ValidatePricingMode_EmptyMode_ThrowsArgumentException()
     {
         var service = CreateService();
-        var act = () => service.ValidatePricingMode("");
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Pricing mode is required*");
+        var ex = Assert.Throws<ArgumentException>((Action?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Pricing mode is required", ex.Message);
+        return;
+        void Act() => service.ValidatePricingMode("");
     }
-
-    #endregion
-
-    #region ValidateJobAccessAsync - Staff Access
 
     [Fact]
     public async Task ValidateJobAccessAsync_StaffUser_AlwaysAllowed()
@@ -444,8 +402,10 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         SetupAsStaff();
         var service = CreateService();
 
-        var act = async () => await service.ValidateJobAccessAsync(999);
-        await act.Should().NotThrowAsync();
+        await Act();
+        return;
+
+        async Task Act() => await service.ValidateJobAccessAsync(999);
     }
 
     [Fact]
@@ -459,10 +419,6 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         _contextFactoryMock.Verify(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
-    #endregion
-
-    #region ValidateJobAccessAsync - Client Contact Access
-
     [Fact]
     public async Task ValidateJobAccessAsync_ContactWithAccess_DoesNotThrow()
     {
@@ -470,8 +426,10 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         await SeedJobAsync(jobId: 100, clientId: 2);
         var service = CreateService();
 
-        var act = async () => await service.ValidateJobAccessAsync(100);
-        await act.Should().NotThrowAsync();
+        await Act();
+        return;
+
+        async Task Act() => await service.ValidateJobAccessAsync(100);
     }
 
     [Fact]
@@ -481,9 +439,11 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         await SeedJobAsync(jobId: 100, clientId: 99);
         var service = CreateService();
 
-        var act = async () => await service.ValidateJobAccessAsync(100);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Access denied to job 100");
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(Act);
+        Assert.Equal("Access denied to job 100", ex.Message);
+        return;
+
+        async Task Act() => await service.ValidateJobAccessAsync(100);
     }
 
     [Fact]
@@ -492,9 +452,11 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         SetupAsContact(contactId: 10, accessibleClientIds: [1, 2]);
         var service = CreateService();
 
-        var act = async () => await service.ValidateJobAccessAsync(999);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("Job 999 not found");
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(Act);
+        Assert.Equal("Job 999 not found", ex.Message);
+        return;
+
+        async Task Act() => await service.ValidateJobAccessAsync(999);
     }
 
     [Fact]
@@ -503,14 +465,12 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         SetupAsContact(contactId: 10, accessibleClientIds: []);
         var service = CreateService();
 
-        var act = async () => await service.ValidateJobAccessAsync(1);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User has no accessible clients");
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(Act);
+        Assert.Equal("User has no accessible clients", ex.Message);
+        return;
+
+        async Task Act() => await service.ValidateJobAccessAsync(1);
     }
-
-    #endregion
-
-    #region ValidateJobAccessAsync - Unauthenticated
 
     [Fact]
     public async Task ValidateJobAccessAsync_Unauthenticated_ThrowsUnauthorized()
@@ -518,14 +478,12 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         SetupAsUnauthenticated();
         var service = CreateService();
 
-        var act = async () => await service.ValidateJobAccessAsync(1);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("User not authenticated");
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>(Act);
+        Assert.Equal("User not authenticated", ex.Message);
+        return;
+
+        async Task Act() => await service.ValidateJobAccessAsync(1);
     }
-
-    #endregion
-
-    #region ValidateJobsAccessAsync - Staff Access
 
     [Fact]
     public async Task ValidateJobsAccessAsync_StaffUser_ReturnsEmptyList()
@@ -534,12 +492,8 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([1, 2, 3]);
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region ValidateJobsAccessAsync - Client Contact Access
 
     [Fact]
     public async Task ValidateJobsAccessAsync_ContactAllAccessible_ReturnsEmptyList()
@@ -550,7 +504,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([100, 101]);
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -562,7 +516,8 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([100, 101]);
-        result.Should().ContainSingle().Which.Should().Be(101);
+        var single = Assert.Single(result);
+        Assert.Equal(101, single);
     }
 
     [Fact]
@@ -574,7 +529,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([100, 101]);
-        result.Should().BeEquivalentTo([100, 101]);
+        Assert.Equivalent(Expected, result);
     }
 
     [Fact]
@@ -584,7 +539,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([1, 2, 3]);
-        result.Should().BeEquivalentTo([1, 2, 3]);
+        Assert.Equivalent(new[] { 1, 2, 3 }, result);
     }
 
     [Fact]
@@ -594,7 +549,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([]);
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -604,12 +559,8 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync(null!);
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region ValidateJobsAccessAsync - Unauthenticated
 
     [Fact]
     public async Task ValidateJobsAccessAsync_Unauthenticated_ReturnsAllJobIds()
@@ -618,12 +569,8 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
 
         var result = await service.ValidateJobsAccessAsync([1, 2, 3]);
-        result.Should().BeEquivalentTo([1, 2, 3]);
+        Assert.Equivalent(new[] { 1, 2, 3 }, result);
     }
-
-    #endregion
-
-    #region GetPricingPermissionsAsync
 
     [Fact]
     public async Task GetPricingPermissionsAsync_ReturnsAllPermissionsEnabled()
@@ -631,16 +578,12 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         var service = CreateService();
         var result = await service.GetPricingPermissionsAsync();
 
-        result.CanModifyPrices.Should().BeTrue();
-        result.CanBulkUpdate.Should().BeTrue();
-        result.CanRecalculate.Should().BeTrue();
-        result.CanSetBaseAmount.Should().BeTrue();
-        result.CanManageBreakdown.Should().BeTrue();
+        Assert.True(result.CanModifyPrices);
+        Assert.True(result.CanBulkUpdate);
+        Assert.True(result.CanRecalculate);
+        Assert.True(result.CanSetBaseAmount);
+        Assert.True(result.CanManageBreakdown);
     }
-
-    #endregion
-
-    #region GetAccessibleClientIdsAsync - Caching
 
     [Fact]
     public async Task ValidateJobAccessAsync_CalledTwice_CachesClientIds()
@@ -673,5 +616,4 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         _clientRepositoryMock.Verify(x => x.ClientContactsAsync(10), Times.Exactly(2));
     }
 
-    #endregion
 }

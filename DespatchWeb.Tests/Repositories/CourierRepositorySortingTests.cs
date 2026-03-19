@@ -2,8 +2,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
+using DespatchWeb.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
@@ -16,40 +15,30 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class CourierRepositorySortingTests : IAsyncDisposable
 {
+    private readonly SqliteTestDatabase _db = new();
+    private readonly DbContextOptions<DespatchContext> _customOptions;
     private readonly IMemoryCache _cache;
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
-    private readonly SqliteConnection _connection;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
-    private readonly DbContextOptions<DespatchContext> _contextOptions;
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
 
     public CourierRepositorySortingTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
+        _db.Connection.RegisterDateDiffMinute();
 
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
+        _customOptions = new DbContextOptionsBuilder<DespatchContext>()
+            .UseSqlite(_db.Connection)
+            .AddSqliteDateDiffTranslation()
             .Options;
 
-        using var context = new DespatchContext(_contextOptions);
-        context.Database.EnsureCreated();
-
+        _contextFactoryMock = new Mock<IDbContextFactory<DespatchContext>>();
         _contextFactoryMock
             .Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_contextOptions));
+            .Returns(() => new DespatchContext(_customOptions));
         _contextFactoryMock
             .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_contextOptions));
+            .ReturnsAsync(() => new DespatchContext(_customOptions));
 
         _tenantInfoServiceMock
             .Setup(x => x.GetTenantTimeZone())
@@ -61,7 +50,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _cache.Dispose();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private CourierRepository CreateRepository() => new(
@@ -72,9 +61,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         _cache
     );
 
-    private DespatchContext CreateContext() => new(_contextOptions);
-
-    #region Seed Helpers
+    private DespatchContext CreateContext() => new(_customOptions);
 
     /// <summary>
     /// Seeds 3 couriers with non-null emails + 2 fleets.
@@ -240,10 +227,6 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    #endregion
-
-    #region GetCourierEmailsAsync Sorting Tests
-
     [Fact]
     public async Task GetCourierEmailsAsync_DefaultSort_ReturnsNameAsc()
     {
@@ -253,8 +236,8 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Should().HaveCount(3);
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Alice Zara", "Bob Young", "Carol Xena");
+        Assert.Equal(3, result.Items.Count());
+        Assert.Equal(["Alice Zara", "Bob Young", "Carol Xena"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -266,7 +249,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Carol Xena", "Bob Young", "Alice Zara");
+        Assert.Equal(["Carol Xena", "Bob Young", "Alice Zara"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -278,7 +261,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Code).Should().ContainInConsecutiveOrder("A02", "B03", "C01");
+        Assert.Equal(["A02", "B03", "C01"], result.Items.Select(x => x.Code));
     }
 
     [Fact]
@@ -290,7 +273,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Code).Should().ContainInConsecutiveOrder("C01", "B03", "A02");
+        Assert.Equal(["C01", "B03", "A02"], result.Items.Select(x => x.Code));
     }
 
     [Fact]
@@ -302,7 +285,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Email).Should().ContainInConsecutiveOrder("a@test.com", "b@test.com", "c@test.com");
+        Assert.Equal(["a@test.com", "b@test.com", "c@test.com"], result.Items.Select(x => x.Email));
     }
 
     [Fact]
@@ -314,7 +297,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Email).Should().ContainInConsecutiveOrder("c@test.com", "b@test.com", "a@test.com");
+        Assert.Equal(["c@test.com", "b@test.com", "a@test.com"], result.Items.Select(x => x.Email));
     }
 
     [Fact]
@@ -326,7 +309,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Phone).Should().ContainInConsecutiveOrder("111", "222", "333");
+        Assert.Equal(["111", "222", "333"], result.Items.Select(x => x.Phone));
     }
 
     [Fact]
@@ -338,7 +321,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Phone).Should().ContainInConsecutiveOrder("333", "222", "111");
+        Assert.Equal(["333", "222", "111"], result.Items.Select(x => x.Phone));
     }
 
     [Fact]
@@ -350,8 +333,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Fleet).Should()
-            .ContainInConsecutiveOrder("Alpha fleet", "Beta fleet", "Gamma fleet");
+        Assert.Equal(["Alpha fleet", "Beta fleet", "Gamma fleet"], result.Items.Select(x => x.Fleet));
     }
 
     [Fact]
@@ -363,8 +345,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Fleet).Should()
-            .ContainInConsecutiveOrder("Gamma fleet", "Beta fleet", "Alpha fleet");
+        Assert.Equal(["Gamma fleet", "Beta fleet", "Alpha fleet"], result.Items.Select(x => x.Fleet));
     }
 
     [Fact]
@@ -376,7 +357,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Alice Zara", "Bob Young", "Carol Xena");
+        Assert.Equal(["Alice Zara", "Bob Young", "Carol Xena"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -388,7 +369,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Carol Xena", "Bob Young", "Alice Zara");
+        Assert.Equal(["Carol Xena", "Bob Young", "Alice Zara"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -400,7 +381,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Alice Zara", "Bob Young", "Carol Xena");
+        Assert.Equal(["Alice Zara", "Bob Young", "Carol Xena"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -413,22 +394,18 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         var request = new PaginatedRequest { Page = 1, PageSize = 2, OrderBy = "code" };
         var result = await repository.GetCourierEmailsAsync(request);
 
-        result.Items.Should().HaveCount(2);
-        result.Items.Select(x => x.Code).Should().ContainInConsecutiveOrder("A02", "B03");
-        result.Total.Should().Be(3);
-        result.Pages.Should().Be(2);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Equal(["A02", "B03"], result.Items.Select(x => x.Code));
+        Assert.Equal(3, result.Total);
+        Assert.Equal(2, result.Pages);
 
         // Page 2, size 2 → C01
         var request2 = new PaginatedRequest { Page = 2, PageSize = 2, OrderBy = "code" };
         var result2 = await repository.GetCourierEmailsAsync(request2);
 
-        result2.Items.Should().HaveCount(1);
-        result2.Items.First().Code.Should().Be("C01");
+        Assert.Single(result2.Items);
+        Assert.Equal("C01", result2.Items.First().Code);
     }
-
-    #endregion
-
-    #region GetCourierDailyEarningsAsync Sorting Tests
 
     [Fact]
     public async Task GetCourierDailyEarningsAsync_SortByName_Asc()
@@ -439,8 +416,8 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Should().HaveCount(3);
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Alice Brown", "Mike Carter", "Zara Adams");
+        Assert.Equal(3, result.Items.Count());
+        Assert.Equal(["Alice Brown", "Mike Carter", "Zara Adams"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -452,7 +429,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Zara Adams", "Mike Carter", "Alice Brown");
+        Assert.Equal(["Zara Adams", "Mike Carter", "Alice Brown"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -464,7 +441,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Alice Brown", "Mike Carter", "Zara Adams");
+        Assert.Equal(["Alice Brown", "Mike Carter", "Zara Adams"], result.Items.Select(x => x.Name));
     }
 
     [Fact]
@@ -477,16 +454,16 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         var request = new PaginatedRequest { Page = 1, PageSize = 2, OrderBy = "name" };
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Should().HaveCount(2);
-        result.Items.Select(x => x.Name).Should().ContainInConsecutiveOrder("Alice Brown", "Mike Carter");
-        result.Total.Should().Be(3);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Equal(["Alice Brown", "Mike Carter"], result.Items.Select(x => x.Name));
+        Assert.Equal(3, result.Total);
 
         // Page 2 → Zara
         var request2 = new PaginatedRequest { Page = 2, PageSize = 2, OrderBy = "name" };
         var result2 = await repository.GetCourierDailyEarningsAsync(request2);
 
-        result2.Items.Should().HaveCount(1);
-        result2.Items.First().Name.Should().Be("Zara Adams");
+        Assert.Single(result2.Items);
+        Assert.Equal("Zara Adams", result2.Items.First().Name);
     }
 
     [Fact]
@@ -499,9 +476,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
         // Mike: 120min, Zara: 240min, Alice: 480min
-        result.Items.Select(x => x.HoursLogged).Should().BeInAscendingOrder();
-        result.Items.First().Name.Should().Be("Mike Carter");
-        result.Items.Last().Name.Should().Be("Alice Brown");
+        Assert.Equal(result.Items.Select(x => x.HoursLogged).OrderBy(x => x), result.Items.Select(x => x.HoursLogged));
+        Assert.Equal("Mike Carter", result.Items.First().Name);
+        Assert.Equal("Alice Brown", result.Items.Last().Name);
     }
 
     [Fact]
@@ -513,9 +490,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Select(x => x.HoursLogged).Should().BeInDescendingOrder();
-        result.Items.First().Name.Should().Be("Alice Brown");
-        result.Items.Last().Name.Should().Be("Mike Carter");
+        Assert.Equal(result.Items.Select(x => x.HoursLogged).OrderByDescending(x => x), result.Items.Select(x => x.HoursLogged));
+        Assert.Equal("Alice Brown", result.Items.First().Name);
+        Assert.Equal("Mike Carter", result.Items.Last().Name);
     }
 
     [Fact]
@@ -528,9 +505,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
         // Alice: 1, Zara: 3, Mike: 5
-        result.Items.Select(x => x.Deliveries).Should().BeInAscendingOrder();
-        result.Items.First().Name.Should().Be("Alice Brown");
-        result.Items.Last().Name.Should().Be("Mike Carter");
+        Assert.Equal(result.Items.Select(x => x.Deliveries).OrderBy(x => x), result.Items.Select(x => x.Deliveries));
+        Assert.Equal("Alice Brown", result.Items.First().Name);
+        Assert.Equal("Mike Carter", result.Items.Last().Name);
     }
 
     [Fact]
@@ -542,9 +519,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Select(x => x.Deliveries).Should().BeInDescendingOrder();
-        result.Items.First().Name.Should().Be("Mike Carter");
-        result.Items.Last().Name.Should().Be("Alice Brown");
+        Assert.Equal(result.Items.Select(x => x.Deliveries).OrderByDescending(x => x), result.Items.Select(x => x.Deliveries));
+        Assert.Equal("Mike Carter", result.Items.First().Name);
+        Assert.Equal("Alice Brown", result.Items.Last().Name);
     }
 
     [Fact]
@@ -557,9 +534,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
         // Mike: $50, Zara: $60, Alice: $100
-        result.Items.Select(x => x.Earnings).Should().BeInAscendingOrder();
-        result.Items.First().Name.Should().Be("Mike Carter");
-        result.Items.Last().Name.Should().Be("Alice Brown");
+        Assert.Equal(result.Items.Select(x => x.Earnings).OrderBy(x => x), result.Items.Select(x => x.Earnings));
+        Assert.Equal("Mike Carter", result.Items.First().Name);
+        Assert.Equal("Alice Brown", result.Items.Last().Name);
     }
 
     [Fact]
@@ -571,9 +548,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Select(x => x.Earnings).Should().BeInDescendingOrder();
-        result.Items.First().Name.Should().Be("Alice Brown");
-        result.Items.Last().Name.Should().Be("Mike Carter");
+        Assert.Equal(result.Items.Select(x => x.Earnings).OrderByDescending(x => x), result.Items.Select(x => x.Earnings));
+        Assert.Equal("Alice Brown", result.Items.First().Name);
+        Assert.Equal("Mike Carter", result.Items.Last().Name);
     }
 
     [Fact]
@@ -586,9 +563,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
         // Alice: $12.50/hr, Zara: $15/hr, Mike: $25/hr
-        result.Items.Select(x => x.HourlyRate).Should().BeInAscendingOrder();
-        result.Items.First().Name.Should().Be("Alice Brown");
-        result.Items.Last().Name.Should().Be("Mike Carter");
+        Assert.Equal(result.Items.Select(x => x.HourlyRate).OrderBy(x => x), result.Items.Select(x => x.HourlyRate));
+        Assert.Equal("Alice Brown", result.Items.First().Name);
+        Assert.Equal("Mike Carter", result.Items.Last().Name);
     }
 
     [Fact]
@@ -600,10 +577,9 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
         var result = await repository.GetCourierDailyEarningsAsync(request);
 
-        result.Items.Select(x => x.HourlyRate).Should().BeInDescendingOrder();
-        result.Items.First().Name.Should().Be("Mike Carter");
-        result.Items.Last().Name.Should().Be("Alice Brown");
+        Assert.Equal(result.Items.Select(x => x.HourlyRate).OrderByDescending(x => x), result.Items.Select(x => x.HourlyRate));
+        Assert.Equal("Mike Carter", result.Items.First().Name);
+        Assert.Equal("Alice Brown", result.Items.Last().Name);
     }
 
-    #endregion
 }

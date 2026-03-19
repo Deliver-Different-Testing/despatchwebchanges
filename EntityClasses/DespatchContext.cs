@@ -1454,6 +1454,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CreatedTime)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.CreatedTimeUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tblBulkJob_CreatedTimeUtc")
+                .HasColumnType("datetime");
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
             entity.Property(e => e.DeliverToContact).HasMaxLength(100);
@@ -5518,6 +5521,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CreatedTime)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.CreatedTimeUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucJob_CreatedTimeUtc")
+                .HasColumnType("datetime");
             entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
@@ -6025,6 +6031,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CreatedTime)
                 .HasDefaultValueSql("(getdate())")
                 .HasColumnType("datetime");
+            entity.Property(e => e.CreatedTimeUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucJobArchive_CreatedTimeUtc")
+                .HasColumnType("datetime");
             entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
             entity.Property(e => e.DeliverByTimeZoneId).HasColumnName("DeliverByTimeZoneID");
@@ -6388,6 +6397,9 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.CreatedTime)
                 .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedTimeUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_tucJobBooking_CreatedTimeUtc")
                 .HasColumnType("datetime");
             entity.Property(e => e.CustomJobName).HasMaxLength(255);
             entity.Property(e => e.DeliverByTime).HasColumnType("datetime");
@@ -7185,7 +7197,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NoteId, "IX_tucNoteHistory_NoteId").HasFilter("([NoteId] IS NOT NULL)");
 
-            entity.Property(e => e.EditedAt)
+            entity.Property(e => e.EditedAtUtc)
                 .HasComment("Timestamp of the edit, stored in UTC")
                 .HasDefaultValueSql("(getutcdate())", "DF_tucNoteHistory_EditedAt")
                 .HasColumnType("datetime");

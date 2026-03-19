@@ -1,7 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -14,8 +13,6 @@ public class FlightRateServiceTests
     private readonly Mock<INationwideJobRepository> _repositoryMock = new();
 
     private FlightRateService CreateService() => new(_repositoryMock.Object);
-
-    #region GetCarrierFlightRateByJobIdAsync Tests
 
     [Fact]
     public async Task GetCarrierFlightRateByJobIdAsync_NullDto_ReturnsZero()
@@ -30,7 +27,7 @@ public class FlightRateServiceTests
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -49,7 +46,7 @@ public class FlightRateServiceTests
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -85,7 +82,7 @@ public class FlightRateServiceTests
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
 
         // Assert
-        result.Should().Be(expectedRate);
+        Assert.Equal(expectedRate, result);
     }
 
     [Fact]
@@ -109,7 +106,7 @@ public class FlightRateServiceTests
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
 
         // Assert
-        result.Should().Be(100m);
+        Assert.Equal(100m, result);
     }
 
     [Fact]
@@ -170,10 +167,6 @@ public class FlightRateServiceTests
         _repositoryMock.Verify(x => x.GetCarrierFlightRatesAsync(dto), Times.Once);
     }
 
-    #endregion
-
-    #region Helper Methods
-
     private static FlightRateCalculationDto CreateBasicFlightRateDto() => new()
     {
         CarrierCode = "AA",
@@ -186,5 +179,4 @@ public class FlightRateServiceTests
         ClientId = 1
     };
 
-    #endregion
 }

@@ -2,8 +2,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
+
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
@@ -23,9 +22,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
-    private readonly DbContextOptions<DespatchContext> _contextOptions;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -39,37 +37,15 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 
     public JobRepositoryEditCompletedTimeTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
-
-        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using var context = new DespatchContext(_contextOptions);
-        context.Database.EnsureCreated();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Seed timezone records for entity-based tests
+        using var context = _db.CreateContext();
         context.TimeZones.AddRange(
             new TimeZone { Id = PstTimezoneId, Name = PstTimezoneName, DisplayName = "Pacific Time", Code = "PST", OffsetHours = -8, OffsetString = "-08:00" },
             new TimeZone { Id = EstTimezoneId, Name = EstTimezoneName, DisplayName = "Eastern Time", Code = "EST", OffsetHours = -5, OffsetString = "-05:00" }
         );
         context.SaveChanges();
-
-        _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_contextOptions));
-
-        _contextFactoryMock.Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_contextOptions));
 
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
@@ -77,11 +53,11 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 
         // Mock GetCurrentTimeFromTimeZone for specific timezones
         _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(
-                It.Is<TimeZone>(tz => tz != null && tz.Name == PstTimezoneName)))
+                It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)))
             .Returns(new DateTime(2024, 6, 15, 9, 37, 0));
 
         _tenantInfoServiceMock.Setup(x => x.GetCurrentTimeFromTimeZone(
-                It.Is<TimeZone>(tz => tz != null && tz.Name == EstTimezoneName)))
+                It.Is<TimeZone>(tz => tz.Name == EstTimezoneName)))
             .Returns(new DateTime(2024, 6, 15, 12, 37, 0));
 
         // Null timezone falls back to tenant time
@@ -89,12 +65,9 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
             .Returns(TestDates.Now);
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await _connection.DisposeAsync();
-    }
+    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
-    private DespatchContext CreateContext() => new(_contextOptions);
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
@@ -103,8 +76,6 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
-
-    #region Direct CompletedTime Edit Tests
 
     [Fact]
     public async Task UpdateJobAsync_CompletedTime_DirectEdit_StoresWallClockTime()
@@ -133,10 +104,9 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 1,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedJob.UcjbComplTime.Should().Be(newCompleted.DateTime,
-            "CompletedTime should store the wall-clock time (09:37) from the DateTimeOffset");
-        updatedJob.UcjbComplTime!.Value.Hour.Should().Be(9);
-        updatedJob.UcjbComplTime!.Value.Minute.Should().Be(37);
+        Assert.Equal(newCompleted.DateTime, updatedJob.UcjbComplTime); // CompletedTime should store the wall-clock time (09:37) from the DateTimeOffset
+        Assert.Equal(9, updatedJob.UcjbComplTime!.Value.Hour);
+        Assert.Equal(37, updatedJob.UcjbComplTime!.Value.Minute);
     }
 
     [Fact]
@@ -165,15 +135,10 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedArchive = await verifyContext.TucJobArchives.FirstAsync(j => j.UcjbId == 2,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedArchive.UcjbComplTime.Should().Be(newCompleted.DateTime,
-            "archived CompletedTime should store wall-clock time from DateTimeOffset");
-        updatedArchive.UcjbComplTime!.Value.Hour.Should().Be(12);
-        updatedArchive.UcjbComplTime!.Value.Minute.Should().Be(37);
+        Assert.Equal(newCompleted.DateTime, updatedArchive.UcjbComplTime); // archived CompletedTime should store wall-clock time from DateTimeOffset
+        Assert.Equal(12, updatedArchive.UcjbComplTime!.Value.Hour);
+        Assert.Equal(37, updatedArchive.UcjbComplTime!.Value.Minute);
     }
-
-    #endregion
-
-    #region Delivered=true CompletedTime Tests
 
     [Fact]
     public async Task UpdateJobAsync_Delivered_LiveJob_SetsCompletedTimeViaInfoService()
@@ -203,10 +168,9 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 3,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedJob.UcjbJobDone.Should().BeTrue();
-        updatedJob.UcjbStatus.Should().Be((int)JobStatus.Completed);
-        updatedJob.UcjbComplTime.Should().Be(new DateTime(2024, 6, 15, 9, 37, 0),
-            "CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)");
+        Assert.True(updatedJob.UcjbJobDone);
+        Assert.Equal((int)JobStatus.Completed, updatedJob.UcjbStatus);
+        Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
         _tenantInfoServiceMock.Verify(
             x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)),
@@ -242,20 +206,15 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 4,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedJob.UcjbJobDone.Should().BeTrue();
-        updatedJob.UcjbStatus.Should().Be((int)JobStatus.Undeliverable);
-        updatedJob.UcjbComplTime.Should().Be(new DateTime(2024, 6, 15, 12, 37, 0),
-            "CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(EST)");
+        Assert.True(updatedJob.UcjbJobDone);
+        Assert.Equal((int)JobStatus.Undeliverable, updatedJob.UcjbStatus);
+        Assert.Equal(new DateTime(2024, 6, 15, 12, 37, 0), updatedJob.UcjbComplTime); // CompletedTime should be the wall-clock time from GetCurrentTimeFromTimeZone(EST)
 
         _tenantInfoServiceMock.Verify(
             x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == EstTimezoneName)),
             Times.Once,
             "should call GetCurrentTimeFromTimeZone with the delivery timezone");
     }
-
-    #endregion
-
-    #region PickUpTime Auto-Set on Status Change Tests
 
     [Fact]
     public async Task UpdateJobAsync_StatusPickedUp_SetsPickUpTimeViaPickupTimezone()
@@ -284,9 +243,8 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 5,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedJob.UcjbStatus.Should().Be((int)JobStatus.PickedUp);
-        updatedJob.PickUpTime.Should().Be(new DateTime(2024, 6, 15, 9, 37, 0),
-            "PickUpTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)");
+        Assert.Equal((int)JobStatus.PickedUp, updatedJob.UcjbStatus);
+        Assert.Equal(new DateTime(2024, 6, 15, 9, 37, 0), updatedJob.PickUpTime); // PickUpTime should be the wall-clock time from GetCurrentTimeFromTimeZone(PST)
 
         _tenantInfoServiceMock.Verify(
             x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz.Name == PstTimezoneName)),
@@ -308,6 +266,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
                 PickUpTime = null,
                 PickupTimeZoneId = null // No timezone set
             });
+            
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
 
@@ -321,19 +280,14 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 6,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedJob.UcjbStatus.Should().Be((int)JobStatus.PickedUp);
-        updatedJob.PickUpTime.Should().Be(TestDates.Now,
-            "with null pickup timezone, GetCurrentTimeFromTimeZone(null) should return tenant time");
+        Assert.Equal((int)JobStatus.PickedUp, updatedJob.UcjbStatus);
+        Assert.Equal(TestDates.Now, updatedJob.PickUpTime); // with null pickup timezone, GetCurrentTimeFromTimeZone(null) should return tenant time
 
         _tenantInfoServiceMock.Verify(
             x => x.GetCurrentTimeFromTimeZone(It.Is<TimeZone>(tz => tz == null)),
             Times.Once,
             "should call GetCurrentTimeFromTimeZone with null (no pickup timezone)");
     }
-
-    #endregion
-
-    #region FollowupTime Direct Edit Tests
 
     [Fact]
     public async Task UpdateJobAsync_FollowupTime_DirectEdit_StoresWallClockTime()
@@ -362,11 +316,9 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         var updatedJob = await verifyContext.TucJobs.FirstAsync(j => j.UcjbId == 7,
             cancellationToken: TestContext.Current.CancellationToken);
 
-        updatedJob.FollowupTime.Should().Be(newFollowup.DateTime,
-            "FollowupTime should store the wall-clock time from DateTimeOffset");
-        updatedJob.FollowupTime!.Value.Hour.Should().Be(14);
-        updatedJob.FollowupTime!.Value.Minute.Should().Be(30);
+        Assert.Equal(newFollowup.DateTime, updatedJob.FollowupTime); // FollowupTime should store the wall-clock time from DateTimeOffset
+        Assert.Equal(14, updatedJob.FollowupTime!.Value.Hour);
+        Assert.Equal(30, updatedJob.FollowupTime!.Value.Minute);
     }
 
-    #endregion
 }

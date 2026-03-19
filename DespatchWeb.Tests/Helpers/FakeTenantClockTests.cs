@@ -1,5 +1,4 @@
 using DespatchWeb.Interfaces;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Helpers;
 
@@ -10,7 +9,7 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.TenantNow.Should().Be(TestDates.Now);
+        Assert.Equal(TestDates.Now, clock.TenantNow);
     }
 
     [Fact]
@@ -22,8 +21,8 @@ public class FakeTenantClockTests
         var second = clock.TenantNow;
         var third = clock.TenantNow;
 
-        first.Should().Be(second);
-        second.Should().Be(third);
+        Assert.Equal(first, second);
+        Assert.Equal(second, third);
     }
 
     [Fact]
@@ -31,9 +30,9 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.TenantNow.Hour.Should().Be(14);
-        clock.TenantNow.Minute.Should().Be(30);
-        clock.TenantNow.Second.Should().Be(0);
+        Assert.Equal(14, clock.TenantNow.Hour);
+        Assert.Equal(30, clock.TenantNow.Minute);
+        Assert.Equal(0, clock.TenantNow.Second);
     }
 
     [Fact]
@@ -41,7 +40,7 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.TenantToday.Should().Be(TestDates.Today);
+        Assert.Equal(TestDates.Today, clock.TenantToday);
     }
 
     [Fact]
@@ -49,7 +48,7 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.TenantToday.TimeOfDay.Should().Be(TimeSpan.Zero);
+        Assert.Equal(TimeSpan.Zero, clock.TenantToday.TimeOfDay);
     }
 
     [Theory]
@@ -61,7 +60,7 @@ public class FakeTenantClockTests
         var fixedTime = new DateTime(2024, 6, 15, hour, minute, second);
         var clock = new FakeTenantClock(fixedTime);
 
-        clock.TenantToday.Should().Be(new DateTime(2024, 6, 15));
+        Assert.Equal(new DateTime(2024, 6, 15), clock.TenantToday);
     }
 
     [Fact]
@@ -69,7 +68,7 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.UtcNow.Should().Be(TestDates.Now.ToUniversalTime());
+        Assert.Equal(TestDates.Now.ToUniversalTime(), clock.UtcNow);
     }
 
     [Fact]
@@ -78,7 +77,7 @@ public class FakeTenantClockTests
         var utcTime = new DateTime(2024, 6, 15, 2, 30, 0, DateTimeKind.Utc);
         var clock = new FakeTenantClock(utcTime);
 
-        clock.UtcNow.Should().Be(utcTime);
+        Assert.Equal(utcTime, clock.UtcNow);
     }
 
     [Fact]
@@ -86,7 +85,7 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.Should().BeAssignableTo<ITenantClock>();
+        Assert.IsType<ITenantClock>(clock, exactMatch: false);
     }
 
     [Fact]
@@ -94,6 +93,6 @@ public class FakeTenantClockTests
     {
         var clock = new FakeTenantClock(TestDates.Now);
 
-        clock.TenantToday.Should().Be(clock.TenantNow.Date);
+        Assert.Equal(clock.TenantNow.Date, clock.TenantToday);
     }
 }

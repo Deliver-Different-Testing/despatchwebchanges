@@ -1,8 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -15,9 +13,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
-    private readonly DbContextOptions<DespatchContext> _contextOptions;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -25,33 +22,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
 
     public JobRepositoryPodSearchDownloadTests()
     {
-        // Use a shared connection so multiple contexts can access the same in-memory database
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        // Disable foreign keys for simpler test setup
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        // Create the schema
-        using var context = new DespatchContext(_contextOptions);
-        context.Database.EnsureCreated();
-
-        // Setup factory to return new contexts that share the same connection
-        _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_contextOptions));
-
-        _contextFactoryMock.Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_contextOptions));
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -60,7 +31,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private JobRepository CreateRepository() => new(
@@ -71,7 +42,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         _createJobServiceMock.Object
     );
 
-    private DespatchContext CreateContext() => new(_contextOptions);
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     [Fact]
     public async Task PodSearchDownloadAsync_ReturnsLiveAndArchivedJobs()
@@ -104,11 +75,11 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(4);
-        result.Should().Contain(j => j.JobNumber == "LIVE-001");
-        result.Should().Contain(j => j.JobNumber == "LIVE-002");
-        result.Should().Contain(j => j.JobNumber == "ARCH-001");
-        result.Should().Contain(j => j.JobNumber == "ARCH-002");
+        Assert.Equal(4, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "LIVE-001");
+        Assert.Contains(result, j => j.JobNumber == "LIVE-002");
+        Assert.Contains(result, j => j.JobNumber == "ARCH-001");
+        Assert.Contains(result, j => j.JobNumber == "ARCH-002");
     }
 
     [Fact]
@@ -139,10 +110,10 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-JAN");
-        result.Should().Contain(j => j.JobNumber == "JOB-JAN2");
-        result.Should().NotContain(j => j.JobNumber == "JOB-FEB");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-JAN");
+        Assert.Contains(result, j => j.JobNumber == "JOB-JAN2");
+        Assert.DoesNotContain(result, j => j.JobNumber == "JOB-FEB");
     }
 
     [Fact]
@@ -173,8 +144,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.JobNumber.StartsWith("CLIENT1"));
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.StartsWith("CLIENT1", j.JobNumber));
     }
 
     [Fact]
@@ -205,8 +176,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.JobNumber.StartsWith("COURIER1"));
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.StartsWith("COURIER1", j.JobNumber));
     }
 
     [Fact]
@@ -237,8 +208,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.JobNumber.StartsWith("SPEED1"));
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.StartsWith("SPEED1", j.JobNumber));
     }
 
     [Fact]
@@ -269,8 +240,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.JobNumber.Contains("ABC"));
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.Contains("ABC", j.JobNumber));
     }
 
     [Fact]
@@ -301,10 +272,10 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - All jobs should be included (parents and children) to match search behavior
-        result.Should().HaveCount(3);
-        result.Should().Contain(j => j.JobNumber == "PARENT-001");
-        result.Should().Contain(j => j.JobNumber == "CHILD-001");
-        result.Should().Contain(j => j.JobNumber == "SINGLE-001");
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "PARENT-001");
+        Assert.Contains(result, j => j.JobNumber == "CHILD-001");
+        Assert.Contains(result, j => j.JobNumber == "SINGLE-001");
     }
 
     [Fact]
@@ -335,7 +306,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().BeInAscendingOrder(j => j.JobNumber);
+        var jobNumbers = result.Select(j => j.JobNumber).ToList();
+        Assert.Equal(jobNumbers.OrderBy(x => x).ToList(), jobNumbers);
     }
 
     [Fact]
@@ -366,8 +338,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         var liveResult = result.Single(j => j.JobNumber == "LIVE-001");
         var archivedResult = result.Single(j => j.JobNumber == "ARCH-001");
 
-        liveResult.IsArchived.Should().BeFalse();
-        archivedResult.IsArchived.Should().BeTrue();
+        Assert.False(liveResult.IsArchived);
+        Assert.True(archivedResult.IsArchived);
     }
 
     [Fact]
@@ -395,7 +367,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -426,9 +398,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find "John Smith" and "Bob Johnson"
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-003");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-003");
     }
 
     [Fact]
@@ -459,9 +431,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find jobs with phone starting with 0412
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-003");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-003");
     }
 
     [Fact]
@@ -492,8 +464,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find job with pickup phone starting with 031
-        result.Should().HaveCount(1);
-        result.Should().Contain(j => j.JobNumber == "JOB-AAA");
+        Assert.Equal(1, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-AAA");
     }
 
     [Fact]
@@ -524,9 +496,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find jobs with delivery phone starting with 07
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-002");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-002");
     }
 
     [Fact]
@@ -557,9 +529,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find jobs with POD email at example.com
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-003");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-003");
     }
 
     [Fact]
@@ -590,9 +562,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find jobs with POD mobile starting with 0400
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-002");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-002");
     }
 
     [Fact]
@@ -623,9 +595,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find jobs with tracking email at company.com
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-002");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-002");
     }
 
     [Fact]
@@ -656,9 +628,9 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find jobs with tracking mobile starting with 0422
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "JOB-001");
-        result.Should().Contain(j => j.JobNumber == "JOB-002");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "JOB-001");
+        Assert.Contains(result, j => j.JobNumber == "JOB-002");
     }
 
     [Fact]
@@ -689,12 +661,10 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find archived jobs with "John" in POD name
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.JobNumber == "ARCH-001");
-        result.Should().Contain(j => j.JobNumber == "ARCH-003");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.JobNumber == "ARCH-001");
+        Assert.Contains(result, j => j.JobNumber == "ARCH-003");
     }
-
-    #region Helper Methods
 
     private static TucJob CreateLiveJob(
         int id,
@@ -778,5 +748,4 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         };
     }
 
-    #endregion
 }

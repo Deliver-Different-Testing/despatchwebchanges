@@ -378,6 +378,8 @@ public partial class TucJobBooking
 
     public DateTime? CreatedTime { get; set; }
 
+    public DateTime? CreatedTimeUtc { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }

@@ -1,8 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -13,9 +11,9 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositorySplitJobTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -23,33 +21,15 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
     public JobRepositorySplitJobTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        // Register SQL Server functions that SQLite doesn't have
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new DespatchContext(options);
-        _context.Database.EnsureCreated();
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
+        _context = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock(_context);
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
     }
 
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private JobRepository CreateRepository() => new(
@@ -60,8 +40,6 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
         _createJobServiceMock.Object
     );
 
-    #region CanJobBeSplitAsync Tests
-
     [Fact]
     public async Task CanJobBeSplitAsync_JobWithNoParent_ReturnsTrue()
     {
@@ -70,7 +48,7 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -85,14 +63,14 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().CanJobBeSplitAsync(101);
 
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
     public async Task CanJobBeSplitAsync_NonExistentJob_ReturnsFalse()
     {
         var result = await CreateRepository().CanJobBeSplitAsync(999);
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -108,7 +86,7 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -132,7 +110,7 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -143,12 +121,8 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().CanJobBeSplitAsync(100);
 
-        result.Should().BeTrue();
+        Assert.True(result);
     }
-
-    #endregion
-
-    #region GetSplitJobChildrenAsync Tests
 
     [Fact]
     public async Task GetSplitJobChildrenAsync_ParentWithChildren_ReturnsChildIds()
@@ -162,8 +136,9 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
-        result.Should().HaveCount(2);
-        result.Should().Contain([101, 102]);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(101, result);
+        Assert.Contains(102, result);
     }
 
     [Fact]
@@ -174,7 +149,7 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -189,25 +164,18 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().GetSplitJobChildrenAsync(100);
 
-        result.Should().ContainSingle().Which.Should().Be(101);
+        var single = Assert.Single(result);
+        Assert.Equal(101, single);
     }
-
-    #endregion
-
-    #region RestoreSplitJobsAsync Tests
 
     [Fact]
     public async Task RestoreSplitJobsAsync_WithEmptyOrNullList_DoesNotThrow()
     {
         var repository = CreateRepository();
 
-        await repository.Invoking(r => r.RestoreSplitJobsAsync([])).Should().NotThrowAsync();
-        await repository.Invoking(r => r.RestoreSplitJobsAsync(null!)).Should().NotThrowAsync();
+        await repository.RestoreSplitJobsAsync([]);
+        await repository.RestoreSplitJobsAsync(null!);
     }
-
-    #endregion
-
-    #region GetJobParentIdAsync Tests
 
     [Fact]
     public async Task GetJobParentIdAsync_ChildJob_ReturnsParentId()
@@ -220,7 +188,7 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().GetJobParentIdAsync(101);
 
-        result.Should().Be(100);
+        Assert.Equal(100, result);
     }
 
     [Fact]
@@ -231,8 +199,7 @@ public class JobRepositorySplitJobTests : IAsyncDisposable
 
         var result = await CreateRepository().GetJobParentIdAsync(100);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
-    #endregion
 }

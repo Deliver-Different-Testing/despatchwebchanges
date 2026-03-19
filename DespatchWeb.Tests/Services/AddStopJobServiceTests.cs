@@ -4,7 +4,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 // EditAddressDialogViewModel is in DespatchWeb.Models namespace (JobViewModel.cs)
@@ -19,15 +18,13 @@ public class AddStopJobServiceTests
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private TucJob _createdStopJob;
+    private TucJob _createdStopJob = new();
 
     private AddStopJobService CreateService() => new(
         _jobRepositoryMock.Object,
         _tenantInfoServiceMock.Object,
         _clock
     );
-
-    #region AddStopInsertJobAsync Validation Tests
 
     [Fact]
     public async Task AddStopInsertJobAsync_NullRequest_ThrowsArgumentNullException()
@@ -39,7 +36,7 @@ public class AddStopJobServiceTests
         var act = async () => await service.AddStopInsertJobAsync(null!);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -56,7 +53,7 @@ public class AddStopJobServiceTests
         var act = async () => await service.AddStopInsertJobAsync(request);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -78,12 +75,8 @@ public class AddStopJobServiceTests
         var act = async () => await service.AddStopInsertJobAsync(request);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
-
-    #endregion
-
-    #region AddStopInsertJobAsync Workflow Tests
 
     [Fact]
     public async Task AddStopInsertJobAsync_ValidRequest_CreatesNewJob()
@@ -100,7 +93,7 @@ public class AddStopJobServiceTests
         var result = await service.AddStopInsertJobAsync(request);
 
         // Assert
-        result.Should().Be(newJobId);
+        Assert.Equal(newJobId, result);
         _jobRepositoryMock.Verify(x => x.CreateMinimalTucJobAsync(
             It.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber.StartsWith(parentJob.UcjbNumber)),
             It.IsAny<CancellationToken>()), Times.Once);
@@ -123,7 +116,7 @@ public class AddStopJobServiceTests
         _jobRepositoryMock.Verify(x => x.CreateMinimalTucJobAsync(
             It.Is<CreateMinimalTucJobInputModel>(m => m.Amount == 20m),
             It.IsAny<CancellationToken>()), Times.Once);
-        _createdStopJob.CourierPayment.Should().Be(10m);
+        Assert.Equal(10m, _createdStopJob.CourierPayment);
     }
 
     [Fact]
@@ -199,7 +192,7 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _createdStopJob.UcjbAttention.Should().BeTrue();
+        Assert.True(_createdStopJob.UcjbAttention);
     }
 
     [Fact]
@@ -216,7 +209,7 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _createdStopJob.RatedManually.Should().BeTrue();
+        Assert.True(_createdStopJob.RatedManually);
     }
 
     [Fact]
@@ -233,7 +226,7 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _createdStopJob.ParentId.Should().Be(parentJob.UcjbId);
+        Assert.Equal(parentJob.UcjbId, _createdStopJob.ParentId);
     }
 
     [Fact]
@@ -251,7 +244,7 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _createdStopJob.ParentId.Should().Be(500);
+        Assert.Equal(500, _createdStopJob.ParentId);
     }
 
     [Fact]
@@ -274,10 +267,6 @@ public class AddStopJobServiceTests
             It.Is<List<TucJobItem>>(items => items.Count == 3)), Times.Once);
     }
 
-    #endregion
-
-    #region AddStopInsertRecurringJobAsync Validation Tests
-
     [Fact]
     public async Task AddStopInsertRecurringJobAsync_NullRequest_ThrowsArgumentNullException()
     {
@@ -288,7 +277,7 @@ public class AddStopJobServiceTests
         var act = async () => await service.AddStopInsertRecurringJobAsync(null!);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -305,12 +294,8 @@ public class AddStopJobServiceTests
         var act = async () => await service.AddStopInsertRecurringJobAsync(request);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
-
-    #endregion
-
-    #region AddStopInsertRecurringJobAsync Workflow Tests
 
     [Fact]
     public async Task AddStopInsertRecurringJobAsync_ValidRequest_CreatesNewBookingJob()
@@ -327,7 +312,7 @@ public class AddStopJobServiceTests
         var result = await service.AddStopInsertRecurringJobAsync(request);
 
         // Assert
-        result.Should().Be(newJobId);
+        Assert.Equal(newJobId, result);
         _jobRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJobBooking>(j =>
             j.UcbkJobNumber.StartsWith(parentBooking.UcbkJobNumber))), Times.Once);
     }
@@ -351,10 +336,6 @@ public class AddStopJobServiceTests
             p.JobId == null &&
             p.ChargeName == "Extra Stop")), Times.Once);
     }
-
-    #endregion
-
-    #region Job Number Generation Tests
 
     [Fact]
     public async Task AddStopInsertJobAsync_FirstStop_AppendsLetterA()
@@ -417,13 +398,9 @@ public class AddStopJobServiceTests
         var act = async () => await service.AddStopInsertJobAsync(request);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*Unable to generate unique job number*");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        Assert.Contains("Unable to generate unique job number", ex.Message);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static AddStopRequest CreateValidRequest() => new()
     {
@@ -525,5 +502,4 @@ public class AddStopJobServiceTests
             .Returns(Task.CompletedTask);
     }
 
-    #endregion
 }

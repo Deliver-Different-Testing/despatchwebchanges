@@ -3,8 +3,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -18,9 +16,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
-    private readonly DbContextOptions<DespatchContext> _contextOptions;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -28,30 +25,7 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
 
     public JobRepositoryUpdatePodDetailsTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
-
-        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using var context = new DespatchContext(_contextOptions);
-        context.Database.EnsureCreated();
-
-        _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_contextOptions));
-
-        _contextFactoryMock.Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_contextOptions));
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
@@ -63,10 +37,10 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
-    private DespatchContext CreateContext() => new(_contextOptions);
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
@@ -75,8 +49,6 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
-
-    #region Active Job Tests
 
     [Fact]
     public async Task UpdatePodDetailsAsync_ActiveJob_SetsStatusPodNameAndCompletedTime()
@@ -114,11 +86,11 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbJobDone.Should().BeTrue();
-            job.UcjbStatus.Should().Be((int)JobStatus.Completed);
-            job.UcjbPodname.Should().Be("Test");
-            job.UcjbComplTime.Should().NotBeNull();
-            job.InternalStatus.Should().Be((int)InternalJobStatus.Reprice);
+            Assert.True(job.UcjbJobDone);
+            Assert.Equal((int)JobStatus.Completed, job.UcjbStatus);
+            Assert.Equal("Test", job.UcjbPodname);
+            Assert.NotNull(job.UcjbComplTime);
+            Assert.Equal((int)InternalJobStatus.Reprice, job.InternalStatus);
         }
     }
 
@@ -160,11 +132,11 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbJobDone.Should().BeTrue();
-            job.UcjbStatus.Should().Be((int)JobStatus.Completed, "status should be overwritten to Completed");
-            job.UcjbPodname.Should().Be("Test", "POD name should be saved even when job was already done");
-            job.UcjbComplTime.Should().NotBeNull("completed time should be saved even when job was already done");
-            job.InternalStatus.Should().Be((int)InternalJobStatus.Reprice);
+            Assert.True(job.UcjbJobDone);
+            Assert.Equal((int)JobStatus.Completed, job.UcjbStatus); // status should be overwritten to Completed
+            Assert.Equal("Test", job.UcjbPodname); // POD name should be saved even when job was already done
+            Assert.NotNull(job.UcjbComplTime); // completed time should be saved even when job was already done
+            Assert.Equal((int)InternalJobStatus.Reprice, job.InternalStatus);
         }
     }
 
@@ -205,15 +177,11 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbPodname.Should().Be("New Name", "should overwrite existing POD name");
-            job.UcjbComplTime.Should().NotBe(oldTime, "should overwrite existing completed time");
-            job.UcjbStatus.Should().Be((int)JobStatus.Completed);
+            Assert.Equal("New Name", job.UcjbPodname); // should overwrite existing POD name
+            Assert.NotEqual(oldTime, job.UcjbComplTime); // should overwrite existing completed time
+            Assert.Equal((int)JobStatus.Completed, job.UcjbStatus);
         }
     }
-
-    #endregion
-
-    #region Archived Job Tests
 
     [Fact]
     public async Task UpdatePodDetailsAsync_ArchivedJob_SetsStatusPodNameAndCompletedTime()
@@ -250,11 +218,11 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobArchives.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbJobDone.Should().BeTrue();
-            job.UcjbStatus.Should().Be((int)JobStatus.Completed);
-            job.UcjbPodname.Should().Be("Archive Test");
-            job.UcjbComplTime.Should().NotBeNull();
-            job.InternalStatus.Should().Be((int)InternalJobStatus.Reprice);
+            Assert.True(job.UcjbJobDone);
+            Assert.Equal((int)JobStatus.Completed, job.UcjbStatus);
+            Assert.Equal("Archive Test", job.UcjbPodname);
+            Assert.NotNull(job.UcjbComplTime);
+            Assert.Equal((int)InternalJobStatus.Reprice, job.InternalStatus);
         }
     }
 
@@ -293,15 +261,11 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobArchives.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbStatus.Should().Be((int)JobStatus.Completed);
-            job.UcjbPodname.Should().Be("Test");
-            job.UcjbComplTime.Should().NotBeNull();
+            Assert.Equal((int)JobStatus.Completed, job.UcjbStatus);
+            Assert.Equal("Test", job.UcjbPodname);
+            Assert.NotNull(job.UcjbComplTime);
         }
     }
-
-    #endregion
-
-    #region Parent Job Completion Tests
 
     [Fact]
     public async Task UpdatePodDetailsAsync_LastSiblingCompleted_AlsoCompletesParent()
@@ -353,14 +317,14 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var child = await ctx.TucJobs.FirstAsync(j => j.UcjbId == childId, cancellationToken: TestContext.Current.CancellationToken);
-            child.UcjbJobDone.Should().BeTrue();
-            child.UcjbStatus.Should().Be((int)JobStatus.Completed);
-            child.UcjbPodname.Should().Be("Child POD");
+            Assert.True(child.UcjbJobDone);
+            Assert.Equal((int)JobStatus.Completed, child.UcjbStatus);
+            Assert.Equal("Child POD", child.UcjbPodname);
 
             var parent = await ctx.TucJobs.FirstAsync(j => j.UcjbId == parentId, cancellationToken: TestContext.Current.CancellationToken);
-            parent.UcjbJobDone.Should().BeTrue();
-            parent.UcjbStatus.Should().Be((int)JobStatus.Completed);
-            parent.UcjbPodname.Should().Be("Child POD");
+            Assert.True(parent.UcjbJobDone);
+            Assert.Equal((int)JobStatus.Completed, parent.UcjbStatus);
+            Assert.Equal("Child POD", parent.UcjbPodname);
         }
     }
 
@@ -418,18 +382,14 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var child1 = await ctx.TucJobs.FirstAsync(j => j.UcjbId == child1Id, cancellationToken: TestContext.Current.CancellationToken);
-            child1.UcjbJobDone.Should().BeTrue();
-            child1.UcjbStatus.Should().Be((int)JobStatus.Completed);
+            Assert.True(child1.UcjbJobDone);
+            Assert.Equal((int)JobStatus.Completed, child1.UcjbStatus);
 
             var parent = await ctx.TucJobs.FirstAsync(j => j.UcjbId == parentId, cancellationToken: TestContext.Current.CancellationToken);
-            parent.UcjbJobDone.Should().BeFalse("parent should not be done while sibling is uncompleted");
-            parent.UcjbStatus.Should().Be(5, "parent status should be unchanged");
+            Assert.False(parent.UcjbJobDone); // parent should not be done while sibling is uncompleted
+            Assert.Equal(5, parent.UcjbStatus); // parent status should be unchanged
         }
     }
-
-    #endregion
-
-    #region POD Time Parsing Tests
 
     [Fact]
     public async Task UpdatePodDetailsAsync_PodTimeWithTimezoneOffset_ParsesCorrectly()
@@ -465,10 +425,10 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbComplTime.Should().NotBeNull();
-            job.UcjbComplTime!.Value.Hour.Should().Be(10);
-            job.UcjbComplTime!.Value.Minute.Should().Be(35);
-            job.UcjbComplTime!.Value.Second.Should().Be(32);
+            Assert.NotNull(job.UcjbComplTime);
+            Assert.Equal(10, job.UcjbComplTime!.Value.Hour);
+            Assert.Equal(35, job.UcjbComplTime!.Value.Minute);
+            Assert.Equal(32, job.UcjbComplTime!.Value.Second);
         }
     }
 
@@ -506,13 +466,9 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbComplTime.Should().NotBeNull("empty PodTime should fall back to current time, not null");
+            Assert.NotNull(job.UcjbComplTime); // empty PodTime should fall back to current time, not null
         }
     }
-
-    #endregion
-
-    #region Edge Cases
 
     [Fact]
     public async Task UpdatePodDetailsAsync_NonExistentJob_DoesNotThrow()
@@ -529,8 +485,7 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         var repo = CreateRepository();
 
         // Act & Assert — should complete without error (no-op)
-        var act = () => repo.UpdatePodDetailsAsync(request);
-        await act.Should().NotThrowAsync();
+        await repo.UpdatePodDetailsAsync(request);
     }
 
     [Fact]
@@ -567,9 +522,8 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         await using (var ctx = CreateContext())
         {
             var job = await ctx.TucJobs.FirstAsync(j => j.UcjbId == jobId, cancellationToken: TestContext.Current.CancellationToken);
-            job.UcjbStatus.Should().Be(0, "status should reflect exactly what was sent in the request");
+            Assert.Equal(0, job.UcjbStatus); // status should reflect exactly what was sent in the request
         }
     }
 
-    #endregion
 }

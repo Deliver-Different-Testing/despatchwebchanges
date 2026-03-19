@@ -52,7 +52,6 @@ jest.mock('../../hooks/useOverviewApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
-jest.mock('../../../functions/greetUser', () => jest.fn(() => 'Good morning, Test!'));
 jest.mock('../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn(() => false),
 }));

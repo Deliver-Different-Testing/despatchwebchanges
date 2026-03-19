@@ -16,7 +16,7 @@ public partial class TucNoteHistory
     /// <summary>
     /// Timestamp of the edit, stored in UTC
     /// </summary>
-    public DateTime EditedAt { get; set; }
+    public DateTime EditedAtUtc { get; set; }
 
     public string OldNoteText { get; set; }
 

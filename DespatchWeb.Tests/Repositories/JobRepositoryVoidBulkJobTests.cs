@@ -1,6 +1,5 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Models.RequestModels;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -100,8 +99,6 @@ public class JobRepositoryVoidBulkJobTests
         }
     }
 
-    #region Pricing Clearing Tests
-
     [Fact]
     public void VoidBulkJob_ClearsPricingFields_WhenVoidingParentJob()
     {
@@ -125,10 +122,10 @@ public class JobRepositoryVoidBulkJobTests
         ApplyVoidUpdate(allJobs, jobsToVoid);
 
         // Assert - All jobs should have pricing cleared to 0
-        allJobs.Should().OnlyContain(j => j.Amount == 0);
-        allJobs.Should().OnlyContain(j => j.CourierPayment == 0);
-        allJobs.Should().OnlyContain(j => j.Void);
-        allJobs.Should().OnlyContain(j => j.JobStatus == (int)JobStatus.Void);
+        Assert.All(allJobs, j => Assert.Equal(0m, j.Amount));
+        Assert.All(allJobs, j => Assert.Equal(0m, j.CourierPayment));
+        Assert.All(allJobs, j => Assert.True(j.Void));
+        Assert.All(allJobs, j => Assert.Equal((int)JobStatus.Void, j.JobStatus));
     }
 
     [Fact]
@@ -158,18 +155,18 @@ public class JobRepositoryVoidBulkJobTests
         var childJob = allJobs.First(j => j.BulkJobId == 2);
         var unrelatedJob = allJobs.First(j => j.BulkJobId == 3);
 
-        parentJob.Amount.Should().Be(0);
-        parentJob.CourierPayment.Should().Be(0);
-        parentJob.Void.Should().BeTrue();
+        Assert.Equal(0m, parentJob.Amount);
+        Assert.Equal(0m, parentJob.CourierPayment);
+        Assert.True(parentJob.Void);
 
-        childJob.Amount.Should().Be(0);
-        childJob.CourierPayment.Should().Be(0);
-        childJob.Void.Should().BeTrue();
+        Assert.Equal(0m, childJob.Amount);
+        Assert.Equal(0m, childJob.CourierPayment);
+        Assert.True(childJob.Void);
 
         // Unrelated job should remain unchanged
-        unrelatedJob.Amount.Should().Be(200.00m);
-        unrelatedJob.CourierPayment.Should().Be(100.00m);
-        unrelatedJob.Void.Should().BeFalse();
+        Assert.Equal(200.00m, unrelatedJob.Amount);
+        Assert.Equal(100.00m, unrelatedJob.CourierPayment);
+        Assert.False(unrelatedJob.Void);
     }
 
     [Fact]
@@ -195,8 +192,8 @@ public class JobRepositoryVoidBulkJobTests
         ApplyVoidUpdate(allJobs, jobsToVoid);
 
         // Assert - All related jobs should have pricing cleared
-        allJobs.Should().OnlyContain(j => j.Amount == 0);
-        allJobs.Should().OnlyContain(j => j.CourierPayment == 0);
+        Assert.All(allJobs, j => Assert.Equal(0m, j.Amount));
+        Assert.All(allJobs, j => Assert.Equal(0m, j.CourierPayment));
     }
 
     [Fact]
@@ -221,8 +218,8 @@ public class JobRepositoryVoidBulkJobTests
         ApplyVoidUpdate(allJobs, jobsToVoid);
 
         // Assert - All amounts should be 0 (not null)
-        allJobs.Should().OnlyContain(j => j.Amount == 0);
-        allJobs.Should().OnlyContain(j => j.CourierPayment == 0);
+        Assert.All(allJobs, j => Assert.Equal(0m, j.Amount));
+        Assert.All(allJobs, j => Assert.Equal(0m, j.CourierPayment));
     }
 
     [Fact]
@@ -253,22 +250,18 @@ public class JobRepositoryVoidBulkJobTests
         var job2 = allJobs.First(j => j.BulkJobId == 2);
         var job3 = allJobs.First(j => j.BulkJobId == 3);
 
-        job1.Amount.Should().Be(100.00m);
-        job1.CourierPayment.Should().Be(50.00m);
-        job1.Void.Should().BeFalse();
+        Assert.Equal(100.00m, job1.Amount);
+        Assert.Equal(50.00m, job1.CourierPayment);
+        Assert.False(job1.Void);
 
-        job2.Amount.Should().Be(0);
-        job2.CourierPayment.Should().Be(0);
-        job2.Void.Should().BeTrue();
+        Assert.Equal(0m, job2.Amount);
+        Assert.Equal(0m, job2.CourierPayment);
+        Assert.True(job2.Void);
 
-        job3.Amount.Should().Be(25.00m);
-        job3.CourierPayment.Should().Be(12.50m);
-        job3.Void.Should().BeFalse();
+        Assert.Equal(25.00m, job3.Amount);
+        Assert.Equal(12.50m, job3.CourierPayment);
+        Assert.False(job3.Void);
     }
-
-    #endregion
-
-    #region Job Selection Tests
 
     [Fact]
     public void DetermineBulkJobsToVoid_VoidSingleJobOnly_ParentWithChildren_ReturnsParentAndChildren()
@@ -292,9 +285,11 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Parent and children should be returned, but not unrelated jobs
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
-        result.Should().NotContain(4);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.DoesNotContain(4, result);
     }
 
     [Fact]
@@ -317,9 +312,9 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Only the single job (no children exist)
-        result.Should().HaveCount(1);
-        result.Should().Contain(1);
-        result.Should().NotContain(2);
+        Assert.Single(result);
+        Assert.Contains(1, result);
+        Assert.DoesNotContain(2, result);
     }
 
     [Fact]
@@ -343,9 +338,10 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Only the child job (no children of its own), not parent or siblings
-        result.Should().HaveCount(1);
-        result.Should().Contain(2);
-        result.Should().NotContain([1, 3]);
+        Assert.Single(result);
+        Assert.Contains(2, result);
+        Assert.DoesNotContain(1, result);
+        Assert.DoesNotContain(3, result);
     }
 
     [Fact]
@@ -370,9 +366,11 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
-        result.Should().NotContain(4);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.DoesNotContain(4, result);
     }
 
     [Fact]
@@ -396,8 +394,10 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Parent and all siblings should be included
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
     }
 
     [Fact]
@@ -422,9 +422,10 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Only selected jobs should be returned
-        result.Should().HaveCount(2);
-        result.Should().Contain([2, 3]);
-        result.Should().NotContain(1);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.DoesNotContain(1, result);
     }
 
     [Fact]
@@ -448,8 +449,9 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Falls back to VoidSingleJobOnly behavior
-        result.Should().HaveCount(2);
-        result.Should().Contain([1, 2]);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
     }
 
     [Fact]
@@ -474,14 +476,10 @@ public class JobRepositoryVoidBulkJobTests
         var result = DetermineBulkJobsToVoid(request, allJobs);
 
         // Assert - Parent and all 50 children should be voided
-        result.Should().HaveCount(51);
-        result.Should().Contain(100);
-        for (var i = 1; i <= 50; i++) result.Should().Contain(i);
+        Assert.Equal(51, result.Count);
+        Assert.Contains(100, result);
+        for (var i = 1; i <= 50; i++) Assert.Contains(i, result);
     }
-
-    #endregion
-
-    #region GetBulkJobWithChildren Tests
 
     [Fact]
     public void GetBulkJobWithChildren_ParentWithChildren_ReturnsParentAndChildren()
@@ -498,8 +496,10 @@ public class JobRepositoryVoidBulkJobTests
         var result = GetBulkJobWithChildren(1, allJobs);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
     }
 
     [Fact]
@@ -516,8 +516,8 @@ public class JobRepositoryVoidBulkJobTests
         var result = GetBulkJobWithChildren(1, allJobs);
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().Contain(1);
+        Assert.Single(result);
+        Assert.Contains(1, result);
     }
 
     [Fact]
@@ -535,8 +535,8 @@ public class JobRepositoryVoidBulkJobTests
         var result = GetBulkJobWithChildren(2, allJobs);
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().Contain(2);
+        Assert.Single(result);
+        Assert.Contains(2, result);
     }
 
     [Fact]
@@ -556,10 +556,12 @@ public class JobRepositoryVoidBulkJobTests
         var result = GetBulkJobWithChildren(1, allJobs);
 
         // Assert - Only parent 1 and its children, not other families
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
-        result.Should().NotContain([10, 11]);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.DoesNotContain(10, result);
+        Assert.DoesNotContain(11, result);
     }
 
-    #endregion
 }

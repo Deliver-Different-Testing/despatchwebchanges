@@ -3,7 +3,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -36,8 +35,6 @@ public class AiControllerTests
         _tenantInfoMock.Object,
         Options.Create(settings ?? _settingsValue));
 
-    #region Helper Methods
-
     private static AiChatRequest CreateValidChatRequest()
     {
         return new AiChatRequest
@@ -49,10 +46,6 @@ public class AiControllerTests
         };
     }
 
-    #endregion
-
-    #region IsEnabled
-
     [Fact]
     public void IsEnabled_WhenFeaturesEnabled_ReturnsEnabledTrue()
     {
@@ -61,9 +54,9 @@ public class AiControllerTests
         var result = controller.IsEnabled();
 
         var json = result as JsonResult;
-        json.Should().NotBeNull();
+        Assert.NotNull(json);
         dynamic? value = json.Value;
-        ((bool)value!.enabled).Should().BeTrue();
+        Assert.True((bool)value!.enabled);
     }
 
     [Fact]
@@ -74,14 +67,10 @@ public class AiControllerTests
         var result = controller.IsEnabled();
 
         var json = result as JsonResult;
-        json.Should().NotBeNull();
+        Assert.NotNull(json);
         dynamic? value = json.Value;
-        ((bool)value!.enabled).Should().BeFalse();
+        Assert.False((bool)value!.enabled);
     }
-
-    #endregion
-
-    #region Chat
 
     [Fact]
     public async Task Chat_AiFeaturesDisabled_Returns503()
@@ -91,12 +80,12 @@ public class AiControllerTests
         var request = CreateValidChatRequest();
 
         // Act
-        var result = await controller.Chat(request, CancellationToken.None);
+        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult.Should().NotBeNull();
-        statusResult.StatusCode.Should().Be(503);
+        Assert.NotNull(statusResult);
+        Assert.Equal(503, statusResult.StatusCode);
     }
 
     [Fact]
@@ -107,11 +96,11 @@ public class AiControllerTests
         var request = new AiChatRequest { Messages = [] };
 
         // Act
-        var result = await controller.Chat(request, CancellationToken.None);
+        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
         var badRequest = result as BadRequestObjectResult;
-        badRequest.Should().NotBeNull();
+        Assert.NotNull(badRequest);
     }
 
     [Fact]
@@ -124,12 +113,12 @@ public class AiControllerTests
         var request = CreateValidChatRequest();
 
         // Act
-        var result = await controller.Chat(request, CancellationToken.None);
+        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult.Should().NotBeNull();
-        statusResult.StatusCode.Should().Be(429);
+        Assert.NotNull(statusResult);
+        Assert.Equal(429, statusResult.StatusCode);
     }
 
     [Fact]
@@ -147,10 +136,10 @@ public class AiControllerTests
         var request = CreateValidChatRequest();
 
         // Act
-        var result = await controller.Chat(request, CancellationToken.None);
+        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -168,7 +157,7 @@ public class AiControllerTests
         var request = CreateValidChatRequest();
 
         // Act
-        await controller.Chat(request, CancellationToken.None);
+        await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
         _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 200, 50), Times.Once);
@@ -185,12 +174,12 @@ public class AiControllerTests
         var request = CreateValidChatRequest();
 
         // Act
-        var result = await controller.Chat(request, CancellationToken.None);
+        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult.Should().NotBeNull();
-        statusResult.StatusCode.Should().Be(500);
+        Assert.NotNull(statusResult);
+        Assert.Equal(500, statusResult.StatusCode);
     }
 
     [Fact]
@@ -204,17 +193,13 @@ public class AiControllerTests
         var request = CreateValidChatRequest();
 
         // Act
-        var result = await controller.Chat(request, CancellationToken.None);
+        var result = await controller.Chat(request, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult.Should().NotBeNull();
-        statusResult.StatusCode.Should().Be(499);
+        Assert.NotNull(statusResult);
+        Assert.Equal(499, statusResult.StatusCode);
     }
-
-    #endregion
-
-    #region SummarizeJobNotes
 
     [Fact]
     public async Task SummarizeJobNotes_AiFeaturesDisabled_Returns503()
@@ -223,11 +208,11 @@ public class AiControllerTests
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         // Act
-        var result = await controller.SummarizeJobNotes(1, CancellationToken.None);
+        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -239,11 +224,11 @@ public class AiControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.SummarizeJobNotes(1, CancellationToken.None);
+        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -260,15 +245,11 @@ public class AiControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.SummarizeJobNotes(1, CancellationToken.None);
+        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
-
-    #endregion
-
-    #region SummarizeJobEvents
 
     [Fact]
     public async Task SummarizeJobEvents_AiFeaturesDisabled_Returns503()
@@ -277,11 +258,11 @@ public class AiControllerTests
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
         // Act
-        var result = await controller.SummarizeJobEvents(1, CancellationToken.None);
+        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -298,10 +279,10 @@ public class AiControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.SummarizeJobEvents(1, CancellationToken.None);
+        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -314,26 +295,22 @@ public class AiControllerTests
         var controller = CreateController();
 
         // Act
-        var result = await controller.SummarizeJobEvents(1, CancellationToken.None);
+        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
 
         // Assert
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
-
-    #endregion
-
-    #region SummarizeTaskDashboard
 
     [Fact]
     public async Task SummarizeTaskDashboard_AiFeaturesDisabled_Returns503()
     {
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
-        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -343,10 +320,10 @@ public class AiControllerTests
             .ReturnsAsync(false);
         var controller = CreateController();
 
-        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -361,9 +338,9 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -378,7 +355,7 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        await controller.SummarizeTaskDashboard(CancellationToken.None);
+        await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
 
         _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 100, 25), Times.Once);
     }
@@ -391,10 +368,10 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -405,25 +382,21 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeTaskDashboard(CancellationToken.None);
+        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(499);
+        Assert.Equal(499, statusResult!.StatusCode);
     }
-
-    #endregion
-
-    #region SummarizeJob
 
     [Fact]
     public async Task SummarizeJob_AiFeaturesDisabled_Returns503()
     {
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
-        var result = await controller.SummarizeJob(1, CancellationToken.None);
+        var result = await controller.SummarizeJob(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -433,10 +406,10 @@ public class AiControllerTests
             .ReturnsAsync(false);
         var controller = CreateController();
 
-        var result = await controller.SummarizeJob(1, CancellationToken.None);
+        var result = await controller.SummarizeJob(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -451,9 +424,9 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeJob(1, CancellationToken.None);
+        var result = await controller.SummarizeJob(1, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -464,25 +437,21 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeJob(1, CancellationToken.None);
+        var result = await controller.SummarizeJob(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
-
-    #endregion
-
-    #region SummarizeOperations
 
     [Fact]
     public async Task SummarizeOperations_AiFeaturesDisabled_Returns503()
     {
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
-        var result = await controller.SummarizeOperations(CancellationToken.None);
+        var result = await controller.SummarizeOperations(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -492,10 +461,10 @@ public class AiControllerTests
             .ReturnsAsync(false);
         var controller = CreateController();
 
-        var result = await controller.SummarizeOperations(CancellationToken.None);
+        var result = await controller.SummarizeOperations(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -510,9 +479,9 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeOperations(CancellationToken.None);
+        var result = await controller.SummarizeOperations(TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -527,7 +496,7 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        await controller.SummarizeOperations(CancellationToken.None);
+        await controller.SummarizeOperations(TestContext.Current.CancellationToken);
 
         _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 90, 15), Times.Once);
     }
@@ -540,25 +509,21 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeOperations(CancellationToken.None);
+        var result = await controller.SummarizeOperations(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
-
-    #endregion
-
-    #region SummarizeCompliance
 
     [Fact]
     public async Task SummarizeCompliance_AiFeaturesDisabled_Returns503()
     {
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
-        var result = await controller.SummarizeCompliance(CancellationToken.None);
+        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -568,10 +533,10 @@ public class AiControllerTests
             .ReturnsAsync(false);
         var controller = CreateController();
 
-        var result = await controller.SummarizeCompliance(CancellationToken.None);
+        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -586,9 +551,9 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeCompliance(CancellationToken.None);
+        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -599,10 +564,10 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeCompliance(CancellationToken.None);
+        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -613,25 +578,21 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SummarizeCompliance(CancellationToken.None);
+        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(499);
+        Assert.Equal(499, statusResult!.StatusCode);
     }
-
-    #endregion
-
-    #region AnalyzeLateAlert
 
     [Fact]
     public async Task AnalyzeLateAlert_AiFeaturesDisabled_Returns503()
     {
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
-        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -641,10 +602,10 @@ public class AiControllerTests
             .ReturnsAsync(false);
         var controller = CreateController();
 
-        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -659,9 +620,9 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -676,7 +637,7 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        await controller.AnalyzeLateAlert(1, CancellationToken.None);
+        await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
 
         _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 110, 22), Times.Once);
     }
@@ -689,25 +650,21 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.AnalyzeLateAlert(1, CancellationToken.None);
+        var result = await controller.AnalyzeLateAlert(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
-
-    #endregion
-
-    #region SuggestCouriers
 
     [Fact]
     public async Task SuggestCouriers_AiFeaturesDisabled_Returns503()
     {
         var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
 
-        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(503);
+        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -717,10 +674,10 @@ public class AiControllerTests
             .ReturnsAsync(false);
         var controller = CreateController();
 
-        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(429);
+        Assert.Equal(429, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -740,9 +697,9 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -757,7 +714,7 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        await controller.SuggestCouriers(1, CancellationToken.None);
+        await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
 
         _rateLimiterMock.Verify(x => x.RecordTokenUsageAsync(1, "Pacific/Auckland", 250, 45), Times.Once);
     }
@@ -770,10 +727,10 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(500);
+        Assert.Equal(500, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -784,11 +741,10 @@ public class AiControllerTests
 
         var controller = CreateController();
 
-        var result = await controller.SuggestCouriers(1, CancellationToken.None);
+        var result = await controller.SuggestCouriers(1, TestContext.Current.CancellationToken);
 
         var statusResult = result as ObjectResult;
-        statusResult!.StatusCode.Should().Be(499);
+        Assert.Equal(499, statusResult!.StatusCode);
     }
 
-    #endregion
 }

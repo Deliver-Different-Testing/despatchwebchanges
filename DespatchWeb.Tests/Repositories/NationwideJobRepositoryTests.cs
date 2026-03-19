@@ -1,8 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -14,34 +12,17 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class NationwideJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private FakeTenantClock _clock = new(TestDates.Now);
 
     public NationwideJobRepositoryTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        // Register custom SQLite function to mimic SQL Server's getdate()
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new DespatchContext(options);
-        _context.Database.EnsureCreated();
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
+        _context = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -52,7 +33,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private NationwideJobRepository CreateRepository() => new(
@@ -61,8 +42,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock.Object
     );
-
-    #region GetActiveAirlineOptionsAsync Tests
 
     [Fact]
     public async Task GetActiveAirlineOptionsAsync_WithActiveAirlines_ReturnsAirlines()
@@ -81,10 +60,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineOptionsAsync();
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain(a => a.Text == "NZ" && a.FullAirlineName == "Air New Zealand");
-        result.Should().Contain(a => a.Text == "QF" && a.FullAirlineName == "Qantas");
-        result.Should().Contain(a => a.Text == "AA" && a.FullAirlineName == "American Airlines");
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, a => a.Text == "NZ" && a.FullAirlineName == "Air New Zealand");
+        Assert.Contains(result, a => a.Text == "QF" && a.FullAirlineName == "Qantas");
+        Assert.Contains(result, a => a.Text == "AA" && a.FullAirlineName == "American Airlines");
     }
 
     [Fact]
@@ -103,8 +82,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineOptionsAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Text.Should().Be("NZ");
+        Assert.Single(result);
+        Assert.Equal("NZ", result[0].Text);
     }
 
     [Fact]
@@ -117,7 +96,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineOptionsAsync();
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -133,13 +112,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineOptionsAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Id.Should().Be(42);
+        Assert.Single(result);
+        Assert.Equal(42, result[0].Id);
     }
-
-    #endregion
-
-    #region GetActiveAirlineCodesAsync Tests
 
     [Fact]
     public async Task GetActiveAirlineCodesAsync_WithActiveAirlines_ReturnsCodes()
@@ -157,9 +132,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineCodesAsync();
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain("NZ");
-        result.Should().Contain("QF");
+        Assert.Equal(2, result.Count);
+        Assert.Contains("NZ", result);
+        Assert.Contains("QF", result);
     }
 
     [Fact]
@@ -178,8 +153,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineCodesAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Should().Be("NZ");
+        Assert.Single(result);
+        Assert.Equal("NZ", result[0]);
     }
 
     [Fact]
@@ -192,12 +167,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetActiveAirlineCodesAsync();
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region GetAirlineCodeByIdAsync Tests
 
     [Fact]
     public async Task GetAirlineCodeByIdAsync_WithExistingAirline_ReturnsCode()
@@ -212,7 +183,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAirlineCodeByIdAsync(1);
 
         // Assert
-        result.Should().Be("NZ");
+        Assert.Equal("NZ", result);
     }
 
     [Fact]
@@ -225,7 +196,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAirlineCodeByIdAsync(999);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -241,12 +212,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAirlineCodeByIdAsync(1);
 
         // Assert
-        result.Should().Be("QF");
+        Assert.Equal("QF", result);
     }
-
-    #endregion
-
-    #region GetNearbyAirportsAsync Tests
 
     [Fact]
     public async Task GetNearbyAirportsAsync_WithNearbyAirports_ReturnsFilteredResults()
@@ -272,8 +239,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetNearbyAirportsAsync(jobId, usePickup: true);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Text.Should().Contain("Auckland Airport");
+        Assert.Equal(1, result.Count);
+        Assert.Contains("Auckland Airport", result[0].Text);
     }
 
     [Fact]
@@ -290,7 +257,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetNearbyAirportsAsync(jobId, usePickup: true);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -303,7 +270,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetNearbyAirportsAsync(999, usePickup: true);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -327,8 +294,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetNearbyAirportsAsync(jobId, usePickup: true);
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Text.Should().Contain("Active Airport");
+        Assert.Single(result);
+        Assert.Contains("Active Airport", result[0].Text);
     }
 
     [Fact]
@@ -351,13 +318,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetNearbyAirportsAsync(jobId, usePickup: false);
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Text.Should().Contain("Auckland Airport");
+        Assert.Single(result);
+        Assert.Contains("Auckland Airport", result[0].Text);
     }
-
-    #endregion
-
-    #region GetAllAgentOptionsBySearchAsync Tests
 
     [Fact]
     public async Task GetAllAgentOptionsBySearchAsync_WithMatchingAgents_ReturnsAgents()
@@ -376,9 +339,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllAgentOptionsBySearchAsync("Express");
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(a => a.Text == "Express Couriers Ltd");
-        result.Should().Contain(a => a.Text == "Quick Express Services");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, a => a.Text == "Express Couriers Ltd");
+        Assert.Contains(result, a => a.Text == "Quick Express Services");
     }
 
     [Fact]
@@ -394,7 +357,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllAgentOptionsBySearchAsync("NoMatch");
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -413,7 +376,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllAgentOptionsBySearchAsync("");
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -432,7 +395,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllAgentOptionsBySearchAsync(null);
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -452,15 +415,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllAgentOptionsBySearchAsync("");
 
         // Assert
-        result.Should().HaveCount(3);
-        result[0].Text.Should().Be("Alpha Delivery");
-        result[1].Text.Should().Be("Beta Services");
-        result[2].Text.Should().Be("Zebra Couriers");
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Alpha Delivery", result[0].Text);
+        Assert.Equal("Beta Services", result[1].Text);
+        Assert.Equal("Zebra Couriers", result[2].Text);
     }
-
-    #endregion
-
-    #region GetAllActiveAirportsWithAgentsAsync Tests
 
     [Fact]
     public async Task GetAllActiveAirportsWithAgentsAsync_WithAirportsWithAgents_ReturnsAirports()
@@ -487,8 +446,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsWithAgentsAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Text.Should().Be("Auckland Airport");
+        Assert.Single(result);
+        Assert.Equal("Auckland Airport", result[0].Text);
     }
 
     [Fact]
@@ -515,8 +474,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsWithAgentsAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Text.Should().Be("Active Airport");
+        Assert.Single(result);
+        Assert.Equal("Active Airport", result[0].Text);
     }
 
     [Fact]
@@ -546,8 +505,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsWithAgentsAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Text.Should().Be("Airport With Agents");
+        Assert.Single(result);
+        Assert.Equal("Airport With Agents", result[0].Text);
     }
 
     [Fact]
@@ -560,12 +519,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsWithAgentsAsync();
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region GetAgentNameAsync Tests
 
     [Fact]
     public async Task GetAgentNameAsync_WithExistingAgent_ReturnsName()
@@ -580,7 +535,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAgentNameAsync(1);
 
         // Assert
-        result.Should().Be("Express Couriers Ltd");
+        Assert.Equal("Express Couriers Ltd", result);
     }
 
     [Fact]
@@ -593,12 +548,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAgentNameAsync(999);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
-
-    #endregion
-
-    #region GetFlightWebhookIdByJobIdAsync Tests
 
     [Fact]
     public async Task GetFlightWebhookIdByJobIdAsync_WithWebhooks_ReturnsIds()
@@ -616,8 +567,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetFlightWebhookIdByJobIdAsync(jobId);
 
         // Assert
-        result.Should().ContainSingle();
-        result.Should().Contain("webhook-123");
+        Assert.Single(result);
+        Assert.Contains("webhook-123", result);
     }
 
     [Fact]
@@ -634,7 +585,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetFlightWebhookIdByJobIdAsync(jobId);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -660,13 +611,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result2 = await repository.GetFlightWebhookIdByJobIdAsync(jobId2);
 
         // Assert
-        result1.Should().ContainSingle().Which.Should().Be("webhook-123");
-        result2.Should().ContainSingle().Which.Should().Be("webhook-456");
+        Assert.Equal("webhook-123", Assert.Single(result1));
+        Assert.Equal("webhook-456", Assert.Single(result2));
     }
-
-    #endregion
-
-    #region GetAllActiveAirportsAsync Tests
 
     [Fact]
     public async Task GetAllActiveAirportsAsync_WithActiveAirports_ReturnsAirports()
@@ -684,9 +631,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsAsync();
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(a => a.AirportCode == "AKL" && a.FlightBufferMinutes == 60);
-        result.Should().Contain(a => a.AirportCode == "SYD" && a.FlightBufferMinutes == 45);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, a => a.AirportCode == "AKL" && a.FlightBufferMinutes == 60);
+        Assert.Contains(result, a => a.AirportCode == "SYD" && a.FlightBufferMinutes == 45);
     }
 
     [Fact]
@@ -705,8 +652,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsAsync();
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].AirportCode.Should().Be("ACT");
+        Assert.Single(result);
+        Assert.Equal("ACT", result[0].AirportCode);
     }
 
     [Fact]
@@ -719,12 +666,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllActiveAirportsAsync();
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region RestoreNationwideJobAsync Tests
 
     [Fact]
     public async Task RestoreNationwideJobAsync_WithExistingJob_DoesNotThrow()
@@ -745,7 +688,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act & Assert - ExecuteUpdateAsync doesn't fully work with SQLite,
         // so we just verify the method runs without throwing for existing jobs
         var act = async () => await repository.RestoreNationwideJobAsync(jobId);
-        await act.Should().NotThrowAsync();
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -756,8 +700,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert
         var act = async () => await repository.RestoreNationwideJobAsync(999);
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Job with ID 999 not found*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        Assert.Contains("Job with ID 999 not found", ex.Message);
     }
 
     [Fact]
@@ -777,12 +721,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
-        flights.Should().BeEmpty();
+        Assert.Empty(flights);
     }
-
-    #endregion
-
-    #region GetFlightCarrierIdByCodeAsync Tests
 
     [Fact]
     public async Task GetFlightCarrierIdByCodeAsync_WithExistingCode_ReturnsId()
@@ -797,7 +737,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetFlightCarrierIdByCodeAsync("NZ");
 
         // Assert
-        result.Should().Be(42);
+        Assert.Equal(42, result);
     }
 
     [Fact]
@@ -811,12 +751,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         // Note: The implementation returns 0 (default int) instead of null due to FirstOrDefaultAsync on int
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
-
-    #endregion
-
-    #region NationwideJobListAsync Tests
 
     [Fact]
     public async Task NationwideJobListAsync_WithEmptyClientIds_ReturnsEmptyResult()
@@ -835,14 +771,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             []);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Jobs.Should().BeEmpty();
-        result.TotalCount.Should().Be(0);
+        Assert.NotNull(result);
+        Assert.Empty(result.Jobs);
+        Assert.Equal(0, result.TotalCount);
     }
-
-    #endregion
-
-    #region AddJobNationwideAsync Tests
 
     [Fact]
     public async Task AddJobNationwideAsync_WithValidRequest_CreatesFlightRecord()
@@ -873,17 +805,17 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
-        flightRecord.Should().NotBeNull();
-        flightRecord.UcnwFlightNo.Should().Be("NZ123");
-        flightRecord.UcnwJobNumber.Should().Be("JOB001-F");
-        flightRecord.UcnwEtd.Should().Be(departureTime.DateTime);
-        flightRecord.UcnwEta.Should().Be(arrivalTime.DateTime);
-        flightRecord.WebhookAlertId.Should().Be("webhook-123");
-        flightRecord.UcnwLegNumber.Should().Be(1);
-        flightRecord.CarrierFsCode.Should().Be("NZ");
-        flightRecord.DepartureAirportFsCode.Should().Be("AKL");
-        flightRecord.ArrivalAirportFsCode.Should().Be("SYD");
-        flightRecord.UcnwAirlineName.Should().Be("Air New Zealand");
+        Assert.NotNull(flightRecord);
+        Assert.Equal("NZ123", flightRecord.UcnwFlightNo);
+        Assert.Equal("JOB001-F", flightRecord.UcnwJobNumber);
+        Assert.Equal(departureTime.DateTime, flightRecord.UcnwEtd);
+        Assert.Equal(arrivalTime.DateTime, flightRecord.UcnwEta);
+        Assert.Equal("webhook-123", flightRecord.WebhookAlertId);
+        Assert.Equal(1, flightRecord.UcnwLegNumber);
+        Assert.Equal("NZ", flightRecord.CarrierFsCode);
+        Assert.Equal("AKL", flightRecord.DepartureAirportFsCode);
+        Assert.Equal("SYD", flightRecord.ArrivalAirportFsCode);
+        Assert.Equal("Air New Zealand", flightRecord.UcnwAirlineName);
     }
 
     [Fact]
@@ -916,8 +848,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedJob?.UcjbStatus.Should().Be((int)DespatchWeb.Enums.JobStatus.Dispatched);
-        updatedJob?.InternalStatus.Should().Be((int)DespatchWeb.Enums.InternalJobStatus.AwaitingPod);
+        Assert.Equal((int)DespatchWeb.Enums.JobStatus.Dispatched, updatedJob?.UcjbStatus);
+        Assert.Equal((int)DespatchWeb.Enums.InternalJobStatus.AwaitingPod, updatedJob?.InternalStatus);
     }
 
     [Fact]
@@ -951,8 +883,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedJob?.UcjbDate.Should().Be(departureTime.DateTime);
-        updatedJob?.UcjbTime.Should().Be(departureTime.DateTime);
+        Assert.Equal(departureTime.DateTime, updatedJob?.UcjbDate);
+        Assert.Equal(departureTime.DateTime, updatedJob?.UcjbTime);
     }
 
     [Fact]
@@ -987,8 +919,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedJob?.UcjbDispDate.Should().Be(currentTime);
-        updatedJob?.UcjbDispTime.Should().Be(currentTime);
+        Assert.Equal(currentTime, updatedJob?.UcjbDispDate);
+        Assert.Equal(currentTime, updatedJob?.UcjbDispTime);
     }
 
     [Fact]
@@ -1028,7 +960,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - pickup job's DeliverByTime should be departure time minus processing time (60 mins)
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
         var expectedDeliverByTime = departureTime.AddMinutes(-60).DateTime;
-        updatedPickupJob?.DeliverByTime.Should().Be(expectedDeliverByTime);
+        Assert.Equal(expectedDeliverByTime, updatedPickupJob?.DeliverByTime);
     }
 
     [Fact]
@@ -1071,9 +1003,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        updatedDeliveryJob?.UcjbDate.Should().Be(packageReadyTime.Date);
-        updatedDeliveryJob?.UcjbTime.Should().Be(packageReadyTime.DateTime);
-        updatedDeliveryJob?.DeliverByTime.Should().Be(packageDeliverByTime.DateTime);
+        Assert.Equal(packageReadyTime.Date, updatedDeliveryJob?.UcjbDate);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
+        Assert.Equal(packageDeliverByTime.DateTime, updatedDeliveryJob?.DeliverByTime);
     }
 
     [Fact]
@@ -1124,21 +1056,21 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             .Where(f => f.UcnwJobId == 100)
             .ToList();
 
-        addedFlightRecords.Should().HaveCount(2);
+        Assert.Equal(2, addedFlightRecords.Count);
 
         var leg1 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 1);
-        leg1.Should().NotBeNull();
-        leg1.UcnwFlightNo.Should().Be("NZ123");
-        leg1.WebhookAlertId.Should().Be("webhook-leg1");
-        leg1.DepartureAirportFsCode.Should().Be("AKL");
-        leg1.ArrivalAirportFsCode.Should().Be("MEL");
+        Assert.NotNull(leg1);
+        Assert.Equal("NZ123", leg1.UcnwFlightNo);
+        Assert.Equal("webhook-leg1", leg1.WebhookAlertId);
+        Assert.Equal("AKL", leg1.DepartureAirportFsCode);
+        Assert.Equal("MEL", leg1.ArrivalAirportFsCode);
 
         var leg2 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 2);
-        leg2.Should().NotBeNull();
-        leg2.UcnwFlightNo.Should().Be("NZ456");
-        leg2.WebhookAlertId.Should().Be("webhook-leg2");
-        leg2.DepartureAirportFsCode.Should().Be("MEL");
-        leg2.ArrivalAirportFsCode.Should().Be("SYD");
+        Assert.NotNull(leg2);
+        Assert.Equal("NZ456", leg2.UcnwFlightNo);
+        Assert.Equal("webhook-leg2", leg2.WebhookAlertId);
+        Assert.Equal("MEL", leg2.DepartureAirportFsCode);
+        Assert.Equal("SYD", leg2.ArrivalAirportFsCode);
     }
 
     [Fact]
@@ -1171,10 +1103,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         var journeyRecord = await _context.JobDeliveryJourneys
             .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment", cancellationToken: TestContext.Current.CancellationToken);
-        journeyRecord.Should().NotBeNull();
-        journeyRecord.StaffId.Should().Be(1);
-        journeyRecord.UpdatedByType.Should().Be("Staff");
-        journeyRecord.FlightId.Should().NotBeNull();
+        Assert.NotNull(journeyRecord);
+        Assert.Equal(1, journeyRecord.StaffId);
+        Assert.Equal("Staff", journeyRecord.UpdatedByType);
+        Assert.NotNull(journeyRecord.FlightId);
     }
 
     [Fact]
@@ -1214,9 +1146,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert
         var note = await _context.TucNotes
             .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)DespatchWeb.Enums.NoteType.FlightUpdate, cancellationToken: TestContext.Current.CancellationToken);
-        note.Should().NotBeNull();
-        note.NoteText.Should().Contain("Flight");
-        note.NoteText.Should().Contain("123"); // Flight number from segment
+        Assert.NotNull(note);
+        Assert.Contains("Flight", note.NoteText);
+        Assert.Contains("123", note.NoteText); // Flight number from segment
     }
 
     [Fact]
@@ -1242,7 +1174,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert - no flight record should be created
         var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
-        flightRecords.Should().BeEmpty();
+        Assert.Empty(flightRecords);
     }
 
     [Fact]
@@ -1263,7 +1195,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert
         var act = async () => await repository.AddJobNationwideAsync(request, null);
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -1295,7 +1227,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert - flight job's DeliverByTime should be set to arrival time
         var updatedFlightJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedFlightJob?.DeliverByTime.Should().Be(arrivalTime.DateTime);
+        Assert.Equal(arrivalTime.DateTime, updatedFlightJob?.DeliverByTime);
     }
 
     [Fact]
@@ -1329,9 +1261,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
         var journeyRecord = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(_context.JobDeliveryJourneys, j => j.JobId == 100, TestContext.Current.CancellationToken);
 
-        flightRecord.Should().NotBeNull();
-        journeyRecord.Should().NotBeNull();
-        journeyRecord.FlightId.Should().Be(flightRecord.UcnwId);
+        Assert.NotNull(flightRecord);
+        Assert.NotNull(journeyRecord);
+        Assert.Equal(flightRecord.UcnwId, journeyRecord.FlightId);
     }
 
     [Fact]
@@ -1378,8 +1310,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
         var unchangedOtherJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedPickupJob?.DeliverByTime.Should().NotBeNull();
-        unchangedOtherJob?.DeliverByTime.Should().BeNull();
+        Assert.NotNull(updatedPickupJob?.DeliverByTime);
+        Assert.Null(unchangedOtherJob?.DeliverByTime);
     }
 
     [Fact]
@@ -1428,12 +1360,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Delivery job should have its date set to after the arrival time (arrival + 60 min processing)
         var expectedReadyTime = arrivalTime.AddMinutes(60);
-        updatedDeliveryJob?.UcjbDate.Should().Be(expectedReadyTime.Date);
-        updatedDeliveryJob?.UcjbTime.Should().Be(expectedReadyTime.DateTime);
+        Assert.Equal(expectedReadyTime.Date, updatedDeliveryJob?.UcjbDate);
+        Assert.Equal(expectedReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
 
         // Other job (suffix '4') should NOT have its time updated - it stays at the default
         // It will have the default DateTime value set by CreateAgentJobWithGrouping
-        unchangedOtherJob?.UcjbTime.Should().NotBe(expectedReadyTime.DateTime);
+        Assert.NotEqual(expectedReadyTime.DateTime, unchangedOtherJob?.UcjbTime);
     }
 
     [Fact]
@@ -1465,8 +1397,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert - primary flight should have leg number 1 (constant value)
         var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
-        flightRecord.Should().NotBeNull();
-        flightRecord.UcnwLegNumber.Should().Be(1, "primary flight leg number constant is 1");
+        Assert.NotNull(flightRecord);
+        Assert.Equal(1, flightRecord.UcnwLegNumber);
     }
 
     [Fact]
@@ -1522,17 +1454,13 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var leg2 = addedFlightRecords.FirstOrDefault(f => f.UcnwLegNumber == 2);
 
         // Primary flight (leg 1) should have gate number
-        leg1.Should().NotBeNull();
-        leg1.GateNumber.Should().Be("Terminal 1");
+        Assert.NotNull(leg1);
+        Assert.Equal("Terminal 1", leg1.GateNumber);
 
         // Connection flight (leg 2) should NOT have gate number (only primary flight gets it)
-        leg2.Should().NotBeNull();
-        leg2.GateNumber.Should().BeNull();
+        Assert.NotNull(leg2);
+        Assert.Null(leg2.GateNumber);
     }
-
-    #endregion
-
-    #region Issue #3: Final Mile Job Start Time Tests
 
     /// <summary>
     /// Tests for Issue #3: The start time of the final mile job doesn't get updated to landing time +1 hour.
@@ -1582,11 +1510,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbDate.Should().Be(expectedStartTime.Date,
-            "Final mile job date should be arrival date (or next day if time crosses midnight)");
-        updatedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
-            "Final mile job time should be arrival time + airport processing time");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(expectedStartTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(expectedStartTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1628,11 +1554,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - delivery job's start time should use the provided PackageReadyTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbDate.Should().Be(customPackageReadyTime.Date,
-            "Final mile job date should use provided PackageReadyTime date");
-        updatedDeliveryJob.UcjbTime.Should().Be(customPackageReadyTime.DateTime,
-            "Final mile job time should use provided PackageReadyTime");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(customPackageReadyTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(customPackageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1674,9 +1598,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(customProcessingTime);
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
-            "Final mile job time should be arrival time + airport-specific processing time (90 mins)");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(expectedStartTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1732,9 +1655,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(60); // Default processing time
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
-            "Final mile job should default to 60 minute processing time when airport has none set");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(expectedStartTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1793,8 +1715,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             .FirstOrDefault(e => e.Entity.UcjbId == 102)?.Entity;
 
         if (trackedDeliveryJob != null)
-            trackedDeliveryJob.UcjbTime.Should().Be(expectedStartTime.DateTime,
-                "Final mile job should use last segment's arrival time + arrival airport processing time");
+            Assert.Equal(expectedStartTime.DateTime, trackedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1842,23 +1763,16 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedJob3 = await _context.TucJobs.FindAsync([103], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
 
-        updatedJob3.Should().NotBeNull();
-        updatedJob3.UcjbDate.Should().Be(expectedStartTime.Date,
-            "Job '3' (drop-off) should have its date set to arrival + processing time");
-        updatedJob3.UcjbTime.Should().Be(expectedStartTime.DateTime,
-            "Job '3' (drop-off) should have its time set to arrival + processing time");
+        Assert.NotNull(updatedJob3);
+        Assert.Equal(expectedStartTime.Date, updatedJob3.UcjbDate);
+        Assert.Equal(expectedStartTime.DateTime, updatedJob3.UcjbTime);
 
         // Job '2' should NOT have its start time modified to the delivery time
         var updatedJob2 = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        updatedJob2.Should().NotBeNull();
+        Assert.NotNull(updatedJob2);
         // Job '2' time should remain unchanged (not set to arrival + processing time)
-        updatedJob2.UcjbTime.Should().NotBe(expectedStartTime.DateTime,
-            "Job '2' should not be updated with the delivery time - only job '3' should be updated");
+        Assert.NotEqual(expectedStartTime.DateTime, updatedJob2.UcjbTime);
     }
-
-    #endregion
-
-    #region Issue #4: First Job (Pickup) DeliverBy Time Tests
 
     /// <summary>
     /// Tests for Issue #4: The delivery by time of the first job doesn't get set when you assign a flight.
@@ -1904,9 +1818,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
         var expectedDeliverByTime = departureTime.AddMinutes(-departureAirportProcessingTime).DateTime;
 
-        updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob.DeliverByTime.Should().Be(expectedDeliverByTime,
-            "Pickup job DeliverByTime should be departure time minus airport processing time");
+        Assert.NotNull(updatedPickupJob);
+        Assert.Equal(expectedDeliverByTime, updatedPickupJob.DeliverByTime);
     }
 
     [Fact]
@@ -1946,9 +1859,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
         var expectedDeliverByTime = departureTime.AddMinutes(-customProcessingTime).DateTime;
 
-        updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob.DeliverByTime.Should().Be(expectedDeliverByTime,
-            "Pickup job DeliverByTime should use departure airport's specific processing time (90 mins)");
+        Assert.NotNull(updatedPickupJob);
+        Assert.Equal(expectedDeliverByTime, updatedPickupJob.DeliverByTime);
     }
 
     [Fact]
@@ -1982,11 +1894,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert - Should not throw, flight assignment should complete
         var act = async () => await repository.AddJobNationwideAsync(request, webhookIds);
-        await act.Should().NotThrowAsync("Flight assignment should succeed even without pickup job");
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
 
         // Verify flight was assigned
         var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
-        flightRecord.Should().NotBeNull("Flight should be assigned successfully");
+        Assert.NotNull(flightRecord);
     }
 
     [Fact]
@@ -2025,9 +1938,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - pickup job's DeliverByTimeZoneId should be set to departure timezone
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
 
-        updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob.DeliverByTimeZoneId.Should().NotBeNull(
-            "Pickup job should have DeliverByTimeZoneId set to departure airport timezone");
+        Assert.NotNull(updatedPickupJob);
+        Assert.NotNull(updatedPickupJob.DeliverByTimeZoneId);
     }
 
     [Fact]
@@ -2078,19 +1990,13 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Pickup: departure - processing time
         var expectedPickupDeliverBy = departureTime.AddMinutes(-departureProcessingTime).DateTime;
-        updatedPickupJob.Should().NotBeNull();
-        updatedPickupJob.DeliverByTime.Should().Be(expectedPickupDeliverBy,
-            "Pickup job DeliverByTime should be departure - processing time");
+        Assert.NotNull(updatedPickupJob);
+        Assert.Equal(expectedPickupDeliverBy, updatedPickupJob.DeliverByTime);
 
         // Delivery: explicitly set PackageDeliverByTime
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.DeliverByTime.Should().Be(packageDeliverByTime.DateTime,
-            "Delivery job DeliverByTime should be the provided PackageDeliverByTime");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(packageDeliverByTime.DateTime, updatedDeliveryJob.DeliverByTime);
     }
-
-    #endregion
-
-    #region Issue #2: Flight Window Time Tests
 
     /// <summary>
     /// Tests for Issue #2: The time of the flight in the flight window (which gets added to the
@@ -2130,11 +2036,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Flight record should have exact ETD and ETA from segment
         var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
 
-        flightRecord.Should().NotBeNull();
-        flightRecord.UcnwEtd.Should().Be(departureTime.DateTime,
-            "Flight ETD should match the segment's departure time exactly");
-        flightRecord.UcnwEta.Should().Be(arrivalTime.DateTime,
-            "Flight ETA should match the segment's arrival time exactly");
+        Assert.NotNull(flightRecord);
+        Assert.Equal(departureTime.DateTime, flightRecord.UcnwEtd);
+        Assert.Equal(arrivalTime.DateTime, flightRecord.UcnwEta);
     }
 
     [Fact]
@@ -2169,11 +2073,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Flight job's date/time should be updated to departure time
         var updatedFlightJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
 
-        updatedFlightJob.Should().NotBeNull();
-        updatedFlightJob.UcjbDate.Should().Be(departureTime.DateTime,
-            "Flight job date should be updated to match departure time");
-        updatedFlightJob.UcjbTime.Should().Be(departureTime.DateTime,
-            "Flight job time should be updated to match departure time");
+        Assert.NotNull(updatedFlightJob);
+        Assert.Equal(departureTime.DateTime, updatedFlightJob.UcjbDate);
+        Assert.Equal(departureTime.DateTime, updatedFlightJob.UcjbTime);
     }
 
     [Fact]
@@ -2221,22 +2123,18 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             .OrderBy(f => f.UcnwLegNumber)
             .ToList();
 
-        addedFlightRecords.Should().HaveCount(2);
+        Assert.Equal(2, addedFlightRecords.Count);
 
         // First leg (main record) - ETD from segment 1, ETA from LAST segment (Issue #2 fix)
         var leg1 = addedFlightRecords[0];
-        leg1.UcnwEtd.Should().Be(departureTime1.DateTime, "Leg 1 ETD should match segment 1 departure");
-        leg1.UcnwEta.Should().Be(arrivalTime2.DateTime, "Leg 1 ETA should match LAST segment arrival (Issue #2 fix)");
+        Assert.Equal(departureTime1.DateTime, leg1.UcnwEtd);
+        Assert.Equal(arrivalTime2.DateTime, leg1.UcnwEta);
 
         // Second leg (additional segment record) - has its own ETD/ETA
         var leg2 = addedFlightRecords[1];
-        leg2.UcnwEtd.Should().Be(departureTime2.DateTime, "Leg 2 ETD should match segment 2 departure");
-        leg2.UcnwEta.Should().Be(arrivalTime2.DateTime, "Leg 2 ETA should match segment 2 arrival");
+        Assert.Equal(departureTime2.DateTime, leg2.UcnwEtd);
+        Assert.Equal(arrivalTime2.DateTime, leg2.UcnwEta);
     }
-
-    #endregion
-
-    #region CalculateCargoReadyTimeAsync Tests
 
     /// <summary>
     /// Tests for CalculateCargoReadyTimeAsync to ensure consistent processing time defaults.
@@ -2265,9 +2163,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
 
         // Assert
-        result.Should().NotBeNull();
-        result.ProcessingTimeMins.Should().Be(configuredProcessingTime,
-            "Should return the airport's configured processing time");
+        Assert.NotNull(result);
+        Assert.Equal(configuredProcessingTime, result.ProcessingTimeMins);
     }
 
     [Fact]
@@ -2305,9 +2202,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
 
         // Assert - Should default to 60 minutes, consistent with AddJobNationwideAsync
-        result.Should().NotBeNull();
-        result.ProcessingTimeMins.Should().Be(60,
-            "Should default to 60 minutes when airport has no processing time configured");
+        Assert.NotNull(result);
+        Assert.Equal(60, result.ProcessingTimeMins);
     }
 
     [Fact]
@@ -2330,9 +2226,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
 
         // Assert
-        result.Should().NotBeNull();
-        result.ArrivalTime.Should().Be(flightArrivalTime,
-            "Should return the flight arrival time passed to the method");
+        Assert.NotNull(result);
+        Assert.Equal(flightArrivalTime, result.ArrivalTime);
     }
 
     [Fact]
@@ -2346,7 +2241,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(999, "NZ", flightArrivalTime);
 
         // Assert
-        result.Should().BeNull("Should return null when job is not found");
+        Assert.Null(result);
     }
 
     [Fact]
@@ -2383,30 +2278,28 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
 
         // Assert
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         // Cargo times should be DateTimeOffset with the airport's timezone offset applied
         // The time portion should match the cargo facility times (06:00 and 22:00)
-        result.CargoOpeningTime.Hour.Should().Be(6, "Opening time should be 06:00");
-        result.CargoOpeningTime.Minute.Should().Be(0);
-        result.CargoClosingTime.Hour.Should().Be(22, "Closing time should be 22:00");
-        result.CargoClosingTime.Minute.Should().Be(0);
+        Assert.Equal(6, result.CargoOpeningTime.Hour);
+        Assert.Equal(0, result.CargoOpeningTime.Minute);
+        Assert.Equal(22, result.CargoClosingTime.Hour);
+        Assert.Equal(0, result.CargoClosingTime.Minute);
 
         // The date should match the flight arrival date
-        result.CargoOpeningTime.Year.Should().Be(2024);
-        result.CargoOpeningTime.Month.Should().Be(6);
-        result.CargoOpeningTime.Day.Should().Be(15);
-        result.CargoClosingTime.Year.Should().Be(2024);
-        result.CargoClosingTime.Month.Should().Be(6);
-        result.CargoClosingTime.Day.Should().Be(15);
+        Assert.Equal(2024, result.CargoOpeningTime.Year);
+        Assert.Equal(6, result.CargoOpeningTime.Month);
+        Assert.Equal(15, result.CargoOpeningTime.Day);
+        Assert.Equal(2024, result.CargoClosingTime.Year);
+        Assert.Equal(6, result.CargoClosingTime.Month);
+        Assert.Equal(15, result.CargoClosingTime.Day);
 
         // The offset should be present (not zero unless actually UTC)
         // Pacific time in June is PDT (UTC-7), so offset should be -07:00
         var expectedOffset = TimeZoneInfo.FindSystemTimeZoneById(pacificTimeZone).GetUtcOffset(flightArrivalTime);
-        result.CargoOpeningTime.Offset.Should().Be(expectedOffset,
-            "Cargo opening time should have the airport's timezone offset");
-        result.CargoClosingTime.Offset.Should().Be(expectedOffset,
-            "Cargo closing time should have the airport's timezone offset");
+        Assert.Equal(expectedOffset, result.CargoOpeningTime.Offset);
+        Assert.Equal(expectedOffset, result.CargoClosingTime.Offset);
     }
 
     [Fact]
@@ -2443,17 +2336,16 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
 
         // Assert
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         // Should fall back to local timezone
         var localOffset = TimeZoneInfo.Local.GetUtcOffset(flightArrivalTime);
-        result.CargoOpeningTime.Offset.Should().Be(localOffset,
-            "Should use local timezone when airport has no timezone configured");
-        result.CargoClosingTime.Offset.Should().Be(localOffset);
+        Assert.Equal(localOffset, result.CargoOpeningTime.Offset);
+        Assert.Equal(localOffset, result.CargoClosingTime.Offset);
 
         // Time portions should still be correct
-        result.CargoOpeningTime.Hour.Should().Be(8);
-        result.CargoClosingTime.Hour.Should().Be(20);
+        Assert.Equal(8, result.CargoOpeningTime.Hour);
+        Assert.Equal(20, result.CargoClosingTime.Hour);
     }
 
     [Fact]
@@ -2494,17 +2386,17 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "NZ", flightArrivalTime);
 
         // Assert
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         // Should use default times (start of day 00:00 and end of day 23:59)
-        result.CargoOpeningTime.Hour.Should().Be(0, "Default opening should be start of day");
-        result.CargoClosingTime.Hour.Should().Be(23, "Default closing should be end of day");
-        result.CargoClosingTime.Minute.Should().Be(59);
+        Assert.Equal(0, result.CargoOpeningTime.Hour);
+        Assert.Equal(23, result.CargoClosingTime.Hour);
+        Assert.Equal(59, result.CargoClosingTime.Minute);
 
         // The offset should still be applied from the airport timezone
         var expectedOffset = TimeZoneInfo.FindSystemTimeZoneById(easternTimeZone).GetUtcOffset(flightArrivalTime);
-        result.CargoOpeningTime.Offset.Should().Be(expectedOffset);
-        result.CargoClosingTime.Offset.Should().Be(expectedOffset);
+        Assert.Equal(expectedOffset, result.CargoOpeningTime.Offset);
+        Assert.Equal(expectedOffset, result.CargoClosingTime.Offset);
     }
 
     [Fact]
@@ -2541,25 +2433,21 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.CalculateCargoReadyTimeAsync(100, "AA", flightArrivalTime);
 
         // Assert
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         // The cargo times should use the ARRIVAL DATE (2024-12-25), not the stored date (1900-01-01)
-        result.CargoOpeningTime.Year.Should().Be(2024, "Should use arrival year");
-        result.CargoOpeningTime.Month.Should().Be(12, "Should use arrival month");
-        result.CargoOpeningTime.Day.Should().Be(25, "Should use arrival day");
-        result.CargoOpeningTime.Hour.Should().Be(5, "Should preserve cargo facility opening hour");
-        result.CargoOpeningTime.Minute.Should().Be(30, "Should preserve cargo facility opening minute");
+        Assert.Equal(2024, result.CargoOpeningTime.Year);
+        Assert.Equal(12, result.CargoOpeningTime.Month);
+        Assert.Equal(25, result.CargoOpeningTime.Day);
+        Assert.Equal(5, result.CargoOpeningTime.Hour);
+        Assert.Equal(30, result.CargoOpeningTime.Minute);
 
-        result.CargoClosingTime.Year.Should().Be(2024);
-        result.CargoClosingTime.Month.Should().Be(12);
-        result.CargoClosingTime.Day.Should().Be(25);
-        result.CargoClosingTime.Hour.Should().Be(21, "Should preserve cargo facility closing hour");
-        result.CargoClosingTime.Minute.Should().Be(45, "Should preserve cargo facility closing minute");
+        Assert.Equal(2024, result.CargoClosingTime.Year);
+        Assert.Equal(12, result.CargoClosingTime.Month);
+        Assert.Equal(25, result.CargoClosingTime.Day);
+        Assert.Equal(21, result.CargoClosingTime.Hour);
+        Assert.Equal(45, result.CargoClosingTime.Minute);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static FlightCarrier CreateFlightCarrier(int id, string code, string name, bool isActive) => new()
     {
@@ -2872,10 +2760,6 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         ]
     };
 
-    #endregion
-
-    #region Diagnostic Tests - Delivery Job Start Time Issue
-
     /// <summary>
     /// Verify that with ToAirportId set, delivery job IS updated.
     /// This is the expected working scenario.
@@ -2919,10 +2803,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Delivery job's time SHOULD be updated to packageReadyTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbDate.Should().Be(packageReadyTime.Date);
-        updatedDeliveryJob.UcjbTime.Should().Be(packageReadyTime.DateTime,
-            "When ToAirportId is set and delivery job exists with correct grouping, it should be updated to packageReadyTime");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(packageReadyTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     /// <summary>
@@ -2969,8 +2852,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Delivery job should NOT be updated because it has wrong grouping
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedDeliveryJob?.UcjbTime.Should().NotBe(packageReadyTime.DateTime,
-            "Delivery job with Flight grouping (not Agent) should NOT be updated");
+        Assert.NotEqual(packageReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
     }
 
     /// <summary>
@@ -3017,10 +2899,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Delivery job SHOULD be updated because request.ToAirportId is set
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbDate.Should().Be(packageReadyTime.Date);
-        updatedDeliveryJob.UcjbTime.Should().Be(packageReadyTime.DateTime,
-            "When request.ToAirportId is set (even if job.ToAirportId is null), delivery job should be updated");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(packageReadyTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     /// <summary>
@@ -3066,9 +2947,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Delivery job SHOULD be updated for NZ tenant with NationwideAgent grouping
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedDeliveryJob.Should().NotBeNull();
-        updatedDeliveryJob.UcjbTime.Should().Be(packageReadyTime.DateTime,
-            "NZ tenant with NationwideAgent grouping (6) should have delivery job updated");
+        Assert.NotNull(updatedDeliveryJob);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     /// <summary>
@@ -3114,9 +2994,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Assert - Delivery job should NOT be updated because NZ tenant expects grouping 6, not 3
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        updatedDeliveryJob?.UcjbTime.Should().NotBe(packageReadyTime.DateTime,
-            "NZ tenant looking for grouping 6, but job has grouping 3 - should NOT be found");
+        Assert.NotEqual(packageReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
     }
 
-    #endregion
 }

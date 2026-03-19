@@ -1,7 +1,5 @@
 using System.Text.Json;
 using DespatchWeb.Models.FlightStats;
-using FluentAssertions;
-
 
 namespace DespatchWeb.Tests.Services;
 
@@ -105,8 +103,6 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 
-    #region Connections API Tests
-
     [Fact]
     public async Task ConnectionsApi_SearchFlights_AucklandToSydney_ReturnsFlights()
     {
@@ -132,10 +128,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         TestContext.Current.TestOutputHelper?.WriteLine($"Response Length: {content.Length} characters");
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}: {content}");
 
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
 
@@ -176,15 +172,16 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}: {content}");
 
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
 
         // LAX to JFK is a busy route, should have flights
-        result.Connections.Should().NotBeNullOrEmpty("LAX to JFK is a major route with many flights");
+        Assert.NotNull(result.Connections);
+        Assert.NotEmpty(result.Connections);
     }
 
     [Fact]
@@ -210,24 +207,18 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}: {content}");
 
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         TestContext.Current.TestOutputHelper?.WriteLine($"American Airlines connections found: {result.Connections?.Count ?? 0}");
 
         // Each connection should include at least one AA-operated flight
         // (connections may include legs operated by regional partners like SkyWest/OO)
         if (result.Connections != null)
-        {
-            foreach (var connection in result.Connections)
-            {
-                connection.ScheduledFlight.Should().Contain(
-                    f => f.CarrierFsCode == airline,
-                    $"Expected at least one {airline} flight in connection but got: {string.Join(", ", connection.ScheduledFlight?.Select(f => f.CarrierFsCode) ?? [])}");
-            }
-        }
+            foreach (var connection in result.Connections) 
+                Assert.Contains(connection.ScheduledFlight, f => f.CarrierFsCode == airline);
     }
 
     [Fact]
@@ -253,10 +244,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}: {content}");
 
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         TestContext.Current.TestOutputHelper?.WriteLine($"United/American connections found: {result.Connections?.Count ?? 0}");
     }
@@ -288,7 +279,7 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         if (response.IsSuccessStatusCode)
         {
             var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-            result?.Connections.Should().BeNullOrEmpty("Invalid airports should return no connections");
+            Assert.True(result?.Connections == null || result.Connections.Count == 0, "Invalid airports should return no connections");
         }
     }
 
@@ -310,17 +301,19 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue();
+        Assert.True(response.IsSuccessStatusCode);
 
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         // Appendix should contain reference data
         if (result.Connections?.Count > 0)
         {
-            result.Appendix.Should().NotBeNull();
-            result.Appendix?.Airlines.Should().NotBeNullOrEmpty("Appendix should contain airline data");
-            result.Appendix?.Airports.Should().NotBeNullOrEmpty("Appendix should contain airport data");
+            Assert.NotNull(result.Appendix);
+            Assert.NotNull(result.Appendix?.Airlines);
+            Assert.NotEmpty(result.Appendix!.Airlines!);
+            Assert.NotNull(result.Appendix?.Airports);
+            Assert.NotEmpty(result.Appendix!.Airports!);
 
             TestContext.Current.TestOutputHelper?.WriteLine($"Airlines in appendix: {result.Appendix?.Airlines?.Count}");
             TestContext.Current.TestOutputHelper?.WriteLine($"Airports in appendix: {result.Appendix?.Airports?.Count}");
@@ -328,8 +321,8 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
 
             // Verify airport data has timezone info
             var aklAirport = result.Appendix?.Airports?.FirstOrDefault(a => a.Fs == "AKL");
-            aklAirport.Should().NotBeNull();
-            aklAirport.TimeZoneRegionName.Should().NotBeNullOrEmpty("Airport should have timezone info");
+            Assert.NotNull(aklAirport);
+            Assert.False(string.IsNullOrEmpty(aklAirport.TimeZoneRegionName));
             TestContext.Current.TestOutputHelper?.WriteLine($"AKL Timezone: {aklAirport.TimeZoneRegionName}");
         }
     }
@@ -357,10 +350,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}");
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}");
 
         var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
 
         TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
 
@@ -373,17 +366,11 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
 
                 if (connection.ScheduledFlight == null) continue;
                 foreach (var segment in connection.ScheduledFlight)
-                {
                     TestContext.Current.TestOutputHelper?.WriteLine($"    {segment.CarrierFsCode}{segment.FlightNumber}: " +
-                                      $"{segment.DepartureAirportFsCode} -> {segment.ArrivalAirportFsCode}");
-                }
+                                                                    $"{segment.DepartureAirportFsCode} -> {segment.ArrivalAirportFsCode}");
             }
         }
     }
-
-    #endregion
-
-    #region Alerts API Tests
 
     [Fact]
     public async Task AlertsApi_InvalidCredentials_ReturnsErrorInResponse()
@@ -402,8 +389,8 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
 
         // Assert - API returns 200 but with error in body
         // The response contains an error object indicating invalid credentials
-        content.Should().Contain("error", "Response should contain error for invalid credentials");
-        content.Should().Contain("invalid", "Response should reference the invalid app id");
+        Assert.Contains("error", content);
+        Assert.Contains("invalid", content);
     }
 
     [Fact]
@@ -424,12 +411,8 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         TestContext.Current.TestOutputHelper?.WriteLine($"Response Length: {content.Length} characters");
 
         // Assert
-        response.IsSuccessStatusCode.Should().BeTrue($"API returned {response.StatusCode}: {content}");
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}: {content}");
     }
-
-    #endregion
-
-    #region Rate Limiting & Error Handling Tests
 
     [Fact]
     public async Task Api_RateLimiting_HandlesMultipleRequests()
@@ -456,8 +439,7 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         foreach (var response in responses) TestContext.Current.TestOutputHelper?.WriteLine($"Response: {response.StatusCode}");
 
         var successCount = responses.Count(r => r.IsSuccessStatusCode);
-        successCount.Should().BeGreaterThan(0, "At least some requests should succeed");
+        Assert.True(successCount > 0, "At least some requests should succeed");
     }
 
-    #endregion
 }

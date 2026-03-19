@@ -1,5 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Security;
 
@@ -22,8 +21,6 @@ public class SqlInjectionPreventionTests
 
     private bool InvokeIsValidWhereCondition(string condition) => (bool)_isValidWhereConditionMethod.Invoke(null, [condition])!;
 
-    #region Valid Conditions - Should Pass
-
     [Theory]
     [InlineData("StatusId = 1")]
     [InlineData("StatusId IN (1, 2, 3)")]
@@ -39,12 +36,8 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeTrue($"'{condition}' should be a valid WHERE condition");
+        Assert.True(result, $"'{condition}' should be a valid WHERE condition");
     }
-
-    #endregion
-
-    #region SQL Injection Patterns - Should Block
 
     [Theory]
     [InlineData("1=1; DROP TABLE TucJob")]
@@ -57,7 +50,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains DROP and should be blocked");
+        Assert.False(result, $"'{condition}' contains DROP and should be blocked");
     }
 
     [Theory]
@@ -70,7 +63,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains DELETE and should be blocked");
+        Assert.False(result, $"'{condition}' contains DELETE and should be blocked");
     }
 
     [Theory]
@@ -82,7 +75,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains TRUNCATE and should be blocked");
+        Assert.False(result, $"'{condition}' contains TRUNCATE and should be blocked");
     }
 
     [Theory]
@@ -94,7 +87,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains INSERT and should be blocked");
+        Assert.False(result, $"'{condition}' contains INSERT and should be blocked");
     }
 
     [Theory]
@@ -106,7 +99,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains UPDATE and should be blocked");
+        Assert.False(result, $"'{condition}' contains UPDATE and should be blocked");
     }
 
     [Theory]
@@ -119,7 +112,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains UNION and should be blocked");
+        Assert.False(result, $"'{condition}' contains UNION and should be blocked");
     }
 
     [Theory]
@@ -132,7 +125,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains EXEC/EXECUTE and should be blocked");
+        Assert.False(result, $"'{condition}' contains EXEC/EXECUTE and should be blocked");
     }
 
     [Theory]
@@ -145,7 +138,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains xp_ procedure and should be blocked");
+        Assert.False(result, $"'{condition}' contains xp_ procedure and should be blocked");
     }
 
     [Theory]
@@ -157,7 +150,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains sp_ procedure and should be blocked");
+        Assert.False(result, $"'{condition}' contains sp_ procedure and should be blocked");
     }
 
     [Theory]
@@ -170,7 +163,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains SQL comment and should be blocked");
+        Assert.False(result, $"'{condition}' contains SQL comment and should be blocked");
     }
 
     [Theory]
@@ -183,7 +176,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains block comment and should be blocked");
+        Assert.False(result, $"'{condition}' contains block comment and should be blocked");
     }
 
     [Theory]
@@ -196,7 +189,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains WAITFOR/DELAY and should be blocked");
+        Assert.False(result, $"'{condition}' contains WAITFOR/DELAY and should be blocked");
     }
 
     [Theory]
@@ -208,7 +201,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains SHUTDOWN and should be blocked");
+        Assert.False(result, $"'{condition}' contains SHUTDOWN and should be blocked");
     }
 
     [Theory]
@@ -220,7 +213,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains INTO and should be blocked");
+        Assert.False(result, $"'{condition}' contains INTO and should be blocked");
     }
 
     [Theory]
@@ -232,7 +225,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains OPENROWSET/OPENQUERY and should be blocked");
+        Assert.False(result, $"'{condition}' contains OPENROWSET/OPENQUERY and should be blocked");
     }
 
     [Theory]
@@ -244,7 +237,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains BULK INSERT and should be blocked");
+        Assert.False(result, $"'{condition}' contains BULK INSERT and should be blocked");
     }
 
     [Theory]
@@ -256,7 +249,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains DBCC and should be blocked");
+        Assert.False(result, $"'{condition}' contains DBCC and should be blocked");
     }
 
     [Theory]
@@ -268,7 +261,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains ALTER and should be blocked");
+        Assert.False(result, $"'{condition}' contains ALTER and should be blocked");
     }
 
     [Theory]
@@ -280,7 +273,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains CREATE and should be blocked");
+        Assert.False(result, $"'{condition}' contains CREATE and should be blocked");
     }
 
     [Theory]
@@ -292,7 +285,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains GRANT and should be blocked");
+        Assert.False(result, $"'{condition}' contains GRANT and should be blocked");
     }
 
     [Theory]
@@ -304,12 +297,8 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse($"'{condition}' contains REVOKE and should be blocked");
+        Assert.False(result, $"'{condition}' contains REVOKE and should be blocked");
     }
-
-    #endregion
-
-    #region Edge Cases
 
     [Theory]
     [InlineData("")]
@@ -321,7 +310,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(condition);
 
         // Assert
-        result.Should().BeFalse("empty or whitespace conditions should be invalid");
+        Assert.False(result, "empty or whitespace conditions should be invalid");
     }
 
     [Fact]
@@ -331,7 +320,7 @@ public class SqlInjectionPreventionTests
         var result = InvokeIsValidWhereCondition(null!);
 
         // Assert
-        result.Should().BeFalse("null conditions should be invalid");
+        Assert.False(result, "null conditions should be invalid");
     }
 
     [Fact]
@@ -350,7 +339,7 @@ public class SqlInjectionPreventionTests
         foreach (var condition in conditions)
         {
             var result = InvokeIsValidWhereCondition(condition);
-            result.Should().BeFalse($"'{condition}' should be blocked regardless of case");
+            Assert.False(result, $"'{condition}' should be blocked regardless of case");
         }
     }
 
@@ -376,5 +365,4 @@ public class SqlInjectionPreventionTests
         }
     }
 
-    #endregion
 }

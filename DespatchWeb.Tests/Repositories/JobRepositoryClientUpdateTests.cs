@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
@@ -29,15 +27,13 @@ public class JobRepositoryClientUpdateTests
 
         // If this is a parent job, update all child jobs to the same client
         if (job.Children.Count == 0) return;
-        
+
         foreach (var childJob in job.Children)
         {
             childJob.ClientId = newClientId;
             childJob.ClientCode = newClientCode;
         }
     }
-
-    #region Parent Job Client Update Tests
 
     [Fact]
     public void UpdateJobClient_ParentWithChildren_UpdatesParentAndAllChildren()
@@ -59,14 +55,14 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 200, "NEW");
 
         // Assert - Parent should be updated
-        parent.ClientId.Should().Be(200);
-        parent.ClientCode.Should().Be("NEW");
+        Assert.Equal(200, parent.ClientId);
+        Assert.Equal("NEW", parent.ClientCode);
 
         // Assert - All children should be updated
-        parent.Children.Should().AllSatisfy(child =>
+        Assert.All(parent.Children, child =>
         {
-            child.ClientId.Should().Be(200);
-            child.ClientCode.Should().Be("NEW");
+            Assert.Equal(200, child.ClientId);
+            Assert.Equal("NEW", child.ClientCode);
         });
     }
 
@@ -85,8 +81,8 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 200, "NEW");
 
         // Assert
-        parent.ClientId.Should().Be(200);
-        parent.ClientCode.Should().Be("NEW");
+        Assert.Equal(200, parent.ClientId);
+        Assert.Equal("NEW", parent.ClientCode);
     }
 
     [Fact]
@@ -108,19 +104,15 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(child, 200, "NEW");
 
         // Assert - Only the target child should be updated
-        child.ClientId.Should().Be(200);
-        child.ClientCode.Should().Be("NEW");
+        Assert.Equal(200, child.ClientId);
+        Assert.Equal("NEW", child.ClientCode);
 
         // Siblings should remain unchanged
-        sibling1.ClientId.Should().Be(100);
-        sibling1.ClientCode.Should().Be("OLD");
-        sibling2.ClientId.Should().Be(100);
-        sibling2.ClientCode.Should().Be("OLD");
+        Assert.Equal(100, sibling1.ClientId);
+        Assert.Equal("OLD", sibling1.ClientCode);
+        Assert.Equal(100, sibling2.ClientId);
+        Assert.Equal("OLD", sibling2.ClientCode);
     }
-
-    #endregion
-
-    #region Edge Cases
 
     [Fact]
     public void UpdateJobClient_ParentWithManyChildren_UpdatesAll()
@@ -147,13 +139,13 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 999, "NEW");
 
         // Assert - Parent and all 50 children should be updated
-        parent.ClientId.Should().Be(999);
-        parent.ClientCode.Should().Be("NEW");
-        parent.Children.Should().HaveCount(50);
-        parent.Children.Should().AllSatisfy(child =>
+        Assert.Equal(999, parent.ClientId);
+        Assert.Equal("NEW", parent.ClientCode);
+        Assert.Equal(50, parent.Children.Count);
+        Assert.All(parent.Children, child =>
         {
-            child.ClientId.Should().Be(999);
-            child.ClientCode.Should().Be("NEW");
+            Assert.Equal(999, child.ClientId);
+            Assert.Equal("NEW", child.ClientCode);
         });
     }
 
@@ -175,10 +167,10 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 100, "SAME");
 
         // Assert - Values should remain the same
-        parent.ClientId.Should().Be(100);
-        parent.ClientCode.Should().Be("SAME");
-        parent.Children[0].ClientId.Should().Be(100);
-        parent.Children[0].ClientCode.Should().Be("SAME");
+        Assert.Equal(100, parent.ClientId);
+        Assert.Equal("SAME", parent.ClientCode);
+        Assert.Equal(100, parent.Children[0].ClientId);
+        Assert.Equal("SAME", parent.Children[0].ClientCode);
     }
 
     [Fact]
@@ -201,12 +193,12 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 500, "NEW");
 
         // Assert - All should now have the same client
-        parent.ClientId.Should().Be(500);
-        parent.ClientCode.Should().Be("NEW");
-        parent.Children.Should().AllSatisfy(child =>
+        Assert.Equal(500, parent.ClientId);
+        Assert.Equal("NEW", parent.ClientCode);
+        Assert.All(parent.Children, child =>
         {
-            child.ClientId.Should().Be(500);
-            child.ClientCode.Should().Be("NEW");
+            Assert.Equal(500, child.ClientId);
+            Assert.Equal("NEW", child.ClientCode);
         });
     }
 
@@ -228,15 +220,11 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 200, null!);
 
         // Assert
-        parent.ClientId.Should().Be(200);
-        parent.ClientCode.Should().BeNull();
-        parent.Children[0].ClientId.Should().Be(200);
-        parent.Children[0].ClientCode.Should().BeNull();
+        Assert.Equal(200, parent.ClientId);
+        Assert.Null(parent.ClientCode);
+        Assert.Equal(200, parent.Children[0].ClientId);
+        Assert.Null(parent.Children[0].ClientCode);
     }
-
-    #endregion
-
-    #region Client Code Truncation Tests
 
     [Fact]
     public void UpdateJobClient_ClientCodeLength_PreservedAsIs()
@@ -256,9 +244,8 @@ public class JobRepositoryClientUpdateTests
         UpdateJobClient(parent, 200, "ABCDE");
 
         // Assert
-        parent.ClientCode.Should().Be("ABCDE");
-        parent.Children[0].ClientCode.Should().Be("ABCDE");
+        Assert.Equal("ABCDE", parent.ClientCode);
+        Assert.Equal("ABCDE", parent.Children[0].ClientCode);
     }
 
-    #endregion
 }

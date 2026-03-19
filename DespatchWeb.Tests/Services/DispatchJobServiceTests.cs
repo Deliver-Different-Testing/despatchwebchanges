@@ -1,7 +1,6 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -19,8 +18,6 @@ public class DispatchJobServiceTests
         _courierRepositoryMock.Object
     );
 
-    #region DispatchJobsToCourierAsync Validation Tests
-
     [Fact]
     public async Task DispatchJobsToCourierAsync_NullJobIds_ThrowsArgumentNullException()
     {
@@ -31,7 +28,7 @@ public class DispatchJobServiceTests
         var act = async () => await service.DispatchJobsToCourierAsync(null!, 1);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -45,8 +42,8 @@ public class DispatchJobServiceTests
         var act = async () => await service.DispatchJobsToCourierAsync(emptyList, 1);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Job list cannot be empty*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        Assert.Contains("Job list cannot be empty", ex.Message);
     }
 
     [Fact]
@@ -60,12 +57,8 @@ public class DispatchJobServiceTests
         var act = async () => await service.DispatchJobsToCourierAsync(jobIds, 0);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(act);
     }
-
-    #endregion
-
-    #region DispatchJobsToCourierAsync Workflow Tests
 
     [Fact]
     public async Task DispatchJobsToCourierAsync_SingleJob_AssignsCourierToJob()
@@ -173,9 +166,8 @@ public class DispatchJobServiceTests
         var act = async () => await service.DispatchJobsToCourierAsync(jobIds, courierId);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("Database error");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        Assert.Equal("Database error", ex.Message);
     }
 
-    #endregion
 }

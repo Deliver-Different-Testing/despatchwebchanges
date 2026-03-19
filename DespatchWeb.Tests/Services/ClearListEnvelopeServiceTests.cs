@@ -1,10 +1,9 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-
 
 namespace DespatchWeb.Tests.Services;
 
@@ -22,8 +21,6 @@ public class ClearListEnvelopeServiceTests
         _clock
     );
 
-    #region GetClearListAreaEnvelopeAsync Validation Tests
-
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
@@ -33,12 +30,13 @@ public class ClearListEnvelopeServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.GetClearListAreaEnvelopeAsync(invalidId, Country.Nz);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Invalid clearListAreaId*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<ClearListEnvelopeViewModel>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Invalid clearListAreaId", ex.Message);
+        return;
+
+        // Act
+        async Task<ClearListEnvelopeViewModel> Act() => await service.GetClearListAreaEnvelopeAsync(invalidId, Country.Nz);
     }
 
     [Fact]
@@ -46,19 +44,16 @@ public class ClearListEnvelopeServiceTests
     {
         // Arrange
         var service = CreateService();
-        var invalidCountry = (Country)999;
-
-        // Act
-        var act = async () => await service.GetClearListAreaEnvelopeAsync(1, invalidCountry);
+        const Country invalidCountry = (Country)999;
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Invalid country*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<ClearListEnvelopeViewModel>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Invalid country", ex.Message);
+        return;
+
+        // Act
+        async Task<ClearListEnvelopeViewModel> Act() => await service.GetClearListAreaEnvelopeAsync(1, invalidCountry);
     }
-
-    #endregion
-
-    #region Dispose Tests
 
     [Fact]
     public void Dispose_WhenCalled_DoesNotThrow()
@@ -66,11 +61,9 @@ public class ClearListEnvelopeServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = () => service.Dispose();
-
-        // Assert
-        act.Should().NotThrow();
+        // Act & Assert
+        var exception = Record.Exception(() => service.Dispose());
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -79,16 +72,13 @@ public class ClearListEnvelopeServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = () =>
+        // Act & Assert
+        var exception = Record.Exception(() =>
         {
             service.Dispose();
             service.Dispose();
-        };
-
-        // Assert
-        act.Should().NotThrow();
+        });
+        Assert.Null(exception);
     }
 
-    #endregion
 }

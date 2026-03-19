@@ -1,7 +1,6 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -29,8 +28,6 @@ public class NationwideJobControllerTests
             _flightRateServiceMock.Object,
             _clientRepositoryMock.Object,
             _recoveryJobServiceMock.Object);
-
-    #region GetScheduledFlightOptions Tests
 
     [Fact]
     public async Task GetScheduledFlightOptions_ValidRequest_ReturnsFlights()
@@ -77,11 +74,11 @@ public class NationwideJobControllerTests
             minimumLayoverMinutes: 60);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var flights = jsonResult.Value as List<FlightViewModel>;
-        flights.Should().NotBeNull();
-        flights.Should().HaveCount(2);
+        Assert.NotNull(flights);
+        Assert.Equal(2, flights.Count);
     }
 
     [Fact]
@@ -129,12 +126,12 @@ public class NationwideJobControllerTests
             minimumLayoverMinutes: 60);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var flights = jsonResult.Value as List<FlightViewModel>;
-        flights.Should().NotBeNull();
-        flights.Should().HaveCount(1);
-        flights[0].AirlineCode.Should().Be("QF");
+        Assert.NotNull(flights);
+        Assert.Single(flights);
+        Assert.Equal("QF", flights[0].AirlineCode);
 
         // Verify airline filter was passed
         _flightServiceMock.Verify(x => x.GetFlightsAsync(
@@ -179,11 +176,11 @@ public class NationwideJobControllerTests
             arrivalAirportId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var flights = jsonResult.Value as List<FlightViewModel>;
-        flights.Should().NotBeNull();
-        flights.Should().BeEmpty();
+        Assert.NotNull(flights);
+        Assert.Empty(flights);
     }
 
     [Fact]
@@ -215,11 +212,11 @@ public class NationwideJobControllerTests
             arrivalAirportId: 96);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var flights = jsonResult.Value as List<FlightViewModel>;
-        flights.Should().NotBeNull();
-        flights.Should().BeEmpty();
+        Assert.NotNull(flights);
+        Assert.Empty(flights);
     }
 
     [Fact]
@@ -251,9 +248,9 @@ public class NationwideJobControllerTests
             arrivalAirportId: 96);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
 
     [Fact]
@@ -388,13 +385,8 @@ public class NationwideJobControllerTests
             60), Times.Once);
     }
 
-    #endregion
-
-    #region Helper Methods
-
-    private static FlightViewModel CreateTestFlight(string airlineCode, string flightNumber, string departure, string arrival)
-    {
-        return new FlightViewModel
+    private static FlightViewModel CreateTestFlight(string airlineCode, string flightNumber, string departure, string arrival) =>
+        new()
         {
             AirlineCode = airlineCode,
             FlightNumber = flightNumber,
@@ -413,7 +405,5 @@ public class NationwideJobControllerTests
                 }
             ]
         };
-    }
 
-    #endregion
 }

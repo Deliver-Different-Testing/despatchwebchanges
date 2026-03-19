@@ -216,7 +216,7 @@ public class NoteRepository(
         };
 
         var history = await query
-            .OrderByDescending(h => h.EditedAt)
+            .OrderByDescending(h => h.EditedAtUtc)
             .Select(h => new NoteHistoryViewModel
             {
                 NoteHistoryId = h.NoteHistoryId,
@@ -225,7 +225,7 @@ public class NoteRepository(
                 EditedByName = h.EditedByNavigation != null
                     ? h.EditedByNavigation.UcstFirstName + Space + h.EditedByNavigation.UcstLastName
                     : string.Empty,
-                EditedAt = h.EditedAt,
+                EditedAt = h.EditedAtUtc,
                 OldNoteText = h.OldNoteText,
                 NewNoteText = h.NewNoteText,
                 OldNoteTypeId = h.OldNoteTypeId,
@@ -437,7 +437,7 @@ public class NoteRepository(
             BulkNoteId = source == NoteHistorySource.BulkNote ? noteId : null,
             ArchiveNoteId = source == NoteHistorySource.Archive ? noteId : null,
             EditedBy = staffId,
-            EditedAt = editedAt,
+            EditedAtUtc = editedAt,
             OldNoteText = oldNoteText,
             NewNoteText = newNoteText,
             OldNoteTypeId = oldNoteTypeId,

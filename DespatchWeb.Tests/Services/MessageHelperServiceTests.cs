@@ -1,7 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -13,8 +12,6 @@ public class MessageHelperServiceTests
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private MessageHelperService CreateService() => new(_clock);
-
-    #region GetOtherParty Tests - Message FROM Current Staff
 
     [Fact]
     public void GetOtherParty_MessageFromCurrentStaffToCourier_ReturnsCourierAsOtherParty()
@@ -38,10 +35,10 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Id.Should().Be(100);
-        result.Type.Should().Be(OtherMessagePartyType.Courier);
-        result.Name.Should().Be("John Driver");
-        result.Initials.Should().Be("JD");
+        Assert.Equal(100, result.Id);
+        Assert.Equal(OtherMessagePartyType.Courier, result.Type);
+        Assert.Equal("John Driver", result.Name);
+        Assert.Equal("JD", result.Initials);
     }
 
     [Fact]
@@ -66,16 +63,12 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Id.Should().Be(2);
-        result.Type.Should().Be(OtherMessagePartyType.Staff);
-        result.Name.Should().Be("Jane Manager");
-        result.Initials.Should().Be("JM");
-        result.Status.Should().Be("online"); // Staff are always online
+        Assert.Equal(2, result.Id);
+        Assert.Equal(OtherMessagePartyType.Staff, result.Type);
+        Assert.Equal("Jane Manager", result.Name);
+        Assert.Equal("JM", result.Initials);
+        Assert.Equal("online", result.Status); // Staff are always online
     }
-
-    #endregion
-
-    #region GetOtherParty Tests - Message TO Current Staff
 
     [Fact]
     public void GetOtherParty_MessageToCurrentStaffFromCourier_ReturnsCourierAsOtherParty()
@@ -99,10 +92,10 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Id.Should().Be(100);
-        result.Type.Should().Be(OtherMessagePartyType.Courier);
-        result.Name.Should().Be("Bob Courier");
-        result.Initials.Should().Be("BC");
+        Assert.Equal(100, result.Id);
+        Assert.Equal(OtherMessagePartyType.Courier, result.Type);
+        Assert.Equal("Bob Courier", result.Name);
+        Assert.Equal("BC", result.Initials);
     }
 
     [Fact]
@@ -127,15 +120,11 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Id.Should().Be(3);
-        result.Type.Should().Be(OtherMessagePartyType.Staff);
-        result.Name.Should().Be("Alice Admin");
-        result.Initials.Should().Be("AA");
+        Assert.Equal(3, result.Id);
+        Assert.Equal(OtherMessagePartyType.Staff, result.Type);
+        Assert.Equal("Alice Admin", result.Name);
+        Assert.Equal("AA", result.Initials);
     }
-
-    #endregion
-
-    #region GetOtherParty Tests - Edge Cases
 
     [Fact]
     public void GetOtherParty_NoOtherParty_ReturnsUnknown()
@@ -153,10 +142,10 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Id.Should().Be(0);
-        result.Type.Should().Be(OtherMessagePartyType.Staff);
-        result.Name.Should().Be("Unknown");
-        result.Initials.Should().Be("??");
+        Assert.Equal(0, result.Id);
+        Assert.Equal(OtherMessagePartyType.Staff, result.Type);
+        Assert.Equal("Unknown", result.Name);
+        Assert.Equal("??", result.Initials);
     }
 
     [Fact]
@@ -181,8 +170,8 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Name.Should().Be("Unknown Courier");
-        result.Initials.Should().Be("??");
+        Assert.Equal("Unknown Courier", result.Name);
+        Assert.Equal("??", result.Initials);
     }
 
     [Fact]
@@ -207,13 +196,9 @@ public class MessageHelperServiceTests
         var result = service.GetOtherParty(message, currentStaffId);
 
         // Assert
-        result.Name.Should().Be("Unknown Staff");
-        result.Initials.Should().Be("??");
+        Assert.Equal("Unknown Staff", result.Name);
+        Assert.Equal("??", result.Initials);
     }
-
-    #endregion
-
-    #region IsIncomingMessage Tests
 
     [Fact]
     public void IsIncomingMessage_MessageSentToStaff_ReturnsTrue()
@@ -227,7 +212,7 @@ public class MessageHelperServiceTests
         var result = service.IsIncomingMessage(message, staffId);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -242,7 +227,7 @@ public class MessageHelperServiceTests
         var result = service.IsIncomingMessage(message, staffId);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -257,12 +242,8 @@ public class MessageHelperServiceTests
         var result = service.IsIncomingMessage(message, staffId);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region GetCourierStatus Tests
 
     [Fact]
     public void GetCourierStatus_NullCourier_ReturnsOffline()
@@ -275,7 +256,7 @@ public class MessageHelperServiceTests
         var result = service.GetCourierStatus(null, currentDate);
 
         // Assert
-        result.Should().Be("offline");
+        Assert.Equal("offline", result);
     }
 
     [Fact]
@@ -290,7 +271,7 @@ public class MessageHelperServiceTests
         var result = service.GetCourierStatus(courier, currentDate);
 
         // Assert
-        result.Should().Be("offline");
+        Assert.Equal("offline", result);
     }
 
     [Fact]
@@ -311,7 +292,7 @@ public class MessageHelperServiceTests
         var result = service.GetCourierStatus(courier, currentDate);
 
         // Assert
-        result.Should().Be("online");
+        Assert.Equal("online", result);
     }
 
     [Fact]
@@ -332,7 +313,7 @@ public class MessageHelperServiceTests
         var result = service.GetCourierStatus(courier, currentDate);
 
         // Assert
-        result.Should().Be("offline");
+        Assert.Equal("offline", result);
     }
 
     [Fact]
@@ -353,8 +334,7 @@ public class MessageHelperServiceTests
         var result = service.GetCourierStatus(courier, currentDate);
 
         // Assert
-        result.Should().Be("offline");
+        Assert.Equal("offline", result);
     }
 
-    #endregion
 }

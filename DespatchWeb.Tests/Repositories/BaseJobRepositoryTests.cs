@@ -3,8 +3,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -17,33 +15,17 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class BaseJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private FakeTenantClock _clock = new(new DateTime(2024, 6, 15, 10, 0, 0));
 
     public BaseJobRepositoryTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new DespatchContext(options);
-        _context.Database.EnsureCreated();
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
+        _context = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -54,7 +36,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     /// <summary>
@@ -91,8 +73,6 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         _clearListEnvelopeServiceMock.Object
     );
 
-    #region IsJobArchived Tests
-
     [Fact]
     public async Task IsJobArchived_WithArchivedJob_ReturnsTrue()
     {
@@ -107,7 +87,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.IsJobArchived(jobId);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -124,7 +104,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.IsJobArchived(jobId);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -137,12 +117,8 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.IsJobArchived(999);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region GetRelatedJobsMultiSelectListAsync Tests
 
     [Fact]
     public async Task GetRelatedJobsMultiSelectListAsync_WithParentAndChildren_ReturnsAllRelated()
@@ -165,12 +141,12 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain(j => j.Id == parentId && j.Selected);
-        result.Should().Contain(j => j.Id == childId1 && !j.Selected);
-        result.Should().Contain(j => j.Id == childId2 && !j.Selected);
-        result.Should().OnlyContain(j => j.IsBulkJob == false);
-        result.Should().OnlyContain(j => j.IsArchived == false);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, j => j.Id == parentId && j.Selected);
+        Assert.Contains(result, j => j.Id == childId1 && !j.Selected);
+        Assert.Contains(result, j => j.Id == childId2 && !j.Selected);
+        Assert.All(result, j => Assert.False(j.IsBulkJob));
+        Assert.All(result, j => Assert.False(j.IsArchived));
     }
 
     [Fact]
@@ -192,9 +168,9 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(childId, isArchived: false);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.Id == childId && j.Selected);
-        result.Should().Contain(j => j.Id == parentId && !j.Selected);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.Id == childId && j.Selected);
+        Assert.Contains(result, j => j.Id == parentId && !j.Selected);
     }
 
     [Fact]
@@ -216,8 +192,8 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: true);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.IsArchived == true);
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.True(j.IsArchived));
     }
 
     [Fact]
@@ -234,14 +210,10 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived: false);
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Id.Should().Be(jobId);
-        result[0].Selected.Should().BeTrue();
+        Assert.Single(result);
+        Assert.Equal(jobId, result[0].Id);
+        Assert.True(result[0].Selected);
     }
-
-    #endregion
-
-    #region GetRelatedJobsMultiSelectListAsync Bulk Job Tests
 
     [Fact]
     public async Task GetRelatedJobsMultiSelectListAsync_WithBulkParentAndChildren_ReturnsAllRelated()
@@ -264,11 +236,11 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false, isBulkJob: true);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain(j => j.Id == parentId && j.Selected);
-        result.Should().Contain(j => j.Id == childId1 && !j.Selected);
-        result.Should().Contain(j => j.Id == childId2 && !j.Selected);
-        result.Should().OnlyContain(j => j.IsBulkJob == true);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, j => j.Id == parentId && j.Selected);
+        Assert.Contains(result, j => j.Id == childId1 && !j.Selected);
+        Assert.Contains(result, j => j.Id == childId2 && !j.Selected);
+        Assert.All(result, j => Assert.True(j.IsBulkJob));
     }
 
     [Fact]
@@ -290,9 +262,9 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(childId, isArchived: false, isBulkJob: true);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(j => j.Id == childId && j.Selected);
-        result.Should().Contain(j => j.Id == parentId && !j.Selected);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, j => j.Id == childId && j.Selected);
+        Assert.Contains(result, j => j.Id == parentId && !j.Selected);
     }
 
     [Fact]
@@ -309,9 +281,9 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(jobId, isArchived: false, isBulkJob: true);
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Id.Should().Be(jobId);
-        result[0].Selected.Should().BeTrue();
+        Assert.Single(result);
+        Assert.Equal(jobId, result[0].Id);
+        Assert.True(result[0].Selected);
     }
 
     [Fact]
@@ -324,12 +296,8 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(999, isArchived: false, isBulkJob: true);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region GetJobParentIdAsync Tests
 
     [Fact]
     public async Task GetJobParentIdAsync_WithChildJob_ReturnsParentId()
@@ -350,7 +318,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobParentIdAsync(childId);
 
         // Assert
-        result.Should().Be(parentId);
+        Assert.Equal(parentId, result);
     }
 
     [Fact]
@@ -367,7 +335,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobParentIdAsync(jobId);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -380,12 +348,8 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobParentIdAsync(999);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
-
-    #endregion
-
-    #region GetJobCurrentAmountsAsync Tests
 
     [Fact]
     public async Task GetJobCurrentAmountsAsync_WithExistingJobs_ReturnsAmounts()
@@ -403,11 +367,11 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobCurrentAmountsAsync([100, 101]);
 
         // Assert
-        result.Should().HaveCount(2);
-        result[100].Amount.Should().Be(150.00m);
-        result[100].RawBaseAmount.Should().Be(130.00m);
-        result[100].Fuel.Should().Be(20.00m);
-        result[101].Amount.Should().Be(200.00m);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(150.00m, result[100].Amount);
+        Assert.Equal(130.00m, result[100].RawBaseAmount);
+        Assert.Equal(20.00m, result[100].Fuel);
+        Assert.Equal(200.00m, result[101].Amount);
     }
 
     [Fact]
@@ -420,7 +384,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobCurrentAmountsAsync([999, 998]);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -436,9 +400,9 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobCurrentAmountsAsync([100]);
 
         // Assert
-        result.Should().ContainKey(100);
-        result[100].Amount.Should().Be(0);
-        result[100].RawBaseAmount.Should().Be(0);
+        Assert.True(result.ContainsKey(100));
+        Assert.Equal(0, result[100].Amount);
+        Assert.Equal(0, result[100].RawBaseAmount);
     }
 
     [Fact]
@@ -454,13 +418,9 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetJobCurrentAmountsAsync([100]);
 
         // Assert
-        result[100].JobNo.Should().Be("TEST-JOB-123");
-        result[100].IsPrebook.Should().BeFalse();
+        Assert.Equal("TEST-JOB-123", result[100].JobNo);
+        Assert.False(result[100].IsPrebook);
     }
-
-    #endregion
-
-    #region SaveMultipleBulkNotesAsync Tests
 
     [Fact]
     public async Task SaveMultipleBulkNotesAsync_SetsCreatedByAndCreatedDate()
@@ -486,10 +446,10 @@ public class BaseJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var notes = await _context.TblBulkJobNotes.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
-        notes.Should().HaveCount(3);
-        notes.Should().OnlyContain(n => n.CreatedBy == staffId);
-        notes.Should().OnlyContain(n => n.CreatedDate == currentTime);
-        notes.Should().OnlyContain(n => n.NoteText == "Test bulk note");
+        Assert.Equal(3, notes.Count);
+        Assert.All(notes, n => Assert.Equal(staffId, n.CreatedBy));
+        Assert.All(notes, n => Assert.Equal(currentTime, n.CreatedDate));
+        Assert.All(notes, n => Assert.Equal("Test bulk note", n.NoteText));
     }
 
     [Fact]
@@ -510,20 +470,16 @@ public class BaseJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var notes = await _context.TblBulkJobNotes.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
-        notes.Should().HaveCount(2);
+        Assert.Equal(2, notes.Count);
 
         var distinctCreatedBy = notes.Select(n => n.CreatedBy).Distinct().ToList();
-        distinctCreatedBy.Should().ContainSingle("all notes should have the same creator");
+        Assert.Single(distinctCreatedBy);
 
         var distinctCreatedDate = notes.Select(n => n.CreatedDate).Distinct().ToList();
-        distinctCreatedDate.Should().ContainSingle("all notes should have the same timestamp");
+        Assert.Single(distinctCreatedDate);
 
-        notes.Should().OnlyContain(n => n.IsImportant == true);
+        Assert.All(notes, n => Assert.True(n.IsImportant));
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
@@ -572,5 +528,4 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
 
-    #endregion
 }

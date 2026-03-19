@@ -1,4 +1,4 @@
-using FluentAssertions;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace DespatchWeb.Tests.Security;
 
@@ -37,24 +37,20 @@ public class AuthenticationExtensionsTests : IDisposable
         Environment.SetEnvironmentVariable("Audience", _originalAudience);
     }
 
-    #region JWT Secret Key Missing Tests
-
     [Fact]
     public void CreateApiToken_WithNullJwtSecretKey_ThrowsInvalidOperationException()
     {
         // Arrange
         Environment.SetEnvironmentVariable("JWTSecretKey", null);
 
-        // Act
-        var act = () => AuthenticationExtensions.CreateApiToken(
-            name: "TestUser",
-            tenantId: 1,
-            connection: "TestConnection",
-            timeZone: "UTC");
-
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*JWTSecretKey*not set*");
+        var ex = Assert.Throws<InvalidOperationException>((Func<JwtSecurityToken>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("JWTSecretKey", ex.Message);
+        Assert.Contains("not set", ex.Message);
+        return;
+
+        // Act
+        JwtSecurityToken Act() => AuthenticationExtensions.CreateApiToken(name: "TestUser", tenantId: 1, connection: "TestConnection", timeZone: "UTC");
     }
 
     [Fact]
@@ -63,21 +59,15 @@ public class AuthenticationExtensionsTests : IDisposable
         // Arrange
         Environment.SetEnvironmentVariable("JWTSecretKey", "");
 
-        // Act
-        var act = () => AuthenticationExtensions.CreateApiToken(
-            name: "TestUser",
-            tenantId: 1,
-            connection: "TestConnection",
-            timeZone: "UTC");
-
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*JWTSecretKey*not set*");
+        var ex = Assert.Throws<InvalidOperationException>((Func<JwtSecurityToken>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("JWTSecretKey", ex.Message);
+        Assert.Contains("not set", ex.Message);
+        return;
+
+        // Act
+        JwtSecurityToken Act() => AuthenticationExtensions.CreateApiToken(name: "TestUser", tenantId: 1, connection: "TestConnection", timeZone: "UTC");
     }
-
-    #endregion
-
-    #region JWT Secret Key Length Tests
 
     [Theory]
     [InlineData("short")]  // 5 bytes
@@ -89,16 +79,14 @@ public class AuthenticationExtensionsTests : IDisposable
         // Arrange
         Environment.SetEnvironmentVariable("JWTSecretKey", shortKey);
 
-        // Act
-        var act = () => AuthenticationExtensions.CreateApiToken(
-            name: "TestUser",
-            tenantId: 1,
-            connection: "TestConnection",
-            timeZone: "UTC");
-
         // Assert
-        act.Should().Throw<InvalidOperationException>()
-            .WithMessage("*32 bytes*256 bits*");
+        var ex = Assert.Throws<InvalidOperationException>((Func<JwtSecurityToken>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("32 bytes", ex.Message);
+        Assert.Contains("256 bits", ex.Message);
+        return;
+
+        // Act
+        JwtSecurityToken Act() => AuthenticationExtensions.CreateApiToken(name: "TestUser", tenantId: 1, connection: "TestConnection", timeZone: "UTC");
     }
 
     [Fact]
@@ -116,8 +104,8 @@ public class AuthenticationExtensionsTests : IDisposable
             timeZone: "UTC");
 
         // Assert
-        token.Should().NotBeNull();
-        token.Claims.Should().NotBeEmpty();
+        Assert.NotNull(token);
+        Assert.NotEmpty(token.Claims);
     }
 
     [Fact]
@@ -135,12 +123,8 @@ public class AuthenticationExtensionsTests : IDisposable
             timeZone: "UTC");
 
         // Assert
-        token.Should().NotBeNull();
+        Assert.NotNull(token);
     }
-
-    #endregion
-
-    #region Token Creation Tests
 
     [Fact]
     public void CreateApiToken_WithValidInputs_CreatesTokenWithCorrectClaims()
@@ -157,9 +141,9 @@ public class AuthenticationExtensionsTests : IDisposable
             timeZone: "UTC");
 
         // Assert
-        token.Should().NotBeNull();
-        token.Claims.Should().Contain(c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" && c.Value == "TestUser");
-        token.Claims.Should().Contain(c => c.Type == "SC"); // Encrypted sensitive claims
+        Assert.NotNull(token);
+        Assert.Contains(token.Claims, c => c.Type == "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name" && c.Value == "TestUser");
+        Assert.Contains(token.Claims, c => c.Type == "SC"); // Encrypted sensitive claims
     }
 
     [Fact]
@@ -178,9 +162,9 @@ public class AuthenticationExtensionsTests : IDisposable
             clientId: 123);
 
         // Assert
-        token.Should().NotBeNull();
+        Assert.NotNull(token);
         // Client ID should be in the encrypted claims (SC)
-        token.Claims.Should().Contain(c => c.Type == "SC");
+        Assert.Contains(token.Claims, c => c.Type == "SC");
     }
 
     [Fact]
@@ -198,7 +182,9 @@ public class AuthenticationExtensionsTests : IDisposable
             timeZone: "UTC");
 
         // Assert
-        token.ValidTo.Should().BeCloseTo(DateTime.UtcNow.AddDays(7), TimeSpan.FromMinutes(1));
+        var expectedExpiry = DateTime.UtcNow.AddDays(7);
+        var tolerance = TimeSpan.FromMinutes(1);
+        Assert.InRange(token.ValidTo, expectedExpiry - tolerance, expectedExpiry + tolerance);
     }
 
     [Fact]
@@ -216,7 +202,7 @@ public class AuthenticationExtensionsTests : IDisposable
             timeZone: "UTC");
 
         // Assert
-        token.SignatureAlgorithm.Should().Be("HS256");
+        Assert.Equal("HS256", token.SignatureAlgorithm);
     }
 
     [Fact]
@@ -236,13 +222,9 @@ public class AuthenticationExtensionsTests : IDisposable
             timeZone: "UTC");
 
         // Assert
-        token.Issuer.Should().Be("TestIssuer");
-        token.Audiences.Should().Contain("TestAudience");
+        Assert.Equal("TestIssuer", token.Issuer);
+        Assert.Contains("TestAudience", token.Audiences);
     }
-
-    #endregion
-
-    #region Security Boundary Tests
 
     [Fact]
     public void CreateApiToken_DifferentKeys_ProduceDifferentTokens()
@@ -258,11 +240,10 @@ public class AuthenticationExtensionsTests : IDisposable
         var token2 = AuthenticationExtensions.CreateApiToken("User", 1, "Conn", "UTC");
 
         // Assert
-        var tokenString1 = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token1);
-        var tokenString2 = new System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler().WriteToken(token2);
+        var tokenString1 = new JwtSecurityTokenHandler().WriteToken(token1);
+        var tokenString2 = new JwtSecurityTokenHandler().WriteToken(token2);
 
-        tokenString1.Should().NotBe(tokenString2);
+        Assert.NotEqual(tokenString1, tokenString2);
     }
 
-    #endregion
 }

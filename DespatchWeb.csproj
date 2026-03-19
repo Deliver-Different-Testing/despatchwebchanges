@@ -401,15 +401,10 @@
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\getDangerousGoodsClassName.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\getJobTableRowClass.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\greetUser.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\handleAddressFieldsFromLookup.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\isDefaultLayout.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\MinsSelectionOptions.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\setDateFilterDefaults.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\toDtoMappings.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\usStates.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\aws.interfaces.ts" />
@@ -426,11 +421,9 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapsAppConfig.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\open-job-options.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-request.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\requests.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\state-info.interface.ts" />
     <TypeScriptCompile Include="wwwroot\app\interfaces\task-request.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\note-management-dialog\types.ts" />

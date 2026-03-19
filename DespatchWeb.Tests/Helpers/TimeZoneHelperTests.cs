@@ -1,5 +1,4 @@
 using DespatchWeb.Helpers;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Helpers;
 
@@ -10,7 +9,6 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public class TimeZoneHelperTests
 {
-    #region SetDateTimeWithTimeZone (DateTimeOffset overload) Tests
 
     [Fact]
     public void SetDateTimeWithTimeZone_DateTimeOffset_WithUtc_ReturnsUtcOffset()
@@ -22,8 +20,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "UTC");
 
         // Assert
-        result.Offset.Should().Be(TimeSpan.Zero);
-        result.DateTime.Should().Be(new DateTime(2024, 6, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.Zero, result.Offset);
+        Assert.Equal(new DateTime(2024, 6, 15, 12, 0, 0), result.DateTime);
     }
 
     [Fact]
@@ -36,8 +34,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "New Zealand Standard Time");
 
         // Assert - NZ is UTC+12 in winter (June), DateTime preserved, offset applied
-        result.Offset.Should().Be(TimeSpan.FromHours(12));
-        result.DateTime.Should().Be(new DateTime(2024, 6, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset);
+        Assert.Equal(new DateTime(2024, 6, 15, 12, 0, 0), result.DateTime);
     }
 
     [Fact]
@@ -50,8 +48,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Pacific Standard Time");
 
         // Assert - PST is UTC-8 in winter (January), DateTime preserved, offset applied
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
-        result.DateTime.Should().Be(new DateTime(2024, 1, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
+        Assert.Equal(new DateTime(2024, 1, 15, 12, 0, 0), result.DateTime);
     }
 
     [Fact]
@@ -64,11 +62,11 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "New Zealand Standard Time");
 
         // Assert - DateTime is preserved, NZDT offset (+13) applied
-        result.Hour.Should().Be(14);
-        result.Minute.Should().Be(30);
-        result.Second.Should().Be(45);
-        result.Day.Should().Be(25);
-        result.Offset.Should().Be(TimeSpan.FromHours(13));
+        Assert.Equal(14, result.Hour);
+        Assert.Equal(30, result.Minute);
+        Assert.Equal(45, result.Second);
+        Assert.Equal(25, result.Day);
+        Assert.Equal(TimeSpan.FromHours(13), result.Offset);
     }
 
     [Fact]
@@ -78,11 +76,11 @@ public class TimeZoneHelperTests
         var dateTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
         // Act
-        var act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Invalid TimeZone");
+        Action act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Invalid TimeZone");
 
         // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Invalid or unsupported time zone*");
+        var ex = Assert.Throws<ArgumentException>(act);
+        Assert.Contains("Invalid or unsupported time zone", ex.Message);
     }
 
     [Fact]
@@ -92,11 +90,11 @@ public class TimeZoneHelperTests
         var dateTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
         // Act
-        var act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "");
+        Action act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "");
 
         // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Time zone cannot be null or empty*");
+        var ex = Assert.Throws<ArgumentException>(act);
+        Assert.Contains("Time zone cannot be null or empty", ex.Message);
     }
 
     [Fact]
@@ -106,16 +104,12 @@ public class TimeZoneHelperTests
         var dateTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
         // Act
-        var act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, null!);
+        Action act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, null!);
 
         // Assert
-        act.Should().Throw<ArgumentException>()
-            .WithMessage("*Time zone cannot be null or empty*");
+        var ex = Assert.Throws<ArgumentException>(act);
+        Assert.Contains("Time zone cannot be null or empty", ex.Message);
     }
-
-    #endregion
-
-    #region SetDateTimeWithTimeZone (DateTime overload) Tests
 
     [Fact]
     public void SetDateTimeWithTimeZone_DateTime_WithUtc_ReturnsUtcOffset()
@@ -127,8 +121,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "UTC");
 
         // Assert
-        result.Offset.Should().Be(TimeSpan.Zero);
-        result.DateTime.Should().Be(dateTime);
+        Assert.Equal(TimeSpan.Zero, result.Offset);
+        Assert.Equal(dateTime, result.DateTime);
     }
 
     [Fact]
@@ -141,8 +135,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "New Zealand Standard Time");
 
         // Assert - NZ is UTC+12 in winter (June), DateTime preserved, offset applied
-        result.Offset.Should().Be(TimeSpan.FromHours(12));
-        result.DateTime.Should().Be(dateTime);
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset);
+        Assert.Equal(dateTime, result.DateTime);
     }
 
     [Fact]
@@ -155,15 +149,11 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Pacific Standard Time");
 
         // Assert - DateTime is preserved, PST offset (-8) applied
-        result.Hour.Should().Be(14);
-        result.Minute.Should().Be(30);
-        result.Second.Should().Be(45);
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
+        Assert.Equal(14, result.Hour);
+        Assert.Equal(30, result.Minute);
+        Assert.Equal(45, result.Second);
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
     }
-
-    #endregion
-
-    #region IANA TimeZone Support Tests
 
     [Fact]
     public void SetDateTimeWithTimeZone_WithIanaTimeZone_AppliesCorrectOffset()
@@ -175,8 +165,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Pacific/Auckland");
 
         // Assert - NZ is UTC+12 in winter (June)
-        result.Offset.Should().Be(TimeSpan.FromHours(12));
-        result.DateTime.Should().Be(new DateTime(2024, 6, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset);
+        Assert.Equal(new DateTime(2024, 6, 15, 12, 0, 0), result.DateTime);
     }
 
     [Fact]
@@ -189,13 +179,9 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "America/Los_Angeles");
 
         // Assert - LA is UTC-8 in winter (January)
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
-        result.DateTime.Should().Be(new DateTime(2024, 1, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
+        Assert.Equal(new DateTime(2024, 1, 15, 12, 0, 0), result.DateTime);
     }
-
-    #endregion
-
-    #region Daylight Saving Time Tests
 
     [Fact]
     public void SetDateTimeWithTimeZone_NzDaylightSavingTime_AppliesCorrectOffset()
@@ -207,8 +193,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "New Zealand Standard Time");
 
         // Assert - NZ is UTC+13 in summer (December) due to daylight saving
-        result.Offset.Should().Be(TimeSpan.FromHours(13));
-        result.DateTime.Should().Be(new DateTime(2024, 12, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.FromHours(13), result.Offset);
+        Assert.Equal(new DateTime(2024, 12, 15, 12, 0, 0), result.DateTime);
     }
 
     [Fact]
@@ -221,9 +207,8 @@ public class TimeZoneHelperTests
         var result = TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Pacific Standard Time");
 
         // Assert - PST becomes PDT in summer (UTC-7)
-        result.Offset.Should().Be(TimeSpan.FromHours(-7));
-        result.DateTime.Should().Be(new DateTime(2024, 7, 15, 12, 0, 0));
+        Assert.Equal(TimeSpan.FromHours(-7), result.Offset);
+        Assert.Equal(new DateTime(2024, 7, 15, 12, 0, 0), result.DateTime);
     }
 
-    #endregion
 }

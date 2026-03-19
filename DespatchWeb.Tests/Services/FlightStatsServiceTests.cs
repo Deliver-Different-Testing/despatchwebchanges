@@ -3,13 +3,12 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
 using Moq.Protected;
 using System.Net;
 using System.Text.Json;
-
+using DespatchWeb.Models;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -30,8 +29,6 @@ public class FlightStatsServiceTests
             _clock);
     }
 
-    #region CreateFlightRuleByDepartureAsync Validation Tests
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -41,12 +38,12 @@ public class FlightStatsServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.CreateFlightRuleByDepartureAsync(
-            flightNumber, DateTimeOffset.Now, "AKL");
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        await Assert.ThrowsAnyAsync<ArgumentException>((Func<Task<string>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<string> Act() => await service.CreateFlightRuleByDepartureAsync(flightNumber, DateTimeOffset.Now, "AKL");
     }
 
     [Theory]
@@ -58,12 +55,12 @@ public class FlightStatsServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.CreateFlightRuleByDepartureAsync(
-            "NZ123", DateTimeOffset.Now, airportCode);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        await Assert.ThrowsAnyAsync<ArgumentException>((Func<Task<string>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<string> Act() => await service.CreateFlightRuleByDepartureAsync("NZ123", DateTimeOffset.Now, airportCode);
     }
 
     [Fact]
@@ -73,17 +70,13 @@ public class FlightStatsServiceTests
         SetupHttpContextWithClaims((ClaimTypes.Name, "TestUser"));
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.CreateFlightRuleByDepartureAsync(
-            "NZ123", DateTimeOffset.Now, "AKL");
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        await Assert.ThrowsAnyAsync<ArgumentException>((Func<Task<string>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<string> Act() => await service.CreateFlightRuleByDepartureAsync("NZ123", DateTimeOffset.Now, "AKL");
     }
-
-    #endregion
-
-    #region DeleteFlightRuleById Tests
 
     [Theory]
     [InlineData(null)]
@@ -130,17 +123,14 @@ public class FlightStatsServiceTests
         SetupHttpError(HttpStatusCode.InternalServerError);
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.DeleteFlightRuleById("webhook-123");
-
         // Assert
-        await act.Should().ThrowAsync<Exception>()
-            .WithMessage("*Failed to disconnect alert*");
+        var ex = await Assert.ThrowsAsync<Exception>(Act);
+        Assert.Contains("Failed to disconnect alert", ex.Message);
+        return;
+
+        // Act
+        async Task Act() => await service.DeleteFlightRuleById("webhook-123");
     }
-
-    #endregion
-
-    #region GetFlightsAsync Validation Tests
 
     [Fact]
     public async Task GetFlightsAsync_NullDepartureAirport_ThrowsArgumentException()
@@ -149,16 +139,15 @@ public class FlightStatsServiceTests
         SetupAirportMocks(departureAirportExists: false, arrivalAirportExists: true);
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now,
-            departureAirportId: 999,
-            arrivalAirportId: 2);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Departure airport*999*not found*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<FlightViewModel>>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Departure airport", ex.Message);
+        Assert.Contains("999", ex.Message);
+        Assert.Contains("not found", ex.Message);
+        return;
+
+        // Act
+        async Task<IReadOnlyList<FlightViewModel>> Act() => await service.GetFlightsAsync(jobId: 1, departureDateTime: DateTimeOffset.Now, departureAirportId: 999, arrivalAirportId: 2);
     }
 
     [Fact]
@@ -168,21 +157,16 @@ public class FlightStatsServiceTests
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: false);
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.GetFlightsAsync(
-            jobId: 1,
-            departureDateTime: DateTimeOffset.Now,
-            departureAirportId: 1,
-            arrivalAirportId: 999);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Arrival airport*999*not found*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<FlightViewModel>>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Arrival airport", ex.Message);
+        Assert.Contains("999", ex.Message);
+        Assert.Contains("not found", ex.Message);
+        return;
+
+        // Act
+        async Task<IReadOnlyList<FlightViewModel>> Act() => await service.GetFlightsAsync(jobId: 1, departureDateTime: DateTimeOffset.Now, departureAirportId: 1, arrivalAirportId: 999);
     }
-
-    #endregion
-
-    #region GetFlightsAsync Response Tests
 
     [Fact]
     public async Task GetFlightsAsync_NoConnections_ReturnsEmptyList()
@@ -205,7 +189,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -229,7 +213,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert
-        result.Should().NotBeEmpty();
+        Assert.NotEmpty(result);
     }
 
     [Fact]
@@ -364,7 +348,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert & Diagnose
-        capturedUrl.Should().NotBeNull("URL should have been captured");
+        Assert.NotNull(capturedUrl);
 
         // Output URL for diagnosis
         TestContext.Current.TestOutputHelper?.WriteLine("=== CAPTURED URL (No airlineId specified) ===");
@@ -385,8 +369,7 @@ public class FlightStatsServiceTests
             TestContext.Current.TestOutputHelper?.WriteLine("Expected: 'NZ,QF,AA'");
 
             // Verify the value
-            airlinesValue.Should().Be("NZ,QF,AA",
-                "Airlines should be comma-separated without URL encoding in the parsed value");
+            Assert.Equal("NZ,QF,AA", airlinesValue);
         }
         else
         {
@@ -460,13 +443,9 @@ public class FlightStatsServiceTests
         TestContext.Current.TestOutputHelper?.WriteLine(
             $"With airlineId=null, includeAirlines='{params2["includeAirlines"]}'");
 
-        params1["includeAirlines"].Should().Be("QF");
-        params2["includeAirlines"].Should().Be("NZ,QF,AA");
+        Assert.Equal("QF", params1["includeAirlines"]);
+        Assert.Equal("NZ,QF,AA", params2["includeAirlines"]);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private void SetupHttpContextWithClaims(params (string type, string value)[] claims)
     {
@@ -580,10 +559,6 @@ public class FlightStatsServiceTests
         }
     };
 
-    #endregion
-
-    #region SplitFlightCode Tests
-
     [Theory]
     [InlineData("AA1234", "AA", "1234")]
     [InlineData("NZ123", "NZ", "123")]
@@ -593,8 +568,8 @@ public class FlightStatsServiceTests
         string expectedFlight)
     {
         var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        carrier.Should().Be(expectedCarrier);
-        flight.Should().Be(expectedFlight);
+        Assert.Equal(expectedCarrier, carrier);
+        Assert.Equal(expectedFlight, flight);
     }
 
     [Theory]
@@ -603,8 +578,8 @@ public class FlightStatsServiceTests
     public void SplitFlightCode_NullOrEmpty_ReturnsInputAndNull(string? input)
     {
         var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        carrier.Should().Be(input);
-        flight.Should().BeNull();
+        Assert.Equal(input, carrier);
+        Assert.Null(flight);
     }
 
     [Theory]
@@ -614,8 +589,8 @@ public class FlightStatsServiceTests
     public void SplitFlightCode_AllAlpha_ReturnsFullStringAsCarrier(string input)
     {
         var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        carrier.Should().Be(input);
-        flight.Should().BeNull();
+        Assert.Equal(input, carrier);
+        Assert.Null(flight);
     }
 
     [Theory]
@@ -624,13 +599,9 @@ public class FlightStatsServiceTests
     public void SplitFlightCode_StartsWithDigit_ReturnsFullStringAsCarrier(string input)
     {
         var (carrier, flight) = FlightStatsService.SplitFlightCode(input);
-        carrier.Should().Be(input);
-        flight.Should().BeNull();
+        Assert.Equal(input, carrier);
+        Assert.Null(flight);
     }
-
-    #endregion
-
-    #region PayloadType Absence Tests
 
     [Fact]
     public async Task GetFlightsAsync_DoesNotIncludePayloadTypeParameter()
@@ -663,14 +634,9 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert
-        capturedUrl.Should().NotBeNull();
-        capturedUrl.Should().NotContain("payloadType",
-            "payloadType=cargo was removed to support non-cargo-classified carriers like BXR");
+        Assert.NotNull(capturedUrl);
+        Assert.DoesNotContain("payloadType", capturedUrl);
     }
-
-    #endregion
-
-    #region Partner Carrier Airline Name Tests
 
     [Fact]
     public async Task GetFlightsAsync_PartnerCarrierSegment_ShowsAirlineName()
@@ -757,16 +723,11 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - The partner carrier segment should have its airline name resolved
-        result.Should().NotBeEmpty();
+        Assert.NotEmpty(result);
         var partnerSegment = result[0].FlightSegments.FirstOrDefault(s => s.CarrierFsCode == "OO");
-        partnerSegment.Should().NotBeNull();
-        partnerSegment.AirlineName.Should().Be("SkyWest Airlines",
-            "Partner carrier airline name should be resolved from the appendix without requiring activeAirlineCodes membership");
+        Assert.NotNull(partnerSegment);
+        Assert.Equal("SkyWest Airlines", partnerSegment.AirlineName);
     }
-
-    #endregion
-
-    #region Issue #1: Past Flight Filtering Tests - CalculateFlightSearchStartTime
 
     /// <summary>
     /// Tests for Issue #1: Available flights ignores current date time so a lazy dispatcher
@@ -809,15 +770,13 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - URL should use current time (14:00) + buffer (60 min) = 15:00, NOT the pastime (08:00)
-        capturedUrl.Should().NotBeNull();
+        Assert.NotNull(capturedUrl);
 
         // The URL should contain the time based on currentTenantTime + buffer, not the past departure time
         // Expected: leaving_after/2024/6/15/15/0 (current time 14:00 + 60 min buffer)
         // NOT: leaving_after/2024/6/15/8/0 (past departure time)
-        capturedUrl.Should().Contain("leaving_after/2024/6/15/15/0",
-            "When departure date is in the past, the search should use current tenant time + buffer");
-        capturedUrl.Should().NotContain("leaving_after/2024/6/15/8",
-            "Past departure times should not be used in the search URL");
+        Assert.Contains("leaving_after/2024/6/15/15/0", capturedUrl);
+        Assert.DoesNotContain("leaving_after/2024/6/15/8", capturedUrl);
     }
 
     [Fact]
@@ -854,9 +813,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - URL should use future departure time + buffer = 15:00
-        capturedUrl.Should().NotBeNull();
-        capturedUrl.Should().Contain("leaving_after/2024/6/15/15/0",
-            "When departure date is in the future, the search should use departure time + buffer");
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("leaving_after/2024/6/15/15/0", capturedUrl);
     }
 
     [Fact]
@@ -892,9 +850,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - URL should use current time (10:30) + buffer (60 min) = 11:30
-        capturedUrl.Should().NotBeNull();
-        capturedUrl.Should().Contain("leaving_after/2024/6/15/11/30",
-            "When no departure date is provided, the search should use current tenant time + buffer");
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("leaving_after/2024/6/15/11/30", capturedUrl);
     }
 
     [Fact]
@@ -931,9 +888,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - Should use departure time (which equals current time) + buffer = 13:00
-        capturedUrl.Should().NotBeNull();
-        capturedUrl.Should().Contain("leaving_after/2024/6/15/13/0",
-            "When departure date equals current time, the search should use that time + buffer");
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("leaving_after/2024/6/15/13/0", capturedUrl);
     }
 
     [Fact]
@@ -989,10 +945,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - Should use departure time (14:00) + 90 min buffer = 15:30
-        capturedUrl.Should().NotBeNull();
-        capturedUrl.Should().Contain("leaving_after/2024/6/15/15/30",
-            "Search should apply the departure airport's specific buffer time");
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("leaving_after/2024/6/15/15/30", capturedUrl);
     }
 
-    #endregion
 }

@@ -2,8 +2,6 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -15,9 +13,9 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -25,30 +23,14 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
     public JobRepositoryPricingBreakdownTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        // Register custom SQLite function to mimic SQL Server's getdate()
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new DespatchContext(options);
-        _context.Database.EnsureCreated();
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
+        _context = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
+
         // Add required note type for note creation
         _context.TucNoteTypes.Add(new TucNoteType
         {
@@ -64,7 +46,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private JobRepository CreateRepository() => new(
@@ -74,8 +56,6 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
-
-    #region GetJobPriceBreakdownAsync Tests
 
     [Fact]
     public async Task GetJobPriceBreakdownAsync_WithLiveJob_ReturnsBreakdowns()
@@ -95,9 +75,9 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var result = await repository.GetJobPriceBreakdownAsync(jobId, isPrebook: false, isArchived: false);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(b => b.Name == "Base Charge" && b.Amount == 100.00m);
-        result.Should().Contain(b => b.Name == "Fuel Surcharge" && b.Amount == 15.00m);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, b => b.Name == "Base Charge" && b.Amount == 100.00m);
+        Assert.Contains(result, b => b.Name == "Fuel Surcharge" && b.Amount == 15.00m);
     }
 
     [Fact]
@@ -118,9 +98,9 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var result = await repository.GetJobPriceBreakdownAsync(jobId, isPrebook: false, isArchived: true);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(b => b.Name == "Base Charge" && b.Amount == 200.00m);
-        result.Should().Contain(b => b.Name == "Fuel Surcharge" && b.Amount == 25.00m);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, b => b.Name == "Base Charge" && b.Amount == 200.00m);
+        Assert.Contains(result, b => b.Name == "Fuel Surcharge" && b.Amount == 25.00m);
     }
 
     [Fact]
@@ -141,9 +121,9 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var result = await repository.GetJobPriceBreakdownAsync(prebookId, isPrebook: true, isArchived: false);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(b => b.Name == "Prebook Base" && b.Amount == 150.00m);
-        result.Should().Contain(b => b.PrebookJobId == prebookId);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, b => b.Name == "Prebook Base" && b.Amount == 150.00m);
+        Assert.Contains(result, b => b.PrebookJobId == prebookId);
     }
 
     [Fact]
@@ -160,7 +140,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var result = await repository.GetJobPriceBreakdownAsync(jobId, isPrebook: false, isArchived: false);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -185,8 +165,8 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var result = await repository.GetJobPriceBreakdownAsync(jobId1, isPrebook: false, isArchived: false);
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Name.Should().Be("Job 1 Charge");
+        Assert.Single(result);
+        Assert.Equal("Job 1 Charge", result[0].Name);
     }
 
     [Fact]
@@ -199,12 +179,8 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var result = await repository.GetJobPriceBreakdownAsync(999, isPrebook: false, isArchived: true);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region AddJobPriceBreakdownAsync Tests
 
     [Fact]
     public async Task AddJobPriceBreakdownAsync_WithLiveJob_AddsToLiveTable()
@@ -228,12 +204,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var chargeId = await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: false);
 
         // Assert
-        chargeId.Should().BeGreaterThan(0);
+        Assert.True(chargeId > 0);
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().NotBeNull();
-        breakdown.ChargeName.Should().Be("New Charge");
-        breakdown.ChargeAmount.Should().Be(50.00m);
-        breakdown.JobId.Should().Be(jobId);
+        Assert.NotNull(breakdown);
+        Assert.Equal("New Charge", breakdown.ChargeName);
+        Assert.Equal(50.00m, breakdown.ChargeAmount);
+        Assert.Equal(jobId, breakdown.JobId);
     }
 
     [Fact]
@@ -258,12 +234,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var chargeId = await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: true);
 
         // Assert
-        chargeId.Should().BeGreaterThan(0);
+        Assert.True(chargeId > 0);
         var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().NotBeNull();
-        breakdown.ChargeName.Should().Be("Archive Charge");
-        breakdown.ChargeAmount.Should().Be(75.00m);
-        breakdown.JobId.Should().Be(jobId);
+        Assert.NotNull(breakdown);
+        Assert.Equal("Archive Charge", breakdown.ChargeName);
+        Assert.Equal(75.00m, breakdown.ChargeAmount);
+        Assert.Equal(jobId, breakdown.JobId);
     }
 
     [Fact]
@@ -288,12 +264,12 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var chargeId = await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: false);
 
         // Assert
-        chargeId.Should().BeGreaterThan(0);
+        Assert.True(chargeId > 0);
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().NotBeNull();
-        breakdown.ChargeName.Should().Be("Prebook Charge");
-        breakdown.PrebookJobId.Should().Be(prebookId);
-        breakdown.JobId.Should().BeNull();
+        Assert.NotNull(breakdown);
+        Assert.Equal("Prebook Charge", breakdown.ChargeName);
+        Assert.Equal(prebookId, breakdown.PrebookJobId);
+        Assert.Null(breakdown.JobId);
     }
 
     [Fact]
@@ -312,12 +288,8 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         var chargeId = await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: false);
 
         // Assert
-        chargeId.Should().Be(0);
+        Assert.Equal(0, chargeId);
     }
-
-    #endregion
-
-    #region UpdateJobPriceBreakdownAsync Tests
 
     [Fact]
     public async Task UpdateJobPriceBreakdownAsync_WithLiveJob_UpdatesBreakdown()
@@ -346,10 +318,10 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         // Assert - Clear change tracker to ensure we read fresh data from DB
         _context.ChangeTracker.Clear();
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().NotBeNull();
-        breakdown.ChargeName.Should().Be("Updated");
-        breakdown.ChargeAmount.Should().Be(150.00m);
-        breakdown.CostAmount.Should().Be(50.00m);
+        Assert.NotNull(breakdown);
+        Assert.Equal("Updated", breakdown.ChargeName);
+        Assert.Equal(150.00m, breakdown.ChargeAmount);
+        Assert.Equal(50.00m, breakdown.CostAmount);
     }
 
     [Fact]
@@ -379,10 +351,10 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         // Assert - Clear change tracker to ensure we read fresh data from DB
         _context.ChangeTracker.Clear();
         var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().NotBeNull();
-        breakdown.ChargeName.Should().Be("Updated Archive");
-        breakdown.ChargeAmount.Should().Be(175.00m);
-        breakdown.CostAmount.Should().Be(60.00m);
+        Assert.NotNull(breakdown);
+        Assert.Equal("Updated Archive", breakdown.ChargeName);
+        Assert.Equal(175.00m, breakdown.ChargeAmount);
+        Assert.Equal(60.00m, breakdown.CostAmount);
     }
 
     [Fact]
@@ -400,7 +372,8 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Act & Assert - Should not throw
         var act = async () => await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
-        await act.Should().NotThrowAsync();
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -419,12 +392,9 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Act & Assert - Should not throw
         var act = async () => await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
-        await act.Should().NotThrowAsync();
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
     }
-
-    #endregion
-
-    #region DeleteJobPriceBreakdownAsync Tests
 
     [Fact]
     public async Task DeleteJobPriceBreakdownAsync_WithLiveBreakdown_DeletesFromLiveTable()
@@ -443,7 +413,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Assert
         var breakdown = await _context.PricingBreakdowns.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().BeNull();
+        Assert.Null(breakdown);
     }
 
     [Fact]
@@ -463,7 +433,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Assert
         var breakdown = await _context.PricingBreakdownArchives.FirstOrDefaultAsync(p => p.PricingBreakdownId == chargeId, cancellationToken: TestContext.Current.CancellationToken);
-        breakdown.Should().BeNull();
+        Assert.Null(breakdown);
     }
 
     [Fact]
@@ -474,7 +444,8 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Act & Assert - Should not throw
         var act = async () => await repository.DeleteJobPriceBreakdownAsync(999, isArchived: false);
-        await act.Should().NotThrowAsync();
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -496,13 +467,9 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Assert
         var remaining = await _context.PricingBreakdowns.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
-        remaining.Should().ContainSingle();
-        remaining.First().ChargeName.Should().Be("Keep");
+        Assert.Single(remaining);
+        Assert.Equal("Keep", remaining.First().ChargeName);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
@@ -541,5 +508,4 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         CostAmount = costAmount
     };
 
-    #endregion
 }

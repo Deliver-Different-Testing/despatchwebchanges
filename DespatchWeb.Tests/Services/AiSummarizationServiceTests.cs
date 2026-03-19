@@ -2,7 +2,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -31,8 +30,6 @@ public class AiSummarizationServiceTests
         _tenantInfoMock.Object,
         _settings);
 
-    #region SummarizeJobNotesAsync
-
     [Fact]
     public async Task SummarizeJobNotesAsync_NoNotes_ReturnsDefaultMessage()
     {
@@ -46,9 +43,9 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No notes found for this job.");
-        result.Usage.InputTokens.Should().Be(0);
-        result.Usage.OutputTokens.Should().Be(0);
+        Assert.Equal("No notes found for this job.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
+        Assert.Equal(0, result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -64,7 +61,7 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No notes found for this job.");
+        Assert.Equal("No notes found for this job.", result.Summary);
     }
 
     [Fact]
@@ -110,9 +107,9 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("Driver arrived and collected the package.");
-        result.Usage.InputTokens.Should().Be(150);
-        result.Usage.OutputTokens.Should().Be(30);
+        Assert.Equal("Driver arrived and collected the package.", result.Summary);
+        Assert.Equal(150, result.Usage.InputTokens);
+        Assert.Equal(30, result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -142,7 +139,7 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("Unable to generate summary.");
+        Assert.Equal("Unable to generate summary.", result.Summary);
     }
 
     [Fact]
@@ -175,9 +172,9 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages.Should().NotBeNull();
-        capturedMessages[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages[0].Content.Should().NotContain("driver@test.com");
+        Assert.NotNull(capturedMessages);
+        Assert.Contains("[EMAIL]", capturedMessages[0].Content);
+        Assert.DoesNotContain("driver@test.com", capturedMessages[0].Content);
     }
 
     [Fact]
@@ -210,12 +207,8 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMaxTokens.Should().Be(1024);
+        Assert.Equal(1024, capturedMaxTokens);
     }
-
-    #endregion
-
-    #region SummarizeJobEventsAsync
 
     [Fact]
     public async Task SummarizeJobEventsAsync_NoEvents_ReturnsDefaultMessage()
@@ -230,7 +223,7 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobEventsAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No events found for this job.");
+        Assert.Equal("No events found for this job.", result.Summary);
     }
 
     [Fact]
@@ -269,8 +262,8 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobEventsAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("A late alert was triggered and resolved.");
-        result.Usage.InputTokens.Should().Be(100);
+        Assert.Equal("A late alert was triggered and resolved.", result.Summary);
+        Assert.Equal(100, result.Usage.InputTokens);
     }
 
     [Fact]
@@ -288,14 +281,10 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobEventsAsync(42, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedFilters.Should().NotBeNull();
-        capturedFilters.JobId.Should().Be(42);
-        capturedFilters.ShowCompleted.Should().BeTrue();
+        Assert.NotNull(capturedFilters);
+        Assert.Equal(42, capturedFilters.JobId);
+        Assert.True(capturedFilters.ShowCompleted);
     }
-
-    #endregion
-
-    #region SummarizeTaskDashboardAsync
 
     [Fact]
     public async Task SummarizeTaskDashboardAsync_NoTasks_ReturnsDefaultMessage()
@@ -310,9 +299,9 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No open tasks found. The task dashboard is clear.");
-        result.Usage.InputTokens.Should().Be(0);
-        result.Usage.OutputTokens.Should().Be(0);
+        Assert.Equal("No open tasks found. The task dashboard is clear.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
+        Assert.Equal(0, result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -328,7 +317,7 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No open tasks found. The task dashboard is clear.");
+        Assert.Equal("No open tasks found. The task dashboard is clear.", result.Summary);
     }
 
     [Fact]
@@ -370,9 +359,9 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("2 open tasks. 1 overdue ETA request needs attention.");
-        result.Usage.InputTokens.Should().Be(200);
-        result.Usage.OutputTokens.Should().Be(40);
+        Assert.Equal("2 open tasks. 1 overdue ETA request needs attention.", result.Summary);
+        Assert.Equal(200, result.Usage.InputTokens);
+        Assert.Equal(40, result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -390,9 +379,9 @@ public class AiSummarizationServiceTests
         await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedFilters.Should().NotBeNull();
-        capturedFilters.ShowCompleted.Should().BeFalse();
-        capturedFilters.JobId.Should().BeNull();
+        Assert.NotNull(capturedFilters);
+        Assert.False(capturedFilters.ShowCompleted);
+        Assert.Null(capturedFilters.JobId);
     }
 
     [Fact]
@@ -430,10 +419,10 @@ public class AiSummarizationServiceTests
         await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages.Should().NotBeNull();
-        capturedMessages[0].Content.Should().Contain("OVERDUE");
-        capturedMessages[0].Content.Should().Contain("OPEN");
-        capturedMessages[0].Content.Should().Contain("Total open tasks: 2");
+        Assert.NotNull(capturedMessages);
+        Assert.Contains("OVERDUE", capturedMessages[0].Content);
+        Assert.Contains("OPEN", capturedMessages[0].Content);
+        Assert.Contains("Total open tasks: 2", capturedMessages[0].Content);
     }
 
     [Fact]
@@ -467,13 +456,9 @@ public class AiSummarizationServiceTests
         await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages?[0].Content.Should().NotContain("driver@test.com");
+        Assert.Contains("[EMAIL]", capturedMessages?[0].Content);
+        Assert.DoesNotContain("driver@test.com", capturedMessages?[0].Content);
     }
-
-    #endregion
-
-    #region SummarizeJobAsync
 
     [Fact]
     public async Task SummarizeJobAsync_NoData_ReturnsDefaultMessage()
@@ -490,8 +475,8 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No data found for this job.");
-        result.Usage.InputTokens.Should().Be(0);
+        Assert.Equal("No data found for this job.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
     }
 
     [Fact]
@@ -523,8 +508,8 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeJobAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Contain("Express job booked at 9:00 AM");
-        result.Usage.InputTokens.Should().Be(180);
+        Assert.Contains("Express job booked at 9:00 AM", result.Summary);
+        Assert.Equal(180, result.Usage.InputTokens);
     }
 
     [Fact]
@@ -567,10 +552,10 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("--- Job Details ---");
-        capturedMessages?[0].Content.Should().Contain("--- Notes ---");
-        capturedMessages?[0].Content.Should().Contain("--- Events ---");
-        capturedMessages?[0].Content.Should().Contain("ABC123");
+        Assert.Contains("--- Job Details ---", capturedMessages?[0].Content);
+        Assert.Contains("--- Notes ---", capturedMessages?[0].Content);
+        Assert.Contains("--- Events ---", capturedMessages?[0].Content);
+        Assert.Contains("ABC123", capturedMessages?[0].Content);
     }
 
     [Fact]
@@ -601,15 +586,11 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages?[0].Content.Should().NotContain("driver@test.com");
-        capturedMessages?[0].Content.Should().Contain("[PHONE]");
-        capturedMessages?[0].Content.Should().NotContain("021-555-1234");
+        Assert.Contains("[EMAIL]", capturedMessages?[0].Content);
+        Assert.DoesNotContain("driver@test.com", capturedMessages?[0].Content);
+        Assert.Contains("[PHONE]", capturedMessages?[0].Content);
+        Assert.DoesNotContain("021-555-1234", capturedMessages?[0].Content);
     }
-
-    #endregion
-
-    #region SummarizeOperationsAsync
 
     [Fact]
     public async Task SummarizeOperationsAsync_ReturnsSummaryWithStats()
@@ -638,11 +619,11 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeOperationsAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Contain("15 active");
-        capturedMessages?[0].Content.Should().Contain("Active jobs: 15");
-        capturedMessages?[0].Content.Should().Contain("Inactive jobs: 8");
-        capturedMessages?[0].Content.Should().Contain("Completed jobs: 42");
-        capturedMessages?[0].Content.Should().Contain("Total: 65");
+        Assert.Contains("15 active", result.Summary);
+        Assert.Contains("Active jobs: 15", capturedMessages?[0].Content);
+        Assert.Contains("Inactive jobs: 8", capturedMessages?[0].Content);
+        Assert.Contains("Completed jobs: 42", capturedMessages?[0].Content);
+        Assert.Contains("Total: 65", capturedMessages?[0].Content);
     }
 
     [Fact]
@@ -665,12 +646,8 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeOperationsAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("Unable to generate summary.");
+        Assert.Equal("Unable to generate summary.", result.Summary);
     }
-
-    #endregion
-
-    #region SummarizeComplianceAsync
 
     [Fact]
     public async Task SummarizeComplianceAsync_NoRecords_ReturnsDefaultMessage()
@@ -686,8 +663,8 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeComplianceAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No compliance records found.");
-        result.Usage.InputTokens.Should().Be(0);
+        Assert.Equal("No compliance records found.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
     }
 
     [Fact]
@@ -704,7 +681,7 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeComplianceAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No compliance records found.");
+        Assert.Equal("No compliance records found.", result.Summary);
     }
 
     [Fact]
@@ -751,11 +728,11 @@ public class AiSummarizationServiceTests
         var result = await service.SummarizeComplianceAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Contain("CRITICAL");
-        capturedMessages?[0].Content.Should().Contain("EXPIRED items:");
-        capturedMessages?[0].Content.Should().Contain("John Driver (D01)");
-        capturedMessages?[0].Content.Should().Contain("Expired: 1");
-        capturedMessages?[0].Content.Should().Contain("Expiring within 7 days: 1");
+        Assert.Contains("CRITICAL", result.Summary);
+        Assert.Contains("EXPIRED items:", capturedMessages?[0].Content);
+        Assert.Contains("John Driver (D01)", capturedMessages?[0].Content);
+        Assert.Contains("Expired: 1", capturedMessages?[0].Content);
+        Assert.Contains("Expiring within 7 days: 1", capturedMessages?[0].Content);
     }
 
     [Fact]
@@ -790,12 +767,8 @@ public class AiSummarizationServiceTests
         await service.SummarizeComplianceAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("... and 5 more");
+        Assert.Contains("... and 5 more", capturedMessages?[0].Content);
     }
-
-    #endregion
-
-    #region AnalyzeLateAlertAsync
 
     [Fact]
     public async Task AnalyzeLateAlertAsync_NullLateInfo_ReturnsDefaultMessage()
@@ -810,8 +783,8 @@ public class AiSummarizationServiceTests
         var result = await service.AnalyzeLateAlertAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No late alert data found for this job.");
-        result.Usage.InputTokens.Should().Be(0);
+        Assert.Equal("No late alert data found for this job.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
     }
 
     [Fact]
@@ -844,8 +817,8 @@ public class AiSummarizationServiceTests
         var result = await service.AnalyzeLateAlertAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Contain("Monitor");
-        result.Usage.InputTokens.Should().Be(120);
+        Assert.Contains("Monitor", result.Summary);
+        Assert.Equal(120, result.Usage.InputTokens);
     }
 
     [Fact]
@@ -877,9 +850,9 @@ public class AiSummarizationServiceTests
         await service.AnalyzeLateAlertAsync(42, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("Job #42");
-        capturedMessages?[0].Content.Should().Contain("Minutes remaining: 15");
-        capturedMessages?[0].Content.Should().Contain("Same Day");
+        Assert.Contains("Job #42", capturedMessages?[0].Content);
+        Assert.Contains("Minutes remaining: 15", capturedMessages?[0].Content);
+        Assert.Contains("Same Day", capturedMessages?[0].Content);
     }
 
     [Fact]
@@ -919,13 +892,9 @@ public class AiSummarizationServiceTests
         await service.AnalyzeLateAlertAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("Recent events:");
-        capturedMessages?[0].Content.Should().Contain("Late pickup alert");
+        Assert.Contains("Recent events:", capturedMessages?[0].Content);
+        Assert.Contains("Late pickup alert", capturedMessages?[0].Content);
     }
-
-    #endregion
-
-    #region SuggestCouriersAsync
 
     [Fact]
     public async Task SuggestCouriersAsync_NullJob_ReturnsDefaultMessage()
@@ -939,9 +908,9 @@ public class AiSummarizationServiceTests
         var result = await service.SuggestCouriersAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("Job not found.");
-        result.Usage.InputTokens.Should().Be(0);
-        result.Couriers.Should().BeEmpty();
+        Assert.Equal("Job not found.", result.Summary);
+        Assert.Equal(0, result.Usage.InputTokens);
+        Assert.Empty(result.Couriers);
     }
 
     [Fact]
@@ -963,8 +932,8 @@ public class AiSummarizationServiceTests
         var result = await service.SuggestCouriersAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("No courier data available for suggestions.");
-        result.Couriers.Should().BeEmpty();
+        Assert.Equal("No courier data available for suggestions.", result.Summary);
+        Assert.Empty(result.Couriers);
     }
 
     [Fact]
@@ -1006,14 +975,14 @@ public class AiSummarizationServiceTests
         var result = await service.SuggestCouriersAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Contain("Jane");
-        result.Usage.InputTokens.Should().Be(250);
-        result.Couriers.Should().HaveCount(2);
-        result.Couriers[0].CourierId.Should().Be(10);
-        result.Couriers[0].Code.Should().Be("C10");
-        result.Couriers[0].FirstName.Should().Be("John");
-        result.Couriers[1].CourierId.Should().Be(11);
-        result.Couriers[1].FirstName.Should().Be("Jane");
+        Assert.Contains("Jane", result.Summary);
+        Assert.Equal(250, result.Usage.InputTokens);
+        Assert.Equal(2, result.Couriers.Count);
+        Assert.Equal(10, result.Couriers[0].CourierId);
+        Assert.Equal("C10", result.Couriers[0].Code);
+        Assert.Equal("John", result.Couriers[0].FirstName);
+        Assert.Equal(11, result.Couriers[1].CourierId);
+        Assert.Equal("Jane", result.Couriers[1].FirstName);
     }
 
     [Fact]
@@ -1047,11 +1016,11 @@ public class AiSummarizationServiceTests
         await service.SuggestCouriersAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages?[0].Content.Should().Contain("Job #J200");
-        capturedMessages?[0].Content.Should().Contain("Express");
-        capturedMessages?[0].Content.Should().Contain("Weight: 12");
-        capturedMessages?[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages?[0].Content.Should().NotContain("user@email.com");
+        Assert.Contains("Job #J200", capturedMessages?[0].Content);
+        Assert.Contains("Express", capturedMessages?[0].Content);
+        Assert.Contains("Weight: 12", capturedMessages?[0].Content);
+        Assert.Contains("[EMAIL]", capturedMessages?[0].Content);
+        Assert.DoesNotContain("user@email.com", capturedMessages?[0].Content);
     }
 
     [Fact]
@@ -1082,16 +1051,12 @@ public class AiSummarizationServiceTests
         var result = await service.SuggestCouriersAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Summary.Should().Be("Driver1 recommended.");
-        result.Couriers.Should().BeEmpty();
+        Assert.Equal("Driver1 recommended.", result.Summary);
+        Assert.Empty(result.Couriers);
         _aiClientMock.Verify(x => x.SendMessageAsync(
             It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
             It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
-
-    #endregion
-
-    #region Region-Aware Prompts
 
     [Fact]
     public async Task SummarizeJobNotesAsync_NzTenant_IncludesNzRegionContext()
@@ -1122,8 +1087,8 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("New Zealand");
-        capturedSystemPrompt.Should().NotContain("US-based");
+        Assert.Contains("New Zealand", capturedSystemPrompt);
+        Assert.DoesNotContain("US-based", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1155,8 +1120,8 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobNotesAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("US-based");
-        capturedSystemPrompt.Should().NotContain("New Zealand");
+        Assert.Contains("US-based", capturedSystemPrompt);
+        Assert.DoesNotContain("New Zealand", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1188,7 +1153,7 @@ public class AiSummarizationServiceTests
         await service.SummarizeTaskDashboardAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("US-based");
+        Assert.Contains("US-based", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1216,7 +1181,7 @@ public class AiSummarizationServiceTests
         await service.SummarizeOperationsAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("New Zealand");
+        Assert.Contains("New Zealand", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1245,8 +1210,8 @@ public class AiSummarizationServiceTests
         await service.SummarizeJobAsync(1, TestContext.Current.CancellationToken);
 
         // Assert — verify the new markdown-oriented prompts
-        capturedSystemPrompt.Should().Contain("**bold**");
-        capturedSystemPrompt.Should().Contain("**Status**");
+        Assert.Contains("**bold**", capturedSystemPrompt);
+        Assert.Contains("**Status**", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1279,7 +1244,7 @@ public class AiSummarizationServiceTests
         await service.SummarizeComplianceAsync(TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("US-based");
+        Assert.Contains("US-based", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1312,7 +1277,7 @@ public class AiSummarizationServiceTests
         await service.AnalyzeLateAlertAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("New Zealand");
+        Assert.Contains("New Zealand", capturedSystemPrompt);
     }
 
     [Fact]
@@ -1349,8 +1314,7 @@ public class AiSummarizationServiceTests
         await service.SuggestCouriersAsync(1, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("US-based");
+        Assert.Contains("US-based", capturedSystemPrompt);
     }
 
-    #endregion
 }

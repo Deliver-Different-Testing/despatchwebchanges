@@ -42,7 +42,6 @@ import ConfigService from "../../services/config.service";
 import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-complete-dialog.service";
 import NationwideBoxes from "./enums/NationwideBoxes";
 import JobAddStopService from "../../services/job-add-stop.service";
-import greetUser from '../../functions/greetUser';
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import {openAgentInfoDialog} from "../../react/components/dialogs/agent-info-dialog";
@@ -126,7 +125,6 @@ class NationwideControl extends BaseController {
 
     private tasksLoadingInBackground: boolean = false;
     isUsCustomer: boolean;
-    greeting: string;
     isDataLoading: boolean = false;
     currentJob?: IDispatchJob;
     jobList?: IDispatchJob[] = [];
@@ -255,7 +253,6 @@ class NationwideControl extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
 
-        this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.appConfig.US_Customer;
         this.timeZone = getIanaTimezone(TimeZone);
 

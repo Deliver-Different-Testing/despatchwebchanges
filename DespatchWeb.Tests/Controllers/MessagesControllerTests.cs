@@ -3,7 +3,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -15,15 +14,10 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class MessagesControllerTests
 {
-    #region Setup
 
     private readonly Mock<IMessageRepository> _messageRepositoryMock = new();
 
     private MessagesController CreateController() => new(_messageRepositoryMock.Object);
-
-    #endregion
-
-    #region GetUnreadMessageCount Tests
 
     [Fact]
     public async Task GetUnreadMessageCount_Success_ReturnsJsonWithCount()
@@ -39,8 +33,8 @@ public class MessagesControllerTests
         var result = await controller.GetUnreadMessageCount();
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().Be(expectedCount);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCount, jsonResult.Value);
     }
 
     [Fact]
@@ -56,14 +50,10 @@ public class MessagesControllerTests
         var result = await controller.GetUnreadMessageCount();
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
-        statusCodeResult.Value.Should().Be("Database error");
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
+        Assert.Equal("Database error", statusCodeResult.Value);
     }
-
-    #endregion
-
-    #region GetRecentList Tests
 
     [Fact]
     public async Task GetRecentList_Success_ReturnsJsonWithRecents()
@@ -83,8 +73,8 @@ public class MessagesControllerTests
         var result = await controller.GetRecentList();
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().BeEquivalentTo(expectedRecents);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equivalent(expectedRecents, jsonResult.Value);
     }
 
     [Fact]
@@ -100,13 +90,9 @@ public class MessagesControllerTests
         var result = await controller.GetRecentList();
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region GetMessages Tests
 
     [Fact]
     public async Task GetMessages_ValidIds_ReturnsJsonWithMessages()
@@ -128,8 +114,8 @@ public class MessagesControllerTests
         var result = await controller.GetMessages(courierId, staffId);
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().BeEquivalentTo(expectedMessages);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equivalent(expectedMessages, jsonResult.Value);
     }
 
     [Fact]
@@ -145,13 +131,9 @@ public class MessagesControllerTests
         var result = await controller.GetMessages(1, 2);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region GetMessagesByStaff Tests
 
     [Fact]
     public async Task GetMessagesByStaff_ValidIds_ReturnsJsonWithMessages()
@@ -173,8 +155,8 @@ public class MessagesControllerTests
         var result = await controller.GetMessagesByStaff(otherStaffId, currentStaffId);
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().BeEquivalentTo(expectedMessages);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equivalent(expectedMessages, jsonResult.Value);
     }
 
     [Fact]
@@ -190,13 +172,9 @@ public class MessagesControllerTests
         var result = await controller.GetMessagesByStaff(1, 2);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region SendMessage Tests
 
     [Fact]
     public async Task SendMessage_ValidCourierRecipient_ReturnsOk()
@@ -217,7 +195,7 @@ public class MessagesControllerTests
         var result = await controller.SendMessage(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.SendMessageAsync(request), Times.Once);
     }
 
@@ -240,7 +218,7 @@ public class MessagesControllerTests
         var result = await controller.SendMessage(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.SendMessageAsync(request), Times.Once);
     }
 
@@ -261,8 +239,8 @@ public class MessagesControllerTests
         var result = await controller.SendMessage(request);
 
         // Assert
-        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequestResult.Value.Should().Be("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)");
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)", badRequestResult.Value);
         _messageRepositoryMock.Verify(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>()), Times.Never);
     }
 
@@ -283,8 +261,8 @@ public class MessagesControllerTests
         var result = await controller.SendMessage(request);
 
         // Assert
-        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequestResult.Value.Should().Be("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)");
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)", badRequestResult.Value);
         _messageRepositoryMock.Verify(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>()), Times.Never);
     }
 
@@ -306,13 +284,9 @@ public class MessagesControllerTests
         var result = await controller.SendMessage(request);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region SendMultiMessage Tests
 
     [Fact]
     public async Task SendMultiMessage_ValidCourierRecipients_ReturnsOk()
@@ -331,7 +305,7 @@ public class MessagesControllerTests
         var result = await controller.SendMultiMessage(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.SendMultipleMessagesAsync(request), Times.Once);
     }
 
@@ -352,7 +326,7 @@ public class MessagesControllerTests
         var result = await controller.SendMultiMessage(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.SendMultipleMessagesAsync(request), Times.Once);
     }
 
@@ -371,8 +345,8 @@ public class MessagesControllerTests
         var result = await controller.SendMultiMessage(request);
 
         // Assert
-        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequestResult.Value.Should().Be("Must specify at least one recipient (either SendToCourierIds or SendToStaffIds)");
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Must specify at least one recipient (either SendToCourierIds or SendToStaffIds)", badRequestResult.Value);
         _messageRepositoryMock.Verify(x => x.SendMultipleMessagesAsync(It.IsAny<SendMultipleMessageRequest>()), Times.Never);
     }
 
@@ -393,13 +367,9 @@ public class MessagesControllerTests
         var result = await controller.SendMultiMessage(request);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region MarkMessagesAsRead Tests
 
     [Fact]
     public async Task MarkMessagesAsRead_ValidCourierParty_ReturnsOk()
@@ -416,7 +386,7 @@ public class MessagesControllerTests
         var result = await controller.MarkMessagesAsRead(otherPartyId, partyType);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.MarkMessagesAsReadAsync(otherPartyId, partyType), Times.Once);
     }
 
@@ -435,7 +405,7 @@ public class MessagesControllerTests
         var result = await controller.MarkMessagesAsRead(otherPartyId, partyType);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.MarkMessagesAsReadAsync(otherPartyId, partyType), Times.Once);
     }
 
@@ -452,8 +422,8 @@ public class MessagesControllerTests
         var result = await controller.MarkMessagesAsRead(invalidId, OtherMessagePartyType.Courier);
 
         // Assert
-        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequestResult.Value.Should().Be("Invalid otherPartyId");
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid otherPartyId", badRequestResult.Value);
         _messageRepositoryMock.Verify(x => x.MarkMessagesAsReadAsync(It.IsAny<int>(), It.IsAny<OtherMessagePartyType>()), Times.Never);
     }
 
@@ -470,13 +440,9 @@ public class MessagesControllerTests
         var result = await controller.MarkMessagesAsRead(1, OtherMessagePartyType.Courier);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region GetQuickResponses Tests
 
     [Fact]
     public async Task GetQuickResponses_Success_ReturnsJsonWithResponses()
@@ -496,8 +462,8 @@ public class MessagesControllerTests
         var result = await controller.GetQuickResponses();
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().BeEquivalentTo(expectedResponses);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equivalent(expectedResponses, jsonResult.Value);
     }
 
     [Fact]
@@ -513,13 +479,9 @@ public class MessagesControllerTests
         var result = await controller.GetQuickResponses();
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region AddQuickResponse Tests
 
     [Fact]
     public async Task AddQuickResponse_ValidRequest_ReturnsJsonWithNewId()
@@ -536,8 +498,8 @@ public class MessagesControllerTests
         var result = await controller.AddQuickResponse(request);
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().Be(expectedId);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedId, jsonResult.Value);
     }
 
     [Fact]
@@ -552,8 +514,8 @@ public class MessagesControllerTests
         var result = await controller.AddQuickResponse(request);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
 
     [Fact]
@@ -570,13 +532,9 @@ public class MessagesControllerTests
         var result = await controller.AddQuickResponse(request);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region DeleteQuickResponse Tests
 
     [Fact]
     public async Task DeleteQuickResponse_ValidId_ReturnsOk()
@@ -592,7 +550,7 @@ public class MessagesControllerTests
         var result = await controller.DeleteQuickResponse(responseId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.DeleteQuickResponseAsync(responseId), Times.Once);
     }
 
@@ -609,8 +567,8 @@ public class MessagesControllerTests
         var result = await controller.DeleteQuickResponse(invalidId);
 
         // Assert
-        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
-        badRequestResult.Value.Should().Be("Invalid otherPartyId");
+        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Equal("Invalid otherPartyId", badRequestResult.Value);
         _messageRepositoryMock.Verify(x => x.DeleteQuickResponseAsync(It.IsAny<int>()), Times.Never);
     }
 
@@ -627,13 +585,9 @@ public class MessagesControllerTests
         var result = await controller.DeleteQuickResponse(1);
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
-    #endregion
-
-    #region GetMessageContactOptions Tests
 
     [Fact]
     public async Task GetMessageContactOptions_ValidSearchTerm_ReturnsJsonWithResults()
@@ -654,8 +608,8 @@ public class MessagesControllerTests
         var result = await controller.GetMessageContactOptions(searchTerm);
 
         // Assert
-        var jsonResult = result.Should().BeOfType<JsonResult>().Subject;
-        jsonResult.Value.Should().BeEquivalentTo(expectedResults);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equivalent(expectedResults, jsonResult.Value);
     }
 
     [Theory]
@@ -670,7 +624,7 @@ public class MessagesControllerTests
         var result = await controller.GetMessageContactOptions(searchTerm!);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _messageRepositoryMock.Verify(x => x.GetNewMessageContactOptionsAsync(It.IsAny<string>()), Times.Never);
     }
 
@@ -687,9 +641,8 @@ public class MessagesControllerTests
         var result = await controller.GetMessageContactOptions("test");
 
         // Assert
-        var statusCodeResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusCodeResult.StatusCode.Should().Be(500);
+        var statusCodeResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusCodeResult.StatusCode);
     }
 
-    #endregion
 }

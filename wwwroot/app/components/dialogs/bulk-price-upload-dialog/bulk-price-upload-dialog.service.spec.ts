@@ -28,14 +28,6 @@ const createMockToastrService = () => ({
     showErrorToast: jest.fn(),
 });
 
-const createMockLog = () => ({
-    debug: jest.fn(),
-    error: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    log: jest.fn(),
-});
-
 const mockEvent = {} as MouseEvent;
 
 // ---------------------------------------------------------------------------
@@ -44,13 +36,11 @@ const mockEvent = {} as MouseEvent;
 
 describe('BulkPriceUploadDialogService', () => {
     let service: BulkPriceUploadDialogService;
-    let mockLog: ReturnType<typeof createMockLog>;
     let mockToastr: ReturnType<typeof createMockToastrService>;
     let mockOcLazyLoad: ReturnType<typeof createMockOcLazyLoad>;
     let mockHttp: ReturnType<typeof createMockHttp>;
 
     beforeEach(() => {
-        mockLog = createMockLog();
         mockToastr = createMockToastrService();
         mockOcLazyLoad = createMockOcLazyLoad();
         mockHttp = createMockHttp({
@@ -59,7 +49,6 @@ describe('BulkPriceUploadDialogService', () => {
         });
 
         service = new BulkPriceUploadDialogService(
-            mockLog as any,
             mockToastr as any,
             mockOcLazyLoad as any,
             mockHttp as any,
@@ -318,7 +307,6 @@ describe('BulkPriceUploadDialogService', () => {
     describe('Service structure', () => {
         it('should have correct $inject dependencies', () => {
             expect(BulkPriceUploadDialogService.$inject).toEqual([
-                '$log',
                 'toastrService',
                 '$ocLazyLoad',
                 '$http',

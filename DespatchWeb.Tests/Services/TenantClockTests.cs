@@ -1,6 +1,5 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -18,7 +17,7 @@ public class TenantClockTests
 
         var clock = CreateClock();
 
-        clock.TenantNow.Should().Be(TestDates.Now);
+        Assert.Equal(TestDates.Now, clock.TenantNow);
     }
 
     [Fact]
@@ -28,9 +27,9 @@ public class TenantClockTests
 
         var clock = CreateClock();
 
-        clock.TenantNow.Hour.Should().Be(14);
-        clock.TenantNow.Minute.Should().Be(30);
-        clock.TenantNow.Second.Should().Be(0);
+        Assert.Equal(14, clock.TenantNow.Hour);
+        Assert.Equal(30, clock.TenantNow.Minute);
+        Assert.Equal(0, clock.TenantNow.Second);
     }
 
     [Fact]
@@ -45,8 +44,8 @@ public class TenantClockTests
 
         var clock = CreateClock();
 
-        clock.TenantNow.Should().Be(first);
-        clock.TenantNow.Should().Be(second);
+        Assert.Equal(first, clock.TenantNow);
+        Assert.Equal(second, clock.TenantNow);
 
         _tenantInfoServiceMock.Verify(s => s.GetCurrentTenantTime(), Times.Exactly(2));
     }
@@ -58,7 +57,7 @@ public class TenantClockTests
 
         var clock = CreateClock();
 
-        clock.TenantToday.Should().Be(TestDates.Today);
+        Assert.Equal(TestDates.Today, clock.TenantToday);
     }
 
     [Fact]
@@ -68,7 +67,7 @@ public class TenantClockTests
 
         var clock = CreateClock();
 
-        clock.TenantToday.TimeOfDay.Should().Be(TimeSpan.Zero);
+        Assert.Equal(TimeSpan.Zero, clock.TenantToday.TimeOfDay);
     }
 
     [Fact]
@@ -78,7 +77,7 @@ public class TenantClockTests
 
         var clock = CreateClock();
 
-        clock.TenantToday.Should().Be(clock.TenantNow.Date);
+        Assert.Equal(clock.TenantNow.Date, clock.TenantToday);
     }
 
     [Fact]
@@ -90,7 +89,7 @@ public class TenantClockTests
         var result = clock.UtcNow;
         var after = DateTime.UtcNow;
 
-        result.Should().BeOnOrAfter(before).And.BeOnOrBefore(after);
+        Assert.InRange(result, before, after);
     }
 
     [Fact]

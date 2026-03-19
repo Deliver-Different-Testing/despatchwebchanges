@@ -114,9 +114,15 @@ public static partial class JobMappings
 
     private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
     {
-        // Tenant-local datetimes are displayed as-is from the database.
-        // No timezone offset stamping needed — the frontend's parseDateFromApi
-        // extracts the time value from the ISO string regardless of offset.
+        if (string.IsNullOrEmpty(tenantTimeZone)) return;
+
+        var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone);
+        foreach (var job in jobs.Where(job => job.CreatedDate.HasValue))
+        {
+            job.CreatedDate = TimeZoneInfo.ConvertTimeFromUtc(
+                DateTime.SpecifyKind(job.CreatedDate!.Value, DateTimeKind.Utc),
+                timeZoneInfo);
+        }
     }
 
     private static async Task BatchLoadFlightInfoAsync(

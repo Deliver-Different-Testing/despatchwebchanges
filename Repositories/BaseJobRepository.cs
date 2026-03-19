@@ -744,7 +744,7 @@ public class BaseJobRepository(
                 {
                     NoteId = noteId,
                     EditedBy = staffId,
-                    EditedAt = DateTime.UtcNow,
+                    EditedAtUtc = DateTime.UtcNow,
                     OldNoteText = currentNote.NoteText,
                     NewNoteText = noteText,
                     OldNoteTypeId = currentNote.NoteTypeId,

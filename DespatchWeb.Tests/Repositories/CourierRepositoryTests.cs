@@ -2,8 +2,6 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
@@ -16,57 +14,28 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class CourierRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
-    private readonly DbContextOptions<DespatchContext> _contextOptions;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
-    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly SqliteTestDatabase _db = new();
     private readonly IMemoryCache _cache;
+    private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
 
     public CourierRepositoryTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
-        // Register custom SQL Server functions for SQLite compatibility
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        // Create schema
-        using var context = new DespatchContext(_contextOptions);
-        context.Database.EnsureCreated();
-
-        // Setup factory to return new context instances (for parallel queries)
-        _contextFactoryMock
-            .Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_contextOptions));
-        _contextFactoryMock
-            .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_contextOptions));
-
-        // Setup tenant info
         _tenantInfoServiceMock
             .Setup(x => x.GetTenantTimeZone())
             .Returns("New Zealand Standard Time");
 
-        // Setup memory cache
         _cache = new MemoryCache(new MemoryCacheOptions());
     }
 
     public async ValueTask DisposeAsync()
     {
         _cache.Dispose();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private CourierRepository CreateRepository() => new(
@@ -77,43 +46,7 @@ public class CourierRepositoryTests : IAsyncDisposable
         _cache
     );
 
-    private DespatchContext CreateContext() => new(_contextOptions);
-
-    #region GetClearListsAsync - Empty Input Tests
-
-    [Fact]
-    public async Task GetClearListsAsync_WithEmptyDespatchViewIds_ReturnsEmptyViewModel()
-    {
-        // Arrange
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetClearListsAsync([], cancellationToken: TestContext.Current.CancellationToken);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().BeEmpty();
-        result.Columns.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task GetClearListsAsync_WithNonExistentDespatchViewIds_ReturnsEmptyViewModel()
-    {
-        // Arrange
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetClearListsAsync([999, 998, 997], cancellationToken: TestContext.Current.CancellationToken);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().BeEmpty();
-        result.Columns.Should().BeEmpty();
-    }
-
-    #endregion
-
-    #region GetClearListsAsync - No Clear List Areas Tests
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     [Fact]
     public async Task GetClearListsAsync_WithDespatchViewWithoutClearListArea_ReturnsEmptyViewModel()
@@ -140,13 +73,60 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().BeEmpty();
+        Assert.NotNull(result);
+        Assert.Empty(result.Areas);
     }
 
-    #endregion
+    [Fact]
+    public async Task GetClearListsAsync_AssignsAreasToCorrectColumns()
+    {
+        // Arrange - Setup areas that should be assigned to different columns
+        await SetupMultipleAreasForColumnLayoutData();
+        var repository = CreateRepository();
 
-    #region GetClearListsAsync - Basic Flow Tests
+        // Act
+        var result =
+            await repository.GetClearListsAsync([1, 2, 3, 4], cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.Columns);
+
+        // Verify column assignment based on area names
+        var allAreasInColumns = result.Columns.SelectMany(c => c.Areas).ToList();
+        Assert.Equal(result.Areas.Count, allAreasInColumns.Count);
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_WithEmptyDespatchViewIds_ReturnsEmptyViewModel()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetClearListsAsync([], cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result.Areas);
+        Assert.Empty(result.Columns);
+    }
+
+    [Fact]
+    public async Task GetClearListsAsync_WithNonExistentDespatchViewIds_ReturnsEmptyViewModel()
+    {
+        // Arrange
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetClearListsAsync([999, 998, 997],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Empty(result.Areas);
+        Assert.Empty(result.Columns);
+    }
 
     [Fact]
     public async Task GetClearListsAsync_WithValidData_ReturnsCorrectAreas()
@@ -159,10 +139,10 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Name.Should().Be("Central");
-        result.Areas[0].Id.Should().Be(1);
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
+        Assert.Equal("Central", result.Areas[0].Name);
+        Assert.Equal(1, result.Areas[0].Id);
     }
 
     [Fact]
@@ -173,17 +153,15 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1, 2], cancellationToken: TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetClearListsAsync([1, 2], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(2);
-        result.Areas.Select(a => a.Name).Should().Contain(["Central", "West Mid"]);
+        Assert.NotNull(result);
+        Assert.Equal(2, result.Areas.Count);
+        Assert.Contains("Central", result.Areas.Select(a => a.Name));
+        Assert.Contains("West Mid", result.Areas.Select(a => a.Name));
     }
-
-    #endregion
-
-    #region GetClearListsAsync - Courier Data Tests
 
     [Fact]
     public async Task GetClearListsAsync_WithLoggedInCouriers_IncludesCouriersInResults()
@@ -196,10 +174,10 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
         // Verify area was created (courier assignment depends on GPS polygon matching)
-        result.Areas[0].Name.Should().Be("Central");
+        Assert.Equal("Central", result.Areas[0].Name);
     }
 
     [Fact]
@@ -213,13 +191,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
     }
-
-    #endregion
-
-    #region GetClearListsAsync - Parallel Query Verification Tests
 
     [Fact]
     public async Task GetClearListsAsync_ExecutesParallelQueries_WithCorrectDataIntegrity()
@@ -229,14 +203,15 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        var result = await repository.GetClearListsAsync([1, 2], cancellationToken: TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetClearListsAsync([1, 2], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - Verify data integrity across parallel queries
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCountGreaterThan(0);
+        Assert.NotNull(result);
+        Assert.True(result.Areas.Count > 0);
 
         // Verify columns are properly assigned
-        result.Columns.Should().NotBeEmpty();
+        Assert.NotEmpty(result.Columns);
     }
 
     [Fact]
@@ -247,41 +222,16 @@ public class CourierRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act - First call populates cache
-        var result1 = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
+        var result1 =
+            await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
         // Second call should use cache
-        var result2 = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
+        var result2 =
+            await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - Both calls should return consistent results
-        result1.Areas.Should().HaveCount(result2.Areas.Count);
-        result1.Areas[0].Name.Should().Be(result2.Areas[0].Name);
+        Assert.Equal(result2.Areas.Count, result1.Areas.Count);
+        Assert.Equal(result2.Areas[0].Name, result1.Areas[0].Name);
     }
-
-    #endregion
-
-    #region GetClearListsAsync - Column Layout Tests
-
-    [Fact]
-    public async Task GetClearListsAsync_AssignsAreasToCorrectColumns()
-    {
-        // Arrange - Setup areas that should be assigned to different columns
-        await SetupMultipleAreasForColumnLayoutData();
-        var repository = CreateRepository();
-
-        // Act
-        var result = await repository.GetClearListsAsync([1, 2, 3, 4], cancellationToken: TestContext.Current.CancellationToken);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Columns.Should().NotBeEmpty();
-
-        // Verify column assignment based on area names
-        var allAreasInColumns = result.Columns.SelectMany(c => c.Areas).ToList();
-        allAreasInColumns.Should().HaveCount(result.Areas.Count);
-    }
-
-    #endregion
-
-    #region GetClearListsAsync - Date Range Filter Tests
 
     [Fact]
     public async Task GetClearListsAsync_WithNoDateParams_ReturnsValidResult()
@@ -294,9 +244,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Name.Should().Be("Central");
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
+        Assert.Equal("Central", result.Areas[0].Name);
     }
 
     [Fact]
@@ -309,12 +259,13 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Act - request jobs from Jan 14 to Jan 16
         var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Name.Should().Be("Central");
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
+        Assert.Equal("Central", result.Areas[0].Name);
     }
 
     [Fact]
@@ -327,11 +278,12 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Act - request jobs from Jan 16 onward (past all test data)
         var startDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 17, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
         // Assert - still returns the area structure even with no matching jobs
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
     }
 
     [Fact]
@@ -343,11 +295,13 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Act - provide only startDate (endDate defaults to tomorrow: 2024-01-16)
         var startDate = new DateTimeOffset(2024, 1, 14, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, cancellationToken: TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetClearListsAsync([1], startDate,
+                cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
     }
 
     [Fact]
@@ -359,16 +313,13 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Act - provide only endDate (startDate defaults to today: 2024-01-15)
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], endDate: endDate, cancellationToken: TestContext.Current.CancellationToken);
+        var result = await repository.GetClearListsAsync([1], endDate: endDate,
+            cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Areas.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Single(result.Areas);
     }
-
-    #endregion
-
-    #region GetClearListsAsync - Display Order Adjustment with Date Filter Tests
 
     [Fact]
     public async Task GetClearListsAsync_CourierWithJobsOutsideDateFilter_MovesFromBottomToMiddle()
@@ -382,9 +333,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should move from Bottom (5) to Middle (3) since no jobs match filter
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Bottom.Should().BeEmpty("courier has no jobs in date range so should not be in Bottom/orange");
-        result.Areas[0].Middle.Should().ContainSingle("courier should move to Middle/purple when jobs are filtered out");
+        Assert.Single(result.Areas);
+        Assert.Empty(result.Areas[0].Bottom); // courier has no jobs in date range so should not be in Bottom/orange
+        Assert.Single(result.Areas[0].Middle); // courier should move to Middle/purple when jobs are filtered out
     }
 
     [Fact]
@@ -398,9 +349,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should stay in Bottom (5) since jobs match filter
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Bottom.Should().ContainSingle("courier has jobs in date range so should remain in Bottom/orange");
-        result.Areas[0].Middle.Should().BeEmpty("courier should not be in Middle when they have jobs");
+        Assert.Single(result.Areas);
+        Assert.Single(result.Areas[0].Bottom); // courier has jobs in date range so should remain in Bottom/orange
+        Assert.Empty(result.Areas[0].Middle); // courier should not be in Middle when they have jobs
     }
 
     [Fact]
@@ -414,9 +365,9 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should move from Top (1) to Middle (3)
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Top.Should().BeEmpty("courier has no jobs in date range so should not be in Top/blue");
-        result.Areas[0].Middle.Should().ContainSingle("courier should move to Middle/purple when jobs are filtered out");
+        Assert.Single(result.Areas);
+        Assert.Empty(result.Areas[0].Top); // courier has no jobs in date range so should not be in Top/blue
+        Assert.Single(result.Areas[0].Middle); // courier should move to Middle/purple when jobs are filtered out
     }
 
     [Fact]
@@ -430,10 +381,10 @@ public class CourierRepositoryTests : IAsyncDisposable
         var result = await repository.GetClearListsAsync([1], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert - courier should remain in Middle (3)
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Middle.Should().ContainSingle("courier with no jobs should stay in Middle/purple");
-        result.Areas[0].Top.Should().BeEmpty();
-        result.Areas[0].Bottom.Should().BeEmpty();
+        Assert.Single(result.Areas);
+        Assert.Single(result.Areas[0].Middle); // courier with no jobs should stay in Middle/purple
+        Assert.Empty(result.Areas[0].Top);
+        Assert.Empty(result.Areas[0].Bottom);
     }
 
     [Fact]
@@ -446,17 +397,14 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Act - narrow time filter (10:00-10:05) that excludes the 16:00 job
         var startDate = new DateTimeOffset(2024, 1, 15, 10, 0, 0, TimeSpan.Zero);
         var endDate = new DateTimeOffset(2024, 1, 15, 10, 5, 0, TimeSpan.Zero);
-        var result = await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
+        var result =
+            await repository.GetClearListsAsync([1], startDate, endDate, TestContext.Current.CancellationToken);
 
         // Assert - courier should stay in Bottom (5) because the full-day query still finds their job
-        result.Areas.Should().HaveCount(1);
-        result.Areas[0].Bottom.Should().ContainSingle("courier has a prebooked job today so should remain in Bottom/orange");
-        result.Areas[0].Middle.Should().BeEmpty("courier should not move to Middle when they have jobs today");
+        Assert.Single(result.Areas);
+        Assert.Single(result.Areas[0].Bottom); // courier has a prebooked job today so should remain in Bottom/orange
+        Assert.Empty(result.Areas[0].Middle); // courier should not move to Middle when they have jobs today
     }
-
-    #endregion
-
-    #region Helper Methods - Data Setup
 
     private async Task SetupBasicClearListData()
     {
@@ -862,10 +810,26 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Create clear list areas for different columns
         var areas = new[]
         {
-            new TblClearListArea { ClearListAreaId = 1, Code = "C", Name = "Central", ChannelId = 1, Order = 1, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
-            new TblClearListArea { ClearListAreaId = 2, Code = "WM", Name = "West Mid", ChannelId = 1, Order = 2, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
-            new TblClearListArea { ClearListAreaId = 3, Code = "EM", Name = "East Mid", ChannelId = 1, Order = 3, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
-            new TblClearListArea { ClearListAreaId = 4, Code = "M", Name = "Mangere", ChannelId = 1, Order = 4, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" }
+            new TblClearListArea
+            {
+                ClearListAreaId = 1, Code = "C", Name = "Central", ChannelId = 1, Order = 1, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new TblClearListArea
+            {
+                ClearListAreaId = 2, Code = "WM", Name = "West Mid", ChannelId = 1, Order = 2, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new TblClearListArea
+            {
+                ClearListAreaId = 3, Code = "EM", Name = "East Mid", ChannelId = 1, Order = 3, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new TblClearListArea
+            {
+                ClearListAreaId = 4, Code = "M", Name = "Mangere", ChannelId = 1, Order = 4, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            }
         };
         context.TblClearListAreas.AddRange(areas);
 
@@ -882,20 +846,52 @@ public class CourierRepositoryTests : IAsyncDisposable
         // Despatch views
         var despatchViews = new[]
         {
-            new TblDespatchView { DespatchViewId = 1, Name = "Central", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
-            new TblDespatchView { DespatchViewId = 2, Name = "West Mid", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
-            new TblDespatchView { DespatchViewId = 3, Name = "East Mid", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" },
-            new TblDespatchView { DespatchViewId = 4, Name = "Mangere", ShowOnAssistDespatch = true, Created = TestDates.Now, CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test" }
+            new TblDespatchView
+            {
+                DespatchViewId = 1, Name = "Central", ShowOnAssistDespatch = true, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new TblDespatchView
+            {
+                DespatchViewId = 2, Name = "West Mid", ShowOnAssistDespatch = true, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new TblDespatchView
+            {
+                DespatchViewId = 3, Name = "East Mid", ShowOnAssistDespatch = true, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new TblDespatchView
+            {
+                DespatchViewId = 4, Name = "Mangere", ShowOnAssistDespatch = true, Created = TestDates.Now,
+                CreatedBy = "Test", LastModified = TestDates.Now, LastModifiedBy = "Test"
+            }
         };
         context.TblDespatchViews.AddRange(despatchViews);
 
         // Link despatch views to zone groups
         var links = new[]
         {
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 1, DespatchViewId = 1, ZoneGroupId = 1, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" },
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 2, DespatchViewId = 2, ZoneGroupId = 2, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" },
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 3, DespatchViewId = 3, ZoneGroupId = 3, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" },
-            new DespatchViewZoneGroup { DespatchViewZoneGroupId = 4, DespatchViewId = 4, ZoneGroupId = 4, CreatedDate = TestDates.Now, CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test" }
+            new DespatchViewZoneGroup
+            {
+                DespatchViewZoneGroupId = 1, DespatchViewId = 1, ZoneGroupId = 1, CreatedDate = TestDates.Now,
+                CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new DespatchViewZoneGroup
+            {
+                DespatchViewZoneGroupId = 2, DespatchViewId = 2, ZoneGroupId = 2, CreatedDate = TestDates.Now,
+                CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new DespatchViewZoneGroup
+            {
+                DespatchViewZoneGroupId = 3, DespatchViewId = 3, ZoneGroupId = 3, CreatedDate = TestDates.Now,
+                CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test"
+            },
+            new DespatchViewZoneGroup
+            {
+                DespatchViewZoneGroupId = 4, DespatchViewId = 4, ZoneGroupId = 4, CreatedDate = TestDates.Now,
+                CreatedBy = "Test", LastModifiedDate = TestDates.Now, LastModifiedBy = "Test"
+            }
         };
         context.DespatchViewZoneGroups.AddRange(links);
 
@@ -1101,5 +1097,4 @@ public class CourierRepositoryTests : IAsyncDisposable
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    #endregion
 }

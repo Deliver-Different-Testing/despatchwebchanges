@@ -1,5 +1,4 @@
 using System.Net;
-using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -17,9 +16,8 @@ public class SecurityMiddlewareTests
     /// <summary>
     /// Creates a test server with the security middleware configured.
     /// </summary>
-    private static IHost CreateTestHost()
-    {
-        return new HostBuilder()
+    private static IHost CreateTestHost() =>
+        new HostBuilder()
             .ConfigureWebHost(webBuilder =>
             {
                 webBuilder.UseTestServer();
@@ -86,9 +84,6 @@ public class SecurityMiddlewareTests
                 });
             })
             .Start();
-    }
-
-    #region CSRF Protection Tests
 
     [Fact]
     public async Task Post_WithoutXhrHeader_Returns400()
@@ -102,9 +97,9 @@ public class SecurityMiddlewareTests
             await client.PostAsync("/api/test", new StringContent(""), TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        content.Should().Contain("missing required header");
+        Assert.Contains("missing required header", content);
     }
 
     [Fact]
@@ -115,7 +110,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
         var request = new HttpRequestMessage(HttpMethod.Post, "/api/test")
         {
-            Content = new StringContent("")
+            Content = new StringContent(string.Empty)
         };
         request.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
@@ -123,7 +118,7 @@ public class SecurityMiddlewareTests
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -137,7 +132,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -152,7 +147,7 @@ public class SecurityMiddlewareTests
             TestContext.Current.CancellationToken);
 
         // Assert - Should succeed because healthz is excluded
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -167,7 +162,7 @@ public class SecurityMiddlewareTests
             TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -181,7 +176,7 @@ public class SecurityMiddlewareTests
         var response = await client.DeleteAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -192,19 +187,15 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
         var request = new HttpRequestMessage(HttpMethod.Patch, "/api/test")
         {
-            Content = new StringContent("")
+            Content = new StringContent(string.Empty)
         };
 
         // Act
         var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
-
-    #endregion
-
-    #region Security Headers Tests
 
     [Fact]
     public async Task Response_HasXContentTypeOptions()
@@ -217,8 +208,8 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("X-Content-Type-Options");
-        response.Headers.GetValues("X-Content-Type-Options").Should().Contain("nosniff");
+        Assert.True(response.Headers.Contains("X-Content-Type-Options"));
+        Assert.Contains("nosniff", response.Headers.GetValues("X-Content-Type-Options"));
     }
 
     [Fact]
@@ -232,8 +223,8 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("X-Frame-Options");
-        response.Headers.GetValues("X-Frame-Options").Should().Contain("DENY");
+        Assert.True(response.Headers.Contains("X-Frame-Options"));
+        Assert.Contains("DENY", response.Headers.GetValues("X-Frame-Options"));
     }
 
     [Fact]
@@ -247,8 +238,8 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("X-XSS-Protection");
-        response.Headers.GetValues("X-XSS-Protection").Should().Contain("1; mode=block");
+        Assert.True(response.Headers.Contains("X-XSS-Protection"));
+        Assert.Contains("1; mode=block", response.Headers.GetValues("X-XSS-Protection"));
     }
 
     [Fact]
@@ -262,8 +253,8 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("Referrer-Policy");
-        response.Headers.GetValues("Referrer-Policy").Should().Contain("strict-origin-when-cross-origin");
+        Assert.True(response.Headers.Contains("Referrer-Policy"));
+        Assert.Contains("strict-origin-when-cross-origin", response.Headers.GetValues("Referrer-Policy"));
     }
 
     [Fact]
@@ -277,10 +268,10 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("Strict-Transport-Security");
+        Assert.True(response.Headers.Contains("Strict-Transport-Security"));
         var hstsValue = response.Headers.GetValues("Strict-Transport-Security").First();
-        hstsValue.Should().Contain("max-age=31536000");
-        hstsValue.Should().Contain("includeSubDomains");
+        Assert.Contains("max-age=31536000", hstsValue);
+        Assert.Contains("includeSubDomains", hstsValue);
     }
 
     [Fact]
@@ -294,13 +285,13 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("Content-Security-Policy");
+        Assert.True(response.Headers.Contains("Content-Security-Policy"));
         var cspValue = response.Headers.GetValues("Content-Security-Policy").First();
-        cspValue.Should().Contain("default-src 'self'");
-        cspValue.Should().Contain("frame-ancestors 'none'");
-        cspValue.Should().Contain("object-src 'none'"); // Prevents Flash/plugin attacks
-        cspValue.Should().Contain("frame-src 'none'"); // Prevents iframe embedding
-        cspValue.Should().Contain("upgrade-insecure-requests"); // Forces HTTPS
+        Assert.Contains("default-src 'self'", cspValue);
+        Assert.Contains("frame-ancestors 'none'", cspValue);
+        Assert.Contains("object-src 'none'", cspValue); // Prevents Flash/plugin attacks
+        Assert.Contains("frame-src 'none'", cspValue); // Prevents iframe embedding
+        Assert.Contains("upgrade-insecure-requests", cspValue); // Forces HTTPS
     }
 
     [Fact]
@@ -315,8 +306,8 @@ public class SecurityMiddlewareTests
 
         // Assert - img-src should only allow https:, not http:
         var cspValue = response.Headers.GetValues("Content-Security-Policy").First();
-        cspValue.Should().Contain("img-src 'self' data: blob: https:");
-        cspValue.Should().NotContain("img-src 'self' data: blob: https: http:");
+        Assert.Contains("img-src 'self' data: blob: https:", cspValue);
+        Assert.DoesNotContain("img-src 'self' data: blob: https: http:", cspValue);
     }
 
     [Fact]
@@ -330,11 +321,10 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        response.Headers.Should().ContainKey("Permissions-Policy");
+        Assert.True(response.Headers.Contains("Permissions-Policy"));
         var permissionsValue = response.Headers.GetValues("Permissions-Policy").First();
-        permissionsValue.Should().Contain("geolocation=(self)");
-        permissionsValue.Should().Contain("microphone=()");
+        Assert.Contains("geolocation=(self)", permissionsValue);
+        Assert.Contains("microphone=()", permissionsValue);
     }
 
-    #endregion
 }

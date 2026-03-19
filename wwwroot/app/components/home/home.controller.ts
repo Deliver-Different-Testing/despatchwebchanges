@@ -27,15 +27,13 @@ import type {ToastType} from "../../react/services/toastService";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../../interfaces/coordinates.interface";
-import {ContactID, FirstName} from "../../contants";
+import {ContactID} from "../../contants";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
-import greetUser from "../../functions/greetUser";
 import dayjs from "dayjs";
 import TruckCourierStatusDialogService
     from "../dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 import JobAddStopService from "../../services/job-add-stop.service";
-import getJobTableRowClass from "../../functions/getJobTableRowClass";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import timezone from 'dayjs/plugin/timezone';
 import {StatusFilter} from "../../enums/status-filter.enum";
@@ -109,7 +107,6 @@ class HomeController extends BaseController {
     isLoadingData: boolean = false;
     showDriverLocationsNoData: boolean = false;
     showDriverLocationsData: boolean = false;
-    greeting: string;
     mapJobList?: IDispatchMapItem[] = []
     mapJobListFull?: IDispatchMapItem[] = []
     currentJob?: IDispatchJob;
@@ -218,7 +215,6 @@ class HomeController extends BaseController {
         super();
         this.initServices($timeout, $interval, $scope);
 
-        this.greeting = greetUser(FirstName);
         this.isUsCustomer = this.APP_CONFIG.US_Customer;
 
         this.initializeBoxes();
@@ -1055,10 +1051,6 @@ class HomeController extends BaseController {
                 }
             },
         };
-    }
-
-    jobClass(job: IDispatchJob): string {
-        return getJobTableRowClass(job, this.currentJob);
     }
 
     private async dispatchJob(courierId: number, jobId: number): Promise<void> {
