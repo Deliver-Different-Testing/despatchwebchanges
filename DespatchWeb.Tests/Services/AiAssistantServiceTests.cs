@@ -1,7 +1,6 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Moq;
 
@@ -41,8 +40,6 @@ public class AiAssistantServiceTests
         _tenantInfoMock.Object,
         _clock,
         _settings);
-
-    #region ChatAsync - Token Accumulation
 
     [Fact]
     public async Task ChatAsync_AccumulatesTokensAcrossIterations()
@@ -91,13 +88,9 @@ public class AiAssistantServiceTests
         var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Usage.InputTokens.Should().Be(300);
-        result.Usage.OutputTokens.Should().Be(75);
+        Assert.Equal(300, result.Usage.InputTokens);
+        Assert.Equal(75, result.Usage.OutputTokens);
     }
-
-    #endregion
-
-    #region ChatAsync - Data Sanitization
 
     [Fact]
     public async Task ChatAsync_SanitizesUserMessages()
@@ -121,14 +114,10 @@ public class AiAssistantServiceTests
         await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedMessages.Should().NotBeNull();
-        capturedMessages[0].Content.Should().Contain("[EMAIL]");
-        capturedMessages[0].Content.Should().NotContain("john@example.com");
+        Assert.NotNull(capturedMessages);
+        Assert.Contains("[EMAIL]", capturedMessages[0].Content);
+        Assert.DoesNotContain("john@example.com", capturedMessages[0].Content);
     }
-
-    #endregion
-
-    #region ChatAsync - Tool Definitions
 
     [Fact]
     public async Task ChatAsync_PassesToolDefinitions()
@@ -149,20 +138,16 @@ public class AiAssistantServiceTests
         await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedTools.Should().NotBeNull();
-        capturedTools.Should().Contain(t => t.Name == "lookup_job");
-        capturedTools.Should().Contain(t => t.Name == "search_jobs");
-        capturedTools.Should().Contain(t => t.Name == "search_couriers");
-        capturedTools.Should().Contain(t => t.Name == "get_job_notes");
-        capturedTools.Should().Contain(t => t.Name == "get_job_events");
-        capturedTools.Should().Contain(t => t.Name == "get_courier_details");
-        capturedTools.Should().Contain(t => t.Name == "get_overview_stats");
-        capturedTools.Should().Contain(t => t.Name == "get_active_couriers");
+        Assert.NotNull(capturedTools);
+        Assert.Contains(capturedTools, t => t.Name == "lookup_job");
+        Assert.Contains(capturedTools, t => t.Name == "search_jobs");
+        Assert.Contains(capturedTools, t => t.Name == "search_couriers");
+        Assert.Contains(capturedTools, t => t.Name == "get_job_notes");
+        Assert.Contains(capturedTools, t => t.Name == "get_job_events");
+        Assert.Contains(capturedTools, t => t.Name == "get_courier_details");
+        Assert.Contains(capturedTools, t => t.Name == "get_overview_stats");
+        Assert.Contains(capturedTools, t => t.Name == "get_active_couriers");
     }
-
-    #endregion
-
-    #region ChatAsync - Basic Response
 
     [Fact]
     public async Task ChatAsync_SimpleTextResponse_ReturnsMessage()
@@ -185,9 +170,9 @@ public class AiAssistantServiceTests
         var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Message.Should().Be("There are 5 active jobs.");
-        result.Usage.InputTokens.Should().Be(100);
-        result.Usage.OutputTokens.Should().Be(20);
+        Assert.Equal("There are 5 active jobs.", result.Message);
+        Assert.Equal(100, result.Usage.InputTokens);
+        Assert.Equal(20, result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -211,12 +196,8 @@ public class AiAssistantServiceTests
         var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Message.Should().BeEmpty();
+        Assert.Empty(result.Message);
     }
-
-    #endregion
-
-    #region ChatAsync - Tool Use
 
     [Fact]
     public async Task ChatAsync_WithToolCall_ExecutesToolAndReturnsResult()
@@ -266,9 +247,9 @@ public class AiAssistantServiceTests
         var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Message.Should().Be("Job 123 is currently active.");
-        result.Usage.InputTokens.Should().Be(500);
-        result.Usage.OutputTokens.Should().Be(80);
+        Assert.Equal("Job 123 is currently active.", result.Message);
+        Assert.Equal(500, result.Usage.InputTokens);
+        Assert.Equal(80, result.Usage.OutputTokens);
     }
 
     [Fact]
@@ -318,7 +299,7 @@ public class AiAssistantServiceTests
         var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Message.Should().Contain("not found");
+        Assert.Contains("not found", result.Message);
     }
 
     [Fact]
@@ -363,12 +344,8 @@ public class AiAssistantServiceTests
         var result = await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
-
-    #endregion
-
-    #region ChatAsync - System Prompt
 
     [Fact]
     public async Task ChatAsync_IncludesOperatorContextInSystemPrompt()
@@ -389,9 +366,9 @@ public class AiAssistantServiceTests
         await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("Test Operator");
-        capturedSystemPrompt.Should().Contain("Pacific/Auckland");
-        capturedSystemPrompt.Should().Contain("Non-US");
+        Assert.Contains("Test Operator", capturedSystemPrompt);
+        Assert.Contains("Pacific/Auckland", capturedSystemPrompt);
+        Assert.Contains("Non-US", capturedSystemPrompt);
     }
 
     [Fact]
@@ -415,8 +392,7 @@ public class AiAssistantServiceTests
         await service.ChatAsync(messages, TestContext.Current.CancellationToken);
 
         // Assert
-        capturedSystemPrompt.Should().Contain("US");
+        Assert.Contains("US", capturedSystemPrompt);
     }
 
-    #endregion
 }

@@ -1,7 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Helpers;
 using DespatchWeb.Models;
-using FluentAssertions;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Helpers;
@@ -12,7 +11,6 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public class JobMappingsTests
 {
-    #region Amount Consistency Tests
 
     [Fact]
     public void AmountCalculation_IsConsistentBetweenLiveAndArchived()
@@ -62,13 +60,9 @@ public class JobMappingsTests
         var archivedResult = archivedMapping(archivedJob);
 
         // Assert - Both should use UcjbAmount directly
-        liveResult.Amount.Should().Be(999m);
-        archivedResult.Amount.Should().Be(999m);
+        Assert.Equal(999m, liveResult.Amount);
+        Assert.Equal(999m, archivedResult.Amount);
     }
-
-    #endregion
-
-    #region JobMappingCore vs JobArchiveMapping Consistency Tests
 
     [Theory]
     [InlineData(false)]
@@ -105,21 +99,17 @@ public class JobMappingsTests
         var archiveResult = archiveMapping(archivedJob);
 
         // Assert - Both should have same default values for collections when no items exist
-        liveResult.TailLiftPu.Should().Be(archiveResult.TailLiftPu);
-        liveResult.TailLiftDo.Should().Be(archiveResult.TailLiftDo);
-        liveResult.DeliverToPrivateRes.Should().Be(archiveResult.DeliverToPrivateRes);
+        Assert.Equal(archiveResult.TailLiftPu, liveResult.TailLiftPu);
+        Assert.Equal(archiveResult.TailLiftDo, liveResult.TailLiftDo);
+        Assert.Equal(archiveResult.DeliverToPrivateRes, liveResult.DeliverToPrivateRes);
         // With inline mapping, empty collections result in empty list
-        liveResult.ParcelDimensions.Should().BeEmpty();
-        archiveResult.ParcelDimensions.Should().BeNullOrEmpty(); // Either null or empty depending on expression evaluation
-        liveResult.PalletInfo.Should().BeNull();
-        archiveResult.PalletInfo.Should().BeNull();
-        liveResult.AssignedFlight.Should().BeNull();
-        archiveResult.AssignedFlight.Should().BeNull();
+        Assert.Empty(liveResult.ParcelDimensions);
+        Assert.True(archiveResult.ParcelDimensions == null || archiveResult.ParcelDimensions.Count == 0); // Either null or empty depending on expression evaluation
+        Assert.Null(liveResult.PalletInfo);
+        Assert.Null(archiveResult.PalletInfo);
+        Assert.Null(liveResult.AssignedFlight);
+        Assert.Null(archiveResult.AssignedFlight);
     }
-
-    #endregion
-
-    #region JobMappingCore Arrival Time Tests
 
     [Theory]
     [InlineData(false)]
@@ -146,8 +136,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.PickupArrivalTime.Should().Be(arrivalTime,
-            "PickupArrivalTime should be mapped from the entity");
+        Assert.Equal(arrivalTime, result.PickupArrivalTime);
     }
 
     [Theory]
@@ -175,8 +164,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.DeliveryArrivalTime.Should().Be(arrivalTime,
-            "DeliveryArrivalTime should be mapped from the entity");
+        Assert.Equal(arrivalTime, result.DeliveryArrivalTime);
     }
 
     [Theory]
@@ -204,13 +192,9 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.PickupArrivalTime.Should().BeNull("PickupArrivalTime should be null when not set on entity");
-        result.DeliveryArrivalTime.Should().BeNull("DeliveryArrivalTime should be null when not set on entity");
+        Assert.Null(result.PickupArrivalTime);
+        Assert.Null(result.DeliveryArrivalTime);
     }
-
-    #endregion
-
-    #region LiveJobDownloadMapping Tests
 
     [Fact]
     public void LiveJobDownloadMapping_Amount_UsesUcjbAmountDirectly()
@@ -243,7 +227,7 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - Should use UcjbAmount directly
-        result.Amount.Should().Be(999m);
+        Assert.Equal(999m, result.Amount);
     }
 
     [Fact]
@@ -268,7 +252,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should use UcjbAmount directly
-        result.Amount.Should().Be(999m);
+        Assert.Equal(999m, result.Amount);
     }
 
     [Fact]
@@ -290,7 +274,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - With .Any() fix: no parent, no pricing, so UcjbAmount is used
-        result.Amount.Should().Be(250m);
+        Assert.Equal(250m, result.Amount);
     }
 
     [Fact]
@@ -320,7 +304,7 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - Should use UcjbAmount directly
-        result.Amount.Should().Be(500m);
+        Assert.Equal(500m, result.Amount);
     }
 
     [Fact]
@@ -366,35 +350,35 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.Id.Should().Be(123);
-        result.ParentId.Should().Be(100);
-        result.JobNumber.Should().Be("JOB-001");
-        result.CustomerName.Should().Be("Test Customer");
-        result.BookDate.Should().Be(new DateTime(2024, 1, 15, 10, 30, 0));
-        result.PickedUpDate.Should().Be(new DateTime(2024, 1, 15, 11, 0, 0));
-        result.DeliveredDate.Should().Be(new DateTime(2024, 1, 15, 12, 0, 0));
-        result.Fuel.Should().Be(15m);
-        result.Ppd.Should().Be(10m);
-        result.CourierPayment.Should().Be(80m);
-        result.CourierFuel.Should().Be(8m);
-        result.CourierBonus.Should().Be(5m);
-        result.Quantity.Should().Be(3);
-        result.Weight.Should().Be(25.5);
-        result.Size.Should().Be(2);
-        result.PickupAddressLine1.Should().Be("123 Pickup St");
-        result.PickupAddressLine2.Should().Be("Unit 1");
-        result.DeliveryAddressLine1.Should().Be("456 Delivery Ave");
-        result.DeliveryAddressLine2.Should().Be("Suite 200");
-        result.ClientReferenceA.Should().Be("REF-A");
-        result.ClientReferenceB.Should().Be("REF-B");
-        result.ClientReferenceC.Should().Be("REF-C");
-        result.StatusName.Should().Be("Completed");
-        result.CourierCode.Should().Be("C001");
-        result.LoggedInContact.Should().Be("John Doe");
-        result.RawBaseAmount.Should().Be(125m);
-        result.IsArchived.Should().BeFalse();
-        result.InvoiceNumber.Should().BeNull(); // Live jobs don't have invoice
-        result.InvoiceDate.Should().BeNull();
+        Assert.Equal(123, result.Id);
+        Assert.Equal(100, result.ParentId);
+        Assert.Equal("JOB-001", result.JobNumber);
+        Assert.Equal("Test Customer", result.CustomerName);
+        Assert.Equal(new DateTime(2024, 1, 15, 10, 30, 0), result.BookDate);
+        Assert.Equal(new DateTime(2024, 1, 15, 11, 0, 0), result.PickedUpDate);
+        Assert.Equal(new DateTime(2024, 1, 15, 12, 0, 0), result.DeliveredDate);
+        Assert.Equal(15m, result.Fuel);
+        Assert.Equal(10m, result.Ppd);
+        Assert.Equal(80m, result.CourierPayment);
+        Assert.Equal(8m, result.CourierFuel);
+        Assert.Equal(5m, result.CourierBonus);
+        Assert.Equal((short)3, result.Quantity);
+        Assert.Equal(25.5, result.Weight);
+        Assert.Equal(2, result.Size);
+        Assert.Equal("123 Pickup St", result.PickupAddressLine1);
+        Assert.Equal("Unit 1", result.PickupAddressLine2);
+        Assert.Equal("456 Delivery Ave", result.DeliveryAddressLine1);
+        Assert.Equal("Suite 200", result.DeliveryAddressLine2);
+        Assert.Equal("REF-A", result.ClientReferenceA);
+        Assert.Equal("REF-B", result.ClientReferenceB);
+        Assert.Equal("REF-C", result.ClientReferenceC);
+        Assert.Equal("Completed", result.StatusName);
+        Assert.Equal("C001", result.CourierCode);
+        Assert.Equal("John Doe", result.LoggedInContact);
+        Assert.Equal(125m, result.RawBaseAmount);
+        Assert.False(result.IsArchived);
+        Assert.Null(result.InvoiceNumber); // Live jobs don't have invoice
+        Assert.Null(result.InvoiceDate);
     }
 
     [Fact]
@@ -417,8 +401,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.AgentAirlineName.Should().Be("Air NZ");
-        result.AWB.Should().Be("NZ123");
+        Assert.Equal("Air NZ", result.AgentAirlineName);
+        Assert.Equal("NZ123", result.AWB);
     }
 
     [Fact]
@@ -438,13 +422,9 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.AgentAirlineName.Should().Be("Agent Smith");
-        result.AWB.Should().BeNull();
+        Assert.Equal("Agent Smith", result.AgentAirlineName);
+        Assert.Null(result.AWB);
     }
-
-    #endregion
-
-    #region ArchivedJobDownloadMapping Tests
 
     [Fact]
     public void ArchivedJobDownloadMapping_Amount_UsesUcjbAmountDirectly()
@@ -478,7 +458,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Should use UcjbAmount directly
-        result.Amount.Should().Be(999m);
+        Assert.Equal(999m, result.Amount);
     }
 
     [Fact]
@@ -497,7 +477,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.IsArchived.Should().BeTrue();
+        Assert.True(result.IsArchived);
     }
 
     [Fact]
@@ -519,8 +499,8 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.InvoiceNumber.Should().Be(12345);
-        result.InvoiceDate.Should().Be(invoiceDate);
+        Assert.Equal(12345, result.InvoiceNumber);
+        Assert.Equal(invoiceDate, result.InvoiceDate);
     }
 
     [Fact]
@@ -561,18 +541,18 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.Id.Should().Be(456);
-        result.ParentId.Should().Be(400);
-        result.JobNumber.Should().Be("ARCH-001");
-        result.CustomerName.Should().Be("Archived Customer");
-        result.Fuel.Should().Be(30m);
-        result.Ppd.Should().Be(20m);
-        result.StatusName.Should().Be("Archived");
-        result.CourierCode.Should().Be("C002");
-        result.AgentAirlineName.Should().Be("Archive Agent");
-        result.AWB.Should().BeNull(); // Archived jobs don't have nationwide navigation
-        result.IsArchived.Should().BeTrue();
-        result.RawBaseAmount.Should().Be(250m);
+        Assert.Equal(456, result.Id);
+        Assert.Equal(400, result.ParentId);
+        Assert.Equal("ARCH-001", result.JobNumber);
+        Assert.Equal("Archived Customer", result.CustomerName);
+        Assert.Equal(30m, result.Fuel);
+        Assert.Equal(20m, result.Ppd);
+        Assert.Equal("Archived", result.StatusName);
+        Assert.Equal("C002", result.CourierCode);
+        Assert.Equal("Archive Agent", result.AgentAirlineName);
+        Assert.Null(result.AWB); // Archived jobs don't have nationwide navigation
+        Assert.True(result.IsArchived);
+        Assert.Equal(250m, result.RawBaseAmount);
     }
 
     [Fact]
@@ -591,12 +571,8 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.BookDate.Should().Be(default);
+        Assert.Equal(default, result.BookDate);
     }
-
-    #endregion
-
-    #region Amount Consistency Tests
 
     /// <summary>
     /// Tests that UcjbAmount is used directly regardless of parent pricing.
@@ -628,7 +604,7 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - UcjbAmount is used directly
-        result.Amount.Should().Be(50m);
+        Assert.Equal(50m, result.Amount);
     }
 
     /// <summary>
@@ -664,7 +640,7 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - UcjbAmount is used directly
-        result.Amount.Should().Be(50m);
+        Assert.Equal(50m, result.Amount);
     }
 
     /// <summary>
@@ -691,7 +667,7 @@ public class JobMappingsTests
         // - Parent is null, so first condition (j.Parent != null && ...) is FALSE
         // - j.PricingBreakdownJobs.Any() returns FALSE (empty list)
         // - Falls through to UcjbAmount (150m)
-        result.Amount.Should().Be(150m, "No pricing breakdowns, so UcjbAmount should be used");
+        Assert.True(result.Amount == 150m, "No pricing breakdowns, so UcjbAmount should be used");
     }
 
     /// <summary>
@@ -725,7 +701,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - UcjbAmount is used directly
-        result.Amount.Should().Be(50m);
+        Assert.Equal(50m, result.Amount);
     }
 
     /// <summary>
@@ -749,7 +725,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should default to 0 when all else fails
-        result.Amount.Should().Be(0m);
+        Assert.Equal(0m, result.Amount);
     }
 
     /// <summary>
@@ -779,12 +755,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Uses UcjbAmount directly, not pricing breakdowns
-        result.Amount.Should().Be(999m);
+        Assert.Equal(999m, result.Amount);
     }
-
-    #endregion
-
-    #region JobArchiveMapping Tests
 
     [Fact]
     public void JobArchiveMapping_SetsDefaultValuesForCollections()
@@ -805,13 +777,13 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Collections have default values when no items exist (now loaded inline)
-        result.TailLiftPu.Should().BeFalse();
-        result.TailLiftDo.Should().BeFalse();
-        result.DeliverToPrivateRes.Should().BeFalse();
-        result.ParcelDimensions.Should().BeNullOrEmpty(); // Either null or empty depending on expression evaluation
-        result.PalletInfo.Should().BeNull();
-        result.AssignedFlight.Should().BeNull();
-        result.IsFlightAssigned.Should().BeFalse();
+        Assert.False(result.TailLiftPu);
+        Assert.False(result.TailLiftDo);
+        Assert.False(result.DeliverToPrivateRes);
+        Assert.True(result.ParcelDimensions == null || result.ParcelDimensions.Count == 0); // Either null or empty depending on expression evaluation
+        Assert.Null(result.PalletInfo);
+        Assert.Null(result.AssignedFlight);
+        Assert.False(result.IsFlightAssigned);
     }
 
     [Fact]
@@ -830,7 +802,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.IsArchived.Should().BeTrue();
+        Assert.True(result.IsArchived);
     }
 
     [Fact]
@@ -881,33 +853,33 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.Id.Should().Be(123);
-        result.JobNo.Should().Be("ARCH-123");
-        result.ParentId.Should().Be(100);
-        result.RootParentId.Should().Be(100);
-        result.ScheduleName.Should().Be("Daily Schedule");
-        result.Void.Should().BeFalse();
-        result.Barcode.Should().Be("BARCODE123");
-        result.Weight.Should().Be(25.5);
-        result.Items.Should().Be(3);
-        result.RefA.Should().Be("REF-A");
-        result.RefB.Should().Be("REF-B");
-        result.OurRef.Should().Be("OUR-REF");
-        result.Direct.Should().BeTrue();
-        result.Van.Should().BeTrue();
-        result.VanOk.Should().BeTrue();
-        result.Truck.Should().BeFalse();
-        result.DgClass.Should().Be(3);
-        result.Done.Should().BeTrue();
-        result.Lp.Should().Be(1);
-        result.Ld.Should().Be(0);
-        result.Attention.Should().BeTrue();
-        result.CustomJobName.Should().Be("Custom Job");
-        result.ClientName.Should().Be("Test Client");
-        result.Status.Should().Be("DEL");
-        result.StatusName.Should().Be("Delivered");
-        result.IsArchived.Should().BeTrue();
-        result.PreBook.Should().BeFalse();
+        Assert.Equal(123, result.Id);
+        Assert.Equal("ARCH-123", result.JobNo);
+        Assert.Equal(100, result.ParentId);
+        Assert.Equal(100, result.RootParentId);
+        Assert.Equal("Daily Schedule", result.ScheduleName);
+        Assert.False(result.Void);
+        Assert.Equal("BARCODE123", result.Barcode);
+        Assert.Equal(25.5, result.Weight);
+        Assert.Equal(3, result.Items);
+        Assert.Equal("REF-A", result.RefA);
+        Assert.Equal("REF-B", result.RefB);
+        Assert.Equal("OUR-REF", result.OurRef);
+        Assert.True(result.Direct);
+        Assert.True(result.Van);
+        Assert.True(result.VanOk);
+        Assert.False(result.Truck);
+        Assert.Equal(3, result.DgClass);
+        Assert.True(result.Done);
+        Assert.Equal(1, result.Lp);
+        Assert.Equal(0, result.Ld);
+        Assert.True(result.Attention);
+        Assert.Equal("Custom Job", result.CustomJobName);
+        Assert.Equal("Test Client", result.ClientName);
+        Assert.Equal("DEL", result.Status);
+        Assert.Equal("Delivered", result.StatusName);
+        Assert.True(result.IsArchived);
+        Assert.False(result.PreBook);
     }
 
     [Fact]
@@ -946,22 +918,22 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Pickup Address
-        result.PickupAddress.AddressLine1.Should().Be("123 Pickup St");
-        result.PickupAddress.AddressLine2.Should().Be("Unit 1");
-        result.PickupAddress.Latitude.Should().Be(-36.8485m);
-        result.PickupAddress.Longitude.Should().Be(174.7633m);
+        Assert.Equal("123 Pickup St", result.PickupAddress.AddressLine1);
+        Assert.Equal("Unit 1", result.PickupAddress.AddressLine2);
+        Assert.Equal(-36.8485m, result.PickupAddress.Latitude);
+        Assert.Equal(174.7633m, result.PickupAddress.Longitude);
 
         // Assert - Delivery Address
-        result.DeliveryAddress.AddressLine1.Should().Be("456 Delivery Ave");
-        result.DeliveryAddress.AddressLine2.Should().Be("Suite 200");
-        result.DeliveryAddress.Latitude.Should().Be(-36.8600m);
-        result.DeliveryAddress.Longitude.Should().Be(174.7700m);
+        Assert.Equal("456 Delivery Ave", result.DeliveryAddress.AddressLine1);
+        Assert.Equal("Suite 200", result.DeliveryAddress.AddressLine2);
+        Assert.Equal(-36.8600m, result.DeliveryAddress.Latitude);
+        Assert.Equal(174.7700m, result.DeliveryAddress.Longitude);
 
         // Assert - Direct location properties
-        result.PickUpLatitude.Should().Be(-36.8485m);
-        result.PickUpLongitude.Should().Be(174.7633m);
-        result.DeliveryLatitude.Should().Be(-36.8600m);
-        result.DeliveryLongitude.Should().Be(174.7700m);
+        Assert.Equal(-36.8485m, result.PickUpLatitude);
+        Assert.Equal(174.7633m, result.PickUpLongitude);
+        Assert.Equal(-36.8600m, result.DeliveryLatitude);
+        Assert.Equal(174.7700m, result.DeliveryLongitude);
     }
 
     [Fact]
@@ -989,15 +961,15 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.Courier.Should().Be("C042");
-        result.CourierData.Should().NotBeNull();
-        result.CourierData!.Courier.Should().Be("C042");
-        result.CourierData.CourierId.Should().Be(42);
-        result.CourierData.CourierMobile.Should().Be("021-123-4567");
-        result.CourierData.CourierName.Should().Be("John Courier");
-        result.AssignedCourier.Should().NotBeNull();
-        result.AssignedCourier!.Id.Should().Be(42);
-        result.AssignedCourier.Text.Should().Be("John Courier");
+        Assert.Equal("C042", result.Courier);
+        Assert.NotNull(result.CourierData);
+        Assert.Equal("C042", result.CourierData!.Courier);
+        Assert.Equal(42, result.CourierData.CourierId);
+        Assert.Equal("021-123-4567", result.CourierData.CourierMobile);
+        Assert.Equal("John Courier", result.CourierData.CourierName);
+        Assert.NotNull(result.AssignedCourier);
+        Assert.Equal(42, result.AssignedCourier!.Id);
+        Assert.Equal("John Courier", result.AssignedCourier.Text);
     }
 
     [Fact]
@@ -1023,11 +995,11 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.AssignedAgent.Should().NotBeNull();
-        result.AssignedAgent!.AgentId.Should().Be(10);
-        result.AssignedAgent.AgentName.Should().Be("Test Agent");
-        result.AssignedAgent.AgentEmail.Should().Be("agent@test.com");
-        result.AssignedAgent.AgentPhone.Should().Be("09-123-4567");
+        Assert.NotNull(result.AssignedAgent);
+        Assert.Equal(10, result.AssignedAgent!.AgentId);
+        Assert.Equal("Test Agent", result.AssignedAgent.AgentName);
+        Assert.Equal("agent@test.com", result.AssignedAgent.AgentEmail);
+        Assert.Equal("09-123-4567", result.AssignedAgent.AgentPhone);
     }
 
     [Fact]
@@ -1059,15 +1031,15 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.SpeedId.Should().Be(5);
-        result.Speed.Should().Be("2HR");
-        result.SpeedName.Should().Be("2 Hour Delivery");
-        result.PickupTime.Should().Be(30);
-        result.DeliveryTime.Should().Be(120);
-        result.NotifiedJobTypeId.Should().Be(6);
-        result.NotifiedName.Should().Be("Notified Speed");
-        result.AcceptedJobTypeId.Should().Be(7);
-        result.AcceptedName.Should().Be("Accepted Speed");
+        Assert.Equal(5, result.SpeedId);
+        Assert.Equal("2HR", result.Speed);
+        Assert.Equal("2 Hour Delivery", result.SpeedName);
+        Assert.Equal(30, result.PickupTime);
+        Assert.Equal(120, result.DeliveryTime);
+        Assert.Equal(6, result.NotifiedJobTypeId);
+        Assert.Equal("Notified Speed", result.NotifiedName);
+        Assert.Equal(7, result.AcceptedJobTypeId);
+        Assert.Equal("Accepted Speed", result.AcceptedName);
     }
 
     [Fact]
@@ -1091,7 +1063,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Should use UcjbAmount directly
-        result.Charge.Should().Be(100m);
+        Assert.Equal(100m, result.Charge);
     }
 
     [Fact]
@@ -1126,7 +1098,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Should use UcjbAmount directly
-        result.Charge.Should().Be(50m);
+        Assert.Equal(50m, result.Charge);
     }
 
     [Fact]
@@ -1146,7 +1118,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Should fall back to UcjbAmount
-        result.Charge.Should().Be(250m);
+        Assert.Equal(250m, result.Charge);
     }
 
     [Fact]
@@ -1168,9 +1140,9 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.TrackingMethod.Should().Be(1);
-        result.TrackingMobile.Should().Be("021-555-1234");
-        result.TrackingEmail.Should().Be("track@test.com");
+        Assert.Equal(1, result.TrackingMethod);
+        Assert.Equal("021-555-1234", result.TrackingMobile);
+        Assert.Equal("track@test.com", result.TrackingEmail);
     }
 
     [Fact]
@@ -1191,12 +1163,12 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.PickUpTimeZone.Should().NotBeNull();
-        result.PickUpTimeZone!.Id.Should().Be(1);
-        result.PickUpTimeZone.Text.Should().Be("Pacific/Auckland");
-        result.DeliveryTimeZone.Should().NotBeNull();
-        result.DeliveryTimeZone!.Id.Should().Be(2);
-        result.DeliveryTimeZone.Text.Should().Be("America/Los_Angeles");
+        Assert.NotNull(result.PickUpTimeZone);
+        Assert.Equal(1, result.PickUpTimeZone!.Id);
+        Assert.Equal("Pacific/Auckland", result.PickUpTimeZone.Text);
+        Assert.NotNull(result.DeliveryTimeZone);
+        Assert.Equal(2, result.DeliveryTimeZone!.Id);
+        Assert.Equal("America/Los_Angeles", result.DeliveryTimeZone.Text);
     }
 
     [Fact]
@@ -1234,9 +1206,9 @@ public class JobMappingsTests
         var nullResult = mapping(nullLockedJob);
 
         // Assert
-        lockedResult.Locked.Should().BeTrue();
-        unlockedResult.Locked.Should().BeFalse();
-        nullResult.Locked.Should().BeFalse();
+        Assert.True(lockedResult.Locked);
+        Assert.False(unlockedResult.Locked);
+        Assert.False(nullResult.Locked);
     }
 
     [Fact]
@@ -1264,15 +1236,15 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.PrivateRes.Should().BeTrue();
-        result.Return.Should().BeTrue();
-        result.SaturdayDelivery.Should().BeTrue();
-        result.CompletedTime.Should().NotBeNull();
-        result.DeliverToContact.Should().Be("John Smith");
-        result.ToContactPhone.Should().Be("09-555-1234");
-        result.DeliverToLeaveId.Should().Be(2);
-        result.SigNotRequired.Should().Be("Leave at door");
-        result.UdStatus.Should().Be("Returned to depot");
+        Assert.True(result.PrivateRes);
+        Assert.True(result.Return);
+        Assert.True(result.SaturdayDelivery);
+        Assert.NotNull(result.CompletedTime);
+        Assert.Equal("John Smith", result.DeliverToContact);
+        Assert.Equal("09-555-1234", result.ToContactPhone);
+        Assert.Equal(2, result.DeliverToLeaveId);
+        Assert.Equal("Leave at door", result.SigNotRequired);
+        Assert.Equal("Returned to depot", result.UdStatus);
     }
 
     [Fact]
@@ -1300,12 +1272,12 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.FromContactName.Should().Be("Pickup Person");
-        result.FromContactNumber.Should().Be("09-111-2222");
-        result.FromContactNumberSource.Should().Be("Job");
-        result.DeliverToContact.Should().Be("Delivery Person");
-        result.ToContactPhone.Should().Be("09-333-4444");
-        result.LoggedInContactName.Should().Be("Admin User");
+        Assert.Equal("Pickup Person", result.FromContactName);
+        Assert.Equal("09-111-2222", result.FromContactNumber);
+        Assert.Equal("Job", result.FromContactNumberSource);
+        Assert.Equal("Delivery Person", result.DeliverToContact);
+        Assert.Equal("09-333-4444", result.ToContactPhone);
+        Assert.Equal("Admin User", result.LoggedInContactName);
     }
 
     [Fact]
@@ -1326,25 +1298,21 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Should not throw and should have sensible defaults
-        result.Id.Should().Be(1);
-        result.JobNo.Should().Be("TEST-001");
-        result.Courier.Should().BeNull();
-        result.CourierData.Should().BeNull();
-        result.AssignedCourier.Should().BeNull();
-        result.AssignedAgent.Should().BeNull();
-        result.Speed.Should().BeNull();
-        result.SpeedName.Should().BeNull();
-        result.Status.Should().BeNull();
-        result.StatusName.Should().BeNull();
-        result.ClientName.Should().Be(string.Empty);
-        result.LoggedInContactName.Should().Be(string.Empty);
-        result.PickUpTimeZone.Should().BeNull();
-        result.DeliveryTimeZone.Should().BeNull();
+        Assert.Equal(1, result.Id);
+        Assert.Equal("TEST-001", result.JobNo);
+        Assert.Null(result.Courier);
+        Assert.Null(result.CourierData);
+        Assert.Null(result.AssignedCourier);
+        Assert.Null(result.AssignedAgent);
+        Assert.Null(result.Speed);
+        Assert.Null(result.SpeedName);
+        Assert.Null(result.Status);
+        Assert.Null(result.StatusName);
+        Assert.Equal(string.Empty, result.ClientName);
+        Assert.Equal(string.Empty, result.LoggedInContactName);
+        Assert.Null(result.PickUpTimeZone);
+        Assert.Null(result.DeliveryTimeZone);
     }
-
-    #endregion
-
-    #region Inline Charge/Pricing Mapping Tests (JobMappingCore)
 
     [Fact]
     public void JobMappingCore_Charge_UsesUcjbAmountDirectly()
@@ -1371,7 +1339,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should use UcjbAmount directly
-        result.Charge.Should().Be(50m);
+        Assert.Equal(50m, result.Charge);
     }
 
     [Fact]
@@ -1395,12 +1363,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should fall back to UcjbAmount
-        result.Charge.Should().Be(200m);
+        Assert.Equal(200m, result.Charge);
     }
-
-    #endregion
-
-    #region Inline Job Item Flags Tests (JobMappingCore)
 
     [Fact]
     public void JobMappingCore_TailLiftPu_TrueWhenJobItemHasPu()
@@ -1426,7 +1390,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.TailLiftPu.Should().BeTrue();
+        Assert.True(result.TailLiftPu);
     }
 
     [Fact]
@@ -1452,7 +1416,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.TailLiftDo.Should().BeTrue();
+        Assert.True(result.TailLiftDo);
     }
 
     [Fact]
@@ -1478,7 +1442,7 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.DeliverToPrivateRes.Should().BeTrue();
+        Assert.True(result.DeliverToPrivateRes);
     }
 
     [Fact]
@@ -1501,14 +1465,10 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.TailLiftPu.Should().BeFalse();
-        result.TailLiftDo.Should().BeFalse();
-        result.DeliverToPrivateRes.Should().BeFalse();
+        Assert.False(result.TailLiftPu);
+        Assert.False(result.TailLiftDo);
+        Assert.False(result.DeliverToPrivateRes);
     }
-
-    #endregion
-
-    #region Inline ParcelDimensions Tests (JobMappingCore)
 
     [Fact]
     public void JobMappingCore_ParcelDimensions_UsesChildJobItems()
@@ -1536,13 +1496,13 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should use child items when available
-        result.ParcelDimensions.Should().NotBeNull();
-        result.ParcelDimensions.Should().HaveCount(1);
-        result.ParcelDimensions![0].ItemName.Should().Be("Child Item");
-        result.ParcelDimensions[0].Height.Should().Be(20);
-        result.ParcelDimensions[0].Depth.Should().Be(30);
-        result.ParcelDimensions[0].Length.Should().Be(40);
-        result.ParcelDimensions[0].Barcode.Should().Be("CHILD123");
+        Assert.NotNull(result.ParcelDimensions);
+        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Equal("Child Item", result.ParcelDimensions![0].ItemName);
+        Assert.Equal(20, result.ParcelDimensions[0].Height);
+        Assert.Equal(30, result.ParcelDimensions[0].Depth);
+        Assert.Equal(40, result.ParcelDimensions[0].Length);
+        Assert.Equal("CHILD123", result.ParcelDimensions[0].Barcode);
     }
 
     [Fact]
@@ -1568,10 +1528,10 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should fall back to parent items
-        result.ParcelDimensions.Should().NotBeNull();
-        result.ParcelDimensions.Should().HaveCount(1);
-        result.ParcelDimensions![0].ItemName.Should().Be("Parent Item");
-        result.ParcelDimensions[0].Height.Should().Be(15);
+        Assert.NotNull(result.ParcelDimensions);
+        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Equal("Parent Item", result.ParcelDimensions![0].ItemName);
+        Assert.Equal(15, result.ParcelDimensions[0].Height);
     }
 
     [Fact]
@@ -1594,12 +1554,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.ParcelDimensions.Should().BeEmpty();
+        Assert.Empty(result.ParcelDimensions);
     }
-
-    #endregion
-
-    #region Inline PalletInfo Tests (JobMappingCore)
 
     [Fact]
     public void JobMappingCore_PalletInfo_MapsFromParentJobItems()
@@ -1638,17 +1594,17 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.PalletInfo.Should().NotBeNull();
-        result.PalletInfo.Should().HaveCount(1);
-        result.PalletInfo![0].Quantity.Should().Be(5);
-        result.PalletInfo[0].Weight.Should().Be(100);
-        result.PalletInfo[0].Length.Should().Be(120);
-        result.PalletInfo[0].Depth.Should().Be(80);
-        result.PalletInfo[0].Height.Should().Be(100);
-        result.PalletInfo[0].Pu.Should().BeTrue();
-        result.PalletInfo[0].Do.Should().BeFalse();
-        result.PalletInfo[0].DgClass.Should().Be(3);
-        result.PalletInfo[0].Notes.Should().Be("Pallet Notes");
+        Assert.NotNull(result.PalletInfo);
+        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Equal(5, result.PalletInfo![0].Quantity);
+        Assert.Equal(100, result.PalletInfo[0].Weight);
+        Assert.Equal(120, result.PalletInfo[0].Length);
+        Assert.Equal(80, result.PalletInfo[0].Depth);
+        Assert.Equal(100, result.PalletInfo[0].Height);
+        Assert.True(result.PalletInfo[0].Pu);
+        Assert.False(result.PalletInfo[0].Do);
+        Assert.Equal(3, result.PalletInfo[0].DgClass);
+        Assert.Equal("Pallet Notes", result.PalletInfo[0].Notes);
     }
 
     [Fact]
@@ -1675,9 +1631,9 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Only parent item should be in pallet info
-        result.PalletInfo.Should().NotBeNull();
-        result.PalletInfo.Should().HaveCount(1);
-        result.PalletInfo![0].Quantity.Should().Be(5);
+        Assert.NotNull(result.PalletInfo);
+        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Equal(5, result.PalletInfo![0].Quantity);
     }
 
     [Fact]
@@ -1700,12 +1656,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.PalletInfo.Should().BeNull();
+        Assert.Null(result.PalletInfo);
     }
-
-    #endregion
-
-    #region Inline AssignedFlight Tests (JobMappingCore)
 
     [Fact]
     public void JobMappingCore_AssignedFlight_MapsFromNationwides()
@@ -1756,14 +1708,14 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.AssignedFlight.Should().NotBeNull();
-        result.AssignedFlight!.FlightNumber.Should().Be("NZ123");
-        result.AssignedFlight.Notes.Should().Be("First leg notes");
-        result.AssignedFlight.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 10, 0, 0));
-        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 14, 0, 0));
-        result.AssignedFlight.DepartureTimeZone.Should().Be("Pacific/Auckland");
-        result.AssignedFlight.ArrivalTimeZone.Should().Be("America/Los_Angeles");
-        result.IsFlightAssigned.Should().BeTrue();
+        Assert.NotNull(result.AssignedFlight);
+        Assert.Equal("NZ123", result.AssignedFlight!.FlightNumber);
+        Assert.Equal("First leg notes", result.AssignedFlight.Notes);
+        Assert.Equal(new DateTime(2024, 1, 15, 10, 0, 0), result.AssignedFlight.ExpectedDeparture);
+        Assert.Equal(new DateTime(2024, 1, 15, 14, 0, 0), result.AssignedFlight.ExpectedArrival);
+        Assert.Equal("Pacific/Auckland", result.AssignedFlight.DepartureTimeZone);
+        Assert.Equal("America/Los_Angeles", result.AssignedFlight.ArrivalTimeZone);
+        Assert.True(result.IsFlightAssigned);
     }
 
     [Fact]
@@ -1806,21 +1758,21 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.AssignedFlight.Should().NotBeNull();
-        result.AssignedFlight!.FlightSegments.Should().HaveCount(2);
+        Assert.NotNull(result.AssignedFlight);
+        Assert.Equal(2, result.AssignedFlight!.FlightSegments.Count);
 
         // First segment (departure info)
-        result.AssignedFlight.ExpectedDeparture.Should().Be(new DateTime(2024, 1, 15, 8, 0, 0));
-        result.AssignedFlight.FlightNumber.Should().Be("NZ1");
+        Assert.Equal(new DateTime(2024, 1, 15, 8, 0, 0), result.AssignedFlight.ExpectedDeparture);
+        Assert.Equal("NZ1", result.AssignedFlight.FlightNumber);
 
         // Last segment (arrival info)
-        result.AssignedFlight.ExpectedArrival.Should().Be(new DateTime(2024, 1, 15, 22, 0, 0));
+        Assert.Equal(new DateTime(2024, 1, 15, 22, 0, 0), result.AssignedFlight.ExpectedArrival);
 
         // Segment details
-        result.AssignedFlight.FlightSegments[0].DepartureAirportFsCode.Should().Be("AKL");
-        result.AssignedFlight.FlightSegments[0].ArrivalAirportFsCode.Should().Be("SYD");
-        result.AssignedFlight.FlightSegments[1].DepartureAirportFsCode.Should().Be("SYD");
-        result.AssignedFlight.FlightSegments[1].ArrivalAirportFsCode.Should().Be("LAX");
+        Assert.Equal("AKL", result.AssignedFlight.FlightSegments[0].DepartureAirportFsCode);
+        Assert.Equal("SYD", result.AssignedFlight.FlightSegments[0].ArrivalAirportFsCode);
+        Assert.Equal("SYD", result.AssignedFlight.FlightSegments[1].DepartureAirportFsCode);
+        Assert.Equal("LAX", result.AssignedFlight.FlightSegments[1].ArrivalAirportFsCode);
     }
 
     [Fact]
@@ -1850,9 +1802,9 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.AssignedFlight.Should().NotBeNull();
-        result.AssignedFlight!.FlightSegments[0].CarrierFsCode.Should().Be("NZ");
-        result.AssignedFlight.FlightSegments[0].FlightNumber.Should().Be("123");
+        Assert.NotNull(result.AssignedFlight);
+        Assert.Equal("NZ", result.AssignedFlight!.FlightSegments[0].CarrierFsCode);
+        Assert.Equal("123", result.AssignedFlight.FlightSegments[0].FlightNumber);
     }
 
     [Fact]
@@ -1875,13 +1827,9 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.AssignedFlight.Should().BeNull();
-        result.IsFlightAssigned.Should().BeFalse();
+        Assert.Null(result.AssignedFlight);
+        Assert.False(result.IsFlightAssigned);
     }
-
-    #endregion
-
-    #region Inline Archived Job Item Flags Tests (JobArchiveMapping)
 
     [Fact]
     public void JobArchiveMapping_TailLiftPu_TrueWhenArchivedItemHasPu()
@@ -1903,7 +1851,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.TailLiftPu.Should().BeTrue();
+        Assert.True(result.TailLiftPu);
     }
 
     [Fact]
@@ -1926,7 +1874,7 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.TailLiftDo.Should().BeTrue();
+        Assert.True(result.TailLiftDo);
     }
 
     [Fact]
@@ -1949,12 +1897,8 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.DeliverToPrivateRes.Should().BeTrue();
+        Assert.True(result.DeliverToPrivateRes);
     }
-
-    #endregion
-
-    #region Inline Archived ParcelDimensions Tests (JobArchiveMapping)
 
     [Fact]
     public void JobArchiveMapping_ParcelDimensions_MapsFromArchivedItems()
@@ -1986,18 +1930,14 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.ParcelDimensions.Should().NotBeNull();
-        result.ParcelDimensions.Should().HaveCount(1);
-        result.ParcelDimensions![0].ItemName.Should().Be("Archived Parcel");
-        result.ParcelDimensions[0].Height.Should().Be(10);
-        result.ParcelDimensions[0].Depth.Should().Be(20);
-        result.ParcelDimensions[0].Length.Should().Be(30);
-        result.ParcelDimensions[0].Barcode.Should().Be("ARCH123");
+        Assert.NotNull(result.ParcelDimensions);
+        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Equal("Archived Parcel", result.ParcelDimensions![0].ItemName);
+        Assert.Equal(10, result.ParcelDimensions[0].Height);
+        Assert.Equal(20, result.ParcelDimensions[0].Depth);
+        Assert.Equal(30, result.ParcelDimensions[0].Length);
+        Assert.Equal("ARCH123", result.ParcelDimensions[0].Barcode);
     }
-
-    #endregion
-
-    #region Inline Archived PalletInfo Tests (JobArchiveMapping)
 
     [Fact]
     public void JobArchiveMapping_PalletInfo_MapsFromArchivedItems()
@@ -2033,20 +1973,16 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert
-        result.PalletInfo.Should().NotBeNull();
-        result.PalletInfo.Should().HaveCount(1);
-        result.PalletInfo![0].Quantity.Should().Be(3);
-        result.PalletInfo[0].Weight.Should().Be(50);
-        result.PalletInfo[0].Length.Should().Be(100);
-        result.PalletInfo[0].Depth.Should().Be(80);
-        result.PalletInfo[0].Height.Should().Be(120);
-        result.PalletInfo[0].DgClass.Should().Be(2);
-        result.PalletInfo[0].Notes.Should().Be("Archived Pallet");
+        Assert.NotNull(result.PalletInfo);
+        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Equal(3, result.PalletInfo![0].Quantity);
+        Assert.Equal(50, result.PalletInfo[0].Weight);
+        Assert.Equal(100, result.PalletInfo[0].Length);
+        Assert.Equal(80, result.PalletInfo[0].Depth);
+        Assert.Equal(120, result.PalletInfo[0].Height);
+        Assert.Equal(2, result.PalletInfo[0].DgClass);
+        Assert.Equal("Archived Pallet", result.PalletInfo[0].Notes);
     }
-
-    #endregion
-
-    #region Inline Archived AssignedFlight Tests (JobArchiveMapping)
 
     [Fact]
     public void JobArchiveMapping_AssignedFlight_AlwaysNullForArchivedJobs()
@@ -2066,13 +2002,9 @@ public class JobMappingsTests
         var result = mapping(archivedJob);
 
         // Assert - Flight info is always null for archived jobs in the mapping
-        result.AssignedFlight.Should().BeNull();
-        result.IsFlightAssigned.Should().BeFalse();
+        Assert.Null(result.AssignedFlight);
+        Assert.False(result.IsFlightAssigned);
     }
-
-    #endregion
-
-    #region Flight Timezone Conversion Tests
 
     [Fact]
     public void ApplyFlightTimezonesToInlineLoadedJobs_ConvertsUtcToLocalTime()
@@ -2114,15 +2046,15 @@ public class JobMappingsTests
 
         // Assert - Times should be converted to local time with correct offset
         // 20:30 UTC = 09:30 NZDT (+13)
-        job.AssignedFlight!.ExpectedDeparture!.Value.Hour.Should().Be(9);
-        job.AssignedFlight.ExpectedDeparture.Value.Minute.Should().Be(30);
-        job.AssignedFlight.ExpectedDeparture.Value.Day.Should().Be(16); // Next day in NZ
-        job.AssignedFlight.ExpectedDeparture.Value.Offset.Should().Be(TimeSpan.FromHours(13));
+        Assert.Equal(9, job.AssignedFlight!.ExpectedDeparture!.Value.Hour);
+        Assert.Equal(30, job.AssignedFlight.ExpectedDeparture.Value.Minute);
+        Assert.Equal(16, job.AssignedFlight.ExpectedDeparture.Value.Day); // Next day in NZ
+        Assert.Equal(TimeSpan.FromHours(13), job.AssignedFlight.ExpectedDeparture.Value.Offset);
 
         // 23:00 UTC = 10:00 AEDT (+11)
-        job.AssignedFlight.ExpectedArrival!.Value.Hour.Should().Be(10);
-        job.AssignedFlight.ExpectedArrival.Value.Day.Should().Be(16);
-        job.AssignedFlight.ExpectedArrival.Value.Offset.Should().Be(TimeSpan.FromHours(11));
+        Assert.Equal(10, job.AssignedFlight.ExpectedArrival!.Value.Hour);
+        Assert.Equal(16, job.AssignedFlight.ExpectedArrival.Value.Day);
+        Assert.Equal(TimeSpan.FromHours(11), job.AssignedFlight.ExpectedArrival.Value.Offset);
     }
 
     [Fact]
@@ -2166,14 +2098,14 @@ public class JobMappingsTests
         var segment = job.AssignedFlight!.FlightSegments[0];
 
         // 18:30 UTC = 10:30 PST (-8)
-        segment.DepartureTime.Hour.Should().Be(10);
-        segment.DepartureTime.Minute.Should().Be(30);
-        segment.DepartureTime.Offset.Should().Be(TimeSpan.FromHours(-8));
+        Assert.Equal(10, segment.DepartureTime.Hour);
+        Assert.Equal(30, segment.DepartureTime.Minute);
+        Assert.Equal(TimeSpan.FromHours(-8), segment.DepartureTime.Offset);
 
         // 02:00 UTC = 21:00 EST (-5) on previous day
-        segment.ArrivalTime.Hour.Should().Be(21);
-        segment.ArrivalTime.Day.Should().Be(15);
-        segment.ArrivalTime.Offset.Should().Be(TimeSpan.FromHours(-5));
+        Assert.Equal(21, segment.ArrivalTime.Hour);
+        Assert.Equal(15, segment.ArrivalTime.Day);
+        Assert.Equal(TimeSpan.FromHours(-5), segment.ArrivalTime.Offset);
     }
 
     [Fact]
@@ -2213,8 +2145,8 @@ public class JobMappingsTests
         method!.Invoke(null, [jobs]);
 
         // Assert - Times should NOT be changed (child jobs are processed by BatchLoadFlightInfoAsync)
-        childJob.AssignedFlight!.FlightSegments[0].DepartureTime.Hour.Should().Be(18);
-        childJob.AssignedFlight.FlightSegments[0].DepartureTime.Offset.Should().Be(TimeSpan.Zero);
+        Assert.Equal(18, childJob.AssignedFlight!.FlightSegments[0].DepartureTime.Hour);
+        Assert.Equal(TimeSpan.Zero, childJob.AssignedFlight.FlightSegments[0].DepartureTime.Offset);
     }
 
     [Fact]
@@ -2235,10 +2167,10 @@ public class JobMappingsTests
         var method = typeof(JobMappings).GetMethod(
             "ApplyFlightTimezonesToInlineLoadedJobs",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-        var act = () => method!.Invoke(null, [jobs]);
+        var exception = Record.Exception(() => method!.Invoke(null, [jobs]));
 
         // Assert
-        act.Should().NotThrow();
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -2257,7 +2189,7 @@ public class JobMappingsTests
         var result = (DateTimeOffset)method!.Invoke(null, [nullDateTime, "Pacific Standard Time"])!;
 
         // Assert - Should return SqlMinDateTime (1753-01-01)
-        result.Year.Should().Be(1753);
+        Assert.Equal(1753, result.Year);
     }
 
     [Fact]
@@ -2276,8 +2208,8 @@ public class JobMappingsTests
         var result = (DateTimeOffset)method!.Invoke(null, [utcTime, null])!;
 
         // Assert - Should return with zero offset (UTC)
-        result.Hour.Should().Be(12);
-        result.Offset.Should().Be(TimeSpan.Zero);
+        Assert.Equal(12, result.Hour);
+        Assert.Equal(TimeSpan.Zero, result.Offset);
     }
 
     [Fact]
@@ -2296,13 +2228,9 @@ public class JobMappingsTests
         var result = (DateTimeOffset)method!.Invoke(null, [utcTime, ""])!;
 
         // Assert
-        result.Hour.Should().Be(12);
-        result.Offset.Should().Be(TimeSpan.Zero);
+        Assert.Equal(12, result.Hour);
+        Assert.Equal(TimeSpan.Zero, result.Offset);
     }
-
-    #endregion
-
-    #region FromContactNumber Fallback Chain Tests (JobMappingCore)
 
     [Fact]
     public void JobMappingCore_FromContactNumber_UsesJobPhone_WhenSet()
@@ -2327,8 +2255,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Job phone takes priority
-        result.FromContactNumber.Should().Be("09-123-4567");
-        result.FromContactNumberSource.Should().Be("Job");
+        Assert.Equal("09-123-4567", result.FromContactNumber);
+        Assert.Equal("Job", result.FromContactNumberSource);
     }
 
     [Fact]
@@ -2354,8 +2282,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.FromContactNumber.Should().Be("09-111-1111");
-        result.FromContactNumberSource.Should().Be("Direct Line");
+        Assert.Equal("09-111-1111", result.FromContactNumber);
+        Assert.Equal("Direct Line", result.FromContactNumberSource);
     }
 
     [Fact]
@@ -2381,8 +2309,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.FromContactNumber.Should().Be("021-222-2222");
-        result.FromContactNumberSource.Should().Be("Mobile");
+        Assert.Equal("021-222-2222", result.FromContactNumber);
+        Assert.Equal("Mobile", result.FromContactNumberSource);
     }
 
     [Fact]
@@ -2408,8 +2336,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.FromContactNumber.Should().Be("09-333-3333");
-        result.FromContactNumberSource.Should().Be("Company");
+        Assert.Equal("09-333-3333", result.FromContactNumber);
+        Assert.Equal("Company", result.FromContactNumberSource);
     }
 
     [Fact]
@@ -2435,8 +2363,8 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert
-        result.FromContactNumber.Should().BeNull();
-        result.FromContactNumberSource.Should().BeNull();
+        Assert.Null(result.FromContactNumber);
+        Assert.Null(result.FromContactNumberSource);
     }
 
     [Fact]
@@ -2461,13 +2389,9 @@ public class JobMappingsTests
         var result = mapping(job);
 
         // Assert - Should skip empty job phone and use direct line
-        result.FromContactNumber.Should().Be("09-111-1111");
-        result.FromContactNumberSource.Should().Be("Direct Line");
+        Assert.Equal("09-111-1111", result.FromContactNumber);
+        Assert.Equal("Direct Line", result.FromContactNumberSource);
     }
-
-    #endregion
-
-    #region Child Job Item Inheritance Tests
 
     [Theory]
     [InlineData(false)]
@@ -2507,10 +2431,10 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - Should inherit parent's items
-        result.ParcelDimensions.Should().HaveCount(2);
-        result.ParcelDimensions[0].ItemName.Should().Be("Box A");
-        result.ParcelDimensions[0].Barcode.Should().Be("BC1");
-        result.ParcelDimensions[1].ItemName.Should().Be("Box B");
+        Assert.Equal(2, result.ParcelDimensions.Count);
+        Assert.Equal("Box A", result.ParcelDimensions[0].ItemName);
+        Assert.Equal("BC1", result.ParcelDimensions[0].Barcode);
+        Assert.Equal("Box B", result.ParcelDimensions[1].ItemName);
     }
 
     [Theory]
@@ -2550,10 +2474,10 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - Should inherit parent's pallet info
-        result.PalletInfo.Should().HaveCount(1);
-        result.PalletInfo[0].Quantity.Should().Be(5);
-        result.PalletInfo[0].Weight.Should().Be(100);
-        result.PalletInfo[0].Notes.Should().Be("Pallet 1");
+        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Equal(5, result.PalletInfo[0].Quantity);
+        Assert.Equal(100, result.PalletInfo[0].Weight);
+        Assert.Equal("Pallet 1", result.PalletInfo[0].Notes);
     }
 
     [Theory]
@@ -2593,9 +2517,9 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - Should inherit parent's flags
-        result.TailLiftPu.Should().BeTrue("child job should inherit TailLiftPu from parent");
-        result.TailLiftDo.Should().BeTrue("child job should inherit TailLiftDo from parent");
-        result.DeliverToPrivateRes.Should().BeTrue("child job should inherit DeliverToPrivateRes from parent");
+        Assert.True(result.TailLiftPu, "child job should inherit TailLiftPu from parent");
+        Assert.True(result.TailLiftDo, "child job should inherit TailLiftDo from parent");
+        Assert.True(result.DeliverToPrivateRes, "child job should inherit DeliverToPrivateRes from parent");
     }
 
     [Theory]
@@ -2637,7 +2561,7 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert
-        result.Items.Should().Be(3, "child job should inherit item count from parent");
+        Assert.True(result.Items == 3, "child job should inherit item count from parent");
     }
 
     [Theory]
@@ -2680,13 +2604,12 @@ public class JobMappingsTests
         var result = mapping(stopChildJob);
 
         // Assert - Should use its own child items, NOT parent's
-        result.Items.Should().Be(1);
-        result.ParcelDimensions.Should().HaveCount(1);
-        result.ParcelDimensions[0].ItemName.Should().Be("Stop Item");
-        result.ParcelDimensions[0].Barcode.Should().Be("STOP-BC");
-        result.PalletInfo.Should().HaveCount(1);
-        result.PalletInfo[0].Notes.Should().Be("Stop Item");
+        Assert.Equal(1, result.Items);
+        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Equal("Stop Item", result.ParcelDimensions[0].ItemName);
+        Assert.Equal("STOP-BC", result.ParcelDimensions[0].Barcode);
+        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Equal("Stop Item", result.PalletInfo[0].Notes);
     }
 
-    #endregion
 }

@@ -1,6 +1,5 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Enums;
 
@@ -11,87 +10,82 @@ namespace DespatchWeb.Tests.Enums;
 /// </summary>
 public class DaysOfWeekExtensionsTests
 {
-    #region ToBinaryString - Individual Days
 
     [Fact]
     public void ToBinaryString_Monday_Returns1000000()
     {
         var result = DaysOfWeek.Monday.ToBinaryString();
-        result.Should().Be("1000000");
+        Assert.Equal("1000000", result);
     }
 
     [Fact]
     public void ToBinaryString_Tuesday_Returns0100000()
     {
         var result = DaysOfWeek.Tuesday.ToBinaryString();
-        result.Should().Be("0100000");
+        Assert.Equal("0100000", result);
     }
 
     [Fact]
     public void ToBinaryString_Wednesday_Returns0010000()
     {
         var result = DaysOfWeek.Wednesday.ToBinaryString();
-        result.Should().Be("0010000");
+        Assert.Equal("0010000", result);
     }
 
     [Fact]
     public void ToBinaryString_Thursday_Returns0001000()
     {
         var result = DaysOfWeek.Thursday.ToBinaryString();
-        result.Should().Be("0001000");
+        Assert.Equal("0001000", result);
     }
 
     [Fact]
     public void ToBinaryString_Friday_Returns0000100()
     {
         var result = DaysOfWeek.Friday.ToBinaryString();
-        result.Should().Be("0000100");
+        Assert.Equal("0000100", result);
     }
 
     [Fact]
     public void ToBinaryString_Saturday_Returns0000010()
     {
         var result = DaysOfWeek.Saturday.ToBinaryString();
-        result.Should().Be("0000010");
+        Assert.Equal("0000010", result);
     }
 
     [Fact]
     public void ToBinaryString_Sunday_Returns0000001()
     {
         var result = DaysOfWeek.Sunday.ToBinaryString();
-        result.Should().Be("0000001");
+        Assert.Equal("0000001", result);
     }
-
-    #endregion
-
-    #region ToBinaryString - Combined Days
 
     [Fact]
     public void ToBinaryString_None_Returns0000000()
     {
         var result = DaysOfWeek.None.ToBinaryString();
-        result.Should().Be("0000000");
+        Assert.Equal("0000000", result);
     }
 
     [Fact]
     public void ToBinaryString_Weekdays_Returns1111100()
     {
         var result = DaysOfWeek.Weekdays.ToBinaryString();
-        result.Should().Be("1111100");
+        Assert.Equal("1111100", result);
     }
 
     [Fact]
     public void ToBinaryString_Weekend_Returns0000011()
     {
         var result = DaysOfWeek.Weekend.ToBinaryString();
-        result.Should().Be("0000011");
+        Assert.Equal("0000011", result);
     }
 
     [Fact]
     public void ToBinaryString_All_Returns1111111()
     {
         var result = DaysOfWeek.All.ToBinaryString();
-        result.Should().Be("1111111");
+        Assert.Equal("1111111", result);
     }
 
     [Fact]
@@ -99,7 +93,7 @@ public class DaysOfWeekExtensionsTests
     {
         const DaysOfWeek days = DaysOfWeek.Monday | DaysOfWeek.Tuesday | DaysOfWeek.Wednesday;
         var result = days.ToBinaryString();
-        result.Should().Be("1110000");
+        Assert.Equal("1110000", result);
     }
 
     [Fact]
@@ -107,7 +101,7 @@ public class DaysOfWeekExtensionsTests
     {
         const DaysOfWeek days = DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday;
         var result = days.ToBinaryString();
-        result.Should().Be("1010100");
+        Assert.Equal("1010100", result);
     }
 
     [Fact]
@@ -116,12 +110,8 @@ public class DaysOfWeekExtensionsTests
         // Mon, Tue, Wed, Fri (Thursday unticked)
         const DaysOfWeek days = DaysOfWeek.Monday | DaysOfWeek.Tuesday | DaysOfWeek.Wednesday | DaysOfWeek.Friday;
         var result = days.ToBinaryString();
-        result.Should().Be("1110100");
+        Assert.Equal("1110100", result);
     }
-
-    #endregion
-
-    #region ToBinaryString - String Length
 
     [Theory]
     [InlineData(DaysOfWeek.None)]
@@ -132,7 +122,7 @@ public class DaysOfWeekExtensionsTests
     public void ToBinaryString_AlwaysReturnsSevenCharacters(DaysOfWeek days)
     {
         var result = days.ToBinaryString();
-        result.Should().HaveLength(7);
+        Assert.Equal(7, result.Length);
     }
 
     [Theory]
@@ -142,12 +132,8 @@ public class DaysOfWeekExtensionsTests
     public void ToBinaryString_OnlyContainsZerosAndOnes(DaysOfWeek days)
     {
         var result = days.ToBinaryString();
-        result.Should().MatchRegex("^[01]{7}$");
+        Assert.Matches("^[01]{7}$", result);
     }
-
-    #endregion
-
-    #region ToBinaryString - Real World Scenarios
 
     [Fact]
     public void ToBinaryString_TypicalBusinessDays_Returns1111100()
@@ -156,7 +142,7 @@ public class DaysOfWeekExtensionsTests
         const DaysOfWeek days = DaysOfWeek.Monday | DaysOfWeek.Tuesday | DaysOfWeek.Wednesday |
                                 DaysOfWeek.Thursday | DaysOfWeek.Friday;
         var result = days.ToBinaryString();
-        result.Should().Be("1111100");
+        Assert.Equal("1111100", result);
     }
 
     [Fact]
@@ -165,7 +151,7 @@ public class DaysOfWeekExtensionsTests
         // Alternating day schedule
         const DaysOfWeek days = DaysOfWeek.Monday | DaysOfWeek.Wednesday | DaysOfWeek.Friday;
         var result = days.ToBinaryString();
-        result.Should().Be("1010100");
+        Assert.Equal("1010100", result);
     }
 
     [Fact]
@@ -173,8 +159,7 @@ public class DaysOfWeekExtensionsTests
     {
         const DaysOfWeek days = DaysOfWeek.Tuesday | DaysOfWeek.Thursday;
         var result = days.ToBinaryString();
-        result.Should().Be("0101000");
+        Assert.Equal("0101000", result);
     }
 
-    #endregion
 }

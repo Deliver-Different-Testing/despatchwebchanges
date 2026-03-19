@@ -7,7 +7,6 @@ import {
 } from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
-import NavigationService from "./services/navigation.service";
 import ToastrService from "./services/toastr.service";
 import {SelectDialogService} from "./components/dialogs/select-dialog/select-dialog.service";
 import "./react/components/dialogs/event-group-dialog/event-group-dialog-react.module";
@@ -19,7 +18,7 @@ import JobFileUploadController from "./components/dialogs/job-file-upload-dialog
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
-import {bytesFilter, momentFormatFilter, replaceFilter, timezoneLongFilter, timezoneShortFilter} from "./filters";
+import {bytesFilter, timezoneShortFilter} from "./filters";
 import {StickyNotesReactComponent} from "./react/components/common/sticky-notes/sticky-notes-react.module";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
@@ -33,7 +32,6 @@ import TruckCourierStatusDialogController
 import TruckCourierStatusDialogService
     from "./components/dialogs/truck-courier-status-dialog/truck-courier-status-dialog.service";
 import MessagingDialogService from "./components/dialogs/messaging-dialog/messaging-dialog.service";
-import CustomUrlService from "./services/custom-url.service";
 import VoidJobConfirmationDialogService
     from "./components/dialogs/void-job-confirmation-dialog/void-job-confirmation-dialog.service";
 import SwapPodsDialogService from "./components/dialogs/swap-pods-dialog/swap-pods-dialog.service";
@@ -197,10 +195,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 
 // Filters
 app.filter("bytes", () => bytesFilter);
-app.filter("replace", () => replaceFilter);
-app.filter('momentFormat', () => momentFormatFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
-app.filter('timezoneLongFilter', () => timezoneLongFilter);
 app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
@@ -222,7 +217,6 @@ app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogCon
 // Services
 app.service("configService", ConfigService);
 app.service("DispatchData", DispatchCoreService);
-app.service("navigationService", NavigationService);
 app.service("toastrService", ToastrService);
 app.service('selectDialogService', SelectDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
@@ -234,7 +228,6 @@ app.service("autoCompleteDialogService", AutoCompleteDialogService);
 app.service("jobAddStopService", JobAddStopService);
 app.service("truckCourierStatusDialogService", TruckCourierStatusDialogService);
 app.service("messagingDialogService", MessagingDialogService);
-app.service('customUrlService', CustomUrlService);
 app.service('voidJobConfirmationDialogService', VoidJobConfirmationDialogService);
 app.service('swapPodsDialogService', SwapPodsDialogService);
 app.service('simplePriceEditDialogService', SimplePriceEditDialogService);

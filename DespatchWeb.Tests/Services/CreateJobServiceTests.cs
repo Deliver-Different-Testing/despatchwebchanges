@@ -1,10 +1,8 @@
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -18,47 +16,25 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class CreateJobServiceTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _seedContext;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
 
     public CreateJobServiceTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        // Register SQL Server functions that SQLite doesn't have
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _seedContext = new DespatchContext(options);
-        _seedContext.Database.EnsureCreated();
+        _seedContext = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // tblReference is mapped as a view (HasNoKey/ToView) so EnsureCreated won't create it.
         // Create as a table in SQLite so we can seed test data via raw SQL.
-        using (var cmd = _connection.CreateCommand())
-        {
-            cmd.CommandText = """
-                CREATE TABLE IF NOT EXISTS tblReference (
-                    ucrfID INTEGER, ucrfClientID INTEGER, ucrfName TEXT,
-                    Grouping TEXT, ReferenceID INTEGER, ClientID INTEGER, Name TEXT
-                );
-                """;
-            cmd.ExecuteNonQuery();
-        }
-
-        _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(options));
+        using var cmd = _db.Connection.CreateCommand();
+        cmd.CommandText = """
+                          CREATE TABLE IF NOT EXISTS tblReference (
+                              ucrfID INTEGER, ucrfClientID INTEGER, ucrfName TEXT,
+                              Grouping TEXT, ReferenceID INTEGER, ClientID INTEGER, Name TEXT
+                          );
+                          """;
+        cmd.ExecuteNonQuery();
 
         SeedBaseData();
     }
@@ -66,10 +42,74 @@ public class CreateJobServiceTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _seedContext.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
-    #region Helpers
+    [Theory]
+    [InlineData("DELIVERTO")]
+    [InlineData("THIRDPARTY")]
+    [InlineData("PICKUP")]
+    [InlineData("")]
+    [InlineData("deliverto")]
+    public async Task CreateJobAsync_TypeResolution_DoesNotFail(string type)
+    {
+        var service = CreateService();
+        var input = CreateInput(type: type);
+
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+
+        // The service should handle all type values without throwing
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task CreateJobAsync_BookedByMatchesContact_AppliesContactDefaults()
+    {
+        _seedContext.TucClientContacts.Add(new TucClientContact
+        {
+            UcctId = 50,
+            UcctClientId = 10,
+            UcctFirstname = "Test",
+            UcctSurname = "User",
+            Active = true,
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+
+        _seedContext.TblClientContacts.Add(new TblClientContact
+        {
+            ClientContactId = 1,
+            ClientId = 10,
+            ContactId = 50,
+            DefaultPod = 1,
+            DefaultPodemail = "contact-pod@test.com",
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+        var input = CreateInput(bookedBy: "Test User");
+
+        var result = await service.CreateJobAsync(input);
+
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public async Task CreateJobAsync_LoadsSettingsFromTblSettings()
+    {
+        var service = CreateService();
+        var input = CreateInput();
+
+        var result = await service.CreateJobAsync(input);
+
+        Assert.NotNull(result);
+    }
 
     private void SeedBaseData()
     {
@@ -186,8 +226,9 @@ public class CreateJobServiceTests : IAsyncDisposable
     /// </summary>
     private void SeedReference(int referenceId, int clientId, string name, string grouping)
     {
-        using var cmd = _connection.CreateCommand();
-        cmd.CommandText = $"INSERT INTO tblReference (ReferenceID, ClientID, Name, Grouping, ucrfID, ucrfClientID, ucrfName) VALUES ({referenceId}, {clientId}, '{name}', '{grouping}', {referenceId}, {clientId}, '{name}')";
+        using var cmd = _db.Connection.CreateCommand();
+        cmd.CommandText =
+            $"INSERT INTO tblReference (ReferenceID, ClientID, Name, Grouping, ucrfID, ucrfClientID, ucrfName) VALUES ({referenceId}, {clientId}, '{name}', '{grouping}', {referenceId}, {clientId}, '{name}')";
         cmd.ExecuteNonQuery();
     }
 
@@ -217,7 +258,8 @@ public class CreateJobServiceTests : IAsyncDisposable
         FromAddress = fromAddress ?? new AddressViewModel(
             "100 Pickup St", string.Empty, string.Empty, string.Empty, "Auckland", string.Empty, "1010", string.Empty),
         ToAddress = toAddress ?? new AddressViewModel(
-            "200 Delivery Ave", string.Empty, string.Empty, string.Empty, "Wellington", string.Empty, "6011", string.Empty),
+            "200 Delivery Ave", string.Empty, string.Empty, string.Empty, "Wellington", string.Empty, "6011",
+            string.Empty),
         Type = type,
         Reference = reference,
         ReferenceB = referenceB,
@@ -240,20 +282,15 @@ public class CreateJobServiceTests : IAsyncDisposable
 
     private class TestDespatchContextImpl(
         DbContextOptions<DespatchContext> options,
-        IDespatchContextProcedures procs) : TestDespatchContext(options, procs)
-    {
-        
-    }
+        IDespatchContextProcedures procs) : TestDespatchContext(options, procs);
 
-    /// <summary>
-    /// Sets the value of an OutputParameter using reflection (SetValue is internal).
-    /// </summary>
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_valueSet")]
+    private static extern ref bool GetValueSet<T>(OutputParameter<T> param);
+
     private static void SetOutputParameterValue<T>(OutputParameter<T> param, T value)
     {
         param._value = value;
-        typeof(OutputParameter<T>)
-            .GetField("_valueSet", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .SetValue(param, true);
+        GetValueSet(param) = true;
     }
 
     /// <summary>
@@ -262,15 +299,11 @@ public class CreateJobServiceTests : IAsyncDisposable
     /// </summary>
     private CreateJobService CreateServiceWithMockedProcs(out Mock<IDespatchContextProcedures> mockProcs)
     {
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
         var procsMock = new Mock<IDespatchContextProcedures>();
 
         var factoryMock = new Mock<IDbContextFactory<DespatchContext>>();
         factoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new TestDespatchContext(options, procsMock.Object));
+            .ReturnsAsync(() => new TestDespatchContext(_db.Options, procsMock.Object));
 
         mockProcs = procsMock;
         return new CreateJobService(factoryMock.Object);
@@ -290,8 +323,10 @@ public class CreateJobServiceTests : IAsyncDisposable
     {
         mockProcs.Setup(p => p.DD_stpJob_Excelerator_InsertAsync(
             It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<double?>(), It.IsAny<double?>(),
             It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<int?>(),
@@ -327,9 +362,11 @@ public class CreateJobServiceTests : IAsyncDisposable
     {
         mockProcs.Setup(p => p.DD_stpBulkScheduleJob_InsertAsync(
             It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
             It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
+            It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<short?>(), It.IsAny<short?>(),
             It.IsAny<decimal?>(), It.IsAny<double?>(), It.IsAny<int?>(),
@@ -341,12 +378,14 @@ public class CreateJobServiceTests : IAsyncDisposable
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<int?>(),
             It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<decimal?>(),
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<OutputParameter<int?>>(), It.IsAny<OutputParameter<string>>(), It.IsAny<OutputParameter<decimal?>>(),
+            It.IsAny<OutputParameter<int?>>(), It.IsAny<OutputParameter<string>>(),
+            It.IsAny<OutputParameter<decimal?>>(),
             It.IsAny<OutputParameter<int>>(), It.IsAny<CancellationToken>()
         )).Callback(new InvocationAction(invocation =>
         {
@@ -354,31 +393,6 @@ public class CreateJobServiceTests : IAsyncDisposable
                 SetOutputParameterValue(jobId, outputJobId);
         })).ReturnsAsync(0);
     }
-
-    #endregion
-
-    #region Type Resolution Tests
-
-    [Theory]
-    [InlineData("DELIVERTO")]
-    [InlineData("THIRDPARTY")]
-    [InlineData("PICKUP")]
-    [InlineData("")]
-    [InlineData("deliverto")]
-    public async Task CreateJobAsync_TypeResolution_DoesNotFail(string type)
-    {
-        var service = CreateService();
-        var input = CreateInput(type: type);
-
-        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        // The service should handle all type values without throwing
-        result.Should().NotBeNull();
-    }
-
-    #endregion
-
-    #region Client Lookup Tests
 
     [Fact]
     public async Task CreateJobAsync_InvalidClientId_ReturnsError()
@@ -388,8 +402,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("Client");
+        Assert.False(result.Success);
+        Assert.Contains("Client", result.Message);
     }
 
     [Fact]
@@ -400,8 +414,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("Client");
+        Assert.False(result.Success);
+        Assert.Contains("Client", result.Message);
     }
 
     [Fact]
@@ -412,14 +426,10 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
         if (!result.Success)
-            result.Message.Should().NotContain("Invalid Client");
+            Assert.DoesNotContain("Invalid Client", result.Message);
     }
-
-    #endregion
-
-    #region Bulk Schedule Detection Tests
 
     [Fact]
     public async Task CreateJobAsync_SpeedIdBelow1000_IsNotBulkSchedule()
@@ -429,7 +439,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -440,7 +450,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -451,12 +461,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
-
-    #endregion
-
-    #region Speed/JobType Resolution Tests
 
     [Fact]
     public async Task CreateJobAsync_SpeedNameMatchesJobType_ResolvesJobTypeId()
@@ -466,7 +472,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -477,12 +483,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
-
-    #endregion
-
-    #region Client Defaults Application Tests
 
     [Fact]
     public async Task CreateJobAsync_WithClientDefaults_AppliesDefaults()
@@ -516,7 +518,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -527,54 +529,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
-
-    #endregion
-
-    #region Contact Defaults Tests
-
-    [Fact]
-    public async Task CreateJobAsync_BookedByMatchesContact_AppliesContactDefaults()
-    {
-        _seedContext.TucClientContacts.Add(new TucClientContact
-        {
-            UcctId = 50,
-            UcctClientId = 10,
-            UcctFirstname = "Test",
-            UcctSurname = "User",
-            Active = true,
-            Created = TestDates.Now,
-            CreatedBy = "Test",
-            LastModified = TestDates.Now,
-            LastModifiedBy = "Test"
-        });
-
-        _seedContext.TblClientContacts.Add(new TblClientContact
-        {
-            ClientContactId = 1,
-            ClientId = 10,
-            ContactId = 50,
-            DefaultPod = 1,
-            DefaultPodemail = "contact-pod@test.com",
-            Created = TestDates.Now,
-            CreatedBy = "Test",
-            LastModified = TestDates.Now,
-            LastModifiedBy = "Test"
-        });
-        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
-
-        var service = CreateService();
-        var input = CreateInput(bookedBy: "Test User");
-
-        var result = await service.CreateJobAsync(input);
-
-        result.Should().NotBeNull();
-    }
-
-    #endregion
-
-    #region Null Fallback Defaults Tests
 
     [Fact]
     public async Task CreateJobAsync_NullInputValues_AppliesFallbackDefaults()
@@ -584,7 +540,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
 
     [Fact]
@@ -608,12 +564,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
     }
-
-    #endregion
-
-    #region Reference Validation Tests
 
     [Fact]
     public async Task CreateJobAsync_MandatoryReferenceA_EmptyValue_ReturnsError()
@@ -628,8 +580,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Be("Custom ref A message");
+        Assert.False(result.Success);
+        Assert.Equal("Custom ref A message", result.Message);
     }
 
     [Fact]
@@ -645,7 +597,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var result = await service.CreateJobAsync(input);
 
         if (!result.Success)
-            result.Message.Should().NotContain("Reference A");
+            Assert.DoesNotContain("Reference A", result.Message);
     }
 
     [Fact]
@@ -661,8 +613,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Be("Ref B is required");
+        Assert.False(result.Success);
+        Assert.Equal("Ref B is required", result.Message);
     }
 
     [Fact]
@@ -679,8 +631,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("not in the defined list");
+        Assert.False(result.Success);
+        Assert.Contains("not in the defined list", result.Message);
     }
 
     [Fact]
@@ -698,7 +650,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var result = await service.CreateJobAsync(input);
 
         if (!result.Success)
-            result.Message.Should().NotContain("defined list");
+            Assert.DoesNotContain("defined list", result.Message);
     }
 
     [Fact]
@@ -715,48 +667,40 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("not in the defined list");
+        Assert.False(result.Success);
+        Assert.Contains("not in the defined list", result.Message);
     }
 
-    #endregion
-
-    #region Recurring Bitmask Parsing Tests
-
     [Theory]
-    [InlineData("1110000", 7, 0b0000111)]  // Mon, Tue, Wed
-    [InlineData("0000011", 7, 0b1100000)]  // Sat, Sun
-    [InlineData("1111111", 7, 0b1111111)]  // All days
-    [InlineData("0000000", 7, 0b0000000)]  // No days
-    [InlineData("1000000", 7, 0b0000001)]  // Mon only
+    [InlineData("1110000", 7, 0b0000111)] // Mon, Tue, Wed
+    [InlineData("0000011", 7, 0b1100000)] // Sat, Sun
+    [InlineData("1111111", 7, 0b1111111)] // All days
+    [InlineData("0000000", 7, 0b0000000)] // No days
+    [InlineData("1000000", 7, 0b0000001)] // Mon only
     public void ParseBitmask_Days_ConvertsCorrectly(string input, int maxBits, int expectedBitmask)
     {
         var result = CreateJobService.ParseBitmask(input, maxBits);
-        result.Should().Be(expectedBitmask);
+        Assert.Equal(expectedBitmask, result);
     }
 
     [Theory]
-    [InlineData("10000", 5, 0b00001)]  // Weekly
-    [InlineData("01000", 5, 0b00010)]  // Fortnightly
-    [InlineData("11000", 5, 0b00011)]  // Weekly + Fortnightly
-    [InlineData("00000", 5, 0b00000)]  // None
+    [InlineData("10000", 5, 0b00001)] // Weekly
+    [InlineData("01000", 5, 0b00010)] // Fortnightly
+    [InlineData("11000", 5, 0b00011)] // Weekly + Fortnightly
+    [InlineData("00000", 5, 0b00000)] // None
     public void ParseBitmask_Frequency_ConvertsCorrectly(string input, int maxBits, int expectedBitmask)
     {
         var result = CreateJobService.ParseBitmask(input, maxBits);
-        result.Should().Be(expectedBitmask);
+        Assert.Equal(expectedBitmask, result);
     }
 
     [Fact]
     public void ParseBitmask_NullInput_ReturnsNull()
     {
-        CreateJobService.ParseBitmask(null, 7).Should().BeNull();
-        CreateJobService.ParseBitmask(string.Empty, 7).Should().BeNull();
-        CreateJobService.ParseBitmask("  ", 5).Should().BeNull();
+        Assert.Null(CreateJobService.ParseBitmask(null, 7));
+        Assert.Null(CreateJobService.ParseBitmask(string.Empty, 7));
+        Assert.Null(CreateJobService.ParseBitmask("  ", 5));
     }
-
-    #endregion
-
-    #region Validation Error Tests
 
     [Fact]
     public async Task CreateJobAsync_MissingBookedBy_ReturnsError()
@@ -766,8 +710,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("Booked By");
+        Assert.False(result.Success);
+        Assert.Contains("Booked By", result.Message);
     }
 
     [Fact]
@@ -778,8 +722,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("Speed");
+        Assert.False(result.Success);
+        Assert.Contains("Speed", result.Message);
     }
 
     [Fact]
@@ -790,8 +734,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("From Address");
+        Assert.False(result.Success);
+        Assert.Contains("From Address", result.Message);
     }
 
     [Fact]
@@ -802,28 +746,9 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("To Address");
+        Assert.False(result.Success);
+        Assert.Contains("To Address", result.Message);
     }
-
-    #endregion
-
-    #region Settings Lookup Tests
-
-    [Fact]
-    public async Task CreateJobAsync_LoadsSettingsFromTblSettings()
-    {
-        var service = CreateService();
-        var input = CreateInput();
-
-        var result = await service.CreateJobAsync(input);
-
-        result.Should().NotBeNull();
-    }
-
-    #endregion
-
-    #region Normal Job Stored Procedure Tests
 
     [Fact]
     public async Task CreateJobAsync_NormalJob_CallsExceleratorInsertProc()
@@ -835,8 +760,9 @@ public class CreateJobServiceTests : IAsyncDisposable
         await service.CreateJobAsync(input);
 
         var invocation = mockProcs.Invocations
-            .SingleOrDefault(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync));
-        invocation.Should().NotBeNull("the normal job path should call DD_stpJob_Excelerator_InsertAsync");
+            .SingleOrDefault(i =>
+                i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync));
+        Assert.NotNull(invocation);
     }
 
     [Fact]
@@ -848,9 +774,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         await service.CreateJobAsync(input);
 
-        mockProcs.Invocations
-            .Any(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
-            .Should().BeFalse("normal jobs should not call the bulk schedule proc");
+        Assert.False(mockProcs.Invocations
+            .Any(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync)));
     }
 
     [Fact]
@@ -862,8 +787,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeTrue();
-        result.JobId.Should().Be(42);
+        Assert.True(result.Success);
+        Assert.Equal(42, result.JobId);
     }
 
     [Fact]
@@ -875,8 +800,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.JobId.Should().BeNull();
+        Assert.False(result.Success);
+        Assert.Null(result.JobId);
     }
 
     [Fact]
@@ -892,15 +817,15 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
             .Arguments;
 
-        args[0].Should().Be(1, "type should default to 1 (pickup)");
-        args[1].Should().Be(10, "clientID should match input");
-        args[3].Should().Be("Test User", "contact should be BookedBy");
-        args[4].Should().Be(3, "chargeType should come from TblSettings.InternetJobChargeType");
-        args[25].Should().Be(42, "opID should come from TblSettings.InternetJobStaffId");
-        args[32].Should().Be(1, "service (jobTypeId) should be resolved from speed name");
-        args[42].Should().Be(1, "speed should match SpeedId");
-        args[49].Should().Be((int)JobSource.DespatchWeb, "sourceId should be DespatchWeb");
-        args[57].Should().Be(1, "loggedInContactId should match input");
+        Assert.Equal(1, args[0]); // type should default to 1 (pickup)
+        Assert.Equal(10, args[1]); // clientID should match input
+        Assert.Equal("Test User", args[3]); // contact should be BookedBy
+        Assert.Equal(3, args[4]); // chargeType should come from TblSettings.InternetJobChargeType
+        Assert.Equal(42, args[25]); // opID should come from TblSettings.InternetJobStaffId
+        Assert.Equal(1, args[32]); // service (jobTypeId) should be resolved from speed name
+        Assert.Equal(1, args[42]); // speed should match SpeedId
+        Assert.Equal((int)JobSource.DespatchWeb, args[49]); // sourceId should be DespatchWeb
+        Assert.Equal(1, args[57]); // loggedInContactId should match input
     }
 
     [Fact]
@@ -909,8 +834,10 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateServiceWithMockedProcs(out var mockProcs);
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput(
-            fromAddress: new AddressViewModel("100 Pickup St", "Suite 2", "3 High", "Road", "Auckland", "AKL", "1010", ""),
-            toAddress: new AddressViewModel("200 Delivery Ave", "Unit 5", "7 Low", "Lane", "Wellington", "WGN", "6011", ""));
+            fromAddress: new AddressViewModel("100 Pickup St", "Suite 2", "3 High", "Road", "Auckland", "AKL", "1010",
+                ""),
+            toAddress: new AddressViewModel("200 Delivery Ave", "Unit 5", "7 Low", "Lane", "Wellington", "WGN", "6011",
+                ""));
 
         await service.CreateJobAsync(input);
 
@@ -919,22 +846,24 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Arguments;
 
         // From address
-        args[15].Should().Be("100 Pickup St, Suite 2, 3 High, Road, Auckland, AKL, 1010", "fromAddress = FullAddress");
-        args[18].Should().Be("100 Pickup St", "fromCompany = AddressLine1");
-        args[17].Should().Be("Suite 2", "fromExtra = AddressLine2");
-        args[16].Should().Be("3 High Road", "fromStreet = AddressLine3 + AddressLine4 trimmed");
-        args[12].Should().Be("Auckland", "fromCity = AddressLine5");
-        args[13].Should().Be("AKL", "fromState = AddressLine6");
-        args[14].Should().Be(1010, "fromZipCode parsed from AddressLine7");
+        Assert.Equal("100 Pickup St, Suite 2, 3 High, Road, Auckland, AKL, 1010",
+            args[15]); // fromAddress = FullAddress
+        Assert.Equal("100 Pickup St", args[18]); // fromCompany = AddressLine1
+        Assert.Equal("Suite 2", args[17]); // fromExtra = AddressLine2
+        Assert.Equal("3 High Road", args[16]); // fromStreet = AddressLine3 + AddressLine4 trimmed
+        Assert.Equal("Auckland", args[12]); // fromCity = AddressLine5
+        Assert.Equal("AKL", args[13]); // fromState = AddressLine6
+        Assert.Equal(1010, args[14]); // fromZipCode parsed from AddressLine7
 
         // To address
-        args[8].Should().Be("200 Delivery Ave, Unit 5, 7 Low, Lane, Wellington, WGN, 6011", "toAddress = FullAddress");
-        args[11].Should().Be("200 Delivery Ave", "toCompany = AddressLine1");
-        args[10].Should().Be("Unit 5", "toExtra = AddressLine2");
-        args[9].Should().Be("7 Low Lane", "toStreet = AddressLine3 + AddressLine4 trimmed");
-        args[5].Should().Be("Wellington", "toCity = AddressLine5");
-        args[6].Should().Be("WGN", "toState = AddressLine6");
-        args[7].Should().Be(6011, "toZipCode parsed from AddressLine7");
+        Assert.Equal("200 Delivery Ave, Unit 5, 7 Low, Lane, Wellington, WGN, 6011",
+            args[8]); // toAddress = FullAddress
+        Assert.Equal("200 Delivery Ave", args[11]); // toCompany = AddressLine1
+        Assert.Equal("Unit 5", args[10]); // toExtra = AddressLine2
+        Assert.Equal("7 Low Lane", args[9]); // toStreet = AddressLine3 + AddressLine4 trimmed
+        Assert.Equal("Wellington", args[5]); // toCity = AddressLine5
+        Assert.Equal("WGN", args[6]); // toState = AddressLine6
+        Assert.Equal(6011, args[7]); // toZipCode parsed from AddressLine7
     }
 
     [Fact]
@@ -963,8 +892,9 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
             .Arguments;
 
-        args[38].Should().BeOfType<int>().Which.Should().Be(1, "proofOfDelivery true -> 1");
-        args[39].Should().Be("pod@test.com", "proofOfDeliveryEmail from defaults");
+        var podValue = Assert.IsType<int>(args[38]);
+        Assert.Equal(1, podValue); // proofOfDelivery true -> 1
+        Assert.Equal("pod@test.com", args[39]); // proofOfDeliveryEmail from defaults
     }
 
     [Fact]
@@ -980,9 +910,9 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
             .Arguments;
 
-        args[63].Should().Be("7", "recurringDays string should be the bitmask value as string");
-        args[64].Should().Be(0b0000111, "daysInt should be the bitmask integer (Mon+Tue+Wed=7)");
-        args[65].Should().Be(0b00001, "frequencyInt should be the bitmask integer (weekly=1)");
+        Assert.Equal("7", args[63]); // recurringDays string should be the bitmask value as string
+        Assert.Equal(0b0000111, args[64]); // daysInt should be the bitmask integer (Mon+Tue+Wed=7)
+        Assert.Equal(0b00001, args[65]); // frequencyInt should be the bitmask integer (weekly=1)
     }
 
     [Fact]
@@ -998,12 +928,8 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
             .Arguments;
 
-        args[0].Should().Be(2, "DELIVERTO type should map to TypeId 2");
+        Assert.Equal(2, args[0]); // DELIVERTO type should map to TypeId 2
     }
-
-    #endregion
-
-    #region Bulk Schedule Job Stored Procedure Tests
 
     [Fact]
     public async Task CreateJobAsync_BulkJob_CallsBulkScheduleInsertProc()
@@ -1015,8 +941,9 @@ public class CreateJobServiceTests : IAsyncDisposable
         await service.CreateJobAsync(input);
 
         var invocation = mockProcs.Invocations
-            .SingleOrDefault(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync));
-        invocation.Should().NotBeNull("bulk jobs (SpeedId >= 1000) should call DD_stpBulkScheduleJob_InsertAsync");
+            .SingleOrDefault(i =>
+                i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync));
+        Assert.NotNull(invocation);
     }
 
     [Fact]
@@ -1028,9 +955,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         await service.CreateJobAsync(input);
 
-        mockProcs.Invocations
-            .Any(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Should().BeFalse("bulk jobs should not call the excelerator proc");
+        Assert.False(mockProcs.Invocations
+            .Any(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync)));
     }
 
     [Fact]
@@ -1042,8 +968,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeTrue();
-        result.JobId.Should().Be(99);
+        Assert.True(result.Success);
+        Assert.Equal(99, result.JobId);
     }
 
     [Fact]
@@ -1060,9 +986,11 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Arguments;
 
         // Size defaults to 2 (from ApplyNullFallbackDefaults), cast to short
-        args[25].Should().BeOfType<short>().Which.Should().Be(2, "size should be cast to short");
+        var sizeValue = Assert.IsType<short>(args[25]);
+        Assert.Equal(2, sizeValue);
         // Quantity defaults to 1 (from ApplyNullFallbackDefaults), cast to short
-        args[26].Should().BeOfType<short>().Which.Should().Be(1, "qty should be cast to short");
+        var qtyValue = Assert.IsType<short>(args[26]);
+        Assert.Equal(1, qtyValue);
     }
 
     [Fact]
@@ -1078,8 +1006,8 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
             .Arguments;
 
-        args[33].Should().BeOfType<bool>().Which.Should().BeTrue(
-            "deliverToPrivateBusiness int 1 should convert to bool true");
+        var deliverToPrivateBusiness = Assert.IsType<bool>(args[33]);
+        Assert.True(deliverToPrivateBusiness);
     }
 
     [Fact]
@@ -1095,13 +1023,13 @@ public class CreateJobServiceTests : IAsyncDisposable
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
             .Arguments;
 
-        args[0].Should().Be(1, "type should default to 1");
-        args[2].Should().Be(10, "clientID should match input");
-        args[3].Should().Be("Test User", "contact should be BookedBy");
-        args[51].Should().Be(false, "onHold should be data.Hold (default false)");
-        args[52].Should().Be("JOB-001", "orderRef should be data.JobNumber");
-        args[64].Should().Be((int)JobSource.DespatchWeb, "sourceId should be DespatchWeb");
-        args[66].Should().Be(1, "loggedInContactId should match input");
+        Assert.Equal(1, args[0]); // type should default to 1
+        Assert.Equal(10, args[2]); // clientID should match input
+        Assert.Equal("Test User", args[3]); // contact should be BookedBy
+        Assert.Equal(false, args[51]); // onHold should be data.Hold (default false)
+        Assert.Equal("JOB-001", args[52]); // orderRef should be data.JobNumber
+        Assert.Equal((int)JobSource.DespatchWeb, args[64]); // sourceId should be DespatchWeb
+        Assert.Equal(1, args[66]); // loggedInContactId should match input
     }
 
     [Fact]
@@ -1119,14 +1047,9 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         // jobNumber OutputParameter is at index 71 (one after jobID at 70)
         var jobNumberParam = args[ExceleratorJobIdArgIndex + 1] as OutputParameter<string>;
-        jobNumberParam.Should().NotBeNull();
-        jobNumberParam!._value.Should().Be("JOB-001",
-            "the pre-generated job number from input should be seeded into the OutputParameter so the SP receives it as input");
+        Assert.NotNull(jobNumberParam);
+        Assert.Equal("JOB-001", jobNumberParam!._value);
     }
-
-    #endregion
-
-    #region Stored Procedure Error Handling Tests
 
     [Fact]
     public async Task CreateJobAsync_ProcThrowsException_ReturnsFailedWithMessage()
@@ -1136,8 +1059,10 @@ public class CreateJobServiceTests : IAsyncDisposable
         // Set up excelerator proc to throw
         mockProcs.Setup(p => p.DD_stpJob_Excelerator_InsertAsync(
             It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<double?>(), It.IsAny<double?>(),
             It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<int?>(), It.IsAny<int?>(),
@@ -1164,8 +1089,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().Contain("Database connection failed");
+        Assert.False(result.Success);
+        Assert.Contains("Database connection failed", result.Message);
     }
 
     [Fact]
@@ -1178,9 +1103,8 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var result = await service.CreateJobAsync(input);
 
-        result.Success.Should().BeFalse();
-        result.Message.Should().NotBeNullOrEmpty();
+        Assert.False(result.Success);
+        Assert.False(string.IsNullOrEmpty(result.Message));
     }
 
-    #endregion
 }

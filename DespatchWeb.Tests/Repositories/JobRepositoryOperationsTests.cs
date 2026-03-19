@@ -4,8 +4,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -19,9 +17,8 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryOperationsTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
-    private readonly DbContextOptions<DespatchContext> _contextOptions;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -30,31 +27,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
 
     public JobRepositoryOperationsTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-        _connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
-
-        _contextOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        using var context = new DespatchContext(_contextOptions);
-        context.Database.EnsureCreated();
-
-        // Setup factory to return new contexts that share the same connection
-        _contextFactoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_contextOptions));
-
-        _contextFactoryMock.Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_contextOptions));
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -62,12 +35,9 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await _connection.DisposeAsync();
-    }
+    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
 
-    private DespatchContext CreateContext() => new(_contextOptions);
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
@@ -76,8 +46,6 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
-
-    #region IsJobParentAsync Tests
 
     [Fact]
     public async Task IsJobParentAsync_WithChildJob_ReturnsTrue()
@@ -94,7 +62,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsJobParentAsync(101);
 
         // Assert - IsJobParentAsync returns true if the job HAS a parent (i.e., is a child)
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -111,7 +79,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsJobParentAsync(100);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -133,7 +101,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsJobParentAsync(200);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -154,7 +122,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsJobParentAsync(200);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -167,7 +135,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsJobParentAsync(999);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -184,12 +152,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsJobParentAsync(100);
 
         // Assert - should check TucJobs first and return false (no parent)
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region IsBulkJobParent Tests
 
     [Fact]
     public async Task IsBulkJobParent_WithParentId_ReturnsTrue()
@@ -212,7 +176,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsBulkJobParent(200);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -236,7 +200,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsBulkJobParent(200);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -259,7 +223,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsBulkJobParent(200);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -272,12 +236,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var result = await repository.IsBulkJobParent(999);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region UpdateJobVoidStatusAsync Tests
 
     [Fact]
     public async Task UpdateJobVoidStatusAsync_WithActiveJobs_SetsVoidAndStatus()
@@ -303,9 +263,9 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
             .Where(j => ((IEnumerable<int>)SourceArray).Contains(j.UcjbId))
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        jobs.Should().HaveCount(2);
-        jobs.Should().OnlyContain(j => j.UcjbVoid == true);
-        jobs.Should().OnlyContain(j => j.UcjbStatus == 1000);
+        Assert.Equal(2, jobs.Count);
+        Assert.All(jobs, j => Assert.True(j.UcjbVoid));
+        Assert.All(jobs, j => Assert.Equal(1000, j.UcjbStatus));
     }
 
     [Fact]
@@ -329,12 +289,12 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var jobs = await verifyContext.TucJobArchives
-            .Where(j => ((IEnumerable<int>)new[] { 100, 101 }).Contains(j.UcjbId))
+            .Where(j => ((IEnumerable<int>)SourceArray).Contains(j.UcjbId))
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        jobs.Should().HaveCount(2);
-        jobs.Should().OnlyContain(j => j.UcjbVoid == true);
-        jobs.Should().OnlyContain(j => j.UcjbStatus == 1000);
+        Assert.Equal(2, jobs.Count);
+        Assert.All(jobs, j => Assert.True(j.UcjbVoid));
+        Assert.All(jobs, j => Assert.Equal(1000, j.UcjbStatus));
     }
 
     [Fact]
@@ -358,10 +318,10 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var activeJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
         var archivedJob = await verifyContext.TucJobArchives.FindAsync([101], TestContext.Current.CancellationToken);
 
-        activeJob!.UcjbVoid.Should().BeTrue();
-        activeJob.UcjbStatus.Should().Be(1000);
-        archivedJob!.UcjbVoid.Should().BeTrue();
-        archivedJob.UcjbStatus.Should().Be(1000);
+        Assert.True(activeJob!.UcjbVoid);
+        Assert.Equal(1000, activeJob.UcjbStatus);
+        Assert.True(archivedJob!.UcjbVoid);
+        Assert.Equal(1000, archivedJob.UcjbStatus);
     }
 
     [Fact]
@@ -384,10 +344,6 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         await repository.UpdateJobVoidStatusAsync([999, 998]);
     }
 
-    #endregion
-
-    #region SimpleRepriceJobManualAsync Tests
-
     [Fact]
     public async Task SimpleRepriceJobManualAsync_WithRegularJob_UpdatesPriceAndMarksManual()
     {
@@ -407,8 +363,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        job!.UcjbAmount.Should().Be(150m);
-        job.RatedManually.Should().BeTrue();
+        Assert.Equal(150m, job!.UcjbAmount);
+        Assert.True(job.RatedManually);
     }
 
     [Fact]
@@ -436,8 +392,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobArchives.FindAsync([100], TestContext.Current.CancellationToken);
-        job!.UcjbAmount.Should().Be(200m);
-        job.RatedManually.Should().BeTrue();
+        Assert.Equal(200m, job!.UcjbAmount);
+        Assert.True(job.RatedManually);
     }
 
     [Fact]
@@ -466,7 +422,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TblBulkJobs.FindAsync([300], TestContext.Current.CancellationToken);
-        job!.Amount.Should().Be(250m);
+        Assert.Equal(250m, job!.Amount);
     }
 
     [Fact]
@@ -494,8 +450,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var job = await verifyContext.TucJobBookings.FindAsync([400], TestContext.Current.CancellationToken);
-        job!.UcbkAmount.Should().Be(180m);
-        job.RatedManually.Should().BeTrue();
+        Assert.Equal(180m, job!.UcbkAmount);
+        Assert.True(job.RatedManually);
     }
 
     [Fact]
@@ -509,13 +465,10 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var act = () => repository.SimpleRepriceJobManualAsync(data);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*999*not found*");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        Assert.Contains("999", ex.Message);
+        Assert.Contains("not found", ex.Message);
     }
-
-    #endregion
-
-    #region AssignCourierToJobAsync Tests
 
     [Fact]
     public async Task AssignCourierToJobAsync_WithValidJobs_UpdatesCourierAndStatus()
@@ -541,9 +494,9 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
             .Where(j => ((IEnumerable<int>)SourceArray).Contains(j.UcjbId))
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
-        jobs.Should().HaveCount(2);
-        jobs.Should().OnlyContain(j => j.UcjbCourierId == 5);
-        jobs.Should().OnlyContain(j => j.InternalStatus == (int)InternalJobStatus.AwaitingPod);
+        Assert.Equal(2, jobs.Count);
+        Assert.All(jobs, j => Assert.Equal(5, j.UcjbCourierId));
+        Assert.All(jobs, j => Assert.Equal((int)InternalJobStatus.AwaitingPod, j.InternalStatus));
     }
 
     [Fact]
@@ -566,8 +519,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedJob!.UcjbDispDate.Should().Be(dispatchTime);
-        updatedJob.UcjbDispTime.Should().Be(dispatchTime);
+        Assert.Equal(dispatchTime, updatedJob!.UcjbDispDate);
+        Assert.Equal(dispatchTime, updatedJob.UcjbDispTime);
     }
 
     [Fact]
@@ -590,7 +543,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var verifiedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        verifiedJob!.UcjbStatus.Should().Be((int)JobStatus.Dispatched); // Should keep existing status
+        Assert.Equal((int)JobStatus.Dispatched, verifiedJob!.UcjbStatus); // Should keep existing status
     }
 
     [Fact]
@@ -613,7 +566,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var verifiedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        verifiedJob!.UcjbStatus.Should().Be((int)JobStatus.Dispatched);
+        Assert.Equal((int)JobStatus.Dispatched, verifiedJob!.UcjbStatus);
     }
 
     [Fact]
@@ -626,13 +579,9 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var act = () => repository.AssignCourierToJobAsync([999], courierId: 5);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("*No records found*");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        Assert.Contains("No records found", ex.Message);
     }
-
-    #endregion
-
-    #region JobNumberExistsAsync Tests
 
     [Fact]
     public async Task AssignCourierToJobAsync_ClearsFirstDriverCourierId()
@@ -655,8 +604,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedJob!.FdcourierId.Should().BeNull();
-        updatedJob.DesCheck.Should().BeFalse();
+        Assert.Null(updatedJob!.FdcourierId);
+        Assert.False(updatedJob.DesCheck);
     }
 
     [Fact]
@@ -679,12 +628,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        updatedJob!.InternalStatus.Should().Be((int)InternalJobStatus.AwaitingPod);
+        Assert.Equal((int)InternalJobStatus.AwaitingPod, updatedJob!.InternalStatus);
     }
-
-    #endregion
-
-    #region SimpleRepriceJobManualAsync Archive Fallback Tests
 
     [Fact]
     public async Task SimpleRepriceJobManualAsync_RegularJob_FallsBackToArchive()
@@ -711,8 +656,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var archivedJob = await verifyContext.TucJobArchives.FindAsync([500], TestContext.Current.CancellationToken);
-        archivedJob!.UcjbAmount.Should().Be(300m);
-        archivedJob.RatedManually.Should().BeTrue();
+        Assert.Equal(300m, archivedJob!.UcjbAmount);
+        Assert.True(archivedJob.RatedManually);
     }
 
     [Fact]
@@ -734,13 +679,9 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var liveJob = await verifyContext.TucJobs.FindAsync([600], TestContext.Current.CancellationToken);
-        liveJob!.UcjbAmount.Should().Be(999m);
-        liveJob.RatedManually.Should().BeTrue();
+        Assert.Equal(999m, liveJob!.UcjbAmount);
+        Assert.True(liveJob.RatedManually);
     }
-
-    #endregion
-
-    #region UpdateJobVoidStatusAsync Edge Case Tests
 
     [Fact]
     public async Task UpdateJobVoidStatusAsync_PreservesOtherJobFields()
@@ -761,10 +702,10 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Assert
         await using var verifyContext = CreateContext();
         var voidedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        voidedJob!.UcjbVoid.Should().BeTrue();
-        voidedJob.UcjbStatus.Should().Be(1000);
-        voidedJob.UcjbAmount.Should().Be(500m); // Amount preserved
-        voidedJob.UcjbNumber.Should().Be("JOB001"); // Job number preserved
+        Assert.True(voidedJob!.UcjbVoid);
+        Assert.Equal(1000, voidedJob.UcjbStatus);
+        Assert.Equal(500m, voidedJob.UcjbAmount); // Amount preserved
+        Assert.Equal("JOB001", voidedJob.UcjbNumber); // Job number preserved
     }
 
     [Fact]
@@ -792,15 +733,11 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var job101 = await verifyContext.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
         var job102 = await verifyContext.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        job100!.UcjbVoid.Should().BeTrue();
-        job101!.UcjbVoid.Should().BeTrue();
-        job102!.UcjbVoid.Should().BeFalse(); // Not voided
-        job102.UcjbStatus.Should().NotBe(1000);
+        Assert.True(job100!.UcjbVoid);
+        Assert.True(job101!.UcjbVoid);
+        Assert.False(job102!.UcjbVoid); // Not voided
+        Assert.NotEqual(1000, job102.UcjbStatus);
     }
-
-    #endregion
-
-    #region UpdateManualPriceAsync Validation Tests
 
     [Fact]
     public async Task UpdateManualPriceAsync_WithInvalidId_ThrowsArgumentException()
@@ -825,7 +762,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var act = () => repository.UpdateManualPriceAsync(data);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        await Assert.ThrowsAsync<ArgumentException>(act);
     }
 
     [Fact]
@@ -851,8 +788,8 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var act = () => repository.UpdateManualPriceAsync(data);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*Invalid Values*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        Assert.Contains("Invalid Values", ex.Message);
     }
 
     [Fact]
@@ -878,7 +815,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var act = () => repository.UpdateManualPriceAsync(data);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        await Assert.ThrowsAsync<ArgumentException>(act);
     }
 
     [Fact]
@@ -904,7 +841,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var act = () => repository.UpdateManualPriceAsync(data);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        await Assert.ThrowsAsync<ArgumentException>(act);
     }
 
     [Fact]
@@ -949,10 +886,6 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         }
     }
 
-    #endregion
-
-    #region Helper Methods
-
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,
@@ -982,5 +915,4 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         UcjbNumber = jobNumber
     };
 
-    #endregion
 }

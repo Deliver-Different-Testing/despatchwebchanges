@@ -3,7 +3,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -21,8 +20,6 @@ public class CourierReportServiceTests
         _clock
     );
 
-    #region Helpers
-
     private static string DecodeCsv(byte[] bytes)
     {
         var text = Encoding.UTF8.GetString(bytes);
@@ -33,10 +30,6 @@ public class CourierReportServiceTests
     }
 
     private static string[] GetCsvLines(byte[] bytes) => DecodeCsv(bytes).TrimEnd('\r', '\n').Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
-
-    #endregion
-
-    #region Today Active Drivers CSV
 
     [Fact]
     public async Task GenerateTodayActiveDriversCsvAsync_WithData_ReturnsCorrectHeadersAndRows()
@@ -70,12 +63,16 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(3); // header + 2 data rows
-        lines[0].Should().Be("Code,Name,Fleet,Login Time,Logout Time,Duration,Deliveries,Status");
-        lines[1].Should().Contain("C001").And.Contain("John Doe").And.Contain("12").And.Contain("Active");
-        lines[2].Should().Contain("C002").And.Contain("Jane Smith");
+        Assert.Equal(3, lines.Length); // header + 2 data rows
+        Assert.Equal("Code,Name,Fleet,Login Time,Logout Time,Duration,Deliveries,Status", lines[0]);
+        Assert.Contains("C001", lines[1]);
+        Assert.Contains("John Doe", lines[1]);
+        Assert.Contains("12", lines[1]);
+        Assert.Contains("Active", lines[1]);
+        Assert.Contains("C002", lines[2]);
+        Assert.Contains("Jane Smith", lines[2]);
 
-        fileName.Should().Be("today-active-drivers-2026-02-18-1430.csv");
+        Assert.Equal("today-active-drivers-2026-02-18-1430.csv", fileName);
     }
 
     [Fact]
@@ -104,7 +101,7 @@ public class CourierReportServiceTests
         // Assert - Logout Time field should be empty
         var lines = GetCsvLines(fileBytes);
         var fields = lines[1].Split(',');
-        fields[4].Should().BeEmpty("null LogoutTime should produce empty CSV field");
+        Assert.Empty(fields[4]);
     }
 
     [Fact]
@@ -121,8 +118,8 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("Code,Name,Fleet,Login Time,Logout Time,Duration,Deliveries,Status");
+        Assert.Single(lines);
+        Assert.Equal("Code,Name,Fleet,Login Time,Logout Time,Duration,Deliveries,Status", lines[0]);
     }
 
     [Fact]
@@ -138,7 +135,8 @@ public class CourierReportServiceTests
         var act = () => service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Database error");
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        Assert.Equal("Database error", ex.Message);
     }
 
     [Fact]
@@ -158,10 +156,6 @@ public class CourierReportServiceTests
         // Assert
         _courierRepositoryMock.Verify(x => x.GetTodayActiveDriversForExportAsync(request), Times.Once);
     }
-
-    #endregion
-
-    #region Compliance CSV
 
     [Fact]
     public async Task GenerateComplianceCsvAsync_WithData_ReturnsCorrectHeadersAndRows()
@@ -194,13 +188,16 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(3);
-        lines[0].Should().Be("Code,Name,Type,Item/Number,Expiry Date,Status,Days Until Expiry");
-        lines[1].Should().Contain("C001").And.Contain("Driver's License").And.Contain("15/06/2026");
+        Assert.Equal(3, lines.Length);
+        Assert.Equal("Code,Name,Type,Item/Number,Expiry Date,Status,Days Until Expiry", lines[0]);
+        Assert.Contains("C001", lines[1]);
+        Assert.Contains("Driver's License", lines[1]);
+        Assert.Contains("15/06/2026", lines[1]);
         // Null expiry date should produce empty field
-        lines[2].Should().Contain("C002").And.Contain("Insurance");
+        Assert.Contains("C002", lines[2]);
+        Assert.Contains("Insurance", lines[2]);
 
-        fileName.Should().Be("driver-compliance-2026-02-18-1430.csv");
+        Assert.Equal("driver-compliance-2026-02-18-1430.csv", fileName);
     }
 
     [Fact]
@@ -228,7 +225,7 @@ public class CourierReportServiceTests
         // Assert
         var lines = GetCsvLines(fileBytes);
         var fields = lines[1].Split(',');
-        fields[4].Should().BeEmpty("null ExpiryDate should produce empty CSV field");
+        Assert.Empty(fields[4]);
     }
 
     [Fact]
@@ -245,8 +242,8 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("Code,Name,Type,Item/Number,Expiry Date,Status,Days Until Expiry");
+        Assert.Single(lines);
+        Assert.Equal("Code,Name,Type,Item/Number,Expiry Date,Status,Days Until Expiry", lines[0]);
     }
 
     [Fact]
@@ -262,12 +259,8 @@ public class CourierReportServiceTests
         var act = () => service.GenerateComplianceCsvAsync(new CourierComplianceFilterRequest());
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
-
-    #endregion
-
-    #region After Hours Schedule CSV
 
     [Fact]
     public async Task GenerateAfterHoursScheduleCsvAsync_WithData_ReturnsCorrectHeadersAndRows()
@@ -295,13 +288,15 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(2);
-        lines[0].Should().Be("Driver Name,Driver Code,Days,Start Time,End Time,Duration");
-        lines[1].Should().Contain("John Doe").And.Contain("C001").And.Contain("4 hours");
+        Assert.Equal(2, lines.Length);
+        Assert.Equal("Driver Name,Driver Code,Days,Start Time,End Time,Duration", lines[0]);
+        Assert.Contains("John Doe", lines[1]);
+        Assert.Contains("C001", lines[1]);
+        Assert.Contains("4 hours", lines[1]);
         // Days should be joined with comma-space (and thus CSV-quoted since it contains commas)
-        lines[1].Should().Contain("Monday");
+        Assert.Contains("Monday", lines[1]);
 
-        fileName.Should().Be("after-hours-schedule-2026-02-18-1430.csv");
+        Assert.Equal("after-hours-schedule-2026-02-18-1430.csv", fileName);
     }
 
     [Fact]
@@ -330,7 +325,7 @@ public class CourierReportServiceTests
 
         // Assert - "Monday, Tuesday" contains a comma, so it should be quoted
         var csv = DecodeCsv(fileBytes);
-        csv.Should().Contain("\"Monday, Tuesday\"");
+        Assert.Contains("\"Monday, Tuesday\"", csv);
     }
 
     [Fact]
@@ -358,7 +353,7 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(2);
+        Assert.Equal(2, lines.Length);
     }
 
     [Fact]
@@ -375,8 +370,8 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("Driver Name,Driver Code,Days,Start Time,End Time,Duration");
+        Assert.Single(lines);
+        Assert.Equal("Driver Name,Driver Code,Days,Start Time,End Time,Duration", lines[0]);
     }
 
     [Fact]
@@ -392,12 +387,8 @@ public class CourierReportServiceTests
         var act = () => service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
-
-    #endregion
-
-    #region Driver Emails CSV
 
     [Fact]
     public async Task GenerateDriverEmailsCsvAsync_WithData_ReturnsCorrectHeadersAndRows()
@@ -419,12 +410,15 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(3);
-        lines[0].Should().Be("Code,Name,Email,Phone,Fleet");
-        lines[1].Should().Contain("C001").And.Contain("John Doe").And.Contain("john@example.com");
-        lines[2].Should().Contain("C002").And.Contain("Jane Smith");
+        Assert.Equal(3, lines.Length);
+        Assert.Equal("Code,Name,Email,Phone,Fleet", lines[0]);
+        Assert.Contains("C001", lines[1]);
+        Assert.Contains("John Doe", lines[1]);
+        Assert.Contains("john@example.com", lines[1]);
+        Assert.Contains("C002", lines[2]);
+        Assert.Contains("Jane Smith", lines[2]);
 
-        fileName.Should().Be("driver-emails-2026-02-18-1430.csv");
+        Assert.Equal("driver-emails-2026-02-18-1430.csv", fileName);
     }
 
     [Fact]
@@ -441,8 +435,8 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("Code,Name,Email,Phone,Fleet");
+        Assert.Single(lines);
+        Assert.Equal("Code,Name,Email,Phone,Fleet", lines[0]);
     }
 
     [Fact]
@@ -458,12 +452,8 @@ public class CourierReportServiceTests
         var act = () => service.GenerateDriverEmailsCsvAsync(new PaginatedRequest());
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
-
-    #endregion
-
-    #region Driver Earnings CSV
 
     [Fact]
     public async Task GenerateDriverEarningsCsvAsync_WithData_ReturnsCorrectHeadersAndRows()
@@ -485,12 +475,12 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(3);
-        lines[0].Should().Be("Name,Hours Logged,Deliveries,Earnings,Hourly Rate");
-        lines[1].Should().Be("John Doe,7.5,12,250.75,33.43");
-        lines[2].Should().Be("Jane Smith,4.0,5,120.00,30.00");
+        Assert.Equal(3, lines.Length);
+        Assert.Equal("Name,Hours Logged,Deliveries,Earnings,Hourly Rate", lines[0]);
+        Assert.Equal("John Doe,7.5,12,250.75,33.43", lines[1]);
+        Assert.Equal("Jane Smith,4.0,5,120.00,30.00", lines[2]);
 
-        fileName.Should().Be("driver-earnings-2026-02-18-1430.csv");
+        Assert.Equal("driver-earnings-2026-02-18-1430.csv", fileName);
     }
 
     [Fact]
@@ -512,7 +502,7 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines[1].Should().Be("New Driver,0.0,0,0.00,0.00");
+        Assert.Equal("New Driver,0.0,0,0.00,0.00", lines[1]);
     }
 
     [Fact]
@@ -529,8 +519,8 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines.Should().HaveCount(1);
-        lines[0].Should().Be("Name,Hours Logged,Deliveries,Earnings,Hourly Rate");
+        Assert.Single(lines);
+        Assert.Equal("Name,Hours Logged,Deliveries,Earnings,Hourly Rate", lines[0]);
     }
 
     [Fact]
@@ -546,12 +536,8 @@ public class CourierReportServiceTests
         var act = () => service.GenerateDriverEarningsCsvAsync(new PaginatedRequest());
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
+        await Assert.ThrowsAsync<InvalidOperationException>(act);
     }
-
-    #endregion
-
-    #region CSV Field Formatting
 
     [Fact]
     public async Task CsvExport_FieldWithComma_IsQuoted()
@@ -572,7 +558,7 @@ public class CourierReportServiceTests
 
         // Assert
         var csv = DecodeCsv(fileBytes);
-        csv.Should().Contain("\"Doe, John\"");
+        Assert.Contains("\"Doe, John\"", csv);
     }
 
     [Fact]
@@ -594,7 +580,7 @@ public class CourierReportServiceTests
 
         // Assert
         var csv = DecodeCsv(fileBytes);
-        csv.Should().Contain("\"John \"\"JD\"\" Doe\"");
+        Assert.Contains("\"John \"\"JD\"\" Doe\"", csv);
     }
 
     [Fact]
@@ -616,12 +602,8 @@ public class CourierReportServiceTests
 
         // Assert
         var lines = GetCsvLines(fileBytes);
-        lines[1].Should().Be(",,,,");
+        Assert.Equal(",,,,", lines[1]);
     }
-
-    #endregion
-
-    #region Filename Timestamps
 
     [Theory]
     [InlineData(2026, 1, 5, 9, 5, "2026-01-05-0905")]
@@ -641,8 +623,7 @@ public class CourierReportServiceTests
         var (_, fileName) = await service.GenerateDriverEmailsCsvAsync(new PaginatedRequest());
 
         // Assert
-        fileName.Should().Be($"driver-emails-{expectedTimestamp}.csv");
+        Assert.Equal($"driver-emails-{expectedTimestamp}.csv", fileName);
     }
 
-    #endregion
 }

@@ -3,7 +3,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -25,8 +24,6 @@ public class AddAgentRecoveryJobServiceTests
         _clock
     );
 
-    #region AddRecoveryAgentJobAsync Validation Tests
-
     [Fact]
     public async Task AddRecoveryAgentJobAsync_NullRequest_ThrowsException()
     {
@@ -38,7 +35,7 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         // Service throws NullReferenceException because catch block accesses request.JobId for logging
-        await act.Should().ThrowAsync<NullReferenceException>();
+        await Assert.ThrowsAsync<NullReferenceException>(act);
     }
 
     [Fact]
@@ -55,12 +52,8 @@ public class AddAgentRecoveryJobServiceTests
         var act = async () => await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
-
-    #endregion
-
-    #region AddRecoveryAgentJobAsync Workflow Tests
 
     [Fact]
     public async Task AddRecoveryAgentJobAsync_ValidRequest_CreatesNewJob()
@@ -77,7 +70,7 @@ public class AddAgentRecoveryJobServiceTests
         var result = await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        result.Should().Be(newJobId);
+        Assert.Equal(newJobId, result);
         _jobRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
             j.UcjbNumber == "JOB001R1" &&
             j.ParentId == parentJob.UcjbId &&
@@ -223,10 +216,6 @@ public class AddAgentRecoveryJobServiceTests
             j.UcjbOurRef == "PARENT123")), Times.Once);
     }
 
-    #endregion
-
-    #region Job Number Generation Tests
-
     [Fact]
     public async Task AddRecoveryAgentJobAsync_FirstRecoveryJob_AppendsR1()
     {
@@ -268,10 +257,6 @@ public class AddAgentRecoveryJobServiceTests
         _jobRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
             j.UcjbNumber == "JOB001R2")), Times.Once);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static AddAgentRecoveryRequest CreateValidRequest() => new()
     {
@@ -318,5 +303,4 @@ public class AddAgentRecoveryJobServiceTests
             .Returns(Task.CompletedTask);
     }
 
-    #endregion
 }

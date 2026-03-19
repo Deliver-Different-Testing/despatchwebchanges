@@ -1,8 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -15,9 +13,9 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryInterfaceTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
@@ -25,24 +23,8 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
 
     public JobRepositoryInterfaceTests()
     {
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new DespatchContext(options);
-        _context.Database.EnsureCreated();
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
+        _context = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -52,7 +34,7 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private IJobRepository CreateRepository() => new JobRepository(
@@ -63,8 +45,6 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         _createJobServiceMock.Object
     );
 
-    #region Interface Contract Tests
-
     [Fact]
     public void JobRepository_ImplementsIJobRepository()
     {
@@ -72,12 +52,8 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Assert
-        repository.Should().BeAssignableTo<IJobRepository>();
+        Assert.IsAssignableFrom<IJobRepository>(repository);
     }
-
-    #endregion
-
-    #region IsJobArchived Interface Tests
 
     [Fact]
     public async Task IsJobArchived_ViaInterface_WithArchivedJob_ReturnsTrue()
@@ -93,7 +69,7 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.IsJobArchived(jobId);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -110,12 +86,8 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.IsJobArchived(jobId);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region GetRelatedJobsMultiSelectListAsync Interface Tests
 
     [Fact]
     public async Task GetRelatedJobsMultiSelectListAsync_ViaInterface_WithParentAndChildren_ReturnsAllRelated()
@@ -138,10 +110,10 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain(j => j.Id == parentId && j.Selected);
-        result.Should().Contain(j => j.Id == childId1 && !j.Selected);
-        result.Should().Contain(j => j.Id == childId2 && !j.Selected);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(result, j => j.Id == parentId && j.Selected);
+        Assert.Contains(result, j => j.Id == childId1 && !j.Selected);
+        Assert.Contains(result, j => j.Id == childId2 && !j.Selected);
     }
 
     [Fact]
@@ -163,7 +135,7 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: true);
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -185,13 +157,9 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetRelatedJobsMultiSelectListAsync(parentId, isArchived: false, isBulkJob: true);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.IsBulkJob == true);
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.True(j.IsBulkJob));
     }
-
-    #endregion
-
-    #region GetJobParentIdAsync Interface Tests
 
     [Fact]
     public async Task GetJobParentIdAsync_ViaInterface_WithChildJob_ReturnsParentId()
@@ -212,7 +180,7 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetJobParentIdAsync(childId);
 
         // Assert
-        result.Should().Be(parentId);
+        Assert.Equal(parentId, result);
     }
 
     [Fact]
@@ -229,12 +197,8 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetJobParentIdAsync(jobId);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
-
-    #endregion
-
-    #region GetJobCurrentAmountsAsync Interface Tests
 
     [Fact]
     public async Task GetJobCurrentAmountsAsync_ViaInterface_WithExistingJobs_ReturnsAmounts()
@@ -252,11 +216,11 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetJobCurrentAmountsAsync([100, 101]);
 
         // Assert
-        result.Should().HaveCount(2);
-        result[100].Amount.Should().Be(150.00m);
-        result[100].RawBaseAmount.Should().Be(130.00m);
-        result[100].Fuel.Should().Be(20.00m);
-        result[101].Amount.Should().Be(200.00m);
+        Assert.Equal(2, result.Count);
+        Assert.Equal(150.00m, result[100].Amount);
+        Assert.Equal(130.00m, result[100].RawBaseAmount);
+        Assert.Equal(20.00m, result[100].Fuel);
+        Assert.Equal(200.00m, result[101].Amount);
     }
 
     [Fact]
@@ -269,12 +233,8 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var result = await repository.GetJobCurrentAmountsAsync([999, 998]);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
@@ -323,5 +283,4 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
 
-    #endregion
 }

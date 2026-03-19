@@ -11,6 +11,7 @@ import { http, HttpResponse } from 'msw';
 import { recurringJobsApi } from '../recurringJobsApi';
 import { mockPaginatedRecurringJobsResponse } from '../../__testUtils__/msw/handlers';
 import type { RecurringJobQuery } from '../../interfaces';
+import dayjs from 'dayjs';
 
 const baseQuery: RecurringJobQuery = {
     order: 'booked',
@@ -46,11 +47,11 @@ describe('recurringJobsApi integration', () => {
             expect(result.page).toBe(1);
         });
 
-        it('transforms date strings to Date objects', async () => {
+        it('transforms date strings to Dayjs objects', async () => {
             const result = await recurringJobsApi.getPreBookJobs(baseQuery);
 
-            expect(result.items[0].booked).toBeInstanceOf(Date);
-            expect(result.items[0].nextDueTime).toBeInstanceOf(Date);
+            expect(dayjs.isDayjs(result.items[0].booked)).toBe(true);
+            expect(dayjs.isDayjs(result.items[0].nextDueTime)).toBe(true);
         });
 
         it('includes job details in response', async () => {
@@ -99,23 +100,23 @@ describe('recurringJobsApi integration', () => {
 
     describe('voidPrebookJob', () => {
         it('voids a job with correct parameter', async () => {
-            let capturedUrl = '';
+            let capturedBody: unknown = null;
 
             server.use(
-                http.get('*/job/VoidPrebookJob', ({ request }) => {
-                    capturedUrl = request.url;
+                http.post('*/job/VoidPrebookJob', async ({ request }) => {
+                    capturedBody = await request.json();
                     return new HttpResponse(null, { status: 200 });
                 })
             );
 
             await recurringJobsApi.voidPrebookJob(123);
 
-            expect(capturedUrl).toContain('jobId=123');
+            expect(capturedBody).toMatchObject({ jobId: 123 });
         });
 
         it('handles not found error', async () => {
             server.use(
-                http.get('*/job/VoidPrebookJob', () => {
+                http.post('*/job/VoidPrebookJob', () => {
                     return HttpResponse.json({ message: 'Job not found' }, { status: 404 });
                 })
             );

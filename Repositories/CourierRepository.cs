@@ -1,4 +1,5 @@
-﻿using DespatchWeb.EntityClasses;
+﻿using System.Data.Common;
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
@@ -9,7 +10,7 @@ using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
-using System.Data.Common;
+
 using DespatchWeb.Extensions;
 
 namespace DespatchWeb.Repositories;
@@ -571,16 +572,16 @@ public class CourierRepository(
             // WAVE 2: Queries depending on Wave 1 results - PARALLEL
             // ===================================================================
             var polygonMappingsTask = GetPolygonMappingsAsync(clearListAreaIds, cancellationToken);
-            var areaFiltersTask = GetAreaFiltersAsync(clearLists, cancellationToken);
+            var hasAreaFiltersTask = HasAreaFiltersAsync(clearLists, cancellationToken);
             var displayOrdersTask = GetDisplayOrdersAsync(courierIds, cancellationToken);
             var jobsTask = GetAllJobsAsync(courierIds, jobStartDate, jobEndDate, cancellationToken);
             // Full-day query for courier status — prebooked jobs must always be counted
             var courierStatusJobsTask = GetAllJobsAsync(courierIds, currentDateOnly, currentDateOnly.AddDays(1), cancellationToken);
 
-            await Task.WhenAll(polygonMappingsTask, areaFiltersTask, displayOrdersTask, jobsTask, courierStatusJobsTask);
+            await Task.WhenAll(polygonMappingsTask, hasAreaFiltersTask, displayOrdersTask, jobsTask, courierStatusJobsTask);
 
             var allValidCourierGpsIds = polygonMappingsTask.Result;
-            var areaFilterDict = areaFiltersTask.Result;
+            var hasAreaFilters = hasAreaFiltersTask.Result;
             var displayOrders = displayOrdersTask.Result;
             var allJobs = jobsTask.Result;
             var courierStatusJobs = courierStatusJobsTask.Result;
@@ -634,7 +635,7 @@ public class CourierRepository(
             // ===================================================================
             // WAVE 3: Queries depending on Wave 2 results - PARALLEL
             // ===================================================================
-            var areaRemainingTask = GetTotalRemainingForAllAreasAsync(areaFilterDict, cancellationToken);
+            var areaRemainingTask = GetTotalRemainingForAllAreasAsync(hasAreaFilters, cancellationToken);
 
             Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup = [];
             Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup = [];
@@ -961,41 +962,21 @@ public class CourierRepository(
                          c.CourierLogInOut.LogInTime >= currentDateOnly &&
                          c.CourierLogInOut.LogOutTime == null))
             .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
-            .GroupJoin(
-                context.TucCourierFleets,
-                c => c.CourierFleetId,
-                cf => cf.UccfId,
-                (c, cfGroup) => new { Courier = c, FleetGroup = cfGroup }
-            )
-            .SelectMany(
-                x => x.FleetGroup.DefaultIfEmpty(),
-                (x, cf) => new { x.Courier, Fleet = cf }
-            )
-            .GroupJoin(
-                context.TblCourierGps,
-                x => x.Courier.CourierGpsid,
-                gps => gps.CourierGpsid,
-                (x, gpsGroup) => new { x.Courier, x.Fleet, GpsGroup = gpsGroup }
-            )
-            .SelectMany(
-                x => x.GpsGroup.DefaultIfEmpty(),
-                (x, gps) => new { x.Courier, x.Fleet, Gps = gps }
-            )
-            .Select(x => new CourierClearListDto
+            .Select(c => new CourierClearListDto
             {
-                UccrId = x.Courier.UccrId,
-                Code = x.Courier.Code,
-                Name = x.Courier.UccrName + " " + x.Courier.UccrSurname,
-                DangerousGoods = x.Courier.UccrDangerousGoods == 1,
-                DgLicenseExpiry = x.Courier.DglicenseExpiry,
-                UccrChannelId = x.Courier.UccrChannelId,
-                SendJobsViaSms = x.Courier.SendJobsViaSms,
-                AutoDespatch = x.Courier.AutoDespatch,
-                UccrVehicle = x.Courier.UccrVehicle,
-                CourierGpsid = x.Courier.CourierGpsid,
-                GpsCreated = x.Gps != null ? x.Gps.Created : null,
-                PolygonId = x.Gps != null ? x.Gps.PolygonId : null,
-                ZipPolygonId = x.Gps != null ? x.Gps.ZipPolygonId : null,
+                UccrId = c.UccrId,
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                DangerousGoods = c.UccrDangerousGoods == 1,
+                DgLicenseExpiry = c.DglicenseExpiry,
+                UccrChannelId = c.UccrChannelId,
+                SendJobsViaSms = c.SendJobsViaSms,
+                AutoDespatch = c.AutoDespatch,
+                UccrVehicle = c.UccrVehicle,
+                CourierGpsid = c.CourierGpsid,
+                GpsCreated = c.CourierGps != null ? c.CourierGps.Created : null,
+                PolygonId = c.CourierGps != null ? c.CourierGps.PolygonId : null,
+                ZipPolygonId = c.CourierGps != null ? c.CourierGps.ZipPolygonId : null,
                 JobCount = 0
             })
             .OrderBy(c => c.Code)
@@ -1025,27 +1006,19 @@ public class CourierRepository(
     }
 
     /// <summary>
-    /// Query 7: Get area filters for total remaining calculation.
+    /// Query 7: Check whether any area filters exist for total remaining calculation.
     /// </summary>
-    private async Task<Dictionary<string, string>> GetAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists, CancellationToken cancellationToken = default)
+    private async Task<bool> HasAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists, CancellationToken cancellationToken = default)
     {
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var clearListNames = clearLists.Select(cl => cl.AreaName);
 
-        var areaFilters = await context.TblDespatchViews
+        return await context.TblDespatchViews
             .Where(v => v.ShowOnAssistDespatch == true &&
-                        clearListNames.Contains(v.Name))
-            .Select(v => new
-            {
-                v.Name,
-                v.WhereCondition
-            })
-            .TagWith("GetClearLists - Wave 2: Area Filters")
-            .ToListAsync(cancellationToken);
-
-        return areaFilters
-            .Where(af => !string.IsNullOrEmpty(af.WhereCondition))
-            .ToDictionary(af => af.Name?.ToLower() ?? "", af => af.WhereCondition);
+                        clearListNames.Contains(v.Name) &&
+                        v.WhereCondition != null && v.WhereCondition != "")
+            .TagWith("GetClearLists - Wave 2: Has Area Filters")
+            .AnyAsync(cancellationToken);
     }
 
     /// <summary>
@@ -1140,10 +1113,12 @@ public class CourierRepository(
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
+        var longitudes = coordinates.Select(c => c.lng).Distinct().ToList();
 
         var results = await context.ZipPolygons
             .Where(zp => zp.Latitude.HasValue && zp.Longitude.HasValue &&
-                         latitudes.Contains(zp.Latitude.Value))
+                         latitudes.Contains(zp.Latitude.Value) &&
+                         longitudes.Contains(zp.Longitude.Value))
             .Join(context.TblClearListAreaPolygons,
                 zp => zp.ZipPolygonId,
                 cap => cap.ZipPolygonId,
@@ -1177,9 +1152,9 @@ public class CourierRepository(
     }
 
     private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(
-        Dictionary<string, string> areaFilterDict, CancellationToken cancellationToken = default)
+        bool hasAreaFilters, CancellationToken cancellationToken = default)
     {
-        if (areaFilterDict.Count == 0)
+        if (!hasAreaFilters)
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
         const string cacheKey = "ClearList:AreaRemainingCounts";
@@ -1192,36 +1167,18 @@ public class CourierRepository(
 
             await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-            var results = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var results = await context.Database
+                .SqlQueryRaw<AreaRemainingCountDto>("EXEC dbo.GetAreaRemainingCounts")
+                .ToListAsync(cancellationToken);
 
-            await using var command = context.Database.GetDbConnection().CreateCommand();
-            command.CommandText = "EXEC dbo.GetAreaRemainingCounts";
-            command.CommandType = System.Data.CommandType.Text;
-
-            await context.Database.OpenConnectionAsync(cancellationToken);
-
-            try
-            {
-                await using var reader = await command.ExecuteReaderAsync(cancellationToken);
-                while (await reader.ReadAsync(cancellationToken))
-                {
-                    var areaName = reader.GetString(0);
-                    var remaining = reader.GetInt32(1);
-                    if (remaining >= 0)
-                        results[areaName.ToLower()] = remaining;
-                }
-            }
-            finally
-            {
-                await context.Database.CloseConnectionAsync();
-            }
-
-            return results;
+            return results
+                .Where(r => r.Remaining >= 0)
+                .ToDictionary(r => r.AreaName.ToLower(), r => r.Remaining, StringComparer.OrdinalIgnoreCase);
         }) ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
     }
 
 
-    private static readonly List<ClearListResult> StaticSeparatorRows =
+    private static readonly IReadOnlyList<ClearListResult> StaticSeparatorRows =
     [
         new()
         {
@@ -1390,16 +1347,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         if (request.Fleet != 0)
@@ -1683,16 +1631,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         if (request.Fleet != 0)
@@ -1725,16 +1664,10 @@ public class CourierRepository(
         // Compute aggregates in SQL instead of materializing all rows
         var totalActiveDrivers = await query.CountAsync(c => c.CourierLogInOut.LogOutTime == null);
 
-        // Average session time still needs in-memory computation due to COALESCE with runtime 'now'
-        var sessionTimes = await query
-            .Select(c => new
-            {
+        var averageSessionTime = await query
+            .AverageAsync(c => (double)EF.Functions.DateDiffMinute(
                 c.CourierLogInOut.LogInTime,
-                c.CourierLogInOut.LogOutTime
-            })
-            .TagWith("GetTodayActiveDrivers - Step 1: Session Times for Average")
-            .ToListAsync();
-        var averageSessionTime = sessionTimes.Average(s => ((s.LogOutTime ?? now) - s.LogInTime).TotalMinutes);
+                c.CourierLogInOut.LogOutTime ?? now));
 
         query = request.OrderBy?.ToLower() switch
         {
@@ -1884,16 +1817,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         var aggregates = await Context.TucJobs
@@ -1965,22 +1889,16 @@ public class CourierRepository(
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
-        // Get all courier data for hourly rate calculation (single query instead of 3)
-        var allCouriersForAverage = await query
-            .Select(c => new
-            {
-                c.UccrId,
-                c.CourierLogInOut.LogInTime,
-                c.CourierLogInOut.LogOutTime
-            })
-            .TagWith("GetCourierDailyEarnings - Step 3: All Couriers for Average")
+        // Get all courier IDs from base query (IDs only, not full row data)
+        var allCourierIds = await query
+            .Select(c => c.UccrId)
+            .TagWith("GetCourierDailyEarnings - Step 3: All Courier IDs")
             .ToListAsync();
 
-        var allCourierIds = allCouriersForAverage.Select(c => c.UccrId).ToList();
-
-        // Run earnings queries in parallel using separate contexts
+        // Run earnings and aggregate queries in parallel using separate contexts
         await using var earningsContext = CreateNewContext();
-        await using var allEarningsContext = CreateNewContext();
+        await using var avgEarningsContext = CreateNewContext();
+        await using var avgHoursContext = CreateNewContext();
 
         var earningsTask = earningsContext.TucJobs
             .Where(j => j.UcjbCourierId.HasValue &&
@@ -1996,36 +1914,29 @@ public class CourierRepository(
             .TagWith("GetCourierDailyEarnings - Step 4a: Paginated Earnings Data")
             .ToListAsync();
 
-        var allEarningsTask = allEarningsContext.TucJobs
+        // Compute total earnings and total hours server-side for average hourly rate
+        var totalEarningsForRateTask = avgEarningsContext.TucJobs
             .Where(j => j.UcjbCourierId.HasValue &&
                         allCourierIds.Contains(j.UcjbCourierId.Value) &&
                         j.UcjbDate.Date == now.Date)
-            .GroupBy(j => j.UcjbCourierId.Value)
-            .Select(g => new
-            {
-                CourierId = g.Key,
-                TotalEarnings = g.Sum(j => j.CourierPayment) ?? 0
-            })
-            .TagWith("GetCourierDailyEarnings - Step 4b: All Earnings for Average (today)")
-            .ToListAsync();
+            .SumAsync(j => j.CourierPayment);
 
-        await Task.WhenAll(earningsTask, allEarningsTask);
+        var totalMinutesForRateTask = avgHoursContext.TucCouriers
+            .Where(c => allCourierIds.Contains(c.UccrId) && c.CourierLogInOut != null)
+            .SumAsync(c => (double)EF.Functions.DateDiffMinute(
+                c.CourierLogInOut.LogInTime,
+                c.CourierLogInOut.LogOutTime ?? now));
+
+        await Task.WhenAll(earningsTask, totalEarningsForRateTask, totalMinutesForRateTask);
 
         var earningsData = await earningsTask;
-        var allEarningsForAverage = await allEarningsTask;
+        var totalEarningsForRate = await totalEarningsForRateTask ?? 0;
+        var totalMinutesForRate = await totalMinutesForRateTask;
 
         var earningsDict = earningsData.ToDictionary(x => x.CourierId);
-        var allEarningsDict = allEarningsForAverage.ToDictionary(x => x.CourierId, x => x.TotalEarnings);
-
-        // Calculate hourly rates in memory using cached courier data
-        var hourlyRates = new List<decimal>();
-        foreach (var courier in allCouriersForAverage)
-        {
-            var hoursLogged = ((courier.LogOutTime ?? now) - courier.LogInTime).TotalMinutes;
-            if (hoursLogged > 0 && allEarningsDict.TryGetValue(courier.UccrId, out var earnings)) hourlyRates.Add(earnings / (decimal)(hoursLogged / 60.0));
-        }
-
-        var averageHourlyRate = hourlyRates.Count > 0 ? hourlyRates.Average() : 0;
+        var averageHourlyRate = totalMinutesForRate > 0
+            ? totalEarningsForRate / (decimal)(totalMinutesForRate / 60.0)
+            : 0;
 
         var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
@@ -2093,17 +2004,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         var totalCount = await query.CountAsync();
@@ -2292,6 +2193,7 @@ public class CourierRepository(
 
         var drivers = await Context.TucCouriers
             .Where(c => c.Active)
+            .Take(500)
             .Select(c => new
             {
                 c.UccrId,
@@ -2431,16 +2333,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         if (request.Fleet != 0)
@@ -2514,16 +2407,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         if (request.Fleet != 0)
@@ -2663,16 +2547,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         return await query
@@ -2704,16 +2579,7 @@ public class CourierRepository(
         if (!string.IsNullOrWhiteSpace(request.SearchTerm))
         {
             var searchPattern = $"%{request.SearchTerm}%";
-            query = query.Where(c =>
-                EF.Functions.Like(c.Code, searchPattern) ||
-                EF.Functions.Like(c.UccrName, searchPattern) ||
-                EF.Functions.Like(c.UccrSurname, searchPattern) ||
-                EF.Functions.Like(c.UccrMobile, searchPattern) ||
-                EF.Functions.Like(c.PersonalMobile, searchPattern) ||
-                EF.Functions.Like(c.VehiclePlateNnumber, searchPattern) ||
-                EF.Functions.Like(c.UccrVehicleModel, searchPattern) ||
-                EF.Functions.Like(c.UccrName + " " + c.UccrSurname, searchPattern)
-            );
+            query = query.WithSearchFilter(searchPattern);
         }
 
         var couriers = await query

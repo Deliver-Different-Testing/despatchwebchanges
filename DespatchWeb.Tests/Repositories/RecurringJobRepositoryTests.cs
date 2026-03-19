@@ -5,8 +5,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
-using FluentAssertions;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -18,41 +16,23 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class RecurringJobRepositoryTests : IAsyncDisposable
 {
-    private readonly SqliteConnection _connection;
+    private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _context;
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public RecurringJobRepositoryTests()
     {
-        // Create and open a SQLite connection that will be kept alive for the test
-        _connection = new SqliteConnection("DataSource=:memory:");
-        _connection.Open();
-
-        _connection.CreateFunction("getdate", () => TestDates.Now);
-
-        // Disable foreign key constraints for testing
-        using (var command = _connection.CreateCommand())
-        {
-            command.CommandText = "PRAGMA foreign_keys = OFF;";
-            command.ExecuteNonQuery();
-        }
-
-        var options = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_connection)
-            .Options;
-
-        _context = new DespatchContext(options);
-        _context.Database.EnsureCreated();
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(_context);
+        _context = _db.CreateContext();
+        _contextFactoryMock = _db.CreateFactoryMock(_context);
     }
 
     public async ValueTask DisposeAsync()
     {
         await _context.DisposeAsync();
-        await _connection.DisposeAsync();
+        await _db.DisposeAsync();
     }
 
     private RecurringJobRepository CreateRepository() => new(
@@ -61,8 +41,6 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         _clock,
         _clearListEnvelopeServiceMock.Object
     );
-
-    #region UpdateRecurringJobAsync - ClientID Tests
 
     [Fact]
     public async Task UpdateRecurringJobAsync_ClientID_FetchesCorrectClientCode()
@@ -92,8 +70,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert - Verify the correct client code was set (not AGRAT which is first)
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkClientId.Should().Be(newClientId);
-        updatedJob.UcbkClientCode.Should().Be(expectedClientCode);
+        Assert.Equal(newClientId, updatedJob!.UcbkClientId);
+        Assert.Equal(expectedClientCode, updatedJob.UcbkClientCode);
     }
 
     [Fact]
@@ -124,8 +102,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert - Should be NEWCLIENT, NOT AGRAT
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkClientCode.Should().Be(expectedClientCode);
-        updatedJob.UcbkClientCode.Should().NotBe("AGRAT");
+        Assert.Equal(expectedClientCode, updatedJob!.UcbkClientCode);
+        Assert.NotEqual("AGRAT", updatedJob.UcbkClientCode);
     }
 
     [Fact]
@@ -153,8 +131,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert - Client code should be null for non-existent client
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkClientId.Should().Be(nonExistentClientId);
-        updatedJob.UcbkClientCode.Should().BeNull();
+        Assert.Equal(nonExistentClientId, updatedJob!.UcbkClientId);
+        Assert.Null(updatedJob.UcbkClientCode);
     }
 
     [Fact]
@@ -188,10 +166,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
             var parentJob = await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
             var childJob = await _context.TucJobBookings.FindAsync([childJobId], TestContext.Current.CancellationToken);
 
-            parentJob!.UcbkClientId.Should().Be(newClientId);
-            parentJob.UcbkClientCode.Should().Be(expectedClientCode);
-            childJob!.UcbkClientId.Should().Be(newClientId);
-            childJob.UcbkClientCode.Should().Be(expectedClientCode);
+            Assert.Equal(newClientId, parentJob!.UcbkClientId);
+            Assert.Equal(expectedClientCode, parentJob.UcbkClientCode);
+            Assert.Equal(newClientId, childJob!.UcbkClientId);
+            Assert.Equal(expectedClientCode, childJob.UcbkClientCode);
         }
     }
 
@@ -224,13 +202,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var parentJob = await _context.TucJobBookings.FindAsync([parentJobId], TestContext.Current.CancellationToken);
         var childJob = await _context.TucJobBookings.FindAsync([childJobId], TestContext.Current.CancellationToken);
 
-        parentJob!.UcbkClientCode.Should().Be(expectedClientCode);
-        childJob!.UcbkClientCode.Should().Be(expectedClientCode);
+        Assert.Equal(expectedClientCode, parentJob!.UcbkClientCode);
+        Assert.Equal(expectedClientCode, childJob!.UcbkClientCode);
     }
-
-    #endregion
-
-    #region UpdateRecurringJobAsync - Other Properties Tests
 
     [Fact]
     public async Task UpdateRecurringJobAsync_Items_UpdatesQuantity()
@@ -250,7 +224,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.Quantity.Should().Be(newQuantity);
+        Assert.Equal(newQuantity, updatedJob!.Quantity);
     }
 
     [Fact]
@@ -271,7 +245,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkSpeed.Should().Be(newSpeedId);
+        Assert.Equal(newSpeedId, updatedJob!.UcbkSpeed);
     }
 
     [Fact]
@@ -293,7 +267,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert - Speed should remain unchanged for done jobs
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkSpeed.Should().Be(originalSpeed);
+        Assert.Equal(originalSpeed, updatedJob!.UcbkSpeed);
     }
 
     [Fact]
@@ -313,7 +287,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkCbd.Should().BeTrue();
+        Assert.True(updatedJob!.UcbkCbd);
     }
 
     [Fact]
@@ -333,12 +307,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkAttention.Should().BeTrue();
+        Assert.True(updatedJob!.UcbkAttention);
     }
-
-    #endregion
-
-    #region GetRecurringJobsListAsync - Timezone Conversion Tests
 
     [Fact]
     public async Task GetRecurringJobsListAsync_WithValidDates_AppliesTimezoneConversion()
@@ -368,11 +338,11 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(1);
+        Assert.Single(result.Items);
         var item = result.Items.First();
 
         // The booked date should have timezone offset applied (NZ is +12 or +13)
-        item.Booked.Offset.Should().NotBe(TimeSpan.Zero);
+        Assert.NotEqual(TimeSpan.Zero, item.Booked.Offset);
     }
 
     [Fact]
@@ -401,11 +371,11 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(1);
+        Assert.Single(result.Items);
         var item = result.Items.First();
 
         // Booked should be the fallback SqlMinDateTime (1753-01-01), not converted
-        item.Booked.Year.Should().Be(1753);
+        Assert.Equal(1753, item.Booked.Year);
     }
 
     [Fact]
@@ -435,7 +405,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert - Should not throw ArgumentOutOfRangeException
         var act = async () => await repository.GetRecurringJobsListAsync(request);
-        await act.Should().NotThrowAsync<ArgumentOutOfRangeException>();
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
     }
 
     [Fact]
@@ -467,12 +438,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(1);
+        Assert.Single(result.Items);
         var item = result.Items.First();
 
         // NextDueTime should have timezone offset applied
-        item.NextDueTime.Should().NotBeNull();
-        item.NextDueTime!.Value.Offset.Should().NotBe(TimeSpan.Zero);
+        Assert.NotNull(item.NextDueTime);
+        Assert.NotEqual(TimeSpan.Zero, item.NextDueTime!.Value.Offset);
     }
 
     [Fact]
@@ -503,9 +474,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(1);
+        Assert.Single(result.Items);
         var item = result.Items.First();
-        item.NextDueTime.Should().BeNull();
+        Assert.Null(item.NextDueTime);
     }
 
     [Fact]
@@ -525,8 +496,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().BeEmpty();
-        result.Total.Should().Be(0);
+        Assert.Empty(result.Items);
+        Assert.Equal(0, result.Total);
     }
 
     [Fact]
@@ -552,17 +523,14 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Act - Should not throw for mixed dates
         var act = async () => await repository.GetRecurringJobsListAsync(request);
-        await act.Should().NotThrowAsync();
+        var exception = await Record.ExceptionAsync(act);
+        Assert.Null(exception);
 
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(3);
+        Assert.Equal(3, result.Items.Count());
     }
-
-    #endregion
-
-    #region GetRecurringJobByIdAsync Tests
 
     [Fact]
     public async Task GetRecurringJobByIdAsync_WithValidJob_ReturnsJobGroup()
@@ -578,9 +546,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobByIdAsync(jobId);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Job.Should().NotBeNull();
-        result.Job.Id.Should().Be(jobId);
+        Assert.NotNull(result);
+        Assert.NotNull(result.Job);
+        Assert.Equal(jobId, result.Job.Id);
     }
 
     [Fact]
@@ -604,9 +572,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobByIdAsync(parentId);
 
         // Assert
-        result.Job.Id.Should().Be(parentId);
-        result.RelatedJobs.Should().HaveCount(2);
-        result.RelatedJobs.Select(j => j.Id).Should().Contain([childId1, childId2]);
+        Assert.Equal(parentId, result.Job.Id);
+        Assert.Equal(2, result.RelatedJobs.Count);
+        Assert.Contains(result.RelatedJobs.Select(j => j.Id), id => id == childId1);
+        Assert.Contains(result.RelatedJobs.Select(j => j.Id), id => id == childId2);
     }
 
     [Fact]
@@ -628,8 +597,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobByIdAsync(childId);
 
         // Assert
-        result.Job.Id.Should().Be(childId);
-        result.RelatedJobs.Should().ContainSingle(j => j.Id == parentId);
+        Assert.Equal(childId, result.Job.Id);
+        Assert.Single(result.RelatedJobs, j => j.Id == parentId);
     }
 
     [Fact]
@@ -640,12 +609,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert
         var act = async () => await repository.GetRecurringJobByIdAsync(999);
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAsync<ArgumentNullException>(act);
     }
-
-    #endregion
-
-    #region UpdateRecurringJobAsync - Additional Property Tests
 
     [Theory]
     [InlineData("true")]
@@ -665,7 +630,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.Reprice.Should().Be(expected);
+        Assert.Equal(expected, updatedJob!.Reprice);
     }
 
     [Fact]
@@ -683,8 +648,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.Truck.Should().BeTrue();
-        updatedJob.UcbkVan.Should().BeFalse();
+        Assert.True(updatedJob!.Truck);
+        Assert.False(updatedJob.UcbkVan);
     }
 
     [Fact]
@@ -702,8 +667,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkVan.Should().BeTrue();
-        updatedJob.Truck.Should().BeFalse();
+        Assert.True(updatedJob!.UcbkVan);
+        Assert.False(updatedJob.Truck);
     }
 
     [Fact]
@@ -722,7 +687,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkClientRefa.Should().HaveLength(20);
+        Assert.Equal(20, updatedJob!.UcbkClientRefa!.Length);
     }
 
     [Fact]
@@ -741,7 +706,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkClientRefb.Should().HaveLength(15);
+        Assert.Equal(15, updatedJob!.UcbkClientRefb!.Length);
     }
 
     [Fact]
@@ -760,7 +725,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.UcbkAmount.Should().Be(newAmount);
+        Assert.Equal(newAmount, updatedJob!.UcbkAmount);
     }
 
     [Fact]
@@ -779,7 +744,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.CourierId.Should().Be(newCourierId);
+        Assert.Equal(newCourierId, updatedJob!.CourierId);
     }
 
     [Fact]
@@ -804,8 +769,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
         var child = await _context.TucJobBookings.FindAsync([childId], TestContext.Current.CancellationToken);
-        parent!.UcbkTime.Should().Be(newTime);
-        child!.UcbkTime.Should().Be(newTime);
+        Assert.Equal(newTime, parent!.UcbkTime);
+        Assert.Equal(newTime, child!.UcbkTime);
     }
 
     [Fact]
@@ -830,8 +795,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Assert
         var parent = await _context.TucJobBookings.FindAsync([parentId], TestContext.Current.CancellationToken);
         var child = await _context.TucJobBookings.FindAsync([childId], TestContext.Current.CancellationToken);
-        parent!.UcbkWeight.Should().Be(newWeight);
-        child!.UcbkWeight.Should().Be(newWeight);
+        Assert.Equal(newWeight, parent!.UcbkWeight);
+        Assert.Equal(newWeight, child!.UcbkWeight);
     }
 
     [Fact]
@@ -849,7 +814,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.Direct.Should().BeTrue();
+        Assert.True(updatedJob!.Direct);
     }
 
     // Note: Active property tests are skipped because they trigger note creation,
@@ -881,9 +846,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
         var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
-        parent!.PickupFromContact.Should().Be(newContact);
-        firstChild!.PickupFromContact.Should().Be(newContact);
-        secondChild!.PickupFromContact.Should().BeNull(); // Second child should NOT be updated
+        Assert.Equal(newContact, parent!.PickupFromContact);
+        Assert.Equal(newContact, firstChild!.PickupFromContact);
+        Assert.Null(secondChild!.PickupFromContact); // Second child should NOT be updated
     }
 
     [Fact]
@@ -912,14 +877,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
         var secondChild = await _context.TucJobBookings.FindAsync([secondChildId], TestContext.Current.CancellationToken);
 
-        parent!.DeliverToContact.Should().Be(newContact);
-        firstChild!.DeliverToContact.Should().BeNull(); // First child should NOT be updated
-        secondChild!.DeliverToContact.Should().Be(newContact);
+        Assert.Equal(newContact, parent!.DeliverToContact);
+        Assert.Null(firstChild!.DeliverToContact); // First child should NOT be updated
+        Assert.Equal(newContact, secondChild!.DeliverToContact);
     }
-
-    #endregion
-
-    #region UpdateBookingDeliveryAddressAsync Tests
 
     [Fact]
     public async Task UpdateBookingDeliveryAddressAsync_WithValidJob_UpdatesAddress()
@@ -942,9 +903,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.DeliveryAddressLine1.Should().Be("123 Delivery St");
-        updatedJob.DeliveryAddressLine6.Should().Be("Auckland");
-        updatedJob.DeliveryAddressLine7.Should().Be("1010");
+        Assert.Equal("123 Delivery St", updatedJob!.DeliveryAddressLine1);
+        Assert.Equal("Auckland", updatedJob.DeliveryAddressLine6);
+        Assert.Equal("1010", updatedJob.DeliveryAddressLine7);
     }
 
     [Fact]
@@ -978,9 +939,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
         var lastChild = await _context.TucJobBookings.FindAsync([lastChildId], TestContext.Current.CancellationToken);
 
-        parent!.DeliveryAddressLine1.Should().Be("456 New Delivery");
-        firstChild!.DeliveryAddressLine1.Should().BeNull(); // First child NOT updated
-        lastChild!.DeliveryAddressLine1.Should().Be("456 New Delivery");
+        Assert.Equal("456 New Delivery", parent!.DeliveryAddressLine1);
+        Assert.Null(firstChild!.DeliveryAddressLine1); // First child NOT updated
+        Assert.Equal("456 New Delivery", lastChild!.DeliveryAddressLine1);
     }
 
     [Fact]
@@ -996,13 +957,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert
         var act = async () => await repository.UpdateBookingDeliveryAddressAsync(request);
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*999*not found*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        Assert.Contains("999", ex.Message);
+        Assert.Contains("not found", ex.Message);
     }
-
-    #endregion
-
-    #region UpdateBookingPickupAddressAsync Tests
 
     [Fact]
     public async Task UpdateBookingPickupAddressAsync_WithValidJob_UpdatesAddress()
@@ -1025,9 +983,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
-        updatedJob!.PickupAddressLine1.Should().Be("789 Pickup Ave");
-        updatedJob.PickupAddressLine6.Should().Be("Hamilton");
-        updatedJob.PickupAddressLine7.Should().Be("3200");
+        Assert.Equal("789 Pickup Ave", updatedJob!.PickupAddressLine1);
+        Assert.Equal("Hamilton", updatedJob.PickupAddressLine6);
+        Assert.Equal("3200", updatedJob.PickupAddressLine7);
     }
 
     [Fact]
@@ -1061,9 +1019,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var firstChild = await _context.TucJobBookings.FindAsync([firstChildId], TestContext.Current.CancellationToken);
         var lastChild = await _context.TucJobBookings.FindAsync([lastChildId], TestContext.Current.CancellationToken);
 
-        parent!.PickupAddressLine1.Should().Be("111 New Pickup");
-        firstChild!.PickupAddressLine1.Should().Be("111 New Pickup");
-        lastChild!.PickupAddressLine1.Should().BeNull(); // Last child NOT updated
+        Assert.Equal("111 New Pickup", parent!.PickupAddressLine1);
+        Assert.Equal("111 New Pickup", firstChild!.PickupAddressLine1);
+        Assert.Null(lastChild!.PickupAddressLine1); // Last child NOT updated
     }
 
     [Fact]
@@ -1079,13 +1037,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Act & Assert
         var act = async () => await repository.UpdateBookingPickupAddressAsync(request);
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("*999*not found*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        Assert.Contains("999", ex.Message);
+        Assert.Contains("not found", ex.Message);
     }
-
-    #endregion
-
-    #region GetAllRecurringJobsForExportAsync Tests
 
     [Fact]
     public async Task GetAllRecurringJobsForExportAsync_ReturnsAllActiveJobs()
@@ -1109,7 +1064,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllRecurringJobsForExportAsync(request);
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -1134,8 +1089,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllRecurringJobsForExportAsync(request);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(j => j.Id == 100 || j.Id == 102);
+        Assert.Equal(2, result.Count);
+        Assert.All(result, j => Assert.True(j.Id == 100 || j.Id == 102));
     }
 
     [Fact]
@@ -1160,7 +1115,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllRecurringJobsForExportAsync(request);
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -1185,7 +1140,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllRecurringJobsForExportAsync(request);
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -1209,8 +1164,8 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllRecurringJobsForExportAsync(request);
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].Id.Should().Be(100);
+        Assert.Single(result);
+        Assert.Equal(100, result[0].Id);
     }
 
     [Theory]
@@ -1244,7 +1199,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetAllRecurringJobsForExportAsync(request);
 
         // Assert
-        result.Should().HaveCount(3);
+        Assert.Equal(3, result.Count);
     }
 
     [Fact]
@@ -1269,8 +1224,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(2);
-        result.Items.Select(i => i.Id).Should().Contain([100, 102]);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 100);
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 102);
     }
 
     [Fact]
@@ -1295,8 +1251,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(2);
-        result.Items.Select(i => i.Id).Should().Contain([100, 101]);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 100);
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 101);
     }
 
     [Fact]
@@ -1321,8 +1278,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(2);
-        result.Items.Select(i => i.Id).Should().Contain([100, 101]);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 100);
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 101);
     }
 
     [Fact]
@@ -1347,13 +1305,10 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(2);
-        result.Items.Select(i => i.Id).Should().Contain([100, 102]);
+        Assert.Equal(2, result.Items.Count());
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 100);
+        Assert.Contains(result.Items.Select(i => i.Id), id => id == 102);
     }
-
-    #endregion
-
-    #region GetRecurringNotesByJobIdAsync Tests
 
     [Fact]
     public async Task GetRecurringNotesByJobIdAsync_ReturnsNotesSortedByCreatedDateDescending()
@@ -1381,15 +1336,11 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringNotesByJobIdAsync(jobBookingId);
 
         // Assert
-        result.Should().HaveCount(3);
-        result[0].NoteText.Should().Be("Newest note");
-        result[1].NoteText.Should().Be("Middle note");
-        result[2].NoteText.Should().Be("Oldest note");
+        Assert.Equal(3, result.Count);
+        Assert.Equal("Newest note", result[0].NoteText);
+        Assert.Equal("Middle note", result[1].NoteText);
+        Assert.Equal("Oldest note", result[2].NoteText);
     }
-
-    #endregion
-
-    #region GetRecurringJobsListAsync - Filtering Tests
 
     [Fact]
     public async Task GetRecurringJobsListAsync_WithDaysOfWeekFilter_FiltersByBitwiseMatch()
@@ -1415,7 +1366,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
-        result.Items.Should().HaveCount(2); // Jobs 100 and 101 have Monday
+        Assert.Equal(2, result.Items.Count()); // Jobs 100 and 101 have Monday
     }
 
     [Fact]
@@ -1443,13 +1394,9 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert - US tenant should only see parent jobs
-        result.Items.Should().ContainSingle();
-        result.Items.First().Id.Should().Be(100);
+        Assert.Single(result.Items);
+        Assert.Equal(100, result.Items.First().Id);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static TucClient CreateClient(int id, string code) => new()
     {
@@ -1637,5 +1584,4 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         UpdatedDate = createdDate // Explicit to avoid SQLite getdate() issue
     };
 
-    #endregion
 }

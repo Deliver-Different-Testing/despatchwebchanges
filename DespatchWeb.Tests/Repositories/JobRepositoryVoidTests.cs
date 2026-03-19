@@ -1,5 +1,4 @@
 using DespatchWeb.Models.RequestModels;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -79,8 +78,6 @@ public class JobRepositoryVoidTests
             : GetAllRelatedJobIdsIncludingParent(data.JobId, allJobs);
     }
 
-    #region VoidSingleJobOnly with Parent Job Tests
-
     [Fact]
     public void DetermineJobsToVoid_VoidSingleJobOnly_ParentWithChildren_VoidsParentAndAllChildren()
     {
@@ -104,9 +101,12 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Parent and all children should be voided
-        result.Should().HaveCount(4);
-        result.Should().Contain([1, 2, 3, 4]);
-        result.Should().NotContain(5); // Unrelated job should not be included
+        Assert.Equal(4, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.Contains(4, result);
+        Assert.DoesNotContain(5, result); // Unrelated job should not be included
     }
 
     [Fact]
@@ -129,9 +129,9 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Only the single job should be voided
-        result.Should().HaveCount(1);
-        result.Should().Contain(1);
-        result.Should().NotContain(2);
+        Assert.Equal(1, result.Count);
+        Assert.Contains(1, result);
+        Assert.DoesNotContain(2, result);
     }
 
     [Fact]
@@ -155,14 +155,11 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Only the child job should be voided (no children of its own)
-        result.Should().HaveCount(1);
-        result.Should().Contain(2);
-        result.Should().NotContain([1, 3]); // Parent and sibling not voided
+        Assert.Equal(1, result.Count);
+        Assert.Contains(2, result);
+        Assert.DoesNotContain(1, result); // Parent and sibling not voided
+        Assert.DoesNotContain(3, result);
     }
-
-    #endregion
-
-    #region VoidSingleJobOnly = false Tests
 
     [Fact]
     public void DetermineJobsToVoid_VoidAllRelated_ParentJob_VoidsParentAndAllChildren()
@@ -185,8 +182,10 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
     }
 
     [Fact]
@@ -211,13 +210,12 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Parent and all siblings should be voided
-        result.Should().HaveCount(4);
-        result.Should().Contain([1, 2, 3, 4]);
+        Assert.Equal(4, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.Contains(4, result);
     }
-
-    #endregion
-
-    #region SelectedJobIds Tests
 
     [Fact]
     public void DetermineJobsToVoid_SelectedJobIdsProvided_UsesSelectedJobIds()
@@ -242,9 +240,11 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Only selected jobs should be voided
-        result.Should().HaveCount(2);
-        result.Should().Contain([2, 3]);
-        result.Should().NotContain([1, 4]);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
+        Assert.DoesNotContain(1, result);
+        Assert.DoesNotContain(4, result);
     }
 
     [Fact]
@@ -268,8 +268,9 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Falls back to VoidSingleJobOnly behavior (parent + children)
-        result.Should().HaveCount(2);
-        result.Should().Contain([1, 2]);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
     }
 
     [Fact]
@@ -293,13 +294,10 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Falls back to VoidSingleJobOnly behavior (parent + children)
-        result.Should().HaveCount(2);
-        result.Should().Contain([1, 2]);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
     }
-
-    #endregion
-
-    #region Edge Cases
 
     [Fact]
     public void DetermineJobsToVoid_ParentWithManyChildren_VoidsAll()
@@ -326,9 +324,9 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Parent and all 50 children should be voided
-        result.Should().HaveCount(51);
-        result.Should().Contain(100);
-        for (var i = 1; i <= 50; i++) result.Should().Contain(i);
+        Assert.Equal(51, result.Count);
+        Assert.Contains(100, result);
+        for (var i = 1; i <= 50; i++) Assert.Contains(i, result);
     }
 
     [Fact]
@@ -350,13 +348,9 @@ public class JobRepositoryVoidTests
         var result = DetermineJobsToVoid(request, allJobs);
 
         // Assert - Should still return the job ID (no children found)
-        result.Should().HaveCount(1);
-        result.Should().Contain(999);
+        Assert.Equal(1, result.Count);
+        Assert.Contains(999, result);
     }
-
-    #endregion
-
-    #region GetJobWithChildren Tests
 
     [Fact]
     public void GetJobWithChildren_ParentWithChildren_ReturnsParentAndChildren()
@@ -373,8 +367,10 @@ public class JobRepositoryVoidTests
         var result = GetJobWithChildren(1, allJobs);
 
         // Assert
-        result.Should().HaveCount(3);
-        result.Should().Contain([1, 2, 3]);
+        Assert.Equal(3, result.Count);
+        Assert.Contains(1, result);
+        Assert.Contains(2, result);
+        Assert.Contains(3, result);
     }
 
     [Fact]
@@ -391,8 +387,8 @@ public class JobRepositoryVoidTests
         var result = GetJobWithChildren(1, allJobs);
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().Contain(1);
+        Assert.Equal(1, result.Count);
+        Assert.Contains(1, result);
     }
 
     [Fact]
@@ -410,9 +406,8 @@ public class JobRepositoryVoidTests
         var result = GetJobWithChildren(2, allJobs);
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().Contain(2);
+        Assert.Equal(1, result.Count);
+        Assert.Contains(2, result);
     }
 
-    #endregion
 }

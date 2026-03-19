@@ -2,7 +2,6 @@ using Amazon.S3;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
 
@@ -25,20 +24,19 @@ public class JobReportServiceTests
         _s3ClientMock.Object
     );
 
-    #region ParseBulkPriceFileAsync Validation Tests
-
     [Fact]
     public async Task ParseBulkPriceFileAsync_NullFile_ThrowsArgumentException()
     {
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = () => service.ParseBulkPriceFileAsync(null!);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("No file provided.");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("No file provided.", ex.Message);
+        return;
+
+        // Act
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(null!);
     }
 
     [Fact]
@@ -50,12 +48,13 @@ public class JobReportServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.ParseBulkPriceFileAsync(fileMock.Object);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("No file provided.");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("No file provided.", ex.Message);
+        return;
+
+        // Act
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock.Object);
     }
 
     [Fact]
@@ -65,12 +64,13 @@ public class JobReportServiceTests
         var fileMock = CreateMockFile("test.pdf", "invalid content");
         var service = CreateService();
 
-        // Act
-        var act = () => service.ParseBulkPriceFileAsync(fileMock.Object);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Invalid file format*");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
+        Assert.StartsWith("Invalid file format", ex.Message);
+        return;
+
+        // Act
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock.Object);
     }
 
     [Theory]
@@ -84,12 +84,13 @@ public class JobReportServiceTests
         var fileMock = CreateMockFile(fileName, "content");
         var service = CreateService();
 
-        // Act
-        var act = () => service.ParseBulkPriceFileAsync(fileMock.Object);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.");
+        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.", ex.Message);
+        return;
+
+        // Act
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock.Object);
     }
 
     [Theory]
@@ -102,7 +103,7 @@ public class JobReportServiceTests
     public async Task ParseBulkPriceFileAsync_ValidExtensions_DoesNotThrowValidationError(string fileName)
     {
         // Arrange - create minimal valid CSV
-        var csvContent = "Id,Amount\n1,100";
+        const string csvContent = "Id,Amount\n1,100";
         var fileMock = CreateMockCsvFile(fileName, csvContent);
         var service = CreateService();
 
@@ -122,18 +123,14 @@ public class JobReportServiceTests
         }
 
         // Assert
-        caughtException.Should().BeNull("file extension should be valid");
+        Assert.Null(caughtException);
     }
-
-    #endregion
-
-    #region ParseBulkPriceFileAsync CSV Parsing Tests
 
     [Fact]
     public async Task ParseBulkPriceFileAsync_ValidCsv_ParsesCorrectly()
     {
         // Arrange
-        var csvContent = "Id,Amount,Fuel,Ppd\n1,100.50,10.25,5.00\n2,200.00,20.00,10.00";
+        const string csvContent = "Id,Amount,Fuel,Ppd\n1,100.50,10.25,5.00\n2,200.00,20.00,10.00";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
         var service = CreateService();
 
@@ -141,22 +138,22 @@ public class JobReportServiceTests
         var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
 
         // Assert
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
 
-        result[0].Id.Should().Be(1);
-        result[0].Amount.Should().Be(100.50m);
-        result[0].Fuel.Should().Be(10.25m);
-        result[0].Ppd.Should().Be(5.00m);
+        Assert.Equal(1, result[0].Id);
+        Assert.Equal(100.50m, result[0].Amount);
+        Assert.Equal(10.25m, result[0].Fuel);
+        Assert.Equal(5.00m, result[0].Ppd);
 
-        result[1].Id.Should().Be(2);
-        result[1].Amount.Should().Be(200.00m);
+        Assert.Equal(2, result[1].Id);
+        Assert.Equal(200.00m, result[1].Amount);
     }
 
     [Fact]
     public async Task ParseBulkPriceFileAsync_CsvWithEmptyValues_ParsesAsNull()
     {
         // Arrange
-        var csvContent = "Id,Amount,Fuel\n1,,10.00\n2,200.00,";
+        const string csvContent = "Id,Amount,Fuel\n1,,10.00\n2,200.00,";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
         var service = CreateService();
 
@@ -164,19 +161,19 @@ public class JobReportServiceTests
         var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].Amount.Should().BeNull();
-        result[0].Fuel.Should().Be(10.00m);
-        result[1].Amount.Should().Be(200.00m);
-        result[1].Fuel.Should().BeNull();
+        Assert.Equal(2, result.Count);
+        Assert.Null(result[0].Amount);
+        Assert.Equal(10.00m, result[0].Fuel);
+        Assert.Equal(200.00m, result[1].Amount);
+        Assert.Null(result[1].Fuel);
     }
 
     [Fact]
     public async Task ParseBulkPriceFileAsync_CsvWithAllFields_ParsesAllFields()
     {
         // Arrange
-        var csvContent = "Id,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,StatusName,CourierCode\n" +
-                         "1,100,10,5,50,5,2,Completed,C001";
+        const string csvContent = "Id,Amount,Fuel,Ppd,CourierPayment,CourierFuel,CourierBonus,StatusName,CourierCode\n" +
+                                  "1,100,10,5,50,5,2,Completed,C001";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
         var service = CreateService();
 
@@ -184,24 +181,24 @@ public class JobReportServiceTests
         var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
 
         // Assert
-        result.Should().HaveCount(1);
+        Assert.Single(result);
         var row = result[0];
-        row.Id.Should().Be(1);
-        row.Amount.Should().Be(100m);
-        row.Fuel.Should().Be(10m);
-        row.Ppd.Should().Be(5m);
-        row.CourierPayment.Should().Be(50m);
-        row.CourierFuel.Should().Be(5m);
-        row.CourierBonus.Should().Be(2m);
-        row.StatusName.Should().Be("Completed");
-        row.CourierCode.Should().Be("C001");
+        Assert.Equal(1, row.Id);
+        Assert.Equal(100m, row.Amount);
+        Assert.Equal(10m, row.Fuel);
+        Assert.Equal(5m, row.Ppd);
+        Assert.Equal(50m, row.CourierPayment);
+        Assert.Equal(5m, row.CourierFuel);
+        Assert.Equal(2m, row.CourierBonus);
+        Assert.Equal("Completed", row.StatusName);
+        Assert.Equal("C001", row.CourierCode);
     }
 
     [Fact]
     public async Task ParseBulkPriceFileAsync_EmptyCsv_ReturnsEmptyList()
     {
         // Arrange - header only, no data rows
-        var csvContent = "Id,Amount,Fuel";
+        const string csvContent = "Id,Amount,Fuel";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
         var service = CreateService();
 
@@ -209,14 +206,14 @@ public class JobReportServiceTests
         var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
     public async Task ParseBulkPriceFileAsync_CaseInsensitiveHeaders_ParsesCorrectly()
     {
         // Arrange - mixed case headers
-        var csvContent = "ID,AMOUNT,fuel,PPD\n1,100,10,5";
+        const string csvContent = "ID,AMOUNT,fuel,PPD\n1,100,10,5";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
         var service = CreateService();
 
@@ -224,14 +221,10 @@ public class JobReportServiceTests
         var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Id.Should().Be(1);
-        result[0].Amount.Should().Be(100m);
+        Assert.Single(result);
+        Assert.Equal(1, result[0].Id);
+        Assert.Equal(100m, result[0].Amount);
     }
-
-    #endregion
-
-    #region ProcessJobPriceUploadAsync Tests
 
     [Fact]
     public async Task ProcessJobPriceUploadAsync_NullFile_ThrowsArgumentException()
@@ -239,19 +232,20 @@ public class JobReportServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = () => service.ProcessJobPriceUploadAsync(null!);
-
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>()
-            .WithMessage("No file provided.");
+        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
+        Assert.Equal("No file provided.", ex.Message);
+        return;
+
+        // Act
+        Task Act() => service.ProcessJobPriceUploadAsync(null!);
     }
 
     [Fact]
     public async Task ProcessJobPriceUploadAsync_ValidFile_ArchivesAndUpdates()
     {
         // Arrange
-        var csvContent = "Id,Amount\n1,100\n2,200";
+        const string csvContent = "Id,Amount\n1,100\n2,200";
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
 
         // Clock is pre-set with TestDates.Now via FakeTenantClock
@@ -275,7 +269,7 @@ public class JobReportServiceTests
     public async Task ProcessJobPriceUploadAsync_EmptyFile_DoesNotCallUpdate()
     {
         // Arrange
-        var csvContent = "Id,Amount"; // Header only
+        const string csvContent = "Id,Amount"; // Header only
         var fileMock = CreateMockCsvFile("test.csv", csvContent);
 
         // Clock is pre-set with TestDates.Now via FakeTenantClock
@@ -288,10 +282,6 @@ public class JobReportServiceTests
         // Assert - should not call update when no data
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static Mock<IFormFile> CreateMockFile(string fileName, string content)
     {
@@ -329,5 +319,4 @@ public class JobReportServiceTests
         return fileMock;
     }
 
-    #endregion
 }

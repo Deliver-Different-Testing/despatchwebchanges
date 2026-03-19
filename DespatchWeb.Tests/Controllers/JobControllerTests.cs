@@ -1,3 +1,4 @@
+using System.Collections;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -5,8 +6,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -17,10 +16,10 @@ namespace DespatchWeb.Tests.Controllers;
 /// Unit tests for JobController - tests all job management endpoints.
 /// These tests use mocks to isolate controller logic for debugging and validation.
 /// </summary>
-public class JobControllerTests
+public class JobControllerTests : IDisposable
 {
-    #region Setup
 
+    private readonly HttpClient _httpClient = new();
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
     private readonly Mock<IClientAccessValidatorService> _clientAccessValidatorMock = new();
@@ -48,13 +47,15 @@ public class JobControllerTests
         _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>())).ReturnsAsync([]);
     }
 
+    public void Dispose() => _httpClient.Dispose();
+
     private JobController CreateController()
     {
         return new JobController(
             _jobRepositoryMock.Object,
             _taskRepositoryMock.Object,
             _clientAccessValidatorMock.Object,
-            new HttpClient(),
+            _httpClient,
             _rateJobServiceMock.Object,
             _recurringJobRepositoryMock.Object,
             _tenantInfoServiceMock.Object,
@@ -81,10 +82,6 @@ public class JobControllerTests
         };
         return controller;
     }
-
-    #endregion
-
-    #region Index (Job List) Tests
 
     [Fact]
     public async Task Index_ValidRequest_ReturnsJobList()
@@ -116,12 +113,12 @@ public class JobControllerTests
         var result = await controller.Index(queryParams, isInternal: true, cid: 0, clientIds: null, despatchViewIds: []);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var jobs = jsonResult.Value as JobSearchResult;
-        jobs.Should().NotBeNull();
-        jobs.Jobs.Should().HaveCount(2);
-        jobs.TotalCount.Should().Be(2);
+        Assert.NotNull(jobs);
+        Assert.Equal(2, jobs.Jobs.Count);
+        Assert.Equal(2, jobs.TotalCount);
     }
 
     [Fact]
@@ -166,9 +163,9 @@ public class JobControllerTests
         var result = await controller.Index(queryParams, isInternal: false, cid: contactId, clientIds: clientIds, despatchViewIds: []);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
+        Assert.Equal(StatusCodes.Status401Unauthorized, objectResult.StatusCode);
     }
 
     [Fact]
@@ -188,14 +185,10 @@ public class JobControllerTests
         var result = await controller.Index(queryParams, isInternal: true, cid: 0, clientIds: null, despatchViewIds: []);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region GetAllJobCoordinates Tests
 
     [Fact]
     public async Task GetAllJobCoordinates_ValidRequest_ReturnsCoordinates()
@@ -216,10 +209,9 @@ public class JobControllerTests
         var result = await controller.GetAllJobCoordinates(isInternal: true, clientIds: null, despatchViewIds: [1, 2]);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var coordinates = jsonResult.Value as List<JobCoordinateModel>;
-        coordinates.Should().HaveCount(2);
+        if (jsonResult.Value is List<JobCoordinateModel> coordinates) Assert.Equal(2, coordinates.Count);
     }
 
     [Fact]
@@ -235,14 +227,10 @@ public class JobControllerTests
         var result = await controller.GetAllJobCoordinates(isInternal: false, clientIds: "123", despatchViewIds: []);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(StatusCodes.Status401Unauthorized);
+        Assert.Equal(StatusCodes.Status401Unauthorized, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region GetJobsByClearListEnvelope Tests
 
     [Fact]
     public async Task GetJobsByClearListEnvelope_ValidRequest_ReturnsJobs()
@@ -269,15 +257,11 @@ public class JobControllerTests
             queryParams, isInternal: true, clientIds: null, despatchViewIds: [], selectedClearListId: clearListId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var jobs = jsonResult.Value as JobSearchResult;
-        jobs!.Jobs.Should().HaveCount(1);
+        Assert.Single(jobs!.Jobs);
     }
-
-    #endregion
-
-    #region GetPricingBreakdown Tests
 
     [Fact]
     public async Task GetPricingBreakdown_ValidJobId_ReturnsPriceComponents()
@@ -299,11 +283,13 @@ public class JobControllerTests
         var result = await controller.GetPricingBreakdown(jobId, isPrebook: false);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var breakdown = jsonResult.Value as List<ChargeViewModel>;
-        breakdown.Should().HaveCount(2);
-        breakdown[0].Name.Should().Be("Base Rate");
+        if (jsonResult.Value is List<ChargeViewModel> breakdown)
+        {
+            Assert.Equal(2, breakdown.Count);
+            Assert.Equal("Base Rate", breakdown[0].Name);
+        }
     }
 
     [Fact]
@@ -342,10 +328,6 @@ public class JobControllerTests
         _jobRepositoryMock.Verify(x => x.GetJobPriceBreakdownAsync(jobId, false, true), Times.Once);
     }
 
-    #endregion
-
-    #region AddPriceComponent Tests
-
     [Fact]
     public async Task AddPriceComponent_ValidRequest_ReturnsChargeId()
     {
@@ -368,9 +350,9 @@ public class JobControllerTests
         var result = await controller.AddPriceComponent(breakdown);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(expectedChargeId);
+        Assert.Equal(expectedChargeId, jsonResult.Value);
     }
 
     [Fact]
@@ -414,14 +396,10 @@ public class JobControllerTests
         var result = await controller.AddPriceComponent(breakdown);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region UpdatePriceComponent Tests
 
     [Fact]
     public async Task UpdatePriceComponent_ValidRequest_ReturnsOk()
@@ -444,7 +422,7 @@ public class JobControllerTests
         var result = await controller.UpdatePriceComponent(breakdown);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -468,10 +446,6 @@ public class JobControllerTests
             1, "Manually rated price", (int)EventType.ChangePrice, null, null, null, false), Times.Once);
     }
 
-    #endregion
-
-    #region DeletePriceComponent Tests
-
     [Fact]
     public async Task DeletePriceComponent_ValidRequest_ReturnsOk()
     {
@@ -492,7 +466,7 @@ public class JobControllerTests
         var result = await controller.DeletePriceComponent(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -537,10 +511,6 @@ public class JobControllerTests
             It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), null, null, null, false), Times.Never);
     }
 
-    #endregion
-
-    #region Detail (Job Detail) Tests
-
     [Fact]
     public async Task Detail_ValidJobId_ReturnsJobDetails()
     {
@@ -560,11 +530,11 @@ public class JobControllerTests
         var result = await controller.Detail(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var job = jsonResult.Value as JobGroupViewModel;
-        job.Should().NotBeNull();
-        job.Job.Id.Should().Be(jobId);
+        Assert.NotNull(job);
+        Assert.Equal(jobId, job.Job.Id);
     }
 
     [Fact]
@@ -582,14 +552,10 @@ public class JobControllerTests
         var result = await controller.Detail(jobId);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region DispatchJobDetail Tests
 
     [Fact]
     public async Task DispatchJobDetail_ValidJobId_ReturnsDispatchDetails()
@@ -611,15 +577,11 @@ public class JobControllerTests
         var result = await controller.DispatchJobDetail(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var job = jsonResult.Value as DispatchJobViewModel;
-        job!.Id.Should().Be(jobId);
+        Assert.Equal(jobId, job!.Id);
     }
-
-    #endregion
-
-    #region BulkDetail Tests
 
     [Fact]
     public async Task BulkDetail_ValidBulkJobId_ReturnsBulkJobDetails()
@@ -640,15 +602,11 @@ public class JobControllerTests
         var result = await controller.BulkDetail(bulkJobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var job = jsonResult.Value as JobGroupViewModel;
-        job!.Job.Id.Should().Be(bulkJobId);
+        Assert.Equal(bulkJobId, job!.Job.Id);
     }
-
-    #endregion
-
-    #region RecurringJobDetail Tests
 
     [Fact]
     public async Task RecurringJobDetail_ValidJobId_ReturnsRecurringJobDetails()
@@ -669,15 +627,11 @@ public class JobControllerTests
         var result = await controller.RecurringJobDetail(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var job = jsonResult.Value as JobGroupViewModel;
-        job!.Job.Id.Should().Be(jobId);
+        Assert.Equal(jobId, job!.Job.Id);
     }
-
-    #endregion
-
-    #region GetCurrentWorkList Tests
 
     [Fact]
     public async Task GetCurrentWorkList_ValidCourierId_ReturnsWorkList()
@@ -701,15 +655,11 @@ public class JobControllerTests
         var result = await controller.GetCurrentWorkList(courierId, startDate, endDate);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var workList = jsonResult.Value as JobSearchResult;
-        workList!.Jobs.Should().HaveCount(1);
+        Assert.Single(workList!.Jobs);
     }
-
-    #endregion
-
-    #region Photo/Signature Upload Tests
 
     [Fact]
     public async Task UploadJobDeliveryPhotoOrSignature_ValidFile_ReturnsSuccess()
@@ -743,7 +693,7 @@ public class JobControllerTests
             jobId, fileMock.Object, isPod: true, podDescription: "Test POD");
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -769,12 +719,8 @@ public class JobControllerTests
         var result = await controller.UploadJobDeliveryPhotoOrSignature(jobId, fileMock.Object);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
-
-    #endregion
-
-    #region DeleteJobDeliveryPhotoOrSignature Tests
 
     [Fact]
     public async Task DeleteJobDeliveryPhotoOrSignature_ValidKey_ReturnsSuccess()
@@ -792,7 +738,7 @@ public class JobControllerTests
         var result = await controller.DeleteJobDeliveryPhotoOrSignature(jobId, key);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -811,12 +757,8 @@ public class JobControllerTests
         var result = await controller.DeleteJobDeliveryPhotoOrSignature(jobId, key);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
-
-    #endregion
-
-    #region GetJobDeliveryPhotosAndSignature Tests
 
     [Fact]
     public async Task GetJobDeliveryPhotosAndSignature_ValidRequest_ReturnsPhotos()
@@ -840,15 +782,10 @@ public class JobControllerTests
         var result = await controller.GetJobDeliveryPhotosAndSignature(jobId, year, month);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var photos = jsonResult.Value as List<S3PhotoInfo>;
-        photos.Should().HaveCount(2);
+        if (jsonResult.Value is List<S3PhotoInfo> photos) Assert.Equal(2, photos.Count);
     }
-
-    #endregion
-
-    #region GetJobPickupPhotos Tests
 
     [Fact]
     public async Task GetJobPickupPhotos_ValidRequest_ReturnsPhotos()
@@ -871,15 +808,10 @@ public class JobControllerTests
         var result = await controller.GetJobPickupPhotos(jobId, year, month);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var photos = jsonResult.Value as List<S3PhotoInfo>;
-        photos.Should().HaveCount(1);
+        if (jsonResult.Value is List<S3PhotoInfo> photos) Assert.Single(photos);
     }
-
-    #endregion
-
-    #region Void Job Tests
 
     [Fact]
     public async Task Void_ValidRequest_ReturnsOk()
@@ -903,7 +835,7 @@ public class JobControllerTests
         var result = await controller.Void(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -931,7 +863,7 @@ public class JobControllerTests
         var result = await controller.Void(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -961,7 +893,7 @@ public class JobControllerTests
         var result = await controller.Void(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -979,14 +911,10 @@ public class JobControllerTests
         var result = await controller.Void(request);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region VoidBulkJob Tests
 
     [Fact]
     public async Task VoidBulkJob_ValidRequest_ReturnsOk()
@@ -1008,12 +936,8 @@ public class JobControllerTests
         var result = await controller.VoidBulkJob(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region VoidPrebookJob Tests
 
     [Fact]
     public async Task VoidPrebookJob_ValidJobId_ReturnsOk()
@@ -1030,12 +954,8 @@ public class JobControllerTests
         var result = await controller.VoidPrebookJob(jobId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region Allocate Tests
 
     [Fact]
     public async Task Allocate_ValidRequest_ReturnsOk()
@@ -1056,7 +976,7 @@ public class JobControllerTests
         var result = await controller.Allocate(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1078,14 +998,10 @@ public class JobControllerTests
         var result = await controller.Allocate(request);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region ReAllocate Tests
 
     [Fact]
     public async Task ReAllocate_ValidRequest_RedispatchesAndAllocates()
@@ -1108,14 +1024,10 @@ public class JobControllerTests
         var result = await controller.ReAllocate(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _jobRepositoryMock.Verify(x => x.ReDispatchSelectedJobsAsync(request.JobIds), Times.Once);
         _dispatchJobServiceMock.Verify(x => x.DispatchJobsToCourierAsync(request.JobIds, request.CourierId), Times.Once);
     }
-
-    #endregion
-
-    #region SplitJob Tests
 
     [Fact]
     public async Task SplitJob_ValidRequest_ReturnsOk()
@@ -1153,7 +1065,7 @@ public class JobControllerTests
         var result = await controller.SplitJob(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1246,7 +1158,7 @@ public class JobControllerTests
         var result = await controller.SplitJob(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
         _splitJobServiceMock.Verify(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>(), 42),
             Times.Once);
     }
@@ -1287,8 +1199,8 @@ public class JobControllerTests
         var result = await controller.SplitJob(request);
 
         // Assert - Exception is caught and returned as 500
-        var statusResult = result.Should().BeOfType<ObjectResult>().Subject;
-        statusResult.StatusCode.Should().Be(500);
+        var statusResult = Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, statusResult.StatusCode);
     }
 
     [Fact]
@@ -1334,23 +1246,19 @@ public class JobControllerTests
         var result = await controller.SplitJob(request);
 
         // Assert - All address fields should be passed
-        result.Should().BeOfType<OkResult>();
-        capturedAddress.Should().NotBeNull();
-        capturedAddress!.AddressLine1.Should().Be("Unit 5");
-        capturedAddress.AddressLine2.Should().Be("Building A");
-        capturedAddress.AddressLine3.Should().Be("123");
-        capturedAddress.AddressLine4.Should().Be("Main Street");
-        capturedAddress.AddressLine5.Should().Be("Auckland");
-        capturedAddress.AddressLine6.Should().Be("Auckland Central");
-        capturedAddress.AddressLine7.Should().Be("1010");
-        capturedAddress.AddressLine8.Should().Be("Near the park");
-        capturedAddress.Latitude.Should().Be(-36.8485m);
-        capturedAddress.Longitude.Should().Be(174.7633m);
+        Assert.IsType<OkResult>(result);
+        Assert.NotNull(capturedAddress);
+        Assert.Equal("Unit 5", capturedAddress!.AddressLine1);
+        Assert.Equal("Building A", capturedAddress.AddressLine2);
+        Assert.Equal("123", capturedAddress.AddressLine3);
+        Assert.Equal("Main Street", capturedAddress.AddressLine4);
+        Assert.Equal("Auckland", capturedAddress.AddressLine5);
+        Assert.Equal("Auckland Central", capturedAddress.AddressLine6);
+        Assert.Equal("1010", capturedAddress.AddressLine7);
+        Assert.Equal("Near the park", capturedAddress.AddressLine8);
+        Assert.Equal(-36.8485m, capturedAddress.Latitude);
+        Assert.Equal(174.7633m, capturedAddress.Longitude);
     }
-
-    #endregion
-
-    #region UnSplitJob Tests
 
     [Fact]
     public async Task UnSplitJob_ValidJobId_ReturnsMessage()
@@ -1368,14 +1276,10 @@ public class JobControllerTests
         var result = await controller.UnSplitJob(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(expectedMessage);
+        Assert.Equal(expectedMessage, jsonResult.Value);
     }
-
-    #endregion
-
-    #region RestoreJobs Tests
 
     [Fact]
     public async Task RestoreJobs_ValidRequest_ReturnsOk()
@@ -1392,12 +1296,8 @@ public class JobControllerTests
         var result = await controller.RestoreJobs(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region RestoreSplitJobs Tests
 
     [Fact]
     public async Task RestoreSplitJobs_ValidJobIds_ReturnsOk()
@@ -1414,12 +1314,8 @@ public class JobControllerTests
         var result = await controller.RestoreSplitJobs(jobIds);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region UpdateJob Tests
 
     [Fact]
     public async Task UpdateJob_ValidRequest_ReturnsOk()
@@ -1438,7 +1334,7 @@ public class JobControllerTests
         var result = await controller.UpdateJob(jobId, field, value);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1463,7 +1359,7 @@ public class JobControllerTests
         var result = await controller.UpdateJob(jobId, field, value);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1481,14 +1377,10 @@ public class JobControllerTests
         var result = await controller.UpdateJob(jobId, JobProperty.ConNote, "test");
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region UpdateRecurringJob Tests
 
     [Fact]
     public async Task UpdateRecurringJob_ValidRequest_ReturnsOk()
@@ -1507,12 +1399,8 @@ public class JobControllerTests
         var result = await controller.UpdateRecurringJob(jobId, field, value);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region UpdateBulkJob Tests
 
     [Fact]
     public async Task UpdateBulkJob_ValidRequest_ReturnsOk()
@@ -1531,12 +1419,8 @@ public class JobControllerTests
         var result = await controller.UpdateBulkJob(bulkJobId, field, value);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region Address Update Tests
 
     [Fact]
     public async Task UpdateDeliveryAddress_ValidRequest_ReturnsOk()
@@ -1562,7 +1446,7 @@ public class JobControllerTests
         var result = await controller.UpdateDeliveryAddress(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1589,7 +1473,7 @@ public class JobControllerTests
         var result = await controller.UpdatePickupAddress(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1614,7 +1498,7 @@ public class JobControllerTests
         var result = await controller.UpdateBookingPickupAddress(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -1639,12 +1523,8 @@ public class JobControllerTests
         var result = await controller.UpdateBookingDeliveryAddress(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region Lookup Endpoint Tests
 
     [Fact]
     public async Task SpeedList_ReturnsSpeedOptions()
@@ -1666,10 +1546,9 @@ public class JobControllerTests
         var result = await controller.SpeedList();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var speeds = jsonResult.Value as List<Suggestion>;
-        speeds.Should().HaveCount(3);
+        if (jsonResult.Value is List<Suggestion> speeds) Assert.Equal(3, speeds.Count);
     }
 
     [Fact]
@@ -1691,10 +1570,9 @@ public class JobControllerTests
         var result = await controller.SearchSpeedOptions(searchTerm);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var speeds = jsonResult.Value as List<Suggestion>;
-        speeds.Should().HaveCount(1);
+        if (jsonResult.Value is List<Suggestion> speeds) Assert.Single((IEnumerable)speeds);
     }
 
     [Fact]
@@ -1717,10 +1595,9 @@ public class JobControllerTests
         var result = await controller.ContactList(clientId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var contacts = jsonResult.Value as List<Suggestion>;
-        contacts.Should().HaveCount(2);
+        if (jsonResult.Value is List<Suggestion> contacts) Assert.Equal(2, contacts.Count);
     }
 
     [Fact]
@@ -1742,10 +1619,9 @@ public class JobControllerTests
         var result = await controller.LeaveList();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var locations = jsonResult.Value as List<Lookup>;
-        locations.Should().HaveCount(2);
+        if (jsonResult.Value is List<Lookup> locations) Assert.Equal(2, locations.Count);
     }
 
     [Fact]
@@ -1767,10 +1643,9 @@ public class JobControllerTests
         var result = await controller.UndeliverableList();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var locations = jsonResult.Value as List<UndeliverableLocation>;
-        locations.Should().HaveCount(2);
+        if (jsonResult.Value is List<UndeliverableLocation> locations) Assert.Equal(2, locations.Count);
     }
 
     [Fact]
@@ -1793,10 +1668,9 @@ public class JobControllerTests
         var result = await controller.StatusList();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var statuses = jsonResult.Value as List<Suggestion>;
-        statuses.Should().HaveCount(3);
+        if (jsonResult.Value is List<Suggestion> statuses) Assert.Equal(3, statuses.Count);
     }
 
     [Fact]
@@ -1818,10 +1692,9 @@ public class JobControllerTests
         var result = await controller.InternalStatusList();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var statuses = jsonResult.Value as List<InternalStatus>;
-        statuses.Should().HaveCount(2);
+        if (jsonResult.Value is List<InternalStatus> statuses) Assert.Equal(2, statuses.Count);
     }
 
     [Fact]
@@ -1844,15 +1717,10 @@ public class JobControllerTests
         var result = await controller.EventTypeList();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var eventTypes = jsonResult.Value as List<Suggestion>;
-        eventTypes.Should().HaveCount(3);
+        if (jsonResult.Value is List<Suggestion> eventTypes) Assert.Equal(3, eventTypes.Count);
     }
-
-    #endregion
-
-    #region Search/Report Tests
 
     [Fact]
     public async Task PodSearch_ValidRequest_ReturnsSearchResults()
@@ -1879,10 +1747,10 @@ public class JobControllerTests
         var result = await controller.PodSearch(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var searchResult = jsonResult.Value as JobSearchResult;
-        searchResult!.Jobs.Should().HaveCount(1);
+        Assert.Single(searchResult!.Jobs);
     }
 
     [Fact]
@@ -1909,10 +1777,10 @@ public class JobControllerTests
         var result = await controller.BulkSearch(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var searchResult = jsonResult.Value as JobSearchResult;
-        searchResult!.TotalCount.Should().Be(1);
+        Assert.Equal(1, searchResult!.TotalCount);
     }
 
     [Fact]
@@ -1939,10 +1807,10 @@ public class JobControllerTests
         var result = await controller.PodSearchDownload(request);
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.FileDownloadName.Should().Be("jobs_report.csv");
-        fileResult.ContentType.Should().Be("text/csv");
+        Assert.Equal("jobs_report.csv", fileResult.FileDownloadName);
+        Assert.Equal("text/csv", fileResult.ContentType);
     }
 
     [Fact]
@@ -1965,9 +1833,9 @@ public class JobControllerTests
         var result = await controller.ClientJobsReportDownload(request);
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.FileDownloadName.Should().Be("client_jobs.csv");
+        Assert.Equal("client_jobs.csv", fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -1985,12 +1853,8 @@ public class JobControllerTests
         var result = await controller.ClientJobsReportDownload(request);
 
         // Assert
-        result.Should().BeOfType<NotFoundObjectResult>();
+        Assert.IsType<NotFoundObjectResult>(result);
     }
-
-    #endregion
-
-    #region PreBookJobs Tests
 
     [Fact]
     public async Task PreBookJobs_ValidRequest_ReturnsRecurringJobs()
@@ -2016,10 +1880,10 @@ public class JobControllerTests
         var result = await controller.PreBookJobs(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var jobs = jsonResult.Value as PaginatedResponse<PrebookListViewModel>;
-        jobs!.Items.Should().HaveCount(1);
+        Assert.Single(jobs!.Items);
     }
 
     [Fact]
@@ -2037,14 +1901,10 @@ public class JobControllerTests
         var result = await controller.RecurringJobsExportCsv(request);
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.FileDownloadName.Should().Be("recurring_jobs.csv");
+        Assert.Equal("recurring_jobs.csv", fileResult.FileDownloadName);
     }
-
-    #endregion
-
-    #region File Upload/Download Tests
 
     [Fact]
     public async Task UploadFile_ValidFile_ReturnsSuccess()
@@ -2079,7 +1939,7 @@ public class JobControllerTests
         var result = await controller.UploadFile(request);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -2094,7 +1954,7 @@ public class JobControllerTests
         var result = await controller.UploadFile(request);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -2119,9 +1979,9 @@ public class JobControllerTests
         var result = await controller.DownloadFile(key);
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.FileDownloadName.Should().Be("document.pdf");
+        Assert.Equal("document.pdf", fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -2144,7 +2004,7 @@ public class JobControllerTests
         var result = await controller.DownloadFile(key);
 
         // Assert
-        result.Should().BeOfType<NotFoundObjectResult>();
+        Assert.IsType<NotFoundObjectResult>(result);
     }
 
     [Fact]
@@ -2162,7 +2022,7 @@ public class JobControllerTests
         var result = await controller.DeleteFile(key);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -2180,7 +2040,7 @@ public class JobControllerTests
         var result = await controller.DeleteFile(key);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -2203,15 +2063,10 @@ public class JobControllerTests
         var result = await controller.GetAttachedFiles(jobId);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
-        var files = okResult.Value as List<S3FileInfo>;
-        files.Should().HaveCount(2);
+        if (okResult.Value is List<S3FileInfo> files) Assert.Equal(2, files.Count);
     }
-
-    #endregion
-
-    #region UpdateNote Tests
 
     [Fact]
     public async Task UpdateNote_ValidRequest_ReturnsOk()
@@ -2229,7 +2084,7 @@ public class JobControllerTests
         var result = await controller.UpdateNote(jobId, note);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -2245,7 +2100,7 @@ public class JobControllerTests
         var result = await controller.UpdateNote(jobId, note);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -2261,7 +2116,7 @@ public class JobControllerTests
         var result = await controller.UpdateNote(jobId, note);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -2280,14 +2135,10 @@ public class JobControllerTests
         var result = await controller.UpdateNote(jobId, note);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region Package Update Tests
 
     [Fact]
     public async Task UpdateJobPackages_ValidRequest_ReturnsOk()
@@ -2311,7 +2162,7 @@ public class JobControllerTests
         var result = await controller.UpdateJobPackages(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2336,12 +2187,8 @@ public class JobControllerTests
         var result = await controller.UpdateBulkJobPackages(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region IsJobParent/IsBulkJobParent Tests
 
     [Fact]
     public async Task IsJobParent_ParentJob_ReturnsTrue()
@@ -2358,9 +2205,9 @@ public class JobControllerTests
         var result = await controller.IsJobParent(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(true);
+        Assert.Equal(true, jsonResult.Value);
     }
 
     [Fact]
@@ -2378,9 +2225,9 @@ public class JobControllerTests
         var result = await controller.IsJobParent(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(false);
+        Assert.Equal(false, jsonResult.Value);
     }
 
     [Fact]
@@ -2398,14 +2245,10 @@ public class JobControllerTests
         var result = await controller.IsBulkJobParent(bulkJobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(true);
+        Assert.Equal(true, jsonResult.Value);
     }
-
-    #endregion
-
-    #region GetRelatedJobsMultiSelectList Tests
 
     [Fact]
     public async Task GetRelatedJobsMultiSelectList_ValidJobId_ReturnsRelatedJobs()
@@ -2427,10 +2270,9 @@ public class JobControllerTests
         var result = await controller.GetRelatedJobsMultiSelectList(jobId, isArchived: false);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var jobs = jsonResult.Value as List<MultiSuggestion>;
-        jobs.Should().HaveCount(2);
+        if (jsonResult.Value is List<MultiSuggestion> jobs) Assert.Equal(2, jobs.Count);
     }
 
     [Fact]
@@ -2453,15 +2295,10 @@ public class JobControllerTests
         var result = await controller.GetRelatedJobsMultiSelectList(jobId, isArchived: false, isBulkJob: true);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var jobs = jsonResult.Value as List<MultiSuggestion>;
-        jobs.Should().HaveCount(2);
+        if (jsonResult.Value is List<MultiSuggestion> jobs) Assert.Equal(2, jobs.Count);
     }
-
-    #endregion
-
-    #region JobReadStatus Tests
 
     [Fact]
     public async Task UpdateJobReadStatus_ValidRequest_ReturnsOk()
@@ -2479,7 +2316,7 @@ public class JobControllerTests
         var result = await controller.UpdateJobReadStatus(jobId, hasBeenRead);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2501,12 +2338,8 @@ public class JobControllerTests
         var result = await controller.BulkUpdateReadStatus(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region AddEvent Tests
 
     [Fact]
     public async Task AddEvent_ValidRequest_ReturnsOk()
@@ -2529,7 +2362,7 @@ public class JobControllerTests
         var result = await controller.AddEvent(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2548,12 +2381,8 @@ public class JobControllerTests
         var result = await controller.AddRestoreEvent(jobId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region QuickCreateJob Tests
 
     [Fact]
     public async Task QuickCreateJob_ValidRequest_ReturnsJobId()
@@ -2576,9 +2405,9 @@ public class JobControllerTests
         var result = await controller.QuickCreateJob(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(expectedJobId);
+        Assert.Equal(expectedJobId, jsonResult.Value);
     }
 
     [Fact]
@@ -2591,9 +2420,9 @@ public class JobControllerTests
         var result = await controller.QuickCreateJob(null);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
 
     [Fact]
@@ -2611,14 +2440,10 @@ public class JobControllerTests
         var result = await controller.QuickCreateJob(request);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+        Assert.Equal(StatusCodes.Status500InternalServerError, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region ReleaseBulkJob Tests
 
     [Fact]
     public async Task ReleaseBulkJob_ValidBulkJobId_ReturnsOk()
@@ -2635,7 +2460,7 @@ public class JobControllerTests
         var result = await controller.ReleaseBulkJob(bulkJobId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2653,14 +2478,10 @@ public class JobControllerTests
         var result = await controller.ReleaseBulkJob(bulkJobId);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region AddStopToJob Tests
 
     [Fact]
     public async Task AddStopToJob_ValidRequest_ReturnsNewJobId()
@@ -2682,9 +2503,9 @@ public class JobControllerTests
         var result = await controller.AddStopToJob(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(newJobId);
+        Assert.Equal(newJobId, jsonResult.Value);
     }
 
     [Fact]
@@ -2707,14 +2528,10 @@ public class JobControllerTests
         var result = await controller.AddStopToRecurringJob(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(newJobId);
+        Assert.Equal(newJobId, jsonResult.Value);
     }
-
-    #endregion
-
-    #region GetDeliveryJourney Tests
 
     [Fact]
     public async Task GetDeliveryJourney_ValidJobId_ReturnsJourney()
@@ -2735,16 +2552,12 @@ public class JobControllerTests
         var result = await controller.GetDeliveryJourney(jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var journey = jsonResult.Value as List<DeliveryJourneyViewModel>;
-        journey!.Should().HaveCount(1);
-        journey[0].JobId.Should().Be(jobId);
+        Assert.Single(journey!);
+        if (journey != null) Assert.Equal(jobId, journey[0].JobId);
     }
-
-    #endregion
-
-    #region GetTimeZoneOptions Tests
 
     [Fact]
     public async Task GetTimeZoneOptions_ReturnsTimeZones()
@@ -2765,15 +2578,10 @@ public class JobControllerTests
         var result = await controller.GetTimeZoneOptions();
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var timeZones = jsonResult.Value as List<TimeZoneSuggestion>;
-        timeZones.Should().HaveCount(2);
+        if (jsonResult.Value is List<TimeZoneSuggestion> timeZones) Assert.Equal(2, timeZones.Count);
     }
-
-    #endregion
-
-    #region Repricing Tests
 
     [Fact]
     public async Task SimpleRepriceJobManual_ValidRequest_ReturnsOk()
@@ -2794,7 +2602,7 @@ public class JobControllerTests
         var result = await controller.SimpleRepriceJobManual(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2817,9 +2625,9 @@ public class JobControllerTests
         var result = await controller.RepriceJobWithBaseAmount(request);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
-        okResult.Value.Should().Be(expectedRate);
+        Assert.Equal(expectedRate, okResult.Value);
     }
 
     [Fact]
@@ -2843,9 +2651,9 @@ public class JobControllerTests
         var result = await controller.RecalculateJobRate(jobId);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
-        okResult.Value.Should().Be(expectedRate);
+        Assert.Equal(expectedRate, okResult.Value);
     }
 
     [Fact]
@@ -2866,12 +2674,8 @@ public class JobControllerTests
         var result = await controller.ApplyRecalculatedJobRate(jobId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region POD Swap Tests
 
     [Fact]
     public async Task ValidateSwapPod_ValidJob_ReturnsTrue()
@@ -2888,9 +2692,9 @@ public class JobControllerTests
         var result = await controller.ValidateSwapPod(jobNumber);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(true);
+        Assert.Equal(true, jsonResult.Value);
     }
 
     [Fact]
@@ -2909,12 +2713,8 @@ public class JobControllerTests
         var result = await controller.SwapPod(job1, job2);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region ReSend/ReAssign Tests
 
     [Fact]
     public async Task ReSendSelected_ValidJobIds_ReturnsOk()
@@ -2931,7 +2731,7 @@ public class JobControllerTests
         var result = await controller.ReSendSelected(jobIds);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2949,7 +2749,7 @@ public class JobControllerTests
         var result = await controller.ReAssignSelected(jobIds);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2968,7 +2768,7 @@ public class JobControllerTests
         var result = await controller.SetFirstJob(jobId, courierId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
 
     [Fact]
@@ -2986,12 +2786,8 @@ public class JobControllerTests
         var result = await controller.ReSendAll(courierId);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region PpdExclusiveAmount Tests
 
     [Fact]
     public async Task PpdExclusiveAmount_ValidRequest_ReturnsPpdAmount()
@@ -3010,14 +2806,10 @@ public class JobControllerTests
         var result = await controller.PpdExclusiveAmount(clientId, amount);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(expectedPpd);
+        Assert.Equal(expectedPpd, jsonResult.Value);
     }
-
-    #endregion
-
-    #region HasClientItemsAvailable Tests
 
     [Fact]
     public async Task HasClientItemsAvailable_ItemsExist_ReturnsTrue()
@@ -3035,9 +2827,9 @@ public class JobControllerTests
         var result = await controller.HasClientItemsAvailable(clientId, speedId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(true);
+        Assert.Equal(true, jsonResult.Value);
     }
 
     [Fact]
@@ -3062,7 +2854,7 @@ public class JobControllerTests
         var result = await controller.GetAllClientItems(clientId, speedId, jobId);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -3085,12 +2877,8 @@ public class JobControllerTests
         var result = await controller.AddClientItemsToJob(jobId, itemsModel);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region UpdatePodDetails Tests
 
     [Fact]
     public async Task UpdatePodDetails_ValidRequest_ReturnsOk()
@@ -3112,12 +2900,8 @@ public class JobControllerTests
         var result = await controller.UpdatePodDetails(request);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        Assert.IsType<OkResult>(result);
     }
-
-    #endregion
-
-    #region ScanJobDetail Tests
 
     [Fact]
     public async Task ScanJobDetail_ValidRequest_ReturnsScanList()
@@ -3139,15 +2923,10 @@ public class JobControllerTests
         var result = await controller.ScanJobDetail(runDate, scan);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var results = jsonResult.Value as List<ScanDetailResult>;
-        results.Should().HaveCount(1);
+        if (jsonResult.Value is List<ScanDetailResult> results) Assert.Single((IEnumerable)results);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static DispatchJobViewModel CreateTestDispatchJob(int id, string jobNumber) =>
         new()
@@ -3159,5 +2938,4 @@ public class JobControllerTests
             ToAddress = "456 Delivery Ave"
         };
 
-    #endregion
 }

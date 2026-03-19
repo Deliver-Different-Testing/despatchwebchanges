@@ -7,9 +7,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
-
 
 namespace DespatchWeb.Tests.Services;
 
@@ -35,8 +33,6 @@ public class JobReportServiceLargeDataTests
         );
     }
 
-    #region Memory Usage Tests
-
     [Fact]
     public async Task GenerateJobsReportAsync_LargeDataset_MemoryUsageReasonable()
     {
@@ -53,7 +49,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -77,16 +73,12 @@ public class JobReportServiceLargeDataTests
 
         // Assert - Memory usage should be reasonable (less than 500MB for 20k records)
         // This is a soft limit to detect memory leaks or inefficient code
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
 
         // Log memory usage for diagnostics
         TestContext.Current.TestOutputHelper?.WriteLine($"Memory used for {recordCount} records: {memoryUsedMb:F2} MB");
         TestContext.Current.TestOutputHelper?.WriteLine($"CSV file size: {result.FileBytes.Length / 1024.0:F2} KB");
     }
-
-    #endregion
-
-    #region Large Dataset Tests - POD Search Export
 
     [Theory]
     [InlineData(100)]
@@ -107,7 +99,7 @@ public class JobReportServiceLargeDataTests
             .ReturnsAsync(jobs);
 
         // Skip S3 upload
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -121,14 +113,14 @@ public class JobReportServiceLargeDataTests
         var result = await service.GenerateJobsReportAsync(request);
 
         // Assert
-        result.Should().NotBeNull();
-        result.FileBytes.Should().NotBeEmpty();
-        result.FileName.Should().EndWith(".csv");
+        Assert.NotNull(result);
+        Assert.NotEmpty(result.FileBytes);
+        Assert.EndsWith(".csv", result.FileName);
 
         // Verify CSV has correct number of lines (header + data rows)
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        lines.Length.Should().Be(recordCount + 1); // +1 for header
+        Assert.Equal(recordCount + 1, lines.Length); // +1 for header
     }
 
     [Fact]
@@ -147,7 +139,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -163,9 +155,9 @@ public class JobReportServiceLargeDataTests
         stopwatch.Stop();
 
         // Assert - Should complete within 30 seconds (generous timeout)
-        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(30),
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30),
             $"Export of {recordCount} records took {stopwatch.Elapsed.TotalSeconds:F2}s which exceeds timeout");
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
     }
 
     [Fact]
@@ -184,7 +176,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -195,8 +187,8 @@ public class JobReportServiceLargeDataTests
         };
 
         // Act & Assert - Should not throw OutOfMemoryException
-        var act = async () => await service.GenerateJobsReportAsync(request);
-        await act.Should().NotThrowAsync<OutOfMemoryException>();
+        var result = await service.GenerateJobsReportAsync(request);
+        Assert.NotEmpty(result.FileBytes);
     }
 
     [Fact]
@@ -231,7 +223,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -245,9 +237,9 @@ public class JobReportServiceLargeDataTests
         var result = await service.GenerateJobsReportAsync(request);
 
         // Assert
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain(new string('A', 500));
+        Assert.Contains(new string('A', 500), csvContent);
     }
 
     [Fact]
@@ -278,7 +270,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -292,12 +284,12 @@ public class JobReportServiceLargeDataTests
         var result = await service.GenerateJobsReportAsync(request);
 
         // Assert - CSV should be properly escaped
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
 
         // Fields with commas should be quoted
-        csvContent.Should().Contain("\"TEST,001\"");
-        csvContent.Should().Contain("\"Ref,With,Commas\"");
+        Assert.Contains("\"TEST,001\"", csvContent);
+        Assert.Contains("\"Ref,With,Commas\"", csvContent);
     }
 
     [Fact]
@@ -314,7 +306,7 @@ public class JobReportServiceLargeDataTests
                 It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync([]);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), CancellationToken.None))
+        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new PutObjectResponse());
 
         var service = CreateService();
@@ -328,15 +320,11 @@ public class JobReportServiceLargeDataTests
         var result = await service.GenerateJobsReportAsync(request);
 
         // Assert
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        lines.Length.Should().Be(1); // Header only
+        Assert.Equal(1, lines.Length); // Header only
     }
-
-    #endregion
-
-    #region Large Dataset Tests - Client Jobs Report
 
     [Theory]
     [InlineData(100)]
@@ -361,12 +349,12 @@ public class JobReportServiceLargeDataTests
         var result = await service.GenerateClientJobsReportCsvAsync(request);
 
         // Assert
-        result.FileBytes.Should().NotBeEmpty();
-        result.FileName.Should().EndWith(".csv");
+        Assert.NotEmpty(result.FileBytes);
+        Assert.EndsWith(".csv", result.FileName);
 
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        lines.Length.Should().Be(recordCount + 1); // +1 for header
+        Assert.Equal(recordCount + 1, lines.Length); // +1 for header
     }
 
     [Fact]
@@ -392,8 +380,8 @@ public class JobReportServiceLargeDataTests
         stopwatch.Stop();
 
         // Assert
-        stopwatch.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(30));
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
+        Assert.NotEmpty(result.FileBytes);
     }
 
     [Fact]
@@ -415,15 +403,11 @@ public class JobReportServiceLargeDataTests
         var result = await service.GenerateClientJobsReportCsvAsync(request);
 
         // Assert
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        lines.Length.Should().Be(1); // Header only
+        Assert.Equal(1, lines.Length); // Header only
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static List<JobDownloadModel> GenerateLargeJobDownloadDataset(int count)
     {
@@ -539,5 +523,4 @@ public class JobReportServiceLargeDataTests
         return reports;
     }
 
-    #endregion
 }

@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
@@ -65,8 +63,6 @@ public class CourierRepositoryLoggedInFilterTests
         return query.OrderBy(c => c.Code).ToList();
     }
 
-    #region LoggedInOnly Filter Tests
-
     [Fact]
     public void FilterCouriers_LoggedInOnly_ReturnsOnlyLoggedInCouriers()
     {
@@ -112,8 +108,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(c => c.Id == 1);
+        Assert.Equal(1, result.Count);
+        Assert.Single(result, c => c.Id == 1);
     }
 
     [Fact]
@@ -153,8 +149,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(c => c.Id == 2);
+        Assert.Equal(1, result.Count);
+        Assert.Single(result, c => c.Id == 2);
     }
 
     [Fact]
@@ -190,8 +186,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(c => c.Id == 2);
+        Assert.Equal(1, result.Count);
+        Assert.Single(result, c => c.Id == 2);
     }
 
     [Fact]
@@ -239,7 +235,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: false, today.AddHours(12));
 
         // Assert
-        result.Should().HaveCount(3);
+        Assert.Equal(3, result.Count);
     }
 
     [Fact]
@@ -275,12 +271,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(18));
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region Combined DG and LoggedInOnly Filter Tests
 
     [Fact]
     public void FilterCouriers_DgOnlyAndLoggedInOnly_ReturnsDgCertifiedLoggedInCouriers()
@@ -350,8 +342,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: true, loggedInOnly: true, today.AddHours(12));
 
         // Assert - Only courier 1 is DG certified AND logged in
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(c => c.Id == 1);
+        Assert.Equal(1, result.Count);
+        Assert.Single(result, c => c.Id == 1);
     }
 
     [Fact]
@@ -394,12 +386,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: true, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region Search Term with LoggedInOnly Filter Tests
 
     [Fact]
     public void FilterCouriers_SearchTermAndLoggedInOnly_FiltersCorrectly()
@@ -451,15 +439,11 @@ public class CourierRepositoryLoggedInFilterTests
 
         // Assert - Should return couriers 1 and 2 (both contain "John" and are logged in)
         // Courier 3 matches search but is logged out
-        result.Should().HaveCount(2);
-        result.Should().Contain(c => c.Id == 1);
-        result.Should().Contain(c => c.Id == 2);
-        result.Should().NotContain(c => c.Id == 3);
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, c => c.Id == 1);
+        Assert.Contains(result, c => c.Id == 2);
+        Assert.DoesNotContain(result, c => c.Id == 3);
     }
-
-    #endregion
-
-    #region Edge Cases
 
     [Fact]
     public void FilterCouriers_LoggedInOnly_MultipleLoggedInCouriers_ReturnsAllLoggedIn()
@@ -506,8 +490,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(18));
 
         // Assert
-        result.Should().HaveCount(10);
-        result.All(c => c.Id <= 10).Should().BeTrue();
+        Assert.Equal(10, result.Count);
+        Assert.True(result.All(c => c.Id <= 10));
     }
 
     [Fact]
@@ -549,8 +533,8 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert - Only active and logged-in courier
-        result.Should().HaveCount(1);
-        result.Should().ContainSingle(c => c.Id == 2);
+        Assert.Equal(1, result.Count);
+        Assert.Single(result, c => c.Id == 2);
     }
 
     [Fact]
@@ -578,7 +562,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        result.Should().HaveCount(1);
+        Assert.Equal(1, result.Count);
     }
 
     [Fact]
@@ -606,8 +590,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(8));
 
         // Assert - Should not be included because login was yesterday
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
-    #endregion
 }

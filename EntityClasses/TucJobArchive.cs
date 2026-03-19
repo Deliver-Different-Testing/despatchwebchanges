@@ -485,6 +485,8 @@ public partial class TucJobArchive
 
     public DateTime? DeliveryArrivalTime { get; set; }
 
+    public DateTime? CreatedTimeUtc { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }

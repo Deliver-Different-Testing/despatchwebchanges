@@ -1,5 +1,4 @@
 using DespatchWeb.Extensions;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Extensions;
 
@@ -8,7 +7,6 @@ namespace DespatchWeb.Tests.Extensions;
 /// </summary>
 public class DateExtensionTests
 {
-    #region ToTimeZone Tests
 
     [Fact]
     public void ToTimeZone_WithPacificTimeZone_ConvertsUtcToLocal()
@@ -20,8 +18,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("Pacific Standard Time");
 
         // Assert
-        result.Hour.Should().Be(10);
-        result.Day.Should().Be(15);
+        Assert.Equal(10, result.Hour);
+        Assert.Equal(15, result.Day);
     }
 
     [Fact]
@@ -34,8 +32,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("New Zealand Standard Time");
 
         // Assert
-        result.Hour.Should().Be(13);
-        result.Day.Should().Be(15);
+        Assert.Equal(13, result.Hour);
+        Assert.Equal(15, result.Day);
     }
 
     [Fact]
@@ -48,8 +46,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("New Zealand Standard Time");
 
         // Assert
-        result.Day.Should().Be(16);
-        result.Hour.Should().Be(11);
+        Assert.Equal(16, result.Day);
+        Assert.Equal(11, result.Hour);
     }
 
     [Fact]
@@ -62,8 +60,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("Pacific Standard Time");
 
         // Assert
-        result.Day.Should().Be(14);
-        result.Hour.Should().Be(18);
+        Assert.Equal(14, result.Day);
+        Assert.Equal(18, result.Hour);
     }
 
     [Fact]
@@ -76,8 +74,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("UTC");
 
         // Assert
-        result.Hour.Should().Be(12);
-        result.Minute.Should().Be(30);
+        Assert.Equal(12, result.Hour);
+        Assert.Equal(30, result.Minute);
     }
 
     [Fact]
@@ -90,7 +88,7 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("Pacific Standard Time");
 
         // Assert - 17:00 UTC = 10:00 PDT (UTC-7)
-        result.Hour.Should().Be(10);
+        Assert.Equal(10, result.Hour);
     }
 
     [Fact]
@@ -103,8 +101,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("Invalid TimeZone");
 
         // Assert - Should return UTC time unchanged
-        result.Hour.Should().Be(12);
-        result.Day.Should().Be(15);
+        Assert.Equal(12, result.Hour);
+        Assert.Equal(15, result.Day);
     }
 
     [Fact]
@@ -117,13 +115,9 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZone("America/Los_Angeles");
 
         // Assert - 18:00 UTC = 10:00 PST (UTC-8)
-        result.Hour.Should().Be(10);
-        result.Day.Should().Be(15);
+        Assert.Equal(10, result.Hour);
+        Assert.Equal(15, result.Day);
     }
-
-    #endregion
-
-    #region ToTimeZoneOffset (TimeZoneInfo overload) Tests
 
     [Fact]
     public void ToTimeZoneOffset_TimeZoneInfo_ConvertsAndIncludesOffset()
@@ -136,8 +130,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset(pstTimeZone);
 
         // Assert
-        result.Hour.Should().Be(10);
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
+        Assert.Equal(10, result.Hour);
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
     }
 
     [Fact]
@@ -151,12 +145,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset(nzTimeZone);
 
         // Assert - The UtcDateTime should match the original
-        result.UtcDateTime.Should().Be(utcTime);
+        Assert.Equal(utcTime, result.UtcDateTime);
     }
-
-    #endregion
-
-    #region ToTimeZoneOffset (string overload) Tests
 
     [Fact]
     public void ToTimeZoneOffset_String_ConvertsAndIncludesOffset()
@@ -168,8 +158,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset("Pacific Standard Time");
 
         // Assert
-        result.Hour.Should().Be(10);
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
+        Assert.Equal(10, result.Hour);
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
     }
 
     [Fact]
@@ -182,8 +172,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset("New Zealand Standard Time");
 
         // Assert
-        result.Hour.Should().Be(13);
-        result.Offset.Should().Be(TimeSpan.FromHours(13)); // NZDT in January
+        Assert.Equal(13, result.Hour);
+        Assert.Equal(TimeSpan.FromHours(13), result.Offset); // NZDT in January
     }
 
     [Fact]
@@ -196,8 +186,8 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset("New Zealand Standard Time");
 
         // Assert
-        result.Hour.Should().Be(12);
-        result.Offset.Should().Be(TimeSpan.FromHours(12)); // NZST in June
+        Assert.Equal(12, result.Hour);
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset); // NZST in June
     }
 
     [Fact]
@@ -210,7 +200,7 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset("Pacific Standard Time");
 
         // Assert - The UtcDateTime should match the original
-        result.UtcDateTime.Should().Be(utcTime);
+        Assert.Equal(utcTime, result.UtcDateTime);
     }
 
     [Fact]
@@ -223,9 +213,9 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset("Invalid TimeZone");
 
         // Assert - Should return UTC time with zero offset
-        result.Hour.Should().Be(12);
-        result.Day.Should().Be(15);
-        result.Offset.Should().Be(TimeSpan.Zero);
+        Assert.Equal(12, result.Hour);
+        Assert.Equal(15, result.Day);
+        Assert.Equal(TimeSpan.Zero, result.Offset);
     }
 
     [Fact]
@@ -238,14 +228,10 @@ public class DateExtensionTests
         var result = utcTime.ToTimeZoneOffset("America/Los_Angeles");
 
         // Assert - 18:00 UTC = 10:00 PST with -8 offset
-        result.Hour.Should().Be(10);
-        result.Day.Should().Be(15);
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
+        Assert.Equal(10, result.Hour);
+        Assert.Equal(15, result.Day);
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
     }
-
-    #endregion
-
-    #region Flight Time Scenario Tests
 
     [Fact]
     public void ToTimeZoneOffset_FlightDepartureFromAuckland()
@@ -260,10 +246,10 @@ public class DateExtensionTests
         var result = utcDepartureTime.ToTimeZoneOffset("New Zealand Standard Time");
 
         // Assert - Should display as 09:30 on Jan 16 with +13 offset
-        result.Hour.Should().Be(9);
-        result.Minute.Should().Be(30);
-        result.Day.Should().Be(16);
-        result.Offset.Should().Be(TimeSpan.FromHours(13));
+        Assert.Equal(9, result.Hour);
+        Assert.Equal(30, result.Minute);
+        Assert.Equal(16, result.Day);
+        Assert.Equal(TimeSpan.FromHours(13), result.Offset);
     }
 
     [Fact]
@@ -279,9 +265,9 @@ public class DateExtensionTests
         var result = utcArrivalTime.ToTimeZoneOffset("Pacific Standard Time");
 
         // Assert - Should display as 18:00 on Jan 14 with -8 offset
-        result.Hour.Should().Be(18);
-        result.Day.Should().Be(14);
-        result.Offset.Should().Be(TimeSpan.FromHours(-8));
+        Assert.Equal(18, result.Hour);
+        Assert.Equal(14, result.Day);
+        Assert.Equal(TimeSpan.FromHours(-8), result.Offset);
     }
 
     [Fact]
@@ -297,9 +283,8 @@ public class DateExtensionTests
         var jsonString = System.Text.Json.JsonSerializer.Serialize(result);
 
         // Assert - JSON should include the -08:00 offset
-        jsonString.Should().Contain("-08:00");
-        jsonString.Should().Contain("10:00:00"); // Local time
+        Assert.Contains("-08:00", jsonString);
+        Assert.Contains("10:00:00", jsonString); // Local time
     }
 
-    #endregion
 }

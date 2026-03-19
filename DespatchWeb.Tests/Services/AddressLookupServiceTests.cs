@@ -3,7 +3,6 @@ using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 using Moq.Protected;
 
@@ -32,8 +31,6 @@ public class AddressLookupServiceTests
         return new AddressLookupService(httpClient, _tenantInfoServiceMock.Object);
     }
 
-    #region AutocompleteAddressSearchAsync Validation Tests
-
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -48,7 +45,7 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync(text);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -61,12 +58,8 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync("12");
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region AutocompleteAddressSearchAsync API Tests
 
     [Fact]
     public async Task AutocompleteAddressSearchAsync_UsCustomer_SendsUsaCountryCode()
@@ -137,8 +130,8 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync("123 Main");
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].Address.Label.Should().Be("123 Main St, New York, NY");
+        Assert.Equal(2, result.Count);
+        Assert.Equal("123 Main St, New York, NY", result[0].Address.Label);
     }
 
     [Fact]
@@ -176,8 +169,8 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync("coffee");
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Address.Label.Should().Be("Valid Address");
+        Assert.Equal(1, result.Count);
+        Assert.Equal("Valid Address", result[0].Address.Label);
     }
 
     [Fact]
@@ -215,7 +208,7 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync("test address");
 
         // Assert
-        result.Should().HaveCount(1);
+        Assert.Equal(1, result.Count);
     }
 
     [Fact]
@@ -230,12 +223,8 @@ public class AddressLookupServiceTests
         var act = async () => await service.AutocompleteAddressSearchAsync("test");
 
         // Assert
-        await act.Should().ThrowAsync<HttpRequestException>();
+        await Assert.ThrowsAsync<HttpRequestException>(act);
     }
-
-    #endregion
-
-    #region GetLocationDetailsByIdAsync Tests
 
     [Fact]
     public async Task GetLocationDetailsByIdAsync_ValidId_ReturnsLocationDetails()
@@ -257,8 +246,8 @@ public class AddressLookupServiceTests
         var result = await service.GetLocationDetailsByIdAsync("here:pds:place:36jx7ps-12345");
 
         // Assert
-        result.Should().NotBeNull();
-        result.Address.Label.Should().Be("123 Main St, Auckland");
+        Assert.NotNull(result);
+        Assert.Equal("123 Main St, Auckland", result.Address.Label);
     }
 
     [Fact]
@@ -272,12 +261,8 @@ public class AddressLookupServiceTests
         var act = async () => await service.GetLocationDetailsByIdAsync("invalid-id");
 
         // Assert
-        await act.Should().ThrowAsync<HttpRequestException>();
+        await Assert.ThrowsAsync<HttpRequestException>(act);
     }
-
-    #endregion
-
-    #region FetchNearestAddressAsync Tests
 
     [Fact]
     public async Task FetchNearestAddressAsync_ValidCoordinates_ReturnsAddress()
@@ -300,8 +285,8 @@ public class AddressLookupServiceTests
         var result = await service.FetchNearestAddressAsync(-36.8509, 174.7645);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Address.Label.Should().Be("Nearest Address");
+        Assert.Equal(1, result.Count);
+        Assert.Equal("Nearest Address", result[0].Address.Label);
     }
 
     [Fact]
@@ -316,7 +301,7 @@ public class AddressLookupServiceTests
         var result = await service.FetchNearestAddressAsync(0, 0);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -330,12 +315,8 @@ public class AddressLookupServiceTests
         var act = async () => await service.FetchNearestAddressAsync(-36.8509, 174.7645);
 
         // Assert
-        await act.Should().ThrowAsync<HttpRequestException>();
+        await Assert.ThrowsAsync<HttpRequestException>(act);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private void SetupHttpResponse<T>(T responseObject)
     {
@@ -365,5 +346,4 @@ public class AddressLookupServiceTests
             .ReturnsAsync(httpResponse);
     }
 
-    #endregion
 }

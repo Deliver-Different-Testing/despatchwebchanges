@@ -2,7 +2,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Accessorial;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -50,8 +49,6 @@ public class AccessorialChargeServiceTests
         return await CreateService().UpdateChargeAsync(1, request);
     }
 
-    #region Quote-Based Charge
-
     [Fact]
     public async Task Recalculate_QuoteBased_ReturnsInputValueDirectly()
     {
@@ -60,12 +57,8 @@ public class AccessorialChargeServiceTests
         var result = await CallUpdate(jac,
             new JobAccessorialChargeUpdateRequest { InputValue = 75.50m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(75.50m);
+        Assert.Equal(75.50m, result.CalculatedAmount);
     }
-
-    #endregion
-
-    #region GetJobAmountAsync
 
     [Fact]
     public async Task GetJobAmountAsync_DelegatesToRepository()
@@ -76,13 +69,9 @@ public class AccessorialChargeServiceTests
 
         var result = await CreateService().GetJobAmountAsync(500);
 
-        result.Should().Be(127.50m);
+        Assert.Equal(127.50m, result);
         _repositoryMock.Verify(r => r.GetJobAmountAsync(500), Times.Once);
     }
-
-    #endregion
-
-    #region GetPortionJobsAsync
 
     [Fact]
     public async Task GetPortionJobsAsync_DelegatesToRepository()
@@ -98,13 +87,9 @@ public class AccessorialChargeServiceTests
 
         var result = await CreateService().GetPortionJobsAsync(200);
 
-        result.Should().BeEquivalentTo(expected);
+        Assert.Equivalent(expected, result);
         _repositoryMock.Verify(r => r.GetPortionJobsAsync(200), Times.Once);
     }
-
-    #endregion
-
-    #region Flat Charge
 
     [Fact]
     public async Task Recalculate_FlatCharge_ReturnsBaseRate()
@@ -113,7 +98,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac);
 
-        result.CalculatedAmount.Should().Be(50m);
+        Assert.Equal(50m, result.CalculatedAmount);
     }
 
     [Fact]
@@ -123,12 +108,8 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 999m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(50m);
+        Assert.Equal(50m, result.CalculatedAmount);
     }
-
-    #endregion
-
-    #region Per Unit / Hourly Charge
 
     [Fact]
     public async Task Recalculate_PerUnit_MultipliesInputByItemCountAndRate()
@@ -137,7 +118,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 5m, ItemCount = 2 });
 
-        result.CalculatedAmount.Should().Be(100m); // 5 * 2 * 10
+        Assert.Equal(100m, result.CalculatedAmount); // 5 * 2 * 10
     }
 
     [Fact]
@@ -153,7 +134,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 5m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(30m); // (5 - 2) * 1 * 10
+        Assert.Equal(30m, result.CalculatedAmount); // (5 - 2) * 1 * 10
     }
 
     [Fact]
@@ -169,7 +150,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 3m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(0m); // max(0, 3-10) = 0
+        Assert.Equal(0m, result.CalculatedAmount); // max(0, 3-10) = 0
     }
 
     [Fact]
@@ -188,7 +169,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 2m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(90m);
+        Assert.Equal(90m, result.CalculatedAmount);
     }
 
     [Fact]
@@ -207,7 +188,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 90m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(60m);
+        Assert.Equal(60m, result.CalculatedAmount);
     }
 
     [Fact]
@@ -223,12 +204,8 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(30m); // min qty 3 → 3 * 1 * 10
+        Assert.Equal(30m, result.CalculatedAmount); // min qty 3 → 3 * 1 * 10
     }
-
-    #endregion
-
-    #region Percentage Charge
 
     [Fact]
     public async Task Recalculate_Percentage_AppliesRateToInputValue()
@@ -242,7 +219,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 1000m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(100m); // 1000 * 10 / 100
+        Assert.Equal(100m, result.CalculatedAmount); // 1000 * 10 / 100
     }
 
     [Fact]
@@ -257,12 +234,8 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 200m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(17m); // 200 * 8.5 / 100
+        Assert.Equal(17m, result.CalculatedAmount); // 200 * 8.5 / 100
     }
-
-    #endregion
-
-    #region Min / Max Charge Enforcement
 
     [Fact]
     public async Task Recalculate_AmountBelowMinimumCharge_ClampedToMinimum()
@@ -277,7 +250,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac);
 
-        result.CalculatedAmount.Should().Be(10m);
+        Assert.Equal(10m, result.CalculatedAmount);
     }
 
     [Fact]
@@ -293,7 +266,7 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac, new JobAccessorialChargeUpdateRequest { InputValue = 10m, ItemCount = 1 });
 
-        result.CalculatedAmount.Should().Be(500m); // would be 1000, capped at 500
+        Assert.Equal(500m, result.CalculatedAmount); // would be 1000, capped at 500
     }
 
     [Fact]
@@ -310,12 +283,8 @@ public class AccessorialChargeServiceTests
 
         var result = await CallUpdate(jac);
 
-        result.CalculatedAmount.Should().Be(50m);
+        Assert.Equal(50m, result.CalculatedAmount);
     }
-
-    #endregion
-
-    #region AddChargesAsync
 
     [Fact]
     public async Task AddChargesAsync_CallsRepositoryForEachCharge()
@@ -357,5 +326,4 @@ public class AccessorialChargeServiceTests
             Times.Once);
     }
 
-    #endregion
 }

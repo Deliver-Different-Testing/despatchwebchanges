@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -35,8 +34,6 @@ public class TenantInfoServiceTests
         _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
     }
 
-    #region GetCurrentTenantTime Tests
-
     [Fact]
     public void GetCurrentTenantTime_WithUtcTimeZone_ReturnsUtcTime()
     {
@@ -48,7 +45,7 @@ public class TenantInfoServiceTests
         var result = service.GetCurrentTenantTime();
 
         // Assert
-        result.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+        Assert.True(Math.Abs((result - DateTime.UtcNow).TotalSeconds) < 1);
     }
 
     [Fact]
@@ -64,7 +61,7 @@ public class TenantInfoServiceTests
         // Assert
         var expected = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
             TimeZoneInfo.FindSystemTimeZoneById("New Zealand Standard Time"));
-        result.Should().BeCloseTo(expected, TimeSpan.FromSeconds(1));
+        Assert.True(Math.Abs((result - expected).TotalSeconds) < 1);
     }
 
     [Fact]
@@ -78,12 +75,8 @@ public class TenantInfoServiceTests
         var result = service.GetCurrentTenantTime();
 
         // Assert
-        result.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+        Assert.True(Math.Abs((result - DateTime.UtcNow).TotalSeconds) < 1);
     }
-
-    #endregion
-
-    #region GetCurrentTimeFromTimeZone Tests
 
     [Fact]
     public void GetCurrentTimeFromTimeZone_WithNullTimeZone_ReturnsTenantTime()
@@ -96,7 +89,7 @@ public class TenantInfoServiceTests
         var result = service.GetCurrentTimeFromTimeZone(null);
 
         // Assert
-        result.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+        Assert.True(Math.Abs((result - DateTime.UtcNow).TotalSeconds) < 1);
     }
 
     [Fact]
@@ -113,12 +106,8 @@ public class TenantInfoServiceTests
         // Assert
         var expected = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow,
             TimeZoneInfo.FindSystemTimeZoneById("Pacific Standard Time"));
-        result.Should().BeCloseTo(expected, TimeSpan.FromSeconds(1));
+        Assert.True(Math.Abs((result - expected).TotalSeconds) < 1);
     }
-
-    #endregion
-
-    #region FormatDateForTenant Tests
 
     [Fact]
     public void FormatDateForTenant_WithNullDate_ReturnsEmptyString()
@@ -131,7 +120,7 @@ public class TenantInfoServiceTests
         var result = service.FormatDateForTenant(null);
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -146,7 +135,7 @@ public class TenantInfoServiceTests
         var result = service.FormatDateForTenant(date);
 
         // Assert
-        result.Should().Contain("12/25/2024"); // US format MM/dd/yyyy
+        Assert.Contains("12/25/2024", result); // US format MM/dd/yyyy
     }
 
     [Fact]
@@ -161,7 +150,7 @@ public class TenantInfoServiceTests
         var result = service.FormatDateForTenant(date);
 
         // Assert
-        result.Should().Contain("25/12/2024"); // NZ format dd/MM/yyyy
+        Assert.Contains("25/12/2024", result); // NZ format dd/MM/yyyy
     }
 
     [Fact]
@@ -176,7 +165,7 @@ public class TenantInfoServiceTests
         var result = service.FormatDateForTenant(date);
 
         // Assert
-        result.Should().Contain("25/12/2024"); // GB format dd/MM/yyyy
+        Assert.Contains("25/12/2024", result); // GB format dd/MM/yyyy
     }
 
     [Fact]
@@ -191,12 +180,8 @@ public class TenantInfoServiceTests
         var result = service.FormatDateForTenant(date);
 
         // Assert
-        result.Should().Contain("12/25/2024"); // Defaults to US format
+        Assert.Contains("12/25/2024", result); // Defaults to US format
     }
-
-    #endregion
-
-    #region GetStaffId Tests
 
     [Fact]
     public void GetStaffId_WithValidClaim_ReturnsStaffId()
@@ -209,7 +194,7 @@ public class TenantInfoServiceTests
         var result = service.GetStaffId();
 
         // Assert
-        result.Should().Be(42);
+        Assert.Equal(42, result);
     }
 
     [Fact]
@@ -223,7 +208,7 @@ public class TenantInfoServiceTests
         var result = service.GetStaffId();
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -238,13 +223,9 @@ public class TenantInfoServiceTests
         var result2 = service.GetStaffId();
 
         // Assert
-        result1.Should().Be(42);
-        result2.Should().Be(42);
+        Assert.Equal(42, result1);
+        Assert.Equal(42, result2);
     }
-
-    #endregion
-
-    #region GetContactId Tests
 
     [Fact]
     public void GetContactId_WithValidClaim_ReturnsContactId()
@@ -257,7 +238,7 @@ public class TenantInfoServiceTests
         var result = service.GetContactId();
 
         // Assert
-        result.Should().Be(123);
+        Assert.Equal(123, result);
     }
 
     [Fact]
@@ -271,12 +252,8 @@ public class TenantInfoServiceTests
         var result = service.GetContactId();
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
-
-    #endregion
-
-    #region IsUsTenant Tests
 
     [Fact]
     public void IsUsTenant_WithUsCountryCode_ReturnsTrue()
@@ -289,7 +266,7 @@ public class TenantInfoServiceTests
         var result = service.IsUsTenant();
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -303,7 +280,7 @@ public class TenantInfoServiceTests
         var result = service.IsUsTenant();
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -317,7 +294,7 @@ public class TenantInfoServiceTests
         var result = service.IsUsTenant();
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -331,12 +308,8 @@ public class TenantInfoServiceTests
         var result = service.IsUsTenant();
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
-
-    #endregion
-
-    #region GetTenantTimeZone Tests
 
     [Fact]
     public void GetTenantTimeZone_WithTimeZoneClaim_ReturnsTimeZone()
@@ -349,7 +322,7 @@ public class TenantInfoServiceTests
         var result = service.GetTenantTimeZone();
 
         // Assert
-        result.Should().Be("Pacific Standard Time");
+        Assert.Equal("Pacific Standard Time", result);
     }
 
     [Fact]
@@ -363,12 +336,8 @@ public class TenantInfoServiceTests
         var result = service.GetTenantTimeZone();
 
         // Assert
-        result.Should().Be("UTC");
+        Assert.Equal("UTC", result);
     }
-
-    #endregion
-
-    #region ConvertUtcToTenantTimeZone Tests
 
     [Fact]
     public void ConvertUtcToTenantTimeZone_WithUtcTimeZone_ReturnsCorrectOffset()
@@ -382,8 +351,8 @@ public class TenantInfoServiceTests
         var result = service.ConvertUtcToTenantTimeZone(utcTime);
 
         // Assert
-        result.Offset.Should().Be(TimeSpan.Zero);
-        result.DateTime.Should().Be(utcTime);
+        Assert.Equal(TimeSpan.Zero, result.Offset);
+        Assert.Equal(utcTime, result.DateTime);
     }
 
     [Fact]
@@ -398,12 +367,8 @@ public class TenantInfoServiceTests
         var result = service.ConvertUtcToTenantTimeZone(utcTime);
 
         // Assert - NZ is UTC+12 in winter (June)
-        result.Offset.Should().Be(TimeSpan.FromHours(12));
+        Assert.Equal(TimeSpan.FromHours(12), result.Offset);
     }
-
-    #endregion
-
-    #region GetStaffInfoAsync Tests
 
     [Fact]
     public async Task GetStaffInfoAsync_WithValidStaffId_ReturnsStaffInfo()
@@ -427,9 +392,9 @@ public class TenantInfoServiceTests
         var result = await service.GetStaffInfoAsync();
 
         // Assert
-        result.Should().NotBeNull();
-        result.Id.Should().Be(1);
-        result.Text.Should().Be("John Doe");
+        Assert.NotNull(result);
+        Assert.Equal(1, result.Id);
+        Assert.Equal("John Doe", result.Text);
     }
 
     [Fact]
@@ -454,8 +419,7 @@ public class TenantInfoServiceTests
         var result = await service.GetStaffInfoAsync();
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
-    #endregion
 }

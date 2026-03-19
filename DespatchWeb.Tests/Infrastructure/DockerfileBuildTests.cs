@@ -1,5 +1,3 @@
-using FluentAssertions;
-
 namespace DespatchWeb.Tests.Infrastructure;
 
 /// <summary>
@@ -21,7 +19,7 @@ public class DockerfileBuildTests
         var restoreLineIndex = Array.FindIndex(DockerfileLines,
             l => l.Contains("dotnet restore", StringComparison.OrdinalIgnoreCase));
 
-        restoreLineIndex.Should().BeGreaterThan(-1, "Dockerfile should contain a dotnet restore command");
+        Assert.True(restoreLineIndex > -1, "Dockerfile should contain a dotnet restore command");
 
         // Act - find a COPY line that includes this file, before the restore line
         var copyLineIndex = Array.FindIndex(DockerfileLines, 0, restoreLineIndex,
@@ -29,7 +27,7 @@ public class DockerfileBuildTests
                  && l.Contains(fileName, StringComparison.OrdinalIgnoreCase));
 
         // Assert
-        copyLineIndex.Should().BeGreaterThan(-1,
+        Assert.True(copyLineIndex > -1,
             $"{fileName} must be copied into the Docker build context before dotnet restore runs. " +
             $"Without it, MSBuild properties defined in {fileName} (like TargetFramework or package versions) will be missing.");
     }
@@ -43,7 +41,7 @@ public class DockerfileBuildTests
         foreach (var file in expectedFiles)
         {
             var fullPath = Path.Combine(SolutionRoot, file);
-            File.Exists(fullPath).Should().BeTrue($"{file} should exist in the solution root");
+            Assert.True(File.Exists(fullPath), $"{file} should exist in the solution root");
         }
     }
 

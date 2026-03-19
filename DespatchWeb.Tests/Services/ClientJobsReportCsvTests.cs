@@ -5,7 +5,6 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -29,8 +28,6 @@ public class ClientJobsReportCsvTests
             _s3ClientMock.Object
         );
 
-    #region RawBaseAmount and FuelSurchargeAmount Tests
-
     [Fact]
     public async Task GenerateClientJobsReportCsvAsync_WithRawBaseAmount_IncludesValueInCsv()
     {
@@ -50,8 +47,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Raw Base Amount");
-        csvContent.Should().Contain("150.50");
+        Assert.Contains("Raw Base Amount", csvContent);
+        Assert.Contains("150.50", csvContent);
     }
 
     [Fact]
@@ -73,8 +70,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Fuel Surcharge Amount");
-        csvContent.Should().Contain("25.75");
+        Assert.Contains("Fuel Surcharge Amount", csvContent);
+        Assert.Contains("25.75", csvContent);
     }
 
     [Fact]
@@ -96,8 +93,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("100");
-        csvContent.Should().Contain("15");
+        Assert.Contains("100", csvContent);
+        Assert.Contains("15", csvContent);
     }
 
     [Fact]
@@ -118,10 +115,10 @@ public class ClientJobsReportCsvTests
         var result = await service.GenerateClientJobsReportCsvAsync(request);
 
         // Assert
-        result.FileBytes.Should().NotBeEmpty();
+        Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        lines.Length.Should().Be(2); // Header + 1 data row
+        Assert.Equal(2, lines.Length); // Header + 1 data row
     }
 
     [Fact]
@@ -140,14 +137,10 @@ public class ClientJobsReportCsvTests
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var headerLine = csvContent.Split('\n')[0];
-        headerLine.Should().Contain("Raw Base Amount");
-        headerLine.Should().Contain("Fuel Surcharge Amount");
-        headerLine.Should().Contain("Charge Excl GST");
+        Assert.Contains("Raw Base Amount", headerLine);
+        Assert.Contains("Fuel Surcharge Amount", headerLine);
+        Assert.Contains("Charge Excl GST", headerLine);
     }
-
-    #endregion
-
-    #region Property Mapping Tests (PascalCase Names)
 
     [Fact]
     public async Task GenerateClientJobsReportCsvAsync_WithPodName_IncludesValueInCsv()
@@ -168,8 +161,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("POD Name");
-        csvContent.Should().Contain("John Smith");
+        Assert.Contains("POD Name", csvContent);
+        Assert.Contains("John Smith", csvContent);
     }
 
     [Fact]
@@ -191,8 +184,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Type");
-        csvContent.Should().Contain("Pick up from us");
+        Assert.Contains("Type", csvContent);
+        Assert.Contains("Pick up from us", csvContent);
     }
 
     [Fact]
@@ -214,8 +207,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Charge Excl GST");
-        csvContent.Should().Contain("250.00");
+        Assert.Contains("Charge Excl GST", csvContent);
+        Assert.Contains("250.00", csvContent);
     }
 
     [Fact]
@@ -236,7 +229,7 @@ public class ClientJobsReportCsvTests
         var result = await service.GenerateClientJobsReportCsvAsync(request);
 
         // Assert
-        result.FileName.Should().Contain("Test_Company_Ltd");
+        Assert.Contains("Test_Company_Ltd", result.FileName);
     }
 
     [Fact]
@@ -258,8 +251,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("From Address");
-        csvContent.Should().Contain("123 Pickup Street");
+        Assert.Contains("From Address", csvContent);
+        Assert.Contains("123 Pickup Street", csvContent);
     }
 
     [Fact]
@@ -281,8 +274,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Courier Name");
-        csvContent.Should().Contain("Express Courier");
+        Assert.Contains("Courier Name", csvContent);
+        Assert.Contains("Express Courier", csvContent);
     }
 
     [Fact]
@@ -304,8 +297,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Account No.");
-        csvContent.Should().Contain("12345");
+        Assert.Contains("Account No.", csvContent);
+        Assert.Contains("12345", csvContent);
     }
 
     [Fact]
@@ -327,13 +320,9 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain("Client Notes");
-        csvContent.Should().Contain("Important client note");
+        Assert.Contains("Client Notes", csvContent);
+        Assert.Contains("Important client note", csvContent);
     }
-
-    #endregion
-
-    #region CSV Column Order Tests
 
     [Fact]
     public async Task GenerateClientJobsReportCsvAsync_CsvHeader_HasCorrectColumnOrder()
@@ -358,19 +347,15 @@ public class ClientJobsReportCsvTests
         var fuelSurchargeIndex = Array.FindIndex(columns, c => c.Contains("Fuel Surcharge Amount"));
         var chargeExclGstIndex = Array.FindIndex(columns, c => c.Contains("Charge Excl GST"));
 
-        rawBaseIndex.Should().BeGreaterThan(-1, "Raw Base Amount column should exist");
-        fuelSurchargeIndex.Should().BeGreaterThan(-1, "Fuel Surcharge Amount column should exist");
-        chargeExclGstIndex.Should().BeGreaterThan(-1, "Charge Excl GST column should exist");
+        Assert.True(rawBaseIndex > -1, "Raw Base Amount column should exist");
+        Assert.True(fuelSurchargeIndex > -1, "Fuel Surcharge Amount column should exist");
+        Assert.True(chargeExclGstIndex > -1, "Charge Excl GST column should exist");
 
         // Raw Base Amount should come before Fuel Surcharge Amount
-        rawBaseIndex.Should().BeLessThan(fuelSurchargeIndex);
+        Assert.True(rawBaseIndex < fuelSurchargeIndex);
         // Fuel Surcharge Amount should come before Charge Excl GST
-        fuelSurchargeIndex.Should().BeLessThan(chargeExclGstIndex);
+        Assert.True(fuelSurchargeIndex < chargeExclGstIndex);
     }
-
-    #endregion
-
-    #region Integration Tests
 
     [Fact]
     public async Task GenerateClientJobsReportCsvAsync_WithCompleteModel_GeneratesValidCsvRow()
@@ -429,17 +414,17 @@ public class ClientJobsReportCsvTests
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        lines.Length.Should().Be(2); // Header + 1 data row
+        Assert.Equal(2, lines.Length); // Header + 1 data row
 
         var dataLine = lines[1];
-        dataLine.Should().Contain("JOB-001");
-        dataLine.Should().Contain("15-Jan-24");
-        dataLine.Should().Contain("09:30");
-        dataLine.Should().Contain("100");
-        dataLine.Should().Contain("15");
-        dataLine.Should().Contain("115.00");
-        dataLine.Should().Contain("John Doe");
-        dataLine.Should().Contain("Fast Courier");
+        Assert.Contains("JOB-001", dataLine);
+        Assert.Contains("15-Jan-24", dataLine);
+        Assert.Contains("09:30", dataLine);
+        Assert.Contains("100", dataLine);
+        Assert.Contains("15", dataLine);
+        Assert.Contains("115.00", dataLine);
+        Assert.Contains("John Doe", dataLine);
+        Assert.Contains("Fast Courier", dataLine);
     }
 
     [Theory]
@@ -465,12 +450,8 @@ public class ClientJobsReportCsvTests
 
         // Assert
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
-        csvContent.Should().Contain(amount.ToString(CultureInfo.InvariantCulture));
+        Assert.Contains(amount.ToString(CultureInfo.InvariantCulture), csvContent);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static ClientJobsReportRequest CreateTestRequest()
     {
@@ -534,5 +515,4 @@ public class ClientJobsReportCsvTests
         };
     }
 
-    #endregion
 }

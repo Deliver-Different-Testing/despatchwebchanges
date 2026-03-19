@@ -1,5 +1,4 @@
 using DespatchWeb.Helpers;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Helpers;
 
@@ -10,7 +9,6 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public class DayOfWeekHelperTests
 {
-    #region DayNameToSqlInt Tests
 
     [Theory]
     [InlineData("Monday", 1)]
@@ -26,7 +24,7 @@ public class DayOfWeekHelperTests
         var result = DayOfWeekHelper.DayNameToSqlInt(dayName);
 
         // Assert
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -41,7 +39,7 @@ public class DayOfWeekHelperTests
         var result = DayOfWeekHelper.DayNameToSqlInt(dayName);
 
         // Assert
-        result.Should().Be(expectedValue);
+        Assert.Equal(expectedValue, result);
     }
 
     [Theory]
@@ -55,7 +53,7 @@ public class DayOfWeekHelperTests
         var result = DayOfWeekHelper.DayNameToSqlInt(invalidDayName);
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -65,7 +63,7 @@ public class DayOfWeekHelperTests
         var result = DayOfWeekHelper.DayNameToSqlInt(null!);
 
         // Assert
-        result.Should().Be(0);
+        Assert.Equal(0, result);
     }
 
     [Fact]
@@ -75,7 +73,7 @@ public class DayOfWeekHelperTests
         // where Monday is the first day of the week (value 1)
         var result = DayOfWeekHelper.DayNameToSqlInt("Monday");
 
-        result.Should().Be(1, "ISO 8601 defines Monday as the first day of the week (value 1)");
+        Assert.True(result == 1, "ISO 8601 defines Monday as the first day of the week (value 1)");
     }
 
     [Fact]
@@ -87,13 +85,9 @@ public class DayOfWeekHelperTests
         for (var i = 0; i < days.Length; i++)
         {
             var result = DayOfWeekHelper.DayNameToSqlInt(days[i]);
-            result.Should().Be(i + 1, $"{days[i]} should be {i + 1}");
+            Assert.True(result == i + 1, $"{days[i]} should be {i + 1}");
         }
     }
-
-    #endregion
-
-    #region SqlIntToDayName Tests
 
     [Theory]
     [InlineData(1, "Monday")]
@@ -109,7 +103,7 @@ public class DayOfWeekHelperTests
         var result = DayOfWeekHelper.SqlIntToDayName(isoValue);
 
         // Assert
-        result.Should().Be(expectedDayName);
+        Assert.Equal(expectedDayName, result);
     }
 
     [Theory]
@@ -123,7 +117,7 @@ public class DayOfWeekHelperTests
         var result = DayOfWeekHelper.SqlIntToDayName(invalidValue);
 
         // Assert
-        result.Should().Be("Unknown");
+        Assert.Equal("Unknown", result);
     }
 
     [Fact]
@@ -133,12 +127,8 @@ public class DayOfWeekHelperTests
         // where 1 represents Monday
         var result = DayOfWeekHelper.SqlIntToDayName(1);
 
-        result.Should().Be("Monday", "ISO 8601 weekday value 1 represents Monday");
+        Assert.True(result == "Monday", "ISO 8601 weekday value 1 represents Monday");
     }
-
-    #endregion
-
-    #region Round-Trip Tests
 
     [Theory]
     [InlineData("Sunday")]
@@ -155,7 +145,7 @@ public class DayOfWeekHelperTests
         var resultDayName = DayOfWeekHelper.SqlIntToDayName(sqlInt);
 
         // Assert
-        resultDayName.Should().Be(originalDayName);
+        Assert.Equal(originalDayName, resultDayName);
     }
 
     [Theory]
@@ -173,12 +163,8 @@ public class DayOfWeekHelperTests
         var resultInt = DayOfWeekHelper.DayNameToSqlInt(dayName);
 
         // Assert
-        resultInt.Should().Be(originalInt);
+        Assert.Equal(originalInt, resultInt);
     }
-
-    #endregion
-
-    #region ISO 8601 Convention Documentation Tests
 
     [Fact]
     public void IsoConvention_WeekStartsOnMonday()
@@ -186,20 +172,19 @@ public class DayOfWeekHelperTests
         // ISO 8601 defines Monday as the first day of the week
         // Monday = 1, Tuesday = 2, ..., Sunday = 7
 
-        DayOfWeekHelper.DayNameToSqlInt("Monday").Should().Be(1, "Week starts on Monday in ISO 8601");
-        DayOfWeekHelper.DayNameToSqlInt("Sunday").Should().Be(7, "Week ends on Sunday in ISO 8601");
+        Assert.True(DayOfWeekHelper.DayNameToSqlInt("Monday") == 1, "Week starts on Monday in ISO 8601");
+        Assert.True(DayOfWeekHelper.DayNameToSqlInt("Sunday") == 7, "Week ends on Sunday in ISO 8601");
     }
 
     [Fact]
     public void IsoConvention_WeekdaysAreSequential()
     {
         // Verify Monday-Friday are sequential (1-5)
-        DayOfWeekHelper.DayNameToSqlInt("Monday").Should().Be(1);
-        DayOfWeekHelper.DayNameToSqlInt("Tuesday").Should().Be(2);
-        DayOfWeekHelper.DayNameToSqlInt("Wednesday").Should().Be(3);
-        DayOfWeekHelper.DayNameToSqlInt("Thursday").Should().Be(4);
-        DayOfWeekHelper.DayNameToSqlInt("Friday").Should().Be(5);
+        Assert.Equal(1, DayOfWeekHelper.DayNameToSqlInt("Monday"));
+        Assert.Equal(2, DayOfWeekHelper.DayNameToSqlInt("Tuesday"));
+        Assert.Equal(3, DayOfWeekHelper.DayNameToSqlInt("Wednesday"));
+        Assert.Equal(4, DayOfWeekHelper.DayNameToSqlInt("Thursday"));
+        Assert.Equal(5, DayOfWeekHelper.DayNameToSqlInt("Friday"));
     }
 
-    #endregion
 }

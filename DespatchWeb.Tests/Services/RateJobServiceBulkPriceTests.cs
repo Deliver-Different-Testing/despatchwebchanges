@@ -3,7 +3,6 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
 
@@ -12,13 +11,15 @@ namespace DespatchWeb.Tests.Services;
 /// <summary>
 /// Tests for RateJobService.ApplyBulkPriceUpdateAsync - the bulk job reprice feature.
 /// </summary>
-public class RateJobServiceBulkPriceTests
+public class RateJobServiceBulkPriceTests : IDisposable
 {
+    private readonly HttpClient _httpClient = new();
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
     private readonly Mock<IJobReportService> _jobReportServiceMock = new();
     private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
+    private static readonly int[] Expected = [1, 2, 3];
 
     public RateJobServiceBulkPriceTests()
     {
@@ -28,16 +29,16 @@ public class RateJobServiceBulkPriceTests
             .ReturnsAsync([]); // Empty list = all jobs accessible
     }
 
+    public void Dispose() => _httpClient.Dispose();
+
     private RateJobService CreateService() => new(
         _jobRepositoryMock.Object,
-        new HttpClient(),
+        _httpClient,
         _tenantInfoServiceMock.Object,
         _httpContextAccessorMock.Object,
         _jobReportServiceMock.Object,
         _pricingPermissionServiceMock.Object
     );
-
-    #region Empty/No Data Tests
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_EmptyFile_ReturnsEmptyResponse()
@@ -53,11 +54,11 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "recalculate");
 
         // Assert
-        result.Should().NotBeNull();
-        result.Rows.Should().BeEmpty();
-        result.TotalJobs.Should().Be(0);
-        result.TotalOldAmount.Should().Be(0);
-        result.TotalNewAmount.Should().Be(0);
+        Assert.NotNull(result);
+        Assert.Empty(result.Rows);
+        Assert.Equal(0, result.TotalJobs);
+        Assert.Equal(0, result.TotalOldAmount);
+        Assert.Equal(0, result.TotalNewAmount);
     }
 
     [Fact]
@@ -77,13 +78,9 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        result.Rows.Should().BeEmpty();
-        result.TotalJobs.Should().Be(0);
+        Assert.Empty(result.Rows);
+        Assert.Equal(0, result.TotalJobs);
     }
-
-    #endregion
-
-    #region Gross Mode Tests
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_GrossMode_UpdatesAmountDirectly()
@@ -112,10 +109,10 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        result.Rows.Should().HaveCount(2);
-        result.TotalJobs.Should().Be(2);
-        result.TotalOldAmount.Should().Be(250m); // 100 + 150
-        result.TotalNewAmount.Should().Be(500m); // 200 + 300
+        Assert.Equal(2, result.Rows.Count);
+        Assert.Equal(2, result.TotalJobs);
+        Assert.Equal(250m, result.TotalOldAmount); // 100 + 150
+        Assert.Equal(500m, result.TotalNewAmount); // 200 + 300
 
         // Verify UpdateManualPriceAsync was called for gross mode
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(parsedData), Times.Once);
@@ -141,14 +138,10 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        result.Rows.Should().HaveCount(1);
-        result.Rows[0].OldAmount.Should().Be(100m);
-        result.Rows[0].NewAmount.Should().Be(100m); // Falls back to old amount
+        Assert.Single(result.Rows);
+        Assert.Equal(100m, result.Rows[0].OldAmount);
+        Assert.Equal(100m, result.Rows[0].NewAmount); // Falls back to old amount
     }
-
-    #endregion
-
-    #region Base Mode Tests
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_BaseMode_CallsUpdateManualPriceWithCorrectValues()
@@ -183,24 +176,24 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert
-        result.Rows.Should().HaveCount(1);
-        result.Rows[0].OldAmount.Should().Be(100m);
-        result.Rows[0].NewAmount.Should().Be(175m);
+        Assert.Single(result.Rows);
+        Assert.Equal(100m, result.Rows[0].OldAmount);
+        Assert.Equal(175m, result.Rows[0].NewAmount);
 
         // Verify UpdateManualPriceAsync was called with correct values
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Once);
 
-        capturedModels.Should().NotBeNull();
-        capturedModels!.Should().HaveCount(1);
+        Assert.NotNull(capturedModels);
+        Assert.Single(capturedModels!);
         var model = capturedModels[0];
-        model.Id.Should().Be(1);
-        model.Amount.Should().Be(175m);
-        model.RawBaseAmount.Should().Be(150m);
-        model.Fuel.Should().Be(25m); // 175 - 150 = 25
-        model.Ppd.Should().Be(0m);
-        model.CourierPayment.Should().Be(50m); // Preserved from existing
-        model.CourierFuel.Should().Be(5m); // Preserved from existing
-        model.CourierBonus.Should().Be(0m); // Preserved from existing
+        Assert.Equal(1, model.Id);
+        Assert.Equal(175m, model.Amount);
+        Assert.Equal(150m, model.RawBaseAmount);
+        Assert.Equal(25m, model.Fuel); // 175 - 150 = 25
+        Assert.Equal(0m, model.Ppd);
+        Assert.Equal(50m, model.CourierPayment); // Preserved from existing
+        Assert.Equal(5m, model.CourierFuel); // Preserved from existing
+        Assert.Equal(0m, model.CourierBonus); // Preserved from existing
 
         // RepriceJobWithBaseAmountAsync should NOT be called for non-prebook jobs
         _jobRepositoryMock.Verify(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()), Times.Never);
@@ -210,7 +203,7 @@ public class RateJobServiceBulkPriceTests
     public async Task ApplyBulkPriceUpdateAsync_BaseMode_HandlesCalculationFailure()
     {
         // Arrange
-        var fileMock = CreateMockFile("test.xlsx", "");
+        var fileMock = CreateMockFile("test.xlsx", string.Empty);
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 150m }]);
 
@@ -234,16 +227,16 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - falls back to base amount (no fuel) when calculation fails
-        result.Rows.Should().HaveCount(1);
-        result.Rows[0].OldAmount.Should().Be(100m);
-        result.Rows[0].NewAmount.Should().Be(150m); // Falls back to base amount
+        Assert.Single(result.Rows);
+        Assert.Equal(100m, result.Rows[0].OldAmount);
+        Assert.Equal(150m, result.Rows[0].NewAmount); // Falls back to base amount
     }
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_BaseMode_PrebookUsesRepriceMethod()
     {
         // Arrange - prebook jobs use the old method since TucJobBooking lacks RawBaseAmount field
-        var fileMock = CreateMockFile("test.xlsx", "");
+        var fileMock = CreateMockFile("test.xlsx", string.Empty);
         _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
             .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
@@ -271,7 +264,7 @@ public class RateJobServiceBulkPriceTests
         // UpdateManualPriceAsync should NOT be called for prebook-only updates
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
 
-        result.Rows[0].NewAmount.Should().Be(120m);
+        Assert.Equal(120m, result.Rows[0].NewAmount);
     }
 
     [Fact]
@@ -310,11 +303,11 @@ public class RateJobServiceBulkPriceTests
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - courier values from file should override existing values
-        capturedModels.Should().NotBeNull();
+        Assert.NotNull(capturedModels);
         var model = capturedModels![0];
-        model.CourierPayment.Should().Be(75m); // From file
-        model.CourierFuel.Should().Be(10m); // From file
-        model.CourierBonus.Should().Be(5m); // From file
+        Assert.Equal(75m, model.CourierPayment); // From file
+        Assert.Equal(10m, model.CourierFuel); // From file
+        Assert.Equal(5m, model.CourierBonus); // From file
     }
 
     [Fact]
@@ -359,12 +352,12 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert
-        result.Rows.Should().HaveCount(2);
+        Assert.Equal(2, result.Rows.Count);
 
         // UpdateManualPriceAsync should only contain the non-prebook job
-        capturedModels.Should().NotBeNull();
-        capturedModels!.Should().HaveCount(1);
-        capturedModels[0].Id.Should().Be(1);
+        Assert.NotNull(capturedModels);
+        Assert.Single(capturedModels!);
+        Assert.Equal(1, capturedModels[0].Id);
 
         // RepriceJobWithBaseAmountAsync should be called for prebook job
         _jobRepositoryMock.Verify(x => x.RepriceJobWithBaseAmountAsync(
@@ -403,10 +396,10 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert
-        result.Rows[0].NewAmount.Should().Be(0m);
-        capturedModels.Should().NotBeNull();
-        capturedModels![0].RawBaseAmount.Should().Be(0m);
-        capturedModels[0].Amount.Should().Be(0m);
+        Assert.Equal(0m, result.Rows[0].NewAmount);
+        Assert.NotNull(capturedModels);
+        Assert.Equal(0m, capturedModels![0].RawBaseAmount);
+        Assert.Equal(0m, capturedModels[0].Amount);
     }
 
     [Fact]
@@ -445,14 +438,14 @@ public class RateJobServiceBulkPriceTests
 
         // Assert - all 3 jobs should be batched in one call
         _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Once);
-        capturedModels.Should().NotBeNull();
-        capturedModels!.Should().HaveCount(3);
-        capturedModels.Select(m => m.Id).Should().BeEquivalentTo([1, 2, 3]);
+        Assert.NotNull(capturedModels);
+        Assert.Equal(3, capturedModels!.Count);
+        Assert.Equivalent(Expected, capturedModels.Select(m => m.Id));
 
         // Verify fuel calculations
-        capturedModels.First(m => m.Id == 1).Fuel.Should().Be(15m); // 115 - 100
-        capturedModels.First(m => m.Id == 2).Fuel.Should().Be(30m); // 230 - 200
-        capturedModels.First(m => m.Id == 3).Fuel.Should().Be(45m); // 345 - 300
+        Assert.Equal(15m, capturedModels.First(m => m.Id == 1).Fuel); // 115 - 100
+        Assert.Equal(30m, capturedModels.First(m => m.Id == 2).Fuel); // 230 - 200
+        Assert.Equal(45m, capturedModels.First(m => m.Id == 3).Fuel); // 345 - 300
     }
 
     [Fact]
@@ -493,11 +486,11 @@ public class RateJobServiceBulkPriceTests
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - CourierPayment from file, others from existing
-        capturedModels.Should().NotBeNull();
+        Assert.NotNull(capturedModels);
         var model = capturedModels![0];
-        model.CourierPayment.Should().Be(80m); // From file
-        model.CourierFuel.Should().Be(10m); // From existing
-        model.CourierBonus.Should().Be(5m); // From existing
+        Assert.Equal(80m, model.CourierPayment); // From file
+        Assert.Equal(10m, model.CourierFuel); // From existing
+        Assert.Equal(5m, model.CourierBonus); // From existing
     }
 
     [Fact]
@@ -526,8 +519,8 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - row still returned with the calculated amount from before failure
-        result.Rows.Should().HaveCount(1);
-        result.Rows[0].NewAmount.Should().Be(120m); // From GetTotalAmountFromBaseAsync
+        Assert.Single(result.Rows);
+        Assert.Equal(120m, result.Rows[0].NewAmount); // From GetTotalAmountFromBaseAsync
     }
 
     [Fact]
@@ -561,8 +554,8 @@ public class RateJobServiceBulkPriceTests
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert - Ppd should be 0, not from file or existing
-        capturedModels.Should().NotBeNull();
-        capturedModels![0].Ppd.Should().Be(0m);
+        Assert.NotNull(capturedModels);
+        Assert.Equal(0m, capturedModels![0].Ppd);
     }
 
     [Fact]
@@ -592,9 +585,9 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert
-        result.TotalOldAmount.Should().Be(230m); // 80 + 150
-        result.TotalNewAmount.Should().Be(345m); // 115 + 230
-        result.TotalJobs.Should().Be(2);
+        Assert.Equal(230m, result.TotalOldAmount); // 80 + 150
+        Assert.Equal(345m, result.TotalNewAmount); // 115 + 230
+        Assert.Equal(2, result.TotalJobs);
     }
 
     [Fact]
@@ -626,15 +619,11 @@ public class RateJobServiceBulkPriceTests
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
 
         // Assert
-        capturedModels.Should().NotBeNull();
-        capturedModels![0].Amount.Should().Be(100m);
-        capturedModels[0].RawBaseAmount.Should().Be(100m);
-        capturedModels[0].Fuel.Should().Be(0m); // No fuel surcharge
+        Assert.NotNull(capturedModels);
+        Assert.Equal(100m, capturedModels![0].Amount);
+        Assert.Equal(100m, capturedModels[0].RawBaseAmount);
+        Assert.Equal(0m, capturedModels[0].Fuel); // No fuel surcharge
     }
-
-    #endregion
-
-    #region Recalculate Mode Tests
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_RecalculateMode_RecalculatesAndGetsNewAmount()
@@ -704,17 +693,13 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "recalculate");
 
         // Assert
-        result.Rows.Should().HaveCount(1);
-        result.Rows[0].OldAmount.Should().Be(100m);
-        result.Rows[0].NewAmount.Should().Be(180m);
+        Assert.Single(result.Rows);
+        Assert.Equal(100m, result.Rows[0].OldAmount);
+        Assert.Equal(180m, result.Rows[0].NewAmount);
 
         // Verify the rating method was called
         _jobRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
     }
-
-    #endregion
-
-    #region Multiple Jobs Tests
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_MultipleJobs_CalculatesTotalsCorrectly()
@@ -742,9 +727,9 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        result.TotalJobs.Should().Be(3);
-        result.TotalOldAmount.Should().Be(300m); // 50 + 100 + 150
-        result.TotalNewAmount.Should().Be(600m); // 100 + 200 + 300
+        Assert.Equal(3, result.TotalJobs);
+        Assert.Equal(300m, result.TotalOldAmount); // 50 + 100 + 150
+        Assert.Equal(600m, result.TotalNewAmount); // 100 + 200 + 300
     }
 
     [Fact]
@@ -770,12 +755,8 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert - processes each row separately
-        result.Rows.Should().HaveCount(2);
+        Assert.Equal(2, result.Rows.Count);
     }
-
-    #endregion
-
-    #region Response Structure Tests
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_ResponseContainsCorrectJobInfo()
@@ -797,18 +778,14 @@ public class RateJobServiceBulkPriceTests
         var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        var row = result.Rows.Single();
-        row.JobId.Should().Be(42);
-        row.JobNo.Should().Be("TEST-042");
-        row.Field.Should().Be("Amount");
-        row.OldAmount.Should().Be(250m);
-        row.NewAmount.Should().Be(500m);
-        row.IsPrebook.Should().BeTrue();
+        var row = Assert.Single(result.Rows);
+        Assert.Equal(42, row.JobId);
+        Assert.Equal("TEST-042", row.JobNo);
+        Assert.Equal("Amount", row.Field);
+        Assert.Equal(250m, row.OldAmount);
+        Assert.Equal(500m, row.NewAmount);
+        Assert.True(row.IsPrebook);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static Mock<IFormFile> CreateMockFile(string fileName, string content)
     {
@@ -825,5 +802,4 @@ public class RateJobServiceBulkPriceTests
         return fileMock;
     }
 
-    #endregion
 }

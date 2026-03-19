@@ -10,8 +10,6 @@ import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID, TimeZone} from "../../contants";
 import {JobProperty} from "../../enums/job-property.enum";
-import NavigationService from "../../services/navigation.service";
-import greetUser from "../../functions/greetUser";
 import {AppPage} from "../../enums/app-pages.enum";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import JobSearchBoxes from "./enums/jobSearchBoxes";
@@ -49,7 +47,6 @@ class JobSearchController extends BaseController {
         'DispatchData',
         '$mdSidenav',
         '$document',
-        "navigationService",
         "messagingDialogService",
         "createJobDialogService",
         "accessorialChargesDialogService",
@@ -117,7 +114,6 @@ class JobSearchController extends BaseController {
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
         private $document: angular.IDocumentService,
-        private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
         private createJobDialogService: CreateJobDialogService,
         private accessorialChargesDialogService: AccessorialChargesDialogService,
@@ -745,10 +741,6 @@ class JobSearchController extends BaseController {
                 console.log('Sidenav not available:', error);
             }
         }
-    }
-
-    greetUser() {
-        return greetUser(FirstName);
     }
 
     async selectAndDispatchJob($event: MouseEvent, job: IDispatchJob) {

@@ -1,7 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -96,8 +95,6 @@ public class DeliveryJourneyServiceTests
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
-    #region Constructor Tests
-
     [Fact]
     public void Constructor_WithValidDependencies_CreatesService()
     {
@@ -105,13 +102,9 @@ public class DeliveryJourneyServiceTests
         var service = CreateService();
 
         // Assert
-        service.Should().NotBeNull();
-        service.Should().BeAssignableTo<IDeliveryJourneyService>();
+        Assert.NotNull(service);
+        Assert.IsType<IDeliveryJourneyService>(service, exactMatch: false);
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Basic Tests
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithNoData_ReturnsEmptyList()
@@ -124,8 +117,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -138,13 +131,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(999);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
+        Assert.NotNull(result);
+        Assert.Empty(result);
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Tasks (Events)
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithEvents_ReturnsTaskEntries()
@@ -167,12 +156,12 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Call customer");
-        result[0].Icon.Should().Be("task");
-        result[0].Tags.Should().Contain("Task");
-        result[0].Tags.Should().Contain("In Progress");
-        result[0].Tags.Should().Contain("Created by John Doe");
+        Assert.Single(result);
+        Assert.Equal("Call customer", result[0].Title);
+        Assert.Equal("task", result[0].Icon);
+        Assert.Contains("Task", result[0].Tags);
+        Assert.Contains("In Progress", result[0].Tags);
+        Assert.Contains("Created by John Doe", result[0].Tags);
     }
 
     [Fact]
@@ -196,9 +185,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain("Completed");
-        result[0].Tags.Should().Contain("Created by Jane Smith");
+        Assert.Single(result);
+        Assert.Contains("Completed", result[0].Tags);
+        Assert.Contains("Created by Jane Smith", result[0].Tags);
     }
 
     [Fact]
@@ -233,14 +222,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(e => e.Title == "First task");
-        result.Should().Contain(e => e.Title == "Second task");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, e => e.Title == "First task");
+        Assert.Contains(result, e => e.Title == "Second task");
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Notes (Live)
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_ReturnsNoteEntries()
@@ -261,11 +246,11 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Note added by System");
-        result[0].Description.Should().Be("Customer called about delivery");
-        result[0].Icon.Should().Be("sticky_note_2");
-        result[0].Tags.Should().Contain("Note");
+        Assert.Single(result);
+        Assert.Equal("Note added by System", result[0].Title);
+        Assert.Equal("Customer called about delivery", result[0].Description);
+        Assert.Equal("sticky_note_2", result[0].Icon);
+        Assert.Contains("Note", result[0].Tags);
     }
 
     [Fact]
@@ -296,9 +281,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(n => n.Description == "First note");
-        result.Should().Contain(n => n.Description == "Second note");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, n => n.Description == "First note");
+        Assert.Contains(result, n => n.Description == "Second note");
     }
 
     [Fact]
@@ -319,9 +304,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — wall-clock time preserved (09:00 stays 09:00), only offset label applied
-        result.Should().HaveCount(1);
-        result[0].Date.Hour.Should().Be(9);
-        result[0].Date.Offset.Should().Be(TimeSpan.FromHours(13));
+        Assert.Single(result);
+        Assert.Equal(9, result[0].Date.Hour);
+        Assert.Equal(TimeSpan.FromHours(13), result[0].Date.Offset);
     }
 
     [Fact]
@@ -343,8 +328,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — should use UpdatedDate (09:00 local preserved), not CreatedDate (02:00)
-        result.Should().HaveCount(1);
-        result[0].Date.Hour.Should().Be(9);
+        Assert.Single(result);
+        Assert.Equal(9, result[0].Date.Hour);
     }
 
     [Fact]
@@ -366,8 +351,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — tag should show 01/15/2024 15:00 (same day, wall-clock preserved)
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain(t => t.Contains("Alice Smith") && t.Contains("01/15/2024 15:00"));
+        Assert.Single(result);
+        Assert.Contains(result[0].Tags, t => t.Contains("Alice Smith") && t.Contains("01/15/2024 15:00"));
     }
 
     [Fact]
@@ -392,13 +377,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — Updated tag should show preserved wall-clock date (01/15/2024 15:00)
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain(t => t.Contains("Bob Jones") && t.Contains("01/15/2024 15:00"));
+        Assert.Single(result);
+        Assert.Contains(result[0].Tags, t => t.Contains("Bob Jones") && t.Contains("01/15/2024 15:00"));
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Notes (Archived)
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_ReturnsNoteEntries()
@@ -418,10 +399,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Note added by System");
-        result[0].Description.Should().Be("Archived note content");
-        result[0].Icon.Should().Be("sticky_note_2");
+        Assert.Single(result);
+        Assert.Equal("Note added by System", result[0].Title);
+        Assert.Equal("Archived note content", result[0].Description);
+        Assert.Equal("sticky_note_2", result[0].Icon);
     }
 
     [Fact]
@@ -440,9 +421,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — wall-clock time preserved (09:00 stays 09:00), only offset label applied
-        result.Should().HaveCount(1);
-        result[0].Date.Hour.Should().Be(9);
-        result[0].Date.Offset.Should().Be(TimeSpan.FromHours(13));
+        Assert.Single(result);
+        Assert.Equal(9, result[0].Date.Hour);
+        Assert.Equal(TimeSpan.FromHours(13), result[0].Date.Offset);
     }
 
     [Fact]
@@ -463,8 +444,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — should use UpdatedDate (09:00 local preserved), not CreatedDate
-        result.Should().HaveCount(1);
-        result[0].Date.Hour.Should().Be(9);
+        Assert.Single(result);
+        Assert.Equal(9, result[0].Date.Hour);
     }
 
     [Fact]
@@ -485,9 +466,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — tags should show preserved wall-clock dates (same day, not shifted)
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain(t => t.Contains("Created on") && t.Contains("01/15/2024 15:00"));
-        result[0].Tags.Should().Contain(t => t.Contains("Updated on") && t.Contains("01/16/2024 15:00"));
+        Assert.Single(result);
+        Assert.Contains(result[0].Tags, t => t.Contains("Created on") && t.Contains("01/15/2024 15:00"));
+        Assert.Contains(result[0].Tags, t => t.Contains("Updated on") && t.Contains("01/16/2024 15:00"));
     }
 
     [Fact]
@@ -505,13 +486,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert — should fall back to DateTime.MinValue with offset applied
-        result.Should().HaveCount(1);
-        result[0].Date.DateTime.Should().Be(DateTime.MinValue);
+        Assert.Single(result);
+        Assert.Equal(DateTime.MinValue, result[0].Date.DateTime);
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Messages
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithEmailMessage_ReturnsEmailEntry()
@@ -533,11 +510,11 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Delivery confirmation");
-        result[0].Description.Should().Be("Your package has been delivered");
-        result[0].Tags.Should().Contain("Email");
-        result[0].Tags.Should().Contain("Sent to customer@example.com");
+        Assert.Single(result);
+        Assert.Equal("Delivery confirmation", result[0].Title);
+        Assert.Equal("Your package has been delivered", result[0].Description);
+        Assert.Contains("Email", result[0].Tags);
+        Assert.Contains("Sent to customer@example.com", result[0].Tags);
     }
 
     [Fact]
@@ -560,14 +537,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain("SMS");
-        result[0].Tags.Should().Contain("Sent to +1234567890");
+        Assert.Single(result);
+        Assert.Contains("SMS", result[0].Tags);
+        Assert.Contains("Sent to +1234567890", result[0].Tags);
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Combined Results & Ordering
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithMixedData_ReturnsSortedByDateDescending()
@@ -607,16 +580,12 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(3);
+        Assert.Equal(3, result.Count);
         // Should be sorted descending by date
-        result[0].Description.Should().Be("Late note"); // 16:00
-        result[1].Title.Should().Be("Mid-day message"); // 12:00
-        result[2].Title.Should().Be("Early task"); // 08:00
+        Assert.Equal("Late note", result[0].Description); // 16:00
+        Assert.Equal("Mid-day message", result[1].Title); // 12:00
+        Assert.Equal("Early task", result[2].Title); // 08:00
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Tenant Configuration
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_NzTenant_UsesCorrectDateFormat()
@@ -639,9 +608,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
+        Assert.Single(result);
         // NZ format: dd/MM/yyyy HH:mm - archived notes use "Created on {date}"
-        result[0].Tags.Should().Contain(t => t.Contains("15/01/2024"));
+        Assert.Contains(result[0].Tags, t => t.Contains("15/01/2024"));
     }
 
     [Fact]
@@ -665,14 +634,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
+        Assert.Single(result);
         // US format: MM/dd/yyyy HH:mm - archived notes use "Created on {date}"
-        result[0].Tags.Should().Contain(t => t.Contains("01/15/2024"));
+        Assert.Contains(result[0].Tags, t => t.Contains("01/15/2024"));
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Edge Cases
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_FiltersByJobId()
@@ -704,8 +669,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Job 1 event");
+        Assert.Single(result);
+        Assert.Equal("Job 1 event", result[0].Title);
     }
 
     [Fact]
@@ -736,10 +701,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].Id.Should().NotBe(result[1].Id);
-        result[0].Id.Should().NotBe(Guid.Empty);
-        result[1].Id.Should().NotBe(Guid.Empty);
+        Assert.Equal(2, result.Count);
+        Assert.NotEqual(result[1].Id, result[0].Id);
+        Assert.NotEqual(Guid.Empty, result[0].Id);
+        Assert.NotEqual(Guid.Empty, result[1].Id);
     }
 
     [Fact]
@@ -769,13 +734,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(42);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().OnlyContain(e => e.JobId == 42);
+        Assert.Equal(2, result.Count);
+        Assert.All(result, e => Assert.Equal(42, e.JobId));
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - Status Updates (Live)
 
     private async Task SeedStatusUpdatesAsync(params JobDeliveryJourney[] updates)
     {
@@ -804,9 +765,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Status Changed");
-        result[0].JobId.Should().Be(1);
+        Assert.Single(result);
+        Assert.Equal("Status Changed", result[0].Title);
+        Assert.Equal(1, result[0].JobId);
     }
 
     [Fact]
@@ -828,8 +789,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Courier Assignment Changed");
+        Assert.Single(result);
+        Assert.Equal("Courier Assignment Changed", result[0].Title);
     }
 
     [Fact]
@@ -851,8 +812,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Agent Assignment Changed");
+        Assert.Single(result);
+        Assert.Equal("Agent Assignment Changed", result[0].Title);
     }
 
     [Fact]
@@ -877,9 +838,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Status Updated");
-        result[0].Tags.Should().Contain("Status: Booked → Dispatched");
+        Assert.Single(result);
+        Assert.Equal("Status Updated", result[0].Title);
+        Assert.Contains("Status: Booked → Dispatched", result[0].Tags);
     }
 
     [Fact]
@@ -904,10 +865,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Amount Updated");
+        Assert.Single(result);
+        Assert.Equal("Amount Updated", result[0].Title);
         // Currency formatting is locale-dependent, so check the tag contains the field name
-        result[0].Tags.Should().Contain(t => t.StartsWith("Amount:"));
+        Assert.Contains(result[0].Tags, t => t.StartsWith("Amount:"));
     }
 
     [Fact]
@@ -932,9 +893,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Voided Updated");
-        result[0].Tags.Should().Contain("Voided: No → Yes");
+        Assert.Single(result);
+        Assert.Equal("Voided Updated", result[0].Title);
+        Assert.Contains("Voided: No → Yes", result[0].Tags);
     }
 
     [Fact]
@@ -959,8 +920,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain("Client Ref A: REF-123 → (cleared)");
+        Assert.Single(result);
+        Assert.Contains("Client Ref A: REF-123 → (cleared)", result[0].Tags);
     }
 
     [Fact]
@@ -985,8 +946,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain("Connote: CON-456");
+        Assert.Single(result);
+        Assert.Contains("Connote: CON-456", result[0].Tags);
     }
 
     [Fact]
@@ -1019,8 +980,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert - only the JobUpdate should be returned, not InternalStatus
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Locked Updated");
+        Assert.Single(result);
+        Assert.Equal("Locked Updated", result[0].Title);
     }
 
     [Fact]
@@ -1056,8 +1017,8 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert - both updates at same timestamp should be grouped into one entry
-        result.Should().HaveCount(1);
-        result[0].Tags.Should().Contain(t => t.StartsWith("Status:"));
+        Assert.Single(result);
+        Assert.Contains(result[0].Tags, t => t.StartsWith("Status:"));
     }
 
     [Fact]
@@ -1092,7 +1053,7 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert - different timestamps = separate entries
-        result.Should().HaveCount(2);
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -1117,9 +1078,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Weight Updated");
-        result[0].Tags.Should().Contain("Weight: 2.50 kg → 5.75 kg");
+        Assert.Single(result);
+        Assert.Equal("Weight Updated", result[0].Title);
+        Assert.Contains("Weight: 2.50 kg → 5.75 kg", result[0].Tags);
     }
 
     [Fact]
@@ -1143,9 +1104,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Distance (km) Updated");
-        result[0].Tags.Should().Contain("Distance (km): 12.3 km");
+        Assert.Single(result);
+        Assert.Equal("Distance (km) Updated", result[0].Title);
+        Assert.Contains("Distance (km): 12.3 km", result[0].Tags);
     }
 
     [Fact]
@@ -1177,14 +1138,10 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().Contain(e => e.Title == "Attention Flag Updated");
-        result.Should().Contain(e => e.Description == "Flagged for attention");
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, e => e.Title == "Attention Flag Updated");
+        Assert.Contains(result, e => e.Description == "Flagged for attention");
     }
-
-    #endregion
-
-    #region GetDeliveryJourneyForJobAsync - FormatFieldName via Field Tags
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_FormatsAddressFieldNames()
@@ -1208,9 +1165,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Title.Should().Be("Pickup Address Updated");
-        result[0].Tags.Should().Contain("Pickup Address: 123 Old St → 456 New Ave");
+        Assert.Single(result);
+        Assert.Equal("Pickup Address Updated", result[0].Title);
+        Assert.Contains("Pickup Address: 123 Old St → 456 New Ave", result[0].Tags);
     }
 
     [Fact]
@@ -1234,10 +1191,9 @@ public class DeliveryJourneyServiceTests
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
         // Assert
-        result.Should().HaveCount(1);
+        Assert.Single(result);
         // ConvertToTitleCase should split camelCase: "CustomNewField" -> "Custom New Field"
-        result[0].Title.Should().Be("Custom New Field Updated");
+        Assert.Equal("Custom New Field Updated", result[0].Title);
     }
 
-    #endregion
 }

@@ -77,11 +77,10 @@ export const recurringJobsHandlers = [
     }),
 
     // Void a prebook job
-    http.get('*/job/VoidPrebookJob', ({ request }) => {
-        const url = new URL(request.url);
-        const jobId = url.searchParams.get('jobId');
+    http.post('*/job/VoidPrebookJob', async ({ request }) => {
+        const body = await request.json() as Record<string, unknown>;
 
-        if (!jobId) {
+        if (!body?.jobId) {
             return new HttpResponse('Missing jobId parameter', { status: 400 });
         }
 

@@ -4,8 +4,8 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Moq;
 
@@ -15,8 +15,9 @@ namespace DespatchWeb.Tests.Services;
 /// Tests for RateJobService methods: RateJobNzAsync, RateJobUsAsync, GetJobRateNzAsync, GetJobRateUsAsync,
 /// and related helpers. Bulk price tests are covered in RateJobServiceBulkPriceTests.
 /// </summary>
-public class RateJobServiceTests
+public class RateJobServiceTests : IDisposable
 {
+    private readonly HttpClient _httpClient = new();
     private readonly Mock<IJobRepository> _jobRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
@@ -37,16 +38,16 @@ public class RateJobServiceTests
         Environment.SetEnvironmentVariable("HereMapsAPIKey", "test-api-key");
     }
 
+    public void Dispose() => _httpClient.Dispose();
+
     private RateJobService CreateService(HttpClient? httpClient = null) => new(
         _jobRepositoryMock.Object,
-        httpClient ?? new HttpClient(),
+        httpClient ?? _httpClient,
         _tenantInfoServiceMock.Object,
         _httpContextAccessorMock.Object,
         _jobReportServiceMock.Object,
         _pricingPermissionServiceMock.Object
     );
-
-    #region MockHttpMessageHandler
 
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string content)
     {
@@ -64,18 +65,15 @@ public class RateJobServiceTests
             });
     }
 
-    #endregion
-
-    #region RateJobNzAsync - Validation Tests
-
     [Fact]
     public async Task RateJobNzAsync_NullJobDetails_ThrowsArgumentNullException()
     {
         var service = CreateService();
 
-        var act = () => service.RateJobNzAsync(null!);
+        await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        Task Act() => service.RateJobNzAsync(null!);
     }
 
     [Fact]
@@ -84,10 +82,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(clientId: null);
 
-        var act = () => service.RateJobNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("ClientId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
+        Task Act() => service.RateJobNzAsync(jobDetails);
     }
 
     [Fact]
@@ -96,10 +96,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(fromId: null);
 
-        var act = () => service.RateJobNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("FromId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("FromId"));
+        Task Act() => service.RateJobNzAsync(jobDetails);
     }
 
     [Fact]
@@ -108,10 +110,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(toId: null);
 
-        var act = () => service.RateJobNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("ToId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ToId"));
+        Task Act() => service.RateJobNzAsync(jobDetails);
     }
 
     [Fact]
@@ -120,10 +124,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(speedId: null);
 
-        var act = () => service.RateJobNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SpeedId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
+        Task Act() => service.RateJobNzAsync(jobDetails);
     }
 
     [Fact]
@@ -132,24 +138,23 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(sizeId: null);
 
-        var act = () => service.RateJobNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SizeId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
+        Task Act() => service.RateJobNzAsync(jobDetails);
     }
-
-    #endregion
-
-    #region RateJobUsAsync - Validation Tests
 
     [Fact]
     public async Task RateJobUsAsync_NullJobDetails_ThrowsArgumentNullException()
     {
         var service = CreateService();
 
-        var act = () => service.RateJobUsAsync(null!);
+        await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        Task Act() => service.RateJobUsAsync(null!);
     }
 
     [Fact]
@@ -158,10 +163,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(speedId: null);
 
-        var act = () => service.RateJobUsAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SpeedId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
+        Task Act() => service.RateJobUsAsync(jobDetails);
     }
 
     [Fact]
@@ -170,10 +177,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(clientId: null);
 
-        var act = () => service.RateJobUsAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("ClientId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
+        Task Act() => service.RateJobUsAsync(jobDetails);
     }
 
     [Fact]
@@ -182,15 +191,13 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(sizeId: null);
 
-        var act = () => service.RateJobUsAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SizeId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
+        Task Act() => service.RateJobUsAsync(jobDetails);
     }
-
-    #endregion
-
-    #region RateJobUsAsync - Road Distance Tests (Non-Flight)
 
     [Fact]
     public async Task RateJobUsAsync_NonFlightSpeed_CallsRateJobUsWithTotalMiles()
@@ -215,14 +222,14 @@ public class RateJobServiceTests
 
         // Assert
         _jobRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
-        capturedDto.Should().NotBeNull();
-        capturedDto!.TotalMiles.Should().Be(10m); // 16093 meters / 1609.344 = ~10 miles
-        capturedDto.FromMiles.Should().Be(0m); // Non-flight should not have FromMiles
-        capturedDto.ToMiles.Should().Be(0m); // Non-flight should not have ToMiles
-        capturedDto.ClientId.Should().Be(jobDetails.ClientId!.Value);
-        capturedDto.Speed.Should().Be(jobDetails.SpeedId!.Value);
-        capturedDto.Size.Should().Be(jobDetails.SizeId!.Value);
-        capturedDto.JobId.Should().Be(jobDetails.JobId);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(10m, capturedDto!.TotalMiles); // 16093 meters / 1609.344 = ~10 miles
+        Assert.Equal(0m, capturedDto.FromMiles); // Non-flight should not have FromMiles
+        Assert.Equal(0m, capturedDto.ToMiles); // Non-flight should not have ToMiles
+        Assert.Equal(jobDetails.ClientId!.Value, capturedDto.ClientId);
+        Assert.Equal(jobDetails.SpeedId!.Value, capturedDto.Speed);
+        Assert.Equal(jobDetails.SizeId!.Value, capturedDto.Size);
+        Assert.Equal(jobDetails.JobId, capturedDto.JobId);
     }
 
     [Fact]
@@ -244,8 +251,8 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        capturedDto.Should().NotBeNull();
-        capturedDto!.TotalMiles.Should().Be(0m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(0m, capturedDto!.TotalMiles);
     }
 
     [Fact]
@@ -280,8 +287,8 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert - only car sections summed: 16093 + 16093 = 32186 meters = ~20 miles
-        capturedDto.Should().NotBeNull();
-        capturedDto!.TotalMiles.Should().Be(20m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(20m, capturedDto!.TotalMiles);
     }
 
     [Fact]
@@ -327,30 +334,26 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        capturedDto.Should().NotBeNull();
-        capturedDto!.JobId.Should().Be(42);
-        capturedDto.ClientId.Should().Be(10);
-        capturedDto.Speed.Should().Be(1);
-        capturedDto.Size.Should().Be(3);
-        capturedDto.FromZip.Should().Be("10001");
-        capturedDto.ToZip.Should().Be("90210");
-        capturedDto.Weight.Should().Be(25); // cast to int
-        capturedDto.Booked.Should().Be(new DateTime(2026, 1, 15));
-        capturedDto.DangerousGoods.Should().BeTrue();
-        capturedDto.TotalPallets.Should().Be(2);
-        capturedDto.ExtraStopOffs.Should().Be(1);
-        capturedDto.DryIceWeight.Should().Be(5);
-        capturedDto.WaitTime.Should().Be(30);
-        capturedDto.Quantity.Should().Be(3);
-        capturedDto.Cubic.Should().Be(1.5m);
-        capturedDto.IsPrebook.Should().BeTrue();
-        capturedDto.CalculateDimsOncePerJob.Should().BeTrue();
-        capturedDto.PreviousRate.Should().Be(150.50m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(42, capturedDto!.JobId);
+        Assert.Equal(10, capturedDto.ClientId);
+        Assert.Equal(1, capturedDto.Speed);
+        Assert.Equal(3, capturedDto.Size);
+        Assert.Equal("10001", capturedDto.FromZip);
+        Assert.Equal("90210", capturedDto.ToZip);
+        Assert.Equal(25, capturedDto.Weight); // cast to int
+        Assert.Equal(new DateTime(2026, 1, 15), capturedDto.Booked);
+        Assert.True(capturedDto.DangerousGoods);
+        Assert.Equal(2, capturedDto.TotalPallets);
+        Assert.Equal(1, capturedDto.ExtraStopOffs);
+        Assert.Equal(5, capturedDto.DryIceWeight);
+        Assert.Equal(30, capturedDto.WaitTime);
+        Assert.Equal(3, capturedDto.Quantity);
+        Assert.Equal(1.5m, capturedDto.Cubic);
+        Assert.True(capturedDto.IsPrebook);
+        Assert.True(capturedDto.CalculateDimsOncePerJob);
+        Assert.Equal(150.50m, capturedDto.PreviousRate);
     }
-
-    #endregion
-
-    #region RateJobUsAsync - Flight Speed Tests
 
     [Fact]
     public async Task RateJobUsAsync_FlightSpeed_GetsClosestAirportsAndCalculatesFromToMiles()
@@ -397,14 +400,14 @@ public class RateJobServiceTests
         _jobRepositoryMock.Verify(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m), Times.Once);
         _jobRepositoryMock.Verify(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m), Times.Once);
 
-        capturedDto.Should().NotBeNull();
-        capturedDto!.FromMiles.Should().Be(5m); // 8046 meters / 1609.344 = ~5 miles
-        capturedDto.ToMiles.Should().Be(5m); // Same mock response for both calls
-        capturedDto.TotalMiles.Should().Be(0m); // Flight jobs do not set TotalMiles
-        capturedDto.FromAirportId.Should().Be(100);
-        capturedDto.ToAirportId.Should().Be(101);
-        capturedDto.FromAgentId.Should().Be(200);
-        capturedDto.ToAgentId.Should().Be(201);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(5m, capturedDto!.FromMiles); // 8046 meters / 1609.344 = ~5 miles
+        Assert.Equal(5m, capturedDto.ToMiles); // Same mock response for both calls
+        Assert.Equal(0m, capturedDto.TotalMiles); // Flight jobs do not set TotalMiles
+        Assert.Equal(100, capturedDto.FromAirportId);
+        Assert.Equal(101, capturedDto.ToAirportId);
+        Assert.Equal(200, capturedDto.FromAgentId);
+        Assert.Equal(201, capturedDto.ToAgentId);
     }
 
     [Fact]
@@ -437,23 +440,20 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert - zero coords return 0 miles for both legs
-        capturedDto.Should().NotBeNull();
-        capturedDto!.FromMiles.Should().Be(0m);
-        capturedDto.ToMiles.Should().Be(0m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(0m, capturedDto!.FromMiles);
+        Assert.Equal(0m, capturedDto.ToMiles);
     }
-
-    #endregion
-
-    #region GetJobRateNzAsync Tests
 
     [Fact]
     public async Task GetJobRateNzAsync_NullJobDetails_ThrowsArgumentNullException()
     {
         var service = CreateService();
 
-        var act = () => service.GetJobRateNzAsync(null!);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        Task<decimal> Act() => service.GetJobRateNzAsync(null!);
     }
 
     [Fact]
@@ -462,10 +462,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(clientId: null);
 
-        var act = () => service.GetJobRateNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("ClientId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
+        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -474,10 +476,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(fromId: null);
 
-        var act = () => service.GetJobRateNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("FromId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("FromId"));
+        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -486,10 +490,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(toId: null);
 
-        var act = () => service.GetJobRateNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("ToId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ToId"));
+        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -498,10 +504,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(speedId: null);
 
-        var act = () => service.GetJobRateNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SpeedId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
+        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -510,24 +518,23 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(sizeId: null);
 
-        var act = () => service.GetJobRateNzAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SizeId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
+        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
     }
-
-    #endregion
-
-    #region GetJobRateUsAsync Tests
 
     [Fact]
     public async Task GetJobRateUsAsync_NullJobDetails_ThrowsArgumentNullException()
     {
         var service = CreateService();
 
-        var act = () => service.GetJobRateUsAsync(null!);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        Task<decimal> Act() => service.GetJobRateUsAsync(null!);
     }
 
     [Fact]
@@ -536,10 +543,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(speedId: null);
 
-        var act = () => service.GetJobRateUsAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SpeedId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SpeedId"));
+        Task<decimal> Act() => service.GetJobRateUsAsync(jobDetails);
     }
 
     [Fact]
@@ -548,10 +557,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(clientId: null);
 
-        var act = () => service.GetJobRateUsAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("ClientId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("ClientId"));
+        Task<decimal> Act() => service.GetJobRateUsAsync(jobDetails);
     }
 
     [Fact]
@@ -560,10 +571,12 @@ public class RateJobServiceTests
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(sizeId: null);
 
-        var act = () => service.GetJobRateUsAsync(jobDetails);
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        Assert.Equal("jobDetails", ex.ParamName);
+        Assert.Contains("SizeId", ex.Message);
+        return;
 
-        await act.Should().ThrowAsync<ArgumentNullException>()
-            .Where(ex => ex.ParamName == "jobDetails" && ex.Message.Contains("SizeId"));
+        Task<decimal> Act() => service.GetJobRateUsAsync(jobDetails);
     }
 
     [Fact]
@@ -583,7 +596,7 @@ public class RateJobServiceTests
         var rate = await service.GetJobRateUsAsync(jobDetails);
 
         // Assert
-        rate.Should().Be(250.75m);
+        Assert.Equal(250.75m, rate);
         _jobRepositoryMock.Verify(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
     }
 
@@ -624,22 +637,18 @@ public class RateJobServiceTests
         await service.GetJobRateUsAsync(jobDetails);
 
         // Assert
-        capturedDto.Should().NotBeNull();
-        capturedDto!.JobId.Should().Be(99);
-        capturedDto.ClientId.Should().Be(5);
-        capturedDto.Speed.Should().Be(1);
-        capturedDto.Size.Should().Be(2);
-        capturedDto.FromZip.Should().Be("30301");
-        capturedDto.ToZip.Should().Be("60601");
-        capturedDto.Weight.Should().Be(10);
-        capturedDto.Quantity.Should().Be(2);
-        capturedDto.Cubic.Should().Be(0.5m);
-        capturedDto.IsPrebook.Should().BeFalse();
+        Assert.NotNull(capturedDto);
+        Assert.Equal(99, capturedDto!.JobId);
+        Assert.Equal(5, capturedDto.ClientId);
+        Assert.Equal(1, capturedDto.Speed);
+        Assert.Equal(2, capturedDto.Size);
+        Assert.Equal("30301", capturedDto.FromZip);
+        Assert.Equal("60601", capturedDto.ToZip);
+        Assert.Equal(10, capturedDto.Weight);
+        Assert.Equal(2, capturedDto.Quantity);
+        Assert.Equal(0.5m, capturedDto.Cubic);
+        Assert.False(capturedDto.IsPrebook);
     }
-
-    #endregion
-
-    #region CalculateMilesFromRoute (Indirect Tests via RateJobUsAsync)
 
     [Fact]
     public async Task RateJobUsAsync_EmptyRouteSections_ReturnsTotalMilesZero()
@@ -663,8 +672,8 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        capturedDto.Should().NotBeNull();
-        capturedDto!.TotalMiles.Should().Be(0m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(0m, capturedDto!.TotalMiles);
     }
 
     [Fact]
@@ -689,8 +698,8 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        capturedDto.Should().NotBeNull();
-        capturedDto!.TotalMiles.Should().Be(0m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(0m, capturedDto!.TotalMiles);
     }
 
     [Fact]
@@ -715,13 +724,9 @@ public class RateJobServiceTests
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        capturedDto.Should().NotBeNull();
-        capturedDto!.TotalMiles.Should().Be(0m);
+        Assert.NotNull(capturedDto);
+        Assert.Equal(0m, capturedDto!.TotalMiles);
     }
-
-    #endregion
-
-    #region Bulk Update - Void Field Handling
 
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_JobsWithVoidTrue_CallsUpdateJobVoidStatusAsync()
@@ -809,10 +814,6 @@ public class RateJobServiceTests
             Times.Once);
     }
 
-    #endregion
-
-    #region Bulk Update - Access Control
-
     [Fact]
     public async Task ApplyBulkPriceUpdateAsync_InaccessibleJobs_ThrowsUnauthorizedAccessException()
     {
@@ -831,12 +832,13 @@ public class RateJobServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
-
         // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("*do not have access*");
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>((Func<Task<BulkPricePreviewResponse>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("do not have access", ex.Message);
+        return;
+
+        // Act
+        Task<BulkPricePreviewResponse> Act() => service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
     }
 
     [Fact]
@@ -858,17 +860,14 @@ public class RateJobServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
-
         // Assert
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
-            .WithMessage("*2*");
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>((Func<Task<BulkPricePreviewResponse>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("2", ex.Message);
+        return;
+
+        // Act
+        Task<BulkPricePreviewResponse> Act() => service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
     }
-
-    #endregion
-
-    #region RateJobUsAsync - API Failure
 
     [Fact]
     public async Task RateJobUsAsync_HereMapsApiFailure_ThrowsApplicationException()
@@ -882,16 +881,13 @@ public class RateJobServiceTests
 
         var service = CreateService(httpClient);
 
-        // Act
-        var act = () => service.RateJobUsAsync(jobDetails);
-
         // Assert - exception propagates
-        await act.Should().ThrowAsync<ApplicationException>();
+        await Assert.ThrowsAsync<ApplicationException>(Act);
+        return;
+
+        // Act
+        Task Act() => service.RateJobUsAsync(jobDetails);
     }
-
-    #endregion
-
-    #region Helper Methods
 
     private static JobRatingDetailsDtoNz CreateValidNzJobDetails(
         int? clientId = 10, int? fromId = 100, int? toId = 200, int? speedId = 1, int? sizeId = 1) => new()
@@ -964,5 +960,4 @@ public class RateJobServiceTests
         return fileMock;
     }
 
-    #endregion
 }

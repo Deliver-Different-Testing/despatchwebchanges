@@ -2,7 +2,6 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -13,7 +12,6 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class CourierControllerTests
 {
-    #region Integration-like Tests
 
     [Fact]
     public async Task AllActiveSearch_MultipleCouriersReturned_ReturnsAllInCorrectOrder()
@@ -36,18 +34,16 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var couriers = jsonResult.Value as List<Suggestion>;
-        couriers.Should().HaveCount(3);
-        couriers[0].Text.Should().Contain("Alpha");
-        couriers[1].Text.Should().Contain("Beta");
-        couriers[2].Text.Should().Contain("Charlie");
+        if (jsonResult.Value is List<Suggestion> couriers)
+        {
+            Assert.Equal(3, couriers.Count);
+            Assert.Contains("Alpha", couriers[0].Text);
+            Assert.Contains("Beta", couriers[1].Text);
+            Assert.Contains("Charlie", couriers[2].Text);
+        }
     }
-
-    #endregion
-
-    #region Setup
 
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
@@ -62,10 +58,6 @@ public class CourierControllerTests
             _taskRepositoryMock.Object,
             _courierReportServiceMock.Object);
     }
-
-    #endregion
-
-    #region AllActiveSearch Tests
 
     [Fact]
     public async Task AllActiveSearch_ValidSearchTerm_ReturnsCouriers()
@@ -87,11 +79,11 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var couriers = jsonResult.Value as List<Suggestion>;
-        couriers.Should().NotBeNull();
-        couriers.Should().HaveCount(2);
+        Assert.NotNull(couriers);
+        Assert.Equal(2, couriers.Count);
     }
 
     [Fact]
@@ -114,7 +106,7 @@ public class CourierControllerTests
 
         // Assert
         _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, true, false), Times.Once);
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -137,7 +129,7 @@ public class CourierControllerTests
 
         // Assert
         _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, false, true), Times.Once);
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -160,7 +152,7 @@ public class CourierControllerTests
 
         // Assert
         _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, true, true), Times.Once);
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -169,6 +161,7 @@ public class CourierControllerTests
         // Arrange
         const string searchTerm = "test";
         var expectedCouriers = new List<Suggestion>();
+        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
         _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, false))
             .ReturnsAsync(expectedCouriers);
@@ -188,6 +181,7 @@ public class CourierControllerTests
         // Arrange
         const string searchTerm = "test";
         var expectedCouriers = new List<Suggestion>(); // Empty - no logged in couriers
+        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
         _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, true))
             .ReturnsAsync(expectedCouriers);
@@ -198,11 +192,11 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
         var couriers = jsonResult.Value as List<Suggestion>;
-        couriers.Should().NotBeNull();
-        couriers.Should().BeEmpty();
+        Assert.NotNull(couriers);
+        Assert.Empty(couriers);
     }
 
     [Fact]
@@ -220,9 +214,9 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
 
     [Fact]
@@ -231,6 +225,7 @@ public class CourierControllerTests
         // Arrange
         const string searchTerm = "";
         var expectedCouriers = new List<Suggestion>();
+        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
         _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, false))
             .ReturnsAsync(expectedCouriers);
@@ -250,6 +245,7 @@ public class CourierControllerTests
         // Arrange
         string? searchTerm = null;
         var expectedCouriers = new List<Suggestion>();
+        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
         _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm!, false, false))
             .ReturnsAsync(expectedCouriers);
@@ -262,10 +258,6 @@ public class CourierControllerTests
         // Assert
         _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm!, false, false), Times.Once);
     }
-
-    #endregion
-
-    #region Index (GetClearLists) Tests
 
     [Fact]
     public async Task Index_WithNoDates_PassesNullDatesToRepository()
@@ -285,7 +277,7 @@ public class CourierControllerTests
         // Assert
         _courierRepositoryMock.Verify(
             x => x.GetClearListsAsync(despatchViewIds, null, null), Times.Once);
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -308,7 +300,7 @@ public class CourierControllerTests
         // Assert
         _courierRepositoryMock.Verify(
             x => x.GetClearListsAsync(despatchViewIds, startDate, endDate), Times.Once);
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -329,7 +321,7 @@ public class CourierControllerTests
         // Assert
         _courierRepositoryMock.Verify(
             x => x.GetClearListsAsync(defaultIds, null, null), Times.Once);
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
     }
 
     [Fact]
@@ -347,21 +339,17 @@ public class CourierControllerTests
         var result = await controller.Index(despatchViewIds);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
-
-    #endregion
-
-    #region Export CSV Endpoint Tests
 
     [Fact]
     public async Task ExportTodayActiveDriversCsv_Success_ReturnsFileResult()
     {
         // Arrange
         var csvBytes = "Code,Name\nC001,John"u8.ToArray();
-        var fileName = "today-active-drivers-2026-02-18-1430.csv";
+        const string fileName = "today-active-drivers-2026-02-18-1430.csv";
 
         _courierReportServiceMock
             .Setup(x => x.GenerateTodayActiveDriversCsvAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
@@ -373,11 +361,11 @@ public class CourierControllerTests
         var result = await controller.ExportTodayActiveDriversCsv(new TodayActiveDriversFilterRequest());
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.ContentType.Should().Be("text/csv");
-        fileResult.FileDownloadName.Should().Be(fileName);
-        fileResult.FileContents.Should().BeEquivalentTo(csvBytes);
+        Assert.Equal("text/csv", fileResult.ContentType);
+        Assert.Equal(fileName, fileResult.FileDownloadName);
+        Assert.Equivalent(csvBytes, fileResult.FileContents);
     }
 
     [Fact]
@@ -394,9 +382,9 @@ public class CourierControllerTests
         var result = await controller.ExportTodayActiveDriversCsv(new TodayActiveDriversFilterRequest());
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
+        Assert.IsType<ObjectResult>(result);
         var objectResult = (ObjectResult)result;
-        objectResult.StatusCode.Should().Be(500);
+        Assert.Equal(500, objectResult.StatusCode);
     }
 
     [Fact]
@@ -404,7 +392,7 @@ public class CourierControllerTests
     {
         // Arrange
         var csvBytes = "Code,Name\nC001,John"u8.ToArray();
-        var fileName = "driver-compliance-2026-02-18-1430.csv";
+        const string fileName = "driver-compliance-2026-02-18-1430.csv";
 
         _courierReportServiceMock.Setup(x => x.GenerateComplianceCsvAsync(It.IsAny<CourierComplianceFilterRequest>()))
             .ReturnsAsync((csvBytes, fileName));
@@ -415,10 +403,10 @@ public class CourierControllerTests
         var result = await controller.ExportComplianceCsv(new CourierComplianceFilterRequest());
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.ContentType.Should().Be("text/csv");
-        fileResult.FileDownloadName.Should().Be(fileName);
+        Assert.Equal("text/csv", fileResult.ContentType);
+        Assert.Equal(fileName, fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -434,8 +422,8 @@ public class CourierControllerTests
         var result = await controller.ExportComplianceCsv(new CourierComplianceFilterRequest());
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -455,10 +443,10 @@ public class CourierControllerTests
         var result = await controller.ExportAfterHoursScheduleCsv(new CourierAfterHoursFilterRequest());
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.ContentType.Should().Be("text/csv");
-        fileResult.FileDownloadName.Should().Be(fileName);
+        Assert.Equal("text/csv", fileResult.ContentType);
+        Assert.Equal(fileName, fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -475,8 +463,8 @@ public class CourierControllerTests
         var result = await controller.ExportAfterHoursScheduleCsv(new CourierAfterHoursFilterRequest());
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -484,7 +472,7 @@ public class CourierControllerTests
     {
         // Arrange
         var csvBytes = "Code,Name,Email\nC001,John,john@test.com"u8.ToArray();
-        var fileName = "driver-emails-2026-02-18-1430.csv";
+        const string fileName = "driver-emails-2026-02-18-1430.csv";
 
         _courierReportServiceMock.Setup(x => x.GenerateDriverEmailsCsvAsync(It.IsAny<PaginatedRequest>()))
             .ReturnsAsync((csvBytes, fileName));
@@ -495,10 +483,10 @@ public class CourierControllerTests
         var result = await controller.ExportDriverEmailsCsv(new PaginatedRequest());
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.ContentType.Should().Be("text/csv");
-        fileResult.FileDownloadName.Should().Be(fileName);
+        Assert.Equal("text/csv", fileResult.ContentType);
+        Assert.Equal(fileName, fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -514,8 +502,8 @@ public class CourierControllerTests
         var result = await controller.ExportDriverEmailsCsv(new PaginatedRequest());
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -523,7 +511,7 @@ public class CourierControllerTests
     {
         // Arrange
         var csvBytes = "Name,Earnings\nJohn,250.75"u8.ToArray();
-        var fileName = "driver-earnings-2026-02-18-1430.csv";
+        const string fileName = "driver-earnings-2026-02-18-1430.csv";
 
         _courierReportServiceMock.Setup(x => x.GenerateDriverEarningsCsvAsync(It.IsAny<PaginatedRequest>()))
             .ReturnsAsync((csvBytes, fileName));
@@ -534,10 +522,10 @@ public class CourierControllerTests
         var result = await controller.ExportDriverEarningsCsv(new PaginatedRequest());
 
         // Assert
-        result.Should().BeOfType<FileContentResult>();
+        Assert.IsType<FileContentResult>(result);
         var fileResult = (FileContentResult)result;
-        fileResult.ContentType.Should().Be("text/csv");
-        fileResult.FileDownloadName.Should().Be(fileName);
+        Assert.Equal("text/csv", fileResult.ContentType);
+        Assert.Equal(fileName, fileResult.FileDownloadName);
     }
 
     [Fact]
@@ -553,8 +541,8 @@ public class CourierControllerTests
         var result = await controller.ExportDriverEarningsCsv(new PaginatedRequest());
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -575,10 +563,6 @@ public class CourierControllerTests
         // Assert
         _courierReportServiceMock.Verify(x => x.GenerateTodayActiveDriversCsvAsync(request), Times.Once);
     }
-
-    #endregion
-
-    #region GetAllCourierEmails Tests
 
     [Fact]
     public async Task GetAllCourierEmails_ValidRequest_ReturnsJsonResult()
@@ -603,9 +587,9 @@ public class CourierControllerTests
         var result = await controller.GetAllCourierEmails(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(expectedResponse);
+        Assert.Equal(expectedResponse, jsonResult.Value);
     }
 
     [Fact]
@@ -618,8 +602,8 @@ public class CourierControllerTests
         var result = await controller.GetAllCourierEmails(null!);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -636,8 +620,8 @@ public class CourierControllerTests
         var result = await controller.GetAllCourierEmails(request);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -678,10 +662,6 @@ public class CourierControllerTests
             Times.Once);
     }
 
-    #endregion
-
-    #region GetCourierDailyEarnings Tests
-
     [Fact]
     public async Task GetCourierDailyEarnings_ValidRequest_ReturnsJsonResult()
     {
@@ -707,9 +687,9 @@ public class CourierControllerTests
         var result = await controller.GetCourierDailyEarnings(request);
 
         // Assert
-        result.Should().BeOfType<JsonResult>();
+        Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        jsonResult.Value.Should().Be(expectedResponse);
+        Assert.Equal(expectedResponse, jsonResult.Value);
     }
 
     [Fact]
@@ -722,8 +702,8 @@ public class CourierControllerTests
         var result = await controller.GetCourierDailyEarnings(null!);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -740,8 +720,8 @@ public class CourierControllerTests
         var result = await controller.GetCourierDailyEarnings(request);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>();
-        ((ObjectResult)result).StatusCode.Should().Be(500);
+        Assert.IsType<ObjectResult>(result);
+        Assert.Equal(500, ((ObjectResult)result).StatusCode);
     }
 
     [Fact]
@@ -782,5 +762,4 @@ public class CourierControllerTests
             Times.Once);
     }
 
-    #endregion
 }

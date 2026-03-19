@@ -1,5 +1,4 @@
 using DespatchWeb.Enums;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Enums;
 
@@ -15,7 +14,7 @@ public class JobStatusTests
         const int missingValue = (int)JobStatus.Missing;
 
         // Assert
-        missingValue.Should().Be(1001);
+        Assert.Equal(1001, missingValue);
     }
 
     [Fact]
@@ -25,22 +24,22 @@ public class JobStatusTests
         const int voidValue = (int)JobStatus.Void;
 
         // Assert
-        voidValue.Should().Be(1000);
+        Assert.Equal(1000, voidValue);
     }
 
     [Fact]
     public void Missing_ShouldBeDistinctFromVoid()
     {
         // Assert
-        JobStatus.Missing.Should().NotBe(JobStatus.Void);
-        ((int)JobStatus.Missing).Should().NotBe((int)JobStatus.Void);
+        Assert.NotEqual(JobStatus.Void, JobStatus.Missing);
+        Assert.NotEqual((int)JobStatus.Void, (int)JobStatus.Missing);
     }
 
     [Fact]
     public void Missing_ShouldBeGreaterThanVoid()
     {
         // Assert - Missing (1001) should come after Void (1000) in the special status range
-        ((int)JobStatus.Missing).Should().BeGreaterThan((int)JobStatus.Void);
+        Assert.True((int)JobStatus.Missing > (int)JobStatus.Void);
     }
 
     [Theory]
@@ -70,7 +69,7 @@ public class JobStatusTests
     [InlineData(JobStatus.Missing, 1001)]
     public void AllJobStatuses_ShouldHaveExpectedValues(JobStatus status, int expectedValue) =>
         // Assert
-        ((int)status).Should().Be(expectedValue);
+        Assert.Equal(expectedValue, (int)status);
 
     [Fact]
     public void JobStatus_ShouldContainMissingStatus()
@@ -79,7 +78,7 @@ public class JobStatusTests
         var allStatuses = Enum.GetValues<JobStatus>();
 
         // Assert
-        allStatuses.Should().Contain(JobStatus.Missing);
+        Assert.Contains(JobStatus.Missing, allStatuses);
     }
 
     [Fact]
@@ -89,8 +88,8 @@ public class JobStatusTests
         var parsed = Enum.TryParse<JobStatus>("Missing", out var result);
 
         // Assert
-        parsed.Should().BeTrue();
-        result.Should().Be(JobStatus.Missing);
+        Assert.True(parsed);
+        Assert.Equal(JobStatus.Missing, result);
     }
 
     [Fact]
@@ -100,8 +99,8 @@ public class JobStatusTests
         var parsed = Enum.TryParse<JobStatus>("1001", out var result);
 
         // Assert
-        parsed.Should().BeTrue();
-        result.Should().Be(JobStatus.Missing);
+        Assert.True(parsed);
+        Assert.Equal(JobStatus.Missing, result);
     }
 
     [Fact]
@@ -111,6 +110,6 @@ public class JobStatusTests
         const string name = nameof(JobStatus.Missing);
 
         // Assert
-        name.Should().Be("Missing");
+        Assert.Equal("Missing", name);
     }
 }

@@ -1,5 +1,4 @@
 using DespatchWeb.Helpers;
-using FluentAssertions;
 
 namespace DespatchWeb.Tests.Helpers;
 
@@ -7,11 +6,9 @@ public class ErrorMessageStringFormatterTests : IDisposable
 {
     private readonly string? _originalEnvironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
 
-    public void Dispose()
-    {
+    public void Dispose() =>
         // Restore original environment after each test
         Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", _originalEnvironment ?? null);
-    }
 
     [Fact]
     public void Format_InDevelopment_ReturnsDetailedMessage()
@@ -25,8 +22,8 @@ public class ErrorMessageStringFormatterTests : IDisposable
         var result = ErrorMessageStringFormatter.Format(exception);
 
         // Assert
-        result.Should().Contain("Test error message");
-        result.Should().Contain("Inner exception details");
+        Assert.Contains("Test error message", result);
+        Assert.Contains("Inner exception details", result);
     }
 
     [Fact]
@@ -41,9 +38,9 @@ public class ErrorMessageStringFormatterTests : IDisposable
         var result = ErrorMessageStringFormatter.Format(exception);
 
         // Assert
-        result.Should().Be("An unexpected error occurred. Please try again or contact support.");
-        result.Should().NotContain("Sensitive");
-        result.Should().NotContain("password");
+        Assert.Equal("An unexpected error occurred. Please try again or contact support.", result);
+        Assert.DoesNotContain("Sensitive", result);
+        Assert.DoesNotContain("password", result);
     }
 
     [Fact]
@@ -58,9 +55,9 @@ public class ErrorMessageStringFormatterTests : IDisposable
         var result = ErrorMessageStringFormatter.Format(exception);
 
         // Assert
-        result.Should().Be("An unexpected error occurred. Please try again or contact support.");
-        result.Should().NotContain("SQL");
-        result.Should().NotContain("Stack trace");
+        Assert.Equal("An unexpected error occurred. Please try again or contact support.", result);
+        Assert.DoesNotContain("SQL", result);
+        Assert.DoesNotContain("Stack trace", result);
     }
 
     [Fact]
@@ -74,7 +71,7 @@ public class ErrorMessageStringFormatterTests : IDisposable
         var result = ErrorMessageStringFormatter.Format(exception);
 
         // Assert
-        result.Should().Be("An unexpected error occurred. Please try again or contact support.");
+        Assert.Equal("An unexpected error occurred. Please try again or contact support.", result);
     }
 
     [Fact]
@@ -88,11 +85,11 @@ public class ErrorMessageStringFormatterTests : IDisposable
         var result = ErrorMessageStringFormatter.FormatForLogging(exception, "JobRepository", "GetJobAsync");
 
         // Assert
-        result.Should().Contain("JobRepository");
-        result.Should().Contain("GetJobAsync");
-        result.Should().Contain("Database connection failed");
-        result.Should().Contain("Timeout expired");
-        result.Should().Contain("Error occurred in");
+        Assert.Contains("JobRepository", result);
+        Assert.Contains("GetJobAsync", result);
+        Assert.Contains("Database connection failed", result);
+        Assert.Contains("Timeout expired", result);
+        Assert.Contains("Error occurred in", result);
     }
 
     [Fact]
@@ -105,8 +102,8 @@ public class ErrorMessageStringFormatterTests : IDisposable
         var result = ErrorMessageStringFormatter.FormatForLogging(exception, "TestClass", "TestMethod");
 
         // Assert
-        result.Should().Contain("TestClass");
-        result.Should().Contain("TestMethod");
-        result.Should().Contain("Simple error");
+        Assert.Contains("TestClass", result);
+        Assert.Contains("TestMethod", result);
+        Assert.Contains("Simple error", result);
     }
 }
