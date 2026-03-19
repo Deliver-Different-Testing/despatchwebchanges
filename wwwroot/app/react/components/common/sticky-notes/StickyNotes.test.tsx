@@ -1,9 +1,11 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * StickyNotes Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {render, screen, waitFor, within} from '@testing-library/react';
+import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {StickyNotes} from './StickyNotes';
@@ -79,7 +81,6 @@ const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesP
 
 describe('StickyNotes', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         // Setup default mock implementations
         mockedNotesApi.getJobNotes.mockResolvedValue(createMockNotes());
         mockedNotesApi.getBulkJobNotes.mockResolvedValue(createMockNotes());
@@ -88,42 +89,33 @@ describe('StickyNotes', () => {
     });
 
     describe('Rendering', () => {
-        it('renders notes header', async () => {
+        it('renders header, notes, type names, dates, filter button, and add note button after loading', async () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
+            // Header
             expect(screen.getByText('Notes')).toBeInTheDocument();
-        });
 
-        it('renders notes after loading', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
+            // Notes after loading
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
             expect(screen.getByText('This is a client note')).toBeInTheDocument();
             expect(screen.getByText('Important internal note')).toBeInTheDocument();
-        });
 
-        it('renders note type names', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            // Internal appears twice (2 internal notes)
+            // Note type names - Internal appears twice (2 internal notes)
             const internalNotes = screen.getAllByText('Internal');
             expect(internalNotes.length).toBe(2);
             expect(screen.getByText('Client')).toBeInTheDocument();
-        });
 
-        it('renders note dates', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
+            // Note dates
             expect(screen.getByText('Jan 15, 2025 9:00 AM')).toBeInTheDocument();
+
+            // Category filter button exists
+            const buttons = screen.getAllByRole('button');
+            expect(buttons.length).toBeGreaterThan(0);
+
+            // Add note button exists
+            const addIcon = screen.getByText('note_add');
+            expect(addIcon).toBeInTheDocument();
         });
 
         it('renders empty state when no notes', async () => {
@@ -132,7 +124,6 @@ describe('StickyNotes', () => {
             renderWithProviders(<StickyNotes {...props} />);
 
             expect(await screen.findByText('No Notes')).toBeInTheDocument();
-
             expect(screen.getByText('No notes available for this job')).toBeInTheDocument();
         });
 
@@ -141,7 +132,6 @@ describe('StickyNotes', () => {
             renderWithProviders(<StickyNotes {...props} />);
 
             expect(await screen.findByText('No Notes')).toBeInTheDocument();
-
             expect(mockedNotesApi.getJobNotes).not.toHaveBeenCalled();
         });
     });
@@ -158,51 +148,26 @@ describe('StickyNotes', () => {
     });
 
     describe('Category Filtering', () => {
-        it('renders category filter button', async () => {
+        it('opens category menu and shows note categories when filter button is clicked', async () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
-            // Find the filter button by looking for the category icon
-            const buttons = screen.getAllByRole('button');
-            expect(buttons.length).toBeGreaterThan(0);
-        });
-
-        it('opens category menu when filter button is clicked', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            // Find button containing category icon
+            // Find and click filter button
             const categoryIcon = screen.getByText('category');
             const filterButton = categoryIcon.closest('button');
             expect(filterButton).toBeInTheDocument();
-            await user.click(filterButton!);
+            fireEvent.click(filterButton!);
 
+            // Menu opens with All Categories header
             expect(await screen.findByText('All Categories')).toBeInTheDocument();
-        });
 
-        it('shows note categories in menu', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            const categoryIcon = screen.getByText('category');
-            const filterButton = categoryIcon.closest('button');
-            await user.click(filterButton!);
-
-            await waitFor(() => {
-                // Check menu items - note: "Internal" also appears in notes, so we check menu specifically
-                const menu = screen.getByRole('menu');
-                expect(within(menu).getByText('Internal')).toBeInTheDocument();
-                expect(within(menu).getByText('Client')).toBeInTheDocument();
-                expect(within(menu).getByText('Consignment')).toBeInTheDocument();
-            });
+            // Check menu items
+            const menu = screen.getByRole('menu');
+            expect(within(menu).getByText('Internal')).toBeInTheDocument();
+            expect(within(menu).getByText('Client')).toBeInTheDocument();
+            expect(within(menu).getByText('Consignment')).toBeInTheDocument();
         });
 
         it('filters notes by category when selected', async () => {
@@ -251,33 +216,7 @@ describe('StickyNotes', () => {
     });
 
     describe('Add Note', () => {
-        it('renders add note button', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            // Find the add note button by its icon
-            const addIcon = screen.getByText('note_add');
-            expect(addIcon).toBeInTheDocument();
-        });
-
-        it('opens note dialog when add button is clicked', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            const addIcon = screen.getByText('note_add');
-            const addButton = addIcon.closest('button');
-            await user.click(addButton!);
-
-            expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
-        });
-
-        it('reloads notes after dialog closes', async () => {
-            const user = userEvent.setup();
+        it('opens note dialog when add button is clicked and reloads notes after dialog closes', async () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
@@ -288,7 +227,10 @@ describe('StickyNotes', () => {
 
             const addIcon = screen.getByText('note_add');
             const addButton = addIcon.closest('button');
-            await user.click(addButton!);
+            fireEvent.click(addButton!);
+
+            // Dialog should be opened
+            expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
 
             // Notes should be reloaded after dialog closes
             await waitFor(() => {
@@ -298,20 +240,7 @@ describe('StickyNotes', () => {
     });
 
     describe('Edit Note', () => {
-        it('opens note dialog when note is clicked', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            await user.click(screen.getByText('This is an internal note'));
-
-            expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
-        });
-
-        it('reloads notes after edit dialog closes', async () => {
-            const user = userEvent.setup();
+        it('opens note dialog when note is clicked and reloads notes after edit dialog closes', async () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
@@ -320,7 +249,10 @@ describe('StickyNotes', () => {
             // Clear the mock to track new calls
             mockedNotesApi.getJobNotes.mockClear();
 
-            await user.click(screen.getByText('This is an internal note'));
+            fireEvent.click(screen.getByText('This is an internal note'));
+
+            // Dialog should be opened
+            expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
 
             // Notes should be reloaded after dialog closes
             await waitFor(() => {
@@ -330,8 +262,7 @@ describe('StickyNotes', () => {
     });
 
     describe('Delete Note', () => {
-        it('calls deleteNote API when confirmed', async () => {
-            const user = userEvent.setup();
+        it('calls deleteNote API when confirmed and shows success toast', async () => {
             const props = createDefaultProps();
 
             // Mock window.confirm
@@ -344,16 +275,20 @@ describe('StickyNotes', () => {
             // Find delete buttons by icon text
             const deleteIcons = screen.getAllByText('delete');
             const deleteButton = deleteIcons[0].closest('button');
-            await user.click(deleteButton!);
+            fireEvent.click(deleteButton!);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).toHaveBeenCalledWith(1);
+
+            // Shows success toast after deleting
+            await waitFor(() => {
+                expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted successfully');
+            });
 
             confirmSpy.mockRestore();
         });
 
         it('does not delete note when cancelled', async () => {
-            const user = userEvent.setup();
             const props = createDefaultProps();
 
             // Mock window.confirm to return false
@@ -365,50 +300,31 @@ describe('StickyNotes', () => {
 
             const deleteIcons = screen.getAllByText('delete');
             const deleteButton = deleteIcons[0].closest('button');
-            await user.click(deleteButton!);
+            fireEvent.click(deleteButton!);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).not.toHaveBeenCalled();
 
             confirmSpy.mockRestore();
         });
-
-        it('shows success toast after deleting note', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-
-            const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
-
-            renderWithProviders(<StickyNotes {...props} />);
-
-            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
-
-            const deleteIcons = screen.getAllByText('delete');
-            const deleteButton = deleteIcons[0].closest('button');
-            await user.click(deleteButton!);
-
-            await waitFor(() => {
-                expect(props.showSuccessToast).toHaveBeenCalledWith('Note deleted successfully');
-            });
-
-            confirmSpy.mockRestore();
-        });
     });
 
     describe('Theme Support', () => {
-        it('renders with US theme via ThemeProvider', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
+        it('renders with both US and NZ themes via ThemeProvider', async () => {
+            // US theme
+            const usProps = createDefaultProps();
+            const {unmount} = renderWithProviders(<StickyNotes {...usProps} />);
 
             expect(await screen.findByText('Notes')).toBeInTheDocument();
-        });
 
-        it('renders with NZ theme via ThemeProvider', async () => {
+            unmount();
+
+            // NZ theme
             const nzTheme = createTheme({palette: {primary: {main: '#f4c430'}}});
-            const props = createDefaultProps();
+            const nzProps = createDefaultProps();
             render(
                 <ThemeProvider theme={nzTheme}>
-                    <StickyNotes {...props} />
+                    <StickyNotes {...nzProps} />
                 </ThemeProvider>
             );
 
@@ -417,12 +333,13 @@ describe('StickyNotes', () => {
     });
 
     describe('Data Loading', () => {
-        it('loads notes on mount', async () => {
+        it('loads notes and note types on mount', async () => {
             const props = createDefaultProps();
             renderWithProviders(<StickyNotes {...props} />);
 
             await waitFor(() => {
                 expect(mockedNotesApi.getJobNotes).toHaveBeenCalledWith(123, false);
+                expect(mockedNotesApi.getNoteTypes).toHaveBeenCalled();
             });
         });
 
@@ -432,15 +349,6 @@ describe('StickyNotes', () => {
 
             await waitFor(() => {
                 expect(mockedNotesApi.getJobNotes).toHaveBeenCalledWith(123, true);
-            });
-        });
-
-        it('loads note types on mount', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<StickyNotes {...props} />);
-
-            await waitFor(() => {
-                expect(mockedNotesApi.getNoteTypes).toHaveBeenCalled();
             });
         });
     });

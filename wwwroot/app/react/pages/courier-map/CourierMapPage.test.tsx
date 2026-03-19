@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * CourierMapPage Component Tests
  *
@@ -95,7 +96,6 @@ const mockCouriers = [
 
 describe('CourierMapPage Component', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue(mockCouriers);
     });
 

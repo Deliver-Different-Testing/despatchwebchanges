@@ -1,9 +1,11 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AutoCompleteDialog Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
+import {fireEvent, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {AutoCompleteDialog, AutoCompleteDialogProps, Suggestion} from './AutoCompleteDialog';
 import {createProps, renderWithTheme} from '../../../__testUtils__';
@@ -27,16 +29,25 @@ const createMockProps = (overrides?: Partial<AutoCompleteDialogProps>) =>
     createProps(defaultProps, overrides);
 
 describe('AutoCompleteDialog', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Rendering', () => {
-        it('renders dialog when open is true', () => {
+        it('renders dialog with expected elements and initial state', () => {
             const props = createMockProps();
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
+            // renders dialog when open is true
             expect(screen.getByRole('dialog')).toBeInTheDocument();
+            // displays title in header
+            expect(screen.getByText('Select Courier')).toBeInTheDocument();
+            // displays subtitle text
+            expect(screen.getByText('Search and select an option')).toBeInTheDocument();
+            // displays placeholder in search input
+            expect(screen.getByPlaceholderText('Search for a courier...')).toBeInTheDocument();
+            // displays Cancel button
+            expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
+            // displays Save button
+            expect(screen.getByRole('button', {name: /save/i})).toBeInTheDocument();
+            // Save button is disabled when no item is selected
+            expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
         });
 
         it('does not render dialog when open is false', () => {
@@ -45,74 +56,30 @@ describe('AutoCompleteDialog', () => {
 
             expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
-
-        it('displays title in header', () => {
-            const props = createMockProps({title: 'Select Driver'});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByText('Select Driver')).toBeInTheDocument();
-        });
-
-        it('displays subtitle text', () => {
-            const props = createMockProps();
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByText('Search and select an option')).toBeInTheDocument();
-        });
-
-        it('displays placeholder in search input', () => {
-            const props = createMockProps({placeholder: 'Type to search...'});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByPlaceholderText('Type to search...')).toBeInTheDocument();
-        });
-
-        it('displays Cancel button', () => {
-            const props = createMockProps();
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-        });
-
-        it('displays Save button', () => {
-            const props = createMockProps();
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /save/i})).toBeInTheDocument();
-        });
-
-        it('Save button is disabled when no item is selected', () => {
-            const props = createMockProps();
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
-        });
     });
 
     describe('Existing Item', () => {
-        it('displays existing item value in input', () => {
+        it('displays existing item in input and enables Save button', () => {
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({existingItem});
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
+            // displays existing item value in input
             expect(screen.getByDisplayValue('John Smith')).toBeInTheDocument();
-        });
-
-        it('enables Save button when existing item is provided', () => {
-            const existingItem: Suggestion = {id: 1, text: 'John Smith'};
-            const props = createMockProps({existingItem});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
+            // enables Save button when existing item is provided
             expect(screen.getByRole('button', {name: /save/i})).not.toBeDisabled();
         });
     });
 
     describe('Re-rate Option', () => {
-        it('shows re-rate checkbox when showRerateOption is true', () => {
+        it('shows re-rate checkbox unchecked by default when showRerateOption is true', () => {
             const props = createMockProps({showRerateOption: true});
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
+            // shows re-rate checkbox
             expect(screen.getByLabelText(/re-rate job/i)).toBeInTheDocument();
+            // re-rate checkbox is unchecked by default
+            expect(screen.getByLabelText(/re-rate job/i)).not.toBeChecked();
         });
 
         it('does not show re-rate checkbox when showRerateOption is false', () => {
@@ -120,13 +87,6 @@ describe('AutoCompleteDialog', () => {
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
             expect(screen.queryByLabelText(/re-rate job/i)).not.toBeInTheDocument();
-        });
-
-        it('re-rate checkbox is unchecked by default', () => {
-            const props = createMockProps({showRerateOption: true});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            expect(screen.getByLabelText(/re-rate job/i)).not.toBeChecked();
         });
     });
 
@@ -138,7 +98,8 @@ describe('AutoCompleteDialog', () => {
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
-            await user.type(input, 'ab');
+            await user.click(input);
+            await user.paste('ab');
 
             await waitFor(() => {
                 expect(onSearch).not.toHaveBeenCalled();
@@ -152,7 +113,8 @@ describe('AutoCompleteDialog', () => {
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
-            await user.type(input, 'jo');
+            await user.click(input);
+            await user.paste('jo');
 
             await waitFor(() => {
                 expect(onSearch).toHaveBeenCalled();
@@ -171,7 +133,8 @@ describe('AutoCompleteDialog', () => {
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
-            await user.type(input, 'john');
+            await user.click(input);
+            await user.paste('john');
 
             expect(await screen.findByRole('progressbar')).toBeInTheDocument();
 
@@ -185,7 +148,8 @@ describe('AutoCompleteDialog', () => {
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
             const input = screen.getByPlaceholderText('Search for a courier...');
-            await user.type(input, 'xyz');
+            await user.click(input);
+            await user.paste('xyz');
 
             // Open the listbox
             await user.click(input);
@@ -195,29 +159,20 @@ describe('AutoCompleteDialog', () => {
     });
 
     describe('Close Functionality', () => {
-        it('calls onClose when close button is clicked', async () => {
-            const user = userEvent.setup();
+        it('calls onClose when close icon or Cancel button is clicked', () => {
             const onClose = jest.fn();
             const props = createMockProps({onClose});
             renderWithTheme(<AutoCompleteDialog {...props} />);
 
-            // Find close button by its close icon
+            // calls onClose when close button is clicked
             const closeIcon = screen.getByTestId('CloseIcon');
-            const closeButton = closeIcon.closest('button');
-            await user.click(closeButton!);
+            const closeButton = closeIcon.closest('button')!;
+            fireEvent.click(closeButton);
+            expect(onClose).toHaveBeenCalledTimes(1);
 
-            expect(onClose).toHaveBeenCalled();
-        });
-
-        it('calls onClose when Cancel button is clicked', async () => {
-            const user = userEvent.setup();
-            const onClose = jest.fn();
-            const props = createMockProps({onClose});
-            renderWithTheme(<AutoCompleteDialog {...props} />);
-
-            await user.click(screen.getByRole('button', {name: /cancel/i}));
-
-            expect(onClose).toHaveBeenCalled();
+            // calls onClose when Cancel button is clicked
+            fireEvent.click(screen.getByRole('button', {name: /cancel/i}));
+            expect(onClose).toHaveBeenCalledTimes(2);
         });
     });
 
@@ -247,8 +202,7 @@ describe('AutoCompleteDialog', () => {
             expect(onSubmit).toHaveBeenCalledWith(existingItem, true);
         });
 
-        it('does not call onSubmit when no item is selected', async () => {
-            const user = userEvent.setup();
+        it('does not call onSubmit when no item is selected', () => {
             const onSubmit = jest.fn();
             const props = createMockProps({onSubmit});
             renderWithTheme(<AutoCompleteDialog {...props} />);
@@ -260,7 +214,7 @@ describe('AutoCompleteDialog', () => {
     });
 
     describe('State Reset', () => {
-        it('resets state when dialog is reopened', async () => {
+        it('resets state when dialog is reopened', () => {
             const existingItem: Suggestion = {id: 1, text: 'John Smith'};
             const props = createMockProps({existingItem, showRerateOption: true});
             const {rerender} = renderWithTheme(<AutoCompleteDialog {...props} />);

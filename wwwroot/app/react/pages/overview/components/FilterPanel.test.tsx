@@ -1,3 +1,9 @@
+/** @jest-environment jest-environment-jsdom */
+/**
+ * Tests for FilterPanel React component
+ * Optimised: read-only tests consolidated to reduce render count.
+ */
+
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -59,23 +65,37 @@ const defaultProps = {
 };
 
 describe('FilterPanel', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+    it('renders all default sections, headers, checkboxes, and controls', () => {
+        renderWithProviders(<FilterPanel {...defaultProps} />);
 
-    describe('Header', () => {
-        it('renders Quick Filters header', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByText('Quick Filters')).toBeInTheDocument();
-        });
+        // Quick Filters header
+        expect(screen.getByText('Quick Filters')).toBeInTheDocument();
+
+        // Date Range section
+        expect(screen.getByText('Date Range')).toBeInTheDocument();
+        expect(screen.getByText('Select Dates')).toBeInTheDocument();
+
+        // Regions section
+        expect(screen.getByText('Regions')).toBeInTheDocument();
+        expect(screen.getByText('London')).toBeInTheDocument();
+        expect(screen.getByText('Manchester')).toBeInTheDocument();
+        expect(screen.getByText('Birmingham')).toBeInTheDocument();
+
+        // Speeds section
+        expect(screen.getByText('Speeds')).toBeInTheDocument();
+        expect(screen.getByText('Same Day')).toBeInTheDocument();
+        expect(screen.getByText('Next Day')).toBeInTheDocument();
+
+        // Couriers section
+        expect(screen.getByText('Couriers')).toBeInTheDocument();
+        expect(screen.getByLabelText('Search couriers...')).toBeInTheDocument();
+
+        // Select All / Unselect All toggle
+        const selectAlls = screen.getAllByText('Select All');
+        expect(selectAlls.length).toBeGreaterThanOrEqual(1);
     });
 
     describe('Date Range section', () => {
-        it('shows "Select Dates" button when no date range set', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByText('Select Dates')).toBeInTheDocument();
-        });
-
         it('shows formatted date range when dates are set', () => {
             renderWithProviders(
                 <FilterPanel
@@ -90,27 +110,9 @@ describe('FilterPanel', () => {
             expect(screen.getByText(/Jan 15, 2024/)).toBeInTheDocument();
             expect(screen.getByText(/Jan 31, 2024/)).toBeInTheDocument();
         });
-
-        it('renders Date Range header', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByText('Date Range')).toBeInTheDocument();
-        });
     });
 
     describe('Regions section', () => {
-        it('renders regions header', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByText('Regions')).toBeInTheDocument();
-        });
-
-        it('renders all region checkboxes', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-
-            expect(screen.getByText('London')).toBeInTheDocument();
-            expect(screen.getByText('Manchester')).toBeInTheDocument();
-            expect(screen.getByText('Birmingham')).toBeInTheDocument();
-        });
-
         it('shows loading indicator when regions loading', () => {
             renderWithProviders(<FilterPanel {...defaultProps} regionsLoading />);
 
@@ -131,13 +133,6 @@ describe('FilterPanel', () => {
             fireEvent.click(londonCheckbox);
 
             expect(defaultProps.onToggleRegion).toHaveBeenCalledWith(1);
-        });
-
-        it('shows Select All / Unselect All toggle', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            // Both regions and speeds have "Select All", so we just check at least one exists
-            const selectAlls = screen.getAllByText('Select All');
-            expect(selectAlls.length).toBeGreaterThanOrEqual(1);
         });
 
         it('shows Unselect All when all regions selected', () => {
@@ -171,18 +166,6 @@ describe('FilterPanel', () => {
     });
 
     describe('Speeds section', () => {
-        it('renders speeds header', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByText('Speeds')).toBeInTheDocument();
-        });
-
-        it('renders all speed checkboxes', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-
-            expect(screen.getByText('Same Day')).toBeInTheDocument();
-            expect(screen.getByText('Next Day')).toBeInTheDocument();
-        });
-
         it('shows empty state when no speeds', () => {
             renderWithProviders(<FilterPanel {...defaultProps} speeds={[]} />);
             expect(screen.getByText('No speeds found')).toBeInTheDocument();
@@ -199,16 +182,6 @@ describe('FilterPanel', () => {
     });
 
     describe('Couriers section', () => {
-        it('renders Couriers header', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByText('Couriers')).toBeInTheDocument();
-        });
-
-        it('renders courier search input', () => {
-            renderWithProviders(<FilterPanel {...defaultProps} />);
-            expect(screen.getByLabelText('Search couriers...')).toBeInTheDocument();
-        });
-
         it('renders selected courier chips', () => {
             renderWithProviders(
                 <FilterPanel

@@ -1,9 +1,12 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * NoteManagementDialog Component Tests
+ *
+ * Optimised: tests sharing identical setup consolidated into single renders.
  */
 
 import React from 'react';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -79,330 +82,200 @@ const createMockProps = (overrides: Partial<NoteManagementDialogProps> = {}): No
 });
 
 describe('NoteManagementDialog', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+    // ── New note render: dialog, title, note types loaded, no metadata, char count, save disabled (single render) ─
+    it('renders new note dialog with correct initial state', async () => {
+        const props = createMockProps();
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
+        });
+
+        await waitFor(() => {
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('Add Note')).toBeInTheDocument();
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
+        });
+
+        // No metadata section for new notes
+        expect(screen.queryByText('Note Information')).not.toBeInTheDocument();
+
+        // Character count
+        expect(screen.getByText('0/1000 characters')).toBeInTheDocument();
+
+        // Save button disabled when empty
+        expect(screen.getByRole('button', {name: /save note/i})).toBeDisabled();
     });
 
-    describe('Rendering', () => {
-        it('should render dialog when open is true', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByRole('dialog')).toBeInTheDocument();
-                expect(screen.getByText('Add Note')).toBeInTheDocument();
-            });
+    // ── Closed dialog ───────────────────────────────────────────────
+    it('should not render dialog when open is false', async () => {
+        const props = createMockProps({open: false});
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        it('should not render dialog when open is false', async () => {
-            const props = createMockProps({open: false});
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
 
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    // ── Edit note render: title, form populated, metadata (single render) ─
+    it('renders edit note dialog with populated form and metadata', async () => {
+        const props = createMockProps({note: mockNote});
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        it('should display "Edit Note" title for existing notes', async () => {
-            const props = createMockProps({note: mockNote});
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
+        expect(await screen.findByText('Edit Note')).toBeInTheDocument();
+        expect(screen.getByDisplayValue('This is an existing note')).toBeInTheDocument();
 
-            expect(await screen.findByText('Edit Note')).toBeInTheDocument();
-        });
-
-        it('should load note types on open', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-        });
-
-        it('should populate form with existing note data', async () => {
-            const props = createMockProps({note: mockNote});
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
-        });
-
-        it('should display metadata section for existing notes', async () => {
-            const props = createMockProps({note: mockNote});
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(screen.getByText('Note Information')).toBeInTheDocument();
-                expect(screen.getByText('John Doe')).toBeInTheDocument();
-            });
-        });
-
-        it('should not display metadata section for new notes', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            expect(screen.queryByText('Note Information')).not.toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText('Note Information')).toBeInTheDocument();
+            expect(screen.getByText('John Doe')).toBeInTheDocument();
         });
     });
 
-    describe('Note Type Selection', () => {
-        it('should show public note warning when public type selected', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            // Wait for the select to be rendered
-            expect(await screen.findByRole('combobox')).toBeInTheDocument();
-
-            // Open dropdown and select public type
-            const selectButton = screen.getByRole('combobox');
-            await act(async () => {
-                await userEvent.click(selectButton);
-            });
-
-            const customerOption = await screen.findByText('Customer');
-            await act(async () => {
-                await userEvent.click(customerOption);
-            });
-
-            expect(await screen.findByText(/public note that will be visible to clients/)).toBeInTheDocument();
+    // ── Note type selection: public warning + description toggle (single render) ─
+    it('shows public note warning and toggles description visibility', async () => {
+        const props = createMockProps();
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        it('should toggle description visibility', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
+        });
 
-            expect(await screen.findByText('View Description')).toBeInTheDocument();
+        // Toggle description
+        expect(await screen.findByText('View Description')).toBeInTheDocument();
+        await act(async () => {
+            await userEvent.click(screen.getByText('View Description'));
+        });
+        expect(await screen.findByText('General notes')).toBeInTheDocument();
 
-            const toggleButton = screen.getByText('View Description');
-            await act(async () => {
-                await userEvent.click(toggleButton);
-            });
+        // Select public type
+        const selectButton = screen.getByRole('combobox');
+        await act(async () => {
+            await userEvent.click(selectButton);
+        });
+        const customerOption = await screen.findByText('Customer');
+        await act(async () => {
+            await userEvent.click(customerOption);
+        });
+        expect(await screen.findByText(/public note that will be visible to clients/)).toBeInTheDocument();
+    });
 
-            expect(await screen.findByText('General notes')).toBeInTheDocument();
+    // ── Note content: type text, toggle important, save enabled (single render) ─
+    it('updates note text, toggles important flag, and enables save', async () => {
+        const props = createMockProps();
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
+        });
+
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
+        });
+
+        expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
+
+        // Type text
+        const textarea = screen.getByPlaceholderText('Enter your note content here...');
+        fireEvent.change(textarea, {target: {value: 'My test note'}});
+        expect(screen.getByDisplayValue('My test note')).toBeInTheDocument();
+
+        // Toggle important
+        const importantCheckbox = screen.getByRole('checkbox', {name: /mark as important/i});
+        await act(async () => {
+            await userEvent.click(importantCheckbox);
+        });
+        expect(importantCheckbox).toBeChecked();
+
+        // Save button now enabled
+        expect(screen.getByRole('button', {name: /save note/i})).toBeEnabled();
+    });
+
+    // ── Create note + cancel (single render) ────────────────────────
+    it('calls onClose on cancel and onCreateNote on save for new notes', async () => {
+        const props = createMockProps();
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
+        });
+
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
+        });
+
+        // Cancel
+        const cancelButton = screen.getByRole('button', {name: /cancel/i});
+        await act(async () => {
+            await userEvent.click(cancelButton);
+        });
+        expect(props.onClose).toHaveBeenCalled();
+
+        // Fill text and save
+        expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
+        const textarea = screen.getByPlaceholderText('Enter your note content here...');
+        fireEvent.change(textarea, {target: {value: 'New note content'}});
+
+        const saveButton = screen.getByRole('button', {name: /save note/i});
+        await act(async () => {
+            await userEvent.click(saveButton);
+        });
+
+        await waitFor(() => {
+            expect(props.onCreateNote).toHaveBeenCalled();
+            expect(props.showToast).toHaveBeenCalledWith('Note created successfully', 'success');
         });
     });
 
-    describe('Note Content', () => {
-        it('should update note text as user types', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            // Wait for dialog content to render
-            expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-
-            const textarea = screen.getByPlaceholderText('Enter your note content here...');
-            await act(async () => {
-                await userEvent.type(textarea, 'My test note');
-            });
-
-            expect(screen.getByDisplayValue('My test note')).toBeInTheDocument();
+    // ── Update existing note ────────────────────────────────────────
+    it('should call onUpdateNote for existing notes', async () => {
+        const props = createMockProps({note: mockNote});
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        it('should show character count', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            expect(await screen.findByText('0/1000 characters')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
         });
 
-        it('should toggle important flag', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
+        expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
 
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
+        const textarea = screen.getByDisplayValue('This is an existing note');
+        fireEvent.change(textarea, {target: {value: 'Updated note content'}});
 
-            // Find checkbox by its label text
-            const importantCheckbox = screen.getByRole('checkbox', {name: /mark as important/i});
-            await act(async () => {
-                await userEvent.click(importantCheckbox);
-            });
+        const saveButton = screen.getByRole('button', {name: /save note/i});
+        await act(async () => {
+            await userEvent.click(saveButton);
+        });
 
-            expect(importantCheckbox).toBeChecked();
+        await waitFor(() => {
+            expect(props.onUpdateNote).toHaveBeenCalledWith(expect.objectContaining({
+                noteId: 123,
+                noteText: 'Updated note content',
+            }));
         });
     });
 
-    describe('Form Validation', () => {
-        it('should disable save button when note text is empty', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            const saveButton = screen.getByRole('button', {name: /save note/i});
-            expect(saveButton).toBeDisabled();
+    // ── Save error handling ─────────────────────────────────────────
+    it('should handle save errors gracefully', async () => {
+        const props = createMockProps({
+            note: mockNote,
+            onUpdateNote: jest.fn().mockRejectedValue(new Error('Network error')),
+        });
+        await act(async () => {
+            renderWithTheme(<NoteManagementDialog {...props} />);
         });
 
-        it('should enable save button when form is valid', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            // Wait for textarea to be available
-            expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-
-            const textarea = screen.getByPlaceholderText('Enter your note content here...');
-            await act(async () => {
-                await userEvent.type(textarea, 'Valid note content');
-            });
-
-            expect(await screen.findByRole('button', {name: /save note/i})).toBeEnabled();
-        });
-    });
-
-    describe('Save Functionality', () => {
-        it('should call onCreateNote for new notes', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            // Wait for textarea to be available
-            expect(await screen.findByPlaceholderText('Enter your note content here...')).toBeInTheDocument();
-
-            const textarea = screen.getByPlaceholderText('Enter your note content here...');
-            await act(async () => {
-                await userEvent.type(textarea, 'New note content');
-            });
-
-            const saveButton = screen.getByRole('button', {name: /save note/i});
-            await act(async () => {
-                await userEvent.click(saveButton);
-            });
-
-            await waitFor(() => {
-                expect(props.onCreateNote).toHaveBeenCalled();
-                expect(props.showToast).toHaveBeenCalledWith('Note created successfully', 'success');
-            });
+        await waitFor(() => {
+            expect(props.onLoadNoteTypes).toHaveBeenCalled();
         });
 
-        it('should call onUpdateNote for existing notes', async () => {
-            const props = createMockProps({note: mockNote});
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
+        expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
 
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            // Wait for form to be populated with existing note data
-            expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
-
-            const textarea = screen.getByDisplayValue('This is an existing note');
-            await act(async () => {
-                await userEvent.clear(textarea);
-                await userEvent.type(textarea, 'Updated note content');
-            });
-
-            const saveButton = screen.getByRole('button', {name: /save note/i});
-            await act(async () => {
-                await userEvent.click(saveButton);
-            });
-
-            await waitFor(() => {
-                expect(props.onUpdateNote).toHaveBeenCalledWith(expect.objectContaining({
-                    noteId: 123,
-                    noteText: 'Updated note content',
-                }));
-            });
+        const saveButton = screen.getByRole('button', {name: /save note/i});
+        await act(async () => {
+            await userEvent.click(saveButton);
         });
 
-        it('should handle save errors gracefully', async () => {
-            const props = createMockProps({
-                note: mockNote,
-                onUpdateNote: jest.fn().mockRejectedValue(new Error('Network error')),
-            });
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            // Wait for form to be populated
-            expect(await screen.findByDisplayValue('This is an existing note')).toBeInTheDocument();
-
-            const saveButton = screen.getByRole('button', {name: /save note/i});
-            await act(async () => {
-                await userEvent.click(saveButton);
-            });
-
-            await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith('Failed to save note', 'error');
-            });
-        });
-    });
-
-    describe('Close Functionality', () => {
-        it('should call onClose when cancel button clicked', async () => {
-            const props = createMockProps();
-            await act(async () => {
-                renderWithTheme(<NoteManagementDialog {...props} />);
-            });
-
-            await waitFor(() => {
-                expect(props.onLoadNoteTypes).toHaveBeenCalled();
-            });
-
-            const cancelButton = screen.getByRole('button', {name: /cancel/i});
-            await act(async () => {
-                await userEvent.click(cancelButton);
-            });
-
-            expect(props.onClose).toHaveBeenCalled();
+        await waitFor(() => {
+            expect(props.showToast).toHaveBeenCalledWith('Failed to save note', 'error');
         });
     });
 });

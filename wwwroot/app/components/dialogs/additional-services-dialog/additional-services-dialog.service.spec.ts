@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for AdditionalServicesDialogService
  * Covers lazy loading of React bundle, dialog opening with parameter mapping,

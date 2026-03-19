@@ -1,5 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsTable Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
@@ -7,6 +9,7 @@ import {fireEvent, render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {RecurringJobsTable, RecurringJobsTableProps} from './RecurringJobsTable';
 import {PrebookListModel} from '../../../interfaces';
+import dayjs from 'dayjs';
 
 const theme = createTheme();
 
@@ -32,8 +35,8 @@ const createMockAddress = (line1: string, line2: string, full: string) => ({
 
 const createMockJob = (id: number, client: string = 'Test Client'): PrebookListModel => ({
     id,
-    booked: new Date('2024-01-15T10:30:00'),
-    nextDueTime: new Date('2024-01-16T09:00:00'),
+    booked: dayjs('2024-01-15T10:30:00'),
+    nextDueTime: dayjs('2024-01-16T09:00:00'),
     client,
     jobNo: `JOB${id}`,
     clientId: 100 + id,
@@ -62,10 +65,6 @@ const defaultProps: RecurringJobsTableProps = {
 };
 
 describe('RecurringJobsTable', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Empty state', () => {
         it('should show empty message when no jobs', () => {
             renderWithTheme(<RecurringJobsTable {...defaultProps} />);
@@ -82,104 +81,59 @@ describe('RecurringJobsTable', () => {
         });
     });
 
-    describe('Table columns', () => {
-        it('should render all column headers', () => {
-            const jobs = [createMockJob(1)];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
+    it('should render all column headers and job data', () => {
+        const jobs = [createMockJob(1)];
+        renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
 
-            expect(screen.getByText('Booked')).toBeInTheDocument();
-            expect(screen.getByText('Speed')).toBeInTheDocument();
-            expect(screen.getByText('Job Name')).toBeInTheDocument();
-            expect(screen.getByText('Client')).toBeInTheDocument();
-            expect(screen.getByText('From')).toBeInTheDocument();
-            expect(screen.getByText('To')).toBeInTheDocument();
-            expect(screen.getByText('Next Due')).toBeInTheDocument();
-            expect(screen.getByText('Courier')).toBeInTheDocument();
-        });
-    });
+        // Column headers
+        expect(screen.getByText('Booked')).toBeInTheDocument();
+        expect(screen.getByText('Speed')).toBeInTheDocument();
+        expect(screen.getByText('Job Name')).toBeInTheDocument();
+        expect(screen.getByText('Client')).toBeInTheDocument();
+        expect(screen.getByText('From')).toBeInTheDocument();
+        expect(screen.getByText('To')).toBeInTheDocument();
+        expect(screen.getByText('Next Due')).toBeInTheDocument();
+        expect(screen.getByText('Courier')).toBeInTheDocument();
 
-    describe('Job data', () => {
-        it('should render job client name', () => {
-            const jobs = [createMockJob(1, 'ABC Corp')];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
-
-            expect(screen.getByText('ABC Corp')).toBeInTheDocument();
-        });
-
-        it('should render job speed', () => {
-            const jobs = [createMockJob(1)];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
-
-            expect(screen.getByText('Standard')).toBeInTheDocument();
-        });
-
-        it('should render job custom name', () => {
-            const jobs = [createMockJob(1)];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
-
-            expect(screen.getByText('Job Name 1')).toBeInTheDocument();
-        });
-
-        it('should render pickup address', () => {
-            const jobs = [createMockJob(1)];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
-
-            expect(screen.getByText('123 Pickup St')).toBeInTheDocument();
-        });
-
-        it('should render delivery address', () => {
-            const jobs = [createMockJob(1)];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
-
-            expect(screen.getByText('456 Delivery Ave')).toBeInTheDocument();
-        });
-
-        it('should render courier name', () => {
-            const jobs = [createMockJob(1)];
-            renderWithTheme(<RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1}/>);
-
-            expect(screen.getByText('John Courier')).toBeInTheDocument();
-        });
+        // Job data - client, speed, custom name, pickup address, delivery address, courier
+        expect(screen.getByText('Test Client')).toBeInTheDocument();
+        expect(screen.getByText('Standard')).toBeInTheDocument();
+        expect(screen.getByText('Job Name 1')).toBeInTheDocument();
+        expect(screen.getByText('123 Pickup St')).toBeInTheDocument();
+        expect(screen.getByText('456 Delivery Ave')).toBeInTheDocument();
+        expect(screen.getByText('John Courier')).toBeInTheDocument();
     });
 
     describe('Row interactions', () => {
-        it('should call onRowClick when row is clicked', () => {
+        it('should call onRowClick, onDeleteClick and onContextMenu for row actions', () => {
             const onRowClick = jest.fn();
-            const jobs = [createMockJob(1)];
-            renderWithTheme(
-                <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1} onRowClick={onRowClick}/>
-            );
-
-            fireEvent.click(screen.getByText('Test Client').closest('tr')!);
-
-            expect(onRowClick).toHaveBeenCalledTimes(1);
-            expect(onRowClick).toHaveBeenCalledWith(jobs[0]);
-        });
-
-        it('should call onDeleteClick when delete button is clicked', () => {
             const onDeleteClick = jest.fn();
-            const jobs = [createMockJob(1)];
-            renderWithTheme(
-                <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1} onDeleteClick={onDeleteClick}/>
-            );
-
-            // Find and click the delete button
-            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-            fireEvent.click(deleteButton);
-
-            expect(onDeleteClick).toHaveBeenCalledTimes(1);
-            expect(onDeleteClick).toHaveBeenCalledWith(jobs[0]);
-        });
-
-        it('should call onContextMenu when right-clicking a row', () => {
             const onContextMenu = jest.fn();
             const jobs = [createMockJob(1)];
             renderWithTheme(
-                <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={1} onContextMenu={onContextMenu}/>
+                <RecurringJobsTable
+                    {...defaultProps}
+                    jobs={jobs}
+                    totalCount={1}
+                    onRowClick={onRowClick}
+                    onDeleteClick={onDeleteClick}
+                    onContextMenu={onContextMenu}
+                />
             );
 
-            fireEvent.contextMenu(screen.getByText('Test Client').closest('tr')!);
+            // Row click
+            fireEvent.click(screen.getByText('Test Client').closest('tr')!);
+            expect(onRowClick).toHaveBeenCalledTimes(1);
+            expect(onRowClick).toHaveBeenCalledWith(jobs[0]);
 
+            // Delete button click
+            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
+            fireEvent.click(deleteButton);
+            expect(onDeleteClick).toHaveBeenCalledTimes(1);
+            expect(onDeleteClick).toHaveBeenCalledWith(jobs[0]);
+
+            // Context menu
+            fireEvent.contextMenu(screen.getByText('Test Client').closest('tr')!);
             expect(onContextMenu).toHaveBeenCalledTimes(1);
         });
     });
@@ -223,7 +177,6 @@ describe('RecurringJobsTable', () => {
                 <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={100}/>
             );
 
-            // MUI TablePagination displays count info in various formats
             expect(screen.getByText(/of 100/)).toBeInTheDocument();
         });
 
@@ -234,7 +187,6 @@ describe('RecurringJobsTable', () => {
                 <RecurringJobsTable {...defaultProps} jobs={jobs} totalCount={100} onPageSizeChange={onPageSizeChange}/>
             );
 
-            // MUI TablePagination renders a select for rows per page
             const select = screen.getByRole('combobox');
             fireEvent.mouseDown(select);
             const option25 = screen.getByText('25');

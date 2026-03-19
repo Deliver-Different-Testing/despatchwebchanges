@@ -76,7 +76,7 @@ public class BaseJobRepositoryTests : IAsyncDisposable
         public new Task<int?> GetJobParentIdAsync(int jobId)
             => base.GetJobParentIdAsync(jobId);
 
-        public new Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
+        public Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(List<int> jobIds)
             => base.GetJobCurrentAmountsAsync(jobIds);
 
         public new Task SaveMultipleBulkNotesAsync(IReadOnlyList<int> bulkJobIds, string noteText, bool isImportant = false,
@@ -235,8 +235,8 @@ public class BaseJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Id.Should().Be(jobId);
-        result.First().Selected.Should().BeTrue();
+        result[0].Id.Should().Be(jobId);
+        result[0].Selected.Should().BeTrue();
     }
 
     #endregion
@@ -310,8 +310,8 @@ public class BaseJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Id.Should().Be(jobId);
-        result.First().Selected.Should().BeTrue();
+        result[0].Id.Should().Be(jobId);
+        result[0].Selected.Should().BeTrue();
     }
 
     [Fact]

@@ -36,10 +36,6 @@ jest.mock('../utils/dateUtils', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('tasksApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getAllTasks', () => {
         const mockTaskResponse: TaskApiResponse[] = [
             {

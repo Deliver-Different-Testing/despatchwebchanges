@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * TaskCalendarView Component Tests
  */
@@ -14,6 +15,7 @@ import timezone from 'dayjs/plugin/timezone';
 import {TaskCalendarView} from './TaskCalendarView';
 import {TaskCalendarViewProps, TasksServiceInterface} from './TaskCalendarView.interfaces';
 import {Task} from '../task-item/TaskItem.interfaces';
+import {suppressConsoleError} from '../../../__testUtils__';
 
 // Extend dayjs plugins for tests
 dayjs.extend(isoWeek);
@@ -68,10 +70,6 @@ const createDefaultProps = (overrides?: Partial<TaskCalendarViewProps>): TaskCal
 });
 
 describe('TaskCalendarView', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Rendering', () => {
         it('renders the calendar toolbar with Today button', () => {
             const props = createDefaultProps();
@@ -207,6 +205,10 @@ describe('TaskCalendarView', () => {
     });
 
     describe('Task Interactions', () => {
+        let errorSpy: jest.SpyInstance;
+        beforeEach(() => { errorSpy = suppressConsoleError('Error updating task'); });
+        afterEach(() => { errorSpy.mockRestore(); });
+
         it('calls onTaskClick when a task is clicked', async () => {
             const user = userEvent.setup();
             const task = createMockTask({title: 'Clickable Task'});

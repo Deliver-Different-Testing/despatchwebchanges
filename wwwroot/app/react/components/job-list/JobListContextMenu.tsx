@@ -2,7 +2,7 @@
  * Job List Context Menu
  *
  * MUI Menu positioned at mouse coordinates, built dynamically based on job state.
- * Ports the logic from job-context-menu.service.ts to React.
+ * Self-contained React context menu with all action handlers.
  * Uses @mui/icons-material for all icons (no font Icon component).
  */
 
@@ -41,16 +41,20 @@ import FirstPageIcon from '@mui/icons-material/FirstPage';
 import RedoIcon from '@mui/icons-material/Redo';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
+import LinearProgress from '@mui/material/LinearProgress';
+
 import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../services/jobListApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
+import {executeSplitJobFlow} from '../../services/splitJobFlow';
+import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 
 // Nationwide speed constant
-const NATIONWIDE_SPEED_ID = 415;
-const INTERNAL_STATUS_REPRICE = 4;
+const NATIONWIDE_SPEED_ID =  415;
+const INTERNAL_STATUS_REPRICE = JobInternalStatusEnum.Reprice;
 
 interface ContextMenuPosition {
     mouseX: number;
@@ -64,7 +68,6 @@ interface JobListContextMenuProps {
     appPage: AppPage;
     showToast: ShowToastFn;
     onRefresh?: () => void;
-    onSplitJob?: (event: MouseEvent, job: DispatchJob) => void;
     onAddStop?: (job: DispatchJob) => void;
     isUsCustomer?: boolean;
 }
@@ -80,7 +83,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     appPage,
     showToast,
     onRefresh,
-    onSplitJob,
     onAddStop,
 }) => {
     const [lateDialogOpen, setLateDialogOpen] = useState(false);
@@ -92,6 +94,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         message: string;
         onConfirm: () => Promise<void>;
     } | null>(null);
+    const [splitJobLoading, setSplitJobLoading] = useState(false);
     const [eventGroups, setEventGroups] = useState<api.EventGroupItem[]>(eventGroupsCache);
     const [eventGroupsAnchor, setEventGroupsAnchor] = useState<HTMLElement | null>(null);
 
@@ -127,7 +130,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -329,11 +332,22 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
-    const handleSplitJob = (event: React.MouseEvent) => {
+    const handleSplitJob = () => {
         closeAll();
-        if (onSplitJob) {
-            onSplitJob(event.nativeEvent, activeJob);
-        }
+        const targetJob = dialogJobRef.current ?? activeJob;
+        setConfirmDialogConfig({
+            title: 'Split Job',
+            message: 'Are you sure you wish to split this job?',
+            onConfirm: async () => {
+                await executeSplitJobFlow({
+                    job: targetJob,
+                    showToast,
+                    onComplete: refresh,
+                    setLoading: setSplitJobLoading,
+                });
+            },
+        });
+        setConfirmDialogOpen(true);
     };
 
     const handleSetFirstJob = () => {
@@ -630,6 +644,20 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         OK
                     </Button>
                 </DialogActions>
+            </Dialog>
+
+            {/* Split Job Loading Dialog */}
+            <Dialog
+                open={splitJobLoading}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogContent sx={{textAlign: 'center', py: 3}}>
+                    <LinearProgress sx={{mb: 2}}/>
+                    <Typography variant="body2">
+                        Splitting job {activeJob.jobNo}...
+                    </Typography>
+                </DialogContent>
             </Dialog>
         </>
     );

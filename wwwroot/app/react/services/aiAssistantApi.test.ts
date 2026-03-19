@@ -29,10 +29,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('aiAssistantApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('suggestCouriers', () => {
         const mockResponse = {
             summary: '1. **Jane** — lowest workload\n2. **John** — closest driver',

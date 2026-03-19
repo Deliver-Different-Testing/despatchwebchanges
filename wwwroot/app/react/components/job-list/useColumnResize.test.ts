@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useColumnResize Hook Tests
  *

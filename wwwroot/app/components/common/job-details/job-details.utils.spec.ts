@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for JobDetailController utility functions
  * Tests static methods and helper functions used in job details

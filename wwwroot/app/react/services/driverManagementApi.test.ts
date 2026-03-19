@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Driver Management API Service Tests
  */
@@ -20,10 +21,6 @@ const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 const mockDownloadBlob = downloadBlob as jest.MockedFunction<typeof downloadBlob>;
 
 describe('driverManagementApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('searchAllCouriers', () => {
         it('should call apiClient.get with correct endpoint and searchTerm', async () => {
             const mockResults = [{id: 1, text: 'John Smith'}];

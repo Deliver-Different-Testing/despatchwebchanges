@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -47,7 +48,6 @@ const renderPage = (showToast = jest.fn()) => {
 
 describe('DriverManagementPage', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         localStorage.clear();
         mockUseFleetOptions.mockReturnValue({data: [{id: 1, text: 'Fleet A'}], isLoading: false, isError: false, error: null} as any);
     });

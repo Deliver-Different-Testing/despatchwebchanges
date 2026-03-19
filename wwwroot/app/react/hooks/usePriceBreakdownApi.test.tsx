@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * usePriceBreakdownApi Hooks Tests
  */
@@ -56,10 +57,6 @@ const mockBreakdowns: PriceBreakdown[] = [
 ];
 
 describe('usePriceBreakdowns', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should fetch price breakdowns for a regular job', async () => {
         mockPricingApi.getPriceBreakdowns.mockResolvedValueOnce(mockBreakdowns);
 
@@ -140,10 +137,6 @@ describe('usePriceBreakdowns', () => {
 });
 
 describe('useAddPriceBreakdown', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should add a price breakdown successfully', async () => {
         mockPricingApi.addPriceBreakdown.mockResolvedValueOnce(4);
 
@@ -214,10 +207,6 @@ describe('useAddPriceBreakdown', () => {
 });
 
 describe('useUpdatePriceBreakdown', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should update a price breakdown successfully', async () => {
         mockPricingApi.updatePriceBreakdown.mockResolvedValueOnce(undefined);
 
@@ -285,10 +274,6 @@ describe('useUpdatePriceBreakdown', () => {
 });
 
 describe('useDeletePriceBreakdown', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should delete a price breakdown successfully', async () => {
         mockPricingApi.deletePriceBreakdown.mockResolvedValueOnce(undefined);
 

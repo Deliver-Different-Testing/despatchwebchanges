@@ -15,10 +15,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('configApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getHereMapsKey', () => {
         it('should call apiClient.get with correct endpoint and extract apiKey', async () => {
             mockApiClient.get.mockResolvedValueOnce({apiKey: 'test-api-key-123'});

@@ -1,3 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
+/**
+ * Optimised: read-only tests consolidated to reduce render count.
+ */
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -67,213 +71,149 @@ const setupMocks = (data?: CourierDailyEarningsPaginated, isLoading = false) => 
 };
 
 describe('DriverEarningsTab', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
+    it('should render column headers, stats, and have correct initial sort state', () => {
+        setupMocks();
+        renderWithProviders();
+
+        // Column headers
+        expect(screen.getByText('Name')).toBeInTheDocument();
+        expect(screen.getByText('Hours Logged')).toBeInTheDocument();
+        expect(screen.getByText('Deliveries')).toBeInTheDocument();
+        expect(screen.getByText('Earnings')).toBeInTheDocument();
+        expect(screen.getByText('Hourly Rate')).toBeInTheDocument();
+
+        // Stats: totalEarningsToday
+        expect(screen.getByText('$150.00')).toBeInTheDocument();
+        expect(screen.getByText('Total Earnings Today')).toBeInTheDocument();
+
+        // Stats: averageHourlyRate
+        expect(screen.getByText('$18.75')).toBeInTheDocument();
+        expect(screen.getByText('Average Hourly Rate')).toBeInTheDocument();
+
+        // Stats: totalActiveDrivers
+        expect(screen.getByText('2')).toBeInTheDocument();
+        expect(screen.getByText('Active Drivers')).toBeInTheDocument();
+
+        // Stats: totalDeliveriesToday
+        expect(screen.getByText('6')).toBeInTheDocument();
+        expect(screen.getByText('Total Deliveries')).toBeInTheDocument();
+
+        // Initial state: name as default sort column with asc direction
+        const firstCall = mockUseDriverEarnings.mock.calls[0];
+        expect(firstCall[0].orderBy).toBe('name');
+        expect(firstCall[0].sortDescending).toBe(false);
     });
 
-    describe('Column headers', () => {
-        it('should render all column headers', () => {
-            setupMocks();
-            renderWithProviders();
+    it('should set orderBy for each sortable column header click', async () => {
+        setupMocks();
+        renderWithProviders();
 
-            expect(screen.getByText('Name')).toBeInTheDocument();
-            expect(screen.getByText('Hours Logged')).toBeInTheDocument();
-            expect(screen.getByText('Deliveries')).toBeInTheDocument();
-            expect(screen.getByText('Earnings')).toBeInTheDocument();
-            expect(screen.getByText('Hourly Rate')).toBeInTheDocument();
-        });
-    });
-
-    describe('Sort clicks', () => {
-        it('should set orderBy to name when Name header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            // Name is default active asc, clicking toggles to desc
-            fireEvent.click(screen.getByText('Name'));
-
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('name');
-                expect(lastCall[0].sortDescending).toBe(true);
-            });
+        // Click Name (default active asc, toggles to desc)
+        fireEvent.click(screen.getByText('Name'));
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('name');
+            expect(lastCall[0].sortDescending).toBe(true);
         });
 
-        it('should set orderBy to hoursLogged when Hours Logged header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            fireEvent.click(screen.getByText('Hours Logged'));
-
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('hoursLogged');
-            });
+        // Click Hours Logged
+        fireEvent.click(screen.getByText('Hours Logged'));
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('hoursLogged');
         });
 
-        it('should set orderBy to deliveries when Deliveries header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            fireEvent.click(screen.getByText('Deliveries'));
-
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('deliveries');
-            });
+        // Click Deliveries
+        fireEvent.click(screen.getByText('Deliveries'));
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('deliveries');
         });
 
-        it('should set orderBy to earnings when Earnings header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            fireEvent.click(screen.getByText('Earnings', {selector: 'span'}));
-
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('earnings');
-            });
+        // Click Earnings
+        fireEvent.click(screen.getByText('Earnings', {selector: 'span'}));
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('earnings');
         });
 
-        it('should set orderBy to hourlyRate when Hourly Rate header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            fireEvent.click(screen.getByText('Hourly Rate'));
-
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('hourlyRate');
-            });
+        // Click Hourly Rate
+        fireEvent.click(screen.getByText('Hourly Rate'));
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('hourlyRate');
         });
     });
 
-    describe('Direction toggle', () => {
-        it('should toggle direction: first click desc (on active), second click asc, third click desc', async () => {
-            setupMocks();
-            renderWithProviders();
+    it('should toggle direction: first click desc (on active), second click asc, third click desc', async () => {
+        setupMocks();
+        renderWithProviders();
 
-            // Name is default active asc, clicking toggles to desc
-            fireEvent.click(screen.getByText('Name'));
+        // Name is default active asc, clicking toggles to desc
+        fireEvent.click(screen.getByText('Name'));
 
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('name');
-                expect(lastCall[0].sortDescending).toBe(true);
-            });
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('name');
+            expect(lastCall[0].sortDescending).toBe(true);
+        });
 
-            // Second click → asc
-            fireEvent.click(screen.getByText('Name'));
+        // Second click → asc
+        fireEvent.click(screen.getByText('Name'));
 
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('name');
-                expect(lastCall[0].sortDescending).toBe(false);
-            });
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('name');
+            expect(lastCall[0].sortDescending).toBe(false);
+        });
 
-            // Third click → desc
-            fireEvent.click(screen.getByText('Name'));
+        // Third click → desc
+        fireEvent.click(screen.getByText('Name'));
 
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('name');
-                expect(lastCall[0].sortDescending).toBe(true);
-            });
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('name');
+            expect(lastCall[0].sortDescending).toBe(true);
         });
     });
 
-    describe('Query state', () => {
-        it('should reset page to 1 when sort changes', async () => {
-            setupMocks();
-            renderWithProviders();
+    it('should reset page to 1 when sort changes and pass sortDescending correctly', async () => {
+        setupMocks();
+        renderWithProviders();
 
-            fireEvent.click(screen.getByText('Hours Logged'));
+        // Clicking a different column should reset page to 1
+        fireEvent.click(screen.getByText('Hours Logged'));
 
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].page).toBe(1);
-            });
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].page).toBe(1);
         });
 
-        it('should pass sortDescending correctly', async () => {
-            setupMocks();
-            renderWithProviders();
+        // Hours Logged is now active asc → click toggles to desc, verify sortDescending
+        fireEvent.click(screen.getByText('Hours Logged'));
 
-            // Name is active asc → click toggles to desc
-            fireEvent.click(screen.getByText('Name'));
-
-            await waitFor(() => {
-                const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
-                expect(lastCall[0].sortDescending).toBe(true);
-            });
+        await waitFor(() => {
+            const lastCall = mockUseDriverEarnings.mock.calls[mockUseDriverEarnings.mock.calls.length - 1];
+            expect(lastCall[0].sortDescending).toBe(true);
         });
     });
 
-    describe('Initial state', () => {
-        it('should have name as the default sort column with asc direction', () => {
-            setupMocks();
-            renderWithProviders();
+    it('should show loading indicator when isLoading is true', () => {
+        setupMocks(undefined, true);
+        renderWithProviders();
 
-            const firstCall = mockUseDriverEarnings.mock.calls[0];
-            expect(firstCall[0].orderBy).toBe('name');
-            expect(firstCall[0].sortDescending).toBe(false);
-        });
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
-    describe('Stats display', () => {
-        it('should display totalEarningsToday', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('$150.00')).toBeInTheDocument();
-            expect(screen.getByText('Total Earnings Today')).toBeInTheDocument();
+    it('should show empty message when no items', () => {
+        setupMocks({
+            items: [], total: 0, page: 1, pages: 0,
+            totalEarningsToday: 0, averageHourlyRate: 0,
+            totalActiveDrivers: 0, totalDeliveriesToday: 0,
         });
+        renderWithProviders();
 
-        it('should display averageHourlyRate', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('$18.75')).toBeInTheDocument();
-            expect(screen.getByText('Average Hourly Rate')).toBeInTheDocument();
-        });
-
-        it('should display totalActiveDrivers', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('2')).toBeInTheDocument();
-            expect(screen.getByText('Active Drivers')).toBeInTheDocument();
-        });
-
-        it('should display totalDeliveriesToday', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('6')).toBeInTheDocument();
-            expect(screen.getByText('Total Deliveries')).toBeInTheDocument();
-        });
-    });
-
-    describe('Loading state', () => {
-        it('should show loading indicator when isLoading is true', () => {
-            setupMocks(undefined, true);
-            renderWithProviders();
-
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
-        });
-    });
-
-    describe('Empty state', () => {
-        it('should show empty message when no items', () => {
-            setupMocks({
-                items: [], total: 0, page: 1, pages: 0,
-                totalEarningsToday: 0, averageHourlyRate: 0,
-                totalActiveDrivers: 0, totalDeliveriesToday: 0,
-            });
-            renderWithProviders();
-
-            expect(screen.getByText('No Earnings Data')).toBeInTheDocument();
-            expect(screen.getByText('No earnings data matches your criteria.')).toBeInTheDocument();
-        });
+        expect(screen.getByText('No Earnings Data')).toBeInTheDocument();
+        expect(screen.getByText('No earnings data matches your criteria.')).toBeInTheDocument();
     });
 });

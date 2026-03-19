@@ -9,6 +9,7 @@
 import type {Dayjs} from 'dayjs';
 import type {AddressViewModel} from './address';
 import type {ShowToastFn} from '../services/toastService';
+import type {RequestOptions} from '../services/apiClient';
 
 // Re-export shared types that the AngularJS layer already defines
 export interface DispatchJobSuggestion {
@@ -216,6 +217,45 @@ export enum AppPage {
     JobSearch = 3,
 }
 
+// ── Search Parameters for React-managed data fetching ────────────────
+
+export interface JobListSearchParams {
+    order?: string;
+    orderDirection?: string;
+    startDate?: Dayjs;
+    endDate?: Dayjs;
+    page?: number;
+    pageSize?: number;
+    searchText?: string;
+    useTime?: boolean;
+    statusFilter?: string;
+    // Job search specific
+    courierIds?: number[];
+    clientIds?: number[];
+    speedIds?: number[];
+    wild?: string;
+    job?: string;
+    jobId?: number;
+    sortColumn?: string;
+    sortDirection?: string;
+    // Dispatch specific
+    isInternal?: boolean;
+    despatchViewIds?: (string | number)[];
+    selectedClearListId?: number;
+}
+
+export interface JobSearchResult {
+    jobs: DispatchJob[];
+    totalCount: number;
+    hasMore: boolean;
+}
+
+export interface FetchConfig {
+    fetchFn: (params: JobListSearchParams, options?: RequestOptions) => Promise<JobSearchResult>;
+    queryKeyFn: (params: JobListSearchParams) => readonly unknown[];
+    initialParams: JobListSearchParams;
+}
+
 // ── Mount Configuration ──────────────────────────────────────────────
 
 export interface MountJobListConfig {
@@ -229,12 +269,12 @@ export interface MountJobListConfig {
     onCategoryChange?: (category: string) => void;
     onBackendFilter?: (column: string, direction: string) => void;
     onLoadMoreJobs?: (page: number, pageSize: number) => Promise<{ jobs: DispatchJob[]; totalCount: number; hasMore: boolean }>;
-    /** AngularJS passes split/addStop callbacks that need $mdDialog flows */
-    onSplitJob?: (event: MouseEvent, job: DispatchJob) => void;
     onAddStop?: (job: DispatchJob) => void;
     defaultCategory?: JobCategory;
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
+    /** If provided, React manages its own data fetching via React Query */
+    fetchConfig?: FetchConfig;
 }
 
 // ── React Component Props ────────────────────────────────────────────
@@ -250,15 +290,18 @@ export interface JobListPanelProps {
     onCategoryChange?: (category: string) => void;
     onBackendFilter?: (column: string, direction: string) => void;
     onLoadMoreJobs?: (page: number, pageSize: number) => Promise<{ jobs: DispatchJob[]; totalCount: number; hasMore: boolean }>;
-    onSplitJob?: (event: MouseEvent, job: DispatchJob) => void;
     onAddStop?: (job: DispatchJob) => void;
     defaultCategory?: JobCategory;
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
-    /** Called by mount module to allow pushing jobs from AngularJS */
+    /** If provided, React manages its own data fetching via React Query */
+    fetchConfig?: FetchConfig;
+    /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */
     setJobsCallback?: (cb: (jobs: DispatchJob[], totalCount: number) => void) => void;
     /** Called by mount module to allow triggering refresh from AngularJS */
     setRefreshCallback?: (cb: () => void) => void;
     /** Called by mount module to allow setting selected job from AngularJS */
     setSelectJobCallback?: (cb: (jobId: number) => void) => void;
+    /** Called by mount module to allow updating search params from AngularJS */
+    setUpdateSearchParamsCallback?: (cb: (params: Partial<JobListSearchParams>) => void) => void;
 }

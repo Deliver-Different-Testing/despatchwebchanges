@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useNotesApi Hooks Tests
  */
@@ -94,10 +95,6 @@ const mockNoteTypes: NoteType[] = [
 ];
 
 describe('useJobNotes', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should fetch notes for a regular job', async () => {
         mockNotesApi.getJobNotes.mockResolvedValueOnce(mockNotes);
 
@@ -154,10 +151,6 @@ describe('useJobNotes', () => {
 });
 
 describe('useBulkJobNotes', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should fetch notes for a bulk job', async () => {
         mockNotesApi.getBulkJobNotes.mockResolvedValueOnce(mockNotes);
 
@@ -181,10 +174,6 @@ describe('useBulkJobNotes', () => {
 });
 
 describe('useNoteTypes', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should fetch note types', async () => {
         mockNotesApi.getNoteTypes.mockResolvedValueOnce(mockNoteTypes);
 
@@ -208,10 +197,6 @@ describe('useNoteTypes', () => {
 });
 
 describe('useCreateNote', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should create a note successfully', async () => {
         mockNotesApi.createNote.mockResolvedValueOnce(undefined);
 
@@ -261,10 +246,6 @@ describe('useCreateNote', () => {
 });
 
 describe('useCreateBulkJobNote', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should create a bulk job note successfully', async () => {
         mockNotesApi.createBulkJobNote.mockResolvedValueOnce(undefined);
 
@@ -288,10 +269,6 @@ describe('useCreateBulkJobNote', () => {
 });
 
 describe('useUpdateNote', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should update a note successfully', async () => {
         mockNotesApi.updateNote.mockResolvedValueOnce(undefined);
 
@@ -316,10 +293,6 @@ describe('useUpdateNote', () => {
 });
 
 describe('useUpdateBulkJobNote', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should update a bulk job note successfully', async () => {
         mockNotesApi.updateBulkJobNote.mockResolvedValueOnce(undefined);
 
@@ -344,10 +317,6 @@ describe('useUpdateBulkJobNote', () => {
 });
 
 describe('useDeleteNote', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should delete a note successfully', async () => {
         mockNotesApi.deleteNote.mockResolvedValueOnce(undefined);
 
@@ -383,10 +352,6 @@ describe('useDeleteNote', () => {
 });
 
 describe('useCreateNoteType', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should create a note type successfully', async () => {
         mockNotesApi.createNoteType.mockResolvedValueOnce(undefined);
 
@@ -417,10 +382,6 @@ describe('useNoteHistory', () => {
             newNoteText: 'Updated',
         },
     ];
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     it('should fetch note history for a note', async () => {
         mockNotesApi.getNoteHistory.mockResolvedValueOnce(mockHistory);

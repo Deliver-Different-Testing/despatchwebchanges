@@ -22,6 +22,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import type {Dayjs} from 'dayjs';
 import {AddressViewModel, PrebookListModel, RecurringJobColumn, RecurringJobSort,} from '../../../interfaces';
 
 export interface RecurringJobsTableProps {
@@ -55,21 +56,14 @@ const columns: RecurringJobColumn[] = [
 
 const pageSizeOptions = [25, 50, 100, 250];
 
-function formatDate(date: Date | undefined): string {
-    if (!date) return '-';
-    return date.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: '2-digit',
-    });
+function formatDate(date: Dayjs | undefined): string {
+    if (!date || !date.isValid()) return '-';
+    return date.format('DD MMM YY');
 }
 
-function formatTime(date: Date | undefined): string {
-    if (!date) return '';
-    return date.toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-    });
+function formatTime(date: Dayjs | undefined): string {
+    if (!date || !date.isValid()) return '';
+    return date.format('HH:mm');
 }
 
 function getAddressPrimary(address: AddressViewModel | undefined): string {

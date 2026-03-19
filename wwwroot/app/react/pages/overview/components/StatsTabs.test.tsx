@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
@@ -14,10 +15,6 @@ describe('StatsTabs', () => {
         activeTab: 0,
         onTabChange: jest.fn(),
     };
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     it('renders all three tabs with correct labels', () => {
         renderWithTheme(<StatsTabs {...defaultProps} />);

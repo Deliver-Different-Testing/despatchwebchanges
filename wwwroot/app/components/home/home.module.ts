@@ -10,7 +10,6 @@ import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 import { CurrentWorkAllDriversReactComponent } from "../../react/components/common/current-work-all-drivers";
-import JobContextMenuService from "../../services/job-context-menu.service";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import angular from 'angular';
@@ -39,7 +38,6 @@ homeModule
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
-    .service("jobContextMenuService", JobContextMenuService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("createJobDialogService", CreateJobDialogService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);

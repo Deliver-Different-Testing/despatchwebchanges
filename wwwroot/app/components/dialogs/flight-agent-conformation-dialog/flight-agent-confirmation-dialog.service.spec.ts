@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FlightAgentConfirmationDialogService
  * Covers lazy loading of React bundle, flight dialog opening, agent dialog opening

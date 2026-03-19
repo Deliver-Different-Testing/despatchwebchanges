@@ -102,28 +102,28 @@ const STAT_CARDS: StatCardDef[] = [
         label: 'ACTIVE',
         countKey: 'active',
         color: 'primary',
-        icon: <TaskAltIcon sx={{fontSize: 32, opacity: 0.9}} />,
+        icon: <TaskAltIcon sx={{fontSize: 32, opacity: 0.9}}/>,
     },
     {
         status: StatusFilter.Overdue,
         label: 'OVERDUE',
         countKey: 'overdue',
         color: 'error',
-        icon: <WarningIcon sx={{fontSize: 32, opacity: 0.9}} />,
+        icon: <WarningIcon sx={{fontSize: 32, opacity: 0.9}}/>,
     },
     {
         status: StatusFilter.Todo,
         label: 'TODO',
         countKey: 'todo',
         color: 'success',
-        icon: <PendingActionsIcon sx={{fontSize: 32, opacity: 0.9}} />,
+        icon: <PendingActionsIcon sx={{fontSize: 32, opacity: 0.9}}/>,
     },
     {
         status: StatusFilter.Done,
         label: 'DONE',
         countKey: 'done',
         color: 'secondary',
-        icon: <CheckCircleIcon sx={{fontSize: 32, opacity: 0.9}} />,
+        icon: <CheckCircleIcon sx={{fontSize: 32, opacity: 0.9}}/>,
     },
 ];
 
@@ -136,11 +136,11 @@ const fadeInUpKeyframes = `
 `;
 
 export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
-    showToast,
-    isUsCustomer,
-    onTaskSelect,
-    setRefreshCallback,
-}) => {
+                                                                        showToast,
+                                                                        isUsCustomer,
+                                                                        onTaskSelect,
+                                                                        setRefreshCallback,
+                                                                    }) => {
     const theme = useTheme();
 
     // View state (initialized from localStorage to avoid flash of default state)
@@ -169,7 +169,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     endDate: dayjs(parsed.endDate),
                 };
             }
-        } catch { /* ignore localStorage errors */ }
+        } catch { /* ignore localStorage errors */
+        }
         return setDateFilterDefaults();
     });
 
@@ -329,7 +330,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             }
         }
 
-        const definitions: Array<{key: string; label: string; accent: string}> = [
+        const definitions: Array<{ key: string; label: string; accent: string }> = [
             {key: 'overdue', label: 'Overdue', accent: theme.palette.error.main},
             {key: 'today', label: 'Today', accent: theme.palette.primary.main},
             {key: 'tomorrow', label: 'Tomorrow', accent: theme.palette.warning.main},
@@ -463,7 +464,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
                                     e.preventDefault();
-                                    handleStatusFilterChange(card.status);
+                                    return handleStatusFilterChange(card.status);
                                 }
                             }}
                             elevation={isSelected ? 8 : 1}
@@ -513,7 +514,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                 input: {
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <SearchIcon />
+                                            <SearchIcon/>
                                         </InputAdornment>
                                     ),
                                 },
@@ -553,7 +554,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                             </Select>
                         </FormControl>
 
-                        <Box sx={{flex: 1}} />
+                        <Box sx={{flex: 1}}/>
 
                         <ToggleButtonGroup
                             value={showFullCalendar ? 'calendar' : 'list'}
@@ -575,11 +576,11 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                             }}
                         >
                             <ToggleButton value="list">
-                                <ViewListIcon sx={{mr: 0.5, fontSize: 20}} />
+                                <ViewListIcon sx={{mr: 0.5, fontSize: 20}}/>
                                 List
                             </ToggleButton>
                             <ToggleButton value="calendar">
-                                <CalendarMonthIcon sx={{mr: 0.5, fontSize: 20}} />
+                                <CalendarMonthIcon sx={{mr: 0.5, fontSize: 20}}/>
                                 Calendar
                             </ToggleButton>
                         </ToggleButtonGroup>
@@ -602,7 +603,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             <Box sx={{flex: 1, display: 'flex', gap: 2, minHeight: 0}}>
                 {/* Left Panel: Tasks or Calendar */}
                 <Box sx={{flex: 11, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
-                    <Card variant="outlined" sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                    <Card variant="outlined"
+                          sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
                         <Toolbar
                             variant="dense"
                             sx={{
@@ -616,12 +618,12 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                         >
                             {showFullCalendar ? (
                                 <>
-                                    <CalendarMonthIcon sx={{mr: 1}} />
+                                    <CalendarMonthIcon sx={{mr: 1}}/>
                                     <Typography variant="subtitle1">Calendar</Typography>
                                 </>
                             ) : (
                                 <>
-                                    <TaskAltIcon sx={{mr: 1}} />
+                                    <TaskAltIcon sx={{mr: 1}}/>
                                     <Typography variant="subtitle1">
                                         Tasks ({filteredTasks.length})
                                     </Typography>
@@ -661,7 +663,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                 {/* Empty State */}
                                 {!tasksLoading && filteredTasks.length === 0 && (
                                     <Box display="flex" alignItems="center" justifyContent="center" p={3}>
-                                        <InfoIcon sx={{mr: 1, color: 'text.disabled'}} />
+                                        <InfoIcon sx={{mr: 1, color: 'text.disabled'}}/>
                                         <Typography color="text.secondary">
                                             No tasks match your filters
                                         </Typography>
@@ -769,7 +771,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
                 {/* Right Panel: Delivery Journey */}
                 <Box sx={{flex: 9, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
-                    <Card variant="outlined" sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                    <Card variant="outlined"
+                          sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
                         <Toolbar
                             variant="dense"
                             sx={{
@@ -781,7 +784,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                 flexShrink: 0,
                             }}
                         >
-                            <RocketLaunchIcon sx={{mr: 1}} />
+                            <RocketLaunchIcon sx={{mr: 1}}/>
                             <Typography variant="subtitle1">
                                 Delivery Journey {selectedTask ? `for Job ${selectedTask.jobNumber}` : ''}
                             </Typography>

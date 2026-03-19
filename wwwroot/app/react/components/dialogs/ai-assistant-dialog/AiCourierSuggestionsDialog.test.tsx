@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AiCourierSuggestionsDialog Component Tests
  *
@@ -50,7 +51,6 @@ const defaultProps = {
 
 describe('AiCourierSuggestionsDialog', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         jest.useFakeTimers();
     });
 
@@ -61,10 +61,10 @@ describe('AiCourierSuggestionsDialog', () => {
     describe('Open/Close', () => {
         it('renders nothing when not open', () => {
             mockSuggestCouriers.mockResolvedValue(mockCourierResponse);
-            const { container } = renderWithTheme(
+            renderWithTheme(
                 <AiCourierSuggestionsDialog {...defaultProps} open={false} />
             );
-            expect(container.querySelector('.MuiDialog-root')).toBeNull();
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
         it('renders dialog when open', () => {

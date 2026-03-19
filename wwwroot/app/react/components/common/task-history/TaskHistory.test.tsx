@@ -1,9 +1,11 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * TaskHistory Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
@@ -106,7 +108,6 @@ const createDefaultProps = (overrides?: Partial<TaskHistoryProps>): TaskHistoryP
 
 describe('TaskHistory', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         jest.useFakeTimers();
     });
 
@@ -123,50 +124,43 @@ describe('TaskHistory', () => {
             expect(screen.getByText('Select a job to view its delivery journey.')).toBeInTheDocument();
         });
 
-        it('renders loading state initially', async () => {
+        it('renders loading state initially', () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
             expect(screen.getByRole('progressbar')).toBeInTheDocument();
         });
 
-        it('renders delivery events after loading', async () => {
+        it('renders delivery events, dates, tags, notes, status styling, and header actions after loading', async () => {
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
+            // Wait for async load
             expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
+            // -- delivery events --
             expect(screen.getByText('Dispatched to Courier')).toBeInTheDocument();
             expect(screen.getByText('Out for Delivery')).toBeInTheDocument();
             expect(screen.getByText('Delivered')).toBeInTheDocument();
-        });
 
-        it('renders event dates', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<TaskHistory {...props} />);
-
-            expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
+            // -- event dates --
             expect(screen.getByText(/Jan 15, 2025 9:00 AM/)).toBeInTheDocument();
-        });
 
-        it('renders event tags', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<TaskHistory {...props} />);
-
-            expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
+            // -- event tags --
             expect(screen.getByText('priority')).toBeInTheDocument();
             expect(screen.getByText('express')).toBeInTheDocument();
-        });
 
-        it('renders event notes in normal mode', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<TaskHistory {...props} />);
-
-            expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
+            // -- event notes (normal mode) --
             expect(screen.getByText('Customer requested express delivery')).toBeInTheDocument();
+
+            // -- status styling: completed, current, pending all rendered --
+            expect(screen.getByText('Order Received')).toBeInTheDocument(); // completed
+            expect(screen.getByText('Out for Delivery')).toBeInTheDocument(); // current
+            expect(screen.getByText('Delivered')).toBeInTheDocument(); // pending
+
+            // -- header actions: density toggle + refresh buttons present --
+            const buttons = screen.getAllByRole('button');
+            expect(buttons.length).toBeGreaterThan(0);
         });
 
         it('renders empty state when no events', async () => {
@@ -180,30 +174,6 @@ describe('TaskHistory', () => {
             expect(await screen.findByText('No Journey Events')).toBeInTheDocument();
 
             expect(screen.getByText('No delivery journey events found for this job.')).toBeInTheDocument();
-        });
-    });
-
-    describe('Header Actions', () => {
-        it('renders density mode toggle button', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<TaskHistory {...props} />);
-
-            expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
-            // Find the density toggle button by its tooltip
-            const buttons = screen.getAllByRole('button');
-            expect(buttons.length).toBeGreaterThan(0);
-        });
-
-        it('renders refresh button', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<TaskHistory {...props} />);
-
-            expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
-            // Find refresh button
-            const buttons = screen.getAllByRole('button');
-            expect(buttons.length).toBeGreaterThan(0);
         });
     });
 
@@ -286,23 +256,21 @@ describe('TaskHistory', () => {
     });
 
     describe('Theme Support', () => {
-        it('renders with US theme colors when isUsCustomer is true', async () => {
-            const props = createDefaultProps({isUsCustomer: true});
-            renderWithProviders(<TaskHistory {...props} />);
+        it('renders with both US and NZ theme colors', async () => {
+            // US theme (isUsCustomer: true)
+            const usProps = createDefaultProps({isUsCustomer: true});
+            const {unmount} = renderWithProviders(<TaskHistory {...usProps} />);
 
             expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
-            // Component should render with blue theme
             expect(screen.getByText('Order Received')).toBeInTheDocument();
-        });
 
-        it('renders with NZ theme colors when isUsCustomer is false', async () => {
-            const props = createDefaultProps({isUsCustomer: false});
-            renderWithProviders(<TaskHistory {...props} />);
+            unmount();
+
+            // NZ theme (isUsCustomer: false)
+            const nzProps = createDefaultProps({isUsCustomer: false});
+            renderWithProviders(<TaskHistory {...nzProps} />);
 
             expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
-            // Component should render with yellow theme
             expect(screen.getByText('Order Received')).toBeInTheDocument();
         });
     });
@@ -339,20 +307,6 @@ describe('TaskHistory', () => {
             await waitFor(() => {
                 expect(props.dispatchService.getDeliveryJourney).toHaveBeenCalledWith(456);
             });
-        });
-    });
-
-    describe('Status Colors', () => {
-        it('renders events with correct status styling', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(<TaskHistory {...props} />);
-
-            expect(await screen.findByText('Order Received')).toBeInTheDocument();
-
-            // All events should be rendered
-            expect(screen.getByText('Order Received')).toBeInTheDocument(); // completed
-            expect(screen.getByText('Out for Delivery')).toBeInTheDocument(); // current
-            expect(screen.getByText('Delivered')).toBeInTheDocument(); // pending
         });
     });
 

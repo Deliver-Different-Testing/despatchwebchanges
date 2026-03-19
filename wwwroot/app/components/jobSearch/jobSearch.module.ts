@@ -2,7 +2,6 @@
 import JobSearchService from "./jobSearch.service";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import JobContextMenuService from "../../services/job-context-menu.service";
 import {TaskHistoryReactComponent} from "../../react/components/common/task-history/task-history-react.module";
 import {SearchCriteriaPanelReactComponent} from "../../react/components/common/search-criteria-panel/search-criteria-panel-react.module";
 import CreateJobDialogService from "../dialogs/create-job-dialog/create-job-dialog.service";
@@ -38,7 +37,6 @@ jobSearchModule
     .service("uCSData", JobSearchService)
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
-    .service("jobContextMenuService", JobContextMenuService)
     .service("createJobDialogService", CreateJobDialogService)
     .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);

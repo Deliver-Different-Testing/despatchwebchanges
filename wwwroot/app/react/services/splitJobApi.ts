@@ -14,30 +14,15 @@ import {AddressViewModel} from '../interfaces';
 export interface SplitJobRequest {
     jobId: number;
     meetingPointAddress: AddressViewModel;
-}
-
-export interface SplitJobResponse {
-    taskId: string;
-}
-
-export interface SplitJobStatusResponse {
-    status: 'Running' | 'Completed' | 'Failed';
-    errorMessage: string | null;
+    courierIdForLegB?: number | null;
 }
 
 /**
- * Split a job into multiple child jobs with a specified meeting point.
- * Returns a taskId for polling the background operation status.
+ * Split a job into pickup and delivery child jobs with a specified meeting point.
+ * The backend performs the split synchronously and returns 200 OK on success.
  */
-export async function splitJob(request: SplitJobRequest): Promise<SplitJobResponse> {
-    return apiClient.post<SplitJobResponse>('job/splitJob', request);
-}
-
-/**
- * Poll the status of a background split job operation.
- */
-export async function getSplitJobStatus(taskId: string): Promise<SplitJobStatusResponse> {
-    return apiClient.get<SplitJobStatusResponse>('job/splitJobStatus', { taskId });
+export async function splitJob(request: SplitJobRequest): Promise<void> {
+    await apiClient.post('job/splitJob', request);
 }
 
 /**
@@ -60,7 +45,6 @@ export async function unSplitJob(jobId: number): Promise<string> {
 
 export const splitJobApi = {
     splitJob,
-    getSplitJobStatus,
     restoreSplitJobs,
     unSplitJob,
 };

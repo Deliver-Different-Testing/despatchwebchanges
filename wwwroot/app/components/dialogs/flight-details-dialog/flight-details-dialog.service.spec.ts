@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FlightDetailsDialogService
  * Covers lazy loading of React bundle, dialog opening with flightData passthrough,

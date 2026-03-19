@@ -34,7 +34,6 @@ const mockedPost = apiClient.post as jest.Mock;
 
 describe('jobListApi', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         mockedPost.mockResolvedValue(undefined);
         mockedGet.mockResolvedValue([]);
     });

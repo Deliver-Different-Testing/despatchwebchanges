@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * BulkPriceUploadDialog Component Tests
  */
@@ -281,7 +282,7 @@ describe('BulkPriceUploadDialog', () => {
             const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
             await userEvent.click(applyButton);
 
-            expect(screen.getByText(/Applying price changes.../)).toBeInTheDocument();
+            expect(await screen.findByText(/Applying price changes.../)).toBeInTheDocument();
         });
 
         it('should show success toast on successful apply', async () => {
@@ -388,7 +389,7 @@ describe('BulkPriceUploadDialog', () => {
             await uploadAndApply(props);
 
             const searchInput = screen.getByPlaceholderText('Search by job number...');
-            await userEvent.type(searchInput, 'JOB-001');
+            fireEvent.change(searchInput, { target: { value: 'JOB-001' } });
 
             await waitFor(() => {
                 expect(screen.getByText('JOB-001')).toBeInTheDocument();
@@ -408,7 +409,7 @@ describe('BulkPriceUploadDialog', () => {
             await uploadAndApply(props);
 
             const searchInput = screen.getByPlaceholderText('Search by job number...');
-            await userEvent.type(searchInput, 'JOB-001');
+            fireEvent.change(searchInput, { target: { value: 'JOB-001' } });
 
             expect(await screen.findByText('1 of 2 jobs')).toBeInTheDocument();
         });
@@ -418,7 +419,7 @@ describe('BulkPriceUploadDialog', () => {
             await uploadAndApply(props);
 
             const searchInput = screen.getByPlaceholderText('Search by job number...');
-            await userEvent.type(searchInput, 'NONEXISTENT');
+            fireEvent.change(searchInput, { target: { value: 'NONEXISTENT' } });
 
             expect(await screen.findByText('No jobs match your search')).toBeInTheDocument();
         });

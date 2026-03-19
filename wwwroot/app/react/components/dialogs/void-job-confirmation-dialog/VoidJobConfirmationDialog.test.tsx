@@ -1,22 +1,20 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * VoidJobConfirmationDialog Component Tests
+ *
+ * Optimised: read-only tests consolidated; fireEvent for simple interactions.
  */
 
 import React from 'react';
-import {act, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {RelatedJob, VoidJobConfirmationDialog, VoidJobDialogJob} from './VoidJobConfirmationDialog';
 
 const theme = createTheme();
 
-const renderWithTheme = (ui: React.ReactElement) => {
-    return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
-    );
-};
+const renderWithTheme = (ui: React.ReactElement) =>
+    render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
 
 const mockJob: VoidJobDialogJob = {
     id: 123,
@@ -51,579 +49,253 @@ const createMockProps = (overrides = {}) => ({
 });
 
 describe('VoidJobConfirmationDialog', () => {
-    describe('Rendering', () => {
-        it('should render dialog when open is true', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+    // ── Rendering + validation + cancel (single render) ─────────────
+    it('renders dialog with all elements, validates reason, and supports cancel/close', async () => {
+        const props = createMockProps();
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            expect(screen.getByRole('dialog')).toBeInTheDocument();
-            expect(screen.getByText('Void JOB-001')).toBeInTheDocument();
+        // Dialog structure
+        expect(screen.getByRole('dialog')).toBeInTheDocument();
+        expect(screen.getByText('Void JOB-001')).toBeInTheDocument();
+        expect(screen.getByText(/You are about to void job/)).toBeInTheDocument();
+        expect(screen.getByText('#JOB-001')).toBeInTheDocument();
+        expect(screen.getByLabelText(/Reason for voiding/)).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /void job/i})).toBeInTheDocument();
+        expect(screen.getByText('0/500 characters')).toBeInTheDocument();
+        expect(screen.getByText('Void this job only')).toBeInTheDocument();
+        expect(screen.getByText('Only this specific job will be voided')).toBeInTheDocument();
+
+        // Void button disabled when reason empty
+        expect(screen.getByRole('button', {name: /void job/i})).toBeDisabled();
+
+        // Type reason → enables button, shows character count
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Customer requested'}});
+        expect(screen.getByRole('button', {name: /void job/i})).toBeEnabled();
+        expect(screen.getByText('18/500 characters')).toBeInTheDocument();
+
+        // Cancel
+        await userEvent.click(screen.getByRole('button', {name: /cancel/i}));
+        expect(props.onClose).toHaveBeenCalledTimes(1);
+
+        // Close icon
+        props.onClose.mockClear();
+        const closeIconButton = screen.getAllByRole('button').find(btn =>
+            btn.querySelector('[data-testid="CloseIcon"]')
+        );
+        if (closeIconButton) {
+            await userEvent.click(closeIconButton);
+            expect(props.onClose).toHaveBeenCalledTimes(1);
+        }
+    });
+
+    // ── Closed / null job (single render with rerender) ─────────────
+    it('does not render when closed or job is null', () => {
+        const props = createMockProps({open: false});
+        const {rerender, container} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+        rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...createMockProps({job: null})} /></ThemeProvider>);
+        expect(container.firstChild).toBeNull();
+    });
+
+    // ── Single void + submitting state (single render) ──────────────
+    it('shows loading state during submission, then completes with success toast', async () => {
+        let resolveVoid!: () => void;
+        const voidPromise = new Promise<void>(resolve => { resolveVoid = resolve; });
+
+        const props = createMockProps({
+            onVoidJob: jest.fn().mockReturnValue(voidPromise),
         });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-        it('should not render dialog when open is false', () => {
-            const props = createMockProps({open: false});
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Customer requested cancellation'}});
+        await userEvent.click(screen.getByRole('button', {name: /void job/i}));
 
-            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-        });
+        // Submitting state
+        expect(screen.getByText('Voiding...')).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: /cancel/i})).toBeDisabled();
 
-        it('should return null when job is null', () => {
-            const props = createMockProps({job: null});
-            const {container} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        // Resolve
+        await act(async () => { resolveVoid(); });
 
-            expect(container.firstChild).toBeNull();
-        });
-
-        it('should display warning message with job number', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            expect(screen.getByText(/You are about to void job/)).toBeInTheDocument();
-            expect(screen.getByText('#JOB-001')).toBeInTheDocument();
-        });
-
-        it('should display void reason textarea', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            expect(screen.getByLabelText(/Reason for voiding/)).toBeInTheDocument();
-        });
-
-        it('should display Cancel and Void Job buttons', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: /void job/i})).toBeInTheDocument();
-        });
-
-        it('should show character count for reason field', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            expect(screen.getByText('0/500 characters')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(props.onVoidJob).toHaveBeenCalledWith(123, true, 'Customer requested cancellation', undefined);
+            expect(props.showToast).toHaveBeenCalledWith('JOB-001 has been voided successfully.', 'success');
+            expect(props.onConfirm).toHaveBeenCalledWith({success: true, voidedCount: 1});
         });
     });
 
-    describe('Void Reason Validation', () => {
-        it('should disable confirm button when reason is empty', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            expect(confirmButton).toBeDisabled();
+    // ── Bulk job void + chips (single render) ───────────────────────
+    it('voids bulk jobs and shows Bulk chips for bulk related jobs', async () => {
+        const bulkRelatedJobs: RelatedJob[] = [
+            {id: 456, text: 'BULK-001 - Parent', selected: true, isBulkJob: true},
+            {id: 457, text: 'BULK-002 - Child', selected: false, isBulkJob: true},
+        ];
+        const props = createMockProps({
+            job: mockBulkJob,
+            onLoadRelatedJobs: jest.fn().mockResolvedValue(bulkRelatedJobs),
         });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-        it('should enable confirm button when reason is provided', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        // Void bulk job (single mode)
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Bulk cancellation'}});
 
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Customer requested cancellation');
+        // Toggle to multi-void to check bulk chips
+        await userEvent.click(screen.getByRole('switch'));
 
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            expect(confirmButton).toBeEnabled();
+        await waitFor(() => {
+            expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(456, false, true);
         });
+        expect(await screen.findAllByText('Bulk')).toHaveLength(2);
 
-        it('should show warning toast when trying to confirm without reason', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        // Void in single mode (click switch back)
+        await userEvent.click(screen.getByRole('switch'));
+        await userEvent.click(screen.getByRole('button', {name: /void job/i}));
 
-            // Force enable button by directly typing and clearing
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'test');
-            await userEvent.clear(textarea);
-
-            // Button should be disabled, but let's test the validation logic
-            // by checking that onVoidJob is not called
-            expect(props.onVoidJob).not.toHaveBeenCalled();
-        });
-
-        it('should update character count as user types', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
-
-            expect(screen.getByText('11/500 characters')).toBeInTheDocument();
+        await waitFor(() => {
+            expect(props.onVoidBulkJob).toHaveBeenCalledWith(456, true, 'Bulk cancellation', undefined);
         });
     });
 
-    describe('Single Job Void Flow', () => {
-        it('should default to void single job only', () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+    // ── Multi-job flow + select/deselect all + toggle job (single render) ─
+    it('shows related jobs, supports select/deselect all, and toggles individual jobs', async () => {
+        const props = createMockProps();
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            expect(screen.getByText('Void this job only')).toBeInTheDocument();
-            expect(screen.getByText('Only this specific job will be voided')).toBeInTheDocument();
+        await userEvent.click(screen.getByRole('switch'));
+
+        expect(await screen.findByText('Related Jobs')).toBeInTheDocument();
+        expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
+        expect(await screen.findByText('current')).toBeInTheDocument();
+
+        await waitFor(() => {
+            expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, false, false);
+            expect(screen.getByText('JOB-001 - Main Job')).toBeInTheDocument();
+            expect(screen.getByText('JOB-002 - Related Pickup')).toBeInTheDocument();
+            expect(screen.getByText('JOB-003 - Related Delivery')).toBeInTheDocument();
         });
 
-        it('should call onVoidJob when confirming single job void', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        // Select All
+        await userEvent.click(screen.getByRole('button', {name: 'Select All'}));
+        expect(await screen.findByText('3 of 3 jobs selected')).toBeInTheDocument();
 
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Customer requested cancellation');
+        // Deselect All
+        await userEvent.click(screen.getByRole('button', {name: 'Deselect All'}));
+        expect(await screen.findByText('0 of 3 jobs selected')).toBeInTheDocument();
 
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
+        // Toggle individual job
+        await userEvent.click(screen.getByText('JOB-002 - Related Pickup'));
+        expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
+    });
 
-            await waitFor(() => {
-                expect(props.onVoidJob).toHaveBeenCalledWith(
-                    123,
-                    true,
-                    'Customer requested cancellation',
-                    undefined
-                );
-            });
+    // ── Loading + empty related jobs (single render) ────────────────
+    it('shows loading state then empty state for related jobs', async () => {
+        let resolveLoad!: (value: RelatedJob[]) => void;
+        const loadPromise = new Promise<RelatedJob[]>(resolve => {
+            resolveLoad = resolve;
         });
 
-        it('should show success toast after voiding single job', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        const props = createMockProps({onLoadRelatedJobs: jest.fn().mockReturnValue(loadPromise)});
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
+        await userEvent.click(screen.getByRole('switch'));
 
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
+        expect(await screen.findByText('Loading related jobs...')).toBeInTheDocument();
 
-            await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith(
-                    'JOB-001 has been voided successfully.',
-                    'success'
-                );
-            });
+        // Resolve with empty list
+        await act(async () => {
+            resolveLoad([]);
         });
 
-        it('should call onConfirm with result after successful void', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        expect(await screen.findByText('No related jobs found.')).toBeInTheDocument();
+    });
 
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
+    // ── No jobs selected → disabled ─────────────────────────────────
+    it('disables confirm when no jobs are selected', async () => {
+        const props = createMockProps({
+            onLoadRelatedJobs: jest.fn().mockResolvedValue([
+                {id: 123, text: 'JOB-001', selected: false},
+                {id: 124, text: 'JOB-002', selected: false},
+            ]),
+        });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Test reason'}});
+        await userEvent.click(screen.getByRole('switch'));
 
-            await waitFor(() => {
-                expect(props.onConfirm).toHaveBeenCalledWith({
-                    success: true,
-                    voidedCount: 1,
-                });
-            });
+        await waitFor(() => {
+            expect(screen.getByRole('button', {name: /void 0 jobs/i})).toBeDisabled();
         });
     });
 
-    describe('Bulk Job Void Flow', () => {
-        it('should call onVoidBulkJob for bulk jobs', async () => {
-            const props = createMockProps({job: mockBulkJob});
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+    // ── Multi-void confirm ──────────────────────────────────────────
+    it('calls onVoidJob with selected job IDs and shows plural success message', async () => {
+        const props = createMockProps({
+            onLoadRelatedJobs: jest.fn().mockResolvedValue([
+                {id: 123, text: 'JOB-001', selected: true},
+                {id: 124, text: 'JOB-002', selected: true},
+                {id: 125, text: 'JOB-003', selected: false},
+            ]),
+        });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Bulk cancellation');
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Multi-void reason'}});
+        await userEvent.click(screen.getByRole('switch'));
 
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
+        expect(await screen.findByText('JOB-001')).toBeInTheDocument();
 
-            await waitFor(() => {
-                expect(props.onVoidBulkJob).toHaveBeenCalledWith(
-                    456,
-                    true,
-                    'Bulk cancellation',
-                    undefined
-                );
-            });
+        await userEvent.click(screen.getByRole('button', {name: /void 2 jobs/i}));
+
+        await waitFor(() => {
+            expect(props.onVoidJob).toHaveBeenCalledWith(123, false, 'Multi-void reason', [123, 124]);
+            expect(props.showToast).toHaveBeenCalledWith('2 jobs have been voided successfully.', 'success');
         });
     });
 
-    describe('Multi-Job Void Flow', () => {
-        it('should show related jobs section when toggle is switched off', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+    // ── State Reset ─────────────────────────────────────────────────
+    it('resets state when dialog reopens', async () => {
+        const props = createMockProps();
+        const {rerender} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
+        fireEvent.change(screen.getByLabelText(/Reason for voiding/), {target: {value: 'Test reason'}});
 
-            expect(await screen.findByText('Related Jobs')).toBeInTheDocument();
+        await act(async () => {
+            rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...props}
+                                                                             open={false}/></ThemeProvider>);
+        });
+        await act(async () => {
+            rerender(<ThemeProvider theme={theme}><VoidJobConfirmationDialog {...props}
+                                                                             open={true}/></ThemeProvider>);
         });
 
-        it('should load related jobs when switching to multi-void mode', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
+        expect(screen.getByLabelText(/Reason for voiding/)).toHaveValue('');
+    });
 
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
+    // ── Archived Job ────────────────────────────────────────────────
+    it('passes isArchived flag when loading related jobs', async () => {
+        const props = createMockProps({job: {...mockJob, isArchived: true}});
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-            await waitFor(() => {
-                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, false, false);
-            });
-        });
+        await userEvent.click(screen.getByRole('switch'));
 
-        it('should display loading state while fetching related jobs', async () => {
-            let resolveLoad!: (value: RelatedJob[]) => void;
-            const loadPromise = new Promise<RelatedJob[]>(resolve => {
-                resolveLoad = resolve;
-            });
-
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockReturnValue(loadPromise),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('Loading related jobs...')).toBeInTheDocument();
-
-            // Resolve the pending promise to avoid act() warnings
-            await act(async () => {
-                resolveLoad(mockRelatedJobs);
-            });
-        });
-
-        it('should display related jobs after loading', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            await waitFor(() => {
-                expect(screen.getByText('JOB-001 - Main Job')).toBeInTheDocument();
-                expect(screen.getByText('JOB-002 - Related Pickup')).toBeInTheDocument();
-                expect(screen.getByText('JOB-003 - Related Delivery')).toBeInTheDocument();
-            });
-        });
-
-        it('should show current job indicator', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('current')).toBeInTheDocument();
-        });
-
-        it('should display selection count', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('1 of 3 jobs selected')).toBeInTheDocument();
-        });
-
-        it('should disable confirm when no jobs are selected', async () => {
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockResolvedValue([
-                    {id: 123, text: 'JOB-001', selected: false},
-                    {id: 124, text: 'JOB-002', selected: false},
-                ]),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            await waitFor(() => {
-                const confirmButton = screen.getByRole('button', {name: /void 0 jobs/i});
-                expect(confirmButton).toBeDisabled();
-            });
-        });
-
-        it('should call onVoidJob with selected job IDs', async () => {
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockResolvedValue([
-                    {id: 123, text: 'JOB-001', selected: true},
-                    {id: 124, text: 'JOB-002', selected: true},
-                    {id: 125, text: 'JOB-003', selected: false},
-                ]),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Multi-void reason');
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('JOB-001')).toBeInTheDocument();
-
-            const confirmButton = screen.getByRole('button', {name: /void 2 jobs/i});
-            await userEvent.click(confirmButton);
-
-            await waitFor(() => {
-                expect(props.onVoidJob).toHaveBeenCalledWith(
-                    123,
-                    false,
-                    'Multi-void reason',
-                    [123, 124]
-                );
-            });
-        });
-
-        it('should show plural success message for multiple jobs', async () => {
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockResolvedValue([
-                    {id: 123, text: 'JOB-001', selected: true},
-                    {id: 124, text: 'JOB-002', selected: true},
-                ]),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test');
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('JOB-001')).toBeInTheDocument();
-
-            const confirmButton = screen.getByRole('button', {name: /void 2 jobs/i});
-            await userEvent.click(confirmButton);
-
-            await waitFor(() => {
-                expect(props.showToast).toHaveBeenCalledWith(
-                    '2 jobs have been voided successfully.',
-                    'success'
-                );
-            });
+        await waitFor(() => {
+            expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, true, false);
         });
     });
 
-    describe('Select/Deselect All', () => {
-        it('should select all jobs when Select All is clicked', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            // Wait for related jobs to load
-            expect(await screen.findByText('JOB-001 - Main Job')).toBeInTheDocument();
-
-            // Click Select All button (exact match)
-            const selectAllButton = screen.getByRole('button', {name: 'Select All'});
-            await userEvent.click(selectAllButton);
-
-            expect(await screen.findByText('3 of 3 jobs selected')).toBeInTheDocument();
+    // ── Archived chips ──────────────────────────────────────────────
+    it('shows Archived chip for archived related jobs', async () => {
+        const archivedRelatedJobs: RelatedJob[] = [
+            {id: 100, text: 'ARCH-001 - Parent', selected: true, isArchived: true},
+            {id: 101, text: 'ARCH-002 - Child', selected: false, isArchived: true},
+        ];
+        const props = createMockProps({
+            onLoadRelatedJobs: jest.fn().mockResolvedValue(archivedRelatedJobs),
         });
+        renderWithTheme(<VoidJobConfirmationDialog {...props} />);
 
-        it('should deselect all jobs when Deselect All is clicked', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            // Wait for related jobs to load
-            expect(await screen.findByText('JOB-001 - Main Job')).toBeInTheDocument();
-
-            const deselectAllButton = screen.getByRole('button', {name: 'Deselect All'});
-            await userEvent.click(deselectAllButton);
-
-            expect(await screen.findByText('0 of 3 jobs selected')).toBeInTheDocument();
-        });
-    });
-
-    describe('Job Selection Toggle', () => {
-        it('should toggle job selection when clicking on a job', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('JOB-002 - Related Pickup')).toBeInTheDocument();
-
-            // Click on the unselected job
-            const jobItem = screen.getByText('JOB-002 - Related Pickup');
-            await userEvent.click(jobItem);
-
-            expect(await screen.findByText('2 of 3 jobs selected')).toBeInTheDocument();
-        });
-    });
-
-    describe('Cancel and Close', () => {
-        it('should call onClose when Cancel button is clicked', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const cancelButton = screen.getByRole('button', {name: /cancel/i});
-            await userEvent.click(cancelButton);
-
-            expect(props.onClose).toHaveBeenCalled();
-        });
-
-        it('should call onClose when close icon is clicked', async () => {
-            const props = createMockProps();
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            // The close button is an IconButton with CloseIcon
-            const closeButtons = screen.getAllByRole('button');
-            const closeIconButton = closeButtons.find(btn =>
-                btn.querySelector('[data-testid="CloseIcon"]')
-            );
-
-            if (closeIconButton) {
-                await userEvent.click(closeIconButton);
-                expect(props.onClose).toHaveBeenCalled();
-            }
-        });
-    });
-
-    describe('Empty State', () => {
-        it('should display empty state when no related jobs found', async () => {
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockResolvedValue([]),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findByText('No related jobs found.')).toBeInTheDocument();
-        });
-    });
-
-    describe('Submitting State', () => {
-        it('should show loading state on confirm button while submitting', async () => {
-            const props = createMockProps({
-                onVoidJob: jest.fn().mockImplementation(
-                    () => new Promise(resolve => setTimeout(resolve, 100))
-                ),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
-
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
-
-            expect(screen.getByText('Voiding...')).toBeInTheDocument();
-        });
-
-        it('should disable buttons while submitting', async () => {
-            const props = createMockProps({
-                onVoidJob: jest.fn().mockImplementation(
-                    () => new Promise(resolve => setTimeout(resolve, 200))
-                ),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
-
-            const confirmButton = screen.getByRole('button', {name: /void job/i});
-            await userEvent.click(confirmButton);
-
-            const cancelButton = screen.getByRole('button', {name: /cancel/i});
-            expect(cancelButton).toBeDisabled();
-        });
-    });
-
-    describe('State Reset', () => {
-        it('should reset state when dialog reopens', async () => {
-            const props = createMockProps();
-            const {rerender} = renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            // Type a reason
-            const textarea = screen.getByLabelText(/Reason for voiding/);
-            await userEvent.type(textarea, 'Test reason');
-
-            // Close and reopen dialog
-            await act(async () => {
-                rerender(
-                    <ThemeProvider theme={theme}>
-                        <VoidJobConfirmationDialog {...props} open={false} />
-                    </ThemeProvider>
-                );
-            });
-
-            await act(async () => {
-                rerender(
-                    <ThemeProvider theme={theme}>
-                        <VoidJobConfirmationDialog {...props} open={true} />
-                    </ThemeProvider>
-                );
-            });
-
-            // Reason should be cleared
-            const newTextarea = screen.getByLabelText(/Reason for voiding/);
-            expect(newTextarea).toHaveValue('');
-        });
-    });
-
-    describe('Archived Job', () => {
-        it('should pass isArchived flag when loading related jobs', async () => {
-            const archivedJob: VoidJobDialogJob = {
-                ...mockJob,
-                isArchived: true,
-            };
-            const props = createMockProps({job: archivedJob});
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            await waitFor(() => {
-                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(123, true, false);
-            });
-        });
-    });
-
-    describe('Bulk Job Multi-Void Flow', () => {
-        it('should pass isBulkJob=true when loading related jobs for bulk job', async () => {
-            const props = createMockProps({job: mockBulkJob});
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            await waitFor(() => {
-                expect(props.onLoadRelatedJobs).toHaveBeenCalledWith(456, false, true);
-            });
-        });
-
-        it('should show Bulk chip for bulk related jobs', async () => {
-            const bulkRelatedJobs: RelatedJob[] = [
-                {id: 456, text: 'BULK-001 - Parent', selected: true, isBulkJob: true},
-                {id: 457, text: 'BULK-002 - Child', selected: false, isBulkJob: true},
-            ];
-            const props = createMockProps({
-                job: mockBulkJob,
-                onLoadRelatedJobs: jest.fn().mockResolvedValue(bulkRelatedJobs),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findAllByText('Bulk')).toHaveLength(2);
-        });
-
-        it('should show Archived chip for archived related jobs', async () => {
-            const archivedRelatedJobs: RelatedJob[] = [
-                {id: 100, text: 'ARCH-001 - Parent', selected: true, isArchived: true},
-                {id: 101, text: 'ARCH-002 - Child', selected: false, isArchived: true},
-            ];
-            const props = createMockProps({
-                onLoadRelatedJobs: jest.fn().mockResolvedValue(archivedRelatedJobs),
-            });
-            renderWithTheme(<VoidJobConfirmationDialog {...props} />);
-
-            const toggle = screen.getByRole('switch');
-            await userEvent.click(toggle);
-
-            expect(await screen.findAllByText('Archived')).toHaveLength(2);
-        });
+        await userEvent.click(screen.getByRole('switch'));
+        expect(await screen.findAllByText('Archived')).toHaveLength(2);
     });
 });

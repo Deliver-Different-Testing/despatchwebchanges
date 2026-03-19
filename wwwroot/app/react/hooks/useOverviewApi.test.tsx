@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
@@ -40,10 +41,6 @@ const createWrapper = () => {
 };
 
 describe('useOverviewApi hooks', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('useOverviewJobs', () => {
         it('fetches jobs with correct params', async () => {
             const mockData = {items: [{jobId: 1, jobName: 'J-001'}], total: 1, page: 1, pages: 1};

@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * JobListStatsHeader Tests
  */
@@ -10,18 +11,13 @@ import {JobListStatsHeader} from './JobListStatsHeader';
 const defaultStats = {total: 25, active: 10, transit: 5, done: 8};
 
 describe('JobListStatsHeader', () => {
-    it('renders all stat labels', () => {
+    it('renders all stat labels and values', () => {
         renderWithTheme(<JobListStatsHeader stats={defaultStats}/>);
 
         expect(screen.getByText('Total')).toBeInTheDocument();
         expect(screen.getByText('Active')).toBeInTheDocument();
         expect(screen.getByText('Transit')).toBeInTheDocument();
         expect(screen.getByText('Done')).toBeInTheDocument();
-    });
-
-    it('renders stat values', () => {
-        renderWithTheme(<JobListStatsHeader stats={defaultStats}/>);
-
         expect(screen.getByText('25')).toBeInTheDocument();
         expect(screen.getByText('10')).toBeInTheDocument();
         expect(screen.getByText('5')).toBeInTheDocument();

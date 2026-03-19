@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -45,8 +46,6 @@ const renderTable = (props = {}) =>
     );
 
 describe('DataTable', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     describe('Column headers', () => {
         it('should render all column headers', () => {
             renderTable();

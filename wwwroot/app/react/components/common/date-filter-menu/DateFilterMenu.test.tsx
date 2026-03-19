@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * DateFilterMenu Component Tests
  */
@@ -39,7 +40,6 @@ describe('DateFilterMenu', () => {
     };
 
     beforeEach(() => {
-        jest.clearAllMocks();
         // Clear localStorage before each test
         localStorage.clear();
     });

@@ -7,6 +7,7 @@
 import {QueryClient} from '@tanstack/react-query';
 import type {PaginatedRequest, TodayActiveDriverFilter, ComplianceFilter, AfterHoursFilter} from '../interfaces/driverManagement';
 import type {OverviewQueryParams} from '../pages/overview/OverviewPage.interfaces';
+import type {JobListSearchParams} from '../interfaces/dispatchJob';
 
 /**
  * Default options for all queries
@@ -135,6 +136,22 @@ export const queryKeys = {
         openJobs: (params: Pick<OverviewQueryParams, 'startDate' | 'endDate' | 'regions' | 'speeds' | 'couriers'>) =>
             ['overview', 'openJobs', params] as const,
         parentJobMap: (jobId: number) => ['overview', 'parentJobMap', jobId] as const,
+    },
+    jobSearch: {
+        all: ['jobSearch'] as const,
+        pod: (params: JobListSearchParams) => ['jobSearch', 'pod', params] as const,
+        bulk: (params: JobListSearchParams) => ['jobSearch', 'bulk', params] as const,
+    },
+    dispatch: {
+        all: ['dispatch'] as const,
+        jobs: (params: JobListSearchParams) => ['dispatch', 'jobs', params] as const,
+        clearList: (params: JobListSearchParams) => ['dispatch', 'clearList', params] as const,
+    },
+    nationwide: {
+        all: ['nationwide'] as const,
+        newJobs: (params: JobListSearchParams) => ['nationwide', 'newJobs', params] as const,
+        podJobs: (params: JobListSearchParams) => ['nationwide', 'podJobs', params] as const,
+        repriceJobs: (params: JobListSearchParams) => ['nationwide', 'repriceJobs', params] as const,
     },
     driverManagement: {
         all: ['driverManagement'] as const,

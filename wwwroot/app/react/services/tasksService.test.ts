@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tasks Service Tests
  */
@@ -54,7 +55,6 @@ Object.defineProperty(window, 'localStorage', {
 
 describe('tasksService', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         localStorageMock.clear();
     });
 

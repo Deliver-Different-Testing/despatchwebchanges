@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Messaging API Service Tests
  */
@@ -24,10 +25,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('MessagingApiService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getRecentList', () => {
         it('should call apiClient.get with correct URL', async () => {
             const mockConversations = [

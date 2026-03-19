@@ -1,24 +1,27 @@
-using System.Collections.Concurrent;
+using System.Data;
+using System.Text;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using DespatchWeb.Models.Dto;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 
 namespace DespatchWeb.Services;
 
 /// <summary>
-/// Service for splitting jobs into pickup and delivery child jobs.
-/// Replaces the stored procedure DES_stpJob_SplitJob with C# implementation.
+/// Splits a parent job into pickup and delivery child legs.
+/// Child rows are inserted via raw SQL to work around tucJob INSERT triggers
+/// that break EF Core's PropagateResults identity read-back.
 /// </summary>
-public sealed class SplitJobService(
+public class SplitJobService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService,
-    ITenantClock clock,
-    ICreateJobService createJobService,
-    IServiceScopeFactory serviceScopeFactory) : ISplitJobService
+    IRateJobService rateJobService,
+    IJobRepository jobRepository) : ISplitJobService
 {
     private const string ParentSystemName = "SplitParent";
     private const string ChildSystemName = "SplitChild";
@@ -29,65 +32,34 @@ public sealed class SplitJobService(
     public async Task<(int PickupJobId, int DeliveryJobId)> SplitJobAsync(
         int jobId,
         string userName,
-        AddressViewModel meetingPointAddress)
+        AddressViewModel meetingPointAddress,
+        int? courierIdForLegB = null,
+        CancellationToken ct = default)
     {
-        var currentTenantTime = clock.TenantNow;
-
-        await using var context = await contextFactory.CreateDbContextAsync();
-        await using var transaction = await context.Database.BeginTransactionAsync();
+        await using var context = await contextFactory.CreateDbContextAsync(ct);
+        await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
         try
         {
             Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
                 jobId, userName);
 
-            var couriers = context.TucCouriers;
-            var relTypes = context.TblJobRelationshipTypes;
-            var nationWide = context.TucJobNationwides;
-
-            var lookups = await context.TblSettings
-                .Where(s => s.SettingId == 1)
-                .Select(s => new
-                {
-                    ParentJobCourierId = s.ParentJobCourierId != null
-                                         && couriers.Any(c => c.UccrId == s.ParentJobCourierId)
-                        ? s.ParentJobCourierId
-                        : null,
-                    SplitParentRelTypeId = relTypes
-                        .Where(r => r.SystemName == "SplitParent")
-                        .Select(r => (int?)r.JobRelationshipTypeId).FirstOrDefault(),
-                    SplitChildRelTypeId = relTypes
-                        .Where(r => r.SystemName == "SplitChild")
-                        .Select(r => (int?)r.JobRelationshipTypeId).FirstOrDefault(),
-                    HasFlightAssigned = nationWide.Any(n => n.UcnwJobId == jobId)
-                }).FirstOrDefaultAsync();
-
-            var parentRelTypeId = lookups?.SplitParentRelTypeId
-                                  ?? throw new InvalidOperationException(
-                                      $"Job relationship type '{ParentSystemName}' not found");
-
-            var childRelTypeId = lookups.SplitChildRelTypeId
-                                 ?? throw new InvalidOperationException(
-                                     $"Job relationship type '{ChildSystemName}' not found");
-
-            if (lookups.HasFlightAssigned)
-                throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
-
-            // Load the job with related data
+            // Load the parent job (no speed navigation needed — we use UcjbSpeed directly)
             var job = await context.TucJobs
                           .AsTracking()
-                          .Include(j => j.UcjbSpeedNavigation)
-                          .FirstOrDefaultAsync(j => j.UcjbId == jobId)
+                          .FirstOrDefaultAsync(j => j.UcjbId == jobId, ct)
                       ?? throw new InvalidOperationException($"Job {jobId} not found");
 
-            // 1B: Use already-loaded speed navigation property 
-            var validSpeed = job.UcjbSpeedNavigation != null
-                ? new Suggestion { Id = job.UcjbSpeedNavigation.UcjtId, Text = job.UcjbSpeedNavigation.UcjtName }
-                : null;
-            ArgumentNullException.ThrowIfNull(validSpeed);
+            var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context, ct);
 
-            // Generate child job numbers using letter suffixes
-            var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job);
+            var hasFlightAssigned = await context.TucJobNationwides.AnyAsync(n => n.UcnwJobId == jobId, ct);
+            if (hasFlightAssigned)
+                throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
+
+            var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
+
+            // Generate child job numbers using letter suffixes (no SP = no speed suffix appended)
+            var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job, ct);
 
             // Capture original courier ID before modifying parent
             var originalCourierId = job.UcjbCourierId;
@@ -95,104 +67,28 @@ public sealed class SplitJobService(
             // Determine root parent ID - preserve existing if job is already a child
             var rootParentId = job.RootParentId ?? job.UcjbId;
 
-            // Update parent job (only set parent IDs if not already set)
+            // Update parent job
             job.JobRelationshipTypeId = parentRelTypeId;
-            job.UcjbCourierId = null;
+            job.UcjbCourierId = parentJobCourierId;
             if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
             job.RootParentId ??= jobId;
             job.InformationParentId ??= job.RootParentId;
-
-            // Create both child jobs sequentially on the same transactional context
-            // (DbContext is not thread-safe, so parallel calls are not possible here)
-            var pickupInput = BuildPickupInputModel(job, pickupJobNumber, validSpeed, meetingPointAddress, userName,
-                currentTenantTime, originalCourierId);
-            var deliveryInput = BuildDeliveryInputModel(job, deliveryJobNumber, validSpeed, meetingPointAddress,
-                userName, currentTenantTime);
-
-            var pickupResult = await createJobService.CreateJobAsync(pickupInput, context);
-            if (!pickupResult.Success)
-                throw new InvalidOperationException($"Failed to create pickup job: {pickupResult.Message}");
-
-            var deliveryResult = await createJobService.CreateJobAsync(deliveryInput, context);
-            if (!deliveryResult.Success)
-                throw new InvalidOperationException($"Failed to create delivery job: {deliveryResult.Message}");
-
-            // 1D: Load both created child jobs in one query
-            var createdJobs = await context.TucJobs
-                .AsTracking()
-                .Where(j => j.UcjbId == pickupResult.JobId || j.UcjbId == deliveryResult.JobId)
-                .ToListAsync();
-            
-            var pickupJob = createdJobs.FirstOrDefault(j => j.UcjbId == pickupResult.JobId)
-                            ?? throw new InvalidOperationException(
-                                $"Failed to load created pickup job {pickupResult.JobId}");
-            var deliveryJob = createdJobs.FirstOrDefault(j => j.UcjbId == deliveryResult.JobId)
-                              ?? throw new InvalidOperationException(
-                                  $"Failed to load created delivery job {deliveryResult.JobId}");
-            
-            // Hide parent from dispatch
             job.DisplayInDespatch = false;
 
-            // Update pickup job fields not handled by the stored procedure
-            pickupJob.UcjbDate = job.UcjbDate;
-            pickupJob.UcjbTime = job.UcjbTime;
-            pickupJob.UcjbType = job.UcjbType;
-            pickupJob.UcjbContact = job.UcjbContact;
-            pickupJob.UcjbChargeType = job.UcjbChargeType;
+            // Build pickup child job via direct entity insert
+            var pickupJob = BuildChildJob(job, pickupJobNumber, childRelTypeId, rootParentId, 1);
+            pickupJob.UcjbCourierId = originalCourierId;
             pickupJob.UcjbFrom = job.UcjbFrom;
             pickupJob.UcjbFromAddr = job.UcjbFromAddr;
             pickupJob.UcjbTo = null;
             pickupJob.UcjbToAddr = meetingPointAddress.FullAddress;
-            pickupJob.UcjbSize = job.UcjbSize;
-            pickupJob.UcjbQty = job.UcjbQty;
-            pickupJob.UcjbCbd = job.UcjbCbd;
-            pickupJob.UcjbWeight = job.UcjbWeight;
-            pickupJob.UcjbCourierId = originalCourierId;
-            pickupJob.UcjbStatus = originalCourierId.HasValue ? (int)JobStatus.Acknowledge : job.UcjbStatus;
-            pickupJob.UcjbOpId = job.UcjbOpId;
-            pickupJob.UcjbReturn = job.UcjbReturn;
-            pickupJob.UcjbPickUpFrom = job.UcjbPickUpFrom;
-            pickupJob.ClientNotes = job.ClientNotes;
-            pickupJob.UcjbContactPhone = job.UcjbContactPhone;
-            pickupJob.ContactId = job.ContactId;
             pickupJob.DeliverToPrivateBusiness = PrivateResidenceDeliverTo;
             pickupJob.DeliverToLeaveId = HandOffLeaveType;
-            pickupJob.ProofOfDelivery = job.ProofOfDelivery;
-            pickupJob.ProofOfDeliveryEmail = job.ProofOfDeliveryEmail;
-            pickupJob.ProofOfDeliveryMobile = job.ProofOfDeliveryMobile;
-            pickupJob.AcceptedJobTypeId = job.AcceptedJobTypeId;
-            pickupJob.DesiredJobTypeId = job.DesiredJobTypeId;
-            pickupJob.Direct = job.Direct;
-            pickupJob.JobRelationshipTypeId = childRelTypeId;
-            pickupJob.DisplayInDespatch = true;
-            pickupJob.ShopId = job.ShopId;
-            pickupJob.ShopRef1 = job.ShopRef1;
-            pickupJob.ShopRef2 = job.ShopRef2;
-            pickupJob.ShopRef3 = job.ShopRef3;
-            pickupJob.ShopRef4 = job.ShopRef4;
-            pickupJob.ShopRef5 = job.ShopRef5;
-            pickupJob.CourierPercentageOverride = job.CourierPercentageOverride;
-            pickupJob.UcjbClientCode = job.UcjbClientCode;
-            pickupJob.UcjbVoid = false;
-            pickupJob.UcjbJobDone = false;
-            pickupJob.UcjbPaged = false;
-            pickupJob.SaturdayDelivery = job.SaturdayDelivery;
-            pickupJob.Dgdocument = job.Dgdocument;
-            pickupJob.InternalStatus = job.InternalStatus;
-            pickupJob.PickupTimeZoneId = job.PickupTimeZoneId;
-            pickupJob.DeliverByTimeZoneId = job.DeliverByTimeZoneId;
-            pickupJob.DeliverByTime = job.DeliverByTime;
             pickupJob.FromAirportId = job.FromAirportId;
             pickupJob.ToAirportId = null;
-            pickupJob.FuelSurchargeAmount = 0;
-            pickupJob.CourierFuel = 0;
-            pickupJob.TotalDistance = null;
-            pickupJob.ParentId = jobId;
-            pickupJob.RootParentId = rootParentId;
-            pickupJob.InformationParentId = rootParentId;
-            pickupJob.Sequence = 1;
-            pickupJob.UcjbVan = job.UcjbVan;
             pickupJob.UcjbAttention = job.UcjbAttention;
+            pickupJob.PickupFromContact = job.PickupFromContact;
+            pickupJob.PickupFromPhone = job.PickupFromPhone;
             pickupJob.PickupAddressLine1 = job.PickupAddressLine1;
             pickupJob.PickupAddressLine2 = job.PickupAddressLine2;
             pickupJob.PickupAddressLine3 = job.PickupAddressLine3;
@@ -214,65 +110,19 @@ public sealed class SplitJobService(
             pickupJob.DeliveryLatitude = meetingPointAddress.Latitude;
             pickupJob.DeliveryLongitude = meetingPointAddress.Longitude;
 
-            // Update delivery job fields not handled by the stored procedure
-            deliveryJob.UcjbDate = job.UcjbDate;
-            deliveryJob.UcjbTime = job.UcjbTime;
-            deliveryJob.UcjbType = job.UcjbType;
-            deliveryJob.UcjbContact = job.UcjbContact;
-            deliveryJob.UcjbChargeType = job.UcjbChargeType;
+            // Build delivery child job via direct entity insert
+            var deliveryJob = BuildChildJob(job, deliveryJobNumber, childRelTypeId, rootParentId, 2);
+            deliveryJob.UcjbCourierId = courierIdForLegB;
             deliveryJob.UcjbFrom = null;
             deliveryJob.UcjbFromAddr = meetingPointAddress.FullAddress;
             deliveryJob.UcjbTo = job.UcjbTo;
             deliveryJob.UcjbToAddr = job.UcjbToAddr;
-            deliveryJob.UcjbSize = job.UcjbSize;
-            deliveryJob.UcjbQty = job.UcjbQty;
-            deliveryJob.UcjbCbd = job.UcjbCbd;
-            deliveryJob.UcjbWeight = job.UcjbWeight;
-            deliveryJob.UcjbCourierId = null;
-            deliveryJob.UcjbStatus = job.UcjbStatus;
-            deliveryJob.UcjbOpId = job.UcjbOpId;
-            deliveryJob.UcjbReturn = job.UcjbReturn;
-            deliveryJob.UcjbPickUpFrom = job.UcjbPickUpFrom;
-            deliveryJob.ClientNotes = job.ClientNotes;
-            deliveryJob.UcjbContactPhone = job.UcjbContactPhone;
-            deliveryJob.ContactId = job.ContactId;
             deliveryJob.DeliverToPrivateBusiness = job.DeliverToPrivateBusiness;
             deliveryJob.DeliverToLeaveId = job.DeliverToLeaveId;
-            deliveryJob.ProofOfDelivery = job.ProofOfDelivery;
-            deliveryJob.ProofOfDeliveryEmail = job.ProofOfDeliveryEmail;
-            deliveryJob.ProofOfDeliveryMobile = job.ProofOfDeliveryMobile;
-            deliveryJob.AcceptedJobTypeId = job.AcceptedJobTypeId;
-            deliveryJob.DesiredJobTypeId = job.DesiredJobTypeId;
-            deliveryJob.Direct = job.Direct;
-            deliveryJob.JobRelationshipTypeId = childRelTypeId;
-            deliveryJob.DisplayInDespatch = true;
-            deliveryJob.ShopId = job.ShopId;
-            deliveryJob.ShopRef1 = job.ShopRef1;
-            deliveryJob.ShopRef2 = job.ShopRef2;
-            deliveryJob.ShopRef3 = job.ShopRef3;
-            deliveryJob.ShopRef4 = job.ShopRef4;
-            deliveryJob.ShopRef5 = job.ShopRef5;
-            deliveryJob.CourierPercentageOverride = job.CourierPercentageOverride;
-            deliveryJob.UcjbClientCode = job.UcjbClientCode;
-            deliveryJob.UcjbVoid = false;
-            deliveryJob.UcjbJobDone = false;
-            deliveryJob.UcjbPaged = false;
-            deliveryJob.SaturdayDelivery = job.SaturdayDelivery;
-            deliveryJob.Dgdocument = job.Dgdocument;
-            deliveryJob.InternalStatus = job.InternalStatus;
-            deliveryJob.PickupTimeZoneId = job.PickupTimeZoneId;
-            deliveryJob.DeliverByTimeZoneId = job.DeliverByTimeZoneId;
-            deliveryJob.DeliverByTime = job.DeliverByTime;
             deliveryJob.FromAirportId = null;
             deliveryJob.ToAirportId = job.ToAirportId;
-            deliveryJob.FuelSurchargeAmount = 0;
-            deliveryJob.CourierFuel = 0;
-            deliveryJob.TotalDistance = null;
-            deliveryJob.ParentId = jobId;
-            deliveryJob.RootParentId = rootParentId;
-            deliveryJob.InformationParentId = rootParentId;
-            deliveryJob.Sequence = 2;
-            deliveryJob.UcjbVan = job.UcjbVan;
+            deliveryJob.DeliverToContact = job.DeliverToContact;
+            deliveryJob.DeliverToPhone = job.DeliverToPhone;
             deliveryJob.PickupAddressLine1 = meetingPointAddress.AddressLine1;
             deliveryJob.PickupAddressLine2 = meetingPointAddress.AddressLine2;
             deliveryJob.PickupAddressLine3 = meetingPointAddress.AddressLine3;
@@ -294,31 +144,277 @@ public sealed class SplitJobService(
             deliveryJob.DeliveryLatitude = job.DeliveryLatitude;
             deliveryJob.DeliveryLongitude = job.DeliveryLongitude;
 
-            // 1E: Add notes to context before SaveChanges so everything persists in one batch
-            var staffId = tenantInfoService.GetStaffId();
-            AddSplitJobNotes(context, currentTenantTime, pickupJob.UcjbId, deliveryJob.UcjbId,
-                job.UcjbNotes, staffId);
+            // Save the parent update first (UPDATE doesn't hit the identity read-back issue)
+            await context.SaveChangesAsync(ct);
 
-            await context.SaveChangesAsync();
+            // INSERT child jobs via raw SQL — tucJob INSERT triggers produce extra
+            // result sets that break EF Core's PropagateResults identity read-back.
+            pickupJob.UcjbId = await InsertJobRawAsync(context, pickupJob, ct);
+            deliveryJob.UcjbId = await InsertJobRawAsync(context, deliveryJob, ct);
 
-            // 1F: Pass already-known values to avoid re-querying the parent job 
-            await ReRateSplitJobsAsync(context, jobId, job.UcjbAmount ?? 0m, rootParentId);
+            // Create notes (requires child job IDs)
+            await CreateSplitJobNotesAsync(context, pickupJob.UcjbId, deliveryJob.UcjbId, job.UcjbNotes, ct);
 
             // Consolidate MARS information
-            await ConsolidateMarsInformationAsync(context, jobId, userName);
+            await ConsolidateMarsInformationAsync(context, jobId, userName, ct);
 
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(ct);
 
             Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
                 jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
+
+            // Re-rate outside transaction (best effort — jobs are already committed)
+            await ReRateSplitJobsAsync(jobId, job.UcjbAmount ?? 0m, rootParentId, ct);
 
             return (pickupJob.UcjbId, deliveryJob.UcjbId);
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
+            await transaction.RollbackAsync(ct);
             Log.Error(ex, "Error splitting job {JobId}", jobId);
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Creates a child TucJob entity with all common fields copied from the parent.
+    /// Address fields and courier/status overrides are set by the caller.
+    /// </summary>
+    private static TucJob BuildChildJob(
+        TucJob parent,
+        string jobNumber,
+        int childRelTypeId,
+        int rootParentId,
+        int sequence) =>
+        new()
+        {
+            UcjbNumber = jobNumber,
+            UcjbDate = parent.UcjbDate,
+            UcjbTime = parent.UcjbTime,
+            UcjbType = parent.UcjbType,
+            UcjbContact = parent.UcjbContact,
+            UcjbChargeType = parent.UcjbChargeType,
+            UcjbSize = parent.UcjbSize,
+            UcjbQty = parent.UcjbQty,
+            UcjbCbd = parent.UcjbCbd,
+            UcjbWeight = parent.UcjbWeight,
+            UcjbSpeed = parent.UcjbSpeed,
+            UcjbClientId = parent.UcjbClientId,
+            UcjbAmount = parent.UcjbAmount,
+            UcjbStatus = parent.UcjbStatus,
+            UcjbOpId = parent.UcjbOpId,
+            UcjbReturn = parent.UcjbReturn,
+            UcjbPickUpFrom = parent.UcjbPickUpFrom,
+            UcjbClientRefa = parent.UcjbClientRefa,
+            UcjbClientRefb = parent.UcjbClientRefb,
+            UcjbOurRef = parent.UcjbOurRef,
+            ClientNotes = parent.ClientNotes,
+            UcjbContactPhone = parent.UcjbContactPhone,
+            ContactId = parent.ContactId,
+            ProofOfDelivery = parent.ProofOfDelivery,
+            ProofOfDeliveryEmail = parent.ProofOfDeliveryEmail,
+            ProofOfDeliveryMobile = parent.ProofOfDeliveryMobile,
+            AcceptedJobTypeId = parent.AcceptedJobTypeId,
+            DesiredJobTypeId = parent.DesiredJobTypeId,
+            Direct = parent.Direct,
+            JobRelationshipTypeId = childRelTypeId,
+            DisplayInDespatch = true,
+            ShopId = parent.ShopId,
+            ShopRef1 = parent.ShopRef1,
+            ShopRef2 = parent.ShopRef2,
+            ShopRef3 = parent.ShopRef3,
+            ShopRef4 = parent.ShopRef4,
+            ShopRef5 = parent.ShopRef5,
+            CourierPercentageOverride = parent.CourierPercentageOverride,
+            UcjbClientCode = parent.UcjbClientCode,
+            UcjbVoid = false,
+            UcjbJobDone = false,
+            UcjbPaged = false,
+            SaturdayDelivery = parent.SaturdayDelivery,
+            Dgdocument = parent.Dgdocument,
+            Dgclass = parent.Dgclass,
+            DryIceWeight = parent.DryIceWeight,
+            InternalStatus = parent.InternalStatus,
+            PickupTimeZoneId = parent.PickupTimeZoneId,
+            DeliverByTimeZoneId = parent.DeliverByTimeZoneId,
+            DeliverByTime = parent.DeliverByTime,
+            FuelSurchargeAmount = 0,
+            CourierFuel = 0,
+            TotalDistance = null,
+            ParentId = parent.UcjbId,
+            RootParentId = rootParentId,
+            InformationParentId = rootParentId,
+            Sequence = sequence,
+            UcjbVan = parent.UcjbVan,
+            Truck = parent.Truck,
+            TruckStartTime = parent.TruckStartTime,
+            TruckHours = parent.TruckHours
+        };
+
+    private static async Task<(int ParentRelTypeId, int ChildRelTypeId)> GetRelationshipTypeIdsAsync(
+        DespatchContext context,
+        CancellationToken ct)
+    {
+        var relTypes = await context.TblJobRelationshipTypes
+            .Where(r => r.SystemName == ParentSystemName || r.SystemName == ChildSystemName)
+            .Select(r => new { r.SystemName, r.JobRelationshipTypeId })
+            .ToListAsync(ct);
+
+        var parentRelTypeId = relTypes.FirstOrDefault(r => r.SystemName == ParentSystemName)?.JobRelationshipTypeId
+                              ?? throw new InvalidOperationException(
+                                  $"Job relationship type '{ParentSystemName}' not found");
+
+        var childRelTypeId = relTypes.FirstOrDefault(r => r.SystemName == ChildSystemName)?.JobRelationshipTypeId
+                             ?? throw new InvalidOperationException(
+                                 $"Job relationship type '{ChildSystemName}' not found");
+
+        return (parentRelTypeId, childRelTypeId);
+    }
+
+    private static async Task<int?> GetParentJobCourierIdAsync(
+        DespatchContext context,
+        CancellationToken ct) =>
+        await context.TblSettings
+            .Where(s => s.SettingId == 1)
+            .Select(s => s.ParentJobCourierId != null
+                         && context.TucCouriers.Any(c => c.UccrId == s.ParentJobCourierId)
+                ? s.ParentJobCourierId
+                : null)
+            .FirstOrDefaultAsync(ct);
+
+    private async Task CreateSplitJobNotesAsync(
+        DespatchContext context,
+        int pickupJobId,
+        int deliveryJobId,
+        string parentNotes,
+        CancellationToken ct)
+    {
+        var staffId = tenantInfoService.GetStaffId();
+        var now = DateTime.UtcNow;
+        var parentNotesText = string.IsNullOrWhiteSpace(parentNotes) ? string.Empty : $"  {parentNotes}";
+
+        context.TucNotes.AddRange(
+            new TucNote
+            {
+                JobId = pickupJobId,
+                NoteTypeId = (int)NoteType.InternalNote,
+                NoteText = $"SPLIT Part 1 of 2. {parentNotesText}",
+                CreatedBy = staffId,
+                CreatedDate = now
+            },
+            new TucNote
+            {
+                JobId = deliveryJobId,
+                NoteTypeId = (int)NoteType.InternalNote,
+                NoteText = $"SPLIT Part 2 of 2. {parentNotesText}",
+                CreatedBy = staffId,
+                CreatedDate = now
+            });
+
+        await context.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Re-rates all child jobs for a split, distributing the parent amount proportionally.
+    /// Runs outside the main transaction as best-effort — jobs are already committed.
+    /// </summary>
+    private async Task ReRateSplitJobsAsync(
+        int parentJobId,
+        decimal parentAmount,
+        int rootParentId,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (parentAmount == 0m)
+            {
+                Log.Information("Parent job {ParentJobId} has zero amount. Skipping re-rate.", parentJobId);
+                return;
+            }
+
+            var isUs = tenantInfoService.IsUsTenant();
+
+            await using var context = await contextFactory.CreateDbContextAsync(ct);
+            var childJobIds = await context.TucJobs
+                .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
+                .OrderBy(j => j.Sequence)
+                .Select(j => j.UcjbId)
+                .Take(100)
+                .ToListAsync(ct);
+
+            if (childJobIds.Count == 0)
+            {
+                Log.Warning("No non-void jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
+                return;
+            }
+
+            // Rate each child sequentially using repository + rate service
+            var rates = new List<(int JobId, decimal Rate)>();
+            foreach (var childId in childJobIds)
+            {
+                var rate = 0m;
+                try
+                {
+                    if (isUs)
+                    {
+                        var details = await jobRepository.GetJobDetailsForRatingAsync(childId);
+                        rate = await rateJobService.GetJobRateUsAsync(details);
+                    }
+                    else
+                    {
+                        var details = await jobRepository.GetJobDetailsForRatingNzAsync(childId, false);
+                        rate = await rateJobService.GetJobRateNzAsync(details);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, "Failed to rate job {JobId}. Using rate 0.", childId);
+                }
+
+                rates.Add((childId, rate));
+            }
+
+            // Distribute parent amount proportionally based on calculated rates
+            var totalRate = rates.Sum(r => r.Rate);
+            var runningTotal = 0m;
+
+            for (var i = 0; i < rates.Count; i++)
+            {
+                decimal amount;
+                if (i == rates.Count - 1)
+                {
+                    // Last job absorbs rounding difference to ensure exact balance
+                    amount = parentAmount - runningTotal;
+                }
+                else if (totalRate == 0m)
+                {
+                    // All rates are 0: distribute evenly
+                    amount = Math.Round(parentAmount / rates.Count, 2);
+                }
+                else
+                {
+                    var percentage = rates[i].Rate / totalRate;
+                    amount = Math.Round(percentage * parentAmount, 2);
+                }
+
+                runningTotal += amount;
+
+                var i1 = i;
+                await context.TucJobs
+                    .Where(j => j.UcjbId == rates[i1].JobId)
+                    .ExecuteUpdateAsync(j => j
+                        .SetProperty(x => x.RatedManually, false)
+                        .SetProperty(x => x.UcjbAmount, amount), ct);
+            }
+
+            Log.Information(
+                "Successfully re-rated {Count} split jobs for parent {ParentJobId}. Parent amount: {ParentAmount}",
+                rates.Count, parentJobId, parentAmount);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Failed to re-rate split jobs for parent {ParentJobId}. Jobs created but not rated.",
+                parentJobId);
         }
     }
 
@@ -339,24 +435,21 @@ public sealed class SplitJobService(
         return result;
     }
 
-    /// <summary>
-    /// Generates child job numbers using letter suffixes based on total split count from root job.
-    /// </summary>
     private static async Task<(string PickupJobNumber, string DeliveryJobNumber)> GenerateChildJobNumbersAsync(
         DespatchContext context,
-        TucJob job)
+        TucJob job,
+        CancellationToken ct)
     {
         // Find root parent ID - use existing RootParentId if present, otherwise this job is the root
         var rootParentId = job.RootParentId ?? job.UcjbId;
 
-        // 1C: Combine root parent number + child count into a single projected query
         string mainJobNumber;
         int existingChildCount;
         if (rootParentId == job.UcjbId)
         {
             mainJobNumber = job.UcjbNumber;
             existingChildCount = await context.TucJobs
-                .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId);
+                .CountAsync(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId, ct);
         }
         else
         {
@@ -367,7 +460,7 @@ public sealed class SplitJobService(
                     MainJobNumber = j.UcjbNumber,
                     ExistingChildCount =
                         context.TucJobs.Count(c => c.RootParentId == rootParentId && c.UcjbId != rootParentId)
-                }).FirstOrDefaultAsync();
+                }).FirstOrDefaultAsync(ct);
 
             mainJobNumber = data?.MainJobNumber ?? job.UcjbNumber;
             existingChildCount = data?.ExistingChildCount ?? 0;
@@ -380,364 +473,16 @@ public sealed class SplitJobService(
         return ($"{mainJobNumber}{pickupSuffix}", $"{mainJobNumber}{deliverySuffix}");
     }
 
-    private CreateMinimalTucJobInputModel BuildPickupInputModel(
-        TucJob parentJob,
-        string jobNumber,
-        Suggestion validSpeed,
-        AddressViewModel meetingPointAddress,
-        string userName,
-        DateTime currentTenantTime,
-        int? originalCourierId) =>
-        new()
-        {
-            JobNumber = jobNumber,
-            ClientId = parentJob.UcjbClientId ?? 0,
-            AgentCourierId = originalCourierId,
-            SpeedId = validSpeed.Id,
-            Speed = validSpeed.Text,
-            Amount = parentJob.UcjbAmount ?? 0m,
-            FromAddress = new AddressViewModel
-            {
-                AddressLine1 = parentJob.PickupAddressLine1,
-                AddressLine2 = parentJob.PickupAddressLine2,
-                AddressLine3 = parentJob.PickupAddressLine3,
-                AddressLine4 = parentJob.PickupAddressLine4,
-                AddressLine5 = parentJob.PickupAddressLine5,
-                AddressLine6 = parentJob.PickupAddressLine6,
-                AddressLine7 = parentJob.PickupAddressLine7,
-                AddressLine8 = parentJob.PickupAddressLine8,
-                Latitude = parentJob.PickUpLatitude,
-                Longitude = parentJob.PickUpLongitude
-            },
-            ToAddress = meetingPointAddress,
-            Reference = parentJob.UcjbClientRefa,
-            ReferenceB = parentJob.UcjbClientRefb,
-            OurRef = parentJob.UcjbOurRef,
-            FromContactName = parentJob.PickupFromContact,
-            FromPhoneNumber = parentJob.PickupFromPhone,
-            PickUpLatitude = parentJob.PickUpLatitude,
-            PickUpLongitude = parentJob.PickUpLongitude,
-            DeliveryLatitude = meetingPointAddress.Latitude,
-            DeliveryLongitude = meetingPointAddress.Longitude,
-            DgClass = parentJob.Dgclass,
-            DryIceWeight = parentJob.DryIceWeight,
-            FuelSurchargeAmount = 0,
-            BookedBy = userName,
-            LoggedInContactId = tenantInfoService.GetContactId(),
-            TenantCurrentTime = currentTenantTime
-        };
-
-    private CreateMinimalTucJobInputModel BuildDeliveryInputModel(
-        TucJob parentJob,
-        string jobNumber,
-        Suggestion validSpeed,
-        AddressViewModel meetingPointAddress,
-        string userName,
-        DateTime currentTenantTime) =>
-        new()
-        {
-            JobNumber = jobNumber,
-            ClientId = parentJob.UcjbClientId ?? 0,
-            SpeedId = validSpeed.Id,
-            Speed = validSpeed.Text,
-            Amount = parentJob.UcjbAmount ?? 0m,
-            FromAddress = meetingPointAddress,
-            ToAddress = new AddressViewModel
-            {
-                AddressLine1 = parentJob.DeliveryAddressLine1,
-                AddressLine2 = parentJob.DeliveryAddressLine2,
-                AddressLine3 = parentJob.DeliveryAddressLine3,
-                AddressLine4 = parentJob.DeliveryAddressLine4,
-                AddressLine5 = parentJob.DeliveryAddressLine5,
-                AddressLine6 = parentJob.DeliveryAddressLine6,
-                AddressLine7 = parentJob.DeliveryAddressLine7,
-                AddressLine8 = parentJob.DeliveryAddressLine8,
-                Latitude = parentJob.DeliveryLatitude,
-                Longitude = parentJob.DeliveryLongitude
-            },
-            Reference = parentJob.UcjbClientRefa,
-            ReferenceB = parentJob.UcjbClientRefb,
-            OurRef = parentJob.UcjbOurRef,
-            ToContactName = parentJob.DeliverToContact,
-            ToPhoneNumber = parentJob.DeliverToPhone,
-            PickUpLatitude = meetingPointAddress.Latitude,
-            PickUpLongitude = meetingPointAddress.Longitude,
-            DeliveryLatitude = parentJob.DeliveryLatitude,
-            DeliveryLongitude = parentJob.DeliveryLongitude,
-            DgClass = parentJob.Dgclass,
-            DryIceWeight = parentJob.DryIceWeight,
-            FuelSurchargeAmount = 0,
-            BookedBy = userName,
-            LoggedInContactId = tenantInfoService.GetContactId(),
-            TenantCurrentTime = currentTenantTime
-        };
-
-    private async Task ReRateSplitJobsAsync(DespatchContext context, int parentJobId,
-        decimal parentAmount, int rootParentId)
+    private static async Task ConsolidateMarsInformationAsync(
+        DespatchContext context,
+        int jobId,
+        string despatcher,
+        CancellationToken ct)
     {
         try
         {
-            if (parentAmount == 0m)
-            {
-                Log.Information("Parent job {ParentJobId} has zero amount. Skipping re-rate.", parentJobId);
-                return;
-            }
-
-            // Load all child entities with rating-related navigations in a single query
-            var childJobs = await context.TucJobs
-                .Include(j => j.UcjbClient)
-                .Include(j => j.FromAirport)
-                .Include(j => j.ToAirport)
-                .Include(j => j.TucJobItemJobs)
-                .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
-                .OrderBy(j => j.Sequence)
-                .AsSplitQuery()
-                .ToListAsync();
-
-            if (childJobs.Count == 0)
-            {
-                Log.Warning("No non-void jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
-                return;
-            }
-
-            // Pre-compute airport address matches once for all child addresses
-            var isUs = tenantInfoService.IsUsTenant();
-            HashSet<string> airportAddresses = null;
-            if (isUs)
-            {
-                var childPickupAddresses = childJobs
-                    .Select(j => j.PickupAddressLine2).Where(a => !string.IsNullOrEmpty(a));
-                var childDeliveryAddresses = childJobs
-                    .Select(j => j.DeliveryAddressLine2).Where(a => !string.IsNullOrEmpty(a));
-                var allAddresses = childPickupAddresses.Concat(childDeliveryAddresses).Distinct().ToList();
-
-                if (allAddresses.Count > 0)
-                {
-                    var matchingAddresses = await context.TblAirports
-                        .Where(a => allAddresses.Contains(a.AddressLine2))
-                        .Select(a => a.AddressLine2)
-                        .ToListAsync();
-                    airportAddresses = new HashSet<string>(matchingAddresses, StringComparer.OrdinalIgnoreCase);
-                }
-                else
-                {
-                    airportAddresses = [];
-                }
-            }
-
-            // Pre-compute flight speed flag once for all children (they all share the same speed)
-            bool? isFlightSpeed = null;
-            if (isUs && childJobs.Count > 0)
-            {
-                var speedId = childJobs[0].UcjbSpeed;
-                if (speedId.HasValue)
-                {
-                    var speed = await context.TucJobTypes
-                        .Include(s => s.Grouping)
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(s => s.UcjtId == speedId.Value);
-                    isFlightSpeed = speed?.Grouping?.GroupingId == (int)SpeedGrouping.Flight;
-                }
-            }
-
-            // Rate child jobs in parallel with bounded concurrency
-            var jobRates = new ConcurrentBag<(int JobId, decimal Rate)>();
-            await Parallel.ForEachAsync(childJobs, new ParallelOptions { MaxDegreeOfParallelism = 4 }, async (child, _) =>
-            {
-                var rate = 0m;
-                try
-                {
-                    using var scope = serviceScopeFactory.CreateScope();
-                    var scopedRateService = scope.ServiceProvider.GetRequiredService<IRateJobService>();
-
-                    if (isUs)
-                    {
-                        var details = BuildRatingDtoUs(child, airportAddresses, isFlightSpeed);
-                        rate = await scopedRateService.GetJobRateUsAsync(details);
-                    }
-                    else
-                    {
-                        var details = BuildRatingDtoNz(child);
-                        rate = await scopedRateService.GetJobRateNzAsync(details);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to rate job {JobId}. Using rate 0.", child.UcjbId);
-                }
-
-                jobRates.Add((child.UcjbId, rate));
-            });
-
-            // Materialize to list for indexed access in distribution logic
-            var jobRatesList = jobRates.ToList();
-
-            // Sum all rates
-            var totalRate = jobRatesList.Sum(c => c.Rate);
-
-            // Distribute parent amount proportionally based on calculated rates
-            var amounts = new Dictionary<int, decimal>();
-            var runningTotal = 0m;
-            for (var i = 0; i < jobRatesList.Count; i++)
-            {
-                decimal jobAmount;
-                if (i == jobRatesList.Count - 1)
-                {
-                    // Last job absorbs rounding difference to ensure exact balance
-                    jobAmount = parentAmount - runningTotal;
-                }
-                else if (totalRate == 0m)
-                {
-                    // All rates are 0: distribute evenly
-                    jobAmount = Math.Round(parentAmount / jobRatesList.Count, 2);
-                }
-                else
-                {
-                    var percentage = jobRatesList[i].Rate / totalRate;
-                    jobAmount = Math.Round(percentage * parentAmount, 2);
-                }
-
-                runningTotal += jobAmount;
-                amounts[jobRatesList[i].JobId] = jobAmount;
-            }
-
-            // Update each child's amount and rated flag in a single statement per child
-            foreach (var (id, amount) in amounts)
-            {
-                await context.TucJobs
-                    .Where(j => j.UcjbId == id)
-                    .ExecuteUpdateAsync(j => j
-                        .SetProperty(x => x.RatedManually, false)
-                        .SetProperty(x => x.UcjbAmount, amount));
-            }
-
-            Log.Information(
-                "Successfully re-rated {Count} split jobs for parent {ParentJobId}. Parent amount: {ParentAmount}",
-                jobRates.Count, parentJobId, parentAmount);
-        }
-        catch (Exception ex)
-        {
-            Log.Warning(ex, "Failed to re-rate split jobs for parent {ParentJobId}. Jobs created but not rated.",
-                parentJobId);
-        }
-    }
-
-    /// <summary>
-    /// Builds a US rating DTO directly from a TucJob entity loaded in memory,
-    /// avoiding a separate GetJobDetailsForRatingAsync DB roundtrip.
-    /// </summary>
-    private static JobRatingDetailsDto BuildRatingDtoUs(TucJob child, HashSet<string> airportAddresses,
-        bool? isFlightSpeed = null) =>
-        new()
-        {
-            JobId = child.UcjbId,
-            ClientId = child.UcjbClientId,
-            FromId = child.UcjbFrom,
-            ToId = child.UcjbTo,
-            SpeedId = child.UcjbSpeed,
-            IsPedal = child.UcjbCbd,
-            IsVan = child.UcjbVan,
-            IsReturnJob = child.UcjbReturn,
-            Weight = child.UcjbWeight,
-            SizeId = child.UcjbSize,
-            IncludeFuelSurcharge = false,
-            IsDirect = child.Direct,
-            AcceptedJobTypeId = child.AcceptedJobTypeId,
-            OurRef = child.UcjbOurRef,
-            RefA = child.UcjbClientRefa,
-            RefB = child.UcjbClientRefb,
-            Quantity = child.UcjbQty ?? 1,
-            BookedDate = child.UcjbDate,
-            PickupLat = child.PickUpLatitude ?? 0,
-            PickupLong = child.PickUpLongitude ?? 0,
-            DeliveryLat = child.DeliveryLatitude ?? 0,
-            DeliveryLong = child.DeliveryLongitude ?? 0,
-            FromZip = child.PickupAddressLine7,
-            ToZip = child.DeliveryAddressLine7,
-            DangerousGoods = child.Dgdocument ?? false,
-            TotalPallets = child.TucJobItemJobs?.Count ?? 0,
-            ExtraStopOffs = 0,
-            DryIceWeight = child.DryIceWeight ?? 0,
-            WaitTime = 0,
-            FromAirportId = child.FromAirportId,
-            ToAirportId = child.ToAirportId,
-            FromAgentId = child.FromAirport?.AgentId,
-            ToAgentId = child.ToAirport?.AgentId,
-            ClientDiscount = child.UcjbClient?.Discount ?? 0,
-            Cubic = child.TucJobItemJobs?.Sum(i => i.Cubic),
-            IsManuallyRated = child.RatedManually,
-            IsFlightSpeed = isFlightSpeed,
-            // Pre-computed airport matches — passed through to RateJobUsDto to skip DB queries
-            PrecomputedIsFromAddressAirport = !string.IsNullOrEmpty(child.PickupAddressLine2)
-                && airportAddresses.Contains(child.PickupAddressLine2),
-            PrecomputedIsToAddressAirport = !string.IsNullOrEmpty(child.DeliveryAddressLine2)
-                && airportAddresses.Contains(child.DeliveryAddressLine2)
-        };
-
-    /// <summary>
-    /// Builds an NZ rating DTO directly from a TucJob entity loaded in memory,
-    /// avoiding a separate GetJobDetailsForRatingNzAsync DB roundtrip.
-    /// </summary>
-    private static JobRatingDetailsDtoNz BuildRatingDtoNz(TucJob child) =>
-        new()
-        {
-            JobId = child.UcjbId,
-            ClientId = child.UcjbClientId,
-            FromId = child.UcjbFrom,
-            ToId = child.UcjbTo,
-            SpeedId = child.UcjbSpeed,
-            IsPedal = child.UcjbCbd,
-            IsVan = child.UcjbVan,
-            IsReturnJob = child.UcjbReturn,
-            Weight = child.UcjbWeight,
-            SizeId = child.UcjbSize,
-            IncludeFuelSurcharge = false,
-            IsDirect = child.Direct,
-            AcceptedJobTypeId = child.AcceptedJobTypeId,
-            OurRef = child.UcjbOurRef,
-            RefA = child.UcjbClientRefa,
-            RefB = child.UcjbClientRefb,
-            Quantity = child.UcjbQty ?? 1,
-            BookedDate = child.UcjbDate,
-            PickupLat = child.PickUpLatitude ?? 0,
-            PickupLong = child.PickUpLongitude ?? 0,
-            DeliveryLat = child.DeliveryLatitude ?? 0,
-            DeliveryLong = child.DeliveryLongitude ?? 0,
-            DangerousGoods = child.Dgdocument ?? false,
-            DryIceWeight = child.DryIceWeight ?? 0,
-            WaitTime = child.WaitedPickUp ?? 0,
-            FromAirportId = child.FromAirportId,
-            ToAirportId = child.ToAirportId,
-            FromAgentId = child.FromAirport?.AgentId,
-            ToAgentId = child.ToAirport?.AgentId,
-            ClientDiscount = child.UcjbClient?.Discount ?? 0,
-            Cubic = child.TucJobItemJobs?.Sum(i => i.Cubic),
-            IsManuallyRated = child.RatedManually,
-            FromCompanyName = child.PickupAddressLine1,
-            FromBuildingName = child.PickupAddressLine2,
-            FromStreetAddress = (child.PickupAddressLine3 + " " + child.PickupAddressLine4).Trim(),
-            FromSuburb = child.PickupAddressLine5,
-            FromCity = child.PickupAddressLine6,
-            FromPostCode = child.PickupAddressLine7,
-            FromCountryCode = child.PickupAddressLine8,
-            ToCompanyName = child.DeliveryAddressLine1,
-            ToBuildingName = child.DeliveryAddressLine2,
-            ToStreetAddress = (child.DeliveryAddressLine3 + " " + child.DeliveryAddressLine4).Trim(),
-            ToSuburb = child.DeliveryAddressLine5,
-            ToCity = child.DeliveryAddressLine6,
-            ToPostCode = child.DeliveryAddressLine7,
-            ToCountryCode = child.DeliveryAddressLine8,
-            JobType = JobType.Active,
-            IsTruck = child.Truck ?? false,
-            TruckStartTime = child.TruckStartTime?.ToString("HH:mm"),
-            TruckHours = child.TruckHours.HasValue ? (int)child.TruckHours : null
-        };
-
-    private static async Task ConsolidateMarsInformationAsync(DespatchContext context, int jobId, string despatcher)
-    {
-        try
-        {
-            await context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(jobId, false, despatcher, null);
+            await context.Procedures.DES_stpJob_ColsolidateMarsInformationAsync(
+                jobId, false, despatcher, null, cancellationToken: ct);
         }
         catch (Exception ex)
         {
@@ -745,32 +490,76 @@ public sealed class SplitJobService(
         }
     }
 
-    private static void AddSplitJobNotes(
-        DespatchContext context,
-        DateTime currentTenantTime,
-        int pickupJobId,
-        int deliveryJobId,
-        string parentNotes,
-        int? staffId)
+    /// <summary>
+    /// Inserts a TucJob via raw SQL to bypass EF Core's PropagateResults which
+    /// breaks on tucJob due to INSERT triggers producing extra result sets.
+    /// Uses an OUTPUT parameter for SCOPE_IDENTITY() to avoid composability issues.
+    /// Do not batch multiple inserts into a single call — SCOPE_IDENTITY() returns
+    /// the identity of the last INSERT only.
+    /// </summary>
+    private static async Task<int> InsertJobRawAsync(DespatchContext context, TucJob job, CancellationToken ct)
     {
-        var parentNotesText = string.IsNullOrWhiteSpace(parentNotes) ? string.Empty : $"  {parentNotes}";
+        // SQLite (used in tests) doesn't have the INSERT trigger that causes
+        // PropagateResults to break, so normal EF Core works fine.
+        if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync(ct);
+            return job.UcjbId;
+        }
 
-        context.TucNotes.AddRange(
-            new TucNote
-            {
-                JobId = pickupJobId,
-                NoteTypeId = (int)NoteType.InternalNote,
-                NoteText = $"SPLIT Part 1 of 2. {parentNotesText}",
-                CreatedBy = staffId,
-                CreatedDate = currentTenantTime
-            },
-            new TucNote
-            {
-                JobId = deliveryJobId,
-                NoteTypeId = (int)NoteType.InternalNote,
-                NoteText = $"SPLIT Part 2 of 2. {parentNotesText}",
-                CreatedBy = staffId,
-                CreatedDate = currentTenantTime
-            });
+        var entityType = context.Model.FindEntityType(typeof(TucJob))!;
+        var storeObject = StoreObjectIdentifier.Table(entityType.GetTableName()!, entityType.GetSchema());
+
+        var columns = new List<string>();
+        var paramNames = new List<string>();
+        var parameters = new List<SqlParameter>();
+
+        foreach (var property in entityType.GetProperties())
+        {
+            // Skip store-generated identity column
+            if (property.IsPrimaryKey() && property.ValueGenerated != ValueGenerated.Never)
+                continue;
+
+            // Skip shadow properties (no CLR backing member)
+            if (property.PropertyInfo == null && property.FieldInfo == null)
+                continue;
+
+            // Skip server-computed columns (always overwritten by the database)
+            if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate)
+                continue;
+
+            var columnName = property.GetColumnName(storeObject);
+            if (columnName == null) continue;
+
+            var value = property.PropertyInfo?.GetValue(job)
+                        ?? property.FieldInfo?.GetValue(job);
+
+            var paramName = $"@p{parameters.Count}";
+            columns.Add($"[{columnName}]");
+            paramNames.Add(paramName);
+            var sqlParam = new SqlParameter(paramName, value ?? DBNull.Value);
+            if (property.GetTypeMapping() is RelationalTypeMapping relMapping
+                && string.Equals(relMapping.StoreType, "image", StringComparison.OrdinalIgnoreCase))
+                sqlParam.SqlDbType = SqlDbType.Image;
+            parameters.Add(sqlParam);
+        }
+
+        // OUTPUT parameter to capture the new identity without SqlQueryRaw composability issues
+        var identityParam = new SqlParameter("@identity", SqlDbType.Int)
+        {
+            Direction = ParameterDirection.Output
+        };
+        parameters.Add(identityParam);
+
+        var sql = new StringBuilder();
+        sql.Append("SET NOCOUNT ON; INSERT INTO [tucJob] (");
+        sql.Append(string.Join(", ", columns));
+        sql.Append(") VALUES (");
+        sql.Append(string.Join(", ", paramNames));
+        sql.Append("); SET @identity = SCOPE_IDENTITY();");
+
+        await context.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray<object>(), ct);
+        return (int)identityParam.Value!;
     }
 }

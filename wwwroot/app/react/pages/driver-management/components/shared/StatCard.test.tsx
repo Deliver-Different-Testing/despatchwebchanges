@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -41,7 +42,8 @@ describe('StatCard', () => {
     it('should apply color to the top bar', () => {
         const {container} = renderStatCard({color: 'error.main'});
 
-        // The top bar is the first Box inside the Card
+        // querySelector is used here because MUI Box renders a plain <div> with no
+        // implicit ARIA role and the colored bar has no text content or test-id to query.
         const colorBar = container.querySelector('.MuiBox-root');
         expect(colorBar).toBeInTheDocument();
     });

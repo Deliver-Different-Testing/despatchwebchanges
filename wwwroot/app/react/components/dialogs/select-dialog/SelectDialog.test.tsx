@@ -1,9 +1,11 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for SelectDialog React component
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import { SelectDialog } from './SelectDialog';
@@ -43,37 +45,27 @@ describe('SelectDialog', () => {
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
             const props = createDefaultProps({ open: false });
-            const { container } = renderWithProviders(props);
-            expect(container.querySelector('.MuiDialog-root')).toBeNull();
+            renderWithProviders(props);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
-        it('renders the dialog when open', () => {
+        it('renders dialog with title, buttons, and all dropdown items', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
+
+            // Dialog is present
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-        });
 
-        it('displays the title with "Edit" prefix', () => {
-            const props = createDefaultProps({ title: 'Speed' });
-            renderWithProviders(props);
+            // Title with "Edit" prefix
             expect(screen.getByText('Edit Speed')).toBeInTheDocument();
-        });
 
-        it('displays Save and Cancel buttons', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
+            // Save and Cancel buttons
             expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
             expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
-        });
 
-        it('renders all items in the dropdown', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithProviders(props);
-
-            // Open the select dropdown
+            // Open the select dropdown to verify all items
             const selectButton = screen.getByRole('combobox');
-            await user.click(selectButton);
+            fireEvent.mouseDown(selectButton);
 
             // All options should be visible
             expect(screen.getByText('Option A')).toBeInTheDocument();
@@ -87,7 +79,6 @@ describe('SelectDialog', () => {
             const props = createDefaultProps({ initialValue: 2 });
             renderWithProviders(props);
 
-            // The selected value should show "Option B"
             const select = screen.getByRole('combobox');
             expect(select).toHaveTextContent('Option B');
         });
@@ -104,7 +95,6 @@ describe('SelectDialog', () => {
             const props = createDefaultProps({ initialValue: null });
             renderWithProviders(props);
 
-            // The select should show the label/placeholder, not any option text
             const select = screen.getByRole('combobox');
             expect(select).not.toHaveTextContent('Option A');
             expect(select).not.toHaveTextContent('Option B');
@@ -140,7 +130,6 @@ describe('SelectDialog', () => {
         });
 
         it('includes checkbox value in result when checked', async () => {
-            const user = userEvent.setup();
             const onSubmit = jest.fn();
             const props = createDefaultProps({
                 showCheckbox: true,
@@ -151,10 +140,10 @@ describe('SelectDialog', () => {
             renderWithProviders(props);
 
             // Check the checkbox
-            await user.click(screen.getByLabelText('DG Documentation'));
+            fireEvent.click(screen.getByLabelText('DG Documentation'));
 
             // Submit
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            fireEvent.click(screen.getByRole('button', { name: /Save/i }));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith(
@@ -168,7 +157,6 @@ describe('SelectDialog', () => {
 
     describe('Submit', () => {
         it('returns correct result shape on submit', async () => {
-            const user = userEvent.setup();
             const onSubmit = jest.fn();
             const props = createDefaultProps({
                 fieldName: 'SpeedID',
@@ -177,7 +165,7 @@ describe('SelectDialog', () => {
             });
             renderWithProviders(props);
 
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            fireEvent.click(screen.getByRole('button', { name: /Save/i }));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith({
@@ -206,31 +194,24 @@ describe('SelectDialog', () => {
     });
 
     describe('Cancel', () => {
-        it('calls onClose when Cancel is clicked', async () => {
-            const user = userEvent.setup();
+        it('calls onClose when Cancel button or close icon is clicked', () => {
             const onClose = jest.fn();
             const props = createDefaultProps({ onClose });
             renderWithProviders(props);
 
-            await user.click(screen.getByRole('button', { name: /Cancel/i }));
-            expect(onClose).toHaveBeenCalled();
-        });
+            // Cancel button
+            fireEvent.click(screen.getByRole('button', { name: /Cancel/i }));
+            expect(onClose).toHaveBeenCalledTimes(1);
 
-        it('calls onClose when close icon is clicked', async () => {
-            const user = userEvent.setup();
-            const onClose = jest.fn();
-            const props = createDefaultProps({ onClose });
-            renderWithProviders(props);
-
-            // The close icon button is in the header
+            // Close icon button
             const closeButtons = screen.getAllByRole('button');
             const closeIconButton = closeButtons.find(
                 btn => btn.querySelector('[data-testid="CloseIcon"]')
             );
 
             if (closeIconButton) {
-                await user.click(closeIconButton);
-                expect(onClose).toHaveBeenCalled();
+                fireEvent.click(closeIconButton);
+                expect(onClose).toHaveBeenCalledTimes(2);
             }
         });
     });

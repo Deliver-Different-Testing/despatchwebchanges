@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -54,8 +55,6 @@ const setupMocks = (options: {driver?: CourierDataDashboard | undefined; isLoadi
 };
 
 describe('DriverDetailsTab', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     describe('Search section', () => {
         it('should render search input', () => {
             setupMocks();

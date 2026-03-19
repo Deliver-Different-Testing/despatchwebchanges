@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for SimplePriceEditDialogService
  * Covers lazy loading of the React bundle, dialog opening with parameter passing,

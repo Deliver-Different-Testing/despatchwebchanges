@@ -82,7 +82,6 @@ function renderCurrentWorkJobList(config: MountJobListConfig): void {
                         onCategoryChange={config.onCategoryChange}
                         onBackendFilter={config.onBackendFilter}
                         onLoadMoreJobs={config.onLoadMoreJobs}
-                        onSplitJob={config.onSplitJob}
                         onAddStop={config.onAddStop}
                         defaultCategory={config.defaultCategory}
                         storagePrefix={config.storagePrefix ?? 'currentWorkJobList'}

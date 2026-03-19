@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useAddressApi Hooks Tests
  */
@@ -40,10 +41,6 @@ const createWrapper = () => {
 };
 
 describe('useAddressSearch', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockAddressResults: HereMapsLocationResult[] = [
         {
             title: '123 Main Street',
@@ -119,10 +116,6 @@ describe('useAddressSearch', () => {
 });
 
 describe('useLocationDetails', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockLocationDetails: HereMapsLookupResponse = {
         title: '123 Main Street',
         id: 'addr1',
@@ -185,10 +178,6 @@ describe('useLocationDetails', () => {
 });
 
 describe('useHereMapsApiKey', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should fetch API key by default', async () => {
         mockAddressApi.getHereMapsKey.mockResolvedValueOnce('test-api-key-123');
 

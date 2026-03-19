@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useJobApi Hooks Tests
  */
@@ -38,10 +39,6 @@ const createWrapper = () => {
 };
 
 describe('useRelatedJobs', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockRelatedJobs: RelatedJobDto[] = [
         {
             id: 100,

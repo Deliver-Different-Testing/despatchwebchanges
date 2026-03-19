@@ -62,6 +62,7 @@ import {
     useAutoRefresh,
 } from './useMessaging';
 import { messagingApi } from '../../../services/messagingApi';
+import { dayjs, parseDateFromApi } from '../../../utils/dateUtils';
 
 export const MessagingDialog: React.FC<MessagingDialogProps> = ({
     open,
@@ -200,7 +201,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                 sendToCourierId: data.sendToCourierId,
                 sendToStaffId: data.sendToStaffId,
                 message: messageContent,
-                messageTime: new Date().toISOString(),
+                messageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
                 read: false,
                 sent: true,
                 isSender: true,
@@ -215,7 +216,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                 selectedConversation.otherPartyType,
                 {
                     lastMessage: messageContent,
-                    lastMessageTime: new Date().toISOString(),
+                    lastMessageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
                 }
             );
 
@@ -307,7 +308,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                 otherPartyStatus: normalizedContact.status || 'offline',
                 unreadCount: 0,
                 lastMessage: '',
-                lastMessageTime: new Date().toISOString(),
+                lastMessageTime: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
             };
 
             addConversation(newConversation);
@@ -351,7 +352,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
 
     const recentForNewChat = conversations
         .filter(c => c.lastMessageTime)
-        .sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime())
+        .sort((a, b) => dayjs(b.lastMessageTime).valueOf() - dayjs(a.lastMessageTime).valueOf())
         .slice(0, 5);
 
     const renderContent = () => {
@@ -1360,43 +1361,42 @@ function getStatusColor(status: string): string {
 }
 
 function formatMessageTime(messageTime: string): string {
-    const time = new Date(messageTime);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / 60000);
-    const diffInHours = Math.floor(diffInMinutes / 60);
+    const time = parseDateFromApi(messageTime);
+    const now = dayjs();
+    const diffInMinutes = now.diff(time, 'minute');
+    const diffInHours = now.diff(time, 'hour');
 
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    if (diffInHours < 24) return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (diffInHours < 48) return `Yesterday ${time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-    return time.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ', ' +
-           time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (diffInHours < 24) return time.format('HH:mm');
+    if (diffInHours < 48) return `Yesterday ${time.format('HH:mm')}`;
+    return time.format('MMM D, HH:mm');
 }
 
 function formatLastMessageTime(lastMessageTime: string): string {
     if (!lastMessageTime) return '';
-    const time = new Date(lastMessageTime);
-    const now = new Date();
-    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / 60000);
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    const diffInDays = Math.floor(diffInHours / 24);
+    const time = parseDateFromApi(lastMessageTime);
+    const now = dayjs();
+    const diffInMinutes = now.diff(time, 'minute');
+    const diffInHours = now.diff(time, 'hour');
+    const diffInDays = now.diff(time, 'day');
 
     if (diffInMinutes < 1) return 'Now';
     if (diffInMinutes < 60) return `${diffInMinutes}m`;
-    if (diffInHours < 24) return time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (diffInDays < 7) return time.toLocaleDateString([], { weekday: 'short' });
-    return time.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    if (diffInHours < 24) return time.format('HH:mm');
+    if (diffInDays < 7) return time.format('ddd');
+    return time.format('MMM D');
 }
 
 function formatDateSeparator(messageTime: string): string {
-    const time = new Date(messageTime);
-    return time.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+    const time = parseDateFromApi(messageTime);
+    return time.format('MMM D, YYYY');
 }
 
 function isSameDay(time1: string, time2: string): boolean {
-    const date1 = new Date(time1);
-    const date2 = new Date(time2);
-    return date1.toDateString() === date2.toDateString();
+    const date1 = parseDateFromApi(time1);
+    const date2 = parseDateFromApi(time2);
+    return date1.isSame(date2, 'day');
 }
 
 function highlightSearchTerm(text: string, searchTerm: string): string {

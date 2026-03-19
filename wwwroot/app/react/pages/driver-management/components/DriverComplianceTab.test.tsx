@@ -1,3 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
+/**
+ * Optimised: read-only tests consolidated to reduce render count.
+ */
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -70,68 +74,43 @@ const setupMocks = (data?: CourierCompliancePaginated, isLoading = false) => {
 };
 
 describe('DriverComplianceTab', () => {
-    beforeEach(() => jest.clearAllMocks());
+    it('should render column headers and stats', () => {
+        setupMocks();
+        renderWithProviders();
 
-    describe('Column headers', () => {
-        it('should render all column headers', () => {
-            setupMocks();
-            renderWithProviders();
+        // Column headers
+        expect(screen.getByText('Code')).toBeInTheDocument();
+        expect(screen.getByText('Name')).toBeInTheDocument();
+        // 'Type' also appears as filter label
+        expect(screen.getAllByText('Type').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByText('Item/Number')).toBeInTheDocument();
+        expect(screen.getByText('Expiry Date')).toBeInTheDocument();
+        // 'Status' also appears as filter label
+        expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
+        expect(screen.getByText('Days Until Expiry')).toBeInTheDocument();
 
-            expect(screen.getByText('Code')).toBeInTheDocument();
-            expect(screen.getByText('Name')).toBeInTheDocument();
-            // 'Type' also appears as filter label
-            expect(screen.getAllByText('Type').length).toBeGreaterThanOrEqual(1);
-            expect(screen.getByText('Item/Number')).toBeInTheDocument();
-            expect(screen.getByText('Expiry Date')).toBeInTheDocument();
-            // 'Status' also appears as filter label
-            expect(screen.getAllByText('Status').length).toBeGreaterThanOrEqual(1);
-            expect(screen.getByText('Days Until Expiry')).toBeInTheDocument();
-        });
+        // Stats: Expired
+        expect(screen.getAllByText('Expired').length).toBeGreaterThanOrEqual(1);
+
+        // Stats: Expiring Soon
+        expect(screen.getByText('Expiring Soon')).toBeInTheDocument();
+
+        // Stats: Valid
+        expect(screen.getAllByText('Valid').length).toBeGreaterThanOrEqual(1);
+
+        // Stats: Total Drivers
+        expect(screen.getByText('Total Drivers')).toBeInTheDocument();
     });
 
-    describe('Stats display', () => {
-        it('should display Expired stat label', () => {
-            setupMocks();
-            renderWithProviders();
+    it('should update orderBy when Name header is clicked', async () => {
+        setupMocks();
+        renderWithProviders();
 
-            // 'Expired' appears as stat card label and as a chip/row status
-            expect(screen.getAllByText('Expired').length).toBeGreaterThanOrEqual(1);
-        });
+        fireEvent.click(screen.getByText('Name'));
 
-        it('should display Expiring Soon stat', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('Expiring Soon')).toBeInTheDocument();
-        });
-
-        it('should display Valid stat label', () => {
-            setupMocks();
-            renderWithProviders();
-
-            // 'Valid' appears as stat card label and as a chip/row status
-            expect(screen.getAllByText('Valid').length).toBeGreaterThanOrEqual(1);
-        });
-
-        it('should display Total Drivers stat', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('Total Drivers')).toBeInTheDocument();
-        });
-    });
-
-    describe('Sort clicks', () => {
-        it('should update orderBy when Name header is clicked', async () => {
-            setupMocks();
-            renderWithProviders();
-
-            fireEvent.click(screen.getByText('Name'));
-
-            await waitFor(() => {
-                const lastCall = mockUseComplianceList.mock.calls[mockUseComplianceList.mock.calls.length - 1];
-                expect(lastCall[0].orderBy).toBe('name');
-            });
+        await waitFor(() => {
+            const lastCall = mockUseComplianceList.mock.calls[mockUseComplianceList.mock.calls.length - 1];
+            expect(lastCall[0].orderBy).toBe('name');
         });
     });
 
@@ -161,25 +140,21 @@ describe('DriverComplianceTab', () => {
         });
     });
 
-    describe('Loading state', () => {
-        it('should show loading indicator when isLoading is true', () => {
-            setupMocks(undefined, true);
-            renderWithProviders();
+    it('should show loading indicator when isLoading is true', () => {
+        setupMocks(undefined, true);
+        renderWithProviders();
 
-            expect(screen.getByText('Loading...')).toBeInTheDocument();
-        });
+        expect(screen.getByText('Loading...')).toBeInTheDocument();
     });
 
-    describe('Empty state', () => {
-        it('should show empty message when no items', () => {
-            setupMocks({
-                items: [], total: 0, page: 1, pages: 0,
-                totalExpired: 0, totalExpiringSoon: 0, totalValid: 0,
-            });
-            renderWithProviders();
-
-            expect(screen.getByText('No Compliance Records')).toBeInTheDocument();
-            expect(screen.getByText('No compliance records match your criteria.')).toBeInTheDocument();
+    it('should show empty message when no items', () => {
+        setupMocks({
+            items: [], total: 0, page: 1, pages: 0,
+            totalExpired: 0, totalExpiringSoon: 0, totalValid: 0,
         });
+        renderWithProviders();
+
+        expect(screen.getByText('No Compliance Records')).toBeInTheDocument();
+        expect(screen.getByText('No compliance records match your criteria.')).toBeInTheDocument();
     });
 });

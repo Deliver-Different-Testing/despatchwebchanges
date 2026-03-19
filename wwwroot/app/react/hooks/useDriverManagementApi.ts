@@ -1,22 +1,22 @@
-import {useQuery, useMutation, useQueryClient, keepPreviousData} from '@tanstack/react-query';
+import {keepPreviousData, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {driverManagementApi} from '../services/driverManagementApi';
 import {
-    PaginatedRequest,
-    FleetOption,
-    CourierDataDashboard,
-    TodayActiveDriverFilter,
-    TodayActiveDriverPaginated,
-    ComplianceFilter,
-    CourierCompliancePaginated,
-    CourierCompliance,
+    AfterHoursCourierScheduleItem,
     AfterHoursFilter,
     AfterHoursPaginated,
-    AfterHoursCourierScheduleItem,
-    PaginatedResponse,
-    DriverEmail,
-    GroupEmailData,
+    ComplianceFilter,
+    CourierCompliance,
+    CourierCompliancePaginated,
     CourierDailyEarningsPaginated,
+    CourierDataDashboard,
+    DriverEmail,
+    FleetOption,
+    GroupEmailData,
+    PaginatedRequest,
+    PaginatedResponse,
+    TodayActiveDriverFilter,
+    TodayActiveDriverPaginated,
 } from '../interfaces';
 
 // ----- Query hooks -----
@@ -92,8 +92,8 @@ export function useCreateAfterHoursSchedule() {
     const queryClient = useQueryClient();
     return useMutation<void, Error, AfterHoursCourierScheduleItem>({
         mutationFn: (schedule) => driverManagementApi.createAfterHoursSchedule(schedule),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: queryKeys.driverManagement.all});
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.driverManagement.all});
         },
     });
 }
@@ -102,8 +102,8 @@ export function useUpdateAfterHoursSchedule() {
     const queryClient = useQueryClient();
     return useMutation<void, Error, AfterHoursCourierScheduleItem>({
         mutationFn: (schedule) => driverManagementApi.updateAfterHoursSchedule(schedule),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: queryKeys.driverManagement.all});
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.driverManagement.all});
         },
     });
 }
@@ -112,8 +112,8 @@ export function useDeleteAfterHoursSchedule() {
     const queryClient = useQueryClient();
     return useMutation<void, Error, number>({
         mutationFn: (id) => driverManagementApi.deleteAfterHoursSchedule(id),
-        onSuccess: () => {
-            queryClient.invalidateQueries({queryKey: queryKeys.driverManagement.all});
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({queryKey: queryKeys.driverManagement.all});
         },
     });
 }

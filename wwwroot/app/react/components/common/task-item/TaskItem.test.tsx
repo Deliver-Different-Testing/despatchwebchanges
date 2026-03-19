@@ -1,9 +1,10 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * TaskItem Component Tests
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
@@ -80,10 +81,6 @@ const createDefaultProps = (overrides?: Partial<TaskItemProps>): TaskItemProps =
 };
 
 describe('TaskItem', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Rendering', () => {
         it('renders the task title', () => {
             const props = createDefaultProps();
@@ -428,7 +425,7 @@ describe('TaskItem', () => {
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
             const searchInput = screen.getByPlaceholderText('Search staff...');
-            await userEvent.type(searchInput, 'Jane');
+            fireEvent.change(searchInput, { target: { value: 'Jane' } });
 
             await waitFor(() => {
                 expect(screen.getByText('Jane Smith')).toBeInTheDocument();
@@ -446,7 +443,7 @@ describe('TaskItem', () => {
             expect(await screen.findByText('Jane Smith')).toBeInTheDocument();
 
             const searchInput = screen.getByPlaceholderText('Search staff...');
-            await userEvent.type(searchInput, 'xyz');
+            fireEvent.change(searchInput, { target: { value: 'xyz' } });
 
             expect(await screen.findByText('No staff found')).toBeInTheDocument();
         });

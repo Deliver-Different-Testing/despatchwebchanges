@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { render, RenderOptions } from '@testing-library/react';
+import { render, RenderOptions, screen } from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -167,17 +167,37 @@ export function createProps<T extends object>(defaults: T, overrides?: Partial<T
  */
 export function describeDialogOpenClose(
     renderDialog: (open: boolean) => ReturnType<typeof render>,
-    dialogSelector = '.MuiDialog-root'
 ) {
     describe('Dialog Open/Close', () => {
         it('renders nothing when not open', () => {
-            const { container } = renderDialog(false);
-            expect(container.querySelector(dialogSelector)).toBeNull();
+            renderDialog(false);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
         it('renders when open', () => {
-            const { container } = renderDialog(true);
-            expect(container.querySelector(dialogSelector)).not.toBeNull();
+            renderDialog(true);
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
         });
+    });
+}
+
+/**
+ * Suppress console.error for the current test scope.
+ * Call in beforeEach or at the top of a test that intentionally triggers errors.
+ * Returns a spy that can be used for assertions on error calls.
+ *
+ * @example
+ * let errorSpy: jest.SpyInstance;
+ * beforeEach(() => { errorSpy = suppressConsoleError(); });
+ * afterEach(() => { errorSpy.mockRestore(); });
+ */
+export function suppressConsoleError(...allowedPrefixes: string[]): jest.SpyInstance {
+    return jest.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+        if (allowedPrefixes.length === 0) return;
+        const msg = typeof args[0] === 'string' ? args[0] : '';
+        if (!allowedPrefixes.some(p => msg.startsWith(p))) {
+            // eslint-disable-next-line no-console
+            console.warn('[unexpected console.error]', ...args);
+        }
     });
 }

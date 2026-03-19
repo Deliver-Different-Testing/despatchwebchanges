@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * JobListContextMenu Tests
  *
@@ -18,6 +19,9 @@ import dayjs from 'dayjs';
 // ── Mocks ─────────────────────────────────────────────────────────────
 
 jest.mock('../../services/jobListApi');
+jest.mock('../../services/splitJobFlow', () => ({
+    executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
+}));
 jest.mock('../dialogs/add-event-dialog', () => ({
     openAddEventDialog: jest.fn().mockResolvedValue(true),
 }));
@@ -29,11 +33,13 @@ jest.mock('../../../functions/aiSettings', () => ({
 }));
 
 import * as api from '../../services/jobListApi';
+import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {isAiEnabled} from '../../../functions/aiSettings';
 
 const mockedApi = api as jest.Mocked<typeof api>;
+const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;
 const mockedOpenAddEventDialog = openAddEventDialog as jest.Mock;
 const mockedOpenEventGroupDialog = openEventGroupDialog as jest.Mock;
 const mockedIsAiEnabled = isAiEnabled as jest.Mock;
@@ -90,7 +96,6 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
         appPage: AppPageEnum.Dispatch as AppPage,
         showToast: jest.fn(),
         onRefresh: jest.fn(),
-        onSplitJob: jest.fn(),
         onAddStop: jest.fn(),
         ...overrides,
     };
@@ -104,8 +109,6 @@ const mockEventGroups: api.EventGroupItem[] = [
 ];
 
 beforeEach(() => {
-    jest.clearAllMocks();
-
     // Default API mocks
     mockedApi.getEventGroups.mockResolvedValue(mockEventGroups);
     mockedApi.updateJobReadStatus.mockResolvedValue(undefined);
@@ -119,6 +122,7 @@ beforeEach(() => {
     mockedApi.lateCall.mockResolvedValue(undefined);
 
     mockedIsAiEnabled.mockReturnValue(false);
+    mockedExecuteSplitJobFlow.mockResolvedValue(undefined);
     mockedOpenAddEventDialog.mockResolvedValue(true);
     mockedOpenEventGroupDialog.mockResolvedValue(true);
 
@@ -146,28 +150,46 @@ describe('JobListContextMenu', () => {
     // ── 1. Rendering & Visibility ──────────────────────────────────────
 
     describe('Rendering & Visibility', () => {
-        it('does not render when job is null', () => {
-            const props = createDefaultProps({job: null});
-            const {container} = renderWithTheme(<JobListContextMenu {...props} />);
-            expect(container.innerHTML).toBe('');
+        it('does not render when job or position is null', () => {
+            // job is null
+            const props1 = createDefaultProps({job: null});
+            const {container: c1, unmount: unmount1} = renderWithTheme(<JobListContextMenu {...props1} />);
+            expect(c1.innerHTML).toBe('');
+            unmount1();
+
+            // position is null
+            const props2 = createDefaultProps({position: null});
+            const {container: c2} = renderWithTheme(<JobListContextMenu {...props2} />);
+            expect(c2.innerHTML).toBe('');
         });
 
-        it('does not render when position is null', () => {
-            const props = createDefaultProps({position: null});
-            const {container} = renderWithTheme(<JobListContextMenu {...props} />);
-            expect(container.innerHTML).toBe('');
-        });
-
-        it('opens menu when both job and position provided', () => {
+        it('renders menu with expected items for default props (Dispatch page)', () => {
             renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
-            expect(screen.getByRole('menu')).toBeInTheDocument();
-        });
 
-        it('shows "Mark as Unread" when hasBeenRead is true', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
-                job: createMockJob({hasBeenRead: true}),
-            })} />);
+            // opens menu when both job and position provided
+            expect(screen.getByRole('menu')).toBeInTheDocument();
+
+            // shows "Mark as Unread" when hasBeenRead is true (default job has hasBeenRead: true)
             expect(screen.getByText('Mark as Unread')).toBeInTheDocument();
+
+            // shows Late Pickup/Delivery on Dispatch page
+            expect(screen.getByText('Late Pickup')).toBeInTheDocument();
+            expect(screen.getByText('Late Delivery')).toBeInTheDocument();
+
+            // always shows Add Task, Task Groups, Void, Set First Job, Restore, Mark Missing
+            expect(screen.getByText('Add Task - Other')).toBeInTheDocument();
+            expect(screen.getByText('Task Groups')).toBeInTheDocument();
+            expect(screen.getByText('Void Job')).toBeInTheDocument();
+            expect(screen.getByText('Set First Job')).toBeInTheDocument();
+            expect(screen.getByText('Restore')).toBeInTheDocument();
+            expect(screen.getByText('Mark Missing')).toBeInTheDocument();
+
+            // does not show Add Stop when not an agent job (default job has isAgentJob: false)
+            expect(screen.queryByText('Add Pickup Stop')).not.toBeInTheDocument();
+            expect(screen.queryByText('Add Delivery Stop')).not.toBeInTheDocument();
+
+            // does not show AI Late Alert when isAiEnabled returns false (default mock returns false)
+            expect(screen.queryByText('AI Late Alert Analysis (Beta)')).not.toBeInTheDocument();
         });
 
         it('shows "Mark as Read" when hasBeenRead is false', () => {
@@ -175,12 +197,6 @@ describe('JobListContextMenu', () => {
                 job: createMockJob({hasBeenRead: false}),
             })} />);
             expect(screen.getByText('Mark as Read')).toBeInTheDocument();
-        });
-
-        it('shows Late Pickup/Delivery on Dispatch page', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.Dispatch})} />);
-            expect(screen.getByText('Late Pickup')).toBeInTheDocument();
-            expect(screen.getByText('Late Delivery')).toBeInTheDocument();
         });
 
         it('shows Late Pickup/Delivery on JobSearch page', () => {
@@ -195,8 +211,9 @@ describe('JobListContextMenu', () => {
             expect(screen.queryByText('Late Delivery')).not.toBeInTheDocument();
         });
 
-        it('shows Unassign Flight only on Domestic + assignedFlight + isFlightJob', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows/hides Unassign Flight based on page and job props', () => {
+            // shows on Domestic + assignedFlight + isFlightJob
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
                     isFlightJob: true,
@@ -209,9 +226,9 @@ describe('JobListContextMenu', () => {
                 }),
             })} />);
             expect(screen.getByText('Unassign Flight')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('does not show Unassign Flight on Dispatch page', () => {
+            // does not show on Dispatch page
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Dispatch,
                 job: createMockJob({
@@ -227,8 +244,9 @@ describe('JobListContextMenu', () => {
             expect(screen.queryByText('Unassign Flight')).not.toBeInTheDocument();
         });
 
-        it('shows Unassign Agent only on Domestic + assignedAgent', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows/hides Unassign Agent based on page and job props', () => {
+            // shows on Domestic + assignedAgent
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Domestic,
                 job: createMockJob({
                     assignedAgent: {
@@ -238,9 +256,9 @@ describe('JobListContextMenu', () => {
                 }),
             })} />);
             expect(screen.getByText('Unassign Agent')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('does not show Unassign Agent on Dispatch page', () => {
+            // does not show on Dispatch page
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 appPage: AppPageEnum.Dispatch,
                 job: createMockJob({
@@ -253,38 +271,25 @@ describe('JobListContextMenu', () => {
             expect(screen.queryByText('Unassign Agent')).not.toBeInTheDocument();
         });
 
-        it('shows Add Delivery Stop for agent jobs without toAirportId', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows Add Delivery Stop or Add Pickup Stop for agent jobs based on airport IDs', () => {
+            // shows Add Delivery Stop for agent jobs without toAirportId
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isAgentJob: true}),
             })} />);
             expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('shows Add Pickup Stop for agent jobs with toAirportId and no fromAirportId', () => {
+            // shows Add Pickup Stop for agent jobs with toAirportId and no fromAirportId
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isAgentJob: true, toAirportId: 5, fromAirportId: undefined}),
             })} />);
             expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
         });
 
-        it('does not show Add Stop when not an agent job', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
-                job: createMockJob({isAgentJob: false}),
-            })} />);
-            expect(screen.queryByText('Add Pickup Stop')).not.toBeInTheDocument();
-            expect(screen.queryByText('Add Delivery Stop')).not.toBeInTheDocument();
-        });
-
         it('shows AI Late Alert only when isAiEnabled returns true', () => {
             mockedIsAiEnabled.mockReturnValue(true);
             renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.Dispatch})} />);
             expect(screen.getByText('AI Late Alert Analysis (Beta)')).toBeInTheDocument();
-        });
-
-        it('does not show AI Late Alert when isAiEnabled returns false', () => {
-            mockedIsAiEnabled.mockReturnValue(false);
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.Dispatch})} />);
-            expect(screen.queryByText('AI Late Alert Analysis (Beta)')).not.toBeInTheDocument();
         });
 
         it('shows Reprice Job for nationwide speed + not reprice + not preBook', () => {
@@ -302,70 +307,64 @@ describe('JobListContextMenu', () => {
             expect(screen.queryByText('Reprice Job')).not.toBeInTheDocument();
         });
 
-        it('shows Send to Live when isBulkJob and not done', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows/hides Send to Live based on done status', () => {
+            // shows when isBulkJob and not done
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
             })} />);
             expect(screen.getByText('Send to Live')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('does not show Send to Live when done', () => {
+            // does not show when done
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: true}),
             })} />);
             expect(screen.queryByText('Send to Live')).not.toBeInTheDocument();
         });
 
-        it('shows Swap PODs when done and not bulk and not preBook', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows/hides Swap PODs based on done status', () => {
+            // shows when done and not bulk and not preBook
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({done: true, isBulkJob: false, preBook: false}),
             })} />);
             expect(screen.getByText('Swap PODs')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('does not show Swap PODs when not done', () => {
+            // does not show when not done
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({done: false}),
             })} />);
             expect(screen.queryByText('Swap PODs')).not.toBeInTheDocument();
         });
 
-        it('shows Split Job when allowSplit and no group children', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows/hides Split Job based on _groupChildren', () => {
+            // shows when allowSplit and no group children
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({allowSplit: true, _groupChildren: []}),
             })} />);
             expect(screen.getByText('Split Job')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('does not show Split Job when _groupChildren has items', () => {
+            // does not show when _groupChildren has items
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({allowSplit: true, _groupChildren: [createMockJob({id: 2})]}),
             })} />);
             expect(screen.queryByText('Split Job')).not.toBeInTheDocument();
         });
 
-        it('shows Re-Dispatch when assignedCourier exists', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
+        it('shows/hides Re-Dispatch based on assignedCourier', () => {
+            // shows when assignedCourier exists
+            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
             })} />);
             expect(screen.getByText('Re-Dispatch')).toBeInTheDocument();
-        });
+            unmount();
 
-        it('does not show Re-Dispatch when no assignedCourier', () => {
+            // does not show when no assignedCourier
             renderWithTheme(<JobListContextMenu {...createDefaultProps({
                 job: createMockJob({assignedCourier: undefined}),
             })} />);
             expect(screen.queryByText('Re-Dispatch')).not.toBeInTheDocument();
-        });
-
-        it('always shows Add Task, Task Groups, Void, Set First Job, Restore, Mark Missing', () => {
-            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
-            expect(screen.getByText('Add Task - Other')).toBeInTheDocument();
-            expect(screen.getByText('Task Groups')).toBeInTheDocument();
-            expect(screen.getByText('Void Job')).toBeInTheDocument();
-            expect(screen.getByText('Set First Job')).toBeInTheDocument();
-            expect(screen.getByText('Restore')).toBeInTheDocument();
-            expect(screen.getByText('Mark Missing')).toBeInTheDocument();
         });
     });
 
@@ -519,7 +518,8 @@ describe('JobListContextMenu', () => {
             await user.click(screen.getByText('Late Pickup'));
 
             const input = screen.getByLabelText('Minutes');
-            await user.type(input, '15');
+            await user.click(input);
+            await user.paste('15');
             await user.click(screen.getByText('Save'));
 
             await waitFor(() => {
@@ -542,7 +542,8 @@ describe('JobListContextMenu', () => {
             await user.click(screen.getByText('Late Delivery'));
 
             const input = screen.getByLabelText('Minutes');
-            await user.type(input, '30');
+            await user.click(input);
+            await user.paste('30');
             await user.click(screen.getByText('Save'));
 
             await waitFor(() => {
@@ -563,7 +564,8 @@ describe('JobListContextMenu', () => {
             await user.click(screen.getByText('Late Pickup'));
 
             const input = screen.getByLabelText('Minutes');
-            await user.type(input, '10');
+            await user.click(input);
+            await user.paste('10');
             await user.keyboard('{Enter}');
 
             await waitFor(() => {
@@ -608,7 +610,8 @@ describe('JobListContextMenu', () => {
 
             await user.click(screen.getByText('Late Pickup'));
             const input = screen.getByLabelText('Minutes');
-            await user.type(input, '5');
+            await user.click(input);
+            await user.paste('5');
             await user.click(screen.getByText('Save'));
 
             await waitFor(() => {
@@ -746,7 +749,7 @@ describe('JobListContextMenu', () => {
             expect(props.onAddStop).toHaveBeenCalledWith(job);
         });
 
-        it('Split Job calls onSplitJob prop with native event and job', async () => {
+        it('Split Job shows confirmation dialog, OK calls executeSplitJobFlow', async () => {
             const user = userEvent.setup();
             const job = createMockJob({allowSplit: true, _groupChildren: []});
             const props = createDefaultProps({job});
@@ -754,10 +757,32 @@ describe('JobListContextMenu', () => {
 
             await user.click(screen.getByText('Split Job'));
 
-            expect(props.onSplitJob).toHaveBeenCalledWith(
-                expect.any(MouseEvent),
-                job,
-            );
+            // Confirmation dialog should be visible
+            expect(screen.getByText('Split Job', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
+            expect(screen.getByText('Are you sure you wish to split this job?')).toBeInTheDocument();
+
+            await user.click(screen.getByText('OK'));
+
+            await waitFor(() => {
+                expect(mockedExecuteSplitJobFlow).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        job,
+                        showToast: props.showToast,
+                    }),
+                );
+            });
+        });
+
+        it('Split Job cancel does not call executeSplitJobFlow', async () => {
+            const user = userEvent.setup();
+            const job = createMockJob({allowSplit: true, _groupChildren: []});
+            const props = createDefaultProps({job});
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Split Job'));
+            await user.click(screen.getByText('Cancel'));
+
+            expect(mockedExecuteSplitJobFlow).not.toHaveBeenCalled();
         });
     });
 

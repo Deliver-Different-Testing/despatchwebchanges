@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * DateRangeDialog Component Tests
  */
@@ -19,10 +20,6 @@ const createMockProps = (overrides?: Partial<DateRangeDialogProps>) =>
     createProps(defaultProps, overrides);
 
 describe('DateRangeDialog', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Rendering', () => {
         it('renders dialog when open is true', () => {
             const props = createMockProps();

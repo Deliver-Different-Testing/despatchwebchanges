@@ -2,121 +2,37 @@
  * Shared Mock Data Factories
  *
  * Centralized mock data to reduce duplication across test files.
+ * Factories import actual source types to catch interface mismatches at compile time.
  */
 
 import dayjs from 'dayjs';
-
-interface MockAddress {
-    addressString: string;
-    unitNumber: string;
-    streetNumber: string;
-    streetName: string;
-    suburb: string;
-    city: string;
-    postcode: string;
-    country: string;
-    dpid: string;
-    longitude: number;
-    latitude: number;
-}
-
-interface MockUSAddress extends MockAddress {
-    state: string;
-}
-
-interface MockAgent {
-    id: number;
-    text: string;
-    name: string;
-    email: string;
-    phone: string;
-}
-
-interface MockTask {
-    id: number;
-    title: string;
-    description: string;
-    dueDate: string;
-    isCompleted: boolean;
-    priority: string;
-    assignedTo: string;
-}
-
-interface MockJob {
-    id: number;
-    jobNo: string;
-    status: string;
-    pickupAddress: string;
-    deliveryAddress: string;
-    customerName: string;
-}
-
-interface MockEventType {
-    id: number;
-    name: string;
-    color: string;
-}
-
-interface MockFlightSegment {
-    segmentOrder: number;
-    departureAirportFsCode: string;
-    departureAirportName: string;
-    departureAirportCity: string;
-    departureAirportId: number;
-    departureAirportTimeZone: string;
-    arrivalAirportFsCode: string;
-    arrivalAirportName: string;
-    arrivalAirportCity: string;
-    arrivalAirportId: number;
-    arrivalAirportTimeZone: string;
-    departureTime: dayjs.Dayjs;
-    arrivalTime: dayjs.Dayjs;
-    carrierFsCode: string;
-    flightNumber: string;
-    airlineName: string;
-}
-
-interface MockFlight {
-    flightNumber: string;
-    departureTime: dayjs.Dayjs;
-    arrivalTime: dayjs.Dayjs;
-    departureTimeZone: string;
-    arrivalTimeZone: string;
-    flightSegments: MockFlightSegment[];
-}
-
-interface MockCargoProcessing {
-    arrivalTime: dayjs.Dayjs;
-    processingTimeMins: number;
-    cargoOpeningTime: dayjs.Dayjs;
-    cargoClosingTime: dayjs.Dayjs;
-    deliverByTime: dayjs.Dayjs;
-}
-
-interface MockRecurringJob {
-    id: number;
-    name: string;
-    frequency: string;
-    nextRun: string;
-    isActive: boolean;
-}
+import type { AddressViewModel } from '../interfaces/address';
+import type { AgentInfo } from '../interfaces/agent';
+import type { EventType, AddEventJob } from '../interfaces/event';
+import type { Task, TaskAssignee } from '../interfaces/tasks';
+import type { PrebookListModel } from '../interfaces/recurringJobs';
+import type {
+    FlightSegment,
+    FlightViewModel,
+    FlightCargoProcessing,
+} from '../components/dialogs/flight-agent-confirmation-dialog/types';
 
 /**
- * Address mock data
+ * Address mock data (NZ format)
  */
-export function createMockAddress(overrides?: Partial<MockAddress>): MockAddress {
+export function createMockAddress(overrides?: Partial<AddressViewModel>): AddressViewModel {
     return {
-        addressString: '123 Test Street, Auckland 1010',
-        unitNumber: '',
-        streetNumber: '123',
-        streetName: 'Test Street',
-        suburb: 'Auckland Central',
-        city: 'Auckland',
-        postcode: '1010',
-        country: 'New Zealand',
-        dpid: 'DPID123',
-        longitude: 174.7633,
+        addressLine1: '',                        // Company/Building
+        addressLine2: '',                        // Unit/Suite
+        addressLine3: '123',                     // Street Number
+        addressLine4: 'Test Street',             // Street Name
+        addressLine5: 'Auckland Central',        // Suburb
+        addressLine6: 'Auckland',                // City
+        addressLine7: '1010',                    // Post Code
+        addressLine8: '',                        // Additional Notes
+        fullAddress: '123 Test Street, Auckland Central, Auckland 1010',
         latitude: -36.8485,
+        longitude: 174.7633,
         ...overrides,
     };
 }
@@ -124,20 +40,19 @@ export function createMockAddress(overrides?: Partial<MockAddress>): MockAddress
 /**
  * US Address mock data
  */
-export function createMockUSAddress(overrides?: Partial<MockUSAddress>): MockUSAddress {
+export function createMockUSAddress(overrides?: Partial<AddressViewModel>): AddressViewModel {
     return {
-        addressString: '456 Main St, New York, NY 10001',
-        unitNumber: 'Apt 5',
-        streetNumber: '456',
-        streetName: 'Main St',
-        suburb: 'Manhattan',
-        city: 'New York',
-        state: 'NY',
-        postcode: '10001',
-        country: 'United States',
-        dpid: '',
-        longitude: -74.006,
+        addressLine1: '',                        // Company/Building
+        addressLine2: 'Apt 5',                   // Unit/Suite
+        addressLine3: '456',                     // Street Number
+        addressLine4: 'Main St',                 // Street Name
+        addressLine5: 'New York',                // City (US)
+        addressLine6: 'NY',                      // State (US)
+        addressLine7: '10001',                   // ZIP Code
+        addressLine8: '',                        // Additional Notes
+        fullAddress: '456 Main St, New York, NY 10001',
         latitude: 40.7128,
+        longitude: -74.006,
         ...overrides,
     };
 }
@@ -145,13 +60,26 @@ export function createMockUSAddress(overrides?: Partial<MockUSAddress>): MockUSA
 /**
  * Agent mock data
  */
-export function createMockAgent(overrides?: Partial<MockAgent>): MockAgent {
+export function createMockAgent(overrides?: Partial<AgentInfo>): AgentInfo {
+    return {
+        agentId: 1,
+        agentName: 'Test Agent Company',
+        agentRate: 50,
+        agentRanking: 'A',
+        agentNotes: '',
+        agentPhone: '555-0100',
+        agentEmail: 'agent@test.com',
+        ...overrides,
+    };
+}
+
+/**
+ * Task assignee mock data
+ */
+export function createMockTaskAssignee(overrides?: Partial<TaskAssignee>): TaskAssignee {
     return {
         id: 1,
-        text: 'Test Agent',
-        name: 'Test Agent Company',
-        email: 'agent@test.com',
-        phone: '555-0100',
+        text: 'Test User',
         ...overrides,
     };
 }
@@ -159,30 +87,30 @@ export function createMockAgent(overrides?: Partial<MockAgent>): MockAgent {
 /**
  * Task mock data
  */
-export function createMockTask(overrides?: Partial<MockTask>): MockTask {
+export function createMockTask(overrides?: Partial<Task>): Task {
     return {
         id: 1,
         title: 'Test Task',
         description: 'Test description',
-        dueDate: dayjs().add(1, 'day').toISOString(),
-        isCompleted: false,
+        dueDate: dayjs().add(1, 'day'),
+        closed: false,
+        assignee: createMockTaskAssignee(),
+        jobId: 100,
+        eventType: 'Follow Up',
+        jobNumber: 'JOB-001',
         priority: 'medium',
-        assignedTo: 'Test User',
         ...overrides,
     };
 }
 
 /**
- * Job mock data
+ * Job mock data (simplified — use for AddEventDialog and similar)
  */
-export function createMockJob(overrides?: Partial<MockJob>): MockJob {
+export function createMockJob(overrides?: Partial<AddEventJob>): AddEventJob {
     return {
         id: 1,
         jobNo: 'JOB-001',
-        status: 'active',
-        pickupAddress: '123 Pickup St',
-        deliveryAddress: '456 Delivery Ave',
-        customerName: 'Test Customer',
+        client: 'Test Customer',
         ...overrides,
     };
 }
@@ -190,11 +118,10 @@ export function createMockJob(overrides?: Partial<MockJob>): MockJob {
 /**
  * Event type mock data
  */
-export function createMockEventType(overrides?: Partial<MockEventType>): MockEventType {
+export function createMockEventType(overrides?: Partial<EventType>): EventType {
     return {
         id: 1,
-        name: 'Test Event',
-        color: '#FF0000',
+        text: 'Follow Up',
         ...overrides,
     };
 }
@@ -202,18 +129,16 @@ export function createMockEventType(overrides?: Partial<MockEventType>): MockEve
 /**
  * Flight segment mock data
  */
-export function createMockFlightSegment(overrides?: Partial<MockFlightSegment>): MockFlightSegment {
+export function createMockFlightSegment(overrides?: Partial<FlightSegment>): FlightSegment {
     return {
         segmentOrder: 0,
         departureAirportFsCode: 'AKL',
         departureAirportName: 'Auckland Airport',
         departureAirportCity: 'Auckland',
-        departureAirportId: 1,
         departureAirportTimeZone: 'Pacific/Auckland',
         arrivalAirportFsCode: 'SYD',
         arrivalAirportName: 'Sydney Airport',
         arrivalAirportCity: 'Sydney',
-        arrivalAirportId: 2,
         arrivalAirportTimeZone: 'Australia/Sydney',
         departureTime: dayjs('2024-03-15T08:00:00'),
         arrivalTime: dayjs('2024-03-15T10:30:00'),
@@ -227,7 +152,7 @@ export function createMockFlightSegment(overrides?: Partial<MockFlightSegment>):
 /**
  * Flight mock data
  */
-export function createMockFlight(overrides?: Partial<MockFlight>): MockFlight {
+export function createMockFlight(overrides?: Partial<FlightViewModel>): FlightViewModel {
     return {
         flightNumber: 'NZ123',
         departureTime: dayjs('2024-03-15T08:00:00'),
@@ -242,7 +167,7 @@ export function createMockFlight(overrides?: Partial<MockFlight>): MockFlight {
 /**
  * Cargo processing mock data
  */
-export function createMockCargoProcessing(overrides?: Partial<MockCargoProcessing>): MockCargoProcessing {
+export function createMockCargoProcessing(overrides?: Partial<FlightCargoProcessing>): FlightCargoProcessing {
     return {
         arrivalTime: dayjs('2024-03-15T10:30:00'),
         processingTimeMins: 90,
@@ -256,13 +181,23 @@ export function createMockCargoProcessing(overrides?: Partial<MockCargoProcessin
 /**
  * Recurring job mock data
  */
-export function createMockRecurringJob(overrides?: Partial<MockRecurringJob>): MockRecurringJob {
+export function createMockRecurringJob(overrides?: Partial<PrebookListModel>): PrebookListModel {
     return {
         id: 1,
-        name: 'Daily Pickup',
-        frequency: 'daily',
-        nextRun: dayjs().add(1, 'day').toISOString(),
-        isActive: true,
+        booked: dayjs('2024-01-15'),
+        nextDueTime: dayjs(Date.now() + 86400000),
+        client: 'Test Client',
+        jobNo: 'RJ-001',
+        clientId: 1,
+        courier: 'Test Courier',
+        speed: 'Standard',
+        customJobName: 'Daily Pickup',
+        pickupAddress: createMockAddress(),
+        deliveryAddress: createMockAddress({
+            addressLine3: '456',
+            addressLine4: 'Delivery Ave',
+            fullAddress: '456 Delivery Ave, Auckland Central, Auckland 1010',
+        }),
         ...overrides,
     };
 }

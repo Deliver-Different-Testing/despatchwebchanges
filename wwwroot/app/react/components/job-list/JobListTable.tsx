@@ -26,6 +26,7 @@ import Button from '@mui/material/Button';
 import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
+import Tooltip from '@mui/material/Tooltip';
 import type {SxProps, Theme} from '@mui/material';
 
 // MUI Icons
@@ -241,13 +242,13 @@ function isMultiPartJob(job: DispatchJob): boolean {
 }
 
 function getFlightIcon(job: DispatchJob): React.ReactNode {
-    if (!job.jobNo) return <QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/>;
+    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     const lastChar = job.jobNo.toString().slice(-1);
     switch (lastChar) {
-        case '1': return <FlightTakeoffIcon fontSize="small" sx={{color: 'info.main'}}/>;
-        case '2': return <LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/>;
-        case '3': return <FlightLandIcon fontSize="small" sx={{color: 'info.main'}}/>;
-        default: return <QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/>;
+        case '1': return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '2': return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '3': return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        default: return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     }
 }
 
@@ -434,16 +435,16 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
         return getFlightIcon(job);
     }
     if (isChilledJob(job)) {
-        return <AcUnitIcon fontSize="small" sx={{color: 'info.main'}}/>;
+        return <Tooltip title="Chilled"><AcUnitIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     }
     if (isMultiPartJob(job)) {
-        return <AccountTreeIcon fontSize="small" sx={{color: 'text.secondary'}}/>;
+        return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={{color: 'text.secondary'}}/></Tooltip>;
     }
     if (isLateForPickup(job)) {
-        return <ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/>;
+        return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
     }
     if (isLateForDelivery(job)) {
-        return <LocalShippingIcon fontSize="small" sx={{color: 'error.main'}}/>;
+        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
     }
     if (isUrgent(job)) {
         return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'}}/>;
@@ -755,7 +756,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({job, isUsCustomer, 
         setSearchText('');
         setOptions(aiSuggestionsRef.current || []);
         // Fire-and-forget AI suggestion fetch
-        fetchAiSuggestions();
+        return fetchAiSuggestions();
     }, [fetchAiSuggestions]);
 
     const handleSearchChange = useCallback((_event: React.SyntheticEvent, value: string) => {
@@ -901,8 +902,8 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({job, isUsCustomer, 
                     <li {...props} key={option.id}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
                             {option.isAiSuggestion
-                                ? <AutoAwesomeIcon sx={{fontSize: 16, color: 'warning.main', flexShrink: 0}}/>
-                                : <PersonSearchIcon sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/>
+                                ? <Tooltip title="AI Suggested"><AutoAwesomeIcon sx={{fontSize: 16, color: 'warning.main', flexShrink: 0}}/></Tooltip>
+                                : <Tooltip title="Search Result"><PersonSearchIcon sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/></Tooltip>
                             }
                             <Typography variant="body2" noWrap sx={{fontSize: '0.8125rem'}}>
                                 {option.text}
@@ -1002,7 +1003,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
                     <Typography variant="body2" sx={{fontWeight: 'inherit', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center'}}>
                         {job.jobNo}
                         {job.direct && (
-                            <BoltIcon sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/>
+                            <Tooltip title="Direct"><BoltIcon sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/></Tooltip>
                         )}
                     </Typography>
                     {isUsCustomer && job.clientName && (

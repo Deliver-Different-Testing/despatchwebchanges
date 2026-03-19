@@ -36,16 +36,16 @@ public class JobViewModel : DispatchJobViewModel
     public string SigNotRequired { get; set; }
     public decimal? Charge { get; set; }
     public string Date { get; set; }
-    public DateTimeOffset? DispatchTime { get; set; }
-    public DateTimeOffset? PuTime { get; set; }
+    public DateTime? DispatchTime { get; set; }
+    public DateTime? PuTime { get; set; }
 
-    public new DateTimeOffset? FollowupTime { get; set; }
+    public new DateTime? FollowupTime { get; set; }
     public List<PalletInfo> PalletInfo { get; set; }
 
     public bool? DgDocumentation { get; set; }
 
     public bool? PrivateRes { get; set; }
-    public DateTimeOffset? CompletedTime { get; set; }
+    public DateTime? CompletedTime { get; set; }
     public string FromContactName { get; set; }
     public string FromContactNumber { get; set; }
     public string FromContactNumberSource { get; set; }
@@ -54,13 +54,13 @@ public class JobViewModel : DispatchJobViewModel
 
     public string ScheduleName { get; set; }
 
-    public DateTimeOffset? CreatedDate { get; set; }
+    public DateTime? CreatedDate { get; set; }
 
     public List<ParcelDimensions> ParcelDimensions { get; set; }
 
     public int? DeliverToLeaveId { get; set; }
 
-    public DateTimeOffset? DeliverByTime { get; set; }
+    public DateTime? DeliverByTime { get; set; }
 
     public List<TucNoteViewModel> Notes { get; set; }
 
@@ -82,8 +82,8 @@ public class JobViewModel : DispatchJobViewModel
     public Suggestion BookingSource { get; set; }
 
     // Arrival times
-    public DateTimeOffset? PickupArrivalTime { get; set; }
-    public DateTimeOffset? DeliveryArrivalTime { get; set; }
+    public DateTime? PickupArrivalTime { get; set; }
+    public DateTime? DeliveryArrivalTime { get; set; }
 
     // Flight detail card
     public bool IsFlightAssigned { get; set; }

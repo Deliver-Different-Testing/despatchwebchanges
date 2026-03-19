@@ -17,10 +17,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('pricingBreakdownApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getPriceBreakdowns', () => {
         const mockBreakdowns: PriceBreakdown[] = [
             {chargeId: 1, name: 'Base Charge', amount: 100.00, jobId: 100},

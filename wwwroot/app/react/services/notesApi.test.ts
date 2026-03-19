@@ -24,10 +24,6 @@ jest.mock('../utils/dateUtils', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('notesApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getJobNotes', () => {
         const mockNoteDtos = [
             {

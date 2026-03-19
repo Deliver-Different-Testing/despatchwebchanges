@@ -31,14 +31,14 @@ public class JobRepositoryTimezoneTests
     public void ApplyTimezoneToJobDates_DoesNotMutateDateFields()
     {
         // Arrange
-        var originalDispatch = new DateTimeOffset(2024, 6, 15, 10, 30, 0, TimeSpan.Zero);
-        var originalPuTime = new DateTimeOffset(2024, 6, 15, 14, 45, 0, TimeSpan.Zero);
-        var originalFollowup = new DateTimeOffset(2024, 1, 15, 9, 0, 0, TimeSpan.Zero);
-        var originalCompleted = new DateTimeOffset(2024, 3, 20, 16, 30, 0, TimeSpan.Zero);
-        var originalCreated = new DateTimeOffset(2024, 12, 25, 8, 0, 0, TimeSpan.Zero);
-        var originalDeliverBy = new DateTimeOffset(2024, 7, 4, 17, 0, 0, TimeSpan.Zero);
-        var originalPickupArrival = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
-        var originalDeliveryArrival = new DateTimeOffset(2024, 6, 15, 15, 0, 0, TimeSpan.Zero);
+        var originalDispatch = new DateTime(2024, 6, 15, 10, 30, 0);
+        var originalPuTime = new DateTime(2024, 6, 15, 14, 45, 0);
+        var originalFollowup = new DateTime(2024, 1, 15, 9, 0, 0);
+        var originalCompleted = new DateTime(2024, 3, 20, 16, 30, 0);
+        var originalCreated = new DateTime(2024, 12, 25, 8, 0, 0);
+        var originalDeliverBy = new DateTime(2024, 7, 4, 17, 0, 0);
+        var originalPickupArrival = new DateTime(2024, 6, 15, 14, 0, 0);
+        var originalDeliveryArrival = new DateTime(2024, 6, 15, 15, 0, 0);
 
         var jobs = new List<JobViewModel>
         {
@@ -60,14 +60,14 @@ public class JobRepositoryTimezoneTests
         ApplyTimezoneToJobDates(jobs, NzTimeZone);
 
         // Assert — all values should be exactly as they were before
-        jobs[0].DispatchTime.Should().Be(originalDispatch);
-        jobs[0].PuTime.Should().Be(originalPuTime);
-        jobs[0].FollowupTime.Should().Be(originalFollowup);
-        jobs[0].CompletedTime.Should().Be(originalCompleted);
-        jobs[0].CreatedDate.Should().Be(originalCreated);
-        jobs[0].DeliverByTime.Should().Be(originalDeliverBy);
-        jobs[0].PickupArrivalTime.Should().Be(originalPickupArrival);
-        jobs[0].DeliveryArrivalTime.Should().Be(originalDeliveryArrival);
+        jobs[0].DispatchTime.Should().Be((DateTime?)originalDispatch);
+        jobs[0].PuTime.Should().Be((DateTime?)originalPuTime);
+        jobs[0].FollowupTime.Should().Be((DateTime?)originalFollowup);
+        jobs[0].CompletedTime.Should().Be((DateTime?)originalCompleted);
+        jobs[0].CreatedDate.Should().Be((DateTime?)originalCreated);
+        jobs[0].DeliverByTime.Should().Be((DateTime?)originalDeliverBy);
+        jobs[0].PickupArrivalTime.Should().Be((DateTime?)originalPickupArrival);
+        jobs[0].DeliveryArrivalTime.Should().Be((DateTime?)originalDeliveryArrival);
     }
 
     [Fact]
@@ -121,9 +121,9 @@ public class JobRepositoryTimezoneTests
     public void ApplyTimezoneToJobDates_MultipleJobs_DoesNotMutateAny()
     {
         // Arrange
-        var dispatch1 = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
-        var dispatch2 = new DateTimeOffset(2024, 6, 15, 11, 0, 0, TimeSpan.Zero);
-        var dispatch3 = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var dispatch1 = new DateTime(2024, 6, 15, 10, 0, 0);
+        var dispatch2 = new DateTime(2024, 6, 15, 11, 0, 0);
+        var dispatch3 = new DateTime(2024, 6, 15, 12, 0, 0);
 
         var jobs = new List<JobViewModel>
         {
@@ -136,9 +136,9 @@ public class JobRepositoryTimezoneTests
         ApplyTimezoneToJobDates(jobs, NzTimeZone);
 
         // Assert — values should be unchanged
-        jobs[0].DispatchTime.Should().Be(dispatch1);
-        jobs[1].DispatchTime.Should().Be(dispatch2);
-        jobs[2].DispatchTime.Should().Be(dispatch3);
+        jobs[0].DispatchTime.Should().Be((DateTime?)dispatch1);
+        jobs[1].DispatchTime.Should().Be((DateTime?)dispatch2);
+        jobs[2].DispatchTime.Should().Be((DateTime?)dispatch3);
     }
 
     #endregion
@@ -323,7 +323,7 @@ public class JobRepositoryTimezoneTests
 
         // Assert — CreatedDate should use CreatedTime (with time component), not UcjbDate
         result.CreatedDate.Should().NotBeNull();
-        result.CreatedDate!.Value.DateTime.Should().Be(createdTimestamp,
+        result.CreatedDate!.Value.Should().Be(createdTimestamp,
             "CreatedDate should use CreatedTime which has the actual creation time, not UcjbDate which is date-only");
         result.CreatedDate!.Value.Hour.Should().Be(14,
             "CreatedDate should preserve the hour from CreatedTime");
@@ -356,9 +356,9 @@ public class JobRepositoryTimezoneTests
         var resultAfter = mapping(archive);
 
         // Assert — CreatedDate should remain unchanged
-        resultBefore.CreatedDate!.Value.DateTime.Should().Be(createdTimestamp);
-        resultAfter.CreatedDate!.Value.DateTime.Should().Be(createdTimestamp);
-        resultBefore.CreatedDate!.Value.DateTime.Should().Be(resultAfter.CreatedDate!.Value.DateTime,
+        resultBefore.CreatedDate!.Value.Should().Be(createdTimestamp);
+        resultAfter.CreatedDate!.Value.Should().Be(createdTimestamp);
+        resultBefore.CreatedDate!.Value.Should().Be(resultAfter.CreatedDate!.Value,
             "changing UcjbDate (Ready date) should not affect CreatedDate");
     }
 
@@ -382,7 +382,7 @@ public class JobRepositoryTimezoneTests
         var result = mapping(archive);
 
         result.CreatedDate.Should().NotBeNull();
-        result.CreatedDate!.Value.DateTime.Should().Be(readyDate,
+        result.CreatedDate!.Value.Should().Be(readyDate,
             "when CreatedTime is null, should fall back to UcjbDate for legacy records");
     }
 

@@ -1,5 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AiSummaryPanel Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  *
  * Tests the collapsible AI summary card including:
  * - formatRelativeTime helper
@@ -45,7 +47,7 @@ const createMockFetchError = (message = 'API Error') => {
 
 describe('AiSummaryPanel', () => {
     describe('Initial rendering', () => {
-        it('renders collapsed by default with title', () => {
+        it('renders collapsed by default with title and placeholder text', () => {
             const mockFetch = createMockFetch();
             renderWithTheme(
                 <AiSummaryPanel title="AI Summary" fetchSummary={mockFetch} />
@@ -54,17 +56,9 @@ describe('AiSummaryPanel', () => {
             expect(screen.getByText('AI Summary')).toBeInTheDocument();
             // Should not have fetched yet
             expect(mockFetch).not.toHaveBeenCalled();
-        });
-
-        it('renders placeholder text in collapsed content area', () => {
-            const mockFetch = createMockFetch();
-            renderWithTheme(
-                <AiSummaryPanel title="Test" fetchSummary={mockFetch} />
-            );
 
             // MUI Collapse renders content in DOM even when collapsed (for animation),
             // so the placeholder text is present but visually hidden via Collapse.
-            // Verify it exists in the document as part of the collapsed content.
             const placeholder = screen.getByText('Click to generate an AI summary.');
             expect(placeholder).toBeInTheDocument();
         });
@@ -123,7 +117,7 @@ describe('AiSummaryPanel', () => {
     });
 
     describe('Loading state', () => {
-        it('shows skeleton placeholders while loading', async () => {
+        it('shows skeleton placeholders and stop button while loading', async () => {
             // Use a fetch that never resolves to keep loading state
             const neverResolve = jest.fn(
                 () => new Promise<AiSummaryResponse>(() => {})
@@ -137,17 +131,8 @@ describe('AiSummaryPanel', () => {
                 const skeletons = document.querySelectorAll('.MuiSkeleton-root');
                 expect(skeletons.length).toBeGreaterThanOrEqual(3);
             });
-        });
 
-        it('shows stop button while loading', async () => {
-            const neverResolve = jest.fn(
-                () => new Promise<AiSummaryResponse>(() => {})
-            );
-            renderWithTheme(
-                <AiSummaryPanel title="Test" fetchSummary={neverResolve} autoFetch />
-            );
-
-            expect(await screen.findByLabelText('Stop generating')).toBeInTheDocument();
+            expect(screen.getByLabelText('Stop generating')).toBeInTheDocument();
         });
     });
 
@@ -163,18 +148,7 @@ describe('AiSummaryPanel', () => {
     });
 
     describe('Copy button', () => {
-        it('shows copy button when summary is available', async () => {
-            const mockFetch = createMockFetch('Summary to copy');
-            renderWithTheme(
-                <AiSummaryPanel title="Test" fetchSummary={mockFetch} autoFetch />
-            );
-
-            expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
-
-            expect(screen.getByLabelText('Copy to clipboard')).toBeInTheDocument();
-        });
-
-        it('copies summary to clipboard when clicked', async () => {
+        it('shows copy button when summary is available and copies to clipboard when clicked', async () => {
             // Mock clipboard API
             const writeTextMock = jest.fn().mockResolvedValue(undefined);
             Object.assign(navigator, {
@@ -187,6 +161,8 @@ describe('AiSummaryPanel', () => {
             );
 
             expect(await screen.findByTestId('react-markdown')).toBeInTheDocument();
+
+            expect(screen.getByLabelText('Copy to clipboard')).toBeInTheDocument();
 
             fireEvent.click(screen.getByLabelText('Copy to clipboard'));
 
@@ -246,6 +222,8 @@ describe('AiSummaryPanel', () => {
                 />
             );
 
+            // querySelector is used here because MUI Card renders a plain <div> with no
+            // implicit ARIA role, and there is no text content unique to the card wrapper.
             const card = container.querySelector('.MuiCard-root') as HTMLElement;
             expect(card).toBeInTheDocument();
         });

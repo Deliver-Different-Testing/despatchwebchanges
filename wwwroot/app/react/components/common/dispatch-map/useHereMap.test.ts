@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useHereMap Hook Tests
  *
@@ -107,7 +108,6 @@ function createWrapper() {
 
 describe('useHereMap', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         (configApi.getHereMapsKey as jest.Mock).mockResolvedValue('test-api-key');
     });
 

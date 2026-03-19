@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Compose Email Dialog React Module Tests
  *
@@ -44,10 +45,6 @@ beforeAll(() => {
 });
 
 describe('ComposeEmailDialogModule', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     afterAll(() => {
         delete (window as any).angular;
         delete (window as any).ReactComposeEmailDialog;

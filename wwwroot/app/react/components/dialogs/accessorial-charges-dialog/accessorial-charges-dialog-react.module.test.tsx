@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Accessorial Charges Dialog React Module Tests
  *
@@ -32,10 +33,6 @@ beforeAll(() => {
 });
 
 describe('AccessorialChargesDialogManager', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     afterAll(() => {
         delete (window as any).angular;
         delete (window as any).ReactAccessorialChargesDialog;
@@ -72,9 +69,8 @@ describe('AccessorialChargesDialogManager', () => {
         it('should proceed to render when both job.id and accessorialChargeGroupId are valid', async () => {
             const job = createMockJob();
 
-            // Start the dialog — don't await since the promise only resolves when
-            // the dialog closes, which never happens with mocked render
-            openAccessorialChargesDialog({job});
+            // Don't await — the promise only resolves when dialog closes
+            const dialogPromise = openAccessorialChargesDialog({job});
 
             // Give time for synchronous initialization to complete
             await new Promise(resolve => setTimeout(resolve, 50));

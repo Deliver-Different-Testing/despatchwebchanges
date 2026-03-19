@@ -1,8 +1,10 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useRecurringJobsApi Hooks Tests
  */
 
 import React from 'react';
+import dayjs from 'dayjs';
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {useRecurringJobsList, useSpeedList} from './useRecurringJobsApi';
@@ -55,8 +57,8 @@ const mockPaginatedResponse: PaginatedRecurringJobsResponse = {
     items: [
         {
             id: 1,
-            booked: new Date('2024-01-15T10:00:00Z'),
-            nextDueTime: new Date('2024-01-20T14:00:00Z'),
+            booked: dayjs('2024-01-15T10:00:00Z'),
+            nextDueTime: dayjs('2024-01-20T14:00:00Z'),
             client: 'Acme Corp',
             jobNo: 'RJ-001',
             clientId: 100,
@@ -88,7 +90,7 @@ const mockPaginatedResponse: PaginatedRecurringJobsResponse = {
         },
         {
             id: 2,
-            booked: new Date('2024-01-10T09:00:00Z'),
+            booked: dayjs('2024-01-10T09:00:00Z'),
             client: 'Beta Inc',
             jobNo: 'RJ-002',
             clientId: 101,
@@ -130,10 +132,6 @@ const mockSpeedOptions: SpeedOption[] = [
 ];
 
 describe('useRecurringJobsApi Hooks', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('useRecurringJobsList', () => {
         it('should fetch recurring jobs list successfully', async () => {
             mockRecurringJobsApi.getPreBookJobs.mockResolvedValueOnce(mockPaginatedResponse);

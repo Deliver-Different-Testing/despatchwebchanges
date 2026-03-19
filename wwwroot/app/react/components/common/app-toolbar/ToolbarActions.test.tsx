@@ -1,5 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * ToolbarActions Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
@@ -32,15 +34,16 @@ describe('MessagesButton', () => {
         onClick: jest.fn(),
     };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+    it('should render without badge and call onClick when clicked', () => {
+        const onClick = jest.fn();
+        renderWithTheme(<MessagesButton {...defaultProps} onClick={onClick} />);
 
-    it('should render without badge when unreadCount is 0', () => {
-        renderWithTheme(<MessagesButton {...defaultProps} />);
         const button = screen.getByRole('button');
         expect(button).toBeInTheDocument();
         expect(screen.queryByText('0')).not.toBeInTheDocument();
+
+        fireEvent.click(button);
+        expect(onClick).toHaveBeenCalledTimes(1);
     });
 
     it('should render badge with count when unreadCount > 0', () => {
@@ -52,15 +55,6 @@ describe('MessagesButton', () => {
         renderWithTheme(<MessagesButton {...defaultProps} unreadCount={150} />);
         expect(screen.getByText('99+')).toBeInTheDocument();
     });
-
-    it('should call onClick when clicked', () => {
-        const onClick = jest.fn();
-        renderWithTheme(<MessagesButton {...defaultProps} onClick={onClick} />);
-
-        fireEvent.click(screen.getByRole('button'));
-
-        expect(onClick).toHaveBeenCalledTimes(1);
-    });
 });
 
 describe('RefreshButton', () => {
@@ -68,62 +62,38 @@ describe('RefreshButton', () => {
         onClick: jest.fn(),
     };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should render refresh icon when not loading', () => {
-        renderWithTheme(<RefreshButton {...defaultProps} />);
-        const button = screen.getByRole('button');
-        expect(button).not.toBeDisabled();
-    });
-
-    it('should show loading spinner when loading', () => {
-        renderWithTheme(<RefreshButton {...defaultProps} loading={true} />);
-        const button = screen.getByRole('button');
-        expect(button).toBeDisabled();
-        expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    });
-
-    it('should call onClick when clicked', () => {
+    it('should render enabled refresh button and call onClick when clicked', () => {
         const onClick = jest.fn();
         renderWithTheme(<RefreshButton {...defaultProps} onClick={onClick} />);
 
-        fireEvent.click(screen.getByRole('button'));
+        const button = screen.getByRole('button');
+        expect(button).not.toBeDisabled();
 
+        fireEvent.click(button);
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('should not call onClick when loading and clicked', () => {
+    it('should show loading spinner and not call onClick when loading', () => {
         const onClick = jest.fn();
         renderWithTheme(<RefreshButton {...defaultProps} onClick={onClick} loading={true} />);
 
-        fireEvent.click(screen.getByRole('button'));
+        const button = screen.getByRole('button');
+        expect(button).toBeDisabled();
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
 
+        fireEvent.click(button);
         expect(onClick).not.toHaveBeenCalled();
     });
 });
 
 describe('SettingsButton', () => {
-    const defaultProps = {
-        onClick: jest.fn(),
-    };
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should render settings button', () => {
-        renderWithTheme(<SettingsButton {...defaultProps} />);
-        expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-
-    it('should call onClick when clicked', () => {
+    it('should render settings button and call onClick when clicked', () => {
         const onClick = jest.fn();
-        renderWithTheme(<SettingsButton {...defaultProps} onClick={onClick} />);
+        renderWithTheme(<SettingsButton onClick={onClick} />);
+
+        expect(screen.getByRole('button')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button'));
-
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 });
@@ -141,23 +111,20 @@ describe('ViewsMenu', () => {
         onClearAll: jest.fn(),
     };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should render menu button', () => {
+    it('should render menu button with selected count badge', () => {
         renderWithTheme(<ViewsMenu {...defaultProps} />);
+
         expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-
-    it('should show badge with selected count', () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} />);
         // 2 views are selected
         expect(screen.getByText('2')).toBeInTheDocument();
     });
 
-    it('should open menu when button is clicked', async () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} />);
+    it('should open menu with views, Clear Selection, and support onClearAll and onToggleView', async () => {
+        const onClearAll = jest.fn();
+        const onToggleView = jest.fn();
+        renderWithTheme(
+            <ViewsMenu {...defaultProps} onClearAll={onClearAll} onToggleView={onToggleView} />
+        );
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -166,26 +133,12 @@ describe('ViewsMenu', () => {
             expect(screen.getByText('View 2')).toBeInTheDocument();
             expect(screen.getByText('View 3')).toBeInTheDocument();
         });
-    });
 
-    it('should show Clear Selection option', async () => {
-        renderWithTheme(<ViewsMenu {...defaultProps} />);
+        // Clear Selection is visible
+        expect(screen.getByText('Clear Selection')).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button'));
-
-        expect(await screen.findByText('Clear Selection')).toBeInTheDocument();
-    });
-
-    it('should call onClearAll when Clear Selection is clicked', async () => {
-        const onClearAll = jest.fn();
-        renderWithTheme(<ViewsMenu {...defaultProps} onClearAll={onClearAll} />);
-
-        fireEvent.click(screen.getByRole('button'));
-
-        await waitFor(() => {
-            fireEvent.click(screen.getByText('Clear Selection'));
-        });
-
+        // Click Clear Selection
+        fireEvent.click(screen.getByText('Clear Selection'));
         expect(onClearAll).toHaveBeenCalledTimes(1);
     });
 
@@ -238,17 +191,10 @@ describe('LayoutsMenu', () => {
         onDeleteLayout: jest.fn(),
     };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should render menu button', () => {
+    it('should render menu button and open menu when clicked', async () => {
         renderWithTheme(<LayoutsMenu {...defaultProps} />);
+
         expect(screen.getByRole('button')).toBeInTheDocument();
-    });
-
-    it('should open menu when button is clicked', async () => {
-        renderWithTheme(<LayoutsMenu {...defaultProps} />);
 
         fireEvent.click(screen.getByRole('button'));
 
@@ -294,7 +240,6 @@ describe('LayoutsMenu', () => {
 
         await waitFor(() => {
             const layoutItem = screen.getByText('Custom Layout 1');
-            // Check that the text has fontWeight 600 (active state)
             expect(layoutItem).toHaveStyle({fontWeight: 600});
         });
     });
@@ -307,37 +252,25 @@ describe('ToolbarIconButton', () => {
         onClick: jest.fn(),
     };
 
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
-    it('should render with icon', () => {
-        renderWithTheme(<ToolbarIconButton {...defaultProps} />);
-        expect(screen.getByTestId('test-icon')).toBeInTheDocument();
-    });
-
-    it('should call onClick when clicked', () => {
+    it('should render with icon and call onClick when clicked', () => {
         const onClick = jest.fn();
         renderWithTheme(<ToolbarIconButton {...defaultProps} onClick={onClick} />);
 
-        fireEvent.click(screen.getByRole('button'));
+        expect(screen.getByTestId('test-icon')).toBeInTheDocument();
 
+        fireEvent.click(screen.getByRole('button'));
         expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it('should be disabled when disabled prop is true', () => {
-        renderWithTheme(<ToolbarIconButton {...defaultProps} disabled={true} />);
-        expect(screen.getByRole('button')).toBeDisabled();
-    });
-
-    it('should not call onClick when disabled', () => {
+    it('should be disabled and not call onClick when disabled', () => {
         const onClick = jest.fn();
         renderWithTheme(
             <ToolbarIconButton {...defaultProps} onClick={onClick} disabled={true} />
         );
 
-        fireEvent.click(screen.getByRole('button'));
+        expect(screen.getByRole('button')).toBeDisabled();
 
+        fireEvent.click(screen.getByRole('button'));
         expect(onClick).not.toHaveBeenCalled();
     });
 });

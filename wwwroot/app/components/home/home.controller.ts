@@ -27,7 +27,6 @@ import type {ToastType} from "../../react/services/toastService";
 import InterCourierChargeDialogService
     from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
 import {Coordinates} from "../../interfaces/coordinates.interface";
-import JobContextMenuService from "../../services/job-context-menu.service";
 import {ContactID, FirstName} from "../../contants";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
@@ -52,6 +51,8 @@ import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog
 import {setAiEnabled} from "../../functions/aiSettings";
 import ITaskItemConfig from "../../enums/task-item-config";
 import CurrentWorkLists from "./enums/CurrentWorkLists";
+import {fetchClearListJobs, fetchDispatchJobs} from "../../react/services/jobSearchApi";
+import {queryKeys} from "../../react/query/queryClient";
 import angular from "angular";
 
 dayjs.extend(utc);
@@ -70,7 +71,6 @@ class HomeController extends BaseController {
         'accessorialChargesDialogService',
         'jobFileUploadDialogService',
         'interCourierChargeDialogService',
-        'jobContextMenuService',
         'truckCourierStatusDialogService',
         'jobAddStopService',
         'messagingDialogService',
@@ -205,7 +205,6 @@ class HomeController extends BaseController {
         private accessorialChargesDialog: AccessorialChargesDialogService,
         private jobFileUploadDialog: JobFileUploadDialogService,
         private interCourierChargeDialog: InterCourierChargeDialogService,
-        private jobContextMenuService: JobContextMenuService,
         private truckCourierStatusDialog: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
         private messagingDialog: MessagingDialogService,
@@ -908,51 +907,31 @@ class HomeController extends BaseController {
     }
 
     private async processClearListJobs(selectedClearListId: number): Promise<void> {
-        try {
-            this.selectedClearListId = selectedClearListId; // Save for later use
+        this.selectedClearListId = selectedClearListId;
 
-            const result = await this.dispatchJobService.getJobsWithDispatchInfo(
-                {
-                    ...this.queryParams,
-                    startDate: this.dateFilterData.startDate,
-                    endDate: this.dateFilterData.endDate,
-                    useTime: this.dateFilterData.useTime,
-                    page: this.currentJobListPage,
-                    pageSize: this.currentJobListPageSize,
-                    statusFilter: this.queryParams.statusFilter
-                },
-                ClientInternal ?? false,
-                this.selectedViews,
-                selectedClearListId,
-            );
+        let orderBy = this.queryParams.order || 'time';
+        let orderDirection = 'asc';
+        if (orderBy.startsWith('-')) {
+            orderBy = orderBy.substring(1);
+            orderDirection = 'desc';
+        }
 
-            if (result.jobs?.length > 0) {
-                this.jobList = this.initializeJobSearchFields(result.jobs);
-
-                if (!this.currentCourier) {
-                    // Only show undispatched jobs on the map for performance
-                    this.mapJobList = this.getUndispatchedMapItems(result.jobs);
-                    this.mapJobListFull = angular.copy(this.mapJobList);
-                }
-            } else {
-                this.jobList = [];
-
-                if (!this.currentCourier) {
-                    this.mapJobList = [];
-                }
-            }
-
-            // Only clear jobsCurrentList if we're not viewing a specific courier's jobs
-            if (!this.currentCourier) {
-                this.jobsCurrentList = undefined;
-            }
-            this.totalJobCount = result.totalCount;
-            this.updateReactJobList();
-
-        } catch (error) {
-            console.error("Error fetching jobs for clear list:", error);
-            this.jobList = [];
-            this.updateReactJobList();
+        // Update React component to use clear list fetch with the selected clear list ID
+        if (window.ReactJobList) {
+            window.ReactJobList.updateSearchParams({
+                order: orderBy,
+                orderDirection: orderDirection,
+                startDate: this.dateFilterData.startDate,
+                endDate: this.dateFilterData.endDate,
+                useTime: this.dateFilterData.useTime,
+                page: this.currentJobListPage,
+                pageSize: this.currentJobListPageSize,
+                searchText: this.queryParams.searchText,
+                statusFilter: this.queryParams.statusFilter,
+                isInternal: ClientInternal ?? false,
+                despatchViewIds: this.selectedViews.map(v => v.id),
+                selectedClearListId: selectedClearListId,
+            });
         }
     }
 
@@ -1122,9 +1101,23 @@ class HomeController extends BaseController {
         await this.searchCourier();
     }
 
-    async splitJob($event: MouseEvent, job: IDispatchJob): Promise<void> {
+    async splitJob(_$event: MouseEvent, job: IDispatchJob): Promise<void> {
+        if (!window.confirm('Are you sure you wish to split this job?')) return;
         try {
-            await this.jobContextMenuService.splitJob($event, job, () => this.getData());
+            const {executeSplitJobFlow} = await import(
+                /* webpackChunkName: "splitJobFlow" */ '../../react/services/splitJobFlow'
+            );
+            const toastMap = {
+                success: (m: string) => this.toastrService.showSuccessToast(m),
+                error: (m: string) => this.toastrService.showErrorToast(m),
+                warning: (m: string) => this.toastrService.showWarningToast(m),
+                info: (m: string) => this.toastrService.showInfoToast(m),
+            } as const;
+            await executeSplitJobFlow({
+                job: job as any,
+                showToast: (msg, type) => toastMap[type](msg),
+                onComplete: () => this.getData(),
+            });
         } catch (error) {
             console.error('Error in splitJob:', error);
         }
@@ -1497,31 +1490,9 @@ class HomeController extends BaseController {
         await this.getData();
     }
 
-    private initializeJobSearchFields(jobs: IDispatchJob[]): IDispatchJob[] {
-        if (!Array.isArray(jobs)) {
-            return jobs;
-        }
-
-        return jobs.map(job => {
-            // Initialize search text if not present
-            if (!Object.prototype.hasOwnProperty.call(job, 'searchText')) {
-                job.searchText = '';
-            }
-
-            // Initialize typeahead loading states
-            if (!Object.prototype.hasOwnProperty.call(job, 'courierSearchLoading')) {
-                job.courierSearchLoading = false;
-            }
-
-            return job;
-        });
-    }
-
     handleBackendFilter = async (column: string, direction: string): Promise<void> => {
         this.queryParams.order = (direction == 'desc' ? '-' : '') + column;
-
-        // Actually fetch the data with the new sort order
-        await this.getJobList();
+        // Sort is now handled by the React hook via updateSort — no need to call getJobList
     }
 
     handleCategoryChange = async (category: string): Promise<void> => {
@@ -1538,103 +1509,42 @@ class HomeController extends BaseController {
     }
 
     async getJobList(): Promise<void> {
-        try {
-            this.isLoadingData = true;
+        if (!this.viewsInitialized && this.selectedViews.length === 0) {
+            console.debug('Views not initialized yet, loading defaults');
+            this.selectedViews = this.loadViewsFromStorage();
 
-            if (!this.viewsInitialized && this.selectedViews.length === 0) {
-                console.debug('Views not initialized yet, loading defaults');
-                this.selectedViews = this.loadViewsFromStorage();
-
-                // If still no views, add at least one default view
-                if (this.selectedViews.length === 0 && this.views.length > 0) {
-                    this.selectedViews = [this.views[0]];
-                }
+            // If still no views, add at least one default view
+            if (this.selectedViews.length === 0 && this.views.length > 0) {
+                this.selectedViews = [this.views[0]];
             }
+        }
 
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.DispatchFiltersKey, JSON.stringify(this.queryParams));
-            }
+        if (Modernizr.localstorage) {
+            localStorage.setItem(this.DispatchFiltersKey, JSON.stringify(this.queryParams));
+        }
 
-            let orderBy = this.queryParams.order || '';
-            let orderDirection: string;
+        let orderBy = this.queryParams.order || 'time';
+        let orderDirection = 'asc';
+        if (orderBy.startsWith('-')) {
+            orderBy = orderBy.substring(1);
+            orderDirection = 'desc';
+        }
 
-            if (orderBy && orderBy.startsWith("-")) {
-                orderBy = orderBy.substring(1);
-                orderDirection = "desc";
-            } else {
-                orderDirection = "asc";
-            }
-
-            const params: IJobQueryParams = {
+        // Push updated params to React — React Query handles the fetch
+        if (window.ReactJobList) {
+            window.ReactJobList.updateSearchParams({
                 order: orderBy,
                 orderDirection: orderDirection,
                 startDate: this.dateFilterData.startDate,
                 endDate: this.dateFilterData.endDate,
+                useTime: this.dateFilterData.useTime,
                 page: this.currentJobListPage,
                 pageSize: this.currentJobListPageSize,
-                useTime: this.dateFilterData.useTime,
                 searchText: this.queryParams.searchText,
                 statusFilter: this.queryParams.statusFilter,
-            };
-
-            const result = await this.dispatchJobService.getJobsWithDispatchInfo(
-                params,
-                ClientInternal ?? false,
-                this.selectedViews
-            );
-
-            if (result.jobs?.length > 0) {
-                this.jobList = this.initializeJobSearchFields(result.jobs);
-
-                if (!this.currentCourier) {
-                    // Only show undispatched jobs on map for performance
-                    const undispatchedMapItems = this.getUndispatchedMapItems(result.jobs);
-                    this.mapJobListFull = angular.copy(undispatchedMapItems);
-                    this.mapJobList = undispatchedMapItems;
-                }
-            } else {
-                this.jobList = [];
-
-                if (!this.currentCourier) {
-                    this.mapJobList = [];
-                }
-            }
-
-            // Only clear jobsCurrentList if we're not viewing a specific courier's jobs
-            if (!this.currentCourier) {
-                this.jobsCurrentList = undefined;
-            }
-            this.totalJobCount = result.totalCount;
-            this.updateReactJobList();
-        } catch (error: unknown) {
-            console.error("Error getting job list:", error);
-
-            const err = error as Record<string, Record<string, unknown> | undefined> | undefined;
-            const statusCode = (err?.status as number | undefined) || (err?.response?.status as number | undefined);
-            const errorMessage = (err?.data?.message as string | undefined) || (error instanceof Error ? error.message : undefined) || 'Unknown error';
-
-            let toastMessage = "Failed to get job list.";
-            if (statusCode === 500) {
-                toastMessage = `Server error (500): ${errorMessage}`;
-            } else if (statusCode === 503 || errorMessage.toLowerCase().includes('timeout') || errorMessage.toLowerCase().includes('connection')) {
-                toastMessage = "Database connection issue. Server may be under heavy load.";
-            } else if (statusCode === 401 || statusCode === 403) {
-                toastMessage = "Access denied. Please refresh and try again.";
-            } else if (statusCode) {
-                toastMessage = `Failed to get job list (${statusCode}): ${errorMessage}`;
-            }
-
-            this.toastrService.showErrorToast(toastMessage);
-
-            this.jobList = [];
-            this.updateReactJobList();
-
-            if (!this.currentCourier) {
-                this.mapJobList = [];
-            }
-        } finally {
-            this.isLoadingData = false;
-            this.applyScope();
+                isInternal: ClientInternal ?? false,
+                despatchViewIds: this.selectedViews.map(v => v.id),
+            });
         }
     }
 
@@ -2461,11 +2371,40 @@ class HomeController extends BaseController {
             }
         };
 
+        // Parse existing sort order
+        let orderBy = this.queryParams.order || 'time';
+        let orderDirection = 'asc';
+        if (orderBy.startsWith('-')) {
+            orderBy = orderBy.substring(1);
+            orderDirection = 'desc';
+        }
+
         window.ReactJobList.mount('react-dispatch-job-list', {
             showToast,
             isUsCustomer: this.isUsCustomer,
             appPage: AppPage.Dispatch,
             defaultCategory: this.defaultJobCategory as any,
+            fetchConfig: {
+                fetchFn: (params, options) => params.selectedClearListId
+                    ? fetchClearListJobs(params, options)
+                    : fetchDispatchJobs(params, options),
+                queryKeyFn: (params) => params.selectedClearListId
+                    ? queryKeys.dispatch.clearList(params)
+                    : queryKeys.dispatch.jobs(params),
+                initialParams: {
+                    order: orderBy,
+                    orderDirection: orderDirection,
+                    startDate: this.dateFilterData.startDate,
+                    endDate: this.dateFilterData.endDate,
+                    useTime: this.dateFilterData.useTime,
+                    page: this.currentJobListPage,
+                    pageSize: this.currentJobListPageSize,
+                    searchText: this.queryParams.searchText,
+                    statusFilter: this.queryParams.statusFilter,
+                    isInternal: ClientInternal ?? false,
+                    despatchViewIds: this.selectedViews.map(v => v.id),
+                },
+            },
             onJobSelect: (job) => {
                 // Bridge back to AngularJS job selection
                 this.selectJob(job as any);
@@ -2476,19 +2415,15 @@ class HomeController extends BaseController {
                 this.applyScope();
             },
             onRefresh: () => {
-                this.getData();
+                // React handles data refresh; also refresh AngularJS-owned data (map, supports)
+                this.loadSupportsInBackground();
+                if (this.isUsCustomer) this.loadDriversWithJobCounts();
             },
             onSearchChange: (searchText) => {
                 this.updateJobSearchText(searchText);
             },
             onCategoryChange: (category) => {
                 this.handleCategoryChange(category);
-            },
-            onBackendFilter: (column, direction) => {
-                this.handleBackendFilter(column, direction);
-            },
-            onSplitJob: ($event, job) => {
-                this.jobContextMenuService.splitJob($event, job as any, () => this.getData());
             },
             onAddStop: (job) => {
                 this.jobAddStopService.addNewStop(job as any);
@@ -2505,11 +2440,7 @@ class HomeController extends BaseController {
         console.log('[HomeController] React job list mounted');
     }
 
-    private updateReactJobList(): void {
-        if (window.ReactJobList) {
-            window.ReactJobList.updateJobs(this.jobList as any, this.totalJobCount);
-        }
-    }
+    // updateReactJobList removed — React manages its own data via fetchConfig
 
     // ── React Current Work Job List Integration ─────────────────────
 
@@ -2578,13 +2509,6 @@ class HomeController extends BaseController {
                 if (this.currentCourier) {
                     this.getCurrentJobs(this.currentCourier.id);
                 }
-            },
-            onSplitJob: ($event, job) => {
-                this.jobContextMenuService.splitJob($event, job as any, () => {
-                    if (this.currentCourier) {
-                        this.getCurrentJobs(this.currentCourier.id);
-                    }
-                });
             },
             onAddStop: (job) => {
                 this.jobAddStopService.addNewStop(job as any);

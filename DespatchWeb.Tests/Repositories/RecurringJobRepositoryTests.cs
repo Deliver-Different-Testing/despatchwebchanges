@@ -1210,7 +1210,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Id.Should().Be(100);
+        result[0].Id.Should().Be(100);
     }
 
     [Theory]

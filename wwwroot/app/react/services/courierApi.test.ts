@@ -16,10 +16,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('courierApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('searchActiveCouriers', () => {
         it('should call apiClient.get with correct endpoint and search text', async () => {
             const mockCouriers = [
