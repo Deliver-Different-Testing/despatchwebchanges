@@ -26,7 +26,6 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<ICreateJobService, CreateJobService>();
         services.AddScoped<IPodReportService, PodReportService>();
         services.AddScoped<IAccessorialChargeService, AccessorialChargeService>();
-        services.AddSingleton<IBackgroundTaskTracker, BackgroundTaskTracker>();
 
         return services;
     }

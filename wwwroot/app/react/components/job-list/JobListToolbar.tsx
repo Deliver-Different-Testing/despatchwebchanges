@@ -51,13 +51,33 @@ const styles: Record<string, SxProps<Theme>> = {
         flexWrap: 'wrap',
     },
     categoryToggle: {
+        borderRadius: 1,
         '& .MuiToggleButton-root': {
             px: 1.5,
             py: 0.5,
             fontSize: '0.75rem',
             textTransform: 'none',
             fontWeight: 500,
-            borderRadius: 1,
+        },
+        '& .MuiToggleButton-root[value="needs-dispatch"].Mui-selected': {
+            bgcolor: 'warning.main',
+            color: 'warning.contrastText',
+            '&:hover': {bgcolor: 'warning.dark'},
+        },
+        '& .MuiToggleButton-root[value="in-progress"].Mui-selected': {
+            bgcolor: 'info.main',
+            color: 'info.contrastText',
+            '&:hover': {bgcolor: 'info.dark'},
+        },
+        '& .MuiToggleButton-root[value="delivered"].Mui-selected': {
+            bgcolor: 'success.main',
+            color: 'success.contrastText',
+            '&:hover': {bgcolor: 'success.dark'},
+        },
+        '& .MuiToggleButton-root[value="all"].Mui-selected': {
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            '&:hover': {bgcolor: 'primary.dark'},
         },
     },
     searchField: {

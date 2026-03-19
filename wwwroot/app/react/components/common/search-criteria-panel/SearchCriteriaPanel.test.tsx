@@ -1,5 +1,8 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * SearchCriteriaPanel Component Tests
+ *
+ * Optimised: tests sharing identical setup consolidated into single renders.
  */
 
 import React from 'react';
@@ -51,276 +54,161 @@ describe('SearchCriteriaPanel', () => {
     const getClientReportButton = () =>
         screen.getByTestId('DescriptionIcon').closest('button')!;
 
-    describe('Rendering', () => {
-        it('renders all section labels', () => {
-            renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
+    // ── Rendering: all labels, inputs, buttons, DateRangePicker (single render) ─
+    it('renders all section labels, inputs, buttons, and DateRangePicker', () => {
+        renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
 
-            expect(screen.getByText('Date Range')).toBeInTheDocument();
-            expect(screen.getByText('Clients')).toBeInTheDocument();
-            expect(screen.getByText('Couriers')).toBeInTheDocument();
-            expect(screen.getByText('Speeds')).toBeInTheDocument();
-            expect(screen.getByText('Job ID')).toBeInTheDocument();
-            expect(screen.getByText('Job Number')).toBeInTheDocument();
-            expect(screen.getByText('General Search')).toBeInTheDocument();
-        });
+        // Section labels
+        expect(screen.getByText('Date Range')).toBeInTheDocument();
+        expect(screen.getByText('Clients')).toBeInTheDocument();
+        expect(screen.getByText('Couriers')).toBeInTheDocument();
+        expect(screen.getByText('Speeds')).toBeInTheDocument();
+        expect(screen.getByText('Job ID')).toBeInTheDocument();
+        expect(screen.getByText('Job Number')).toBeInTheDocument();
+        expect(screen.getByText('General Search')).toBeInTheDocument();
 
-        it('renders DateRangePicker', () => {
-            renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
-            expect(screen.getByTestId('date-range-picker')).toBeInTheDocument();
-        });
+        // DateRangePicker
+        expect(screen.getByTestId('date-range-picker')).toBeInTheDocument();
 
-        it('renders 3 text inputs with correct placeholders', () => {
-            renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
+        // Text inputs
+        expect(screen.getByPlaceholderText('Enter job ID')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Enter job number')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Address, name, reference...')).toBeInTheDocument();
 
-            expect(screen.getByPlaceholderText('Enter job ID')).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('Enter job number')).toBeInTheDocument();
-            expect(screen.getByPlaceholderText('Address, name, reference...')).toBeInTheDocument();
-        });
+        // Action buttons
+        expect(screen.getByRole('button', {name: 'Search'})).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Download'})).toBeInTheDocument();
+        expect(getClientReportButton()).toBeInTheDocument();
+        expect(screen.getByRole('button', {name: 'Upload Prices'})).toBeInTheDocument();
 
-        it('renders Search, Download, Client Report, Upload Prices buttons', () => {
-            renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
-
-            expect(screen.getByRole('button', {name: 'Search'})).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'Download'})).toBeInTheDocument();
-            // Client Report: disabled IconButton is wrapped in <span> by Tooltip,
-            // so query via DescriptionIcon instead of accessible name
-            expect(getClientReportButton()).toBeInTheDocument();
-            expect(screen.getByRole('button', {name: 'Upload Prices'})).toBeInTheDocument();
-        });
+        // Client Report disabled when no clients selected
+        expect(getClientReportButton()).toBeDisabled();
     });
 
-    describe('Text Input Handlers', () => {
-        it('calls onCriteriaChange with jobId and Number on input', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
+    // ── Text Input Handlers: type and clear all 3 fields (single render) ─
+    it('calls onCriteriaChange for all text inputs on type and clear', async () => {
+        const props = createDefaultProps();
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-            await user.type(screen.getByPlaceholderText('Enter job ID'), '123');
+        // Job ID
+        const jobIdInput = screen.getByPlaceholderText('Enter job ID');
+        await user.type(jobIdInput, '123');
+        expect(props.onCriteriaChange).toHaveBeenLastCalledWith('jobId', 123);
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        await user.clear(jobIdInput);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', undefined);
 
-            expect(props.onCriteriaChange).toHaveBeenLastCalledWith('jobId', 123);
-        });
+        // Job Number
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        const jobNoInput = screen.getByPlaceholderText('Enter job number');
+        await user.type(jobNoInput, 'JOB-001');
+        expect(props.onCriteriaChange).toHaveBeenLastCalledWith('job', 'JOB-001');
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        await user.clear(jobNoInput);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('job', undefined);
 
-        it('calls onCriteriaChange with jobId undefined on clear', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            const input = screen.getByPlaceholderText('Enter job ID');
-            await user.type(input, '1');
-            (props.onCriteriaChange as jest.Mock).mockClear();
-            await user.clear(input);
-
-            expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', undefined);
-        });
-
-        it('calls onCriteriaChange with job field on job number input', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            await user.type(screen.getByPlaceholderText('Enter job number'), 'JOB-001');
-
-            expect(props.onCriteriaChange).toHaveBeenLastCalledWith('job', 'JOB-001');
-        });
-
-        it('calls onCriteriaChange with job undefined on clear', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            const input = screen.getByPlaceholderText('Enter job number');
-            await user.type(input, 'X');
-            (props.onCriteriaChange as jest.Mock).mockClear();
-            await user.clear(input);
-
-            expect(props.onCriteriaChange).toHaveBeenCalledWith('job', undefined);
-        });
-
-        it('calls onCriteriaChange with wild field on general search input', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            await user.type(screen.getByPlaceholderText('Address, name, reference...'), 'test query');
-
-            expect(props.onCriteriaChange).toHaveBeenLastCalledWith('wild', 'test query');
-        });
-
-        it('calls onCriteriaChange with wild undefined on clear', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            const input = screen.getByPlaceholderText('Address, name, reference...');
-            await user.type(input, 'X');
-            (props.onCriteriaChange as jest.Mock).mockClear();
-            await user.clear(input);
-
-            expect(props.onCriteriaChange).toHaveBeenCalledWith('wild', undefined);
-        });
+        // General Search
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        const wildInput = screen.getByPlaceholderText('Address, name, reference...');
+        await user.type(wildInput, 'test query');
+        expect(props.onCriteriaChange).toHaveBeenLastCalledWith('wild', 'test query');
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        await user.clear(wildInput);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('wild', undefined);
     });
 
-    describe('Keyboard — Enter Key Triggers Search', () => {
-        it('Enter in Job ID calls onSearch', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
+    // ── Enter Key triggers search in all 3 fields (single render) ───
+    it('Enter key triggers onSearch in all text inputs', async () => {
+        const props = createDefaultProps();
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-            const input = screen.getByPlaceholderText('Enter job ID');
-            await user.click(input);
-            await user.keyboard('{Enter}');
+        // Job ID
+        await user.click(screen.getByPlaceholderText('Enter job ID'));
+        await user.keyboard('{Enter}');
+        expect(props.onSearch).toHaveBeenCalledTimes(1);
 
-            expect(props.onSearch).toHaveBeenCalled();
-        });
+        // Job Number
+        await user.click(screen.getByPlaceholderText('Enter job number'));
+        await user.keyboard('{Enter}');
+        expect(props.onSearch).toHaveBeenCalledTimes(2);
 
-        it('Enter in Job Number calls onSearch', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            const input = screen.getByPlaceholderText('Enter job number');
-            await user.click(input);
-            await user.keyboard('{Enter}');
-
-            expect(props.onSearch).toHaveBeenCalled();
-        });
-
-        it('Enter in General Search calls onSearch', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            const input = screen.getByPlaceholderText('Address, name, reference...');
-            await user.click(input);
-            await user.keyboard('{Enter}');
-
-            expect(props.onSearch).toHaveBeenCalled();
-        });
+        // General Search
+        await user.click(screen.getByPlaceholderText('Address, name, reference...'));
+        await user.keyboard('{Enter}');
+        expect(props.onSearch).toHaveBeenCalledTimes(3);
     });
 
-    describe('Action Buttons', () => {
-        it('Search button calls onSearch', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
+    // ── Action Buttons: Search, Download, Upload (single render) ────
+    it('calls correct handlers for Search, Download, and Upload buttons', async () => {
+        const props = createDefaultProps();
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-            await user.click(screen.getByRole('button', {name: 'Search'}));
+        await user.click(screen.getByRole('button', {name: 'Search'}));
+        expect(props.onSearch).toHaveBeenCalledTimes(1);
 
-            expect(props.onSearch).toHaveBeenCalledTimes(1);
-        });
+        await user.click(screen.getByRole('button', {name: 'Download'}));
+        expect(props.onDownload).toHaveBeenCalledTimes(1);
 
-        it('Download button calls onDownload', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            await user.click(screen.getByRole('button', {name: 'Download'}));
-
-            expect(props.onDownload).toHaveBeenCalledTimes(1);
-        });
-
-        it('Upload Prices button calls onUpload', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            await user.click(screen.getByRole('button', {name: 'Upload Prices'}));
-
-            expect(props.onUpload).toHaveBeenCalledTimes(1);
-        });
-
-        it('Client Report is disabled when no clients selected', () => {
-            renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
-
-            expect(getClientReportButton()).toBeDisabled();
-        });
-
-        it('Client Report is enabled when clients selected and dates exist', async () => {
-            const props = createDefaultProps({
-                onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
-            });
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            // Type in the clients autocomplete (minInputLength is 2)
-            const clientsInput = screen.getByPlaceholderText('Search clients...');
-            await user.type(clientsInput, 'ac');
-            await act(async () => {
-                jest.advanceTimersByTime(300);
-            });
-
-            const option = await screen.findByRole('option', {name: 'Acme Corp'});
-            await user.click(option);
-
-            expect(getClientReportButton()).toBeEnabled();
-        });
-
-        it('Client Report calls onClientReport when clicked', async () => {
-            const props = createDefaultProps({
-                onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
-            });
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            // Select a client first to enable the button
-            const clientsInput = screen.getByPlaceholderText('Search clients...');
-            await user.type(clientsInput, 'ac');
-            await act(async () => {
-                jest.advanceTimersByTime(300);
-            });
-
-            const option = await screen.findByRole('option', {name: 'Acme Corp'});
-            await user.click(option);
-
-            await user.click(getClientReportButton());
-
-            expect(props.onClientReport).toHaveBeenCalledTimes(1);
-        });
+        await user.click(screen.getByRole('button', {name: 'Upload Prices'}));
+        expect(props.onUpload).toHaveBeenCalledTimes(1);
     });
 
-    describe('ChipsAutocomplete Integration', () => {
-        it('typing in Clients field triggers onClientSearch after debounce', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
+    // ── Client Report: enabled when client selected, calls handler (single render) ─
+    it('enables Client Report when client selected and calls onClientReport', async () => {
+        const props = createDefaultProps({
+            onClientSearch: jest.fn().mockResolvedValue([{id: 1, text: 'Acme Corp'}]),
+        });
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-            await user.type(screen.getByPlaceholderText('Search clients...'), 'ac');
-            await act(async () => {
-                jest.advanceTimersByTime(300);
-            });
-
-            expect(props.onClientSearch).toHaveBeenCalledWith('ac');
+        // Select a client
+        const clientsInput = screen.getByPlaceholderText('Search clients...');
+        await user.type(clientsInput, 'ac');
+        await act(async () => {
+            jest.advanceTimersByTime(300);
         });
 
-        it('selecting a client chip calls onCriteriaChange', async () => {
-            const props = createDefaultProps({
-                onClientSearch: jest.fn().mockResolvedValue([
-                    {id: 1, text: 'Acme Corp'},
-                    {id: 2, text: 'Beta Inc'},
-                ]),
-            });
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
+        const option = await screen.findByRole('option', {name: 'Acme Corp'});
+        await user.click(option);
 
-            await user.type(screen.getByPlaceholderText('Search clients...'), 'ac');
-            await act(async () => {
-                jest.advanceTimersByTime(300);
-            });
+        // Client Report enabled and clickable
+        expect(getClientReportButton()).toBeEnabled();
+        await user.click(getClientReportButton());
+        expect(props.onClientReport).toHaveBeenCalledTimes(1);
+    });
 
-            const option = await screen.findByRole('option', {name: 'Acme Corp'});
-            await user.click(option);
-
-            expect(props.onCriteriaChange).toHaveBeenCalledWith('clients', [{id: 1, text: 'Acme Corp'}]);
+    // ── ChipsAutocomplete: search triggers and chip selection (single render) ─
+    it('triggers search callbacks on autocomplete input and selects chips', async () => {
+        const props = createDefaultProps({
+            onClientSearch: jest.fn().mockResolvedValue([
+                {id: 1, text: 'Acme Corp'},
+                {id: 2, text: 'Beta Inc'},
+            ]),
         });
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
 
-        it('typing in Couriers field triggers onCourierSearch', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
-
-            // Couriers has minInputLength of 1
-            await user.type(screen.getByPlaceholderText('Search couriers...'), 'j');
-            await act(async () => {
-                jest.advanceTimersByTime(300);
-            });
-
-            expect(props.onCourierSearch).toHaveBeenCalledWith('j');
+        // Clients search + select
+        await user.type(screen.getByPlaceholderText('Search clients...'), 'ac');
+        await act(async () => {
+            jest.advanceTimersByTime(300);
         });
+        expect(props.onClientSearch).toHaveBeenCalledWith('ac');
 
-        it('typing in Speeds field triggers onSpeedSearch', async () => {
-            const props = createDefaultProps();
-            renderWithTheme(<SearchCriteriaPanel {...props} />);
+        const option = await screen.findByRole('option', {name: 'Acme Corp'});
+        await user.click(option);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('clients', [{id: 1, text: 'Acme Corp'}]);
 
-            // Speeds has minInputLength of 1
-            await user.type(screen.getByPlaceholderText('Search speeds...'), 's');
-            await act(async () => {
-                jest.advanceTimersByTime(300);
-            });
-
-            expect(props.onSpeedSearch).toHaveBeenCalledWith('s');
+        // Couriers search
+        await user.type(screen.getByPlaceholderText('Search couriers...'), 'j');
+        await act(async () => {
+            jest.advanceTimersByTime(300);
         });
+        expect(props.onCourierSearch).toHaveBeenCalledWith('j');
+
+        // Speeds search
+        await user.type(screen.getByPlaceholderText('Search speeds...'), 's');
+        await act(async () => {
+            jest.advanceTimersByTime(300);
+        });
+        expect(props.onSpeedSearch).toHaveBeenCalledWith('s');
     });
 });

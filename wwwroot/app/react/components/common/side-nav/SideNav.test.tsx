@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * SideNav Component Tests
  */
@@ -26,10 +27,6 @@ describe('SideNav', () => {
         onClose: jest.fn(),
         onNavigate: jest.fn(),
     };
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     describe('Rendering', () => {
         it('should render when open is true', () => {

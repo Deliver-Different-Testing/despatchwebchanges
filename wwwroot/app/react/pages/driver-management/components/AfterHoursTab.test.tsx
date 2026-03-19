@@ -1,3 +1,9 @@
+/** @jest-environment jest-environment-jsdom */
+/**
+ * AfterHoursTab Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
+ */
+
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -73,7 +79,6 @@ const setupMocks = (data?: AfterHoursPaginated, isLoading = false) => {
 
 describe('AfterHoursTab', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         (window as any).ReactEditAfterhoursDialog = {open: jest.fn()};
     });
 
@@ -81,34 +86,21 @@ describe('AfterHoursTab', () => {
         delete (window as any).ReactEditAfterhoursDialog;
     });
 
-    describe('Column headers', () => {
-        it('should render all column headers', () => {
-            setupMocks();
-            renderWithProviders();
+    it('should render all column headers and stats display', () => {
+        setupMocks();
+        renderWithProviders();
 
-            expect(screen.getByText('Driver Name')).toBeInTheDocument();
-            expect(screen.getByText('Driver Code')).toBeInTheDocument();
-            expect(screen.getByText('Days')).toBeInTheDocument();
-            expect(screen.getByText('Start Time')).toBeInTheDocument();
-            expect(screen.getByText('End Time')).toBeInTheDocument();
-            expect(screen.getByText('Duration')).toBeInTheDocument();
-        });
-    });
+        // Column headers
+        expect(screen.getByText('Driver Name')).toBeInTheDocument();
+        expect(screen.getByText('Driver Code')).toBeInTheDocument();
+        expect(screen.getByText('Days')).toBeInTheDocument();
+        expect(screen.getByText('Start Time')).toBeInTheDocument();
+        expect(screen.getByText('End Time')).toBeInTheDocument();
+        expect(screen.getByText('Duration')).toBeInTheDocument();
 
-    describe('Stats display', () => {
-        it('should display Total Assignments stat', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('Total Assignments')).toBeInTheDocument();
-        });
-
-        it('should display Active Drivers stat', () => {
-            setupMocks();
-            renderWithProviders();
-
-            expect(screen.getByText('Active Drivers')).toBeInTheDocument();
-        });
+        // Stats display
+        expect(screen.getByText('Total Assignments')).toBeInTheDocument();
+        expect(screen.getByText('Active Drivers')).toBeInTheDocument();
     });
 
     describe('Sort clicks', () => {
@@ -130,7 +122,6 @@ describe('AfterHoursTab', () => {
             setupMocks();
             renderWithProviders();
 
-            // Click first delete button (there should be one per row)
             const deleteButtons = screen.getAllByRole('button', {name: 'Delete'});
             fireEvent.click(deleteButtons[0]);
 

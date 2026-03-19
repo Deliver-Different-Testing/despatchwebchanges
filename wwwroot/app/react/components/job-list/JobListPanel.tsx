@@ -24,6 +24,7 @@ import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
 import type {CourierData} from '../../interfaces/dispatchJob';
 import {allocateJobs} from '../../services/jobListApi';
+import {useJobListData} from '../../hooks/useJobListData';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -284,22 +285,32 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               onSearchChange,
                                                               onCategoryChange,
                                                               onBackendFilter,
-                                                              onSplitJob,
                                                               onAddStop,
                                                               defaultCategory,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
+                                                              fetchConfig,
                                                               setJobsCallback,
                                                               setRefreshCallback,
                                                               setSelectJobCallback,
+                                                              setUpdateSearchParamsCallback,
                                                           }) => {
     const getStorageKey = useCallback((suffix: string): string => {
         const contactId = window.ContactID ?? 0;
         return `${storagePrefix}_${suffix}_${contactId}`;
     }, [storagePrefix]);
-    // ── Job data (pushed from AngularJS) ─────────────────────────────
-    const [jobs, setJobs] = useState<DispatchJob[]>([]);
-    const [totalCount, setTotalCount] = useState(0);
 
+    // ── React Query data fetching (when fetchConfig is provided) ─────
+    const hookData = useJobListData(fetchConfig);
+    const hookDataRef = useRef(hookData);
+    hookDataRef.current = hookData;
+
+    // ── Job data (pushed from AngularJS when no fetchConfig) ─────────
+    const [pushedJobs, setPushedJobs] = useState<DispatchJob[]>([]);
+    const [pushedTotalCount, setPushedTotalCount] = useState(0);
+
+    // Use hook data when available, otherwise fall back to pushed data
+    const jobs = fetchConfig ? hookData.jobs : pushedJobs;
+    const totalCount = fetchConfig ? hookData.totalCount : pushedTotalCount;
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(defaultCategory || 'all');
@@ -342,29 +353,33 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
 
     const isJobSearchPage = appPage === 3; // AppPage.JobSearch
 
-    // ── Register callbacks for AngularJS bridge ──────────────────────
+    // ── Register callbacks for AngularJS bridge (legacy mode) ────────
     const updateJobsRef = useRef<((jobs: DispatchJob[], total: number) => void) | null>(null);
     updateJobsRef.current = (newJobs: DispatchJob[], total: number) => {
-        setJobs(newJobs);
-        setTotalCount(total);
+        setPushedJobs(newJobs);
+        setPushedTotalCount(total);
         setLastUpdated(`Last updated: ${dayjs().format('h:mm A')}`);
     };
 
     useEffect(() => {
-        if (setJobsCallback) {
+        if (!fetchConfig && setJobsCallback) {
             setJobsCallback((newJobs, total) => {
                 if (updateJobsRef.current) updateJobsRef.current(newJobs, total);
             });
         }
-    }, [setJobsCallback]);
+    }, [fetchConfig, setJobsCallback]);
 
     useEffect(() => {
         if (setRefreshCallback) {
             setRefreshCallback(() => {
-                if (onRefresh) onRefresh();
+                if (fetchConfig) {
+                    hookDataRef.current.refresh();
+                } else if (onRefresh) {
+                    onRefresh();
+                }
             });
         }
-    }, [setRefreshCallback, onRefresh]);
+    }, [setRefreshCallback, onRefresh, fetchConfig]);
 
     useEffect(() => {
         if (setSelectJobCallback) {
@@ -372,10 +387,26 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [setSelectJobCallback]);
 
+    // Register updateSearchParams callback for AngularJS to update fetch params
+    useEffect(() => {
+        if (fetchConfig && setUpdateSearchParamsCallback) {
+            setUpdateSearchParamsCallback((newParams) => {
+                hookDataRef.current.updateParams(newParams);
+            });
+        }
+    }, [fetchConfig, setUpdateSearchParamsCallback]);
+
     // Update category when defaultCategory prop changes
     useEffect(() => {
         if (defaultCategory) setSelectedCategory(defaultCategory);
     }, [defaultCategory]);
+
+    // Update lastUpdated when hook data changes (fetchConfig mode)
+    useEffect(() => {
+        if (hookData && !hookData.isLoading && !hookData.isFetching) {
+            setLastUpdated(`Last updated: ${dayjs().format('h:mm A')}`);
+        }
+    }, [hookData?.isLoading, hookData?.isFetching]);
 
     // ── Persist preferences ──────────────────────────────────────────
     useEffect(() => {
@@ -415,18 +446,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             filtered = filtered.filter((job) => matchesSearch(job, searchQuery));
         }
 
-        // Remove grouped children that are already under a parent
-        const groupedParentIds = new Set(
-            filtered
-                .filter((j) => j.isParentOrSingle && j._groupChildren && j._groupChildren.length > 0)
-                .map((j) => j.id),
-        );
-        if (groupedParentIds.size > 0) {
-            filtered = filtered.filter(
-                (j) => j.isParentOrSingle || !j.parentId || !groupedParentIds.has(j.parentId),
-            );
-        }
-
         // Sort
         filtered = sortJobs(filtered, sortState, isUsCustomer);
 
@@ -449,17 +468,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         return new Set(selectedJob.relatedJobs.map((r) => r.id));
     }, [selectedJobId, jobs]);
 
-    // ── Expand multipart jobs into visible list ─────────────────────
-    const visibleJobs = useMemo(() => {
-        const result: DispatchJob[] = [];
-        for (const job of filteredJobs) {
-            result.push(job);
-            if (job._isExpanded && job._groupChildren) {
-                result.push(...job._groupChildren);
-            }
-        }
-        return result;
-    }, [filteredJobs]);
+    // ── Visible jobs (backend controls ordering) ───────────────────
+    const visibleJobs = filteredJobs;
 
     // ── Handlers ─────────────────────────────────────────────────────
 
@@ -488,9 +498,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const handleCategoryChange = useCallback(
         (category: JobCategory) => {
             setSelectedCategory(category);
+            if (fetchConfig) {
+                hookDataRef.current.updateParams({statusFilter: category === 'all' ? undefined : category});
+            }
             if (onCategoryChange) onCategoryChange(category);
         },
-        [onCategoryChange],
+        [onCategoryChange, fetchConfig],
     );
 
     const handleSearchChange = useCallback(
@@ -513,17 +526,21 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         [],
     );
 
-    // Notify AngularJS when sort state changes (side effect belongs in useEffect, not setState)
+    // When sort changes: update hook params (fetchConfig mode) or notify AngularJS (legacy mode)
     const sortChangeInitRef = useRef(true);
     useEffect(() => {
         if (sortChangeInitRef.current) {
             sortChangeInitRef.current = false;
             return;
         }
-        if (sortState.column && sortState.direction && onBackendFilter) {
-            onBackendFilter(sortState.column, sortState.direction);
+        if (sortState.column && sortState.direction) {
+            if (fetchConfig) {
+                hookDataRef.current.updateSort(sortState.column, sortState.direction);
+            } else if (onBackendFilter) {
+                onBackendFilter(sortState.column, sortState.direction);
+            }
         }
-    }, [sortState.column, sortState.direction, onBackendFilter]);
+    }, [sortState.column, sortState.direction, fetchConfig, onBackendFilter]);
 
     const handleLoggedInCouriersOnlyChange = useCallback((checked: boolean) => {
         setLoggedInCouriersOnly(checked);
@@ -542,8 +559,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     }, []);
 
     const handleRefresh = useCallback(() => {
-        if (onRefresh) onRefresh();
-    }, [onRefresh]);
+        if (fetchConfig) {
+            hookDataRef.current.refresh();
+        } else if (onRefresh) {
+            onRefresh();
+        }
+    }, [fetchConfig, onRefresh]);
 
     const handleJobDispatch = useCallback(async (
         job: DispatchJob,
@@ -556,7 +577,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const courierDisplayName = parts.slice(1).join(' - ').trim() || courierName;
 
         // Optimistic update — immediately show courier in the list
-        setJobs(prev => prev.map(j => {
+        setPushedJobs(prev => prev.map(j => {
             if (j.id !== job.id) return j;
             return {
                 ...j,
@@ -576,14 +597,18 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         try {
             await allocateJobs(courierId, [job.id]);
             showToast(`Dispatched to ${courierName}`, 'success');
-            // Sync AngularJS data in background
-            if (onRefresh) onRefresh();
+            // Refresh data
+            if (fetchConfig) {
+                hookDataRef.current.refresh();
+            } else if (onRefresh) {
+                onRefresh();
+            }
         } catch {
             // Rollback — restore original job
-            setJobs(prev => prev.map(j => j.id === job.id ? job : j));
+            setPushedJobs(prev => prev.map(j => j.id === job.id ? job : j));
             showToast('Failed to dispatch job', 'error');
         }
-    }, [showToast, onRefresh]);
+    }, [showToast, fetchConfig, onRefresh]);
 
     // ── Render ───────────────────────────────────────────────────────
 
@@ -640,7 +665,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 appPage={appPage}
                 showToast={showToast}
                 onRefresh={handleRefresh}
-                onSplitJob={onSplitJob}
                 onAddStop={onAddStop}
                 isUsCustomer={isUsCustomer}
             />

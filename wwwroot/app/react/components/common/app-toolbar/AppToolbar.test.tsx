@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AppToolbar Component Tests
  */
@@ -24,10 +25,6 @@ describe('AppToolbar', () => {
         title: 'Test Dashboard',
         firstName: 'John',
     };
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
 
     describe('Rendering', () => {
         it('should render the title', () => {

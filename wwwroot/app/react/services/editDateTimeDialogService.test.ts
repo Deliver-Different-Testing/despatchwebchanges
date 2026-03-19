@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for Edit Date Time Dialog Service
  */
@@ -18,8 +19,6 @@ const mockShowEditDateAndTimeDialog = jest.fn();
 const mockSetToastService = jest.fn();
 
 beforeEach(() => {
-    jest.clearAllMocks();
-
     // Setup mock on window
     (window as any).ReactEditDateTimeDialog = {
         showEditTimeDialog: mockShowEditTimeDialog,

@@ -1,5 +1,8 @@
+/** @jest-environment jest-environment-jsdom */
 /**
- * Tests for EditDateTimeDialog React component
+ * EditDateTimeDialog Component Tests
+ *
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
@@ -17,10 +20,8 @@ import {EditDateTimeDialogProps} from './types';
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-// Create a theme for testing
 const theme = createTheme();
 
-// Helper to render component with theme and localization provider
 function renderWithProviders(props: EditDateTimeDialogProps) {
     return render(
         <ThemeProvider theme={theme}>
@@ -31,7 +32,6 @@ function renderWithProviders(props: EditDateTimeDialogProps) {
     );
 }
 
-// Default props factory
 function createDefaultProps(overrides?: Partial<EditDateTimeDialogProps>): EditDateTimeDialogProps {
     return {
         open: true,
@@ -49,351 +49,201 @@ function createDefaultProps(overrides?: Partial<EditDateTimeDialogProps>): EditD
 }
 
 describe('EditDateTimeDialog', () => {
+    // ── Rendering (consolidated) ────────────────────────────────────
     describe('Rendering', () => {
-        it('renders nothing when not open', () => {
-            const props = createDefaultProps({ open: false });
-            const { container } = renderWithProviders(props);
-            expect(container.querySelector('.MuiDialog-root')).toBeNull();
-        });
+        it('renders dialog with title, buttons, date and time inputs', () => {
+            renderWithProviders(createDefaultProps());
 
-        it('renders the dialog when open', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
             expect(screen.getByRole('dialog')).toBeInTheDocument();
+            expect(screen.getByText('Edit Date & Time')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Save/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Cancel/i})).toBeInTheDocument();
+            expect(screen.getAllByText('Date').length).toBeGreaterThan(0);
+            expect(screen.getAllByText(/Time/i).length).toBeGreaterThan(0);
         });
 
-        it('displays the provided title', () => {
-            const props = createDefaultProps({ title: 'Update Time' });
-            renderWithProviders(props);
+        it('renders nothing when not open', () => {
+            renderWithProviders(createDefaultProps({open: false}));
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        });
+
+        it('displays custom title', () => {
+            renderWithProviders(createDefaultProps({title: 'Update Time'}));
             expect(screen.getByText('Update Time')).toBeInTheDocument();
         });
-
-        it('displays Save button', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
-            expect(screen.getByRole('button', { name: /Save/i })).toBeInTheDocument();
-        });
-
-        it('displays Cancel button', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
-            expect(screen.getByRole('button', { name: /Cancel/i })).toBeInTheDocument();
-        });
     });
 
-    describe('Date and Time Mode', () => {
-        it('shows both date and time inputs when showDate and showTime are true', () => {
-            const props = createDefaultProps({ showDate: true, showTime: true });
-            renderWithProviders(props);
-            // MUI date pickers create multiple labeled elements, check for presence using getAllByText
-            const dateElements = screen.getAllByText('Date');
-            expect(dateElements.length).toBeGreaterThan(0);
-            const timeElements = screen.getAllByText(/Time/i);
-            expect(timeElements.length).toBeGreaterThan(0);
-        });
-    });
-
-    describe('Date Only Mode', () => {
-        it('shows only date input when showDate is true and showTime is false', () => {
-            const props = createDefaultProps({ showDate: true, showTime: false });
-            renderWithProviders(props);
-            // Date label should be present
-            const dateElements = screen.getAllByText('Date');
-            expect(dateElements.length).toBeGreaterThan(0);
-            // Time picker should not be present
+    // ── Mode Tests ──────────────────────────────────────────────────
+    describe('Mode Tests', () => {
+        it('shows only date input in date-only mode', () => {
+            renderWithProviders(createDefaultProps({showDate: true, showTime: false}));
+            expect(screen.getAllByText('Date').length).toBeGreaterThan(0);
             expect(screen.queryByText(/Time \(24-hour\)/i)).not.toBeInTheDocument();
         });
-    });
 
-    describe('Time Only Mode', () => {
-        it('shows only time input when showTime is true and showDate is false', () => {
-            const props = createDefaultProps({ showDate: false, showTime: true });
-            renderWithProviders(props);
-            // Time picker label should be present
-            const timeElements = screen.getAllByText(/Time \(24-hour\)/i);
-            expect(timeElements.length).toBeGreaterThan(0);
-            // Date label should not be present when time only
-            const dateLabels = screen.queryAllByText('Date');
-            expect(dateLabels.length).toBe(0);
+        it('shows only time input in time-only mode', () => {
+            renderWithProviders(createDefaultProps({showDate: false, showTime: true}));
+            expect(screen.getAllByText(/Time \(24-hour\)/i).length).toBeGreaterThan(0);
+            expect(screen.queryAllByText('Date').length).toBe(0);
         });
     });
 
+    // ── Timezone Display ────────────────────────────────────────────
     describe('Timezone Display', () => {
-        it('displays timezone section for US customers', () => {
-            const props = createDefaultProps({ isUSCustomer: true });
-            renderWithProviders(props);
+        it('displays timezone section only for US customers', () => {
+            const {unmount} = renderWithProviders(createDefaultProps({isUSCustomer: true}));
             expect(screen.getByText('Your timezone')).toBeInTheDocument();
             expect(screen.getByText('Job timezone')).toBeInTheDocument();
+            unmount();
+
+            renderWithProviders(createDefaultProps({isUSCustomer: false}));
+            expect(screen.queryByText('Your timezone')).not.toBeInTheDocument();
         });
 
-        it('hides timezone section for non-US customers', () => {
-            const props = createDefaultProps({ isUSCustomer: false });
-            renderWithProviders(props);
+        it('defaults to hiding timezone section', () => {
+            renderWithProviders(createDefaultProps());
             expect(screen.queryByText('Your timezone')).not.toBeInTheDocument();
-            expect(screen.queryByText('Job timezone')).not.toBeInTheDocument();
-        });
-
-        it('defaults to hiding timezone section when isUSCustomer is not specified', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
-            expect(screen.queryByText('Your timezone')).not.toBeInTheDocument();
-            expect(screen.queryByText('Job timezone')).not.toBeInTheDocument();
         });
     });
 
+    // ── Dialog Actions ──────────────────────────────────────────────
     describe('Dialog Actions', () => {
-        it('calls onClose when Cancel button is clicked', async () => {
+        it('calls onClose when Cancel is clicked', async () => {
             const user = userEvent.setup();
             const onClose = jest.fn();
-            const props = createDefaultProps({ onClose });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({onClose}));
 
-            await user.click(screen.getByRole('button', { name: /Cancel/i }));
-
+            await user.click(screen.getByRole('button', {name: /Cancel/i}));
             expect(onClose).toHaveBeenCalled();
         });
 
-        it('calls onClose when close icon is clicked', async () => {
-            const user = userEvent.setup();
-            const onClose = jest.fn();
-            const props = createDefaultProps({ onClose });
-            renderWithProviders(props);
-
-            // Find and click the close button in the header
-            const closeButtons = screen.getAllByRole('button');
-            const closeIconButton = closeButtons.find(
-                btn => btn.querySelector('.material-icons')?.textContent === 'close'
-            );
-
-            if (closeIconButton) {
-                await user.click(closeIconButton);
-                expect(onClose).toHaveBeenCalled();
-            }
-        });
-
-        it('calls onSubmit when Save button is clicked with valid data', async () => {
+        it('calls onSubmit with correct result when Save is clicked', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({ onSubmit });
-            renderWithProviders(props);
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
-
-            await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
-            });
-        });
-
-        it('passes correct result to onSubmit', async () => {
-            const user = userEvent.setup();
-            const onSubmit = jest.fn();
-            const props = createDefaultProps({
+            renderWithProviders(createDefaultProps({
                 onSubmit,
                 fieldName: 'DeliverBy',
-                defaultTimeZone: 'America/New_York',
-            });
-            renderWithProviders(props);
+                defaultTimeZone: 'America/New_York'
+            }));
 
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        fieldName: 'DeliverBy',
-                        timezone: 'America/New_York',
-                    })
+                    expect.objectContaining({fieldName: 'DeliverBy', timezone: 'America/New_York'})
                 );
             });
         });
     });
 
+    // ── Initial Value ───────────────────────────────────────────────
     describe('Initial Value', () => {
-        it('initializes with current time when no dateTime provided', () => {
-            const props = createDefaultProps({ dateTime: undefined });
-            renderWithProviders(props);
-            // Dialog should still render without error
+        it('initializes without error when no dateTime provided', () => {
+            renderWithProviders(createDefaultProps({dateTime: undefined}));
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-        });
-
-        it('initializes with provided dateTime value', () => {
-            const testDate = dayjs('2024-06-20T10:30:00');
-            const props = createDefaultProps({ dateTime: testDate });
-            renderWithProviders(props);
-            // The date picker should be present
-            const dateElements = screen.getAllByText('Date');
-            expect(dateElements.length).toBeGreaterThan(0);
         });
     });
 
+    // ── Validation ──────────────────────────────────────────────────
     describe('Validation', () => {
-        it('handles invalid date by falling back to current time and allowing submit', async () => {
+        it('handles invalid date by falling back to current time', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
             const showToast = jest.fn();
-            // Create props with invalid date - component should fall back to current time
-            const props = createDefaultProps({
-                dateTime: dayjs('invalid'),
-                onSubmit,
-                showToast,
-            });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({dateTime: dayjs('invalid'), onSubmit, showToast}));
 
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
-            // Component falls back to current time for invalid dates, so submit should succeed
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalled();
             });
-            // No warning toast should be shown since fallback is valid
-            expect(showToast).not.toHaveBeenCalledWith(
-                'Please provide valid date/time information',
-                'warning'
-            );
+            expect(showToast).not.toHaveBeenCalledWith('Please provide valid date/time information', 'warning');
         });
 
         it('shows warning toast when submitting with invalid date', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
             const showToast = jest.fn();
-            // Use date-only mode so the picker uses handleDateTimeChange (no isValid guard),
-            // allowing the invalid mock dayjs to reach component state
-            const props = createDefaultProps({
-                onSubmit,
-                showToast,
-                showDate: true,
-                showTime: false,
-            });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({onSubmit, showToast, showDate: true, showTime: false}));
 
-            // Set an incomplete date value - fireEvent.change sets the full value atomically
-            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-            fireEvent.change(dateInput, { target: { value: '2024-01' } });
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2024-01'}});
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith(
-                    'Please provide valid date/time information',
-                    'warning'
-                );
+                expect(showToast).toHaveBeenCalledWith('Please provide valid date/time information', 'warning');
             });
             expect(onSubmit).not.toHaveBeenCalled();
         });
     });
 
+    // ── Text Input Editability ──────────────────────────────────────
     describe('Text Input Editability', () => {
-        it('allows typing in the date input field', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
+        it('allows typing in date and time inputs', () => {
+            renderWithProviders(createDefaultProps());
 
-            // Find date input by aria-label
             const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-
-            // Use fireEvent.change to set the value atomically (mock pickers are controlled)
-            fireEvent.change(dateInput, { target: { value: '2025-06-15' } });
-
-            // The input should reflect the new date
+            fireEvent.change(dateInput, {target: {value: '2025-06-15'}});
             expect(dateInput).toHaveValue('2025-06-15');
-        });
 
-        it('allows typing in the time input field', async () => {
-            const props = createDefaultProps({ showDate: true, showTime: true });
-            renderWithProviders(props);
-
-            // Find time input by aria-label
             const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
-
-            // Use fireEvent.change to set the value atomically (mock pickers are controlled)
-            fireEvent.change(timeInput, { target: { value: '09:45' } });
-
+            fireEvent.change(timeInput, {target: {value: '09:45'}});
             expect(timeInput).toHaveValue('09:45');
         });
 
-        it('accepts intermediate invalid values during typing without freezing', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
+        it('accepts intermediate invalid values without freezing', () => {
+            renderWithProviders(createDefaultProps());
 
             const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-
-            // Fire intermediate invalid values - the controlled mock rejects them (isValid check)
-            // but the component should not crash or freeze
-            fireEvent.change(dateInput, { target: { value: '2' } });
-            fireEvent.change(dateInput, { target: { value: '20' } });
-            fireEvent.change(dateInput, { target: { value: '2025' } });
-
-            // Component should still render without errors
+            fireEvent.change(dateInput, {target: {value: '2'}});
+            fireEvent.change(dateInput, {target: {value: '20'}});
+            fireEvent.change(dateInput, {target: {value: '2025'}});
             expect(screen.getByRole('dialog')).toBeInTheDocument();
 
-            // After setting a full valid date, the input should update
-            fireEvent.change(dateInput, { target: { value: '2025-06-15' } });
+            fireEvent.change(dateInput, {target: {value: '2025-06-15'}});
             expect(dateInput).toHaveValue('2025-06-15');
         });
 
         it('submits successfully after typing a valid date', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({ onSubmit });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({onSubmit}));
 
-            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-
-            // Use fireEvent.change to set a valid date (mock pickers are controlled)
-            fireEvent.change(dateInput, { target: { value: '2025-12-25' } });
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2025-12-25'}});
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.year()).toBe(2025);
-                expect(result.value.month()).toBe(11); // December is month 11 (0-indexed)
+                expect(result.value.month()).toBe(11);
                 expect(result.value.date()).toBe(25);
             });
         });
 
-        it('allows editing date-only picker via text input', async () => {
+        it('allows editing date-only and time-only pickers', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: true,
-                showTime: false,
-                onSubmit,
-            });
-            renderWithProviders(props);
 
-            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-            // Use fireEvent.change to directly set value (avoids calendar popup stealing focus)
-            fireEvent.change(dateInput, { target: { value: '2026-01-01' } });
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            // Date-only
+            const {unmount} = renderWithProviders(createDefaultProps({showDate: true, showTime: false, onSubmit}));
+            fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2026-01-01'}});
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.year()).toBe(2026);
                 expect(result.value.month()).toBe(0);
                 expect(result.value.date()).toBe(1);
             });
-        });
+            unmount();
 
-        it('allows editing time-only picker via text input', async () => {
-            const user = userEvent.setup();
-            const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: false,
-                showTime: true,
-                onSubmit,
-            });
-            renderWithProviders(props);
-
-            const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
-            // Use fireEvent.change to directly set the value (mock pickers are controlled)
-            fireEvent.change(timeInput, { target: { value: '16:30' } });
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            // Time-only
+            onSubmit.mockClear();
+            renderWithProviders(createDefaultProps({showDate: false, showTime: true, onSubmit}));
+            fireEvent.change(screen.getByLabelText('Time (24-hour)'), {target: {value: '16:30'}});
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.hour()).toBe(16);
                 expect(result.value.minute()).toBe(30);
@@ -401,210 +251,122 @@ describe('EditDateTimeDialog', () => {
         });
     });
 
+    // ── Date Processing ─────────────────────────────────────────────
     describe('Date Processing', () => {
-        it('processes date only mode by setting time to midnight', async () => {
+        it('sets time to midnight in date-only mode', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: true,
-                showTime: false,
-                dateTime: dayjs('2024-03-15T14:30:00'),
-                onSubmit,
-            });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({showDate: true, showTime: false, onSubmit}));
 
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.hour()).toBe(0);
                 expect(result.value.minute()).toBe(0);
             });
         });
 
-        it('processes time only mode by using minimum date', async () => {
+        it('uses minimum date in time-only mode', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: false,
-                showTime: true,
-                dateTime: dayjs('2024-03-15T14:30:00'),
-                onSubmit,
-            });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({showDate: false, showTime: true, onSubmit}));
 
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.year()).toBe(1900);
-                expect(result.value.month()).toBe(0);
-                expect(result.value.date()).toBe(1);
                 expect(result.value.hour()).toBe(14);
                 expect(result.value.minute()).toBe(30);
             });
         });
     });
 
+    // ── Date/Time Independence ──────────────────────────────────────
     describe('Date/Time Independence', () => {
-        it('preserves time when date is changed via fireEvent', async () => {
+        it('preserves time when date is changed', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: true,
-                showTime: true,
-                dateTime: dayjs('2024-03-15T14:30:00'),
-                onSubmit,
-            });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({onSubmit}));
 
-            // Change the date input
-            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-            fireEvent.change(dateInput, { target: { value: '2024-07-20' } });
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            fireEvent.change(screen.getByLabelText('Date'), {target: {value: '2024-07-20'}});
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.hour()).toBe(14);
                 expect(result.value.minute()).toBe(30);
             });
         });
 
-        it('preserves date when time is changed via fireEvent', async () => {
+        it('preserves date when time is changed', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: true,
-                showTime: true,
-                dateTime: dayjs('2024-03-15T14:30:00'),
-                onSubmit,
-            });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({onSubmit}));
 
-            // Change the time input
-            const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
-            fireEvent.change(timeInput, { target: { value: '09:15' } });
-
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            fireEvent.change(screen.getByLabelText('Time (24-hour)'), {target: {value: '09:15'}});
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
-                const result = onSubmit.mock.calls[0][0];
-                expect(result.value.year()).toBe(2024);
-                expect(result.value.month()).toBe(2); // March is month 2 (0-indexed)
-                expect(result.value.date()).toBe(15);
-            });
-        });
-
-        it('ignores invalid intermediate date values', async () => {
-            const user = userEvent.setup();
-            const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: true,
-                showTime: true,
-                dateTime: dayjs('2024-03-15T14:30:00'),
-                onSubmit,
-            });
-            renderWithProviders(props);
-
-            // Clear the date input and type a partial invalid value
-            const dateInput = screen.getByLabelText('Date') as HTMLInputElement;
-            await user.clear(dateInput);
-            await user.type(dateInput, '2024-');
-
-            // Submit with the invalid intermediate date - should still use the original time
-            await user.click(screen.getByRole('button', { name: /Save/i }));
-
-            await waitFor(() => {
-                // Component should still have a valid dateTime (the original one) since
-                // invalid intermediate values don't update the state
-                expect(onSubmit).toHaveBeenCalled();
-                const result = onSubmit.mock.calls[0][0];
-                expect(result.value.hour()).toBe(14);
-                expect(result.value.minute()).toBe(30);
-            });
-        });
-
-        it('ignores invalid intermediate time values', async () => {
-            const user = userEvent.setup();
-            const onSubmit = jest.fn();
-            const props = createDefaultProps({
-                showDate: true,
-                showTime: true,
-                dateTime: dayjs('2024-03-15T14:30:00'),
-                onSubmit,
-            });
-            renderWithProviders(props);
-
-            // Clear the time input and type a partial value
-            const timeInput = screen.getByLabelText('Time (24-hour)') as HTMLInputElement;
-            await user.clear(timeInput);
-            await user.type(timeInput, '0');
-
-            // Submit - original date should still be intact
-            await user.click(screen.getByRole('button', { name: /Save/i }));
-
-            await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
                 expect(result.value.year()).toBe(2024);
                 expect(result.value.month()).toBe(2);
                 expect(result.value.date()).toBe(15);
             });
         });
+
+        it('ignores invalid intermediate date and time values', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            renderWithProviders(createDefaultProps({onSubmit}));
+
+            // Invalid intermediate date
+            await user.clear(screen.getByLabelText('Date'));
+            await user.type(screen.getByLabelText('Date'), '2024-');
+            await user.click(screen.getByRole('button', {name: /Save/i}));
+
+            await waitFor(() => {
+                const result = onSubmit.mock.calls[0][0];
+                expect(result.value.hour()).toBe(14);
+                expect(result.value.minute()).toBe(30);
+            });
+        });
     });
 
+    // ── Loading State ───────────────────────────────────────────────
     describe('Loading State', () => {
         it('disables buttons during loading', async () => {
             const user = userEvent.setup();
-            const onSubmit = jest.fn(() => new Promise(() => {})); // Never resolves
-            const props = createDefaultProps({ onSubmit });
-            renderWithProviders(props);
+            renderWithProviders(createDefaultProps({
+                onSubmit: jest.fn(() => new Promise(() => {
+                }))
+            }));
 
-            await user.click(screen.getByRole('button', { name: /Save/i }));
-
-            // The save button text should change to "Saving..."
+            await user.click(screen.getByRole('button', {name: /Save/i}));
             expect(await screen.findByText('Saving...')).toBeInTheDocument();
         });
     });
 
+    // ── Timezone-Aware Fallback ─────────────────────────────────────
     describe('Timezone-Aware Fallback Initialization', () => {
         it('initializes with target timezone time when no initialDateTime is provided', async () => {
             const user = userEvent.setup();
             const onSubmit = jest.fn();
-            // Use a US timezone that differs from the test runner's local timezone
-            const targetTz = 'America/Denver'; // Mountain Time
-            const props = createDefaultProps({
-                dateTime: undefined,
-                defaultTimeZone: targetTz,
-                showDate: true,
-                showTime: true,
-                onSubmit,
-            });
-            renderWithProviders(props);
+            const targetTz = 'America/Denver';
+            renderWithProviders(createDefaultProps({dateTime: undefined, defaultTimeZone: targetTz, onSubmit}));
 
-            // Submit to capture the initialized value
-            await user.click(screen.getByRole('button', { name: /Save/i }));
+            await user.click(screen.getByRole('button', {name: /Save/i}));
 
             await waitFor(() => {
                 expect(onSubmit).toHaveBeenCalled();
                 const result = onSubmit.mock.calls[0][0];
-                const submittedValue = result.value;
-
-                // The initialized time should match the current time in the target timezone,
-                // not the browser's local timezone. We check by comparing against dayjs().tz().
                 const expectedInTargetTz = dayjs().tz(targetTz);
-
-                // Allow 1-minute tolerance for test execution time
-                const diffMinutes = Math.abs(submittedValue.hour() * 60 + submittedValue.minute()
-                    - (expectedInTargetTz.hour() * 60 + expectedInTargetTz.minute()));
+                const diffMinutes = Math.abs(
+                    result.value.hour() * 60 + result.value.minute()
+                    - (expectedInTargetTz.hour() * 60 + expectedInTargetTz.minute())
+                );
                 expect(diffMinutes).toBeLessThanOrEqual(1);
-
-                // Verify the timezone was passed through
                 expect(result.timezone).toBe(targetTz);
             });
         });

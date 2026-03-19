@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
@@ -70,10 +71,6 @@ const setupMocks = (data?: PaginatedResponse<DriverEmail>, isLoading = false) =>
 };
 
 describe('DriverEmailsTab', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Column headers', () => {
         it('should render all column headers', () => {
             setupMocks();

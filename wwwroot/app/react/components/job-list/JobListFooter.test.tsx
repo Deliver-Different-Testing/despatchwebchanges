@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * JobListFooter Tests
  */
@@ -8,12 +9,13 @@ import {renderWithTheme} from '../../__testUtils__';
 import {JobListFooter} from './JobListFooter';
 
 describe('JobListFooter', () => {
-    it('renders displayed count when all jobs loaded', () => {
+    it('renders displayed count and last updated timestamp when all jobs loaded', () => {
         renderWithTheme(
             <JobListFooter displayedCount={15} totalCount={15} lastUpdated="Last updated: 3:00 PM" allJobsLoaded/>,
         );
 
         expect(screen.getByText('Showing 15 jobs')).toBeInTheDocument();
+        expect(screen.getByText('Last updated: 3:00 PM')).toBeInTheDocument();
     });
 
     it('renders "X of Y" when not all jobs loaded', () => {
@@ -30,13 +32,5 @@ describe('JobListFooter', () => {
         );
 
         expect(screen.getByText('Loading more jobs...')).toBeInTheDocument();
-    });
-
-    it('renders last updated timestamp', () => {
-        renderWithTheme(
-            <JobListFooter displayedCount={5} totalCount={5} lastUpdated="Last updated: 3:00 PM" allJobsLoaded/>,
-        );
-
-        expect(screen.getByText('Last updated: 3:00 PM')).toBeInTheDocument();
     });
 });

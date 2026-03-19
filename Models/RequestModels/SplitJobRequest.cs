@@ -14,4 +14,10 @@ public sealed class SplitJobRequest
     /// The meeting point address data including all address lines.
     /// </summary>
     public required AddressViewModel MeetingPointAddress { get; init; }
+
+    /// <summary>
+    /// Optional courier ID to assign to the delivery leg (Leg B) at split time.
+    /// When null, the delivery leg is created without a courier assignment.
+    /// </summary>
+    public int? CourierIdForLegB { get; init; }
 }

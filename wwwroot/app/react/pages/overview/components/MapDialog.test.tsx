@@ -1,5 +1,6 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
-import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {MapDialog} from './MapDialog';
@@ -65,10 +66,6 @@ const mockMapConfig = {
 };
 
 describe('MapDialog', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('when closed', () => {
         it('renders nothing when not open', () => {
             renderWithProviders(

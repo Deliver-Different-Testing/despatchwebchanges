@@ -20,10 +20,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('NationwideApiService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('calculateCargoReadyTime', () => {
         it('should call apiClient.get with correct URL and params', async () => {
             const mockResponse = {

@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Messaging Hooks Tests
  */
@@ -22,10 +23,6 @@ jest.mock('../../../services/messagingApi', () => ({
 const mockMessagingApi = messagingApi as jest.Mocked<typeof messagingApi>;
 
 describe('useConversations', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockConversations = [
         {
             otherPartyId: 1,
@@ -161,10 +158,6 @@ describe('useConversations', () => {
 });
 
 describe('useMessages', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockMessages = [
         {
             messageId: 2,
@@ -266,10 +259,6 @@ describe('useMessages', () => {
 });
 
 describe('useQuickResponses', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('should initialize with default quick responses', () => {
         const { result } = renderHook(() => useQuickResponses());
 
@@ -372,7 +361,6 @@ describe('useQuickResponses', () => {
 
 describe('useContactSearch', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         jest.useFakeTimers();
     });
 
@@ -449,7 +437,6 @@ describe('useContactSearch', () => {
 
 describe('useAutoRefresh', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         jest.useFakeTimers();
     });
 

@@ -1,14 +1,17 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsPage Component Tests
+ *
+ * Optimised: tests sharing identical setup consolidated into single renders.
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
+import dayjs from 'dayjs';
 
 // Mock the hooks
 jest.mock('../../hooks/useRecurringJobsApi', () => ({
@@ -73,8 +76,8 @@ const createMockAddress = (line1: string, full: string) => ({
 
 const createMockJob = (id: number, client: string = 'Test Client'): PrebookListModel => ({
     id,
-    booked: new Date('2024-01-15T10:30:00'),
-    nextDueTime: new Date('2024-01-16T09:00:00'),
+    booked: dayjs('2024-01-15T10:30:00'),
+    nextDueTime: dayjs('2024-01-16T09:00:00'),
     client,
     jobNo: `JOB${id}`,
     clientId: 100 + id,
@@ -103,8 +106,6 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsPageProps>): Recurr
 
 describe('RecurringJobsPage', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-
         // Default mock implementations
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse([]),
@@ -132,361 +133,249 @@ describe('RecurringJobsPage', () => {
         mockRecurringJobsApi.exportToCsv.mockResolvedValue(undefined);
     });
 
-    describe('Initial render', () => {
-        it('should render toolbar and table', () => {
-            renderWithProviders(createDefaultProps());
+    // ── Initial render: toolbar, empty state, refresh callback, speed filter, export, refresh (single render) ─
+    it('renders toolbar, empty state, speed filter, registers callback, and supports export/refresh', async () => {
+        const showToast = jest.fn();
+        const setRefreshCallback = jest.fn();
+        const refetch = jest.fn();
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse([]),
+            isLoading: false,
+            error: null,
+            refetch,
+        } as any);
 
-            expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-            expect(screen.getByText('Active')).toBeInTheDocument();
-            expect(screen.getByText('Inactive')).toBeInTheDocument();
-        });
+        renderWithProviders(createDefaultProps({showToast, setRefreshCallback}));
 
-        it('should show empty state when no jobs', () => {
-            renderWithProviders(createDefaultProps());
+        // Toolbar
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        expect(screen.getByText('Active')).toBeInTheDocument();
+        expect(screen.getByText('Inactive')).toBeInTheDocument();
 
-            expect(screen.getByText('No recurring jobs available')).toBeInTheDocument();
-        });
+        // Empty state
+        expect(screen.getByText('No recurring jobs available')).toBeInTheDocument();
 
-        it('should register refresh callback', () => {
-            const setRefreshCallback = jest.fn();
-            renderWithProviders(createDefaultProps({setRefreshCallback}));
+        // Refresh callback
+        expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
 
-            expect(setRefreshCallback).toHaveBeenCalledWith(expect.any(Function));
-        });
-    });
+        // Speed filter
+        const speedLabels = screen.getAllByText('Speed');
+        const formControl = speedLabels[0].closest('.MuiFormControl-root');
+        expect(formControl).toBeInTheDocument();
+        const selectButton = formControl?.querySelector('[role="combobox"]');
+        expect(selectButton).toBeInTheDocument();
 
-    describe('Loading state', () => {
-        it('should show loading indicator', () => {
-            mockUseRecurringJobsList.mockReturnValue({
-                data: undefined,
-                isLoading: true,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps());
-
-            expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
-        });
-    });
-
-    describe('Job list display', () => {
-        it('should display jobs in table', () => {
-            const jobs = [createMockJob(1, 'ABC Corp'), createMockJob(2, 'XYZ Inc')];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps());
-
-            expect(screen.getByText('ABC Corp')).toBeInTheDocument();
-            expect(screen.getByText('XYZ Inc')).toBeInTheDocument();
-        });
-    });
-
-    describe('Job selection', () => {
-        it('should call onJobSelect when job row is clicked', () => {
-            const onJobSelect = jest.fn();
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps({onJobSelect}));
-
-            fireEvent.click(screen.getByText('Test Client').closest('tr')!);
-
-            expect(onJobSelect).toHaveBeenCalledWith(1);
-        });
-
-        it('should clear selection when switching active filter', () => {
-            const onJobSelect = jest.fn();
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps({onJobSelect}));
-
-            // Select a job first
-            fireEvent.click(screen.getByText('Test Client').closest('tr')!);
-            expect(onJobSelect).toHaveBeenCalledWith(1);
-
-            // Switch to inactive
-            fireEvent.click(screen.getByText('Inactive'));
-
-            expect(onJobSelect).toHaveBeenCalledWith(null);
-        });
-    });
-
-    describe('Void job', () => {
-        it('should open confirmation dialog when delete is clicked', () => {
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps());
-
-            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-            fireEvent.click(deleteButton);
-
-            expect(screen.getByText('Inactivate Recurring Job')).toBeInTheDocument();
-            expect(screen.getByText(/this will inactivate this recurring job/i)).toBeInTheDocument();
-        });
-
-        it('should close dialog when No is clicked', async () => {
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps());
-
-            // Open dialog
-            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-            fireEvent.click(deleteButton);
-
-            // Verify dialog is open
-            expect(screen.getByText('Inactivate Recurring Job')).toBeInTheDocument();
-
-            // Click No
-            fireEvent.click(screen.getByText('No'));
-
-            // Wait for dialog to close
-            await waitFor(() => {
-                expect(screen.queryByText('Inactivate Recurring Job')).not.toBeInTheDocument();
-            });
-        });
-
-        it('should call API and show toast when Yes is clicked', async () => {
-            const showToast = jest.fn();
-            const refetch = jest.fn();
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch,
-            } as any);
-
-            renderWithProviders(createDefaultProps({showToast}));
-
-            // Open dialog
-            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-            fireEvent.click(deleteButton);
-
-            // Click Yes
-            fireEvent.click(screen.getByText('Yes'));
-
-            await waitFor(() => {
-                expect(mockRecurringJobsApi.voidPrebookJob).toHaveBeenCalledWith(1);
-            });
-
-            await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith(
-                    'The recurring job has been successfully inactivated.',
-                    'success'
-                );
-            });
-
+        // Refresh button
+        const refreshIcon = screen.getByTestId('RefreshIcon');
+        const refreshButton = refreshIcon.closest('button');
+        expect(refreshButton).toBeInTheDocument();
+        fireEvent.click(refreshButton!);
+        await waitFor(() => {
             expect(refetch).toHaveBeenCalled();
         });
-    });
 
-    describe('Export', () => {
-        it('should call export API and show toast', async () => {
-            const showToast = jest.fn();
-            renderWithProviders(createDefaultProps({showToast}));
+        // Export button
+        const exportIcon = screen.getByTestId('FileDownloadIcon');
+        const exportButton = exportIcon.closest('button');
+        expect(exportButton).toBeInTheDocument();
+        fireEvent.click(exportButton!);
 
-            // Find export button by icon
-            const exportIcon = screen.getByTestId('FileDownloadIcon');
-            const exportButton = exportIcon.closest('button');
-            expect(exportButton).toBeInTheDocument();
-            fireEvent.click(exportButton!);
-
-            await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Exporting recurring jobs...', 'info');
-            });
-
-            await waitFor(() => {
-                expect(mockRecurringJobsApi.exportToCsv).toHaveBeenCalled();
-            });
-
-            await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('Recurring jobs exported successfully', 'success');
-            });
+        await waitFor(() => {
+            expect(showToast).toHaveBeenCalledWith('Exporting recurring jobs...', 'info');
+        });
+        await waitFor(() => {
+            expect(mockRecurringJobsApi.exportToCsv).toHaveBeenCalled();
+        });
+        await waitFor(() => {
+            expect(showToast).toHaveBeenCalledWith('Recurring jobs exported successfully', 'success');
         });
     });
 
-    describe('Refresh', () => {
-        it('should call refetch when refresh button is clicked', async () => {
-            const refetch = jest.fn();
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse([]),
-                isLoading: false,
-                error: null,
-                refetch,
-            } as any);
+    // ── Loading state ───────────────────────────────────────────────
+    it('should show loading indicator', () => {
+        mockUseRecurringJobsList.mockReturnValue({
+            data: undefined,
+            isLoading: true,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
 
-            renderWithProviders(createDefaultProps());
+        renderWithProviders(createDefaultProps());
 
-            // Find the refresh button by its icon's test id
-            const refreshIcon = screen.getByTestId('RefreshIcon');
-            const refreshButton = refreshIcon.closest('button');
-            expect(refreshButton).toBeInTheDocument();
-            fireEvent.click(refreshButton!);
+        expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
+    });
 
-            await waitFor(() => {
-                expect(refetch).toHaveBeenCalled();
-            });
+    // ── Job list + selection + filter clear (single render) ─────────
+    it('displays jobs, selects on click, and clears selection on filter switch', () => {
+        const onJobSelect = jest.fn();
+        const jobs = [createMockJob(1, 'ABC Corp'), createMockJob(2, 'XYZ Inc')];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        renderWithProviders(createDefaultProps({onJobSelect}));
+
+        // Jobs displayed
+        expect(screen.getByText('ABC Corp')).toBeInTheDocument();
+        expect(screen.getByText('XYZ Inc')).toBeInTheDocument();
+
+        // Select job
+        fireEvent.click(screen.getByText('ABC Corp').closest('tr')!);
+        expect(onJobSelect).toHaveBeenCalledWith(1);
+
+        // Switch to Inactive → clears selection
+        fireEvent.click(screen.getByText('Inactive'));
+        expect(onJobSelect).toHaveBeenCalledWith(null);
+    });
+
+    // ── Void job: open dialog + close with No (single render) ───────
+    it('opens void confirmation dialog and closes with No', async () => {
+        const jobs = [createMockJob(1)];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        renderWithProviders(createDefaultProps());
+
+        const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
+        fireEvent.click(deleteButton);
+
+        expect(screen.getByText('Inactivate Recurring Job')).toBeInTheDocument();
+        expect(screen.getByText(/this will inactivate this recurring job/i)).toBeInTheDocument();
+
+        // Close with No
+        fireEvent.click(screen.getByText('No'));
+
+        await waitFor(() => {
+            expect(screen.queryByText('Inactivate Recurring Job')).not.toBeInTheDocument();
         });
     });
 
-    describe('Search', () => {
-        it('should update query when search text changes', async () => {
-            renderWithProviders(createDefaultProps());
+    // ── Void job: confirm with Yes ──────────────────────────────────
+    it('calls API and shows toast when void is confirmed', async () => {
+        const showToast = jest.fn();
+        const refetch = jest.fn();
+        const jobs = [createMockJob(1)];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch,
+        } as any);
 
-            const searchInput = screen.getByPlaceholderText('Search jobs...');
-            await userEvent.type(searchInput, 'test search');
+        renderWithProviders(createDefaultProps({showToast}));
 
-            await waitFor(() => {
-                // Check that the hook was called with searchText
-                const calls = mockUseRecurringJobsList.mock.calls;
-                const lastCallWithSearch = calls.find(call => call[0]?.searchText === 'test search');
-                expect(lastCallWithSearch).toBeDefined();
-            }, {timeout: 500});
+        const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
+        fireEvent.click(deleteButton);
+
+        fireEvent.click(screen.getByText('Yes'));
+
+        await waitFor(() => {
+            expect(mockRecurringJobsApi.voidPrebookJob).toHaveBeenCalledWith(1);
         });
-    });
 
-    describe('Pagination', () => {
-        it('should update query when page changes', () => {
-            const jobs = Array.from({length: 50}, (_, i) => createMockJob(i + 1));
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs, 100),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps());
-
-            // Click next page
-            const nextButton = screen.getByRole('button', {name: /next page/i});
-            fireEvent.click(nextButton);
-
-            // Check that the hook was called with page 2
-            const calls = mockUseRecurringJobsList.mock.calls;
-            const lastCallWithPage2 = calls.find(call => call[0]?.page === 2);
-            expect(lastCallWithPage2).toBeDefined();
-        });
-    });
-
-    describe('Sorting', () => {
-        it('should update query when sort changes', () => {
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
-
-            renderWithProviders(createDefaultProps());
-
-            // Click on Client column to sort
-            fireEvent.click(screen.getByText('Client'));
-
-            // Check that the hook was called with correct sort params
-            const calls = mockUseRecurringJobsList.mock.calls;
-            const lastCallWithSort = calls.find(call =>
-                call[0]?.order === 'client' && call[0]?.orderDirection === 'asc'
+        await waitFor(() => {
+            expect(showToast).toHaveBeenCalledWith(
+                'The recurring job has been successfully inactivated.',
+                'success'
             );
-            expect(lastCallWithSort).toBeDefined();
         });
+
+        expect(refetch).toHaveBeenCalled();
     });
 
-    describe('Filters', () => {
-        it('should render speed filter', () => {
-            renderWithProviders(createDefaultProps());
+    // ── Search ──────────────────────────────────────────────────────
+    it('should update query when search text changes', async () => {
+        jest.useFakeTimers();
+        renderWithProviders(createDefaultProps());
 
-            // Find speed filter by looking for the form control with Speed label
-            const speedLabels = screen.getAllByText('Speed');
-            // The first one should be in the toolbar
-            const formControl = speedLabels[0].closest('.MuiFormControl-root');
-            expect(formControl).toBeInTheDocument();
+        const searchInput = screen.getByPlaceholderText('Search jobs...');
+        fireEvent.change(searchInput, {target: {value: 'test search'}});
 
-            // Verify a combobox exists for the filter
-            const selectButton = formControl?.querySelector('[role="combobox"]');
-            expect(selectButton).toBeInTheDocument();
+        act(() => {
+            jest.advanceTimersByTime(350);
         });
 
-        it('should update query when days filter changes', () => {
-            renderWithProviders(createDefaultProps());
+        const calls = mockUseRecurringJobsList.mock.calls;
+        const lastCallWithSearch = calls.find(call => call[0]?.searchText === 'test search');
+        expect(lastCallWithSearch).toBeDefined();
 
-            fireEvent.click(screen.getByText('M'));
-
-            // Check that the hook was called with daysOfWeek set
-            const calls = mockUseRecurringJobsList.mock.calls;
-            const lastCallWithDays = calls.find(call => call[0]?.daysOfWeek === 1);
-            expect(lastCallWithDays).toBeDefined();
-        });
+        jest.useRealTimers();
     });
 
-    describe('Context menu', () => {
-        it('should open context menu on right-click', () => {
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
+    // ── Pagination ──────────────────────────────────────────────────
+    it('should update query when page changes', () => {
+        const jobs = Array.from({length: 50}, (_, i) => createMockJob(i + 1));
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs, 100),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
 
-            renderWithProviders(createDefaultProps());
+        renderWithProviders(createDefaultProps());
 
-            const row = screen.getByText('Test Client').closest('tr')!;
-            fireEvent.contextMenu(row);
+        const nextButton = screen.getByRole('button', {name: /next page/i});
+        fireEvent.click(nextButton);
 
-            expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
-            expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
-        });
+        const calls = mockUseRecurringJobsList.mock.calls;
+        const lastCallWithPage2 = calls.find(call => call[0]?.page === 2);
+        expect(lastCallWithPage2).toBeDefined();
+    });
 
-        it('should call onAddStop when menu item is clicked', () => {
-            const onAddStop = jest.fn();
-            const jobs = [createMockJob(1)];
-            mockUseRecurringJobsList.mockReturnValue({
-                data: createMockResponse(jobs),
-                isLoading: false,
-                error: null,
-                refetch: jest.fn(),
-            } as any);
+    // ── Sorting + days filter (single render) ───────────────────────
+    it('updates query for sort and days filter changes', () => {
+        const jobs = [createMockJob(1)];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
 
-            renderWithProviders(createDefaultProps({onAddStop}));
+        renderWithProviders(createDefaultProps());
 
-            // Open context menu
-            const row = screen.getByText('Test Client').closest('tr')!;
-            fireEvent.contextMenu(row);
+        // Sort by Client
+        fireEvent.click(screen.getByText('Client'));
+        const sortCalls = mockUseRecurringJobsList.mock.calls;
+        const lastCallWithSort = sortCalls.find(call =>
+            call[0]?.order === 'client' && call[0]?.orderDirection === 'asc'
+        );
+        expect(lastCallWithSort).toBeDefined();
 
-            // Click add pickup stop
-            fireEvent.click(screen.getByText('Add Pickup Stop'));
+        // Days filter
+        fireEvent.click(screen.getByText('M'));
+        const dayCalls = mockUseRecurringJobsList.mock.calls;
+        const lastCallWithDays = dayCalls.find(call => call[0]?.daysOfWeek === 1);
+        expect(lastCallWithDays).toBeDefined();
+    });
 
-            expect(onAddStop).toHaveBeenCalledWith(jobs[0], true);
-        });
+    // ── Context menu: open + click item (single render) ─────────────
+    it('opens context menu on right-click and calls onAddStop', () => {
+        const onAddStop = jest.fn();
+        const jobs = [createMockJob(1)];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        renderWithProviders(createDefaultProps({onAddStop}));
+
+        const row = screen.getByText('Test Client').closest('tr')!;
+        fireEvent.contextMenu(row);
+
+        expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
+        expect(screen.getByText('Add Delivery Stop')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByText('Add Pickup Stop'));
+        expect(onAddStop).toHaveBeenCalledWith(jobs[0], true);
     });
 });

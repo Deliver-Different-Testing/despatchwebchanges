@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for EditDateTimeDialogService
  * Covers lazy loading of the React bundle, dialog opening for all three modes

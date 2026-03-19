@@ -28,10 +28,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('jobApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getRelatedJobsMultiSelectList', () => {
         it('should call apiClient.get with correct URL and params', async () => {
             const mockResponse = [

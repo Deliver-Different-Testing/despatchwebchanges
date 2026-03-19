@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useCourierApi Hooks Tests
  */
@@ -39,10 +40,6 @@ const createWrapper = () => {
 };
 
 describe('useCourierSearch', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockCouriers: CourierSuggestion[] = [
         {id: 1, text: 'John Smith'},
         {id: 2, text: 'Jane Doe'},
@@ -118,10 +115,6 @@ describe('useCourierSearch', () => {
 });
 
 describe('useTimeZoneOptions', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const mockTimeZones: TimeZoneOption[] = [
         {id: 1, text: 'Pacific Time (US)', timeZoneIana: 'America/Los_Angeles'},
         {id: 2, text: 'Eastern Time (US)', timeZoneIana: 'America/New_York'},

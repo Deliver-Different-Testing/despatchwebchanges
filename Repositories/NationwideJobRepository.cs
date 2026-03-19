@@ -1180,7 +1180,7 @@ public class NationwideJobRepository(
 
         // Create primary flight record with ETA set to the last flight's arrival time
         var primaryFlightRecord = CreateFlightRecord(
-            job, primarySegment, webhookIds.First(),
+            job, primarySegment, webhookIds[0],
             NationwideJobConstants.PrimaryFlightLegNumber, timeZones,
             lastFlightArrivalTime);
 
@@ -1281,7 +1281,7 @@ public class NationwideJobRepository(
         var nearbyAirports = await GetNearbyAirportsAsync(jobId);
         if (nearbyAirports.Count == 0) return jobDetail;
 
-        var nearestAirportId = nearbyAirports.First().Id;
+        var nearestAirportId = nearbyAirports[0].Id;
         Log.Information("Using nearest airport {AirportId} for job {JobId}", nearestAirportId, jobId);
 
         // AirPortId is init-only, so create a new instance with the airport set

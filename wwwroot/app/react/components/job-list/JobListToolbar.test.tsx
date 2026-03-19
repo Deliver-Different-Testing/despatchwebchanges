@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * JobListToolbar Tests
  */
@@ -35,57 +36,36 @@ function createDefaultProps(overrides?: Partial<{
 }
 
 describe('JobListToolbar', () => {
-    describe('Category Tabs', () => {
-        it('renders all category buttons', () => {
-            renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
+    it('renders category buttons, search input, and density toggle buttons', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
 
-            expect(screen.getByText('Unassigned')).toBeInTheDocument();
-            expect(screen.getByText('Active')).toBeInTheDocument();
-            expect(screen.getByText('Done')).toBeInTheDocument();
-            expect(screen.getByText('All')).toBeInTheDocument();
-        });
-
-        it('fires onCategoryChange when a category is clicked', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithTheme(<JobListToolbar {...props}/>);
-
-            await user.click(screen.getByText('Unassigned'));
-
-            expect(props.onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
-        });
+        expect(screen.getByText('Unassigned')).toBeInTheDocument();
+        expect(screen.getByText('Active')).toBeInTheDocument();
+        expect(screen.getByText('Done')).toBeInTheDocument();
+        expect(screen.getByText('All')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+        const buttons = screen.getAllByRole('button');
+        expect(buttons.length).toBeGreaterThanOrEqual(4);
     });
 
-    describe('Search', () => {
-        it('renders search input', () => {
-            renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
+    it('fires onCategoryChange when a category is clicked', async () => {
+        const user = userEvent.setup();
+        const props = createDefaultProps();
+        renderWithTheme(<JobListToolbar {...props}/>);
 
-            expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-        });
+        await user.click(screen.getByText('Unassigned'));
+
+        expect(props.onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
     });
 
-    describe('Density Toggle', () => {
-        it('renders density toggle buttons', () => {
-            renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
+    it('fires onResetColumns when reset button is clicked', async () => {
+        const user = userEvent.setup();
+        const props = createDefaultProps();
+        renderWithTheme(<JobListToolbar {...props}/>);
 
-            // The toggle group contains Normal, Dense, Ultra Dense tooltips
-            const buttons = screen.getAllByRole('button');
-            // At least: 3 density buttons + 1 reset button = 4
-            expect(buttons.length).toBeGreaterThanOrEqual(4);
-        });
-    });
+        const resetButton = screen.getByRole('button', {name: /reset column widths/i});
+        await user.click(resetButton);
 
-    describe('Reset Columns', () => {
-        it('fires onResetColumns when reset button is clicked', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps();
-            renderWithTheme(<JobListToolbar {...props}/>);
-
-            // Find the reset button by tooltip title
-            const resetButton = screen.getByRole('button', {name: /reset column widths/i});
-            await user.click(resetButton);
-
-            expect(props.onResetColumns).toHaveBeenCalledTimes(1);
-        });
+        expect(props.onResetColumns).toHaveBeenCalledTimes(1);
     });
 });

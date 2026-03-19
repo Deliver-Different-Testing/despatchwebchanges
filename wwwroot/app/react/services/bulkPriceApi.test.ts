@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Bulk Price API Service Tests
  */
@@ -17,10 +18,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('BulkPriceApiService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('applyBulkPriceUpdate', () => {
         const mockFile = new File(['test content'], 'prices.csv', { type: 'text/csv' });
 

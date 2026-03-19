@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FlightAgentConfirmationDialog React component
  */
@@ -91,20 +92,16 @@ const defaultProps = {
 };
 
 describe('FlightAgentConfirmationDialog', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
-            const { container } = renderWithTheme(
+            renderWithTheme(
                 <FlightAgentConfirmationDialog
                     {...defaultProps}
                     open={false}
                     flight={createFlight()}
                 />
             );
-            expect(container.querySelector('.MuiDialog-root')).toBeNull();
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
         it('renders the dialog when open', () => {
@@ -332,7 +329,8 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             const awbInput = screen.getByLabelText('AWB Number');
-            await user.type(awbInput, '987-65432109');
+            await user.click(awbInput);
+            await user.paste('987-65432109');
 
             expect(screen.getByDisplayValue('987-65432109')).toBeInTheDocument();
         });
@@ -390,7 +388,8 @@ describe('FlightAgentConfirmationDialog', () => {
             );
 
             const notesInput = screen.getByLabelText('Delivery Instructions');
-            await user.type(notesInput, 'Handle with care');
+            await user.click(notesInput);
+            await user.paste('Handle with care');
 
             expect(screen.getByDisplayValue('Handle with care')).toBeInTheDocument();
         });
@@ -430,7 +429,8 @@ describe('FlightAgentConfirmationDialog', () => {
 
             // Enter AWB
             const awbInput = screen.getByLabelText('AWB Number');
-            await user.type(awbInput, '111-22233344');
+            await user.click(awbInput);
+            await user.paste('111-22233344');
 
             // Click confirm
             await user.click(screen.getByText('Confirm Assignment'));

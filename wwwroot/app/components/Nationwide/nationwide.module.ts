@@ -9,7 +9,6 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import JobContextMenuService from "../../services/job-context-menu.service";
 import RecoveryAgentManagementController
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.controller";
 import RecoveryAgentManagementService
@@ -41,7 +40,6 @@ nationwideModule
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
-    .service("jobContextMenuService", JobContextMenuService)
     .service("recoveryAgentManagementService", RecoveryAgentManagementService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 

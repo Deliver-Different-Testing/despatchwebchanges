@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
@@ -43,7 +44,6 @@ function createMockOpenJob(overrides: Partial<IOpenJobResponse> = {}): IOpenJobR
 
 describe('OpenJobsWidget', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         localStorage.clear();
     });
 

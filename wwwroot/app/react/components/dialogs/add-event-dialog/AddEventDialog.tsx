@@ -28,6 +28,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import type { ShowToastFn } from '../../../services/toastService';
+import { formatDateForApi } from '../../../utils/dateUtils';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -146,7 +147,7 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
                 jobId: job.id,
                 notes: notes,
                 eventTypeId: selectedEventTypeId as number,
-                eventDueDate: eventDate.toISOString(),
+                eventDueDate: formatDateForApi(eventDate, tz),
             };
 
             await onSubmit(eventData);

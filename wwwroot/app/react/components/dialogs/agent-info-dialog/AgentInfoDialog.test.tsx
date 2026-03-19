@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AgentInfoDialog Component Tests
  */

@@ -38,10 +38,6 @@ const createMockAddress = (): AddressViewModel => ({
 });
 
 describe('splitJobApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('splitJob', () => {
         it('should call apiClient.post with correct URL and request body', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);

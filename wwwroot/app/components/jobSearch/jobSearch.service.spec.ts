@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for JobSearchService
  * Tests URL builder methods and service behavior

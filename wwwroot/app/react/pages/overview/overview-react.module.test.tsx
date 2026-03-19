@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for the overview-react module (mount/unmount/refresh lifecycle).
  *
@@ -52,8 +53,11 @@ const mockConfig = {
 describe('overview-react.module', () => {
     beforeEach(() => {
         unmountOverviewPage();
-        jest.clearAllMocks();
         document.body.innerHTML = '';
+        // Reset mock counters after cleanup
+        mockUnmount.mockClear();
+        mockRender.mockClear();
+        (createRoot as jest.Mock).mockClear();
     });
 
     describe('mountOverviewPage', () => {

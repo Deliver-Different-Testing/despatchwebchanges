@@ -9,7 +9,6 @@ import {Coordinates} from "../../interfaces/coordinates.interface";
 import BaseController from "../base-controller";
 import {IBox, IColumn, ILayout} from "../../interfaces/layout.interfaces";
 import {ContactID, TimeZone} from "../../contants";
-import JobContextMenuService from "../../services/job-context-menu.service";
 import {JobProperty} from "../../enums/job-property.enum";
 import NavigationService from "../../services/navigation.service";
 import greetUser from "../../functions/greetUser";
@@ -34,6 +33,8 @@ import utc from "dayjs/plugin/utc";
 import {getIanaTimezone} from "../../react/utils/dateUtils";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import {setAiEnabled} from "../../functions/aiSettings";
+import {fetchPodJobs, fetchBulkJobs} from "../../react/services/jobSearchApi";
+import {queryKeys} from "../../react/query/queryClient";
 import angular from 'angular';
 
 dayjs.extend(utc);
@@ -48,7 +49,6 @@ class JobSearchController extends BaseController {
         'DispatchData',
         '$mdSidenav',
         '$document',
-        'jobContextMenuService',
         "navigationService",
         "messagingDialogService",
         "createJobDialogService",
@@ -117,7 +117,6 @@ class JobSearchController extends BaseController {
         private DispatchData: DispatchCoreService,
         private $mdSidenav: angular.material.ISidenavService,
         private $document: angular.IDocumentService,
-        private jobContextMenuService: JobContextMenuService,
         private navigationService: NavigationService,
         private messagingDialogService: MessagingDialogService,
         private createJobDialogService: CreateJobDialogService,
@@ -236,6 +235,24 @@ class JobSearchController extends BaseController {
             isUsCustomer: this.isUsCustomer,
             appPage: AppPage.JobSearch,
             storagePrefix: 'jobSearchJobList',
+            fetchConfig: {
+                fetchFn: fetchPodJobs,
+                queryKeyFn: (params) => queryKeys.jobSearch.pod(params),
+                initialParams: {
+                    startDate: this.searchCriteria.from_date,
+                    endDate: this.searchCriteria.to_date,
+                    page: 0,
+                    pageSize: 50,
+                    courierIds: this.getCourierIds(),
+                    clientIds: this.getClientIds(),
+                    speedIds: this.getSpeedIds(),
+                    wild: this.searchCriteria.wild,
+                    job: this.searchCriteria.job,
+                    jobId: this.searchCriteria.jobId,
+                    sortColumn: this.currentSortColumn,
+                    sortDirection: this.currentSortDirection,
+                },
+            },
             onJobSelect: (job) => {
                 this.selectJobDetail(job.id as number);
                 this.applyScope();
@@ -245,13 +262,7 @@ class JobSearchController extends BaseController {
                 this.applyScope();
             },
             onRefresh: () => {
-                this.refreshData();
-            },
-            onBackendFilter: (column, direction) => {
-                this.handleBackendSort({column, direction});
-            },
-            onSplitJob: ($event, job) => {
-                this.jobContextMenuService.splitJob($event, job as any, () => this.refreshAllData());
+                // React handles its own refresh via React Query
             },
         });
 
@@ -302,12 +313,27 @@ class JobSearchController extends BaseController {
             isUsCustomer: this.isUsCustomer,
             appPage: AppPage.JobSearch,
             storagePrefix: 'jobSearchBulkJobList',
+            fetchConfig: {
+                fetchFn: fetchBulkJobs,
+                queryKeyFn: (params) => queryKeys.jobSearch.bulk(params),
+                initialParams: {
+                    startDate: this.searchCriteria.from_date,
+                    endDate: this.searchCriteria.to_date,
+                    page: 0,
+                    pageSize: 50,
+                    courierIds: this.getCourierIds(),
+                    clientIds: this.getClientIds(),
+                    speedIds: this.getSpeedIds(),
+                    job: this.searchCriteria.job,
+                    wild: this.searchCriteria.wild,
+                },
+            },
             onJobSelect: (job) => {
                 this.selectBulkJobDetail(job.id as number);
                 this.applyScope();
             },
             onRefresh: () => {
-                this.refreshBulkData();
+                // React handles its own refresh via React Query
             },
         });
 
@@ -315,17 +341,7 @@ class JobSearchController extends BaseController {
         console.log('[JobSearchController] React bulk job list mounted');
     }
 
-    private updateReactJobList(): void {
-        if (window.ReactJobSearchJobList && this.reactJobSearchMounted.has('main')) {
-            window.ReactJobSearchJobList.updateJobs('main', this.jobList as any ?? [], this.totalJobs ?? 0);
-        }
-    }
-
-    private updateReactBulkJobList(): void {
-        if (window.ReactJobSearchJobList && this.reactJobSearchMounted.has('bulk')) {
-            window.ReactJobSearchJobList.updateJobs('bulk', this.bulkJobList as any ?? [], this.bulkJobList?.length ?? 0);
-        }
-    }
+    // updateReactJobList and updateReactBulkJobList removed — React manages its own data via fetchConfig
 
     // Layout system
     private initializeOldLayoutSystem(): void {
@@ -977,35 +993,39 @@ class JobSearchController extends BaseController {
     }
 
     async refreshData() {
-        try {
-            this.isJobListLoading = true;
-
-            const response = await this.handleLoadMoreJobs(0, 50);
-            this.jobList = response.jobs;
-            this.totalJobs = response.totalCount;
-
-            this.updateReactJobList();
-        } catch (error) {
-            this.handleError(error);
-        } finally {
-            this.isJobListLoading = false;
-            this.applyScope();
+        // Push updated search params to React — React Query handles the fetch
+        if (window.ReactJobSearchJobList) {
+            window.ReactJobSearchJobList.updateSearchParams('main', {
+                startDate: this.searchCriteria.from_date,
+                endDate: this.searchCriteria.to_date,
+                courierIds: this.getCourierIds(),
+                clientIds: this.getClientIds(),
+                speedIds: this.getSpeedIds(),
+                wild: this.searchCriteria.wild,
+                job: this.searchCriteria.job,
+                jobId: this.searchCriteria.jobId,
+                sortColumn: this.currentSortColumn,
+                sortDirection: this.currentSortDirection,
+                page: 0,
+                pageSize: 50,
+            });
         }
     }
 
     async refreshBulkData() {
-        try {
-            this.isBulkJobListLoading = true;
-
-            const response = await this.handleLoadMoreBulkJobs(0, 50);
-            this.bulkJobList = response.jobs;
-
-            this.updateReactBulkJobList();
-        } catch (error) {
-            console.error('Error in refreshBulkData:', error);
-        } finally {
-            this.isBulkJobListLoading = false;
-            this.applyScope();
+        // Push updated search params to React — React Query handles the fetch
+        if (window.ReactJobSearchJobList) {
+            window.ReactJobSearchJobList.updateSearchParams('bulk', {
+                startDate: this.searchCriteria.from_date,
+                endDate: this.searchCriteria.to_date,
+                courierIds: this.getCourierIds(),
+                clientIds: this.getClientIds(),
+                speedIds: this.getSpeedIds(),
+                job: this.searchCriteria.job,
+                wild: this.searchCriteria.wild,
+                page: 0,
+                pageSize: 50,
+            });
         }
     }
 
@@ -1208,10 +1228,6 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async openHubUrl() {
-        await this.navigationService.openHubUrl();
-    }
-
     async openMessagingDialog($event: MouseEvent) {
         await this.messagingDialogService.openMessagingDialog($event);
     }
@@ -1327,7 +1343,7 @@ class JobSearchController extends BaseController {
     async handleBackendSort(sortData: { column: string, direction: string }): Promise<void> {
         this.currentSortColumn = sortData.column;
         this.currentSortDirection = sortData.direction;
-        await this.refreshData();
+        // Sort is now handled by the React hook via updateSort — no need to call refreshData
     }
 
     async openSettingsDialog($event: MouseEvent): Promise<void> {

@@ -1,4 +1,8 @@
 /**
+ * @jest-environment jsdom
+ */
+
+/**
  * DispatchCourierMarkerManager Tests
  *
  * Comprehensive tests for the DispatchCourierMarkerManager class that handles
@@ -89,7 +93,6 @@ describe('DispatchCourierMarkerManager', () => {
     let manager: DispatchCourierMarkerManager;
 
     beforeEach(() => {
-        jest.clearAllMocks();
         mockMarkerInstances.length = 0;
         mockMap = createMockMap();
         mockUI = createMockUI();

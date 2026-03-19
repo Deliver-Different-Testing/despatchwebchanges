@@ -2,9 +2,12 @@
  * Nationwide Job List React Module
  *
  * Multi-instance bridge module for the nationwide/domestic page.
- * Unlike the dispatch and current-work bridges (which manage a single React root
- * each via module-scope singletons), this module uses a Map to manage three
- * independent React roots — one per job list (New Jobs, Awaiting POD, Reprice).
+ * Uses a Map to manage three independent React roots — one per
+ * job list (New Jobs, Awaiting POD, Reprice).
+ *
+ * Supports two modes:
+ *   1. fetchConfig mode — React owns data fetching via React Query
+ *   2. Legacy mode — AngularJS pushes data via updateJobs()
  *
  * Exposed on window.ReactNationwideJobList with instance-keyed API.
  */
@@ -16,7 +19,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
-import type {DispatchJob, MountJobListConfig} from '../../interfaces';
+import type {DispatchJob, MountJobListConfig, JobListSearchParams} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
 interface JobListInstance {
@@ -26,6 +29,7 @@ interface JobListInstance {
     updateJobsCallback: ((jobs: DispatchJob[], totalCount: number) => void) | null;
     refreshCallback: (() => void) | null;
     selectJobCallback: ((jobId: number) => void) | null;
+    updateSearchParamsCallback: ((params: Partial<JobListSearchParams>) => void) | null;
 }
 
 const instances = new Map<string, JobListInstance>();
@@ -52,10 +56,10 @@ function renderInstance(instance: JobListInstance): void {
                         onCategoryChange={instance.config.onCategoryChange}
                         onBackendFilter={instance.config.onBackendFilter}
                         onLoadMoreJobs={instance.config.onLoadMoreJobs}
-                        onSplitJob={instance.config.onSplitJob}
                         onAddStop={instance.config.onAddStop}
                         defaultCategory={instance.config.defaultCategory}
                         storagePrefix={instance.config.storagePrefix}
+                        fetchConfig={instance.config.fetchConfig}
                         setJobsCallback={(cb) => {
                             instance.updateJobsCallback = cb;
                         }}
@@ -64,6 +68,9 @@ function renderInstance(instance: JobListInstance): void {
                         }}
                         setSelectJobCallback={(cb) => {
                             instance.selectJobCallback = cb;
+                        }}
+                        setUpdateSearchParamsCallback={(cb) => {
+                            instance.updateSearchParamsCallback = cb;
                         }}
                     />
                 </ErrorBoundary>
@@ -74,9 +81,6 @@ function renderInstance(instance: JobListInstance): void {
 
 /**
  * Mounts a job list instance into a container element.
- * Handles re-mounting: if an instance exists but its container was removed
- * from the DOM (box collapse/expand via ng-if), unmounts the old root and
- * creates a fresh one for the new container.
  */
 function mount(instanceId: string, containerId: string, config: MountJobListConfig): void {
     console.log(`[NationwideJobListReact] Mounting instance '${instanceId}' to container:`, containerId);
@@ -114,6 +118,7 @@ function mount(instanceId: string, containerId: string, config: MountJobListConf
         updateJobsCallback: null,
         refreshCallback: null,
         selectJobCallback: null,
+        updateSearchParamsCallback: null,
     };
 
     instances.set(instanceId, instance);
@@ -145,7 +150,7 @@ function unmountAll(): void {
 }
 
 /**
- * Push updated job data from AngularJS into a specific instance.
+ * Push updated job data from AngularJS into a specific instance (legacy mode).
  */
 function updateJobs(instanceId: string, jobs: DispatchJob[], totalCount: number): void {
     const instance = instances.get(instanceId);
@@ -185,6 +190,17 @@ function selectJob(instanceId: string, jobId: number): void {
     }
 }
 
+/**
+ * Update search params from AngularJS (fetchConfig mode).
+ * Triggers a React Query refetch with new params.
+ */
+function updateSearchParams(instanceId: string, params: Partial<JobListSearchParams>): void {
+    const instance = instances.get(instanceId);
+    if (instance?.updateSearchParamsCallback) {
+        instance.updateSearchParamsCallback(params);
+    }
+}
+
 // Expose globally for AngularJS access (typed via global.d.ts)
 window.ReactNationwideJobList = {
     mount,
@@ -194,6 +210,7 @@ window.ReactNationwideJobList = {
     updateConfig,
     refresh,
     selectJob,
+    updateSearchParams,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

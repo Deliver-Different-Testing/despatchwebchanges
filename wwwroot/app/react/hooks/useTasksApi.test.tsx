@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useTasksApi Hooks Tests
  */
@@ -122,10 +123,6 @@ const mockDeliveryJourney: DeliveryJourney[] = [
 ];
 
 describe('useTasksApi Hooks', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('useTasks', () => {
         it('should fetch tasks successfully', async () => {
             mockTasksApi.getAllTasks.mockResolvedValueOnce(mockTasks);

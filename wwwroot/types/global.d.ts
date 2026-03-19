@@ -12,7 +12,7 @@ import type {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import type angular from 'angular';
 
 // Page module mount configs
-import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, DispatchJob} from '../app/react/interfaces';
+import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, DispatchJob, JobListSearchParams} from '../app/react/interfaces';
 import type {MountOverviewConfig} from '../app/react/pages/overview/OverviewPage.interfaces';
 import type {MountTaskDashboardConfig} from '../app/react/pages/task-dashboard/TaskDashboardPage.interfaces';
 import type {MountErrorPageConfig} from '../app/react/pages/error-page/error-page-react.module';
@@ -128,6 +128,7 @@ declare global {
             updateConfig(config: Partial<MountJobListConfig>): void;
             refresh(): void;
             selectJob(jobId: number): void;
+            updateSearchParams(params: Partial<JobListSearchParams>): void;
         };
         ReactCurrentWorkJobList?: {
             mount(containerId: string, config: MountJobListConfig): void;
@@ -144,6 +145,7 @@ declare global {
             updateConfig(instanceId: string, config: Partial<MountJobListConfig>): void;
             refresh(instanceId: string): void;
             selectJob(instanceId: string, jobId: number): void;
+            updateSearchParams(instanceId: string, params: Partial<JobListSearchParams>): void;
         };
         ReactJobSearchJobList?: {
             mount(instanceId: string, containerId: string, config: MountJobListConfig): void;
@@ -153,6 +155,7 @@ declare global {
             updateConfig(instanceId: string, config: Partial<MountJobListConfig>): void;
             refresh(instanceId: string): void;
             selectJob(instanceId: string, jobId: number): void;
+            updateSearchParams(instanceId: string, params: Partial<JobListSearchParams>): void;
         };
 
         // ── Lazy-loaded React dialog modules ─────────────────────────────

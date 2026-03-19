@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Recurring Jobs API Service Tests
  */
@@ -9,6 +10,7 @@ import {
     RecurringJobQuery,
     SpeedOption,
 } from '../interfaces';
+import dayjs from 'dayjs';
 
 // Mock the apiClient (including postForBlob and downloadBlob)
 jest.mock('./apiClient', () => ({
@@ -24,10 +26,6 @@ const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 const mockDownloadBlob = downloadBlob as jest.Mock;
 
 describe('recurringJobsApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getPreBookJobs', () => {
         const mockQuery: RecurringJobQuery = {
             order: 'booked',
@@ -126,9 +124,9 @@ describe('recurringJobsApi', () => {
 
             const result = await recurringJobsApi.getPreBookJobs(mockQuery);
 
-            expect(result.items[0].booked).toBeInstanceOf(Date);
-            expect(result.items[0].nextDueTime).toBeInstanceOf(Date);
-            expect(result.items[1].booked).toBeInstanceOf(Date);
+            expect(dayjs.isDayjs(result.items[0].booked)).toBe(true);
+            expect(dayjs.isDayjs(result.items[0].nextDueTime)).toBe(true);
+            expect(dayjs.isDayjs(result.items[1].booked)).toBe(true);
             expect(result.items[1].nextDueTime).toBeUndefined();
         });
 

@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Integration tests for EditDateTimeDialog using REAL MUI X v8 date pickers.
  *

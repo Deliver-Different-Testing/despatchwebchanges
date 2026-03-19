@@ -20,7 +20,6 @@ describe('EventApiService', () => {
 
     beforeEach(() => {
         service = new EventApiService();
-        jest.clearAllMocks();
     });
 
     describe('getEventTypes', () => {

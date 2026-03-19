@@ -21,6 +21,7 @@ import { bulkPriceHandlers } from './bulkPriceHandlers';
 import { driverManagementHandlers } from './driverManagementHandlers';
 import { overviewHandlers } from './overviewHandlers';
 import { additionalServicesHandlers } from './additionalServicesHandlers';
+import { jobSearchHandlers } from './jobSearchHandlers';
 
 export const handlers = [
     ...messagingHandlers,
@@ -40,6 +41,7 @@ export const handlers = [
     ...driverManagementHandlers,
     ...overviewHandlers,
     ...additionalServicesHandlers,
+    ...jobSearchHandlers,
 ];
 
 // Re-export individual handler arrays for selective use
@@ -60,6 +62,7 @@ export { bulkPriceHandlers } from './bulkPriceHandlers';
 export { driverManagementHandlers } from './driverManagementHandlers';
 export { overviewHandlers } from './overviewHandlers';
 export { additionalServicesHandlers } from './additionalServicesHandlers';
+export { jobSearchHandlers } from './jobSearchHandlers';
 
 // Re-export mock data for test assertions
 export { mockRecentConversations, mockChatMessages, mockQuickResponses, mockContactOptions } from './messagingHandlers';
@@ -78,3 +81,4 @@ export { mockBulkPricePreviewResponse } from './bulkPriceHandlers';
 export { mockFleetOptions, mockCourierSearchResults, mockCourierDetails, mockTodayActiveDrivers, mockComplianceList, mockAfterHoursSchedule, mockDriverEmails, mockDriverEarnings } from './driverManagementHandlers';
 export { mockOverviewStats, mockOverviewRegions, mockOverviewSpeeds, mockOverviewJobsResponse, mockOverviewParentJobs, mockOpenJobDtos, mockMapConfig } from './overviewHandlers';
 export { mockAdditionalServices, mockPaginatedServices, mockPpdExclusiveAmount } from './additionalServicesHandlers';
+export { mockDispatchJobDto, mockJobSearchResultDto, mockEmptySearchResult } from './jobSearchHandlers';

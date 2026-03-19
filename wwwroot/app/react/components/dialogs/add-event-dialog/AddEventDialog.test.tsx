@@ -1,10 +1,12 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AddEventDialog Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
 import {render, screen, waitFor} from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import {fireEvent} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
@@ -50,12 +52,16 @@ const createMockProps = (overrides = {}) => ({
 
 describe('AddEventDialog', () => {
     describe('Rendering', () => {
-        it('renders dialog when open is true', async () => {
+        it('renders dialog with title, job number, client field, and action buttons when open', async () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
             expect(await screen.findByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Add Task')).toBeInTheDocument();
+            expect(await screen.findByDisplayValue('JOB-001')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Test Client')).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /save/i})).toBeInTheDocument();
         });
 
         it('does not render dialog when open is false', () => {
@@ -70,28 +76,6 @@ describe('AddEventDialog', () => {
             const { container } = renderWithTheme(<AddEventDialog {...props} />);
 
             expect(container.firstChild).toBeNull();
-        });
-
-        it('displays job number field', async () => {
-            const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
-
-            expect(await screen.findByDisplayValue('JOB-001')).toBeInTheDocument();
-        });
-
-        it('displays client field', async () => {
-            const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
-
-            expect(await screen.findByDisplayValue('Test Client')).toBeInTheDocument();
-        });
-
-        it('displays Cancel and Save buttons', async () => {
-            const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
-
-            expect(await screen.findByRole('button', {name: /cancel/i})).toBeInTheDocument();
-            expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument();
         });
     });
 
@@ -162,36 +146,25 @@ describe('AddEventDialog', () => {
 
     describe('Cancel and Close', () => {
         it('calls onClose when Cancel button is clicked', async () => {
-            const user = userEvent.setup();
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
             expect(await screen.findByRole('button', {name: /cancel/i})).toBeInTheDocument();
 
-            await user.click(screen.getByRole('button', { name: /cancel/i }));
+            fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
 
             expect(props.onClose).toHaveBeenCalled();
         });
     });
 
     describe('Disabled Fields', () => {
-        it('has job number field disabled', async () => {
+        it('has job number and client fields disabled', async () => {
             const props = createMockProps();
             renderWithTheme(<AddEventDialog {...props} />);
 
             await waitFor(() => {
-                const jobNoField = screen.getByDisplayValue('JOB-001');
-                expect(jobNoField).toBeDisabled();
-            });
-        });
-
-        it('has client field disabled', async () => {
-            const props = createMockProps();
-            renderWithTheme(<AddEventDialog {...props} />);
-
-            await waitFor(() => {
-                const clientField = screen.getByDisplayValue('Test Client');
-                expect(clientField).toBeDisabled();
+                expect(screen.getByDisplayValue('JOB-001')).toBeDisabled();
+                expect(screen.getByDisplayValue('Test Client')).toBeDisabled();
             });
         });
     });

@@ -5,6 +5,8 @@
  */
 
 import {AddressViewModel} from './address';
+import type {Dayjs} from 'dayjs';
+import {parseDateFromApi} from '../utils/dateUtils';
 import type {ShowToastFn} from '../services/toastService';
 
 /**
@@ -52,8 +54,8 @@ export interface SpeedOption {
  */
 export interface PrebookListModel {
     id: number;
-    booked: Date;
-    nextDueTime?: Date;
+    booked: Dayjs;
+    nextDueTime?: Dayjs;
     client: string;
     jobNo: string;
     clientId: number | null;
@@ -136,8 +138,8 @@ export interface RecurringJobContextMenu {
 export function transformPrebookDto(dto: PrebookListModelDto): PrebookListModel {
     return {
         ...dto,
-        booked: new Date(dto.booked),
-        nextDueTime: dto.nextDueTime ? new Date(dto.nextDueTime) : undefined,
+        booked: parseDateFromApi(dto.booked),
+        nextDueTime: dto.nextDueTime ? parseDateFromApi(dto.nextDueTime) : undefined,
     };
 }
 

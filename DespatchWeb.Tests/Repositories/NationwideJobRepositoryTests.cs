@@ -104,7 +104,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Text.Should().Be("NZ");
+        result[0].Text.Should().Be("NZ");
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Id.Should().Be(42);
+        result[0].Id.Should().Be(42);
     }
 
     #endregion
@@ -179,7 +179,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Should().Be("NZ");
+        result[0].Should().Be("NZ");
     }
 
     [Fact]
@@ -273,7 +273,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().HaveCount(1);
-        result.First().Text.Should().Contain("Auckland Airport");
+        result[0].Text.Should().Contain("Auckland Airport");
     }
 
     [Fact]
@@ -328,7 +328,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Text.Should().Contain("Active Airport");
+        result[0].Text.Should().Contain("Active Airport");
     }
 
     [Fact]
@@ -352,7 +352,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Text.Should().Contain("Auckland Airport");
+        result[0].Text.Should().Contain("Auckland Airport");
     }
 
     #endregion
@@ -488,7 +488,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Text.Should().Be("Auckland Airport");
+        result[0].Text.Should().Be("Auckland Airport");
     }
 
     [Fact]
@@ -516,7 +516,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Text.Should().Be("Active Airport");
+        result[0].Text.Should().Be("Active Airport");
     }
 
     [Fact]
@@ -547,7 +547,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Text.Should().Be("Airport With Agents");
+        result[0].Text.Should().Be("Airport With Agents");
     }
 
     [Fact]
@@ -706,7 +706,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().AirportCode.Should().Be("ACT");
+        result[0].AirportCode.Should().Be("ACT");
     }
 
     [Fact]

@@ -186,7 +186,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().Name.Should().Be("Job 1 Charge");
+        result[0].Name.Should().Be("Job 1 Charge");
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for DispatchExecutorService
  * Covers the chilled job warning logic: isChilledJob, isChilledCourier,

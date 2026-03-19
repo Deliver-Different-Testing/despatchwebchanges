@@ -2,10 +2,9 @@
  * Job List React Module
  *
  * Entry point for the React-based Job List component.
- * Provides mount/unmount/updateJobs functions for AngularJS integration.
- *
- * Key difference from RecurringJobsPage: exposes updateJobs() to push data
- * from AngularJS since the home controller owns data fetching.
+ * Supports two modes:
+ *   1. fetchConfig mode — React owns data fetching via React Query
+ *   2. Legacy mode — AngularJS pushes data via updateJobs()
  */
 
 import React from 'react';
@@ -15,16 +14,17 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
 import {getTheme} from '../../theme/muiTheme';
 import {ReactQueryProvider} from '../../query';
-import type {MountJobListConfig, DispatchJob} from '../../interfaces';
+import type {MountJobListConfig, DispatchJob, JobListSearchParams} from '../../interfaces';
 import {ErrorBoundary} from '../common/error-boundary';
 
 let jobListRoot: Root | null = null;
 let jobListContainer: HTMLElement | null = null;
 
-// Callbacks stored at module scope so AngularJS can push data
+// Callbacks stored at module scope so AngularJS can interact
 let updateJobsCallback: ((jobs: DispatchJob[], totalCount: number) => void) | null = null;
 let refreshCallback: (() => void) | null = null;
 let selectJobCallback: ((jobId: number) => void) | null = null;
+let updateSearchParamsCallback: ((params: Partial<JobListSearchParams>) => void) | null = null;
 let currentConfig: MountJobListConfig | null = null;
 
 /**
@@ -85,10 +85,10 @@ function renderJobList(config: MountJobListConfig): void {
                         onCategoryChange={config.onCategoryChange}
                         onBackendFilter={config.onBackendFilter}
                         onLoadMoreJobs={config.onLoadMoreJobs}
-                        onSplitJob={config.onSplitJob}
                         onAddStop={config.onAddStop}
                         defaultCategory={config.defaultCategory}
                         storagePrefix={config.storagePrefix}
+                        fetchConfig={config.fetchConfig}
                         setJobsCallback={(cb) => {
                             updateJobsCallback = cb;
                         }}
@@ -98,6 +98,9 @@ function renderJobList(config: MountJobListConfig): void {
                         setSelectJobCallback={(cb) => {
                             selectJobCallback = cb;
                         }}
+                        setUpdateSearchParamsCallback={(cb) => {
+                            updateSearchParamsCallback = cb;
+                        }}
                     />
                 </ErrorBoundary>
             </ThemeProvider>
@@ -106,7 +109,7 @@ function renderJobList(config: MountJobListConfig): void {
 }
 
 /**
- * Push updated job data from AngularJS into the React component
+ * Push updated job data from AngularJS into the React component (legacy mode)
  */
 export function updateJobListJobs(jobs: DispatchJob[], totalCount: number): void {
     if (updateJobsCallback) {
@@ -143,6 +146,16 @@ export function refreshJobList(): void {
 }
 
 /**
+ * Update search params from AngularJS (fetchConfig mode).
+ * Triggers a React Query refetch with new params.
+ */
+export function updateSearchParams(params: Partial<JobListSearchParams>): void {
+    if (updateSearchParamsCallback) {
+        updateSearchParamsCallback(params);
+    }
+}
+
+/**
  * Unmounts the job list component
  */
 export function unmountJobList(): void {
@@ -157,6 +170,7 @@ export function unmountJobList(): void {
     updateJobsCallback = null;
     refreshCallback = null;
     selectJobCallback = null;
+    updateSearchParamsCallback = null;
     currentConfig = null;
 }
 
@@ -168,6 +182,7 @@ window.ReactJobList = {
     updateConfig: updateJobListConfig,
     refresh: refreshJobList,
     selectJob: selectJobInList,
+    updateSearchParams,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

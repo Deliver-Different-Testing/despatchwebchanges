@@ -528,7 +528,7 @@ public sealed class CreateJobService(
         await context.Procedures.DD_stpJob_Excelerator_InsertAsync(
             type: resolved.TypeId,
             clientID: resolved.ClientId,
-            bookdate: data.TenantCurrentTime,
+            bookdate: data.Pickup ?? data.TenantCurrentTime,
             contact: data.BookedBy,
             chargeType: resolved.ChargeType,
             toCity: toAddress?.AddressLine5,
@@ -630,7 +630,7 @@ public sealed class CreateJobService(
 
         await context.Procedures.DD_stpBulkScheduleJob_InsertAsync(
             type: resolved.TypeId,
-            dateTime: data.TenantCurrentTime,
+            dateTime: data.Pickup ?? data.TenantCurrentTime,
             clientID: resolved.ClientId,
             contact: data.BookedBy,
             urgentScheduleSpeedID: resolved.SpeedId,

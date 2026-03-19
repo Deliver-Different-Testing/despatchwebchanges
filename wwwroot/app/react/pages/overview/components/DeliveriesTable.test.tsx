@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
@@ -41,10 +42,6 @@ const defaultProps = {
 };
 
 describe('DeliveriesTable', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('Empty state', () => {
         it('shows empty state message when no deliveries', () => {
             renderWithTheme(<DeliveriesTable {...defaultProps} />);

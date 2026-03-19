@@ -6,7 +6,8 @@ import {AppPage} from "../../enums/app-pages.enum";
 import {IAppConfig} from "../../interfaces/app-config.interface";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
-    IAgent, IAirlineSuggestion,
+    IAgent,
+    IAirlineSuggestion,
     IAirportSuggestion,
     IDispatchJob,
     IJob,
@@ -32,12 +33,10 @@ import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialo
 import type {ToastType} from "../../react/services/toastService";
 import type {MountJobListConfig} from "../../react/interfaces";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
-import JobContextMenuService from "../../services/job-context-menu.service";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import FlightDetailsDialogService from "../dialogs/flight-details-dialog/flight-details-dialog.service";
-import NavigationService from '../../services/navigation.service';
 import ApiConfig from "../../interfaces/apiConfig.interface";
 import ConfigService from "../../services/config.service";
 import AutoCompleteDialogService from "../dialogs/auto-complete-dialog/auto-complete-dialog.service";
@@ -56,6 +55,8 @@ import JobListType from "../../enums/job-list-type.enum";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import {formatDateForApiWithTzs, getIanaTimezone} from "../../react/utils/dateUtils";
+import {fetchNationwideJobsNew, fetchNationwideJobsPod, fetchNationwideJobsReprice} from "../../react/services/jobSearchApi";
+import {queryKeys} from "../../react/query/queryClient";
 import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
 import timezone from "dayjs/plugin/timezone";
@@ -82,9 +83,7 @@ class NationwideControl extends BaseController {
         'dispatchJobService',
         'jobFileUploadDialogService',
         'accessorialChargesDialogService',
-        'jobContextMenuService',
         'flightDetailsDialogService',
-        'navigationService',
         'configService',
         'autoCompleteDialogService',
         'jobAddStopService',
@@ -239,9 +238,7 @@ class NationwideControl extends BaseController {
         private dispatchJobService: DispatchExecutorService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private accessorialChargesDialogService: AccessorialChargesDialogService,
-        private jobContextMenuService: JobContextMenuService,
         private flightDetailsDialogService: FlightDetailsDialogService,
-        private navigationService: NavigationService,
         private configService: ConfigService,
         private autoCompleteDialogService: AutoCompleteDialogService,
         private jobAddStopService: JobAddStopService,
@@ -1459,76 +1456,57 @@ class NationwideControl extends BaseController {
 
         this.updateDateFilters(requestedTypes);
 
-        if (requestedTypes.includes(JobDataType.NEW)) this.jobListLoading = true;
-        if (requestedTypes.includes(JobDataType.POD)) this.podListLoading = true;
-        if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = true;
+        const despatchViewIds = this.selectedViews.map(v => v.id);
 
-        try {
-            // Create fetch promises
-            const fetchPromises = [];
-
+        // Push updated params to React — React Query handles the fetch
+        if (window.ReactNationwideJobList) {
             if (requestedTypes.includes(JobDataType.NEW)) {
-                const jobListPromise = this.nationwideService.getNationwideJobsNew(
-                    this.jobFilters || {},
-                    ClientInternal,
-                    this.selectedViews
-                );
-                fetchPromises.push(jobListPromise.then(data => ({type: JobDataType.NEW, data})));
+                window.ReactNationwideJobList.updateSearchParams('newJobs', {
+                    order: this.jobFilters.order ?? 'time',
+                    orderDirection: this.jobFilters.orderDirection ?? 'asc',
+                    startDate: this.jobFilters.startDate,
+                    endDate: this.jobFilters.endDate,
+                    useTime: this.jobFilters.useTime,
+                    searchText: this.jobFilters.searchText,
+                    isInternal: ClientInternal,
+                    despatchViewIds,
+                    page: this.jobFilters.page ?? 0,
+                    pageSize: this.jobFilters.pageSize ?? 50,
+                });
             }
-
             if (requestedTypes.includes(JobDataType.POD)) {
-                const podListPromise = this.nationwideService.getNationwideJobsPOD(
-                    this.jobPodFilters || {},
-                    ClientInternal,
-                    this.selectedViews
-                );
-                fetchPromises.push(podListPromise.then(data => ({type: JobDataType.POD, data})));
+                window.ReactNationwideJobList.updateSearchParams('podJobs', {
+                    order: this.jobPodFilters.order ?? 'time',
+                    orderDirection: this.jobPodFilters.orderDirection ?? 'asc',
+                    startDate: this.jobPodFilters.startDate,
+                    endDate: this.jobPodFilters.endDate,
+                    useTime: this.jobPodFilters.useTime,
+                    searchText: this.jobPodFilters.searchText,
+                    isInternal: ClientInternal,
+                    despatchViewIds,
+                    page: this.jobPodFilters.page ?? 0,
+                    pageSize: this.jobPodFilters.pageSize ?? 50,
+                });
             }
-
             if (requestedTypes.includes(JobDataType.REPRICE)) {
-                const repriceListPromise = this.nationwideService.getNationwideJobsReprice(
-                    this.jobRepriceFilters || {},
-                    ClientInternal,
-                    this.selectedViews
-                );
-                fetchPromises.push(repriceListPromise.then(data => ({type: JobDataType.REPRICE, data})));
+                window.ReactNationwideJobList.updateSearchParams('repriceJobs', {
+                    order: this.jobRepriceFilters.order ?? 'time',
+                    orderDirection: this.jobRepriceFilters.orderDirection ?? 'asc',
+                    startDate: this.jobRepriceFilters.startDate,
+                    endDate: this.jobRepriceFilters.endDate,
+                    useTime: this.jobRepriceFilters.useTime,
+                    searchText: this.jobRepriceFilters.searchText,
+                    isInternal: ClientInternal,
+                    despatchViewIds,
+                    page: this.jobRepriceFilters.page ?? 0,
+                    pageSize: this.jobRepriceFilters.pageSize ?? 50,
+                });
             }
-
-            // Execute in parallel
-            const tasksPromise = this.loadTasks();
-            const results = await Promise.all(fetchPromises);
-
-            // Update state with results - now handling IJobSearchResult
-            results.forEach(({type, data}) => {
-                if (type === JobDataType.NEW) {
-                    this.jobList = data.jobs || [];
-                    this.totalJobCount = data.totalCount || 0;
-                    this.jobListLoading = false;
-                    this.updateNationwideReactJobList('newJobs', this.jobList, this.totalJobCount);
-                } else if (type === JobDataType.POD) {
-                    this.jobListPOD = data.jobs || [];
-                    this.totalPodCount = data.totalCount || 0;
-                    this.podListLoading = false;
-                    this.updateNationwideReactJobList('podJobs', this.jobListPOD, this.totalPodCount);
-                } else if (type === JobDataType.REPRICE) {
-                    this.jobListReprice = data.jobs || [];
-                    this.totalRepriceCount = data.totalCount || 0;
-                    this.repriceListLoading = false;
-                    this.updateNationwideReactJobList('repriceJobs', this.jobListReprice, this.totalRepriceCount);
-                }
-            });
-
-            await tasksPromise;
-        } catch (error) {
-            console.error("Error fetching job data:", error);
-
-            // Reset loading states
-            if (requestedTypes.includes(JobDataType.NEW)) this.jobListLoading = false;
-            if (requestedTypes.includes(JobDataType.POD)) this.podListLoading = false;
-            if (requestedTypes.includes(JobDataType.REPRICE)) this.repriceListLoading = false;
-        } finally {
-            this.applyScope();
         }
+
+        // Still load tasks in background
+        await this.loadTasks();
+        this.applyScope();
     }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob) {
@@ -1791,10 +1769,6 @@ class NationwideControl extends BaseController {
         } else {
             return mins + 'm';
         }
-    }
-
-    async openHubUrl(): Promise<void> {
-        await this.navigationService.openHubUrl();
     }
 
     async openAgentSearchDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
@@ -2393,15 +2367,32 @@ class NationwideControl extends BaseController {
             },
         };
 
+        const baseNwParams = {
+            isInternal: ClientInternal,
+            despatchViewIds: this.selectedViews.map(v => v.id),
+            page: 0,
+            pageSize: 50,
+        };
+
         // New Jobs
         this.mountNationwideReactJobList('newJobs', 'react-nationwide-new-jobs', {
             ...sharedConfig,
             storagePrefix: 'nwNewJobList',
-            onRefresh: () => {
-                this.getJobList([JobDataType.NEW]);
+            fetchConfig: {
+                fetchFn: fetchNationwideJobsNew,
+                queryKeyFn: (params) => queryKeys.nationwide.newJobs(params),
+                initialParams: {
+                    ...baseNwParams,
+                    order: this.jobFilters.order ?? 'time',
+                    orderDirection: this.jobFilters.orderDirection ?? 'asc',
+                    startDate: this.dateFilterData.startDate,
+                    endDate: this.dateFilterData.endDate,
+                    useTime: this.dateFilterData.useTime,
+                    searchText: this.jobFilters.searchText,
+                },
             },
-            onLoadMoreJobs: (page, pageSize) => {
-                return this.handleLoadMoreNationwideJobs(page, pageSize);
+            onRefresh: () => {
+                // React handles data refresh via React Query
             },
             onSearchChange: (searchText) => {
                 this.updateJobSearchText(searchText, JobListType.NationwideJobList);
@@ -2412,11 +2403,21 @@ class NationwideControl extends BaseController {
         this.mountNationwideReactJobList('podJobs', 'react-nationwide-pod-jobs', {
             ...sharedConfig,
             storagePrefix: 'nwPodJobList',
-            onRefresh: () => {
-                this.getJobList([JobDataType.POD]);
+            fetchConfig: {
+                fetchFn: fetchNationwideJobsPod,
+                queryKeyFn: (params) => queryKeys.nationwide.podJobs(params),
+                initialParams: {
+                    ...baseNwParams,
+                    order: this.jobPodFilters.order ?? 'time',
+                    orderDirection: this.jobPodFilters.orderDirection ?? 'asc',
+                    startDate: this.dateFilterData.startDate,
+                    endDate: this.dateFilterData.endDate,
+                    useTime: this.dateFilterData.useTime,
+                    searchText: this.jobPodFilters.searchText,
+                },
             },
-            onLoadMoreJobs: (page, pageSize) => {
-                return this.handleLoadMorePodJobs(page, pageSize);
+            onRefresh: () => {
+                // React handles data refresh via React Query
             },
             onSearchChange: (searchText) => {
                 this.updateJobSearchText(searchText, JobListType.NationwidePodJobList);
@@ -2427,11 +2428,21 @@ class NationwideControl extends BaseController {
         this.mountNationwideReactJobList('repriceJobs', 'react-nationwide-reprice-jobs', {
             ...sharedConfig,
             storagePrefix: 'nwRepriceJobList',
-            onRefresh: () => {
-                this.getJobList([JobDataType.REPRICE]);
+            fetchConfig: {
+                fetchFn: fetchNationwideJobsReprice,
+                queryKeyFn: (params) => queryKeys.nationwide.repriceJobs(params),
+                initialParams: {
+                    ...baseNwParams,
+                    order: this.jobRepriceFilters.order ?? 'time',
+                    orderDirection: this.jobRepriceFilters.orderDirection ?? 'asc',
+                    startDate: this.dateFilterData.startDate,
+                    endDate: this.dateFilterData.endDate,
+                    useTime: this.dateFilterData.useTime,
+                    searchText: this.jobRepriceFilters.searchText,
+                },
             },
-            onLoadMoreJobs: (page, pageSize) => {
-                return this.handleLoadMoreRepriceJobs(page, pageSize);
+            onRefresh: () => {
+                // React handles data refresh via React Query
             },
             onSearchChange: (searchText) => {
                 this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList);
@@ -2439,33 +2450,37 @@ class NationwideControl extends BaseController {
         } as MountJobListConfig);
     }
 
-    private updateNationwideReactJobList(instanceId: string, jobs: IDispatchJob[], totalCount: number): void {
+    private updateNationwideReactJobList(instanceId: string, _jobs: IDispatchJob[], _totalCount: number): void {
         if (!window.ReactNationwideJobList) return;
 
         if (this.reactNationwideMounted.has(instanceId)) {
-            window.ReactNationwideJobList.updateJobs(instanceId, jobs as any, totalCount);
+            // React manages its own data via fetchConfig — just trigger a refresh
+            window.ReactNationwideJobList.refresh(instanceId);
         } else {
-            // Not yet mounted (box may have just expanded) — mount first, then push data after a short delay
-            const configMap: Record<string, { containerId: string; storagePrefix: string; onRefresh: () => void; onLoadMoreJobs: (page: number, pageSize: number) => Promise<any>; onSearchChange: (searchText: string) => void }> = {
+            // Not yet mounted (box may have just expanded) — re-mount with fetchConfig
+            const configMap: Record<string, { containerId: string; storagePrefix: string; fetchFn: any; queryKeyFn: any; filters: any; onSearchChange: (searchText: string) => void }> = {
                 newJobs: {
                     containerId: 'react-nationwide-new-jobs',
                     storagePrefix: 'nwNewJobList',
-                    onRefresh: () => { this.getJobList([JobDataType.NEW]); },
-                    onLoadMoreJobs: (page, pageSize) => this.handleLoadMoreNationwideJobs(page, pageSize),
+                    fetchFn: fetchNationwideJobsNew,
+                    queryKeyFn: (params: any) => queryKeys.nationwide.newJobs(params),
+                    filters: this.jobFilters,
                     onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwideJobList); },
                 },
                 podJobs: {
                     containerId: 'react-nationwide-pod-jobs',
                     storagePrefix: 'nwPodJobList',
-                    onRefresh: () => { this.getJobList([JobDataType.POD]); },
-                    onLoadMoreJobs: (page, pageSize) => this.handleLoadMorePodJobs(page, pageSize),
+                    fetchFn: fetchNationwideJobsPod,
+                    queryKeyFn: (params: any) => queryKeys.nationwide.podJobs(params),
+                    filters: this.jobPodFilters,
                     onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwidePodJobList); },
                 },
                 repriceJobs: {
                     containerId: 'react-nationwide-reprice-jobs',
                     storagePrefix: 'nwRepriceJobList',
-                    onRefresh: () => { this.getJobList([JobDataType.REPRICE]); },
-                    onLoadMoreJobs: (page, pageSize) => this.handleLoadMoreRepriceJobs(page, pageSize),
+                    fetchFn: fetchNationwideJobsReprice,
+                    queryKeyFn: (params: any) => queryKeys.nationwide.repriceJobs(params),
+                    filters: this.jobRepriceFilters,
                     onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList); },
                 },
             };
@@ -2487,6 +2502,22 @@ class NationwideControl extends BaseController {
                 isUsCustomer: this.isUsCustomer,
                 appPage: AppPage.Domestic,
                 storagePrefix: cfg.storagePrefix,
+                fetchConfig: {
+                    fetchFn: cfg.fetchFn,
+                    queryKeyFn: cfg.queryKeyFn,
+                    initialParams: {
+                        order: cfg.filters.order ?? 'time',
+                        orderDirection: cfg.filters.orderDirection ?? 'asc',
+                        startDate: this.dateFilterData.startDate,
+                        endDate: this.dateFilterData.endDate,
+                        useTime: this.dateFilterData.useTime,
+                        searchText: cfg.filters.searchText,
+                        isInternal: ClientInternal,
+                        despatchViewIds: this.selectedViews.map(v => v.id),
+                        page: 0,
+                        pageSize: 50,
+                    },
+                },
                 onJobSelect: (job) => {
                     this.selectJob(job as any);
                     this.applyScope();
@@ -2498,17 +2529,11 @@ class NationwideControl extends BaseController {
                 onAddStop: (job) => {
                     this.jobAddStopService.addNewStop(job as any);
                 },
-                onRefresh: cfg.onRefresh,
-                onLoadMoreJobs: cfg.onLoadMoreJobs,
+                onRefresh: () => {
+                    // React handles data refresh via React Query
+                },
                 onSearchChange: cfg.onSearchChange,
             });
-
-            // Push data after a short delay to allow React to mount
-            setTimeout(() => {
-                if (window.ReactNationwideJobList && this.reactNationwideMounted.has(instanceId)) {
-                    window.ReactNationwideJobList.updateJobs(instanceId, jobs as any, totalCount);
-                }
-            }, 200);
         }
     }
 

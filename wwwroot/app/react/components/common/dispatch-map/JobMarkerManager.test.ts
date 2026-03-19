@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * JobMarkerManager Tests
  *
@@ -106,7 +107,6 @@ describe('JobMarkerManager', () => {
     let manager: JobMarkerManager;
 
     beforeEach(() => {
-        jest.clearAllMocks();
         mockMap = createMockMap();
         mockUI = createMockUI();
         manager = new JobMarkerManager(mockMap, mockUI);

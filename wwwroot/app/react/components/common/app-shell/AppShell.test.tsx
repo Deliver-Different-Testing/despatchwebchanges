@@ -1,5 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * AppShell Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
@@ -28,7 +30,6 @@ describe('AppShell', () => {
     };
 
     beforeEach(() => {
-        jest.clearAllMocks();
         jest.useFakeTimers();
     });
 
@@ -37,18 +38,11 @@ describe('AppShell', () => {
     });
 
     describe('Rendering', () => {
-        it('should render AppToolbar with title', () => {
+        it('should render toolbar title, menu button, and logo', () => {
             renderWithTheme(<AppShell {...defaultProps} />);
+
             expect(screen.getByText('Test Dashboard')).toBeInTheDocument();
-        });
-
-        it('should render menu button', () => {
-            renderWithTheme(<AppShell {...defaultProps} />);
             expect(screen.getByRole('button', {name: /navigation menu/i})).toBeInTheDocument();
-        });
-
-        it('should render logo', () => {
-            renderWithTheme(<AppShell {...defaultProps} />);
             expect(screen.getByAltText('DFRNT')).toBeInTheDocument();
         });
 

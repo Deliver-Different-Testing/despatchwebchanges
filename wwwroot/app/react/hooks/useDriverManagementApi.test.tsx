@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * useDriverManagementApi Hooks Tests
  */
@@ -62,8 +63,6 @@ const createWrapper = () => {
 // --- Query hooks ---
 
 describe('useDriverSearch', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should not fetch when search text is less than 2 characters', async () => {
         renderHook(() => useDriverSearch('j'), {wrapper: createWrapper()});
 
@@ -94,8 +93,6 @@ describe('useDriverSearch', () => {
 });
 
 describe('useCourierDetails', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should not fetch when courierId is 0', async () => {
         renderHook(() => useCourierDetails(0), {wrapper: createWrapper()});
 
@@ -133,8 +130,6 @@ describe('useCourierDetails', () => {
 });
 
 describe('useFleetOptions', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should fetch fleet options', async () => {
         const mockOptions = [{id: 1, text: 'Fleet A'}];
         mockApi.getAllFleetOptions.mockResolvedValueOnce(mockOptions);
@@ -156,8 +151,6 @@ describe('useFleetOptions', () => {
 });
 
 describe('useTodayActiveDrivers', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     const query = {page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: ''};
     const filters = {location: 'all', status: 'all', fleet: 0};
 
@@ -181,8 +174,6 @@ describe('useTodayActiveDrivers', () => {
 });
 
 describe('useComplianceList', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     const query = {page: 1, pageSize: 100, orderBy: 'code', sortDescending: false, searchTerm: ''};
     const filters = {type: 'all', status: 'all', fleet: 0};
 
@@ -198,8 +189,6 @@ describe('useComplianceList', () => {
 });
 
 describe('useAfterHoursSchedule', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     const query = {page: 1, pageSize: 100, orderBy: 'name', sortDescending: false, searchTerm: ''};
     const filters = {day: 'all'};
 
@@ -215,8 +204,6 @@ describe('useAfterHoursSchedule', () => {
 });
 
 describe('useDriverEmails', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should fetch driver emails', async () => {
         const mockData = {items: [{courierId: 1, email: 'test@test.com'}], total: 1, page: 1, pages: 1};
         mockApi.getDriverEmails.mockResolvedValueOnce(mockData as any);
@@ -230,8 +217,6 @@ describe('useDriverEmails', () => {
 });
 
 describe('useDriverEarnings', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should fetch driver earnings', async () => {
         const mockData = {items: [], total: 0, page: 1, pages: 0, totalEarningsToday: 0, averageHourlyRate: 0, totalActiveDrivers: 0, totalDeliveriesToday: 0};
         mockApi.getDriverDailyEarnings.mockResolvedValueOnce(mockData);
@@ -247,8 +232,6 @@ describe('useDriverEarnings', () => {
 // --- Mutation hooks ---
 
 describe('useCreateAfterHoursSchedule', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should call createAfterHoursSchedule on mutateAsync', async () => {
         mockApi.createAfterHoursSchedule.mockResolvedValueOnce(undefined);
 
@@ -274,8 +257,6 @@ describe('useCreateAfterHoursSchedule', () => {
 });
 
 describe('useUpdateAfterHoursSchedule', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should call updateAfterHoursSchedule on mutateAsync', async () => {
         mockApi.updateAfterHoursSchedule.mockResolvedValueOnce(undefined);
 
@@ -291,8 +272,6 @@ describe('useUpdateAfterHoursSchedule', () => {
 });
 
 describe('useDeleteAfterHoursSchedule', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should call deleteAfterHoursSchedule on mutateAsync', async () => {
         mockApi.deleteAfterHoursSchedule.mockResolvedValueOnce(undefined);
 
@@ -307,8 +286,6 @@ describe('useDeleteAfterHoursSchedule', () => {
 });
 
 describe('useSendComplianceReminder', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should call sendComplianceReminder on mutateAsync', async () => {
         mockApi.sendComplianceReminder.mockResolvedValueOnce(undefined);
 
@@ -324,8 +301,6 @@ describe('useSendComplianceReminder', () => {
 });
 
 describe('useSendBulkComplianceReminders', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should call sendBulkComplianceReminders on mutateAsync', async () => {
         mockApi.sendBulkComplianceReminders.mockResolvedValueOnce(undefined);
 
@@ -343,8 +318,6 @@ describe('useSendBulkComplianceReminders', () => {
 });
 
 describe('useSendEmailToCouriers', () => {
-    beforeEach(() => jest.clearAllMocks());
-
     it('should call sendEmailToCouriers on mutateAsync', async () => {
         mockApi.sendEmailToCouriers.mockResolvedValueOnce(undefined);
 

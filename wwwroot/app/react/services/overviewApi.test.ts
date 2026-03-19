@@ -18,10 +18,6 @@ jest.mock('../utils/dateUtils', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('overviewApi', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getAllJobs', () => {
         it('calls correct endpoint with parameters', async () => {
             const mockResponse = {items: [], total: 0, page: 1, pages: 0};

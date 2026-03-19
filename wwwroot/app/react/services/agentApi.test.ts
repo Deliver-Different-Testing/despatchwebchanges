@@ -21,7 +21,6 @@ describe('AgentApiService', () => {
 
     beforeEach(() => {
         service = new AgentApiService();
-        jest.clearAllMocks();
     });
 
     describe('getAgentInfo', () => {

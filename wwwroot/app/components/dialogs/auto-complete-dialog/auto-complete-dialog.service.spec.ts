@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for AutoCompleteDialogService
  * Covers lazy loading of React bundle, dialog opening with search function creation,

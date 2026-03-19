@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for SimplePriceEditDialog React component
  */
@@ -44,8 +45,8 @@ describe('SimplePriceEditDialog', () => {
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
             const props = createDefaultProps({ open: false });
-            const { container } = renderWithProviders(props);
-            expect(container.querySelector('.MuiDialog-root')).toBeNull();
+            renderWithProviders(props);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
         it('renders the dialog when open', () => {

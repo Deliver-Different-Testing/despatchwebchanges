@@ -130,7 +130,7 @@ public class NoteRepositoryTests : IAsyncDisposable
 
         // Assert
         result.Should().ContainSingle();
-        result.First().NoteText.Should().Be("Note for job 1");
+        result[0].NoteText.Should().Be("Note for job 1");
     }
 
     [Fact]

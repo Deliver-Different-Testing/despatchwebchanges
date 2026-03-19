@@ -60,6 +60,7 @@ public class BaseJobRepository(
             }
 
             query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
+            query = ApplyStatusFilter(query, queryParams.StatusFilter);
 
             switch (page)
             {
@@ -318,6 +319,31 @@ public class BaseJobRepository(
                 job.AssignedFlight = flight;
     }
 
+
+    private static IQueryable<TucJob> ApplyStatusFilter(IQueryable<TucJob> query, string statusFilter)
+    {
+        var completed = (int?)JobStatus.Completed;
+        var dispatched = (int?)JobStatus.Dispatched;
+        var accepted = (int?)JobStatus.Accepted;
+        var pickedUp = (int?)JobStatus.PickedUp;
+        var inTransit = (int?)JobStatus.InTransit;
+
+        return statusFilter?.ToLower() switch
+        {
+            "needs-dispatch" => query.Where(j =>
+                j.UcjbCourierId == null
+                && j.UcjbStatus != completed
+                && j.UcjbStatus != dispatched
+                && j.UcjbStatus != accepted
+                && j.UcjbStatus != pickedUp
+                && j.UcjbStatus != inTransit),
+            "in-progress" => query.Where(j =>
+                j.UcjbStatus != completed),
+            "delivered" => query.Where(j =>
+                j.UcjbStatus == completed),
+            _ => query // "all" or null — no filter
+        };
+    }
 
     private static IQueryable<TucJob> ApplyGeographicFilters(
         IQueryable<TucJob> query,

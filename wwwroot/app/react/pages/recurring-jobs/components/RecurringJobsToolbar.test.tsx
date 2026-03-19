@@ -1,5 +1,7 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsToolbar Component Tests
+ * Optimised: read-only tests consolidated to reduce render count.
  */
 
 import React from 'react';
@@ -68,8 +70,6 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsToolbarProps>): Rec
 
 describe('RecurringJobsToolbar', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-
         // Default mock implementations
         mockUseSpeedList.mockReturnValue({
             data: [
@@ -88,17 +88,63 @@ describe('RecurringJobsToolbar', () => {
         } as any);
     });
 
+    it('should render all default UI elements with default props', () => {
+        renderWithProviders(createDefaultProps());
+
+        // Search input
+        expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+
+        // Active/Inactive toggle buttons
+        expect(screen.getByText('Active')).toBeInTheDocument();
+        expect(screen.getByText('Inactive')).toBeInTheDocument();
+
+        // Active selected when isActive is true
+        const activeButton = screen.getByText('Active').closest('button');
+        expect(activeButton).toHaveAttribute('aria-pressed', 'true');
+
+        // Speed dropdown
+        const speedLabels = screen.getAllByText('Speed');
+        expect(speedLabels.length).toBeGreaterThan(0);
+
+        // useSpeedList hook is called
+        expect(mockUseSpeedList).toHaveBeenCalled();
+
+        // Speed select control with combobox
+        const speedLabel = speedLabels[0];
+        const formControl = speedLabel.closest('.MuiFormControl-root');
+        const selectButton = formControl?.querySelector('[role="combobox"]');
+        expect(selectButton).toBeInTheDocument();
+
+        // Courier autocomplete
+        expect(screen.getByLabelText('Courier')).toBeInTheDocument();
+
+        // Courier autocomplete with combobox role
+        const courierInput = screen.getByRole('combobox', {name: /courier/i});
+        expect(courierInput).toBeInTheDocument();
+
+        // Day toggle buttons
+        expect(screen.getByText('Days:')).toBeInTheDocument();
+        expect(screen.getByText('M')).toBeInTheDocument();
+        expect(screen.getByText('T')).toBeInTheDocument();
+        expect(screen.getByText('W')).toBeInTheDocument();
+        expect(screen.getByText('Th')).toBeInTheDocument();
+        expect(screen.getByText('F')).toBeInTheDocument();
+        expect(screen.getByText('S')).toBeInTheDocument();
+        expect(screen.getByText('Su')).toBeInTheDocument();
+
+        // Refresh button
+        expect(screen.getByTestId('RefreshIcon')).toBeInTheDocument();
+
+        // Export button
+        expect(screen.getByTestId('FileDownloadIcon')).toBeInTheDocument();
+    });
+
     describe('Search field', () => {
-        it('should render search input', () => {
-            renderWithProviders(createDefaultProps());
+        it('should display initial search text and show clear button', () => {
+            renderWithProviders(createDefaultProps({searchText: 'test'}));
 
-            expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-        });
-
-        it('should display initial search text', () => {
-            renderWithProviders(createDefaultProps({searchText: 'test query'}));
-
-            expect(screen.getByDisplayValue('test query')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('test')).toBeInTheDocument();
+            expect(screen.getByTestId('ClearIcon')).toBeInTheDocument();
         });
 
         it('should call onSearchChange after debounce', async () => {
@@ -113,13 +159,7 @@ describe('RecurringJobsToolbar', () => {
             }, {timeout: 500});
         });
 
-        it('should show clear button when search has text', async () => {
-            renderWithProviders(createDefaultProps({searchText: 'test'}));
-
-            expect(screen.getByTestId('ClearIcon')).toBeInTheDocument();
-        });
-
-        it('should clear search when clear button is clicked', async () => {
+        it('should clear search when clear button is clicked', () => {
             const onSearchChange = jest.fn();
             renderWithProviders(createDefaultProps({searchText: 'test', onSearchChange}));
 
@@ -133,20 +173,6 @@ describe('RecurringJobsToolbar', () => {
     });
 
     describe('Active/Inactive toggle', () => {
-        it('should render Active and Inactive toggle buttons', () => {
-            renderWithProviders(createDefaultProps());
-
-            expect(screen.getByText('Active')).toBeInTheDocument();
-            expect(screen.getByText('Inactive')).toBeInTheDocument();
-        });
-
-        it('should have Active selected when isActive is true', () => {
-            renderWithProviders(createDefaultProps({isActive: true}));
-
-            const activeButton = screen.getByText('Active').closest('button');
-            expect(activeButton).toHaveAttribute('aria-pressed', 'true');
-        });
-
         it('should have Inactive selected when isActive is false', () => {
             renderWithProviders(createDefaultProps({isActive: false}));
 
@@ -164,40 +190,7 @@ describe('RecurringJobsToolbar', () => {
         });
     });
 
-    describe('Speed filter', () => {
-        it('should render speed dropdown', () => {
-            renderWithProviders(createDefaultProps());
-
-            // Find speed filter - there may be multiple "Speed" texts
-            const speedLabels = screen.getAllByText('Speed');
-            expect(speedLabels.length).toBeGreaterThan(0);
-        });
-
-        it('should use speed options from useSpeedList', () => {
-            // Verify useSpeedList hook is called
-            renderWithProviders(createDefaultProps());
-            expect(mockUseSpeedList).toHaveBeenCalled();
-        });
-
-        it('should have a speed select control', () => {
-            renderWithProviders(createDefaultProps());
-
-            // Verify the speed select renders with a combobox
-            const speedLabels = screen.getAllByText('Speed');
-            const speedLabel = speedLabels[0]; // Use the first one (the form label)
-            const formControl = speedLabel.closest('.MuiFormControl-root');
-            const selectButton = formControl?.querySelector('[role="combobox"]');
-            expect(selectButton).toBeInTheDocument();
-        });
-    });
-
     describe('Courier filter', () => {
-        it('should render courier autocomplete', () => {
-            renderWithProviders(createDefaultProps());
-
-            expect(screen.getByLabelText('Courier')).toBeInTheDocument();
-        });
-
         it('should use courier search hook when typing', async () => {
             renderWithProviders(createDefaultProps());
 
@@ -207,27 +200,18 @@ describe('RecurringJobsToolbar', () => {
             // Verify useCourierSearch is called
             expect(mockUseCourierSearch).toHaveBeenCalled();
         });
-
-        it('should render courier autocomplete with combobox role', () => {
-            renderWithProviders(createDefaultProps());
-
-            const courierInput = screen.getByRole('combobox', {name: /courier/i});
-            expect(courierInput).toBeInTheDocument();
-        });
     });
 
     describe('Days of week filter', () => {
-        it('should render day toggle buttons', () => {
-            renderWithProviders(createDefaultProps());
+        it('should call onFiltersChange when day is toggled', () => {
+            const onFiltersChange = jest.fn();
+            renderWithProviders(createDefaultProps({onFiltersChange}));
 
-            expect(screen.getByText('Days:')).toBeInTheDocument();
-            expect(screen.getByText('M')).toBeInTheDocument();
-            expect(screen.getByText('T')).toBeInTheDocument();
-            expect(screen.getByText('W')).toBeInTheDocument();
-            expect(screen.getByText('Th')).toBeInTheDocument();
-            expect(screen.getByText('F')).toBeInTheDocument();
-            expect(screen.getByText('S')).toBeInTheDocument();
-            expect(screen.getByText('Su')).toBeInTheDocument();
+            fireEvent.click(screen.getByText('M'));
+
+            expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({
+                daysOfWeek: 1, // Monday bit
+            }));
         });
 
         it('should toggle additional days on', () => {
@@ -244,17 +228,6 @@ describe('RecurringJobsToolbar', () => {
             // Should now have Monday (1) + Tuesday (2) = 3
             expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({
                 daysOfWeek: 3, // Monday + Tuesday bits
-            }));
-        });
-
-        it('should call onFiltersChange when day is toggled', () => {
-            const onFiltersChange = jest.fn();
-            renderWithProviders(createDefaultProps({onFiltersChange}));
-
-            fireEvent.click(screen.getByText('M'));
-
-            expect(onFiltersChange).toHaveBeenCalledWith(expect.objectContaining({
-                daysOfWeek: 1, // Monday bit
             }));
         });
 
@@ -280,27 +253,25 @@ describe('RecurringJobsToolbar', () => {
             expect(screen.queryByRole('button', {name: /clear all filters/i})).not.toBeInTheDocument();
         });
 
-        it('should show clear filters when speed filter is active', () => {
-            renderWithProviders(createDefaultProps({
+        it('should show clear filters when speed, courier, or days filter is active', () => {
+            // Speed filter active
+            const {unmount: unmount1} = renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, speedId: 1},
             }));
-
             expect(screen.getByRole('button', {name: /clear all filters/i})).toBeInTheDocument();
-        });
+            unmount1();
 
-        it('should show clear filters when courier filter is active', () => {
-            renderWithProviders(createDefaultProps({
+            // Courier filter active
+            const {unmount: unmount2} = renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, courierId: 1},
             }));
-
             expect(screen.getByRole('button', {name: /clear all filters/i})).toBeInTheDocument();
-        });
+            unmount2();
 
-        it('should show clear filters when days filter is active', () => {
+            // Days filter active
             renderWithProviders(createDefaultProps({
                 filters: {...defaultFilters, daysOfWeek: 1},
             }));
-
             expect(screen.getByRole('button', {name: /clear all filters/i})).toBeInTheDocument();
         });
 
@@ -322,12 +293,6 @@ describe('RecurringJobsToolbar', () => {
     });
 
     describe('Refresh button', () => {
-        it('should render refresh button', () => {
-            renderWithProviders(createDefaultProps());
-
-            expect(screen.getByTestId('RefreshIcon')).toBeInTheDocument();
-        });
-
         it('should call onRefresh when clicked', () => {
             const onRefresh = jest.fn();
             renderWithProviders(createDefaultProps({onRefresh}));
@@ -337,22 +302,9 @@ describe('RecurringJobsToolbar', () => {
 
             expect(onRefresh).toHaveBeenCalledTimes(1);
         });
-
-        it('should be disabled when loading', () => {
-            renderWithProviders(createDefaultProps({isLoading: true}));
-
-            // When loading, shows CircularProgress instead of RefreshIcon
-            expect(screen.getByRole('progressbar')).toBeInTheDocument();
-        });
     });
 
     describe('Export button', () => {
-        it('should render export button', () => {
-            renderWithProviders(createDefaultProps());
-
-            expect(screen.getByTestId('FileDownloadIcon')).toBeInTheDocument();
-        });
-
         it('should call onExport when clicked', () => {
             const onExport = jest.fn();
             renderWithProviders(createDefaultProps({onExport}));
@@ -370,42 +322,31 @@ describe('RecurringJobsToolbar', () => {
             const progressBars = screen.getAllByRole('progressbar');
             expect(progressBars.length).toBeGreaterThanOrEqual(1);
         });
-
-        it('should be disabled when loading', () => {
-            renderWithProviders(createDefaultProps({isLoading: true}));
-
-            // Export button should be disabled, but we can't easily test this without the icon
-            // Just verify loading state shows progress indicators
-            expect(screen.getAllByRole('progressbar').length).toBeGreaterThanOrEqual(1);
-        });
     });
 
     describe('Loading state', () => {
-        it('should disable search input when loading', () => {
+        it('should disable search, toggles, day buttons, courier, and show progress indicators when loading', () => {
             renderWithProviders(createDefaultProps({isLoading: true}));
 
+            // Search input disabled
             expect(screen.getByPlaceholderText('Search jobs...')).toBeDisabled();
-        });
 
-        it('should disable Active/Inactive toggle when loading', () => {
-            renderWithProviders(createDefaultProps({isLoading: true}));
-
+            // Active/Inactive toggle disabled
             expect(screen.getByText('Active').closest('button')).toBeDisabled();
             expect(screen.getByText('Inactive').closest('button')).toBeDisabled();
-        });
 
-        it('should disable day toggle buttons when loading', () => {
-            renderWithProviders(createDefaultProps({isLoading: true}));
-
-            // Day buttons should be disabled
+            // Day toggle buttons disabled
             const mondayButton = screen.getByText('M').closest('button');
             expect(mondayButton).toBeDisabled();
-        });
 
-        it('should disable courier autocomplete when loading', () => {
-            renderWithProviders(createDefaultProps({isLoading: true}));
-
+            // Courier autocomplete disabled
             expect(screen.getByLabelText('Courier')).toBeDisabled();
+
+            // Shows CircularProgress (refresh button replaced by progress)
+            expect(screen.getByRole('progressbar')).toBeInTheDocument();
+
+            // Export button also affected by loading - progress indicators present
+            expect(screen.getAllByRole('progressbar').length).toBeGreaterThanOrEqual(1);
         });
     });
 });

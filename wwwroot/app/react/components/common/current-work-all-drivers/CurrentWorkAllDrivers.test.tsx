@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for CurrentWorkAllDrivers component
  */
@@ -176,7 +177,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'Alice');
+            await user.click(searchInput);
+            await user.paste('Alice');
 
             expect(screen.getByText('Alice Driver')).toBeInTheDocument();
             expect(screen.queryByText('Bob Driver')).not.toBeInTheDocument();
@@ -194,7 +196,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'alice');
+            await user.click(searchInput);
+            await user.paste('alice');
 
             expect(screen.getByText('Alice Driver')).toBeInTheDocument();
         });
@@ -210,7 +213,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'Driver');
+            await user.click(searchInput);
+            await user.paste('Driver');
 
             expect(screen.getByText('3 of 3 drivers')).toBeInTheDocument();
         });
@@ -226,7 +230,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'NonExistent');
+            await user.click(searchInput);
+            await user.paste('NonExistent');
 
             expect(screen.getByText('No Drivers Found')).toBeInTheDocument();
             expect(screen.getByText('No drivers match "NonExistent"')).toBeInTheDocument();
@@ -243,7 +248,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'Alice');
+            await user.click(searchInput);
+            await user.paste('Alice');
 
             expect(screen.queryByText('Bob Driver')).not.toBeInTheDocument();
 
@@ -310,7 +316,8 @@ describe('CurrentWorkAllDrivers', () => {
 
             // Search for "Driver"
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'Driver');
+            await user.click(searchInput);
+            await user.paste('Driver');
 
             const listItems = screen.getAllByRole('button');
             const driverItems = listItems.filter(item =>
@@ -420,7 +427,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, 'Char');
+            await user.click(searchInput);
+            await user.paste('Char');
 
             expect(screen.getByText('Charlie Driver')).toBeInTheDocument();
             expect(screen.queryByText('Alice Driver')).not.toBeInTheDocument();
@@ -461,7 +469,8 @@ describe('CurrentWorkAllDrivers', () => {
             );
 
             const searchInput = screen.getByPlaceholderText('Search courier...');
-            await user.type(searchInput, '  Alice  ');
+            await user.click(searchInput);
+            await user.paste('  Alice  ');
 
             expect(screen.getByText('Alice Driver')).toBeInTheDocument();
         });

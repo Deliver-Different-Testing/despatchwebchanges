@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for EditAddressDialog React component
  *
@@ -13,6 +14,7 @@ import {EditAddressDialog, EditAddressDialogProps} from './EditAddressDialog';
 import {EditAddressDialogViewModel, HereMapsLocationResult, HereMapsLookupResponse,} from '../../../interfaces';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../services/addressApi';
+import {suppressConsoleError} from '../../../__testUtils__';
 
 // Mock the React Query hooks
 jest.mock('../../../hooks/useAddressApi', () => ({
@@ -223,9 +225,6 @@ const nzLookupResponse: HereMapsLookupResponse = {
 
 describe('EditAddressDialog', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
-
-        // Default mock implementations
         mockUseAddressSearch.mockReturnValue({
             data: [],
             isFetching: false,
@@ -233,7 +232,7 @@ describe('EditAddressDialog', () => {
         } as any);
 
         mockUseHereMapsApiKey.mockReturnValue({
-            data: undefined, // No API key means map won't initialize
+            data: undefined,
             isLoading: false,
             error: null,
         } as any);
@@ -259,105 +258,45 @@ describe('EditAddressDialog', () => {
     describe('Rendering', () => {
         it('renders nothing when not open', () => {
             const props = createDefaultProps({open: false});
-            const {container} = renderWithProviders(props);
-            expect(container.querySelector('.MuiDialog-root')).toBeNull();
+            renderWithProviders(props);
+            expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         });
 
-        it('renders the dialog when open', () => {
-            const props = createDefaultProps();
+        it('renders dialog with title, submit label, and all sections', () => {
+            const props = createDefaultProps({title: 'Update Delivery Address', submitLabel: 'Update Address'});
             renderWithProviders(props);
+
             expect(screen.getByRole('dialog')).toBeInTheDocument();
-        });
-
-        it('displays the provided title', () => {
-            const props = createDefaultProps({title: 'Update Delivery Address'});
-            renderWithProviders(props);
             expect(screen.getByText('Update Delivery Address')).toBeInTheDocument();
-        });
-
-        it('displays the provided submit label', () => {
-            const props = createDefaultProps({submitLabel: 'Update Address'});
-            renderWithProviders(props);
             expect(screen.getByRole('button', {name: /Update Address/i})).toBeInTheDocument();
-        });
-
-        it('shows Address Lookup section', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
             expect(screen.getByText('Address Lookup')).toBeInTheDocument();
-        });
-
-        it('shows Address Details section', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
             expect(screen.getByText('Address Details')).toBeInTheDocument();
-        });
-
-        it('shows Location Preview section', () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
             expect(screen.getByText('Location Preview')).toBeInTheDocument();
         });
     });
 
-    describe('US Address Format', () => {
-        it('shows US-specific field labels', () => {
+    describe('Address Format', () => {
+        it('shows US-specific fields (City, ZIP, Unit/Suite, Country, State)', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            // City field for US
             const cityInputs = screen.getAllByLabelText(/City/);
             expect(cityInputs.length).toBeGreaterThan(0);
-
-            // ZIP Code field
             expect(screen.getByLabelText(/ZIP Code/)).toBeInTheDocument();
-        });
-
-        it('shows Unit/Suite label for US tenant', () => {
-            const props = createDefaultProps({isUsTenant: true});
-            renderWithProviders(props);
-
             expect(screen.getByLabelText(/Unit\/Suite/)).toBeInTheDocument();
-        });
-
-        it('shows Country label for US tenant', () => {
-            const props = createDefaultProps({isUsTenant: true});
-            renderWithProviders(props);
-
             expect(screen.getByLabelText(/Country/)).toBeInTheDocument();
-        });
-
-        it('shows state dropdown for US tenant', () => {
-            const props = createDefaultProps({isUsTenant: true});
-            renderWithProviders(props);
-
-            // MUI Select uses InputLabel - find by label text
             const stateLabels = screen.getAllByText('State *');
             expect(stateLabels.length).toBeGreaterThan(0);
         });
-    });
 
-    describe('NZ Address Format', () => {
-        it('shows NZ-specific field labels', () => {
+        it('shows NZ-specific fields (Suburb, City, Post Code, Unit/Flat/Suite, Country)', () => {
             const props = createDefaultProps({isUsTenant: false});
             renderWithProviders(props);
 
             expect(screen.getByLabelText(/Suburb/)).toBeInTheDocument();
             expect(screen.getByLabelText(/City/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Post Code/)).toBeInTheDocument();
-        });
-
-        it('shows Unit/Flat/Suite label for NZ tenant', () => {
-            const props = createDefaultProps({isUsTenant: false});
-            renderWithProviders(props);
-
             expect(screen.getByLabelText(/Unit\/Flat\/Suite/)).toBeInTheDocument();
-        });
-
-        it('shows Country label for NZ tenant', () => {
-            const props = createDefaultProps({isUsTenant: false});
-            renderWithProviders(props);
-
             expect(screen.getByLabelText(/Country/)).toBeInTheDocument();
         });
     });
@@ -366,36 +305,38 @@ describe('EditAddressDialog', () => {
         it('does not show shipment details when showContactInfo is false', () => {
             const props = createDefaultProps({showContactInfo: false});
             renderWithProviders(props);
-
             expect(screen.queryByText('Shipment Details')).not.toBeInTheDocument();
         });
 
-        it('shows shipment details when showContactInfo is true', () => {
-            const props = createDefaultProps({showContactInfo: true});
-            renderWithProviders(props);
-
-            expect(screen.getByText('Shipment Details')).toBeInTheDocument();
-        });
-
-        it('shows contact fields in shipment details', () => {
-            const props = createDefaultProps({showContactInfo: true});
-            renderWithProviders(props);
-
-            expect(screen.getByLabelText(/Contact Name/)).toBeInTheDocument();
-            expect(screen.getByLabelText(/Contact Phone/)).toBeInTheDocument();
-        });
-
-        it('shows dimension fields with US units for US tenant', () => {
+        it('shows section with contacts, US dimensions, and supports expand/collapse', async () => {
+            const user = userEvent.setup();
             const props = createDefaultProps({showContactInfo: true, isUsTenant: true});
             renderWithProviders(props);
 
+            // Section visible
+            expect(screen.getByText('Shipment Details')).toBeInTheDocument();
+
+            // Contact fields
+            expect(screen.getByLabelText(/Contact Name/)).toBeInTheDocument();
+            expect(screen.getByLabelText(/Contact Phone/)).toBeInTheDocument();
+
+            // US dimension fields
             expect(screen.getByLabelText(/Weight \(lbs\)/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Length \(in\)/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Width \(in\)/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Height \(in\)/)).toBeInTheDocument();
+
+            // Initially expanded
+            expect(screen.getByLabelText(/Contact Name/)).toBeVisible();
+
+            // Click to collapse
+            await user.click(screen.getByText('Shipment Details'));
+            await waitFor(() => {
+                expect(screen.queryByLabelText(/Contact Name/)).not.toBeVisible();
+            });
         });
 
-        it('shows dimension fields with metric units for NZ tenant', () => {
+        it('shows metric dimensions for NZ tenant', () => {
             const props = createDefaultProps({showContactInfo: true, isUsTenant: false});
             renderWithProviders(props);
 
@@ -404,30 +345,14 @@ describe('EditAddressDialog', () => {
             expect(screen.getByLabelText(/Width \(cm\)/)).toBeInTheDocument();
             expect(screen.getByLabelText(/Height \(cm\)/)).toBeInTheDocument();
         });
-
-        it('can expand and collapse shipment details', async () => {
-            const user = userEvent.setup();
-            const props = createDefaultProps({showContactInfo: true});
-            renderWithProviders(props);
-
-            // Initially expanded
-            expect(screen.getByLabelText(/Contact Name/)).toBeVisible();
-
-            // Click to collapse
-            await user.click(screen.getByText('Shipment Details'));
-
-            // Should collapse (contact name no longer visible)
-            await waitFor(() => {
-                expect(screen.queryByLabelText(/Contact Name/)).not.toBeVisible();
-            });
-        });
     });
 
     describe('Form Population with Existing Address', () => {
-        it('populates form fields with existing address data', () => {
+        it('populates US address fields and coordinates with existing data', () => {
             const props = createDefaultProps({addressDetails: existingAddress});
             renderWithProviders(props);
 
+            // Address fields
             expect(screen.getByDisplayValue('Empire State Building')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Suite 100')).toBeInTheDocument();
             expect(screen.getByDisplayValue('350')).toBeInTheDocument();
@@ -435,12 +360,8 @@ describe('EditAddressDialog', () => {
             expect(screen.getByDisplayValue('New York')).toBeInTheDocument();
             expect(screen.getByDisplayValue('10118')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Main entrance')).toBeInTheDocument();
-        });
 
-        it('populates coordinates with existing data', () => {
-            const props = createDefaultProps({addressDetails: existingAddress});
-            renderWithProviders(props);
-
+            // Coordinates
             expect(screen.getByDisplayValue('40.7484')).toBeInTheDocument();
             expect(screen.getByDisplayValue('-73.9857')).toBeInTheDocument();
         });
@@ -454,8 +375,8 @@ describe('EditAddressDialog', () => {
 
             expect(screen.getByDisplayValue('John Doe')).toBeInTheDocument();
             expect(screen.getByDisplayValue('555-123-4567')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('10')).toBeInTheDocument(); // weight
-            expect(screen.getByDisplayValue('2')).toBeInTheDocument(); // quantity
+            expect(screen.getByDisplayValue('10')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('2')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Handle with care')).toBeInTheDocument();
         });
 
@@ -468,9 +389,9 @@ describe('EditAddressDialog', () => {
 
             expect(screen.getByDisplayValue('Sky Tower')).toBeInTheDocument();
             expect(screen.getByDisplayValue('Victoria Street West')).toBeInTheDocument();
-            expect(screen.getByDisplayValue('Auckland CBD')).toBeInTheDocument(); // Suburb
-            expect(screen.getByDisplayValue('Auckland')).toBeInTheDocument(); // City
-            expect(screen.getByDisplayValue('1010')).toBeInTheDocument(); // Post Code
+            expect(screen.getByDisplayValue('Auckland CBD')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('Auckland')).toBeInTheDocument();
+            expect(screen.getByDisplayValue('1010')).toBeInTheDocument();
         });
     });
 
@@ -487,12 +408,13 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123 Main');
+            await user.click(searchInput);
+            await user.paste('123 Main');
 
             expect(await screen.findByText('123 Main Street, New York, NY 10001')).toBeInTheDocument();
         });
 
-        it('shows loading state while searching', async () => {
+        it('shows loading state while searching', () => {
             mockUseAddressSearch.mockReturnValue({
                 data: [],
                 isFetching: true,
@@ -511,16 +433,20 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, 'ab');
-            await user.click(searchInput); // Focus to show dropdown
+            await user.click(searchInput);
+            await user.paste('ab');
+            await user.click(searchInput);
 
-            // The placeholder text should indicate minimum characters
             expect(screen.getByPlaceholderText(/Type at least 3 characters/)).toBeInTheDocument();
         });
     });
 
     describe('Address Selection Field Population', () => {
-        it('populates US form fields when selecting an address from search results', async () => {
+        let errorSpy: jest.SpyInstance;
+        beforeEach(() => { errorSpy = suppressConsoleError('[EditAddressDialog] Error processing selected address'); });
+        afterEach(() => { errorSpy.mockRestore(); });
+
+        it('populates US fields, coordinates, clears unit/notes, and sets country when selecting address', async () => {
             mockUseAddressSearch.mockReturnValue({
                 data: sampleAddressResults,
                 isFetching: false,
@@ -532,30 +458,41 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            // Open autocomplete and select an address
+            // Pre-fill Unit/Suite to verify it gets cleared
+            fireEvent.change(screen.getByLabelText(/Unit\/Suite/), {target: {value: 'Suite 200'}});
+            expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('Suite 200');
+
+            // Select address
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
+            await user.click(searchInput);
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Wait for async lookup to complete and fields to populate
             await waitFor(() => {
                 expect(mockAddressApi.getLocationDetailsById).toHaveBeenCalledWith('here:af:address:123');
             });
 
+            // Form fields populated
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
                 expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('Main Street');
                 expect((screen.getByLabelText(/ZIP Code/) as HTMLInputElement).value).toBe('10001');
             });
 
-            // Company/Building is cleared when buildingName is not in the response
+            // Company cleared (no buildingName in response)
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
 
-            // Check coordinates
+            // Coordinates
             expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
             expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
+
+            // Unit/Suite cleared
+            expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('');
+
+            // Country populated
+            expect((screen.getByLabelText(/Country/) as HTMLInputElement).value).toBe('United States');
         });
 
         it('clears stale company name when selecting houseNumber result without buildingName', async () => {
@@ -569,23 +506,19 @@ describe('EditAddressDialog', () => {
             const user = userEvent.setup();
             const props = createDefaultProps({
                 isUsTenant: true,
-                addressDetails: existingAddress, // Has 'Empire State Building' as addressLine1
+                addressDetails: existingAddress,
             });
             renderWithProviders(props);
 
-            // Verify company name is pre-populated
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Empire State Building');
 
-            // Select a new address (without buildingName in the response)
             const searchInput = screen.getByLabelText(/Search Address/);
             await user.clear(searchInput);
-            await user.type(searchInput, '123');
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Company name should be cleared since the lookup has no buildingName
-            // (prevents stale company names from pre-populated addresses persisting)
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Number/) as HTMLInputElement).value).toBe('123');
             });
@@ -612,18 +545,17 @@ describe('EditAddressDialog', () => {
             const user = userEvent.setup();
             const props = createDefaultProps({
                 isUsTenant: true,
-                addressDetails: existingAddress, // Has 'Empire State Building'
+                addressDetails: existingAddress,
             });
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
             await user.clear(searchInput);
-            await user.type(searchInput, '123');
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Company name should be updated to the buildingName from HERE
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Freedom Tower');
             });
@@ -659,12 +591,12 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
+            await user.click(searchInput);
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Company name should be populated from title since resultType is 'place'
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Starbucks Coffee');
             });
@@ -706,12 +638,12 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
+            await user.click(searchInput);
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // buildingName should take priority over title
             await waitFor(() => {
                 expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('Main Street Plaza');
             });
@@ -730,7 +662,8 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '10 Queen');
+            await user.click(searchInput);
+            await user.paste('10 Queen');
 
             const option = await screen.findByRole('option', {
                 name: /10 Queen Street, Auckland/,
@@ -744,9 +677,8 @@ describe('EditAddressDialog', () => {
                 expect((screen.getByLabelText(/Post Code/) as HTMLInputElement).value).toBe('1010');
             });
 
-            // Company/Building is cleared when buildingName is not in the response
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
-        }, 30000);
+        });
 
         it('formats street name from streetInfo when available', async () => {
             mockUseAddressSearch.mockReturnValue({
@@ -761,48 +693,15 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
+            await user.click(searchInput);
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // streetInfo: prefix 'North' + baseName 'Main' + streetType 'Street' (not preceding)
-            // Expected: 'North Main Street'
             await waitFor(() => {
                 expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('North Main Street');
             });
-        }, 30000);
-
-        it('clears unit and notes fields when selecting an address', async () => {
-            mockUseAddressSearch.mockReturnValue({
-                data: sampleAddressResults,
-                isFetching: false,
-                error: null,
-            } as any);
-            mockAddressApi.getLocationDetailsById.mockResolvedValue(usLookupResponse);
-
-            const user = userEvent.setup();
-            const props = createDefaultProps({isUsTenant: true});
-            renderWithProviders(props);
-
-            // Pre-fill Unit/Suite (which handleAddressFieldsFromLookup clears)
-            fireEvent.change(screen.getByLabelText(/Unit\/Suite/), {target: {value: 'Suite 200'}});
-            expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('Suite 200');
-
-            // Select a new address
-            const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
-
-            const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
-            await user.click(option);
-
-            // Unit/Suite should be cleared by handleAddressFieldsFromLookup
-            await waitFor(() => {
-                expect((screen.getByLabelText(/Unit\/Suite/) as HTMLInputElement).value).toBe('');
-            });
-
-            // Country should be populated from the lookup response
-            expect((screen.getByLabelText(/Country/) as HTMLInputElement).value).toBe('United States');
         });
 
         it('shows error toast when address lookup fails', async () => {
@@ -819,7 +718,8 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
+            await user.click(searchInput);
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
@@ -842,18 +742,17 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             const searchInput = screen.getByLabelText(/Search Address/);
-            await user.type(searchInput, '123');
+            await user.click(searchInput);
+            await user.paste('123');
 
             const option = await screen.findByRole('option', {name: /123 Main Street, New York/});
             await user.click(option);
 
-            // Should fall back to basic position from the search result
             await waitFor(() => {
                 expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('40.7128');
                 expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('-74.006');
             });
 
-            // Form fields should NOT be populated (no detailed lookup)
             expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
         });
     });
@@ -864,7 +763,6 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            // Fill in other required fields but leave city empty
             fireEvent.change(screen.getByLabelText(/Street Name/), {target: {value: 'Main Street'}});
             fireEvent.change(screen.getByLabelText(/ZIP Code/), {target: {value: '10001'}});
 
@@ -878,7 +776,6 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            // Fill in other required fields but leave street name empty
             fireEvent.change(screen.getByLabelText(/Company\/Building\/Complex/), {target: {value: 'Test Building'}});
             fireEvent.change(screen.getByLabelText(/City/), {target: {value: 'New York'}});
             fireEvent.change(screen.getByLabelText(/ZIP Code/), {target: {value: '10001'}});
@@ -890,32 +787,24 @@ describe('EditAddressDialog', () => {
     });
 
     describe('Dialog Actions', () => {
-        it('calls onClose when cancel button is clicked', async () => {
+        it('calls onClose via cancel and close icon buttons', async () => {
             const user = userEvent.setup();
             const onClose = jest.fn();
             const props = createDefaultProps({onClose});
             renderWithProviders(props);
 
+            // Cancel button
             await user.click(screen.getByRole('button', {name: 'Cancel'}));
+            expect(onClose).toHaveBeenCalledTimes(1);
 
-            expect(onClose).toHaveBeenCalled();
-        });
-
-        it('calls onClose when close icon is clicked', async () => {
-            const user = userEvent.setup();
-            const onClose = jest.fn();
-            const props = createDefaultProps({onClose});
-            renderWithProviders(props);
-
-            // Find and click the close icon button in the header
+            // Close icon
             const closeButtons = screen.getAllByRole('button');
             const closeIconButton = closeButtons.find(
                 btn => btn.querySelector('svg[data-testid="CloseIcon"]')
             );
-
             if (closeIconButton) {
                 await user.click(closeIconButton);
-                expect(onClose).toHaveBeenCalled();
+                expect(onClose).toHaveBeenCalledTimes(2);
             }
         });
 
@@ -970,44 +859,25 @@ describe('EditAddressDialog', () => {
     });
 
     describe('Form Input Changes', () => {
-        it('allows changing company/building field', async () => {
+        it('allows changing all form fields', () => {
             const props = createDefaultProps();
             renderWithProviders(props);
 
-            const input = screen.getByLabelText(/Company\/Building\/Complex/);
-            fireEvent.change(input, {target: {value: 'New Building Name'}});
+            const companyInput = screen.getByLabelText(/Company\/Building\/Complex/);
+            fireEvent.change(companyInput, {target: {value: 'New Building Name'}});
+            expect((companyInput as HTMLInputElement).value).toBe('New Building Name');
 
-            expect((input as HTMLInputElement).value).toBe('New Building Name');
-        });
+            const streetInput = screen.getByLabelText(/Street Number/);
+            fireEvent.change(streetInput, {target: {value: '999'}});
+            expect((streetInput as HTMLInputElement).value).toBe('999');
 
-        it('allows changing street number', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
+            const latInput = screen.getByLabelText(/Latitude/);
+            fireEvent.change(latInput, {target: {value: '41.8781'}});
+            expect((latInput as HTMLInputElement).value).toBe('41.8781');
 
-            const input = screen.getByLabelText(/Street Number/);
-            fireEvent.change(input, {target: {value: '999'}});
-
-            expect((input as HTMLInputElement).value).toBe('999');
-        });
-
-        it('allows changing latitude', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
-
-            const input = screen.getByLabelText(/Latitude/);
-            fireEvent.change(input, {target: {value: '41.8781'}});
-
-            expect((input as HTMLInputElement).value).toBe('41.8781');
-        });
-
-        it('allows changing longitude', async () => {
-            const props = createDefaultProps();
-            renderWithProviders(props);
-
-            const input = screen.getByLabelText(/Longitude/);
-            fireEvent.change(input, {target: {value: '-87.6298'}});
-
-            expect((input as HTMLInputElement).value).toBe('-87.6298');
+            const lngInput = screen.getByLabelText(/Longitude/);
+            fireEvent.change(lngInput, {target: {value: '-87.6298'}});
+            expect((lngInput as HTMLInputElement).value).toBe('-87.6298');
         });
     });
 
@@ -1016,7 +886,6 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: true});
             renderWithProviders(props);
 
-            // Verify state label is present for US tenant
             const stateLabels = screen.getAllByText('State *');
             expect(stateLabels.length).toBeGreaterThan(0);
         });
@@ -1025,32 +894,19 @@ describe('EditAddressDialog', () => {
             const props = createDefaultProps({isUsTenant: false});
             renderWithProviders(props);
 
-            // State field should not be present for NZ tenant
             expect(screen.queryAllByText('State *')).toHaveLength(0);
         });
     });
 
     describe('New Address (empty form)', () => {
-        it('starts with empty form fields for new address', () => {
+        it('starts with empty form fields and coordinates', () => {
             const props = createDefaultProps({addressDetails: null});
             renderWithProviders(props);
 
-            const companyInput = screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement;
-            const streetInput = screen.getByLabelText(/Street Name/) as HTMLInputElement;
-
-            expect(companyInput.value).toBe('');
-            expect(streetInput.value).toBe('');
-        });
-
-        it('has empty coordinates for new address', () => {
-            const props = createDefaultProps({addressDetails: null});
-            renderWithProviders(props);
-
-            const latInput = screen.getByLabelText(/Latitude/) as HTMLInputElement;
-            const lngInput = screen.getByLabelText(/Longitude/) as HTMLInputElement;
-
-            expect(latInput.value).toBe('');
-            expect(lngInput.value).toBe('');
+            expect((screen.getByLabelText(/Company\/Building\/Complex/) as HTMLInputElement).value).toBe('');
+            expect((screen.getByLabelText(/Street Name/) as HTMLInputElement).value).toBe('');
+            expect((screen.getByLabelText(/Latitude/) as HTMLInputElement).value).toBe('');
+            expect((screen.getByLabelText(/Longitude/) as HTMLInputElement).value).toBe('');
         });
     });
 });

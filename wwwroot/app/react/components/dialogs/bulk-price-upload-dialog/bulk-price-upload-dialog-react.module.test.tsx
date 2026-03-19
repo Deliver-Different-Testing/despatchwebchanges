@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * Bulk Price Upload Dialog React Module Tests
  *
@@ -36,10 +37,6 @@ describe('BulkPriceUploadDialogManager', () => {
         // Now import the module
         const module = require('./bulk-price-upload-dialog-react.module');
         openBulkPriceUploadDialog = module.openBulkPriceUploadDialog;
-    });
-
-    beforeEach(() => {
-        jest.clearAllMocks();
     });
 
     afterAll(() => {

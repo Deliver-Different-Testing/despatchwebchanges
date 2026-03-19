@@ -1,3 +1,4 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * DispatchMap Component Tests
  *
@@ -92,7 +93,6 @@ const createDefaultProps = (overrides?: Partial<DispatchMapProps>): DispatchMapP
 
 describe('DispatchMap Component', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue([]);
         (courierApi.getClearListEnvelope as jest.Mock).mockResolvedValue({
             minimumLatitude: 33.5,
@@ -183,10 +183,6 @@ describe('DispatchMap Component', () => {
 });
 
 describe('DispatchMap Clearlist Envelope Feature', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('calls getClearListEnvelope when clearListId is provided and map is ready', async () => {
         // Mock useHereMap to return a ready map
         const mockMap = {
@@ -336,10 +332,6 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 });
 
 describe('DispatchMap Loading State', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('shows loading indicator when map is loading', () => {
         const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
         useHereMapMock.mockReturnValue({
@@ -353,11 +345,10 @@ describe('DispatchMap Loading State', () => {
         });
 
         const props = createDefaultProps();
-        const {container} = renderWithProviders(<DispatchMap {...props} />);
+        renderWithProviders(<DispatchMap {...props} />);
 
-        // MUI LinearProgress should be rendered
-        const progressBar = container.querySelector('.MuiLinearProgress-root');
-        expect(progressBar).toBeInTheDocument();
+        // MUI LinearProgress renders with role="progressbar"
+        expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
 
     it('hides loading indicator when map is ready', () => {
@@ -373,18 +364,13 @@ describe('DispatchMap Loading State', () => {
         });
 
         const props = createDefaultProps();
-        const {container} = renderWithProviders(<DispatchMap {...props} />);
+        renderWithProviders(<DispatchMap {...props} />);
 
-        const progressBar = container.querySelector('.MuiLinearProgress-root');
-        expect(progressBar).not.toBeInTheDocument();
+        expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });
 });
 
 describe('DispatchMap Control Buttons', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('shows control buttons when map is ready', () => {
         const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
         useHereMapMock.mockReturnValue({
@@ -426,7 +412,6 @@ describe('DispatchMap Control Buttons', () => {
 
 describe('DispatchMap Courier Data', () => {
     beforeEach(() => {
-        jest.clearAllMocks();
         (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue([]);
     });
 
@@ -481,10 +466,6 @@ describe('DispatchMap Courier Data', () => {
 });
 
 describe('DispatchMap Map Ready Callback', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('calls onMapReady with map, platform and ui when provided', async () => {
         const mockMap = {};
         const mockPlatform = {};
@@ -516,10 +497,6 @@ describe('DispatchMap Map Ready Callback', () => {
 });
 
 describe('DispatchMap with Different Control States', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     it('renders with couriersOnlyEnabled state', () => {
         const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
         useHereMapMock.mockReturnValue({

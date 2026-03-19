@@ -498,8 +498,8 @@ public sealed class RateJobService(
             var closestFromAirports = fromAirportsTask.Result;
             var closestToAirports = toAirportsTask.Result;
 
-            result.FromAirport = closestFromAirports.First();
-            result.ToAirport = closestToAirports.First();
+            result.FromAirport = closestFromAirports[0];
+            result.ToAirport = closestToAirports[0];
 
             // Calculate road distances to/from airports in parallel
             var fromMilesTask = CalculateRoadDistance(

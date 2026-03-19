@@ -78,13 +78,11 @@ public class SecurityMiddlewareTests
                         });
                     });
 
-                    app.Map("/healthz", appBuilder =>
-                    {
-                        appBuilder.Run(async context =>
+                    app.Map("/healthz",
+                        appBuilder =>
                         {
-                            await context.Response.WriteAsync("Healthy");
+                            appBuilder.Run(async context => { await context.Response.WriteAsync("Healthy"); });
                         });
-                    });
                 });
             })
             .Start();
@@ -100,11 +98,12 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.PostAsync("/api/test", new StringContent(""));
+        var response =
+            await client.PostAsync("/api/test", new StringContent(""), TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var content = await response.Content.ReadAsStringAsync();
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         content.Should().Contain("missing required header");
     }
 
@@ -121,7 +120,7 @@ public class SecurityMiddlewareTests
         request.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
         // Act
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -135,7 +134,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -149,7 +148,8 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act - POST to healthz without header
-        var response = await client.PostAsync("/healthz", new StringContent(string.Empty));
+        var response = await client.PostAsync("/healthz", new StringContent(string.Empty),
+            TestContext.Current.CancellationToken);
 
         // Assert - Should succeed because healthz is excluded
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -163,7 +163,8 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.PutAsync("/api/test", new StringContent(string.Empty));
+        var response = await client.PutAsync("/api/test", new StringContent(string.Empty),
+            TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -177,7 +178,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.DeleteAsync("/api/test");
+        var response = await client.DeleteAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -195,7 +196,7 @@ public class SecurityMiddlewareTests
         };
 
         // Act
-        var response = await client.SendAsync(request);
+        var response = await client.SendAsync(request, TestContext.Current.CancellationToken);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -213,7 +214,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("X-Content-Type-Options");
@@ -228,7 +229,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("X-Frame-Options");
@@ -243,7 +244,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("X-XSS-Protection");
@@ -258,7 +259,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("Referrer-Policy");
@@ -273,7 +274,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("Strict-Transport-Security");
@@ -290,7 +291,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("Content-Security-Policy");
@@ -310,7 +311,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert - img-src should only allow https:, not http:
         var cspValue = response.Headers.GetValues("Content-Security-Policy").First();
@@ -326,7 +327,7 @@ public class SecurityMiddlewareTests
         var client = host.GetTestClient();
 
         // Act
-        var response = await client.GetAsync("/api/test");
+        var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
         response.Headers.Should().ContainKey("Permissions-Policy");

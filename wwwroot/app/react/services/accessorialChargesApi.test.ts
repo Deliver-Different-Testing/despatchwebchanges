@@ -18,10 +18,6 @@ jest.mock('./apiClient', () => ({
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
 describe('AccessorialChargesApiService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     describe('getAvailableCharges', () => {
         it('should call apiClient.get with correct URL and params', async () => {
             mockApiClient.get.mockResolvedValueOnce([]);
