@@ -30,12 +30,13 @@ public class AddAgentRecoveryJobServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.AddRecoveryAgentJobAsync(null!);
-
         // Assert
         // Service throws NullReferenceException because catch block accesses request.JobId for logging
-        await Assert.ThrowsAsync<NullReferenceException>(act);
+        await Assert.ThrowsAsync<NullReferenceException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddRecoveryAgentJobAsync(null!);
     }
 
     [Fact]
@@ -48,11 +49,12 @@ public class AddAgentRecoveryJobServiceTests
         _jobRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
             .ReturnsAsync((TucJob)null!);
 
-        // Act
-        var act = async () => await service.AddRecoveryAgentJobAsync(request);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddRecoveryAgentJobAsync(request);
     }
 
     [Fact]

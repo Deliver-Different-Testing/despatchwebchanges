@@ -24,7 +24,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
     public JobRepositoryPricingBreakdownTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = _db.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -45,6 +45,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _context.DisposeAsync();
         await _db.DisposeAsync();
     }

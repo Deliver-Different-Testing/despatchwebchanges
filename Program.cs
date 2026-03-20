@@ -226,10 +226,11 @@ app.UseStaticFiles(new StaticFileOptions
     ContentTypeProvider = provider
 });
 
+var distDir = Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist");
+Directory.CreateDirectory(distDir);
 app.UseStaticFiles(new StaticFileOptions
 {
-    FileProvider = new PhysicalFileProvider(
-        Path.Combine(builder.Environment.ContentRootPath, "wwwroot", "dist")),
+    FileProvider = new PhysicalFileProvider(distDir),
     RequestPath = "/dist",
     ContentTypeProvider = provider // Make sure to use the same provider here
 });
@@ -261,3 +262,6 @@ static AWSCredentials LoadSsoCredentials(string profile)
 #pragma warning restore CS0618 // Type or member is obsolete
     return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
 }
+
+// Enable WebApplicationFactory<Program> in integration tests
+public abstract partial class Program;

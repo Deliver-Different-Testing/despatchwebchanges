@@ -32,11 +32,12 @@ public class AddStopJobServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.AddStopInsertJobAsync(null!);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddStopInsertJobAsync(null!);
     }
 
     [Fact]
@@ -49,11 +50,12 @@ public class AddStopJobServiceTests
         _jobRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
             .ReturnsAsync((TucJob)null!);
 
-        // Act
-        var act = async () => await service.AddStopInsertJobAsync(request);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddStopInsertJobAsync(request);
     }
 
     [Fact]
@@ -71,11 +73,12 @@ public class AddStopJobServiceTests
         _jobRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
             .ReturnsAsync(CreateParentJob());
 
-        // Act
-        var act = async () => await service.AddStopInsertJobAsync(request);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddStopInsertJobAsync(request);
     }
 
     [Fact]
@@ -273,11 +276,12 @@ public class AddStopJobServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.AddStopInsertRecurringJobAsync(null!);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddStopInsertRecurringJobAsync(null!);
     }
 
     [Fact]
@@ -290,11 +294,12 @@ public class AddStopJobServiceTests
         _jobRepositoryMock.Setup(x => x.GetByIdAsync<TucJobBooking>(request.JobId))
             .ReturnsAsync((TucJobBooking)null!);
 
-        // Act
-        var act = async () => await service.AddStopInsertRecurringJobAsync(request);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddStopInsertRecurringJobAsync(request);
     }
 
     [Fact]
@@ -394,12 +399,13 @@ public class AddStopJobServiceTests
         _jobRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
             .ReturnsAsync(true); // All suffixes taken
 
-        // Act
-        var act = async () => await service.AddStopInsertJobAsync(request);
-
         // Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("Unable to generate unique job number", ex.Message);
+        return;
+
+        // Act
+        async Task<int> Act() => await service.AddStopInsertJobAsync(request);
     }
 
     private static AddStopRequest CreateValidRequest() => new()

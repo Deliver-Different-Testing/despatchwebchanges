@@ -31,6 +31,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _db.DisposeAsync();
     }
 
@@ -464,7 +465,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         );
 
         // Assert - Should find job with pickup phone starting with 031
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains(result, j => j.JobNumber == "JOB-AAA");
     }
 

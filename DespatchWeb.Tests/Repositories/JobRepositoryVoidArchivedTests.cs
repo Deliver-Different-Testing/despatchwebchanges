@@ -129,7 +129,7 @@ public class JobRepositoryVoidArchivedTests
         var result = DetermineArchivedJobsToVoid(request, allJobs);
 
         // Assert - Only the single archived job should be voided
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains(1, result);
         Assert.DoesNotContain(2, result);
     }
@@ -155,7 +155,7 @@ public class JobRepositoryVoidArchivedTests
         var result = DetermineArchivedJobsToVoid(request, allJobs);
 
         // Assert - Only the child archived job should be voided (no children of its own)
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains(2, result);
         Assert.DoesNotContain(1, result); // Parent and sibling not voided
         Assert.DoesNotContain(3, result);
@@ -348,7 +348,7 @@ public class JobRepositoryVoidArchivedTests
         var result = DetermineArchivedJobsToVoid(request, allJobs);
 
         // Assert - Should still return the job ID (no children found)
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains(999, result);
     }
 
@@ -387,7 +387,7 @@ public class JobRepositoryVoidArchivedTests
         var result = GetArchivedJobWithChildren(1, allJobs);
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains(1, result);
     }
 
@@ -406,7 +406,7 @@ public class JobRepositoryVoidArchivedTests
         var result = GetArchivedJobWithChildren(2, allJobs);
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains(2, result);
     }
 

@@ -15,7 +15,7 @@ namespace DespatchWeb.Tests.Repositories;
 public class CourierRepositoryTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly IMemoryCache _cache;
+    private readonly MemoryCache _cache;
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly FakeTenantClock _clock = new(new DateTime(2024, 1, 15, 10, 0, 0));
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
@@ -34,6 +34,7 @@ public class CourierRepositoryTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         _cache.Dispose();
         await _db.DisposeAsync();
     }
@@ -208,7 +209,7 @@ public class CourierRepositoryTests : IAsyncDisposable
 
         // Assert - Verify data integrity across parallel queries
         Assert.NotNull(result);
-        Assert.True(result.Areas.Count > 0);
+        Assert.NotEmpty(result.Areas);
 
         // Verify columns are properly assigned
         Assert.NotEmpty(result.Columns);

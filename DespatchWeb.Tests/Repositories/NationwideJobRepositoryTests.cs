@@ -22,7 +22,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public NationwideJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = _db.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -32,6 +32,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _context.DisposeAsync();
         await _db.DisposeAsync();
     }
@@ -239,7 +240,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var result = await repository.GetNearbyAirportsAsync(jobId, usePickup: true);
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Contains("Auckland Airport", result[0].Text);
     }
 
@@ -685,11 +686,13 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
+        var exception = await Record.ExceptionAsync(Act);
+        Assert.Null(exception);
+        return;
+
         // Act & Assert - ExecuteUpdateAsync doesn't fully work with SQLite,
         // so we just verify the method runs without throwing for existing jobs
-        var act = async () => await repository.RestoreNationwideJobAsync(jobId);
-        var exception = await Record.ExceptionAsync(act);
-        Assert.Null(exception);
+        async Task Act() => await repository.RestoreNationwideJobAsync(jobId);
     }
 
     [Fact]
@@ -698,10 +701,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Arrange
         var repository = CreateRepository();
 
-        // Act & Assert
-        var act = async () => await repository.RestoreNationwideJobAsync(999);
-        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
         Assert.Contains("Job with ID 999 not found", ex.Message);
+        return;
+
+        // Act & Assert
+        async Task Act() => await repository.RestoreNationwideJobAsync(999);
     }
 
     [Fact]
@@ -720,7 +725,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.RestoreNationwideJobAsync(jobId);
 
         // Assert
-        var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var flights = await _context.TucJobNationwides.Where(f => f.UcnwJobId == jobId).ToListAsync(TestContext.Current.CancellationToken);
         Assert.Empty(flights);
     }
 
@@ -762,13 +767,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var queryParams = new Models.JobQueryParams();
 
         // Act
-        var result = await repository.NationwideJobListAsync(
-            queryParams,
-            isInternal: false,
-            isUsTenant: false,
-            clientIds: "",
-            DespatchWeb.Enums.NationwideWidget.JobList,
-            []);
+        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: "", DespatchWeb.Enums.NationwideWidget.JobList, []);
 
         // Assert
         Assert.NotNull(result);
@@ -801,10 +800,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100);
         Assert.NotNull(flightRecord);
         Assert.Equal("NZ123", flightRecord.UcnwFlightNo);
         Assert.Equal("JOB001-F", flightRecord.UcnwJobNumber);
@@ -844,7 +843,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
@@ -879,7 +878,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
@@ -915,7 +914,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
@@ -955,7 +954,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - pickup job's DeliverByTime should be departure time minus processing time (60 mins)
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
@@ -999,7 +998,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -1042,7 +1041,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act & Assert - verify records are added before save fails
         try
         {
-            await repository.AddJobNationwideAsync(request, webhookIds);
+            await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
         }
         catch (DbUpdateException)
         {
@@ -1098,11 +1097,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
         var journeyRecord = await _context.JobDeliveryJourneys
-            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment", cancellationToken: TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment");
         Assert.NotNull(journeyRecord);
         Assert.Equal(1, journeyRecord.StaffId);
         Assert.Equal("Staff", journeyRecord.UpdatedByType);
@@ -1141,11 +1140,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
         var note = await _context.TucNotes
-            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)DespatchWeb.Enums.NoteType.FlightUpdate, cancellationToken: TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)DespatchWeb.Enums.NoteType.FlightUpdate);
         Assert.NotNull(note);
         Assert.Contains("Flight", note.NoteText);
         Assert.Contains("123", note.NoteText); // Flight number from segment
@@ -1170,10 +1169,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - no flight record should be created
-        var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var flightRecords = await _context.TucJobNationwides.Where(f => f.UcnwJobId == 100).ToListAsync(TestContext.Current.CancellationToken);
         Assert.Empty(flightRecords);
     }
 
@@ -1193,9 +1192,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
+        await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        return;
+
         // Act & Assert
-        var act = async () => await repository.AddJobNationwideAsync(request, null);
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        async Task Act() => await repository.AddJobNationwideAsync(request, null);
     }
 
     [Fact]
@@ -1223,7 +1224,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - flight job's DeliverByTime should be set to arrival time
         var updatedFlightJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
@@ -1255,11 +1256,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - both flight record and journey record should exist (atomic save)
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
-        var journeyRecord = await EntityFrameworkQueryableExtensions.FirstOrDefaultAsync(_context.JobDeliveryJourneys, j => j.JobId == 100, TestContext.Current.CancellationToken);
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        var journeyRecord = await _context.JobDeliveryJourneys.FirstOrDefaultAsync(j => j.JobId == 100, TestContext.Current.CancellationToken);
 
         Assert.NotNull(flightRecord);
         Assert.NotNull(journeyRecord);
@@ -1304,7 +1305,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - only the pickup job (suffix '1') should have DeliverByTime updated
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
@@ -1352,20 +1353,22 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - only the delivery job (suffix '3') should have UcjbDate/UcjbTime updated
-        var updatedDeliveryJob = await _context.TucJobs.FindAsync(103);
-        var unchangedOtherJob = await _context.TucJobs.FindAsync(104);
+        {
+            var updatedDeliveryJob = await _context.TucJobs.FindAsync([103], TestContext.Current.CancellationToken);
+            var unchangedOtherJob = await _context.TucJobs.FindAsync([104], TestContext.Current.CancellationToken);
 
-        // Delivery job should have its date set to after the arrival time (arrival + 60 min processing)
-        var expectedReadyTime = arrivalTime.AddMinutes(60);
-        Assert.Equal(expectedReadyTime.Date, updatedDeliveryJob?.UcjbDate);
-        Assert.Equal(expectedReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
+            // Delivery job should have its date set to after the arrival time (arrival + 60 min processing)
+            var expectedReadyTime = arrivalTime.AddMinutes(60);
+            Assert.Equal(expectedReadyTime.Date, updatedDeliveryJob?.UcjbDate);
+            Assert.Equal(expectedReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
 
-        // Other job (suffix '4') should NOT have its time updated - it stays at the default
-        // It will have the default DateTime value set by CreateAgentJobWithGrouping
-        Assert.NotEqual(expectedReadyTime.DateTime, unchangedOtherJob?.UcjbTime);
+            // Other job (suffix '4') should NOT have its time updated - it stays at the default
+            // It will have the default DateTime value set by CreateAgentJobWithGrouping
+            Assert.NotEqual(expectedReadyTime.DateTime, unchangedOtherJob?.UcjbTime);
+        }
     }
 
     [Fact]
@@ -1393,10 +1396,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - primary flight should have leg number 1 (constant value)
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         Assert.Equal(1, flightRecord.UcnwLegNumber);
     }
@@ -1437,7 +1440,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act & Assert - verify gate number assignment before save
         try
         {
-            await repository.AddJobNationwideAsync(request, webhookIds);
+            await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
         }
         catch (DbUpdateException)
         {
@@ -1504,7 +1507,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - delivery job's start time should be arrival time + processing time (60 mins)
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -1549,7 +1552,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - delivery job's start time should use the provided PackageReadyTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -1592,7 +1595,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - delivery job's start time should be arrival + 90 minutes (custom processing time)
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -1649,7 +1652,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - should use default 60 minutes when airport has no processing time
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -1698,7 +1701,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act - Note: This may throw due to SQLite constraint, but we capture the state
         try
         {
-            await repository.AddJobNationwideAsync(request, webhookIds);
+            await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
         }
         catch (DbUpdateException)
         {
@@ -1757,7 +1760,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Job '3' should have its start time updated, not job '2'
         var updatedJob3 = await _context.TucJobs.FindAsync([103], TestContext.Current.CancellationToken);
@@ -1812,7 +1815,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - pickup job's DeliverByTime should be departure time - processing time
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
@@ -1853,7 +1856,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - pickup job's DeliverByTime should be departure - 90 minutes
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
@@ -1892,14 +1895,16 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var repository = CreateRepository();
 
-        // Act & Assert - Should not throw, flight assignment should complete
-        var act = async () => await repository.AddJobNationwideAsync(request, webhookIds);
-        var exception = await Record.ExceptionAsync(act);
+        var exception = await Record.ExceptionAsync(Act);
         Assert.Null(exception);
 
         // Verify flight was assigned
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
+        return;
+
+        // Act & Assert - Should not throw, flight assignment should complete
+        async Task Act() => await repository.AddJobNationwideAsync(request, webhookIds);
     }
 
     [Fact]
@@ -1933,7 +1938,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - pickup job's DeliverByTimeZoneId should be set to departure timezone
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
@@ -1982,7 +1987,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Both pickup and delivery jobs should have DeliverByTime set
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
@@ -2031,10 +2036,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Flight record should have exact ETD and ETA from segment
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, cancellationToken: TestContext.Current.CancellationToken);
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
 
         Assert.NotNull(flightRecord);
         Assert.Equal(departureTime.DateTime, flightRecord.UcnwEtd);
@@ -2068,7 +2073,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Flight job's date/time should be updated to departure time
         var updatedFlightJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
@@ -2108,7 +2113,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act - Note: May throw due to SQLite constraint
         try
         {
-            await repository.AddJobNationwideAsync(request, webhookIds);
+            await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
         }
         catch (DbUpdateException)
         {
@@ -2798,7 +2803,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job's time SHOULD be updated to packageReadyTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -2847,7 +2852,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job should NOT be updated because it has wrong grouping
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -2894,7 +2899,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job SHOULD be updated because request.ToAirportId is set
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -2942,7 +2947,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job SHOULD be updated for NZ tenant with NationwideAgent grouping
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
@@ -2989,7 +2994,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Act
-        await repository.AddJobNationwideAsync(request, webhookIds);
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job should NOT be updated because NZ tenant expects grouping 6, not 3
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);

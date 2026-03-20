@@ -8,19 +8,15 @@ namespace DespatchWeb.Tests.Services;
 
 /// <summary>
 /// Unit tests for DeliveryJourneyService - tests delivery journey timeline building.
-/// Note: Full integration tests with a real database are recommended to test the complex
-/// LINQ queries and entity relationships. These tests validate service construction,
-/// interface contracts, and basic behavior with mocked dependencies.
+/// Uses SQLite in-memory database for realistic query execution.
 /// </summary>
-public class DeliveryJourneyServiceTests
+public class DeliveryJourneyServiceTests : IAsyncDisposable
 {
+    private readonly SqliteTestDatabase _db = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly string _databaseName;
 
     public DeliveryJourneyServiceTests()
     {
-        _databaseName = Guid.NewGuid().ToString();
-
         // Default tenant info setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("UTC");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
@@ -28,69 +24,55 @@ public class DeliveryJourneyServiceTests
             .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero));
     }
 
-    private DbContextOptions<DespatchContext> CreateDbContextOptions() =>
-        new DbContextOptionsBuilder<DespatchContext>()
-            .UseInMemoryDatabase(_databaseName)
-            .Options;
-
-    private IDbContextFactory<DespatchContext> CreateContextFactory()
+    public async ValueTask DisposeAsync()
     {
-        var options = CreateDbContextOptions();
-        var factoryMock = new Mock<IDbContextFactory<DespatchContext>>();
-        factoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(options));
-        return factoryMock.Object;
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
     }
 
     private DeliveryJourneyService CreateService() => new(
-        CreateContextFactory(),
+        _db.CreateFactoryMock().Object,
         _tenantInfoServiceMock.Object
     );
 
     private async Task SeedJobsAsync(params TucJob[] jobs)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.TucJobs.AddRange(jobs);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedEventsAsync(params TucEvent[] events)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.TucEvents.AddRange(events);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedNotesAsync(params TucNote[] notes)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.TucNotes.AddRange(notes);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedArchivedNotesAsync(params TucNoteArchive[] notes)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.TucNoteArchives.AddRange(notes);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedStaffAsync(params TucStaff[] staff)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.TucStaffs.AddRange(staff);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
     private async Task SeedMessagesAsync(params TucManualMessage[] messages)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.TucManualMessages.AddRange(messages);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
@@ -296,7 +278,9 @@ public class DeliveryJourneyServiceTests
         await SeedNotesAsync(new TucNote
         {
             NoteId = 1, JobId = 1, NoteText = "TZ test",
-            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0), NoteTypeId = 1
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
+            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
+            NoteTypeId = 1
         });
         var service = CreateService();
 
@@ -413,7 +397,9 @@ public class DeliveryJourneyServiceTests
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
             NoteId = 1, JobId = 1, NoteText = "Archived TZ test",
-            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0), NoteTypeId = 1
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
+            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
+            NoteTypeId = 1
         });
         var service = CreateService();
 
@@ -474,12 +460,15 @@ public class DeliveryJourneyServiceTests
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_FallsBackToMinDateWhenNoDates()
     {
-        // Arrange — neither CreatedDate nor UpdatedDate set; uses default UTC timezone
+        // Arrange — neither CreatedDate nor UpdatedDate set; uses default UTC timezone.
+        // SQLite applies getdate() defaults on insert, so we clear them via raw SQL
+        // to simulate the null-dates scenario.
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
             NoteId = 1, JobId = 1, NoteText = "No dates note",
             NoteTypeId = 1
         });
+        await using (var ctx = _db.CreateContext()) await ctx.Database.ExecuteSqlRawAsync("UPDATE TucNoteArchive SET CreatedDate = NULL, UpdatedDate = NULL WHERE NoteId = 1", cancellationToken: TestContext.Current.CancellationToken);
         var service = CreateService();
 
         // Act
@@ -740,8 +729,7 @@ public class DeliveryJourneyServiceTests
 
     private async Task SeedStatusUpdatesAsync(params JobDeliveryJourney[] updates)
     {
-        var options = CreateDbContextOptions();
-        await using var context = new DespatchContext(options);
+        await using var context = _db.CreateContext();
         context.JobDeliveryJourneys.AddRange(updates);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }

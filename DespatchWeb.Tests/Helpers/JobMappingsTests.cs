@@ -104,7 +104,7 @@ public class JobMappingsTests
         Assert.Equal(archiveResult.DeliverToPrivateRes, liveResult.DeliverToPrivateRes);
         // With inline mapping, empty collections result in empty list
         Assert.Empty(liveResult.ParcelDimensions);
-        Assert.True(archiveResult.ParcelDimensions == null || archiveResult.ParcelDimensions.Count == 0); // Either null or empty depending on expression evaluation
+        Assert.True(archiveResult.ParcelDimensions is null or []); // Either null or empty depending on expression evaluation
         Assert.Null(liveResult.PalletInfo);
         Assert.Null(archiveResult.PalletInfo);
         Assert.Null(liveResult.AssignedFlight);
@@ -780,7 +780,7 @@ public class JobMappingsTests
         Assert.False(result.TailLiftPu);
         Assert.False(result.TailLiftDo);
         Assert.False(result.DeliverToPrivateRes);
-        Assert.True(result.ParcelDimensions == null || result.ParcelDimensions.Count == 0); // Either null or empty depending on expression evaluation
+        Assert.True(result.ParcelDimensions is null or []); // Either null or empty depending on expression evaluation
         Assert.Null(result.PalletInfo);
         Assert.Null(result.AssignedFlight);
         Assert.False(result.IsFlightAssigned);
@@ -1497,7 +1497,7 @@ public class JobMappingsTests
 
         // Assert - Should use child items when available
         Assert.NotNull(result.ParcelDimensions);
-        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Single(result.ParcelDimensions);
         Assert.Equal("Child Item", result.ParcelDimensions![0].ItemName);
         Assert.Equal(20, result.ParcelDimensions[0].Height);
         Assert.Equal(30, result.ParcelDimensions[0].Depth);
@@ -1529,7 +1529,7 @@ public class JobMappingsTests
 
         // Assert - Should fall back to parent items
         Assert.NotNull(result.ParcelDimensions);
-        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Single(result.ParcelDimensions);
         Assert.Equal("Parent Item", result.ParcelDimensions![0].ItemName);
         Assert.Equal(15, result.ParcelDimensions[0].Height);
     }
@@ -1595,7 +1595,7 @@ public class JobMappingsTests
 
         // Assert
         Assert.NotNull(result.PalletInfo);
-        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Single(result.PalletInfo);
         Assert.Equal(5, result.PalletInfo![0].Quantity);
         Assert.Equal(100, result.PalletInfo[0].Weight);
         Assert.Equal(120, result.PalletInfo[0].Length);
@@ -1632,7 +1632,7 @@ public class JobMappingsTests
 
         // Assert - Only parent item should be in pallet info
         Assert.NotNull(result.PalletInfo);
-        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Single(result.PalletInfo);
         Assert.Equal(5, result.PalletInfo![0].Quantity);
     }
 
@@ -1931,7 +1931,7 @@ public class JobMappingsTests
 
         // Assert
         Assert.NotNull(result.ParcelDimensions);
-        Assert.Equal(1, result.ParcelDimensions.Count);
+        Assert.Single(result.ParcelDimensions);
         Assert.Equal("Archived Parcel", result.ParcelDimensions![0].ItemName);
         Assert.Equal(10, result.ParcelDimensions[0].Height);
         Assert.Equal(20, result.ParcelDimensions[0].Depth);
@@ -1974,7 +1974,7 @@ public class JobMappingsTests
 
         // Assert
         Assert.NotNull(result.PalletInfo);
-        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Single(result.PalletInfo);
         Assert.Equal(3, result.PalletInfo![0].Quantity);
         Assert.Equal(50, result.PalletInfo[0].Weight);
         Assert.Equal(100, result.PalletInfo[0].Length);
@@ -2474,7 +2474,7 @@ public class JobMappingsTests
         var result = mapping(childJob);
 
         // Assert - Should inherit parent's pallet info
-        Assert.Equal(1, result.PalletInfo.Count);
+        Assert.Single(result.PalletInfo);
         Assert.Equal(5, result.PalletInfo[0].Quantity);
         Assert.Equal(100, result.PalletInfo[0].Weight);
         Assert.Equal("Pallet 1", result.PalletInfo[0].Notes);
@@ -2605,11 +2605,11 @@ public class JobMappingsTests
 
         // Assert - Should use its own child items, NOT parent's
         Assert.Equal(1, result.Items);
-        Assert.Equal(1, result.ParcelDimensions.Count);
-        Assert.Equal("Stop Item", result.ParcelDimensions[0].ItemName);
-        Assert.Equal("STOP-BC", result.ParcelDimensions[0].Barcode);
-        Assert.Equal(1, result.PalletInfo.Count);
-        Assert.Equal("Stop Item", result.PalletInfo[0].Notes);
+        var parcel = Assert.Single(result.ParcelDimensions);
+        Assert.Equal("Stop Item", parcel.ItemName);
+        Assert.Equal("STOP-BC", parcel.Barcode);
+        var pallet = Assert.Single(result.PalletInfo);
+        Assert.Equal("Stop Item", pallet.Notes);
     }
 
 }

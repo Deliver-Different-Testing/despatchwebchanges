@@ -41,6 +41,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _seedContext.DisposeAsync();
         await _db.DisposeAsync();
     }
@@ -59,7 +60,6 @@ public class CreateJobServiceTests : IAsyncDisposable
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         // The service should handle all type values without throwing
-        Assert.NotNull(result);
     }
 
     [Fact]
@@ -95,20 +95,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(bookedBy: "Test User");
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
-    }
-
-    [Fact]
-    public async Task CreateJobAsync_LoadsSettingsFromTblSettings()
-    {
-        var service = CreateService();
-        var input = CreateInput();
-
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     private void SeedBaseData()
@@ -400,7 +387,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(clientId: 0);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("Client", result.Message);
@@ -412,7 +399,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(clientId: 9999);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("Client", result.Message);
@@ -424,9 +411,8 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(clientId: 10);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        Assert.NotNull(result);
         if (!result.Success)
             Assert.DoesNotContain("Invalid Client", result.Message);
     }
@@ -437,9 +423,9 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(speedId: 1);
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        if(!result.Success)
+            Assert.DoesNotContain("Invalid SpeedId", result.Message);
     }
 
     [Fact]
@@ -448,9 +434,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(speedId: 2001);
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -459,9 +443,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(speedId: 1000);
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -470,9 +452,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(speed: "Standard");
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -481,9 +461,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(speed: "NonExistentSpeed");
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -516,9 +494,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -527,9 +503,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -538,9 +512,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(notes: null, reference: null, referenceB: null, privateRes: null);
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -562,9 +534,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(notes: "Custom notes");
 
-        var result = await service.CreateJobAsync(input);
-
-        Assert.NotNull(result);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -578,7 +548,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Custom ref A message", result.Message);
@@ -594,7 +564,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(reference: "REF-001");
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         if (!result.Success)
             Assert.DoesNotContain("Reference A", result.Message);
@@ -611,7 +581,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Equal("Ref B is required", result.Message);
@@ -629,7 +599,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(reference: "INVALID-REF");
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("not in the defined list", result.Message);
@@ -647,7 +617,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(reference: "VALID-REF");
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         if (!result.Success)
             Assert.DoesNotContain("defined list", result.Message);
@@ -665,7 +635,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(referenceB: "BAD-B-REF");
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("not in the defined list", result.Message);
@@ -708,7 +678,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(bookedBy: string.Empty);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("Booked By", result.Message);
@@ -720,7 +690,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(speedId: 0);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("Speed", result.Message);
@@ -732,7 +702,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(fromAddress: new AddressViewModel());
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("From Address", result.Message);
@@ -744,7 +714,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateService();
         var input = CreateInput(toAddress: new AddressViewModel());
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("To Address", result.Message);
@@ -757,7 +727,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput();
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var invocation = mockProcs.Invocations
             .SingleOrDefault(i =>
@@ -772,10 +742,10 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput(speedId: 1);
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        Assert.False(mockProcs.Invocations
-            .Any(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync)));
+        Assert.DoesNotContain(mockProcs.Invocations
+, i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync));
     }
 
     [Fact]
@@ -785,7 +755,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs, outputJobId: 42);
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal(42, result.JobId);
@@ -798,7 +768,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs, outputJobId: null);
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Null(result.JobId);
@@ -811,7 +781,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput();
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
@@ -839,7 +809,7 @@ public class CreateJobServiceTests : IAsyncDisposable
             toAddress: new AddressViewModel("200 Delivery Ave", "Unit 5", "7 Low", "Lane", "Wellington", "WGN", "6011",
                 ""));
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
@@ -886,7 +856,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput();
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
@@ -904,7 +874,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput(recurringDays: "1110000", recurringFrequency: "10000");
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
@@ -922,7 +892,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput(type: "DELIVERTO");
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
@@ -938,7 +908,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupBulkScheduleInsert(mockProcs);
         var input = CreateInput(speedId: 2001);
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var invocation = mockProcs.Invocations
             .SingleOrDefault(i =>
@@ -953,10 +923,10 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupBulkScheduleInsert(mockProcs);
         var input = CreateInput(speedId: 2001);
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        Assert.False(mockProcs.Invocations
-            .Any(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync)));
+        Assert.DoesNotContain(mockProcs.Invocations
+, i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync));
     }
 
     [Fact]
@@ -966,7 +936,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupBulkScheduleInsert(mockProcs, outputJobId: 99);
         var input = CreateInput(speedId: 2001);
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
         Assert.Equal(99, result.JobId);
@@ -979,7 +949,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupBulkScheduleInsert(mockProcs);
         var input = CreateInput(speedId: 2001);
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
@@ -1000,7 +970,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupBulkScheduleInsert(mockProcs);
         var input = CreateInput(speedId: 2001, privateRes: true);
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
@@ -1017,7 +987,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupBulkScheduleInsert(mockProcs);
         var input = CreateInput(speedId: 2001);
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
@@ -1039,7 +1009,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         SetupExceleratorInsert(mockProcs);
         var input = CreateInput();
 
-        await service.CreateJobAsync(input);
+        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         var args = mockProcs.Invocations
             .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
@@ -1048,7 +1018,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         // jobNumber OutputParameter is at index 71 (one after jobID at 70)
         var jobNumberParam = args[ExceleratorJobIdArgIndex + 1] as OutputParameter<string>;
         Assert.NotNull(jobNumberParam);
-        Assert.Equal("JOB-001", jobNumberParam!._value);
+        Assert.Equal("JOB-001", jobNumberParam._value);
     }
 
     [Fact]
@@ -1087,7 +1057,7 @@ public class CreateJobServiceTests : IAsyncDisposable
 
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.Contains("Database connection failed", result.Message);
@@ -1101,7 +1071,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         var service = CreateServiceWithMockedProcs(out _);
         var input = CreateInput();
 
-        var result = await service.CreateJobAsync(input);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.False(result.Success);
         Assert.False(string.IsNullOrEmpty(result.Message));

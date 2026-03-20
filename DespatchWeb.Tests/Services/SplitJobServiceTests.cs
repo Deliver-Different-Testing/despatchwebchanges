@@ -39,6 +39,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _seedContext.DisposeAsync();
         await _db.DisposeAsync();
     }
@@ -108,6 +109,22 @@ public class SplitJobServiceTests : IAsyncDisposable
             UcjtUnitRate = 0,
             GroupingId = 1,
             ShowPhotosWhenChild = true,
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+
+        // "Unknown" suburb — fallback suburb ID for US tenants where zone-based
+        // rate triggers require non-null suburb IDs on child jobs.
+        _seedContext.TucSuburbs.Add(new TucSuburb
+        {
+            UcsuId = 1,
+            UcsuName = "Unknown",
+            UcsuArea = 0,
+            UcsuBaseRegion = 0,
+            Smsname = "Unknown",
+            PostCode = "00000",
             Created = TestDates.Now,
             CreatedBy = "Test",
             LastModified = TestDates.Now,
@@ -219,7 +236,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Contains("Job 999 not found", ex.Message);
         return;
 
-        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(999, "TestUser", CreateMeetingPointAddress());
+        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(999, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -246,7 +264,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Contains("flights assigned", ex.Message);
         return;
 
-        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress());
+        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -596,6 +615,36 @@ public class SplitJobServiceTests : IAsyncDisposable
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(99, delivery.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_MeetingPointSuburb_UsesUnknownSuburbFallback()
+    {
+        // Zone-based rate triggers (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid)
+        // require non-null suburb IDs. The meeting-point side should use the "Unknown" suburb.
+        SeedJob(configure: j =>
+        {
+            j.UcjbFrom = 10;
+            j.UcjbTo = 20;
+        });
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Pickup: from = original, to = Unknown suburb (meeting point)
+        Assert.Equal(10, pickup.UcjbFrom);
+        Assert.Equal(1, pickup.UcjbTo); // Unknown suburb ID
+
+        // Delivery: from = Unknown suburb (meeting point), to = original
+        Assert.Equal(1, delivery.UcjbFrom); // Unknown suburb ID
+        Assert.Equal(20, delivery.UcjbTo);
     }
 
     [Fact]

@@ -24,7 +24,7 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
     public JobRepositoryInterfaceTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = _db.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -33,11 +33,12 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _context.DisposeAsync();
         await _db.DisposeAsync();
     }
 
-    private IJobRepository CreateRepository() => new JobRepository(
+    private JobRepository CreateRepository() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
         _clock,
@@ -52,7 +53,7 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         var repository = CreateRepository();
 
         // Assert
-        Assert.IsAssignableFrom<IJobRepository>(repository);
+        Assert.IsType<IJobRepository>(repository, exactMatch: false);
     }
 
     [Fact]
@@ -282,5 +283,4 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
     {
         BulkJobId = id, JobNumber = jobNumber, BulkParentId = parentId
     };
-
 }

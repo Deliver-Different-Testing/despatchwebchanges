@@ -4,6 +4,7 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Moq;
@@ -26,11 +27,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     public RecurringJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = _db.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
     }
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _context.DisposeAsync();
         await _db.DisposeAsync();
     }
@@ -83,7 +85,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         const int newClientId = 55;
         const string expectedClientCode = "NEWCLIENT";
 
-        // AGRAT comes first alphabetically and has lowest ID
+        // AGRAT comes first alphabetically and has the lowest ID
         _context.TucClients.AddRange(
             CreateClient(1, "AGRAT"),
             CreateClient(55, expectedClientCode)
@@ -403,10 +405,12 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
 
-        // Act & Assert - Should not throw ArgumentOutOfRangeException
-        var act = async () => await repository.GetRecurringJobsListAsync(request);
-        var exception = await Record.ExceptionAsync(act);
+        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ?? throw new InvalidOperationException());
         Assert.Null(exception);
+        return;
+
+        // Act & Assert - Should not throw ArgumentOutOfRangeException
+        async Task<PaginatedResponse<PrebookListViewModel>> Act() => await repository.GetRecurringJobsListAsync(request);
     }
 
     [Fact]
@@ -521,15 +525,17 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         var repository = CreateRepository();
         var request = new RecurringJobQueryRequest { Active = true, Page = 1, Limit = 50 };
 
-        // Act - Should not throw for mixed dates
-        var act = async () => await repository.GetRecurringJobsListAsync(request);
-        var exception = await Record.ExceptionAsync(act);
+        var exception = await Record.ExceptionAsync((Func<Task<PaginatedResponse<PrebookListViewModel>>>?)Act ?? throw new InvalidOperationException());
         Assert.Null(exception);
 
         var result = await repository.GetRecurringJobsListAsync(request);
 
         // Assert
         Assert.Equal(3, result.Items.Count());
+        return;
+
+        // Act - Should not throw for mixed dates
+        async Task<PaginatedResponse<PrebookListViewModel>> Act() => await repository.GetRecurringJobsListAsync(request);
     }
 
     [Fact]
@@ -607,9 +613,11 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
         // Arrange
         var repository = CreateRepository();
 
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<JobGroupViewModel>>?)Act ?? throw new InvalidOperationException());
+        return;
+
         // Act & Assert
-        var act = async () => await repository.GetRecurringJobByIdAsync(999);
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        async Task<JobGroupViewModel> Act() => await repository.GetRecurringJobByIdAsync(999);
     }
 
     [Theory]
@@ -955,11 +963,13 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
             Address = CreateTestAddress("Test", "Test", "1234")
         };
 
-        // Act & Assert
-        var act = async () => await repository.UpdateBookingDeliveryAddressAsync(request);
-        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
         Assert.Contains("999", ex.Message);
         Assert.Contains("not found", ex.Message);
+        return;
+
+        // Act & Assert
+        async Task Act() => await repository.UpdateBookingDeliveryAddressAsync(request);
     }
 
     [Fact]
@@ -1035,11 +1045,13 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
             Address = CreateTestAddress("Test", "Test", "1234")
         };
 
-        // Act & Assert
-        var act = async () => await repository.UpdateBookingPickupAddressAsync(request);
-        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
         Assert.Contains("999", ex.Message);
         Assert.Contains("not found", ex.Message);
+        return;
+
+        // Act & Assert
+        async Task Act() => await repository.UpdateBookingPickupAddressAsync(request);
     }
 
     [Fact]
