@@ -24,11 +24,12 @@ public class DispatchJobServiceTests
         // Arrange
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.DispatchJobsToCourierAsync(null!, 1);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentNullException>(act);
+        await Assert.ThrowsAsync<ArgumentNullException>(Act);
+        return;
+
+        // Act
+        async Task Act() => await service.DispatchJobsToCourierAsync(null!, 1);
     }
 
     [Fact]
@@ -38,12 +39,13 @@ public class DispatchJobServiceTests
         var service = CreateService();
         var emptyList = new List<int>();
 
-        // Act
-        var act = async () => await service.DispatchJobsToCourierAsync(emptyList, 1);
-
         // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
         Assert.Contains("Job list cannot be empty", ex.Message);
+        return;
+
+        // Act
+        async Task Act() => await service.DispatchJobsToCourierAsync(emptyList, 1);
     }
 
     [Fact]
@@ -53,11 +55,12 @@ public class DispatchJobServiceTests
         var service = CreateService();
         var jobIds = new List<int> { 1 };
 
-        // Act
-        var act = async () => await service.DispatchJobsToCourierAsync(jobIds, 0);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(act);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(Act);
+        return;
+
+        // Act
+        async Task Act() => await service.DispatchJobsToCourierAsync(jobIds, 0);
     }
 
     [Fact]
@@ -66,7 +69,7 @@ public class DispatchJobServiceTests
         // Arrange
         var service = CreateService();
         var jobIds = new List<int> { 1 };
-        var courierId = 100;
+        const int courierId = 100;
 
         _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
             .Returns(Task.CompletedTask);
@@ -112,7 +115,7 @@ public class DispatchJobServiceTests
         // Arrange
         var service = CreateService();
         var jobIds = new List<int> { 1 };
-        var courierId = 100;
+        const int courierId = 100;
 
         _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
             .Returns(Task.CompletedTask);
@@ -134,7 +137,7 @@ public class DispatchJobServiceTests
         // Arrange
         var service = CreateService();
         var jobIds = new List<int> { 1, 2 };
-        var courierId = 100;
+        const int courierId = 100;
 
         _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
             .Returns(Task.CompletedTask);
@@ -157,17 +160,17 @@ public class DispatchJobServiceTests
         // Arrange
         var service = CreateService();
         var jobIds = new List<int> { 1 };
-        var courierId = 100;
+        const int courierId = 100;
 
         _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
-        // Act
-        var act = async () => await service.DispatchJobsToCourierAsync(jobIds, courierId);
-
         // Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(Act);
         Assert.Equal("Database error", ex.Message);
-    }
+        return;
 
+        // Act
+        async Task Act() => await service.DispatchJobsToCourierAsync(jobIds, courierId);
+    }
 }

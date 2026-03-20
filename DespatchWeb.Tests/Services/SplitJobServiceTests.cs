@@ -21,6 +21,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly DespatchContext _seedContext;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantClock _fakeTenantClock = new FakeTenantClock(TestDates.Now);
     private static readonly string[] Expected = ["JOB-500A", "JOB-500B"];
 
     public SplitJobServiceTests()
@@ -187,6 +188,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     private SplitJobService CreateService() => new(
         _contextFactoryMock.Object,
         _tenantInfoServiceMock.Object,
+        _fakeTenantClock,
         _rateJobServiceMock.Object,
         _jobRepositoryMock.Object);
 
@@ -645,6 +647,69 @@ public class SplitJobServiceTests : IAsyncDisposable
         // Delivery: from = Unknown suburb (meeting point), to = original
         Assert.Equal(1, delivery.UcjbFrom); // Unknown suburb ID
         Assert.Equal(20, delivery.UcjbTo);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_DispatchFieldsCopiedToChildJobs_WhenCourierAssigned()
+    {
+        // Fix: dispatch fields must be copied so tucJob_Insert_ClearListAreaOrder trigger
+        // doesn't fail with NULL OrderTime on tblClearListAreaOrder insert.
+        var dispTime = new DateTime(2024, 1, 15, 10, 30, 0);
+        var dispDate = new DateTime(2024, 1, 15);
+        SeedJob(configure: j =>
+        {
+            j.UcjbCourierId = 42;
+            j.UcjbDispTime = dispTime;
+            j.UcjbDispDate = dispDate;
+            j.UcjbDispId = 7;
+        });
+        var service = CreateService();
+
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            courierIdForLegB: 99, ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Pickup leg always gets dispatch fields (courier is always assigned)
+        Assert.Equal(TestDates.Now, pickup.UcjbDispTime);
+        Assert.Equal(TestDates.Now, pickup.UcjbDispDate);
+        Assert.Equal(7, pickup.UcjbDispId);
+
+        // Delivery leg gets dispatch fields when courierIdForLegB is provided
+        Assert.Equal(TestDates.Now, delivery.UcjbDispTime);
+        Assert.Equal(TestDates.Now, delivery.UcjbDispDate);
+        Assert.Equal(7, delivery.UcjbDispId);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_DeliveryJobNoCourier_DispatchFieldsNotCopied()
+    {
+        var dispTime = new DateTime(2024, 1, 15, 10, 30, 0);
+        var dispDate = new DateTime(2024, 1, 15);
+        SeedJob(configure: j =>
+        {
+            j.UcjbCourierId = 42;
+            j.UcjbDispTime = dispTime;
+            j.UcjbDispDate = dispDate;
+            j.UcjbDispId = 7;
+        });
+        var service = CreateService();
+
+        var (_, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // No courier for leg B → dispatch fields should NOT be copied
+        Assert.Null(delivery.UcjbDispTime);
+        Assert.Null(delivery.UcjbDispDate);
+        Assert.Null(delivery.UcjbDispId);
     }
 
     [Fact]
