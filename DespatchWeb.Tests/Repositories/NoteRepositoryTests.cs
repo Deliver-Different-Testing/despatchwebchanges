@@ -23,7 +23,7 @@ public class NoteRepositoryTests : IAsyncDisposable
     public NoteRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = _db.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -35,6 +35,7 @@ public class NoteRepositoryTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _context.DisposeAsync();
         await _db.DisposeAsync();
     }
@@ -91,8 +92,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.AddNewTucNoteTypeAsync(noteType);
 
         // Assert
-        var savedType = await _context.TucNoteTypes.FirstOrDefaultAsync(nt => nt.NoteTypeName == "New Note Type",
-            cancellationToken: TestContext.Current.CancellationToken);
+        var savedType = await _context.TucNoteTypes.FirstOrDefaultAsync(nt => nt.NoteTypeName == "New Note Type", cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedType);
         Assert.True(savedType.IsActive);
         Assert.True(savedType.IsPublic);
@@ -353,8 +353,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert — use AsNoTracking since ExecuteDeleteAsync bypasses the change tracker
-        var note = await _context.TucNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId,
-            cancellationToken: TestContext.Current.CancellationToken);
+        var note = await _context.TucNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(note);
 
         var history = await _context.TucNoteHistories
@@ -383,8 +382,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.DeleteBulkNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert
-        var note = await _context.TblBulkJobNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId,
-            cancellationToken: TestContext.Current.CancellationToken);
+        var note = await _context.TblBulkJobNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(note);
 
         var history = await _context.TucNoteHistories
@@ -675,8 +673,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note",
-            cancellationToken: TestContext.Current.CancellationToken);
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteText == "Brand new note", cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedNote);
         Assert.Equal(bulkJobId, savedNote.BulkJobId);
         Assert.Equal(1, savedNote.NoteTypeId);
@@ -818,8 +815,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
         // Assert
-        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId,
-            cancellationToken: TestContext.Current.CancellationToken);
+        var savedNote = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.BulkJobId == bulkJobId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedNote);
         Assert.Equal(1, savedNote.NoteTypeId); // Internal Note default
     }

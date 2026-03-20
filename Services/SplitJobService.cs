@@ -61,6 +61,11 @@ public class SplitJobService(
             // Generate child job numbers using letter suffixes (no SP = no speed suffix appended)
             var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job, ct);
 
+            // For US tenants, the tucJob INSERT triggers require non-null suburb IDs
+            // (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid, etc.).
+            // Mirror DD_stpJob_Excelerator_Insert which uses the "Unknown" suburb as fallback.
+            var meetingPointSuburbId = await GetUnknownSuburbIdAsync(context, ct);
+
             // Capture original courier ID before modifying parent
             var originalCourierId = job.UcjbCourierId;
 
@@ -80,7 +85,7 @@ public class SplitJobService(
             pickupJob.UcjbCourierId = originalCourierId;
             pickupJob.UcjbFrom = job.UcjbFrom;
             pickupJob.UcjbFromAddr = job.UcjbFromAddr;
-            pickupJob.UcjbTo = null;
+            pickupJob.UcjbTo = meetingPointSuburbId;
             pickupJob.UcjbToAddr = meetingPointAddress.FullAddress;
             pickupJob.DeliverToPrivateBusiness = PrivateResidenceDeliverTo;
             pickupJob.DeliverToLeaveId = HandOffLeaveType;
@@ -113,7 +118,7 @@ public class SplitJobService(
             // Build delivery child job via direct entity insert
             var deliveryJob = BuildChildJob(job, deliveryJobNumber, childRelTypeId, rootParentId, 2);
             deliveryJob.UcjbCourierId = courierIdForLegB;
-            deliveryJob.UcjbFrom = null;
+            deliveryJob.UcjbFrom = meetingPointSuburbId;
             deliveryJob.UcjbFromAddr = meetingPointAddress.FullAddress;
             deliveryJob.UcjbTo = job.UcjbTo;
             deliveryJob.UcjbToAddr = job.UcjbToAddr;
@@ -280,6 +285,16 @@ public class SplitJobService(
                          && context.TucCouriers.Any(c => c.UccrId == s.ParentJobCourierId)
                 ? s.ParentJobCourierId
                 : null)
+            .FirstOrDefaultAsync(ct);
+
+    /// <summary>
+    /// Returns the "Unknown" suburb ID used as fallback for US tenants.
+    /// Mirrors DD_stpJob_Excelerator_Insert: SELECT SuburbID FROM tblSuburb WHERE Name = N'Unknown'
+    /// </summary>
+    private static async Task<int?> GetUnknownSuburbIdAsync(DespatchContext context, CancellationToken ct) =>
+        await context.TucSuburbs
+            .Where(s => s.UcsuName == "Unknown")
+            .Select(s => (int?)s.UcsuId)
             .FirstOrDefaultAsync(ct);
 
     private async Task CreateSplitJobNotesAsync(

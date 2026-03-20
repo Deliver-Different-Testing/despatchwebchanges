@@ -37,6 +37,7 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await _db.DisposeAsync();
     }
 

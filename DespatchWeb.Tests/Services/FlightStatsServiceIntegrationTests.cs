@@ -99,6 +99,7 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
 
     public ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         _httpClient.Dispose();
         return ValueTask.CompletedTask;
     }
@@ -279,7 +280,7 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         if (response.IsSuccessStatusCode)
         {
             var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
-            Assert.True(result?.Connections == null || result.Connections.Count == 0, "Invalid airports should return no connections");
+            Assert.True(result?.Connections is null or [], "Invalid airports should return no connections");
         }
     }
 
@@ -431,7 +432,7 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         var tasks = new List<Task<HttpResponseMessage>>();
         for (var i = 0; i < 3; i++)
             if (_httpClient != null)
-                tasks.Add(_httpClient.GetAsync(url));
+                tasks.Add(_httpClient.GetAsync(url, TestContext.Current.CancellationToken));
 
         var responses = await Task.WhenAll(tasks);
 

@@ -31,7 +31,11 @@ public class JobRepositoryEditArrivalTimeTests : IAsyncDisposable
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
     }
 
-    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
+    }
 
     private DespatchContext CreateContext() => _db.CreateContext();
 

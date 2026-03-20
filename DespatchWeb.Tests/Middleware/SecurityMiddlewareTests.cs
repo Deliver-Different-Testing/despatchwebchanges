@@ -208,7 +208,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("X-Content-Type-Options"));
+        Assert.Contains(response.Headers, h => h.Key == "X-Content-Type-Options");
         Assert.Contains("nosniff", response.Headers.GetValues("X-Content-Type-Options"));
     }
 
@@ -223,7 +223,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("X-Frame-Options"));
+        Assert.Contains(response.Headers, h => h.Key == "X-Frame-Options");
         Assert.Contains("DENY", response.Headers.GetValues("X-Frame-Options"));
     }
 
@@ -238,7 +238,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("X-XSS-Protection"));
+        Assert.Contains(response.Headers, h => h.Key == "X-XSS-Protection");
         Assert.Contains("1; mode=block", response.Headers.GetValues("X-XSS-Protection"));
     }
 
@@ -253,7 +253,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("Referrer-Policy"));
+        Assert.Contains(response.Headers, h => h.Key == "Referrer-Policy");
         Assert.Contains("strict-origin-when-cross-origin", response.Headers.GetValues("Referrer-Policy"));
     }
 
@@ -268,7 +268,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("Strict-Transport-Security"));
+        Assert.Contains(response.Headers, h => h.Key == "Strict-Transport-Security");
         var hstsValue = response.Headers.GetValues("Strict-Transport-Security").First();
         Assert.Contains("max-age=31536000", hstsValue);
         Assert.Contains("includeSubDomains", hstsValue);
@@ -285,7 +285,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("Content-Security-Policy"));
+        Assert.Contains(response.Headers, h => h.Key == "Content-Security-Policy");
         var cspValue = response.Headers.GetValues("Content-Security-Policy").First();
         Assert.Contains("default-src 'self'", cspValue);
         Assert.Contains("frame-ancestors 'none'", cspValue);
@@ -321,7 +321,7 @@ public class SecurityMiddlewareTests
         var response = await client.GetAsync("/api/test", TestContext.Current.CancellationToken);
 
         // Assert
-        Assert.True(response.Headers.Contains("Permissions-Policy"));
+        Assert.Contains(response.Headers, h => h.Key == "Permissions-Policy");
         var permissionsValue = response.Headers.GetValues("Permissions-Policy").First();
         Assert.Contains("geolocation=(self)", permissionsValue);
         Assert.Contains("microphone=()", permissionsValue);

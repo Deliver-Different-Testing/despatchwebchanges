@@ -108,7 +108,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Single(result, c => c.Id == 1);
     }
 
@@ -149,7 +149,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Single(result, c => c.Id == 2);
     }
 
@@ -186,7 +186,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Single(result, c => c.Id == 2);
     }
 
@@ -342,7 +342,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: true, loggedInOnly: true, today.AddHours(12));
 
         // Assert - Only courier 1 is DG certified AND logged in
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Single(result, c => c.Id == 1);
     }
 
@@ -533,7 +533,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert - Only active and logged-in courier
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Single(result, c => c.Id == 2);
     }
 
@@ -562,7 +562,7 @@ public class CourierRepositoryLoggedInFilterTests
         var result = FilterCouriers(couriers, "", dgOnly: false, loggedInOnly: true, today.AddHours(12));
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
     }
 
     [Fact]

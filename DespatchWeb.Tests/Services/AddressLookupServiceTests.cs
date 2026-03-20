@@ -169,7 +169,7 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync("coffee");
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Equal("Valid Address", result[0].Address.Label);
     }
 
@@ -208,7 +208,7 @@ public class AddressLookupServiceTests
         var result = await service.AutocompleteAddressSearchAsync("test address");
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
     }
 
     [Fact]
@@ -219,11 +219,12 @@ public class AddressLookupServiceTests
         SetupHttpError(HttpStatusCode.InternalServerError);
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.AutocompleteAddressSearchAsync("test");
-
         // Assert
-        await Assert.ThrowsAsync<HttpRequestException>(act);
+        await Assert.ThrowsAsync<HttpRequestException>((Func<Task<IReadOnlyList<HereMapsLocationResult>>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<IReadOnlyList<HereMapsLocationResult>> Act() => await service.AutocompleteAddressSearchAsync("test");
     }
 
     [Fact]
@@ -257,11 +258,12 @@ public class AddressLookupServiceTests
         SetupHttpError(HttpStatusCode.NotFound);
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.GetLocationDetailsByIdAsync("invalid-id");
-
         // Assert
-        await Assert.ThrowsAsync<HttpRequestException>(act);
+        await Assert.ThrowsAsync<HttpRequestException>((Func<Task<HereMapsLookupResponse>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<HereMapsLookupResponse> Act() => await service.GetLocationDetailsByIdAsync("invalid-id");
     }
 
     [Fact]
@@ -285,7 +287,7 @@ public class AddressLookupServiceTests
         var result = await service.FetchNearestAddressAsync(-36.8509, 174.7645);
 
         // Assert
-        Assert.Equal(1, result.Count);
+        Assert.Single(result);
         Assert.Equal("Nearest Address", result[0].Address.Label);
     }
 
@@ -311,11 +313,12 @@ public class AddressLookupServiceTests
         SetupHttpError(HttpStatusCode.ServiceUnavailable);
         var service = CreateService();
 
-        // Act
-        var act = async () => await service.FetchNearestAddressAsync(-36.8509, 174.7645);
-
         // Assert
-        await Assert.ThrowsAsync<HttpRequestException>(act);
+        await Assert.ThrowsAsync<HttpRequestException>((Func<Task<IReadOnlyList<HereMapsLocationResult>>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        async Task<IReadOnlyList<HereMapsLocationResult>> Act() => await service.FetchNearestAddressAsync(-36.8509, 174.7645);
     }
 
     private void SetupHttpResponse<T>(T responseObject)

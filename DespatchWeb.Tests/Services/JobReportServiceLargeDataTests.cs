@@ -323,7 +323,7 @@ public class JobReportServiceLargeDataTests
         Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(1, lines.Length); // Header only
+        Assert.Single(lines); // Header only
     }
 
     [Theory]
@@ -406,7 +406,7 @@ public class JobReportServiceLargeDataTests
         Assert.NotEmpty(result.FileBytes);
         var csvContent = Encoding.UTF8.GetString(result.FileBytes);
         var lines = csvContent.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        Assert.Equal(1, lines.Length); // Header only
+        Assert.Single(lines); // Header only
     }
 
     private static List<JobDownloadModel> GenerateLargeJobDownloadDataset(int count)

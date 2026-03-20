@@ -131,12 +131,13 @@ public class CourierReportServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
-
         // Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
         Assert.Equal("Database error", ex.Message);
+        return;
+
+        // Act
+        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
     }
 
     [Fact]
@@ -255,11 +256,12 @@ public class CourierReportServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.GenerateComplianceCsvAsync(new CourierComplianceFilterRequest());
-
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateComplianceCsvAsync(new CourierComplianceFilterRequest());
     }
 
     [Fact]
@@ -383,11 +385,12 @@ public class CourierReportServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
-
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
     }
 
     [Fact]
@@ -448,11 +451,12 @@ public class CourierReportServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.GenerateDriverEmailsCsvAsync(new PaginatedRequest());
-
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateDriverEmailsCsvAsync(new PaginatedRequest());
     }
 
     [Fact]
@@ -532,11 +536,12 @@ public class CourierReportServiceTests
 
         var service = CreateService();
 
-        // Act
-        var act = () => service.GenerateDriverEarningsCsvAsync(new PaginatedRequest());
-
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(act);
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        return;
+
+        // Act
+        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateDriverEarningsCsvAsync(new PaginatedRequest());
     }
 
     [Fact]

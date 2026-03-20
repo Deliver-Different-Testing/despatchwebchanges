@@ -1074,7 +1074,7 @@ public class JobControllerTests : IDisposable
         // Arrange - This test verifies the fix where suburb ID is no longer required
         var meetingPointAddress = new AddressViewModel(
             addressLine1: "456 New Meeting Point",
-            addressLine2: "Suite 100",
+            addressLine2: string.Empty,
             addressLine3: string.Empty,
             addressLine4: string.Empty,
             addressLine5: "Wellington",
@@ -1108,6 +1108,7 @@ public class JobControllerTests : IDisposable
         var result = await controller.SplitJob(request);
 
         // Assert - Verify service is called with correct parameters (no suburb ID)
+        Assert.IsType<OkResult>(result);
         _splitJobServiceMock.Verify(x => x.SplitJobAsync(
             42,
             "Jane Smith",

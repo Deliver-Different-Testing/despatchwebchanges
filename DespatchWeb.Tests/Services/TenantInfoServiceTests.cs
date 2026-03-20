@@ -4,7 +4,6 @@ using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using MockQueryable.Moq;
 using Moq;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
@@ -13,11 +12,21 @@ namespace DespatchWeb.Tests.Services;
 /// <summary>
 /// Unit tests for TenantInfoService - tests timezone handling, culture formatting, and claim parsing.
 /// </summary>
-public class TenantInfoServiceTests
+public class TenantInfoServiceTests : IAsyncDisposable
 {
+    private readonly SqliteTestDatabase _db = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
-    private readonly IMemoryCache _memoryCache = new MemoryCache(new MemoryCacheOptions());
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly MemoryCache _memoryCache = new(new MemoryCacheOptions());
+
+    public TenantInfoServiceTests() => _contextFactoryMock = _db.CreateFactoryMock();
+
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        _memoryCache.Dispose();
+        await _db.DisposeAsync();
+    }
 
     private TenantInfoService CreateService() => new(
         _httpContextAccessorMock.Object,
@@ -376,15 +385,13 @@ public class TenantInfoServiceTests
         // Arrange
         SetupHttpContextWithClaims(("StaffID", "1"));
 
-        var staffList = new List<TucStaff>
+        await using var context = _db.CreateContext();
+        context.TucStaffs.Add(new TucStaff
         {
-            new() { UcstId = 1, UcstFirstName = "John", UcstLastName = "Doe" }
-        };
-
-        var mockDbSet = staffList.BuildMockDbSet();
-        var mockContext = new Mock<DespatchContext>(new DbContextOptions<DespatchContext>());
-        mockContext.Setup(c => c.TucStaffs).Returns(mockDbSet.Object);
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(mockContext.Object);
+            UcstId = 1, UcstFirstName = "John", UcstLastName = "Doe",
+            CreatedBy = "test", LastModifiedBy = "test"
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
 
@@ -403,15 +410,13 @@ public class TenantInfoServiceTests
         // Arrange
         SetupHttpContextWithClaims(("StaffID", "999"));
 
-        var staffList = new List<TucStaff>
+        await using var context = _db.CreateContext();
+        context.TucStaffs.Add(new TucStaff
         {
-            new() { UcstId = 1, UcstFirstName = "John", UcstLastName = "Doe" }
-        };
-
-        var mockDbSet = staffList.BuildMockDbSet();
-        var mockContext = new Mock<DespatchContext>(new DbContextOptions<DespatchContext>());
-        mockContext.Setup(c => c.TucStaffs).Returns(mockDbSet.Object);
-        _contextFactoryMock.Setup(f => f.CreateDbContext()).Returns(mockContext.Object);
+            UcstId = 1, UcstFirstName = "John", UcstLastName = "Doe",
+            CreatedBy = "test", LastModifiedBy = "test"
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var service = CreateService();
 

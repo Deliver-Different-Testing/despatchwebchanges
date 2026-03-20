@@ -65,7 +65,11 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
             .Returns(TestDates.Now);
     }
 
-    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
+    }
 
     private DespatchContext CreateContext() => _db.CreateContext();
 

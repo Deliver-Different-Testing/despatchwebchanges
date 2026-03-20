@@ -21,7 +21,8 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
         Connection.Open();
 
         Connection.CreateFunction("getdate", () => TestDates.Now);
-        Connection.CreateFunction("getutcdate", () => DateTime.UtcNow);
+        Connection.CreateFunction("getutcdate", () => TestDates.UtcNow);
+        Connection.RegisterDateDiffMinute();
 
         using var cmd = Connection.CreateCommand();
         cmd.CommandText = "PRAGMA foreign_keys = OFF;";
@@ -29,6 +30,7 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
 
         Options = new DbContextOptionsBuilder<DespatchContext>()
             .UseSqlite(Connection)
+            .AddSqliteDateDiffTranslation()
             .Options;
 
         using var context = new DespatchContext(Options);
@@ -54,7 +56,7 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
     /// Creates a factory mock that always returns the same context instance.
     /// Use when tests don't need parallel query support.
     /// </summary>
-    public Mock<IDbContextFactory<DespatchContext>> CreateFactoryMock(DespatchContext sharedContext)
+    public static Mock<IDbContextFactory<DespatchContext>> CreateFactoryMock(DespatchContext sharedContext)
     {
         var mock = new Mock<IDbContextFactory<DespatchContext>>();
         mock.Setup(f => f.CreateDbContext())
@@ -64,5 +66,9 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
         return mock;
     }
 
-    public async ValueTask DisposeAsync() => await Connection.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await Connection.DisposeAsync();
+    }
 }

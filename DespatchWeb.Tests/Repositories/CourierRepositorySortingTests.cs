@@ -2,7 +2,6 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Repositories;
-using DespatchWeb.Tests.Helpers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
@@ -16,8 +15,7 @@ namespace DespatchWeb.Tests.Repositories;
 public class CourierRepositorySortingTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly DbContextOptions<DespatchContext> _customOptions;
-    private readonly IMemoryCache _cache;
+    private readonly MemoryCache _cache;
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
@@ -25,20 +23,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
     public CourierRepositorySortingTests()
     {
-        _db.Connection.RegisterDateDiffMinute();
-
-        _customOptions = new DbContextOptionsBuilder<DespatchContext>()
-            .UseSqlite(_db.Connection)
-            .AddSqliteDateDiffTranslation()
-            .Options;
-
-        _contextFactoryMock = new Mock<IDbContextFactory<DespatchContext>>();
-        _contextFactoryMock
-            .Setup(f => f.CreateDbContext())
-            .Returns(() => new DespatchContext(_customOptions));
-        _contextFactoryMock
-            .Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new DespatchContext(_customOptions));
+        _contextFactoryMock = _db.CreateFactoryMock();
 
         _tenantInfoServiceMock
             .Setup(x => x.GetTenantTimeZone())
@@ -49,6 +34,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         _cache.Dispose();
         await _db.DisposeAsync();
     }
@@ -61,7 +47,7 @@ public class CourierRepositorySortingTests : IAsyncDisposable
         _cache
     );
 
-    private DespatchContext CreateContext() => new(_customOptions);
+    private DespatchContext CreateContext() => _db.CreateContext();
 
     /// <summary>
     /// Seeds 3 couriers with non-null emails + 2 fleets.

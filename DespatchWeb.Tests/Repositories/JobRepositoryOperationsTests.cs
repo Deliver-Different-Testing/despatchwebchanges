@@ -35,7 +35,11 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
     }
 
-    public async ValueTask DisposeAsync() => await _db.DisposeAsync();
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
+    }
 
     private DespatchContext CreateContext() => _db.CreateContext();
 
@@ -461,13 +465,14 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         var repository = CreateRepository();
         var data = new SimpleRepriceJobModel { JobId = 999, NewPrice = 100m };
 
-        // Act
-        var act = () => repository.SimpleRepriceJobManualAsync(data);
-
         // Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(Act);
         Assert.Contains("999", ex.Message);
         Assert.Contains("not found", ex.Message);
+        return;
+
+        // Act
+        Task Act() => repository.SimpleRepriceJobManualAsync(data);
     }
 
     [Fact]
@@ -575,12 +580,13 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Arrange
         var repository = CreateRepository();
 
-        // Act
-        var act = () => repository.AssignCourierToJobAsync([999], courierId: 5);
-
         // Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(act);
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(Act);
         Assert.Contains("No records found", ex.Message);
+        return;
+
+        // Act
+        Task Act() => repository.AssignCourierToJobAsync([999], courierId: 5);
     }
 
     [Fact]
@@ -758,11 +764,12 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
             }
         };
 
-        // Act
-        var act = () => repository.UpdateManualPriceAsync(data);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentException>(act);
+        await Assert.ThrowsAsync<ArgumentException>(Act);
+        return;
+
+        // Act
+        Task Act() => repository.UpdateManualPriceAsync(data);
     }
 
     [Fact]
@@ -784,12 +791,13 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
             }
         };
 
-        // Act
-        var act = () => repository.UpdateManualPriceAsync(data);
-
         // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>(act);
+        var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
         Assert.Contains("Invalid Values", ex.Message);
+        return;
+
+        // Act
+        Task Act() => repository.UpdateManualPriceAsync(data);
     }
 
     [Fact]
@@ -811,11 +819,12 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
             }
         };
 
-        // Act
-        var act = () => repository.UpdateManualPriceAsync(data);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentException>(act);
+        await Assert.ThrowsAsync<ArgumentException>(Act);
+        return;
+
+        // Act
+        Task Act() => repository.UpdateManualPriceAsync(data);
     }
 
     [Fact]
@@ -837,11 +846,12 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
             }
         };
 
-        // Act
-        var act = () => repository.UpdateManualPriceAsync(data);
-
         // Assert
-        await Assert.ThrowsAsync<ArgumentException>(act);
+        await Assert.ThrowsAsync<ArgumentException>(Act);
+        return;
+
+        // Act
+        Task Act() => repository.UpdateManualPriceAsync(data);
     }
 
     [Fact]
