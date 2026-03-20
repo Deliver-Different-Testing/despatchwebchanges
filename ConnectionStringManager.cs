@@ -56,7 +56,7 @@ public class ConnectionStringManager(
                 : null;
     }
 
-    public async Task<string?> GetConnectionStringAsync(string tenantAppCacheKey)
+    public async Task<string> GetConnectionStringAsync(string tenantAppCacheKey)
     {
         // Try memory cache first (fastest, no async overhead)
         var memoryCached = GetConnectionStringFromMemoryCache(tenantAppCacheKey);

@@ -20,6 +20,7 @@ namespace DespatchWeb.Services;
 public class SplitJobService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService,
+    ITenantClock tenantClock,
     IRateJobService rateJobService,
     IJobRepository jobRepository) : ISplitJobService
 {
@@ -72,6 +73,9 @@ public class SplitJobService(
             // Determine root parent ID - preserve existing if job is already a child
             var rootParentId = job.RootParentId ?? job.UcjbId;
 
+            // Current tenant time
+            var currentTenantTime = tenantClock.TenantNow;
+            
             // Update parent job
             job.JobRelationshipTypeId = parentRelTypeId;
             job.UcjbCourierId = parentJobCourierId;
@@ -83,6 +87,9 @@ public class SplitJobService(
             // Build pickup child job via direct entity insert
             var pickupJob = BuildChildJob(job, pickupJobNumber, childRelTypeId, rootParentId, 1);
             pickupJob.UcjbCourierId = originalCourierId;
+            pickupJob.UcjbDispTime = currentTenantTime;
+            pickupJob.UcjbDispDate = currentTenantTime;
+            pickupJob.UcjbDispId = job.UcjbDispId;
             pickupJob.UcjbFrom = job.UcjbFrom;
             pickupJob.UcjbFromAddr = job.UcjbFromAddr;
             pickupJob.UcjbTo = meetingPointSuburbId;
@@ -118,6 +125,12 @@ public class SplitJobService(
             // Build delivery child job via direct entity insert
             var deliveryJob = BuildChildJob(job, deliveryJobNumber, childRelTypeId, rootParentId, 2);
             deliveryJob.UcjbCourierId = courierIdForLegB;
+            if (courierIdForLegB.HasValue)
+            {
+                deliveryJob.UcjbDispTime =  currentTenantTime;
+                deliveryJob.UcjbDispDate = currentTenantTime;
+                deliveryJob.UcjbDispId = job.UcjbDispId;
+            }
             deliveryJob.UcjbFrom = meetingPointSuburbId;
             deliveryJob.UcjbFromAddr = meetingPointAddress.FullAddress;
             deliveryJob.UcjbTo = job.UcjbTo;
@@ -305,7 +318,7 @@ public class SplitJobService(
         CancellationToken ct)
     {
         var staffId = tenantInfoService.GetStaffId();
-        var now = DateTime.UtcNow;
+        var now = tenantClock.UtcNow;
         var parentNotesText = string.IsNullOrWhiteSpace(parentNotes) ? string.Empty : $"  {parentNotes}";
 
         context.TucNotes.AddRange(
