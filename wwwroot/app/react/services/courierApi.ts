@@ -14,7 +14,7 @@ import type {ClearListEnvelopeData} from '../components/common/dispatch-map/Disp
  */
 export async function searchActiveCouriers(searchText: string, options?: RequestOptions): Promise<CourierSuggestion[]> {
     return apiClient.get<CourierSuggestion[]>('courier/AllActiveSearch', {
-        searchText,
+        searchTerm: searchText,
     }, options);
 }
 
@@ -25,7 +25,7 @@ export async function searchActiveCouriersExtended(
     searchText: string,
     options?: { dgOnly?: boolean; loggedInOnly?: boolean } & RequestOptions
 ): Promise<CourierSuggestion[]> {
-    const params: Record<string, any> = { searchText };
+    const params: Record<string, any> = { searchTerm: searchText };
     if (options?.dgOnly) params.dgOnly = true;
     if (options?.loggedInOnly) params.loggedInOnly = true;
     return apiClient.get<CourierSuggestion[]>('courier/AllActiveSearch', params, options);

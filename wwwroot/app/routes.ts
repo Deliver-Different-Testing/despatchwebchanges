@@ -1,6 +1,7 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
+import {openJobDetail} from './react/services/navigationService';
 
 class RouterConfig {
     constructor(
@@ -319,7 +320,7 @@ class RouterConfig {
                     return $ocLazyLoad.load(getAssetPath('overviewReact.js'));
                 }]
             },
-            controller: ['$scope', 'toastrService', 'APP_CONFIG', 'navigationService',
+            controller: ['$scope', 'toastrService', 'APP_CONFIG',
                 function(
                     $scope: angular.IScope,
                     toastrService: {
@@ -328,8 +329,7 @@ class RouterConfig {
                         showErrorToast: (m?: string) => void;
                         showInfoToast: (m: string) => void;
                     },
-                    appConfig: { US_Customer: boolean },
-                    navigationService: { openJobDetail: (jobId: number) => void }
+                    appConfig: { US_Customer: boolean }
                 ) {
                     const showToast = {
                         showSuccessToast: (m: string) => toastrService.showSuccessToast(m),
@@ -341,7 +341,7 @@ class RouterConfig {
                     window.ReactOverview!.mount('react-overview', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
-                        onOpenJobDetail: (jobId: number) => navigationService.openJobDetail(jobId),
+                        onOpenJobDetail: (jobId: number) => openJobDetail(jobId),
                     });
 
                     $scope.$on('$destroy', () => {
