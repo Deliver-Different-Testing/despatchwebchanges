@@ -27,7 +27,7 @@ describe('courierApi', () => {
             const result = await courierApi.searchActiveCouriers('John');
 
             expect(mockApiClient.get).toHaveBeenCalledWith('courier/AllActiveSearch', {
-                searchText: 'John',
+                searchTerm: 'John',
             }, undefined);
             expect(result).toEqual(mockCouriers);
         });
@@ -47,7 +47,7 @@ describe('courierApi', () => {
             const result = await courierApi.searchActiveCouriers('');
 
             expect(mockApiClient.get).toHaveBeenCalledWith('courier/AllActiveSearch', {
-                searchText: '',
+                searchTerm: '',
             }, undefined);
             expect(result).toEqual(mockCouriers);
         });
@@ -69,7 +69,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'courier/AllActiveSearch',
-                {searchText: 'test'},
+                {searchTerm: 'test'},
                 undefined,
             );
         });
@@ -81,7 +81,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'courier/AllActiveSearch',
-                {searchText: 'test', dgOnly: true},
+                {searchTerm: 'test', dgOnly: true},
                 expect.objectContaining({dgOnly: true}),
             );
         });
@@ -93,7 +93,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'courier/AllActiveSearch',
-                {searchText: 'test', loggedInOnly: true},
+                {searchTerm: 'test', loggedInOnly: true},
                 expect.objectContaining({loggedInOnly: true}),
             );
         });
@@ -105,7 +105,7 @@ describe('courierApi', () => {
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
                 'courier/AllActiveSearch',
-                {searchText: 'test', dgOnly: true, loggedInOnly: true},
+                {searchTerm: 'test', dgOnly: true, loggedInOnly: true},
                 expect.objectContaining({dgOnly: true, loggedInOnly: true}),
             );
         });

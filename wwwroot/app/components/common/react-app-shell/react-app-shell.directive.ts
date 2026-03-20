@@ -1,5 +1,6 @@
 import angular from 'angular';
 import { initAiSettings } from '../../../functions/aiSettings';
+import { openHubUrl } from '../../../react/services/navigationService';
 /**
  * React App Shell Directive
  *
@@ -35,7 +36,6 @@ interface ReactAppShellScope extends angular.IScope {
 function reactAppShellDirective(
     $ocLazyLoad: oc.ILazyLoad,
     $state: angular.ui.IStateService,
-    navigationService: any,
     APP_CONFIG: any,
     $rootScope: angular.IRootScopeService,
     toastrService: any
@@ -262,7 +262,7 @@ function reactAppShellDirective(
                         fullName,
                         isUsCustomer: APP_CONFIG.US_Customer,
                         currentState: $state.current.name || '',
-                        onLogoClick: () => navigationService.openHubUrl(),
+                        onLogoClick: () => openHubUrl(),
                         onNavigate: (state: string) => {
                             $state.go(state).catch((error: any) => {
                                 // Ignore superseded transitions (user clicked another link)
@@ -347,6 +347,6 @@ function reactAppShellDirective(
     };
 }
 
-reactAppShellDirective.$inject = ['$ocLazyLoad', '$state', 'navigationService', 'APP_CONFIG', '$rootScope', 'toastrService'];
+reactAppShellDirective.$inject = ['$ocLazyLoad', '$state', 'APP_CONFIG', '$rootScope', 'toastrService'];
 
 export default reactAppShellDirective;

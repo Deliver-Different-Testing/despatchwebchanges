@@ -19,6 +19,14 @@ export function bytesFilter(bytes: number, precision?: number): string {
 }
 
 /**
+ * Replaces all occurrences of a string with another
+ */
+export function replaceFilter(input: string, search: string, replacement: string): string {
+    if (!input) return input;
+    return input.replace(new RegExp(search, "g"), replacement);
+}
+
+/**
  * Gets timezone abbreviation from IANA timezone
  */
 export function timezoneShortFilter(timezone: string): string {

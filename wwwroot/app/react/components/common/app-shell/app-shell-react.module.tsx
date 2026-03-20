@@ -26,6 +26,7 @@ import {
 } from '../app-toolbar/ToolbarActions';
 import angular from 'angular';
 import {isAiEnabled} from '../../../../functions/aiSettings';
+import {openHubUrl} from '../../../services/navigationService';
 
 // Toolbar Actions Configuration
 export interface ToolbarActionsConfig {
@@ -393,12 +394,10 @@ const appShellReactModule = window.angular!.module(
 appShellReactModule.service('reactAppShellService', [
     '$state',
     '$rootScope',
-    'navigationService',
     'APP_CONFIG',
     (
         $state: angular.ui.IStateService,
         $rootScope: angular.IRootScopeService,
-        navigationService: any,
         appConfig: any
     ) => {
         let stateChangeListener: (() => void) | null = null;
@@ -417,7 +416,7 @@ appShellReactModule.service('reactAppShellService', [
                     fullName,
                     isUsCustomer: appConfig.US_Customer,
                     currentState: $state.current.name || '',
-                    onLogoClick: () => navigationService.openHubUrl(),
+                    onLogoClick: () => openHubUrl(),
                     onNavigate: (state: string) => {
                         $state.go(state).catch((error: any) => {
                             if (error?.type === 2 /* RejectType.SUPERSEDED */) return;

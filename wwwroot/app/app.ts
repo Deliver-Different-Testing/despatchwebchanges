@@ -18,7 +18,7 @@ import JobFileUploadController from "./components/dialogs/job-file-upload-dialog
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
-import {bytesFilter, timezoneShortFilter} from "./filters";
+import {bytesFilter, replaceFilter, timezoneShortFilter} from "./filters";
 import {StickyNotesReactComponent} from "./react/components/common/sticky-notes/sticky-notes-react.module";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
@@ -195,6 +195,7 @@ app.config(["$qProvider", ($qProvider: angular.IQProvider) => {
 
 // Filters
 app.filter("bytes", () => bytesFilter);
+app.filter('replace', () => replaceFilter);
 app.filter('timezoneShort', () => timezoneShortFilter);
 app.filter('minutesToTime', () => minutesToTimeFilter);
 
