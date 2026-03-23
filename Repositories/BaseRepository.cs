@@ -15,7 +15,11 @@ public class BaseRepository(IDbContextFactory<DespatchContext> contextFactory) :
     /// </summary>
     protected DespatchContext CreateNewContext() => contextFactory.CreateDbContext();
 
-    public void Dispose() => _context?.Dispose();
+    public void Dispose()
+    {
+        _context?.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     public async Task AddEntityAsync<T>(T entity)
         where T : class => await Context.Set<T>().AddAsync(entity);  

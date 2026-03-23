@@ -71,6 +71,11 @@ export const queryKeys = {
         all: ['jobs'] as const,
         related: (jobId: number, isArchived: boolean) =>
             ['jobs', 'related', jobId, isArchived] as const,
+        detail: (jobId: number, type: 'standard' | 'recurring' | 'bulk') =>
+            ['jobs', 'detail', jobId, type] as const,
+        photos: (jobId: number, photoType: 'delivery' | 'pickup') =>
+            ['jobs', 'photos', jobId, photoType] as const,
+        internalStatuses: ['jobs', 'internalStatuses'] as const,
     },
     addresses: {
         all: ['addresses'] as const,

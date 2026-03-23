@@ -15,66 +15,6 @@ namespace DespatchWeb.Services;
 public sealed class CreateJobService(
     IDbContextFactory<DespatchContext> contextFactory) : ICreateJobService
 {
-    /// <summary>
-    /// Intermediate state that replaces ~30 SQL local variables from the stored procedure.
-    /// </summary>
-    private class ResolvedJobData
-    {
-        // Input-derived
-        public int TypeId { get; set; } = 1;
-        public int? ClientGroupId { get; set; }
-        public string ClientCode { get; set; }
-        public bool IsBulkSchedule { get; set; }
-        public int? BulkRunScheduleId { get; set; }
-        public int? BulkJobTypeId { get; set; }
-        public int? JobTypeId { get; set; }
-        public int? SpeedId { get; set; }
-
-        // Address type
-        public int? AddressType { get; set; }
-        public int? LeaveNotHomeId { get; set; }
-        public bool? ReturnJob { get; set; }
-        public int? ProofOfDeliveryType { get; set; }
-        public bool? ProofOfDelivery { get; set; }
-        public string ProofOfDeliveryEmail { get; set; }
-        public string ProofOfDeliveryMobile { get; set; }
-
-        // Defaults
-        public string Contact { get; set; }
-        public int? ContactId { get; set; }
-        public int? DeliverToPrivateBusiness { get; set; }
-        public string ClientReferenceA { get; set; }
-        public string ClientReferenceB { get; set; }
-        public int? Size { get; set; }
-        public decimal? Weight { get; set; }
-        public int? Quantity { get; set; }
-        public string CourierNotes { get; set; }
-        public string ClientNotes { get; set; }
-        public int? PickUpFrom { get; set; }
-        public int? DeliverToLeaveId { get; set; }
-
-        // Settings
-        public int ChargeType { get; set; }
-        public int OperatorId { get; set; }
-
-        // Client info
-        public int? ClientId { get; set; }
-        public bool ReferenceAmandatory { get; set; }
-        public bool ReferenceAdefineList { get; set; }
-        public string ReferenceAmessage { get; set; }
-        public bool ReferenceBmandatory { get; set; }
-        public bool ReferenceBdefineList { get; set; }
-        public string ReferenceBmessage { get; set; }
-
-        // Recurring
-        public int? RecurringDaysBitmask { get; set; }
-        public int? RecurringFrequencyBitmask { get; set; }
-
-        // Bulk schedule info
-        public TblBulkRunSchedule BulkSchedule { get; set; }
-        public TblBulkRegion BulkRegion { get; set; }
-    }
-
     /// <inheritdoc />
     public async Task<CreateMinimalTucJobResponse> CreateJobAsync(
         CreateMinimalTucJobInputModel data,
@@ -92,7 +32,6 @@ public sealed class CreateJobService(
         }
     }
 
-    /// <inheritdoc />
     public async Task<CreateMinimalTucJobResponse> CreateJobAsync(
         CreateMinimalTucJobInputModel data,
         DespatchContext context,
@@ -731,5 +670,65 @@ public sealed class CreateJobService(
         if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out var result))
             return null;
         return result;
+    }
+
+    /// <summary>
+    /// Intermediate state that replaces ~30 SQL local variables from the stored procedure.
+    /// </summary>
+    private class ResolvedJobData
+    {
+        // Input-derived
+        public int TypeId { get; set; } = 1;
+        public int? ClientGroupId { get; set; }
+        public string ClientCode { get; set; }
+        public bool IsBulkSchedule { get; set; }
+        public int? BulkRunScheduleId { get; set; }
+        public int? BulkJobTypeId { get; set; }
+        public int? JobTypeId { get; set; }
+        public int? SpeedId { get; set; }
+
+        // Address type
+        public int? AddressType { get; set; }
+        public int? LeaveNotHomeId { get; set; }
+        public bool? ReturnJob { get; set; }
+        public int? ProofOfDeliveryType { get; set; }
+        public bool? ProofOfDelivery { get; set; }
+        public string ProofOfDeliveryEmail { get; set; }
+        public string ProofOfDeliveryMobile { get; set; }
+
+        // Defaults
+        public string Contact { get; set; }
+        public int? ContactId { get; set; }
+        public int? DeliverToPrivateBusiness { get; set; }
+        public string ClientReferenceA { get; set; }
+        public string ClientReferenceB { get; set; }
+        public int? Size { get; set; }
+        public decimal? Weight { get; set; }
+        public int? Quantity { get; set; }
+        public string CourierNotes { get; set; }
+        public string ClientNotes { get; set; }
+        public int? PickUpFrom { get; set; }
+        public int? DeliverToLeaveId { get; set; }
+
+        // Settings
+        public int ChargeType { get; set; }
+        public int OperatorId { get; set; }
+
+        // Client info
+        public int? ClientId { get; set; }
+        public bool ReferenceAmandatory { get; set; }
+        public bool ReferenceAdefineList { get; set; }
+        public string ReferenceAmessage { get; set; }
+        public bool ReferenceBmandatory { get; set; }
+        public bool ReferenceBdefineList { get; set; }
+        public string ReferenceBmessage { get; set; }
+
+        // Recurring
+        public int? RecurringDaysBitmask { get; set; }
+        public int? RecurringFrequencyBitmask { get; set; }
+
+        // Bulk schedule info
+        public TblBulkRunSchedule BulkSchedule { get; set; }
+        public TblBulkRegion BulkRegion { get; set; }
     }
 }

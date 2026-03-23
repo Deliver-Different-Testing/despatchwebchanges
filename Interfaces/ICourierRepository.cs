@@ -1,3 +1,5 @@
+#nullable enable
+
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;

@@ -23,7 +23,7 @@ public class AiRateLimiterTests
     {
         // Arrange - cache returns null (no existing counter)
         _cacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((byte[])null);
+            .ReturnsAsync((byte[]?)null);
 
         var service = CreateService();
 
@@ -41,7 +41,7 @@ public class AiRateLimiterTests
         _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), It.IsAny<CancellationToken>()))
             .ReturnsAsync("20"u8.ToArray());
         _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((byte[])null);
+            .ReturnsAsync((byte[]?)null);
 
         var service = CreateService();
 

@@ -35,28 +35,33 @@ workflow:
   rules:
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
       changes:
-        - "**/*.cs"
-        - "**/*.csproj"
-        - Directory.Build.props
-        - Directory.Packages.props
-        - nuget.config
-        - global.json
-        - .gitlab-ci.yml
+        paths:
+          - "**/*.cs"
+          - "**/*.csproj"
+          - Directory.Build.props
+          - Directory.Packages.props
+          - nuget.config
+          - global.json
+          - .gitlab-ci.yml
+        compare_to: refs/heads/master
 
 # Path-based rules: only run frontend tests when frontend files change
 .frontend-test-rules:
+  interruptible: true
   rules:
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
       changes:
-        - "wwwroot/**"
-        - package.json
-        - package-lock.json
-        - jest.config.ts
-        - jest.integration.config.ts
-        - tsconfig.json
-        - tsconfig.test.json
-        - eslint.config.mjs
-        - .gitlab-ci.yml
+        paths:
+          - "wwwroot/**"
+          - package.json
+          - package-lock.json
+          - jest.config.ts
+          - jest.integration.config.ts
+          - tsconfig.json
+          - tsconfig.test.json
+          - eslint.config.mjs
+          - .gitlab-ci.yml
+        compare_to: refs/heads/master
 
 # Test jobs - only run on merge requests targeting protected branches
 test:backend:

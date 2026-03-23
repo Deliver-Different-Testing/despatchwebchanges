@@ -1009,8 +1009,8 @@ public partial class JobRepository(
         var fromDateOnly = fromDate.Date;
         var toDateOnly = toDate.Date;
 
-        var jobSearch = $"%{job ?? string.Empty}%";
-        var wildSearch = $"%{wild ?? string.Empty}%";
+        var jobSearch = $"%{job}%";
+        var wildSearch = $"%{wild}%";
 
         var clientSet = clientIds is { Count: > 0 };
         var courierSet = courierIds is { Count: > 0 };

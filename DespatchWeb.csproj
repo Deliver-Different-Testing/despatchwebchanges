@@ -318,7 +318,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" />
-    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
     <PackageReference Include="Serilog.AspNetCore" />
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="System.Linq.Async" />
@@ -330,7 +329,6 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\common\job-details\job-details.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\app-shell\app-shell.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\pod-photo-viewer\pod-photo-viewer.types.ts" />

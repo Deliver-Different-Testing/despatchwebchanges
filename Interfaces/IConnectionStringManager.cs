@@ -1,4 +1,6 @@
-﻿namespace DespatchWeb.Interfaces;
+﻿#nullable enable
+
+namespace DespatchWeb.Interfaces;
 
 public interface IConnectionStringManager
 {

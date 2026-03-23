@@ -634,6 +634,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 densityMode={densityMode}
                 onDensityModeChange={handleDensityModeChange}
                 onResetColumns={handleResetColumns}
+                appPage={appPage}
             />
             <JobListTable
                 jobs={visibleJobs}

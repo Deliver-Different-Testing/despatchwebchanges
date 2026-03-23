@@ -1,3 +1,5 @@
+#nullable enable
+
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -36,7 +38,7 @@ public interface IJobQueryRepository
         JobQueryParams queryParams,
         bool isInternal,
         bool isUsTenant,
-        string clientIds,
+        string? clientIds,
         IReadOnlyList<int> selectedViewIds,
         int? selectedClearListId = null,
         CancellationToken cancellationToken = default);
@@ -67,7 +69,7 @@ public interface IJobQueryRepository
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
     Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default);
-    Task<JobViewModel> GetSingleJobById(int jobId);
+    Task<JobViewModel?> GetSingleJobById(int jobId);
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
     Task<PaginatedResponse<DeliveryJob>> GetJobsForOverviewPageAsync(
@@ -88,7 +90,7 @@ public interface IJobQueryRepository
 
     Task<bool> IsJobParentAsync(int jobId);
     Task<bool> IsBulkJobParent(int bulkJobId);
-    Task<JobLateCallDto> GetJobForLateCallAsync(int jobId);
+    Task<JobLateCallDto?> GetJobForLateCallAsync(int jobId);
     Task<JobRatingDetailsDto> GetJobDetailsForRatingAsync(int jobId);
     Task<JobRatingDetailsDtoNz> GetJobDetailsForRatingNzAsync(int jobId, bool isArchived);
     Task<JobRatingDetailsDtoNz> GetJobBookingDetailsForRatingNzAsync(int jobId);

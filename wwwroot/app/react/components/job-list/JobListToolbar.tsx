@@ -22,6 +22,7 @@ import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type {SxProps, Theme} from '@mui/material';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
+import {AppPage} from '../../interfaces/dispatchJob';
 
 interface JobListToolbarProps {
     selectedCategory: JobCategory;
@@ -33,6 +34,7 @@ interface JobListToolbarProps {
     densityMode: DensityMode;
     onDensityModeChange: (mode: DensityMode) => void;
     onResetColumns: () => void;
+    appPage?: AppPage | number;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -110,7 +112,9 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     densityMode,
     onDensityModeChange,
     onResetColumns,
+    appPage,
 }) => {
+    const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const localInputRef = useRef(searchQuery);
 
@@ -185,19 +189,21 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 sx={styles.searchField}
             />
 
-            {/* Logged-in couriers only toggle */}
-            <FormControlLabel
-                control={
-                    <Switch
-                        size="small"
-                        checked={loggedInCouriersOnly}
-                        onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
-                    />
-                }
-                label="Logged-in only"
-                slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap'}}}}
-                sx={{ml: 0, mr: 0}}
-            />
+            {/* Logged-in couriers only toggle - only shown when dispatching is enabled */}
+            {allowDispatch && (
+                <FormControlLabel
+                    control={
+                        <Switch
+                            size="small"
+                            checked={loggedInCouriersOnly}
+                            onChange={(_, checked) => onLoggedInCouriersOnlyChange(checked)}
+                        />
+                    }
+                    label="Logged-in only"
+                    slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap'}}}}
+                    sx={{ml: 0, mr: 0}}
+                />
+            )}
 
             <Box sx={{flex: 1}}/>
 

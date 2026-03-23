@@ -46,7 +46,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            await taskRepository.UpdateEventDateAsync(data.EventId, data.Date);
+            await taskRepository.UpdateEventDueTimeAsync(data.EventId, data.Date);
             return Ok();
         }
         catch (Exception ex)
@@ -62,7 +62,7 @@ public class TaskController(ITaskRepository taskRepository) : Controller
     {
         try
         {
-            await taskRepository.UpdateEventTimeAsync(data.EventId, data.Time);
+            await taskRepository.UpdateEventDueTimeAsync(data.EventId, data.Time);
             return Ok();
         }
         catch (Exception ex)

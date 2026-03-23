@@ -289,8 +289,8 @@ public class AiAssistantServiceTests
                 };
             });
 
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999))
-            .ReturnsAsync((JobViewModel)null);
+        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999))!
+            .ReturnsAsync((JobViewModel?)null);
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Find job 999" } };

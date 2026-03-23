@@ -159,8 +159,8 @@ class EditDateTimeDialogManager {
                 fieldName: options.fieldName,
                 dateTime: options.dateTime,
                 defaultTimeZone: options.defaultTimeZone,
-                showDate: options.showDate,
-                showTime: options.showTime,
+                showDate: options.showDate ?? true,
+                showTime: options.showTime ?? true,
                 isUSCustomer: options.isUSCustomer ?? getIsUSCustomer(),
                 resolve,
             };

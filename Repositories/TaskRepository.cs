@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Extensions;
@@ -16,28 +15,11 @@ public class TaskRepository(
     ITenantInfoService infoService,
     ITenantClock clock) : BaseRepository(contextFactory), ITaskRepository
 {
+    private const int InternetUserStaffId = 33;
+
     private static readonly HashSet<string> AutoResponseTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "Web", "Email", "Text"
-    };
-
-    private static readonly Expression<Func<TucEvent, TaskViewModel>> TaskMapping = e => new TaskViewModel
-    {
-        Id = e.UcevId,
-        Assignee = e.UcevStaffIdinNavigation != null
-            ? new Suggestion
-            {
-                Id = e.UcevStaffIdinNavigation.UcstId,
-                Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
-            }
-            : null,
-        Description = e.UcevNotes,
-        JobId = e.UcevJobId ?? 0,
-        Closed = e.UcevClosed,
-        DueDate = e.UcevDueTime,
-        Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
-        EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
-        JobNumber = e.UcevJob.UcjbNumber
     };
 
     public async Task<IReadOnlyList<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters)
@@ -46,28 +28,40 @@ public class TaskRepository(
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
         var query = Context.TucEvents
+            .AsNoTracking()
             .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
 
         if (filters != null) query = ApplyFilters(query, filters);
 
         query = ApplyOrdering(query, filters, today.DateTime);
 
+        query = query.Take(filters?.Limit is > 0 ? filters.Limit.Value : 500);
+
         var tasks = await query
-            .Select(TaskMapping)
+            .Select(e => new TaskViewModel
+            {
+                Id = e.UcevId,
+                Assignee = e.UcevStaffIdinNavigation != null
+                    ? new Suggestion
+                    {
+                        Id = e.UcevStaffIdinNavigation.UcstId,
+                        Text = e.UcevStaffIdinNavigation.UcstFirstName + " " + e.UcevStaffIdinNavigation.UcstLastName
+                    }
+                    : null,
+                Description = e.UcevNotes,
+                JobId = e.UcevJobId ?? 0,
+                Closed = e.UcevClosed,
+                DueDate = e.UcevDueTime,
+                Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
+                EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
+                JobNumber = e.UcevJob.UcjbNumber
+            })
             .ToListAsync();
 
-        return tasks.Select(task => new TaskViewModel
-        {
-            Id = task.Id,
-            Title = task.Title,
-            Description = task.Description,
-            DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone),
-            Closed = task.Closed,
-            Assignee = task.Assignee,
-            EventType = task.EventType,
-            JobId = task.JobId,
-            JobNumber = task.JobNumber
-        }).ToList();
+        foreach (var task in tasks)
+            task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
+
+        return tasks;
     }
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
@@ -111,48 +105,7 @@ public class TaskRepository(
         }
     }
 
-    public async Task UpdateEventDateAsync(int eventId, DateTimeOffset date)
-    {
-        await using var transaction = await Context.Database.BeginTransactionAsync();
-
-        try
-        {
-            var existingEvent = await Context.TucEvents
-                .Where(e => e.UcevId == eventId)
-                .Select(e => new { e.UcevDueTime })
-                .FirstOrDefaultAsync();
-
-            ArgumentNullException.ThrowIfNull(existingEvent);
-
-            // Only update if the value changed
-            if (existingEvent.UcevDueTime != date.DateTime)
-            {
-                await Context.TucEvents
-                    .Where(e => e.UcevId == eventId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(e => e.UcevDueTime, date.DateTime));
-
-                await CreateEventAuditRecord(
-                    eventId,
-                    infoService.GetStaffId(),
-                    TucEventChangeType.Update,
-                    "UcevDueTime",
-                    existingEvent.UcevDueTime.ToString("O"),
-                    date.ToString("O")
-                );
-            }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
-    }
-
-
-    public async Task UpdateEventTimeAsync(int eventId, DateTimeOffset time)
+    public async Task UpdateEventDueTimeAsync(int eventId, DateTimeOffset dueTime)
     {
         await using var transaction = await Context.Database.BeginTransactionAsync();
 
@@ -166,12 +119,12 @@ public class TaskRepository(
             if (existingEvent == null)
                 throw new ArgumentException($"Event with ID {eventId} not found.");
 
-            if (existingEvent.UcevDueTime != time.DateTime)
+            if (existingEvent.UcevDueTime != dueTime.DateTime)
             {
                 await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
                     .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(e => e.UcevDueTime, time.DateTime));
+                        .SetProperty(e => e.UcevDueTime, dueTime.DateTime));
 
                 await CreateEventAuditRecord(
                     eventId,
@@ -179,7 +132,7 @@ public class TaskRepository(
                     TucEventChangeType.Update,
                     "UcevDueTime",
                     existingEvent.UcevDueTime.ToString("O"),
-                    time.ToString("O")
+                    dueTime.ToString("O")
                 );
             }
 
@@ -234,6 +187,7 @@ public class TaskRepository(
 
     public async Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync() =>
         await Context.TucEventTypeGroups
+            .AsNoTracking()
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .ToListAsync();
@@ -242,6 +196,7 @@ public class TaskRepository(
     {
         var now = clock.TenantNow;
         var eventGroups = await Context.TucEventTypeEventTypeGroups
+            .AsNoTracking()
             .Where(x => x.EventTypeGroupId == eventGroupId)
             .Select(x => new EventGroupViewModel
             {
@@ -330,6 +285,7 @@ public class TaskRepository(
     public async Task<IReadOnlyList<Suggestion>> GetActiveStaffAsync()
     {
         var staff = await Context.TucStaffs
+            .AsNoTracking()
             .Where(s => s.UcstActive)
             .Select(s => new Suggestion
             {
@@ -554,7 +510,7 @@ public class TaskRepository(
             if (automaticResponse)
             {
                 closed = true;
-                staffIdOut = 33; // INTERNET USER
+                staffIdOut = InternetUserStaffId;
                 responseTime = currentDate;
                 contact = "Automatic Response";
                 despatcher = "Internet";
@@ -592,7 +548,7 @@ public class TaskRepository(
     }
 
     private async Task CreateEventAuditRecord(int eventId, int staffIdId, TucEventChangeType changeType,
-        string columnName, dynamic oldValue, dynamic newValue)
+        string columnName, string oldValue, string newValue)
     {
         var newAudit = new TucEventAudit
         {

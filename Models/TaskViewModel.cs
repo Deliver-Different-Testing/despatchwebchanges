@@ -8,7 +8,7 @@ public sealed class TaskViewModel
 
     public string Description { get; init; }
 
-    public DateTimeOffset DueDate { get; init; }
+    public DateTimeOffset DueDate { get; set; }
 
     public bool Closed { get; init; }
     

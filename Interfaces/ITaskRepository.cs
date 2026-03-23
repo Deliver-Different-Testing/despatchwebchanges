@@ -7,8 +7,7 @@ public interface ITaskRepository
 {
     Task<IReadOnlyList<TaskViewModel>> GetAllTasksAsync(TaskTableFiltersRequest filters);
     Task SetEventAsClosedAsync(int eventId, bool closed);
-    Task UpdateEventDateAsync(int eventId, DateTimeOffset date);
-    Task UpdateEventTimeAsync(int eventId, DateTimeOffset time);
+    Task UpdateEventDueTimeAsync(int eventId, DateTimeOffset dueTime);
     Task ReassignEventToUserAsync(int eventId, int staffId);
     Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync();
     Task<IReadOnlyList<EventGroupViewModel>> GetEventTypeGroupsAsync(int eventGroupId);

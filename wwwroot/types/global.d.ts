@@ -13,6 +13,7 @@ import type angular from 'angular';
 
 // Page module mount configs
 import type {MountRecurringJobsConfig, MountDriverManagementConfig, MountJobListConfig, DispatchJob, JobListSearchParams} from '../app/react/interfaces';
+import type {MountJobDetailsConfig} from '../app/react/components/common/job-details/JobDetails.types';
 import type {MountOverviewConfig} from '../app/react/pages/overview/OverviewPage.interfaces';
 import type {MountTaskDashboardConfig} from '../app/react/pages/task-dashboard/TaskDashboardPage.interfaces';
 import type {MountErrorPageConfig} from '../app/react/pages/error-page/error-page-react.module';
@@ -121,6 +122,7 @@ declare global {
         ReactDriverManagement?: ReactPageModule<MountDriverManagementConfig>;
         ReactCourierMap?: ReactPageModule<MountCourierMapConfig>;
         ReactErrorPage?: ReactPageModule<MountErrorPageConfig>;
+        ReactJobDetails?: ReactPageModule<MountJobDetailsConfig>;
         ReactJobList?: {
             mount(containerId: string, config: MountJobListConfig): void;
             unmount(): void;

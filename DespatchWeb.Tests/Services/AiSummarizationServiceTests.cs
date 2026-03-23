@@ -465,9 +465,9 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel?)null);
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync((List<TucNoteViewModel>?)null);
+        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync((List<TucNoteViewModel>?)null!);
         _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync((List<TaskViewModel>?)null);
+            .ReturnsAsync((List<TaskViewModel>?)null!);
 
         var service = CreateService();
 
@@ -673,7 +673,7 @@ public class AiSummarizationServiceTests
         // Arrange
         _courierRepositoryMock
             .Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync((List<CourierComplianceViewModel>?)null);
+            .ReturnsAsync((IReadOnlyList<CourierComplianceViewModel>?)null!);
 
         var service = CreateService();
 
