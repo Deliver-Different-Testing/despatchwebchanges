@@ -35,8 +35,7 @@ public class DynamicDespatchDbContextFactory(
 
         // Use sync memory-cache lookup first to avoid blocking the thread pool.
         // Only fall back to the async path (which may hit Redis) when memory cache is cold.
-        var connectionString = connectionStringManager.GetConnectionStringFromMemoryCache(cacheKey)
-            ?? connectionStringManager.GetConnectionStringAsync(cacheKey).GetAwaiter().GetResult();
+        var connectionString = connectionStringManager.GetConnectionStringFromMemoryCache(cacheKey);
 
         if (string.IsNullOrEmpty(connectionString))
         {

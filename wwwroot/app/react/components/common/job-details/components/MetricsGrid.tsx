@@ -24,7 +24,11 @@ interface MetricsGridProps {
 
 const gridSx: SxProps<Theme> = {
     display: 'grid',
-    gridTemplateColumns: 'repeat(6, 1fr)',
+    gridTemplateColumns: {
+        xs: 'repeat(2, 1fr)',
+        sm: 'repeat(3, 1fr)',
+        md: 'repeat(6, 1fr)',
+    },
     gap: '1px',
     bgcolor: 'divider',
 };

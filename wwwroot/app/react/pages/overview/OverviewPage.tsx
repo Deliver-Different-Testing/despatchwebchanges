@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Typography from '@mui/material/Typography';
@@ -10,10 +10,10 @@ import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
 import {
     useOverviewJobs,
+    useOverviewOpenJobs,
     useOverviewRegions,
     useOverviewSpeeds,
     useOverviewStats,
-    useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
 import {FilterPanel} from './components/FilterPanel';
@@ -22,11 +22,11 @@ import {DeliveriesTable} from './components/DeliveriesTable';
 import {OpenJobsWidget} from './components/OpenJobsWidget';
 import {MapDialog} from './components/MapDialog';
 import type {
+    DateRange,
+    ISuggestion,
     OverviewPageProps,
     OverviewQueryParams,
     OverviewTableParentJob,
-    ISuggestion,
-    DateRange,
     TableSort,
 } from './OverviewPage.interfaces';
 
@@ -158,7 +158,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     // ── Refresh callback (exposed to AngularJS) ──
     const handleRefresh = useCallback(() => {
-        queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
+        return queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
     }, [queryClient]);
 
     useEffect(() => {

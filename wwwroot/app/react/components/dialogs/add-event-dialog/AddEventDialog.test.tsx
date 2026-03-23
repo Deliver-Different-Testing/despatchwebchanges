@@ -84,7 +84,7 @@ describe('AddEventDialog', () => {
             const props = createMockProps({
                 open: false,
                 onLoadEventTypes: jest.fn().mockImplementation(
-                    () => new Promise(resolve => setTimeout(() => resolve(mockEventTypes), 100))
+                    () => new Promise(() => {}) // Never resolves — loading state is guaranteed
                 ),
             });
             const { rerender } = renderWithTheme(<AddEventDialog {...props} />);
@@ -125,7 +125,7 @@ describe('AddEventDialog', () => {
             const props = createMockProps({
                 open: false,
                 onLoadEventTypes: jest.fn().mockImplementation(
-                    () => new Promise(resolve => setTimeout(() => resolve(mockEventTypes), 100))
+                    () => new Promise(() => {}) // Never resolves — loading state is guaranteed
                 ),
             });
             const { rerender } = renderWithTheme(<AddEventDialog {...props} />);

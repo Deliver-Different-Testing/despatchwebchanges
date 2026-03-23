@@ -72,8 +72,8 @@ describe('AccessorialChargesDialogManager', () => {
             // Don't await — the promise only resolves when dialog closes
             const dialogPromise = openAccessorialChargesDialog({job});
 
-            // Give time for synchronous initialization to complete
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Flush microtask queue for synchronous initialization
+            await Promise.resolve();
 
             // Validation passed and rendering was attempted
             const { createRoot } = require('react-dom/client');

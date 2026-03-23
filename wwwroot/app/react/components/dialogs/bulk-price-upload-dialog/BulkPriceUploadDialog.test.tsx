@@ -271,9 +271,10 @@ describe('BulkPriceUploadDialog', () => {
         });
 
         it('should show loading state while applying', async () => {
+            let resolveSubmit!: (value: typeof mockResponse) => void;
             const props = createMockProps({
                 onSubmit: jest.fn().mockImplementation(
-                    () => new Promise(resolve => setTimeout(() => resolve(mockResponse), 100))
+                    () => new Promise(resolve => { resolveSubmit = resolve; })
                 ),
             });
             renderWithTheme(<BulkPriceUploadDialog {...props} />);
@@ -282,7 +283,11 @@ describe('BulkPriceUploadDialog', () => {
             const applyButton = screen.getByRole('button', { name: /recalculate & save/i });
             await userEvent.click(applyButton);
 
+            // Promise never resolves until we say so — loading state is guaranteed visible
             expect(await screen.findByText(/Applying price changes.../)).toBeInTheDocument();
+
+            // Clean up: resolve the pending promise
+            resolveSubmit(mockResponse);
         });
 
         it('should show success toast on successful apply', async () => {

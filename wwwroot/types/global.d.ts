@@ -18,6 +18,7 @@ import type {MountOverviewConfig} from '../app/react/pages/overview/OverviewPage
 import type {MountTaskDashboardConfig} from '../app/react/pages/task-dashboard/TaskDashboardPage.interfaces';
 import type {MountErrorPageConfig} from '../app/react/pages/error-page/error-page-react.module';
 import type {MountCourierMapConfig} from '../app/react/pages/courier-map/courier-map-react.module';
+import type {MountDispatchConfig} from '../app/react/pages/dispatch/DispatchPage.interfaces';
 
 // Shared service types
 import type {ToastService} from '../app/react/services/toastService';
@@ -122,6 +123,7 @@ declare global {
         ReactDriverManagement?: ReactPageModule<MountDriverManagementConfig>;
         ReactCourierMap?: ReactPageModule<MountCourierMapConfig>;
         ReactErrorPage?: ReactPageModule<MountErrorPageConfig>;
+        ReactDispatch?: ReactPageModule<MountDispatchConfig>;
         ReactJobDetails?: ReactPageModule<MountJobDetailsConfig>;
         ReactJobList?: {
             mount(containerId: string, config: MountJobListConfig): void;

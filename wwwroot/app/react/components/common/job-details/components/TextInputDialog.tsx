@@ -45,7 +45,7 @@ export function TextInputDialog({
         }
     }, [open, initialValue]);
 
-    // Auto-focus input when dialog opens
+    // Autofocus input when dialog opens
     useEffect(() => {
         if (open) {
             const timer = setTimeout(() => {

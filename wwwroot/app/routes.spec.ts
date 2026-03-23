@@ -86,9 +86,9 @@ describe('RouterConfig', () => {
             expect(homeState.url).toBe('/?jobId');
         });
 
-        it('should configure home state with homeComponent', () => {
+        it('should configure home state with React dispatch template', () => {
             const homeState = registeredStates.get('home');
-            expect(homeState.component).toBe('homeComponent');
+            expect(homeState.template).toContain('react-dispatch');
         });
 
         it('should configure home state with optional jobId param', () => {

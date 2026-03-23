@@ -41,6 +41,11 @@ class RouterConfig {
                     squash: true
                 }
             },
+            template: `
+                <md-content class="md-dense" style="height: 100%;">
+                    <div id="react-dispatch" style="height: 100%;"></div>
+                </md-content>
+            `,
             resolve: {
                 jobId: ['$stateParams', ($stateParams: IDfrntStateParams) => {
                     return $stateParams.jobId ? parseInt($stateParams.jobId, 10) : null;
@@ -52,32 +57,66 @@ class RouterConfig {
                     } catch {
                         console.warn('[ROUTES] Failed to load manifest for home state, using fallback names');
                         return {
-                            'home.js': 'home.js',
-                            'home.css': 'home.css'
+                            'vendor-react.js': 'vendor-react.js',
+                            'dispatchReact.js': 'dispatchReact.js'
                         };
                     }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
                     const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    await $ocLazyLoad.load([
-                        getAssetPath('home.js'),
-                        getAssetPath('home.css')
-                    ]);
-                    // Load React job list for the dispatch page
                     if (!window.React) {
                         await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
                     }
                     await $ocLazyLoad.load({
-                        name: 'uDispatch.jobListReact',
-                        files: [getAssetPath('jobListReact.js')]
+                        name: 'uDispatch.dispatchReact',
+                        files: [getAssetPath('dispatchReact.js')]
                     });
-                    await $ocLazyLoad.load({
-                        name: 'uDispatch.currentWorkJobListReact',
-                        files: [getAssetPath('currentWorkJobListReact.js')]
-                    });
+                    // Load CSS if available
+                    const cssFile = manifest['dispatchReact.css'];
+                    if (cssFile) {
+                        await $ocLazyLoad.load(`dist/${cssFile}`);
+                    }
                 }]
             },
-            component: "homeComponent"
+            controller: ['$scope', '$state', 'toastrService', 'APP_CONFIG', 'jobId',
+                function(
+                    $scope: angular.IScope,
+                    $state: angular.ui.IStateService,
+                    toastrService: {
+                        showSuccessToast: (m: string) => void;
+                        showWarningToast: (m: string) => void;
+                        showErrorToast: (m: string) => void;
+                        showInfoToast: (m: string) => void
+                    },
+                    appConfig: { US_Customer: boolean },
+                    jobId: number | null
+                ) {
+                    const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                        switch (type) {
+                            case 'success': toastrService.showSuccessToast(message); break;
+                            case 'warning': toastrService.showWarningToast(message); break;
+                            case 'error': toastrService.showErrorToast(message); break;
+                            case 'info': toastrService.showInfoToast(message); break;
+                        }
+                    };
+
+                    window.ReactDispatch!.mount('react-dispatch', {
+                        showToast,
+                        isUsCustomer: appConfig.US_Customer,
+                        initialJobId: jobId,
+                        onNavigate: (state: string) => {
+                            $state.go(state).catch((error: any) => {
+                                if (error?.type === 2) return;
+                                console.error(`[DispatchReact] Navigation to '${state}' failed:`, error);
+                            });
+                        },
+                    });
+
+                    $scope.$on('$destroy', () => {
+                        window.ReactDispatch!.unmount();
+                    });
+                }
+            ],
         });
         return this;
     }
