@@ -166,6 +166,8 @@ export interface UseDispatchLayoutReturn {
     saveLayoutAs: (name: string) => void;
     /** Delete a layout by index */
     deleteLayout: (index: number) => void;
+    /** Update box visibility from settings dialog result */
+    updateBoxStates: (boxes: Record<string, { visible?: boolean }>) => void;
     /** Number of grid columns */
     cols: number;
     /** Row height in pixels */
@@ -316,6 +318,17 @@ export function useDispatchLayout(): UseDispatchLayoutReturn {
         loadLayout(0);
     }, [layouts, loadLayout]);
 
+    const updateBoxStates = useCallback((boxes: Record<string, { visible?: boolean }>) => {
+        const updated = {...boxStates};
+        for (const [key, box] of Object.entries(boxes)) {
+            if (updated[key]) {
+                updated[key] = {visible: box.visible ?? true};
+            }
+        }
+        setBoxStates(updated);
+        saveBoxStates(currentLayoutName, updated);
+    }, [boxStates, currentLayoutName]);
+
     return {
         rglLayout,
         onLayoutChange,
@@ -326,6 +339,7 @@ export function useDispatchLayout(): UseDispatchLayoutReturn {
         loadLayout,
         saveLayoutAs,
         deleteLayout,
+        updateBoxStates,
         cols,
         rowHeight,
         visibleBoxIds,

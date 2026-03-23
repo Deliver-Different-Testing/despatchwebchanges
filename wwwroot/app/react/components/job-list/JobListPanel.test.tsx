@@ -191,7 +191,8 @@ describe('JobListPanel', () => {
     });
 
     it('filters by category, search (job number, client, courier), computes stats, selects job on click', async () => {
-        const user = userEvent.setup();
+        jest.useFakeTimers();
+        const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
         const onCategoryChange = jest.fn();
         const onSearchChange = jest.fn();
         const onJobSelect = jest.fn();
@@ -228,37 +229,36 @@ describe('JobListPanel', () => {
         expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
         expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
 
-        // Search by job number
+        // Search by job number — flush 300ms debounce instantly
         const searchInput = screen.getByPlaceholderText('Search jobs...');
         await user.click(searchInput);
         await user.paste('UNASSIGNED');
-        await waitFor(() => {
-            expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
-            expect(screen.queryByText('DISPATCHED-1')).not.toBeInTheDocument();
-        });
+        await act(async () => { jest.advanceTimersByTime(300); });
+        expect(screen.getByText('UNASSIGNED-1')).toBeInTheDocument();
+        expect(screen.queryByText('DISPATCHED-1')).not.toBeInTheDocument();
         expect(onSearchChange).toHaveBeenCalledWith('UNASSIGNED');
 
         // Search by client
         await user.clear(searchInput);
         await user.paste('gadget');
-        await waitFor(() => {
-            expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
-            expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
-        });
+        await act(async () => { jest.advanceTimersByTime(300); });
+        expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
+        expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
         // Search by courier
         await user.clear(searchInput);
         await user.paste('Mike');
-        await waitFor(() => {
-            expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
-            expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
-        });
+        await act(async () => { jest.advanceTimersByTime(300); });
+        expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
+        expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
         // Job selection (clear search first)
         await user.clear(searchInput);
-        await screen.findByText('UNASSIGNED-1');
+        await act(async () => { jest.advanceTimersByTime(300); });
         await user.click(screen.getByText('UNASSIGNED-1'));
         expect(onJobSelect).toHaveBeenCalledWith(expect.objectContaining({id: 1, jobNo: 'UNASSIGNED-1'}));
+
+        jest.useRealTimers();
     });
 
     describe('localStorage Persistence', () => {
