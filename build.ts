@@ -9,7 +9,6 @@ type EntryPointName =
     | 'vendor-plugins'
     | 'vendor-react'
     | 'app'
-    | 'home'
     | 'nationwide'
     | 'jobSearch'
     | 'taskDashboardReact'
@@ -45,7 +44,8 @@ type EntryPointName =
     | 'currentWorkJobListReact'
     | 'nationwideJobListReact'
     | 'jobSearchJobListReact'
-    | 'jobDetailsReact';
+    | 'jobDetailsReact'
+    | 'dispatchReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -60,7 +60,6 @@ const entryPoints: EntryPoints = {
     "vendor-plugins": path.join(rootDir, "wwwroot/app/vendor-plugins.ts"),
     "vendor-react": path.join(rootDir, "wwwroot/app/vendor-react.ts"),
     app: path.join(rootDir, "wwwroot/app/app.ts"),
-    home: path.join(rootDir, "wwwroot/app/components/home/home.module.ts"),
     nationwide: path.join(rootDir, "wwwroot/app/components/Nationwide/nationwide.module.ts"),
     jobSearch: path.join(rootDir, "wwwroot/app/components/jobSearch/jobSearch.module.ts"),
     taskDashboardReact: path.join(rootDir, "wwwroot/app/react/pages/task-dashboard/task-dashboard-react.module.tsx"),
@@ -97,6 +96,7 @@ const entryPoints: EntryPoints = {
     nationwideJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/nationwide-job-list-react.module.tsx"),
     jobSearchJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-search-job-list-react.module.tsx"),
     jobDetailsReact: path.join(rootDir, "wwwroot/app/react/components/common/job-details/job-details-react.module.tsx"),
+    dispatchReact: path.join(rootDir, "wwwroot/app/react/pages/dispatch/dispatch-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)

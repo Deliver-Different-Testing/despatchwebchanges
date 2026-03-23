@@ -36,6 +36,8 @@ const config = {
         '<rootDir>/wwwroot/app/tests/setup.ts',
     ],
 
+    // Only collect coverage when explicitly requested via --coverage flag
+    collectCoverage: false,
     collectCoverageFrom: [
         'wwwroot/app/**/*.ts',
         'wwwroot/app/**/*.tsx',
@@ -54,6 +56,11 @@ const config = {
             statements: 15,
         },
     },
+
+    reporters: [
+        'default',
+        ['jest-slow-test-reporter', { numTests: 10, warnOnSlowerThan: 300, color: true }],
+    ],
 
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/', '/__integration__/'],
 

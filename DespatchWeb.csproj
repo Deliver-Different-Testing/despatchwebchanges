@@ -349,9 +349,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\home\enums\CurrentWorkLists.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\home\enums\DispatchBoxes.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\home\home.module.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\JobSearchDateRange.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
@@ -371,7 +368,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\home\home.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\NationwideBoxes.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\Nationwide\filters\minutesToTimeFilter.ts" />

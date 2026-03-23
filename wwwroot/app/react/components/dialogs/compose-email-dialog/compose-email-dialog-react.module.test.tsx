@@ -70,8 +70,8 @@ describe('ComposeEmailDialogModule', () => {
             // Don't await — the promise only resolves when dialog closes, which never happens in mocks
             void openComposeEmailDialog(createMockCouriers());
 
-            // Allow synchronous code to execute
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Flush microtask queue for synchronous code
+            await Promise.resolve();
 
             expect(mockCreateRoot).toHaveBeenCalled();
             expect(mockRender).toHaveBeenCalled();

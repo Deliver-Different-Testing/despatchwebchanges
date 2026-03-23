@@ -74,11 +74,11 @@ describe('BulkPriceUploadDialogManager', () => {
         it('should create dialog container in document body', async () => {
             const toastService = createMockToastService();
 
-            // Start opening the dialog
-            openBulkPriceUploadDialog({ toastService });
+            // Start opening the dialog (don't await — the promise resolves on user close)
+            openBulkPriceUploadDialog({toastService});
 
-            // Give time for async operations
-            await new Promise(resolve => setTimeout(resolve, 50));
+            // Flush microtask queue for async rendering
+            await Promise.resolve();
 
             const container = document.getElementById('react-bulk-price-upload-dialog-root');
             expect(container).not.toBeNull();

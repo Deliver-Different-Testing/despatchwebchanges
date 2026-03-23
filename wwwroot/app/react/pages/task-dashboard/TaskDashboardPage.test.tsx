@@ -217,7 +217,7 @@ describe('TaskDashboardPage', () => {
     // ── Skeleton loading state ──────────────────────────────────────
     it('renders skeleton loading state while fetching tasks', async () => {
         mockTasksApi.getAllTasks.mockImplementation(
-            () => new Promise((resolve) => setTimeout(() => resolve([]), 500))
+            () => new Promise(() => {}) // Never resolves — loading state is guaranteed
         );
 
         const props = createDefaultProps();

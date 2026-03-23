@@ -39,51 +39,41 @@ function createDefaultProps(overrides?: Partial<{
 }
 
 describe('JobListToolbar', () => {
-    it('renders category buttons, search input, and density toggle buttons', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
+    it('renders all elements and fires callbacks on interaction', async () => {
+        const user = userEvent.setup();
+        const props = createDefaultProps();
+        renderWithTheme(<JobListToolbar {...props}/>);
 
+        // Category buttons and search input present
         expect(screen.getByText('Unassigned')).toBeInTheDocument();
         expect(screen.getByText('Active')).toBeInTheDocument();
         expect(screen.getByText('Done')).toBeInTheDocument();
         expect(screen.getByText('All')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
-        const buttons = screen.getAllByRole('button');
-        expect(buttons.length).toBeGreaterThanOrEqual(4);
-    });
+        expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(4);
 
-    it('fires onCategoryChange when a category is clicked', async () => {
-        const user = userEvent.setup();
-        const props = createDefaultProps();
-        renderWithTheme(<JobListToolbar {...props}/>);
-
+        // Category change callback
         await user.click(screen.getByText('Unassigned'));
-
         expect(props.onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
+
+        // Reset columns callback
+        await user.click(screen.getByRole('button', {name: /reset column widths/i}));
+        expect(props.onResetColumns).toHaveBeenCalledTimes(1);
     });
 
-    it('shows logged-in only toggle when dispatching is enabled', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})}/>);
+    it('shows logged-in only toggle on Dispatch and JobSearch pages but not Domestic', () => {
+        // Dispatch
+        const {unmount: u1} = renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})}/>);
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
-    });
+        u1();
 
-    it('shows logged-in only toggle on job search page', () => {
-        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
+        // JobSearch
+        const {unmount: u2} = renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
-    });
+        u2();
 
-    it('hides logged-in only toggle when dispatching is not enabled', () => {
+        // Domestic
         renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})}/>);
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
-    });
-
-    it('fires onResetColumns when reset button is clicked', async () => {
-        const user = userEvent.setup();
-        const props = createDefaultProps();
-        renderWithTheme(<JobListToolbar {...props}/>);
-
-        const resetButton = screen.getByRole('button', {name: /reset column widths/i});
-        await user.click(resetButton);
-
-        expect(props.onResetColumns).toHaveBeenCalledTimes(1);
     });
 });

@@ -6,9 +6,9 @@
  * and date/time editing.
  */
 
-import React, {useState, useMemo, useCallback} from 'react';
-import {alpha} from '@mui/material/styles';
+import React, {useCallback, useMemo, useState} from 'react';
 import type {Theme} from '@mui/material/styles';
+import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
@@ -30,7 +30,7 @@ import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {TimeClock} from '@mui/x-date-pickers/TimeClock';
 import dayjs, {Dayjs} from 'dayjs';
-import {TaskItemProps, TaskItemConfig, Task} from './TaskItem.interfaces';
+import {Task, TaskItemConfig, TaskItemProps} from './TaskItem.interfaces';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 const defaultConfig: TaskItemConfig = {
@@ -363,7 +363,6 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                     color: 'primary.dark',
                                     fontSize: '0.75rem',
                                     fontWeight: 600,
-                                    fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
                                 })}
                             />
                         )}

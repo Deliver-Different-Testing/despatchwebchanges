@@ -41,8 +41,8 @@ export function useJobUpdate(
 ) {
     const queryClient = useQueryClient();
 
-    const invalidateJob = () => {
-        queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
+    const invalidateJob = async () => {
+        await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
     };
 
     const updateFieldMutation = useMutation({
@@ -53,9 +53,9 @@ export function useJobUpdate(
                 await updateJobDetail(job.id, field, value, isRecurring, timezone);
             }
         },
-        onSuccess: (_data, {job}) => {
+        onSuccess: async (_data, {job}) => {
             showToast(`${job.jobNo} updated`, 'success');
-            invalidateJob();
+            await invalidateJob();
         },
         onError: () => {
             showToast('Failed to update job. Please try again.', 'error');
@@ -70,9 +70,9 @@ export function useJobUpdate(
                 await updatePickupAddress(job.id, job.preBook, address);
             }
         },
-        onSuccess: (_data, {job}) => {
+        onSuccess: async (_data, {job}) => {
             showToast(`${job.jobNo} updated`, 'success');
-            invalidateJob();
+            await invalidateJob();
         },
         onError: () => {
             showToast('Failed to update address. Please try again.', 'error');
@@ -81,8 +81,8 @@ export function useJobUpdate(
 
     const updatePodMutation = useMutation({
         mutationFn: (data: UpdatePodDetailsRequest) => updatePodDetails(data),
-        onSuccess: () => {
-            invalidateJob();
+        onSuccess: async () => {
+           await invalidateJob();
         },
         onError: () => {
             showToast('Failed to update POD details.', 'error');
@@ -90,10 +90,10 @@ export function useJobUpdate(
     });
 
     const toggleReadStatusMutation = useMutation({
-        mutationFn: ({jobId, hasBeenRead}: {jobId: number; hasBeenRead: boolean}) =>
+        mutationFn: ({jobId, hasBeenRead}: { jobId: number; hasBeenRead: boolean }) =>
             updateJobReadStatus(jobId, hasBeenRead),
-        onSuccess: () => {
-            invalidateJob();
+        onSuccess: async () => {
+           await invalidateJob();
         },
         onError: (_err, {hasBeenRead}) => {
             const actionText = hasBeenRead ? 'read' : 'unread';
@@ -112,23 +112,22 @@ export function useJobUpdate(
             try {
                 const courier = await getCourierById(courierId);
                 if (courier) {
-                    const display = courier.id && courier.id !== 'undefined' && courier.id.trim() !== ''
+                    return courier.id && courier.id !== 'undefined' && courier.id.trim() !== ''
                         ? `${courier.id}: ${courier.name}`
                         : courier.name;
-                    return display;
                 }
             } catch {
                 // Ignore
             }
             return null;
         },
-        onSuccess: (courierDisplay) => {
+        onSuccess: async (courierDisplay) => {
             if (courierDisplay) {
                 showToast(`Dispatched to ${courierDisplay}`, 'success');
             } else {
                 showToast('Job dispatched successfully', 'success');
             }
-            invalidateJob();
+            await invalidateJob();
         },
         onError: () => {
             showToast('Failed to dispatch job.', 'error');
