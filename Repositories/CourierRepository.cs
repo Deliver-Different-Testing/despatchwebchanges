@@ -1,6 +1,8 @@
 ﻿using System.Data.Common;
+using System.Diagnostics;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
+using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
@@ -10,8 +12,6 @@ using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Serilog;
-
-using DespatchWeb.Extensions;
 
 namespace DespatchWeb.Repositories;
 
@@ -24,14 +24,31 @@ public class CourierRepository(
     : BaseRepository(contextFactory),
         ICourierRepository
 {
-    private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
+    private static readonly IReadOnlyList<ClearListResult> StaticSeparatorRows =
+    [
+        new()
+        {
+            CourierId = null,
+            Code = "----",
+            DisplayOrder = 2,
+            Deliver = "---------",
+            DisplayOrderDesc = null,
+            DisplayOrderAsc = null,
+            AutoDespatch = null
+        },
+        new()
+        {
+            CourierId = null,
+            Code = "----",
+            DisplayOrder = 4,
+            Deliver = "---------",
+            DisplayOrderDesc = null,
+            DisplayOrderAsc = null,
+            AutoDespatch = null
+        }
+    ];
 
-    private static string GetPolygonMappingsCacheKey(List<int> clearListAreaIds)
-    {
-        // Sort IDs to ensure a consistent cache key regardless of order
-        var sortedIds = string.Join("-", clearListAreaIds.OrderBy(x => x));
-        return $"polygon-mappings:{sortedIds}";
-    }
+    private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
 
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId)
     {
@@ -116,7 +133,8 @@ public class CourierRepository(
         }
     }
 
-    public async Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<AvailableCourierPosition>> GetAvailableCouriersAsync(CourierLocationRequest data,
+        CancellationToken cancellationToken = default)
     {
         var correlationId = Guid.NewGuid().ToString();
 
@@ -139,7 +157,7 @@ public class CourierRepository(
                 isUsTenant
             );
 
-            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            var stopwatch = Stopwatch.StartNew();
 
             var result = isUsTenant
                 ? await GetUsAvailableCourierPositionsAsync(data, cancellationToken)
@@ -164,201 +182,6 @@ public class CourierRepository(
                 correlationId,
                 ex.Message
             );
-            throw;
-        }
-    }
-
-    private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
-        CourierLocationRequest data, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var currentDate = clock.TenantNow;
-
-            var courierData = await Context.TucCouriers
-                .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
-                            c.CourierGps != null &&
-                            c.CourierGps.Longitude >= data.MinLng &&
-                            c.CourierGps.Longitude <= data.MaxLng &&
-                            c.CourierGps.Latitude >= data.MinLat &&
-                            c.CourierGps.Latitude <= data.MaxLat &&
-                            c.CourierLogInOut != null &&
-                            c.CourierLogInOut.LogOutTime == null)
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
-                .Select(c => new
-                {
-                    c.UccrId,
-                    c.UccrName,
-                    c.UccrSurname,
-                    Latitude = c.CourierGps.Latitude ?? 0,
-                    Longitude = c.CourierGps.Longitude ?? 0,
-                    ChannelId = c.UccrChannelId ?? 0,
-                    c.UccrVehicle,
-                    ClearListAreaIDs = c.CourierGps.ZipPolygon.TblClearListAreaPolygons
-                        .Select(x => x.ClearListAreaId).ToList(),
-                    c.Code,
-                    c.CourierFleetId,
-                    DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
-                })
-                .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
-                .ToListAsync(cancellationToken);
-
-            if (courierData.Count == 0) return [];
-
-            var courierIds = courierData.Select(c => c.UccrId).ToList();
-
-            var jobData = await Context.TucJobs
-                .Where(j => j.UcjbCourierId.HasValue &&
-                            courierIds.Contains(j.UcjbCourierId.Value) &&
-                            !j.UcjbVoid &&
-                            !j.UcjbJobDone)
-                .Select(j => new
-                {
-                    CourierId = j.UcjbCourierId.Value,
-                    j.UcjbDate,
-                    j.UcjbTime,
-                    Minutes = j.AcceptedJobType.Minutes ?? 0
-                })
-                .TagWith("GetUsAvailableCouriers - Step 2: Job Data")
-                .ToListAsync(cancellationToken);
-
-            var jobsByCourier = jobData
-                .GroupBy(j => j.CourierId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => new
-                    {
-                        Count = g.Count(),
-                        TimedJobs = g.Where(j => j.UcjbTime != null).ToList()
-                    }
-                );
-
-            return courierData.Select(c =>
-            {
-                var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
-
-                return new AvailableCourierPosition
-                {
-                    CourierId = c.UccrId,
-                    CourierName = c.UccrName + " " + c.UccrSurname,
-                    Latitude = c.Latitude,
-                    Longitude = c.Longitude,
-                    ChannelId = c.ChannelId,
-                    VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
-                    ClearListAreaIDs = c.ClearListAreaIDs,
-                    Code = c.Code,
-                    IsUrgentArmyDriver = c.CourierFleetId != null &&
-                                         ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
-                    TotalJobs = jobs?.Count ?? 0,
-                    OverDueJobs = jobs?.TimedJobs.Count(j =>
-                        j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes) < currentDate) ?? 0,
-                    DisplayOrder = c.DisplayOrder
-                };
-            }).ToList();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
-                    nameof(GetUsAvailableCourierPositionsAsync)));
-            throw;
-        }
-    }
-
-    private async Task<IReadOnlyList<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(
-        CourierLocationRequest data, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var now = clock.TenantNow;
-
-            var courierData = await Context.TucCouriers
-                .Where(c => c.CourierLogInOut != null &&
-                            c.CourierLogInOut.LogOutTime == null &&
-                            c.CourierGps != null &&
-                            c.CourierGps.Longitude >= data.MinLng &&
-                            c.CourierGps.Longitude <= data.MaxLng &&
-                            c.CourierGps.Latitude >= data.MinLat &&
-                            c.CourierGps.Latitude <= data.MaxLat)
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
-                .Select(c => new
-                {
-                    c.UccrId,
-                    c.UccrName,
-                    c.UccrSurname,
-                    Latitude = c.CourierGps.Latitude ?? 0,
-                    Longitude = c.CourierGps.Longitude ?? 0,
-                    ChannelId = c.UccrChannelId ?? 0,
-                    c.UccrVehicle,
-                    ClearListAreaIDs = c.CourierGps.Polygon.TblClearListAreaPolygons
-                        .Select(x => x.ClearListAreaId).ToList(),
-                    c.Code,
-                    c.CourierFleetId,
-                    DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
-                })
-                .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
-                .ToListAsync(cancellationToken);
-
-            if (courierData.Count == 0) return [];
-
-            var courierIds = courierData.Select(c => c.UccrId).ToList();
-
-            // Single query for all job data
-            var jobData = await Context.TucJobs
-                .Where(j => j.UcjbCourierId.HasValue &&
-                            courierIds.Contains(j.UcjbCourierId.Value) &&
-                            !j.UcjbVoid &&
-                            !j.UcjbJobDone)
-                .Select(j => new
-                {
-                    CourierId = j.UcjbCourierId.Value,
-                    j.UcjbDate,
-                    j.UcjbTime,
-                    j.AcceptedJobType.Minutes
-                })
-                .TagWith("GetNzAvailableCouriers - Step 2: Job Data")
-                .ToListAsync(cancellationToken);
-
-            var jobsByCourier = jobData
-                .GroupBy(j => j.CourierId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => new
-                    {
-                        Count = g.Count(),
-                        TimedJobs = g.Where(j => j.UcjbTime != null).ToList()
-                    }
-                );
-
-            return courierData.Select(c =>
-            {
-                var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
-
-                return new AvailableCourierPosition
-                {
-                    CourierId = c.UccrId,
-                    CourierName = c.UccrName + " " + c.UccrSurname,
-                    Latitude = c.Latitude,
-                    Longitude = c.Longitude,
-                    ChannelId = c.ChannelId,
-                    VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
-                    ClearListAreaIDs = c.ClearListAreaIDs,
-                    Code = c.Code,
-                    IsUrgentArmyDriver = c.CourierFleetId != null &&
-                                         ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
-                    TotalJobs = jobs?.Count ?? 0,
-                    OverDueJobs = jobs?.TimedJobs.Count(j =>
-                        j.UcjbTime != null &&
-                        j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
-                    DisplayOrder = c.DisplayOrder
-                };
-            }).ToList();
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
-                    nameof(GetNzAvailableCourierPositionsAsync)));
             throw;
         }
     }
@@ -402,7 +225,8 @@ public class CourierRepository(
         }
     }
 
-    public async Task<IReadOnlyList<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false, bool loggedInOnly = false)
+    public async Task<IReadOnlyList<Suggestion>> AllActiveCouriersAsync(string searchTerm, bool dgOnly = false,
+        bool loggedInOnly = false)
     {
         var isUsTenant = infoService.IsUsTenant();
         var now = clock.TenantNow;
@@ -504,35 +328,6 @@ public class CourierRepository(
         await clearListEnvelopeService.GetClearListAreaEnvelopeAsync(
             clearListAreaId, country, includeCouriers);
 
-    private async Task<IReadOnlyList<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
-    {
-        var today = clock.TenantToday;
-        var results = await Context.GetActiveCouriersAsync(today);
-
-        if (!includeJobCount || results.Count == 0) return results;
-
-        var courierIds = results.Select(c => c.CourierId).ToList();
-
-        var jobCounts = await Context.TucJobs
-            .Where(j => j.UcjbCourierId.HasValue &&
-                        courierIds.Contains(j.UcjbCourierId.Value) &&
-                        !j.UcjbVoid &&
-                        !j.UcjbJobDone &&
-                        j.UcjbDate.Date <= today.Date)
-            .GroupBy(j => j.UcjbCourierId.Value)
-            .Select(g => new { CourierId = g.Key, Count = g.Count() })
-            .TagWith("GetActiveCouriers - Job Counts")
-            .ToListAsync();
-
-        var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
-
-        // Update job counts in memory
-        foreach (var result in results)
-            result.JobCount = jobCountDict.GetValueOrDefault(result.CourierId, 0);
-
-        return results;
-    }
-
     public async Task<ClearListViewModel> GetClearListsAsync(
         IReadOnlyList<int> despatchViewIds,
         DateTimeOffset? startDate = null,
@@ -576,9 +371,11 @@ public class CourierRepository(
             var displayOrdersTask = GetDisplayOrdersAsync(courierIds, cancellationToken);
             var jobsTask = GetAllJobsAsync(courierIds, jobStartDate, jobEndDate, cancellationToken);
             // Full-day query for courier status — prebooked jobs must always be counted
-            var courierStatusJobsTask = GetAllJobsAsync(courierIds, currentDateOnly, currentDateOnly.AddDays(1), cancellationToken);
+            var courierStatusJobsTask =
+                GetAllJobsAsync(courierIds, currentDateOnly, currentDateOnly.AddDays(1), cancellationToken);
 
-            await Task.WhenAll(polygonMappingsTask, hasAreaFiltersTask, displayOrdersTask, jobsTask, courierStatusJobsTask);
+            await Task.WhenAll(polygonMappingsTask, hasAreaFiltersTask, displayOrdersTask, jobsTask,
+                courierStatusJobsTask);
 
             var allValidCourierGpsIds = polygonMappingsTask.Result;
             var hasAreaFilters = hasAreaFiltersTask.Result;
@@ -596,7 +393,8 @@ public class CourierRepository(
                 .GroupBy(x => x.ClearListAreaId)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Select(x => new { MatchingId = isUsTenant ? x.ZipPolygonId : x.PolygonId, x.ChannelId }).ToList()
+                    g => g.Select(x => new { MatchingId = isUsTenant ? x.ZipPolygonId : x.PolygonId, x.ChannelId })
+                        .ToList()
                 );
 
             // Apply display orders to courier data
@@ -651,7 +449,8 @@ public class CourierRepository(
                 await Task.WhenAll(coordinateMappingsTask, areaRemainingTask);
                 coordinateLookup = coordinateMappingsTask.Result;
 
-                Log.Information("Wave 3 complete (US): {CoordinateCount} coordinate mappings, {AreaCount} area remaining counts",
+                Log.Information(
+                    "Wave 3 complete (US): {CoordinateCount} coordinate mappings, {AreaCount} area remaining counts",
                     coordinateLookup.Count, areaRemainingTask.Result.Count);
             }
             else
@@ -666,7 +465,8 @@ public class CourierRepository(
                 await Task.WhenAll(suburbMappingsTask, areaRemainingTask);
                 suburbLookup = suburbMappingsTask.Result;
 
-                Log.Information("Wave 3 complete (NZ): {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
+                Log.Information(
+                    "Wave 3 complete (NZ): {SuburbCount} suburb mappings, {AreaCount} area remaining counts",
                     suburbLookup.Count, areaRemainingTask.Result.Count);
             }
 
@@ -724,7 +524,8 @@ public class CourierRepository(
                     foreach (var polygonChannel in validPolygonChannels)
                     {
                         if (polygonChannel.MatchingId == null ||
-                            !couriersByPolygon.TryGetValue(polygonChannel.MatchingId.Value, out var couriersWithPolygon))
+                            !couriersByPolygon.TryGetValue(polygonChannel.MatchingId.Value,
+                                out var couriersWithPolygon))
                             continue;
 
                         // Filter to only couriers whose channel matches the area's channel
@@ -830,431 +631,6 @@ public class CourierRepository(
             throw;
         }
     }
-
-    private static List<ClearListResult> BuildClearListResultsInMemory(
-        List<CourierClearListDto> areaCouriers,
-        Dictionary<int, List<CourierJobSuburbDto>> jobsByCourier,
-        Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup,
-        Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup,
-        bool isUsTenant,
-        DateTime currentDate)
-    {
-        var clearListResults = new List<ClearListResult>();
-
-        foreach (var courier in areaCouriers)
-        {
-            var courierJobs = jobsByCourier.GetValueOrDefault(courier.UccrId, []);
-            var deliverCodes = new List<string>();
-
-            if (courierJobs.Count != 0)
-            {
-                var jobsByArea = courierJobs
-                    .GroupBy(job =>
-                    {
-                        List<SuburbClearListAreaDto> areaOptions = null;
-
-                        if (isUsTenant)
-                        {
-                            if (job.DeliveryLatitude.HasValue && job.DeliveryLongitude.HasValue)
-                                coordinateLookup.TryGetValue(
-                                    (job.DeliveryLatitude.Value, job.DeliveryLongitude.Value),
-                                    out areaOptions);
-                        }
-                        else
-                        {
-                            if (job.ToSuburbId.HasValue)
-                                suburbLookup.TryGetValue(job.ToSuburbId.Value, out areaOptions);
-                        }
-
-                        if (areaOptions == null)
-                            return "O";
-
-                        var matchingSameChannel = areaOptions
-                            .FirstOrDefault(sca => sca.ChannelId == courier.UccrChannelId);
-
-                        if (matchingSameChannel != null)
-                            return matchingSameChannel.Code;
-
-                        var matchingDifferentChannel = areaOptions
-                            .FirstOrDefault(sca => sca.ChannelId != courier.UccrChannelId);
-
-                        return matchingDifferentChannel?.Code ?? "O";
-                    })
-                    .Select(g => new
-                    {
-                        DeliverCode = g.Key,
-                        JobCount = g.Count()
-                    });
-
-                deliverCodes = jobsByArea
-                    .Select(area => area.DeliverCode + (area.JobCount > 0 ? area.JobCount.ToString() : string.Empty))
-                    .ToList();
-            }
-
-            // Build courier code with indicators
-            var codeBuilder = courier.Code;
-            if (courier.SendJobsViaSms) codeBuilder += "#";
-            if (courier.GpsCreated.HasValue &&
-                (currentDate - courier.GpsCreated.Value).TotalMinutes > 3)
-                codeBuilder += "*";
-            if (!courier.AutoDespatch) codeBuilder += "^";
-            if (courier.UccrVehicle == "Truck") codeBuilder += "T";
-
-            clearListResults.Add(new ClearListResult
-            {
-                CourierId = courier.UccrId,
-                Code = codeBuilder,
-                DisplayOrder = courier.DisplayOrder ?? 0,
-                Deliver = string.Join(",", deliverCodes),
-                DisplayOrderDesc = courier.DisplayOrder == 1 ? courier.OrderTime : null,
-                DisplayOrderAsc = courier.DisplayOrder != 1 ? courier.OrderTime : null,
-                AutoDespatch = courier.AutoDespatch
-            });
-        }
-
-        // Add static separator rows and sort
-        return clearListResults
-            .Concat(StaticSeparatorRows)
-            .OrderBy(x => x.DisplayOrder)
-            .ThenBy(x => x.DisplayOrderDesc)
-            .ThenBy(x => x.DisplayOrderAsc)
-            .ThenBy(x => x.Code)
-            .ThenBy(x => x.Deliver)
-            .ToList();
-    }
-
-    // ===================================================================
-    // PARALLEL QUERY HELPER METHODS FOR GetClearListsAsync
-    // ===================================================================
-
-    /// <summary>
-    /// Query 1: Get all clear list areas for the given despatch view IDs.
-    /// </summary>
-    private async Task<IReadOnlyList<ClearListAreaDto>> GetClearListAreasAsync(IReadOnlyList<int> despatchViewIds, CancellationToken cancellationToken = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        return await context.TblDespatchViews
-            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
-            .SelectMany(dv => dv.DespatchViewZoneGroups)
-            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
-            .Where(cla => cla != null)
-            .Distinct()
-            .Select(cl => new ClearListAreaDto
-            {
-                ClearListAreaId = cl.ClearListAreaId,
-                AreaName = cl.Name,
-                AreaOrder = cl.Order
-            })
-            .TagWith("GetClearLists - Wave 1: Clear List Areas")
-            .ToListAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Query 3&4: Get all courier data with GPS, Fleet info.
-    /// </summary>
-    private async Task<IReadOnlyList<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly, CancellationToken cancellationToken = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        return await context.TucCouriers
-            .Where(c => c.Active && c.TblClearListAreaOrder != null)
-            .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
-                        (c.CourierLogInOut != null &&
-                         c.CourierLogInOut.LogInTime >= currentDateOnly &&
-                         c.CourierLogInOut.LogOutTime == null))
-            .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
-            .Select(c => new CourierClearListDto
-            {
-                UccrId = c.UccrId,
-                Code = c.Code,
-                Name = c.UccrName + " " + c.UccrSurname,
-                DangerousGoods = c.UccrDangerousGoods == 1,
-                DgLicenseExpiry = c.DglicenseExpiry,
-                UccrChannelId = c.UccrChannelId,
-                SendJobsViaSms = c.SendJobsViaSms,
-                AutoDespatch = c.AutoDespatch,
-                UccrVehicle = c.UccrVehicle,
-                CourierGpsid = c.CourierGpsid,
-                GpsCreated = c.CourierGps != null ? c.CourierGps.Created : null,
-                PolygonId = c.CourierGps != null ? c.CourierGps.PolygonId : null,
-                ZipPolygonId = c.CourierGps != null ? c.CourierGps.ZipPolygonId : null,
-                JobCount = 0
-            })
-            .OrderBy(c => c.Code)
-            .TagWith("GetClearLists - Wave 1: All Courier Data with GPS")
-            .ToListAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Query 2: Get polygon mappings for clear list areas (cached).
-    /// </summary>
-    private async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds, CancellationToken cancellationToken = default)
-    {
-        var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
-
-        return await cache.GetOrCreateAsync(
-            cacheKey,
-            async entry =>
-            {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
-                entry.Priority = CacheItemPriority.Normal;
-
-                Log.Information("Cache MISS for polygon mappings - fetching from database");
-
-                await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-                return await context.GetPolygonMappings(clearListAreaIds);
-            }) ?? [];
-    }
-
-    /// <summary>
-    /// Query 7: Check whether any area filters exist for total remaining calculation.
-    /// </summary>
-    private async Task<bool> HasAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists, CancellationToken cancellationToken = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        var clearListNames = clearLists.Select(cl => cl.AreaName);
-
-        return await context.TblDespatchViews
-            .Where(v => v.ShowOnAssistDespatch == true &&
-                        clearListNames.Contains(v.Name) &&
-                        v.WhereCondition != null && v.WhereCondition != "")
-            .TagWith("GetClearLists - Wave 2: Has Area Filters")
-            .AnyAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Query 4b: Get display orders for couriers.
-    /// </summary>
-    private async Task<IReadOnlyList<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds, CancellationToken cancellationToken = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        return await context.TblClearListAreaOrders
-            .Where(cao => courierIds.Contains(cao.CourierId))
-            .Select(cao => new DisplayOrderDto
-            {
-                CourierId = cao.CourierId,
-                Status = cao.Status,
-                OrderTime = cao.OrderTime
-            })
-            .TagWith("GetClearLists - Wave 2: Display Orders")
-            .ToListAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Query 5: Get all jobs for couriers.
-    /// </summary>
-    private async Task<IReadOnlyList<CourierJobSuburbDto>> GetAllJobsAsync(
-        List<int> courierIds, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
-    {
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-
-        return await context.TucJobs
-            .Where(job => !job.UcjbJobDone &&
-                          !job.UcjbVoid &&
-                          job.UcjbDate >= startDate &&
-                          job.UcjbDate < endDate &&
-                          job.UcjbCourierId.HasValue &&
-                          courierIds.Contains(job.UcjbCourierId.Value))
-            .Select(job => new CourierJobSuburbDto
-            {
-                CourierId = job.UcjbCourierId.Value,
-                ToSuburbId = job.UcjbTo,
-                DeliveryLatitude = job.DeliveryLatitude,
-                DeliveryLongitude = job.DeliveryLongitude
-            })
-            .TagWith("GetClearLists - Wave 2: All Jobs")
-            .ToListAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Query 6: Get suburb to clear list area mappings.
-    /// </summary>
-    private async Task<Dictionary<int, List<SuburbClearListAreaDto>>> GetSuburbMappingsAsync(HashSet<int> allSuburbIds, CancellationToken cancellationToken = default)
-    {
-        if (allSuburbIds.Count == 0)
-            return [];
-
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        var suburbClearListAreas = await context.TblPolygonSuburbs
-            .Where(ps => allSuburbIds.Contains(ps.SuburbId))
-            .Join(context.TblPolygons,
-                ps => ps.PolygonId,
-                p => p.PolygonId,
-                (ps, p) => new { ps.SuburbId, p.PolygonId })
-            .Join(context.TblClearListAreaPolygons,
-                p => p.PolygonId,
-                cap => cap.PolygonId,
-                (p, cap) => new { p.SuburbId, cap.ClearListAreaId })
-            .Join(context.TblClearListAreas,
-                cap => cap.ClearListAreaId,
-                cla => cla.ClearListAreaId,
-                (cap, cla) => new SuburbClearListAreaDto
-                {
-                    SuburbId = cap.SuburbId,
-                    ClearListAreaId = cla.ClearListAreaId,
-                    Code = cla.Code,
-                    ChannelId = cla.ChannelId
-                })
-            .TagWith("GetClearLists - Wave 3: Suburb Mappings")
-            .ToListAsync(cancellationToken);
-
-        return suburbClearListAreas
-            .GroupBy(sca => sca.SuburbId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-    }
-
-    /// <summary>
-    /// Query 6b (US): Map delivery coordinates → ZipPolygon → ClearListArea.
-    /// </summary>
-    private async Task<Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>>>
-        GetCoordinateMappingsAsync(HashSet<(decimal lat, decimal lng)> coordinates, CancellationToken cancellationToken = default)
-    {
-        if (coordinates.Count == 0)
-            return [];
-
-        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-        var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
-        var longitudes = coordinates.Select(c => c.lng).Distinct().ToList();
-
-        var results = await context.ZipPolygons
-            .Where(zp => zp.Latitude.HasValue && zp.Longitude.HasValue &&
-                         latitudes.Contains(zp.Latitude.Value) &&
-                         longitudes.Contains(zp.Longitude.Value))
-            .Join(context.TblClearListAreaPolygons,
-                zp => zp.ZipPolygonId,
-                cap => cap.ZipPolygonId,
-                (zp, cap) => new { zp.Latitude, zp.Longitude, cap.ClearListAreaId })
-            .Join(context.TblClearListAreas,
-                x => x.ClearListAreaId,
-                cla => cla.ClearListAreaId,
-                (x, cla) => new
-                {
-                    Lat = x.Latitude!.Value,
-                    Lng = x.Longitude!.Value,
-                    cla.ClearListAreaId,
-                    cla.Code,
-                    cla.ChannelId
-                })
-            .TagWith("GetClearLists - Wave 3: Coordinate Mappings (US)")
-            .ToListAsync(cancellationToken);
-
-        return results
-            .Where(r => coordinates.Contains((r.Lat, r.Lng)))
-            .GroupBy(r => (r.Lat, r.Lng))
-            .ToDictionary(
-                g => g.Key,
-                g => g.Select(r => new SuburbClearListAreaDto
-                {
-                    SuburbId = 0,
-                    ClearListAreaId = r.ClearListAreaId,
-                    Code = r.Code,
-                    ChannelId = r.ChannelId
-                }).ToList());
-    }
-
-    private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(
-        bool hasAreaFilters, CancellationToken cancellationToken = default)
-    {
-        if (!hasAreaFilters)
-            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-
-        const string cacheKey = "ClearList:AreaRemainingCounts";
-
-        return await cache.GetOrCreateAsync(cacheKey, async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
-
-            Log.Information("AreaRemainingCounts cache MISS - calling stored procedure");
-
-            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-
-            var results = await context.Database
-                .SqlQueryRaw<AreaRemainingCountDto>("EXEC dbo.GetAreaRemainingCounts")
-                .ToListAsync(cancellationToken);
-
-            return results
-                .Where(r => r.Remaining >= 0)
-                .ToDictionary(r => r.AreaName.ToLower(), r => r.Remaining, StringComparer.OrdinalIgnoreCase);
-        }) ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-    }
-
-
-    private static readonly IReadOnlyList<ClearListResult> StaticSeparatorRows =
-    [
-        new()
-        {
-            CourierId = null,
-            Code = "----",
-            DisplayOrder = 2,
-            Deliver = "---------",
-            DisplayOrderDesc = null,
-            DisplayOrderAsc = null,
-            AutoDespatch = null
-        },
-        new()
-        {
-            CourierId = null,
-            Code = "----",
-            DisplayOrder = 4,
-            Deliver = "---------",
-            DisplayOrderDesc = null,
-            DisplayOrderAsc = null,
-            AutoDespatch = null
-        }
-    ];
-
-    private static List<ClearListSection> BuildClearListSection(
-        List<ClearListResult> data,
-        Dictionary<int, CourierClearListDto> courierLookup,
-        int displayOrder
-    )
-    {
-        if (data == null) return [];
-
-        return data
-            .Where(c => c.DisplayOrder == displayOrder)
-            .Select(x =>
-            {
-                var courier = x.CourierId.HasValue
-                    ? courierLookup.GetValueOrDefault(x.CourierId.Value)
-                    : null;
-                return new ClearListSection
-                {
-                    CourierNumber = x.Code,
-                    CourierData = BuildCourierData(x, courierLookup),
-                    Destinations = BuildDestinations(x.Deliver),
-                    JobCount = courier?.JobCount ?? 0
-                };
-            })
-            .ToList();
-    }
-
-    private static CourierData BuildCourierData(
-        ClearListResult result,
-        Dictionary<int, CourierClearListDto> courierLookup
-    )
-    {
-        var courier = result?.CourierId.HasValue == true
-            ? courierLookup.GetValueOrDefault(result.CourierId.Value)
-            : null;
-
-        return new CourierData
-        {
-            Courier = $"{courier?.Code} {courier?.Name}".Trim(),
-            Location = "Unknown",
-            Pu = "Unknown",
-            Del = result?.Deliver ?? "Unknown",
-            Lrm = "Unknown",
-            Eta2Lrm = "Unknown",
-            CourierId = result?.CourierId
-        };
-    }
-
-    private static List<Destination> BuildDestinations(string deliver) =>
-        deliver
-            ?.Split(',')
-            .Select((d, index) => new Destination { Id = index + 1, Label = d.Trim() })
-            .Where(y => !string.IsNullOrWhiteSpace(y.Label))
-            .ToList() ?? [];
 
     public async Task<IReadOnlyList<Suggestion>> SearchAllCouriersAsync(string searchTerm)
     {
@@ -1463,21 +839,6 @@ public class CourierRepository(
         };
     }
 
-    private static string GetComplianceStatus(DateTime now, DateTime? expiryDate)
-    {
-        if (!expiryDate.HasValue) return "Not Set";
-        if (now >= expiryDate.Value) return "Expired";
-        var daysUntilExpiry = (expiryDate.Value - now).TotalDays;
-        return daysUntilExpiry <= 30 ? "Expiring Soon" : "Valid";
-    }
-
-    private static string CalculateDaysUntilExpiry(DateTime now, DateTime? expiryDate)
-    {
-        if (!expiryDate.HasValue) return "N/A";
-        var days = (int)Math.Ceiling((expiryDate.Value - now).TotalDays);
-        return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
-    }
-
     public async Task<CourierAfterHoursPaginatedResponse> GetAfterHoursCourierScheduleAsync(
         CourierAfterHoursFilterRequest request)
     {
@@ -1599,19 +960,6 @@ public class CourierRepository(
             Pages = totalPages,
             TotalActiveDrivers = totalActiveDrivers
         };
-    }
-
-    private static string CalculateDuration(DateTime startTime, DateTime endTime)
-    {
-        // Extract only the time components
-        var startTimeOnly = startTime.TimeOfDay;
-        var endTimeOnly = endTime.TimeOfDay;
-
-        // If end time is earlier than start time, assume it's the next day
-        if (endTimeOnly < startTimeOnly) endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
-
-        var duration = endTimeOnly - startTimeOnly;
-        return (int)duration.TotalHours + "h " + duration.Minutes + "m";
     }
 
     public async Task<TodayActiveDriversPaginatedResponse> GetTodayActiveDriversAsync(
@@ -1768,25 +1116,6 @@ public class CourierRepository(
             TotalDriversActiveToday = totalActiveDrivers,
             AverageSessionTime = averageSessionTime
         };
-    }
-
-    private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
-    {
-        if (!logoutTime.HasValue) return "Currently Active";
-
-        var duration = logoutTime.Value - loginTime;
-
-        // If logout time is before login time, assume it's the next day
-        if (duration.TotalMinutes < 0)
-        {
-            logoutTime = logoutTime.Value.AddDays(1);
-            duration = logoutTime.Value - loginTime;
-        }
-
-        var hours = (int)duration.TotalHours;
-        var minutes = duration.Minutes;
-
-        return hours + "h " + minutes.ToString().PadLeft(2, '0') + "m";
     }
 
     public async Task<IReadOnlyList<Suggestion>> GetAllFleetOptionsAsync()
@@ -2075,8 +1404,6 @@ public class CourierRepository(
         await Context.SaveChangesAsync();
     }
 
-    private static int GetDayOfWeekAsInt(string dayOfWeek) => DayOfWeekHelper.DayNameToSqlInt(dayOfWeek);
-
     public async Task UpdateAfterHoursCourierScheduleAsync(AfterHoursCourierScheduleViewModel request)
     {
         try
@@ -2292,6 +1619,693 @@ public class CourierRepository(
 
     public async Task<IReadOnlyList<Suggestion>> GetAllSpeedsAsync() => await Context.GetAllSpeedsAsync();
 
+    private static string GetPolygonMappingsCacheKey(List<int> clearListAreaIds)
+    {
+        // Sort IDs to ensure a consistent cache key regardless of order
+        var sortedIds = string.Join("-", clearListAreaIds.OrderBy(x => x));
+        return $"polygon-mappings:{sortedIds}";
+    }
+
+    private async Task<IReadOnlyList<AvailableCourierPosition>> GetUsAvailableCourierPositionsAsync(
+        CourierLocationRequest data, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var currentDate = clock.TenantNow;
+
+            var courierData = await Context.TucCouriers
+                .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
+                            c.CourierGps != null &&
+                            c.CourierGps.Longitude >= data.MinLng &&
+                            c.CourierGps.Longitude <= data.MaxLng &&
+                            c.CourierGps.Latitude >= data.MinLat &&
+                            c.CourierGps.Latitude <= data.MaxLat &&
+                            c.CourierLogInOut != null &&
+                            c.CourierLogInOut.LogOutTime == null)
+                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+                .Select(c => new
+                {
+                    c.UccrId,
+                    c.UccrName,
+                    c.UccrSurname,
+                    Latitude = c.CourierGps.Latitude ?? 0,
+                    Longitude = c.CourierGps.Longitude ?? 0,
+                    ChannelId = c.UccrChannelId ?? 0,
+                    c.UccrVehicle,
+                    ClearListAreaIDs = c.CourierGps.ZipPolygon.TblClearListAreaPolygons
+                        .Select(x => x.ClearListAreaId).ToList(),
+                    c.Code,
+                    c.CourierFleetId,
+                    DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
+                })
+                .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
+                .ToListAsync(cancellationToken);
+
+            if (courierData.Count == 0) return [];
+
+            var courierIds = courierData.Select(c => c.UccrId).ToList();
+
+            var jobData = await Context.TucJobs
+                .Where(j => j.UcjbCourierId.HasValue &&
+                            courierIds.Contains(j.UcjbCourierId.Value) &&
+                            !j.UcjbVoid &&
+                            !j.UcjbJobDone)
+                .Select(j => new
+                {
+                    CourierId = j.UcjbCourierId.Value,
+                    j.UcjbDate,
+                    j.UcjbTime,
+                    Minutes = j.AcceptedJobType.Minutes ?? 0
+                })
+                .TagWith("GetUsAvailableCouriers - Step 2: Job Data")
+                .ToListAsync(cancellationToken);
+
+            var jobsByCourier = jobData
+                .GroupBy(j => j.CourierId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        Count = g.Count(),
+                        TimedJobs = g.Where(j => j.UcjbTime != null).ToList()
+                    }
+                );
+
+            return courierData.Select(c =>
+            {
+                var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+
+                return new AvailableCourierPosition
+                {
+                    CourierId = c.UccrId,
+                    CourierName = c.UccrName + " " + c.UccrSurname,
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
+                    ChannelId = c.ChannelId,
+                    VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
+                    ClearListAreaIDs = c.ClearListAreaIDs,
+                    Code = c.Code,
+                    IsUrgentArmyDriver = c.CourierFleetId != null &&
+                                         ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
+                    TotalJobs = jobs?.Count ?? 0,
+                    OverDueJobs = jobs?.TimedJobs.Count(j =>
+                        j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes) < currentDate) ?? 0,
+                    DisplayOrder = c.DisplayOrder
+                };
+            }).ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(GetUsAvailableCourierPositionsAsync)));
+            throw;
+        }
+    }
+
+    private async Task<IReadOnlyList<AvailableCourierPosition>> GetNzAvailableCourierPositionsAsync(
+        CourierLocationRequest data, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var now = clock.TenantNow;
+
+            var courierData = await Context.TucCouriers
+                .Where(c => c.CourierLogInOut != null &&
+                            c.CourierLogInOut.LogOutTime == null &&
+                            c.CourierGps != null &&
+                            c.CourierGps.Longitude >= data.MinLng &&
+                            c.CourierGps.Longitude <= data.MaxLng &&
+                            c.CourierGps.Latitude >= data.MinLat &&
+                            c.CourierGps.Latitude <= data.MaxLat)
+                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+                .Select(c => new
+                {
+                    c.UccrId,
+                    c.UccrName,
+                    c.UccrSurname,
+                    Latitude = c.CourierGps.Latitude ?? 0,
+                    Longitude = c.CourierGps.Longitude ?? 0,
+                    ChannelId = c.UccrChannelId ?? 0,
+                    c.UccrVehicle,
+                    ClearListAreaIDs = c.CourierGps.Polygon.TblClearListAreaPolygons
+                        .Select(x => x.ClearListAreaId).ToList(),
+                    c.Code,
+                    c.CourierFleetId,
+                    DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
+                })
+                .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
+                .ToListAsync(cancellationToken);
+
+            if (courierData.Count == 0) return [];
+
+            var courierIds = courierData.Select(c => c.UccrId).ToList();
+
+            // Single query for all job data
+            var jobData = await Context.TucJobs
+                .Where(j => j.UcjbCourierId.HasValue &&
+                            courierIds.Contains(j.UcjbCourierId.Value) &&
+                            !j.UcjbVoid &&
+                            !j.UcjbJobDone)
+                .Select(j => new
+                {
+                    CourierId = j.UcjbCourierId.Value,
+                    j.UcjbDate,
+                    j.UcjbTime,
+                    j.AcceptedJobType.Minutes
+                })
+                .TagWith("GetNzAvailableCouriers - Step 2: Job Data")
+                .ToListAsync(cancellationToken);
+
+            var jobsByCourier = jobData
+                .GroupBy(j => j.CourierId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        Count = g.Count(),
+                        TimedJobs = g.Where(j => j.UcjbTime != null).ToList()
+                    }
+                );
+
+            return courierData.Select(c =>
+            {
+                var jobs = jobsByCourier.GetValueOrDefault(c.UccrId);
+
+                return new AvailableCourierPosition
+                {
+                    CourierId = c.UccrId,
+                    CourierName = c.UccrName + " " + c.UccrSurname,
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
+                    ChannelId = c.ChannelId,
+                    VehicleType = MapVehicleTypeToAbbreviation(c.UccrVehicle),
+                    ClearListAreaIDs = c.ClearListAreaIDs,
+                    Code = c.Code,
+                    IsUrgentArmyDriver = c.CourierFleetId != null &&
+                                         ((CourierFleet)c.CourierFleetId.Value).IsUrgentArmy(),
+                    TotalJobs = jobs?.Count ?? 0,
+                    OverDueJobs = jobs?.TimedJobs.Count(j =>
+                        j.UcjbTime != null &&
+                        j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
+                    DisplayOrder = c.DisplayOrder
+                };
+            }).ToList();
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(CourierRepository),
+                    nameof(GetNzAvailableCourierPositionsAsync)));
+            throw;
+        }
+    }
+
+    private async Task<IReadOnlyList<ActiveCourierDto>> GetActiveCouriersAsync(bool includeJobCount = true)
+    {
+        var today = clock.TenantToday;
+        var results = await Context.GetActiveCouriersAsync(today);
+
+        if (!includeJobCount || results.Count == 0) return results;
+
+        var courierIds = results.Select(c => c.CourierId).ToList();
+
+        var jobCounts = await Context.TucJobs
+            .Where(j => j.UcjbCourierId.HasValue &&
+                        courierIds.Contains(j.UcjbCourierId.Value) &&
+                        !j.UcjbVoid &&
+                        !j.UcjbJobDone &&
+                        j.UcjbDate.Date <= today.Date)
+            .GroupBy(j => j.UcjbCourierId.Value)
+            .Select(g => new { CourierId = g.Key, Count = g.Count() })
+            .TagWith("GetActiveCouriers - Job Counts")
+            .ToListAsync();
+
+        var jobCountDict = jobCounts.ToDictionary(x => x.CourierId, x => x.Count);
+
+        // Update job counts in memory
+        foreach (var result in results)
+            result.JobCount = jobCountDict.GetValueOrDefault(result.CourierId, 0);
+
+        return results;
+    }
+
+    private static List<ClearListResult> BuildClearListResultsInMemory(
+        List<CourierClearListDto> areaCouriers,
+        Dictionary<int, List<CourierJobSuburbDto>> jobsByCourier,
+        Dictionary<int, List<SuburbClearListAreaDto>> suburbLookup,
+        Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>> coordinateLookup,
+        bool isUsTenant,
+        DateTime currentDate)
+    {
+        var clearListResults = new List<ClearListResult>();
+
+        foreach (var courier in areaCouriers)
+        {
+            var courierJobs = jobsByCourier.GetValueOrDefault(courier.UccrId, []);
+            var deliverCodes = new List<string>();
+
+            if (courierJobs.Count != 0)
+            {
+                var jobsByArea = courierJobs
+                    .GroupBy(job =>
+                    {
+                        List<SuburbClearListAreaDto> areaOptions = null;
+
+                        if (isUsTenant)
+                        {
+                            if (job.DeliveryLatitude.HasValue && job.DeliveryLongitude.HasValue)
+                                coordinateLookup.TryGetValue(
+                                    (job.DeliveryLatitude.Value, job.DeliveryLongitude.Value),
+                                    out areaOptions);
+                        }
+                        else
+                        {
+                            if (job.ToSuburbId.HasValue)
+                                suburbLookup.TryGetValue(job.ToSuburbId.Value, out areaOptions);
+                        }
+
+                        if (areaOptions == null)
+                            return "O";
+
+                        var matchingSameChannel = areaOptions
+                            .FirstOrDefault(sca => sca.ChannelId == courier.UccrChannelId);
+
+                        if (matchingSameChannel != null)
+                            return matchingSameChannel.Code;
+
+                        var matchingDifferentChannel = areaOptions
+                            .FirstOrDefault(sca => sca.ChannelId != courier.UccrChannelId);
+
+                        return matchingDifferentChannel?.Code ?? "O";
+                    })
+                    .Select(g => new
+                    {
+                        DeliverCode = g.Key,
+                        JobCount = g.Count()
+                    });
+
+                deliverCodes = jobsByArea
+                    .Select(area => area.DeliverCode + (area.JobCount > 0 ? area.JobCount.ToString() : string.Empty))
+                    .ToList();
+            }
+
+            // Build courier code with indicators
+            var codeBuilder = courier.Code;
+            if (courier.SendJobsViaSms) codeBuilder += "#";
+            if (courier.GpsCreated.HasValue &&
+                (currentDate - courier.GpsCreated.Value).TotalMinutes > 3)
+                codeBuilder += "*";
+            if (!courier.AutoDespatch) codeBuilder += "^";
+            if (courier.UccrVehicle == "Truck") codeBuilder += "T";
+
+            clearListResults.Add(new ClearListResult
+            {
+                CourierId = courier.UccrId,
+                Code = codeBuilder,
+                DisplayOrder = courier.DisplayOrder ?? 0,
+                Deliver = string.Join(",", deliverCodes),
+                DisplayOrderDesc = courier.DisplayOrder == 1 ? courier.OrderTime : null,
+                DisplayOrderAsc = courier.DisplayOrder != 1 ? courier.OrderTime : null,
+                AutoDespatch = courier.AutoDespatch
+            });
+        }
+
+        // Add static separator rows and sort
+        return clearListResults
+            .Concat(StaticSeparatorRows)
+            .OrderBy(x => x.DisplayOrder)
+            .ThenBy(x => x.DisplayOrderDesc)
+            .ThenBy(x => x.DisplayOrderAsc)
+            .ThenBy(x => x.Code)
+            .ThenBy(x => x.Deliver)
+            .ToList();
+    }
+
+    // ===================================================================
+    // PARALLEL QUERY HELPER METHODS FOR GetClearListsAsync
+    // ===================================================================
+
+    /// <summary>
+    /// Query 1: Get all clear list areas for the given despatch view IDs.
+    /// </summary>
+    private async Task<IReadOnlyList<ClearListAreaDto>> GetClearListAreasAsync(IReadOnlyList<int> despatchViewIds,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.TblDespatchViews
+            .Where(dv => despatchViewIds.Contains(dv.DespatchViewId))
+            .SelectMany(dv => dv.DespatchViewZoneGroups)
+            .Select(dvzg => dvzg.ZoneGroup.ClearListArea)
+            .Where(cla => cla != null)
+            .Distinct()
+            .Select(cl => new ClearListAreaDto
+            {
+                ClearListAreaId = cl.ClearListAreaId,
+                AreaName = cl.Name,
+                AreaOrder = cl.Order
+            })
+            .TagWith("GetClearLists - Wave 1: Clear List Areas")
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Query 3&4: Get all courier data with GPS, Fleet info.
+    /// </summary>
+    private async Task<IReadOnlyList<CourierClearListDto>> GetAllCourierDataAsync(DateTime currentDateOnly,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.TucCouriers
+            .Where(c => c.Active && c.TblClearListAreaOrder != null)
+            .Where(c => c.CourierFleetId == (int)CourierFleet.UaAucklandP2P ||
+                        (c.CourierLogInOut != null &&
+                         c.CourierLogInOut.LogInTime >= currentDateOnly &&
+                         c.CourierLogInOut.LogOutTime == null))
+            .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+            .Select(c => new CourierClearListDto
+            {
+                UccrId = c.UccrId,
+                Code = c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                DangerousGoods = c.UccrDangerousGoods == 1,
+                DgLicenseExpiry = c.DglicenseExpiry,
+                UccrChannelId = c.UccrChannelId,
+                SendJobsViaSms = c.SendJobsViaSms,
+                AutoDespatch = c.AutoDespatch,
+                UccrVehicle = c.UccrVehicle,
+                CourierGpsid = c.CourierGpsid,
+                GpsCreated = c.CourierGps != null ? c.CourierGps.Created : null,
+                PolygonId = c.CourierGps != null ? c.CourierGps.PolygonId : null,
+                ZipPolygonId = c.CourierGps != null ? c.CourierGps.ZipPolygonId : null,
+                JobCount = 0
+            })
+            .OrderBy(c => c.Code)
+            .TagWith("GetClearLists - Wave 1: All Courier Data with GPS")
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Query 2: Get polygon mappings for clear list areas (cached).
+    /// </summary>
+    private async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappingsAsync(List<int> clearListAreaIds,
+        CancellationToken cancellationToken = default)
+    {
+        var cacheKey = GetPolygonMappingsCacheKey(clearListAreaIds);
+
+        return await cache.GetOrCreateAsync(
+            cacheKey,
+            async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+                entry.Priority = CacheItemPriority.Normal;
+
+                Log.Information("Cache MISS for polygon mappings - fetching from database");
+
+                await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+                return await context.GetPolygonMappings(clearListAreaIds);
+            }) ?? [];
+    }
+
+    /// <summary>
+    /// Query 7: Check whether any area filters exist for total remaining calculation.
+    /// </summary>
+    private async Task<bool> HasAreaFiltersAsync(IReadOnlyList<ClearListAreaDto> clearLists,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var clearListNames = clearLists.Select(cl => cl.AreaName);
+
+        return await context.TblDespatchViews
+            .Where(v => v.ShowOnAssistDespatch == true &&
+                        clearListNames.Contains(v.Name) &&
+                        v.WhereCondition != null && v.WhereCondition != "")
+            .TagWith("GetClearLists - Wave 2: Has Area Filters")
+            .AnyAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Query 4b: Get display orders for couriers.
+    /// </summary>
+    private async Task<IReadOnlyList<DisplayOrderDto>> GetDisplayOrdersAsync(List<int> courierIds,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        return await context.TblClearListAreaOrders
+            .Where(cao => courierIds.Contains(cao.CourierId))
+            .Select(cao => new DisplayOrderDto
+            {
+                CourierId = cao.CourierId,
+                Status = cao.Status,
+                OrderTime = cao.OrderTime
+            })
+            .TagWith("GetClearLists - Wave 2: Display Orders")
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Query 5: Get all jobs for couriers.
+    /// </summary>
+    private async Task<IReadOnlyList<CourierJobSuburbDto>> GetAllJobsAsync(
+        List<int> courierIds, DateTime startDate, DateTime endDate, CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+        return await context.TucJobs
+            .Where(job => !job.UcjbJobDone &&
+                          !job.UcjbVoid &&
+                          job.UcjbDate >= startDate &&
+                          job.UcjbDate < endDate &&
+                          job.UcjbCourierId.HasValue &&
+                          courierIds.Contains(job.UcjbCourierId.Value))
+            .Select(job => new CourierJobSuburbDto
+            {
+                CourierId = job.UcjbCourierId.Value,
+                ToSuburbId = job.UcjbTo,
+                DeliveryLatitude = job.DeliveryLatitude,
+                DeliveryLongitude = job.DeliveryLongitude
+            })
+            .TagWith("GetClearLists - Wave 2: All Jobs")
+            .ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Query 6: Get suburb to clear list area mappings.
+    /// </summary>
+    private async Task<Dictionary<int, List<SuburbClearListAreaDto>>> GetSuburbMappingsAsync(HashSet<int> allSuburbIds,
+        CancellationToken cancellationToken = default)
+    {
+        if (allSuburbIds.Count == 0)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var suburbClearListAreas = await context.TblPolygonSuburbs
+            .Where(ps => allSuburbIds.Contains(ps.SuburbId))
+            .Join(context.TblPolygons,
+                ps => ps.PolygonId,
+                p => p.PolygonId,
+                (ps, p) => new { ps.SuburbId, p.PolygonId })
+            .Join(context.TblClearListAreaPolygons,
+                p => p.PolygonId,
+                cap => cap.PolygonId,
+                (p, cap) => new { p.SuburbId, cap.ClearListAreaId })
+            .Join(context.TblClearListAreas,
+                cap => cap.ClearListAreaId,
+                cla => cla.ClearListAreaId,
+                (cap, cla) => new SuburbClearListAreaDto
+                {
+                    SuburbId = cap.SuburbId,
+                    ClearListAreaId = cla.ClearListAreaId,
+                    Code = cla.Code,
+                    ChannelId = cla.ChannelId
+                })
+            .TagWith("GetClearLists - Wave 3: Suburb Mappings")
+            .ToListAsync(cancellationToken);
+
+        return suburbClearListAreas
+            .GroupBy(sca => sca.SuburbId)
+            .ToDictionary(g => g.Key, g => g.ToList());
+    }
+
+    /// <summary>
+    /// Query 6b (US): Map delivery coordinates → ZipPolygon → ClearListArea.
+    /// </summary>
+    private async Task<Dictionary<(decimal, decimal), List<SuburbClearListAreaDto>>>
+        GetCoordinateMappingsAsync(HashSet<(decimal lat, decimal lng)> coordinates,
+            CancellationToken cancellationToken = default)
+    {
+        if (coordinates.Count == 0)
+            return [];
+
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
+        var longitudes = coordinates.Select(c => c.lng).Distinct().ToList();
+
+        var results = await context.ZipPolygons
+            .Where(zp => zp.Latitude.HasValue && zp.Longitude.HasValue &&
+                         latitudes.Contains(zp.Latitude.Value) &&
+                         longitudes.Contains(zp.Longitude.Value))
+            .Join(context.TblClearListAreaPolygons,
+                zp => zp.ZipPolygonId,
+                cap => cap.ZipPolygonId,
+                (zp, cap) => new { zp.Latitude, zp.Longitude, cap.ClearListAreaId })
+            .Join(context.TblClearListAreas,
+                x => x.ClearListAreaId,
+                cla => cla.ClearListAreaId,
+                (x, cla) => new
+                {
+                    Lat = x.Latitude!.Value,
+                    Lng = x.Longitude!.Value,
+                    cla.ClearListAreaId,
+                    cla.Code,
+                    cla.ChannelId
+                })
+            .TagWith("GetClearLists - Wave 3: Coordinate Mappings (US)")
+            .ToListAsync(cancellationToken);
+
+        return results
+            .Where(r => coordinates.Contains((r.Lat, r.Lng)))
+            .GroupBy(r => (r.Lat, r.Lng))
+            .ToDictionary(
+                g => g.Key,
+                g => g.Select(r => new SuburbClearListAreaDto
+                {
+                    SuburbId = 0,
+                    ClearListAreaId = r.ClearListAreaId,
+                    Code = r.Code,
+                    ChannelId = r.ChannelId
+                }).ToList());
+    }
+
+    private async Task<Dictionary<string, int>> GetTotalRemainingForAllAreasAsync(
+        bool hasAreaFilters, CancellationToken cancellationToken = default)
+    {
+        if (!hasAreaFilters)
+            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        const string cacheKey = "ClearList:AreaRemainingCounts";
+
+        return await cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+
+            Log.Information("AreaRemainingCounts cache MISS - calling stored procedure");
+
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+            var results = await context.Database
+                .SqlQueryRaw<AreaRemainingCountDto>("EXEC dbo.GetAreaRemainingCounts")
+                .ToListAsync(cancellationToken);
+
+            return results
+                .Where(r => r.Remaining >= 0)
+                .ToDictionary(r => r.AreaName.ToLower(), r => r.Remaining, StringComparer.OrdinalIgnoreCase);
+        }) ?? new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static List<ClearListSection> BuildClearListSection(
+        List<ClearListResult> data,
+        Dictionary<int, CourierClearListDto> courierLookup,
+        int displayOrder
+    )
+    {
+        if (data == null) return [];
+
+        return data
+            .Where(c => c.DisplayOrder == displayOrder)
+            .Select(x =>
+            {
+                var courier = x.CourierId.HasValue
+                    ? courierLookup.GetValueOrDefault(x.CourierId.Value)
+                    : null;
+                return new ClearListSection
+                {
+                    CourierNumber = x.Code,
+                    CourierData = BuildCourierData(x, courierLookup),
+                    Destinations = BuildDestinations(x.Deliver),
+                    JobCount = courier?.JobCount ?? 0
+                };
+            })
+            .ToList();
+    }
+
+    private static CourierData BuildCourierData(
+        ClearListResult result,
+        Dictionary<int, CourierClearListDto> courierLookup
+    )
+    {
+        var courier = result?.CourierId.HasValue == true
+            ? courierLookup.GetValueOrDefault(result.CourierId.Value)
+            : null;
+
+        return new CourierData
+        {
+            Courier = $"{courier?.Code} {courier?.Name}".Trim(),
+            Location = "Unknown",
+            Pu = "Unknown",
+            Del = result?.Deliver ?? "Unknown",
+            Lrm = "Unknown",
+            Eta2Lrm = "Unknown",
+            CourierId = result?.CourierId
+        };
+    }
+
+    private static List<Destination> BuildDestinations(string deliver) =>
+        deliver
+            ?.Split(',')
+            .Select((d, index) => new Destination { Id = index + 1, Label = d.Trim() })
+            .Where(y => !string.IsNullOrWhiteSpace(y.Label))
+            .ToList() ?? [];
+
+    private static string GetComplianceStatus(DateTime now, DateTime? expiryDate)
+    {
+        if (!expiryDate.HasValue) return "Not Set";
+        if (now >= expiryDate.Value) return "Expired";
+        var daysUntilExpiry = (expiryDate.Value - now).TotalDays;
+        return daysUntilExpiry <= 30 ? "Expiring Soon" : "Valid";
+    }
+
+    private static string CalculateDaysUntilExpiry(DateTime now, DateTime? expiryDate)
+    {
+        if (!expiryDate.HasValue) return "N/A";
+        var days = (int)Math.Ceiling((expiryDate.Value - now).TotalDays);
+        return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
+    }
+
+    private static string CalculateDuration(DateTime startTime, DateTime endTime)
+    {
+        // Extract only the time components
+        var startTimeOnly = startTime.TimeOfDay;
+        var endTimeOnly = endTime.TimeOfDay;
+
+        // If end time is earlier than start time, assume it's the next day
+        if (endTimeOnly < startTimeOnly) endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
+
+        var duration = endTimeOnly - startTimeOnly;
+        return (int)duration.TotalHours + "h " + duration.Minutes + "m";
+    }
+
+    private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
+    {
+        if (!logoutTime.HasValue) return "Currently Active";
+
+        var duration = logoutTime.Value - loginTime;
+
+        // If logout time is before login time, assume it's the next day
+        if (duration.TotalMinutes < 0)
+        {
+            logoutTime = logoutTime.Value.AddDays(1);
+            duration = logoutTime.Value - loginTime;
+        }
+
+        var hours = (int)duration.TotalHours;
+        var minutes = duration.Minutes;
+
+        return hours + "h " + minutes.ToString().PadLeft(2, '0') + "m";
+    }
+
+    private static int GetDayOfWeekAsInt(string dayOfWeek) => DayOfWeekHelper.DayNameToSqlInt(dayOfWeek);
+
 
     /// <summary>
     /// Maps full vehicle type names to single character abbreviations
@@ -2340,14 +2354,12 @@ public class CourierRepository(
             query = query.Where(c => c.CourierFleetId == request.Fleet);
 
         if (!string.IsNullOrWhiteSpace(request.Status))
-        {
             query = request.Status.ToLower() switch
             {
                 "active" => query.Where(c => c.CourierLogInOut.LogOutTime == null),
                 "inactive" => query.Where(c => c.CourierLogInOut.LogOutTime != null),
                 _ => query
             };
-        }
 
         var couriers = await query
             .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)

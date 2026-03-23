@@ -13,4 +13,5 @@ public sealed class TaskTableFiltersRequest
     public int? JobId { get; init; }
     public DateTimeOffset? StartDate { get; init; }
     public DateTimeOffset? EndDate { get; init; }
+    public int? Limit { get; init; }
 }

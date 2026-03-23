@@ -7,8 +7,6 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
-using Serilog;
-
 namespace DespatchWeb.Repositories;
 
 public partial class JobRepository
@@ -230,136 +228,136 @@ public partial class JobRepository
     /// <returns>List of open jobs with pickup/delivery details and courier performance metrics.</returns>
     public async Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters)
     {
-        try
+        var now = _clock.TenantNow;
+        var tenantTimeZone = _infoService.GetTenantTimeZone();
+        var currentDate = now.Date;
+        var nextDate = currentDate.AddDays(1);
+
+        var query = Context.TucJobs
+            .Where(j =>
+                j.UcjbStatus != (int)JobStatus.Completed &&
+                j.UcjbStatus != (int)JobStatus.Rejected &&
+                j.UcjbStatus != (int)JobStatus.Void
+            );
+
+        // Apply date range filter using range comparisons to allow index usage
+        if (parameters.StartDate.HasValue)
+            query = query.Where(j => j.UcjbDate >= parameters.StartDate.Value.Date);
+        if (parameters.EndDate.HasValue)
+            query = query.Where(j => j.UcjbDate < parameters.EndDate.Value.Date.AddDays(1));
+
+        // Apply region filter if provided
+        if (parameters.Regions.Count > 0)
+            query = query.Where(j =>
+                j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
+            );
+
+        // Apply speed filter if provided
+        if (parameters.Speeds.Count > 0)
+            query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
+
+        // Apply courier filter if provided
+        if (parameters.Couriers.Count > 0)
+            query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
+
+        // Order by nullable column directly — EF Core handles null ordering in SQL
+        query = query.OrderBy(j => j.PickUpTime);
+
+        var jobDtos = await query
+            .Take(500)
+            .Select(j => new OpenJobDto
+            {
+                JobId = j.UcjbId,
+                Reference = j.UcjbNumber,
+                StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
+                PickupTime = j.PickUpTime,
+                PickupFromContact = j.PickupFromContact,
+                PickupAddressLine1 = j.PickupAddressLine1,
+                PickupAddressLine2 = j.PickupAddressLine2,
+                PickupAddressLine3 = j.PickupAddressLine3,
+                PickupAddressLine4 = j.PickupAddressLine4,
+                PickupAddressLine5 = j.PickupAddressLine5,
+                PickupAddressLine6 = j.PickupAddressLine6,
+                PickupAddressLine7 = j.PickupAddressLine7,
+                PickupAddressLine8 = j.PickupAddressLine8,
+                PickupTimeZone = j.PickupTimeZone != null ? j.PickupTimeZone.Name : null,
+                DeliverToContact = j.DeliverToContact,
+                DeliveryAddressLine1 = j.DeliveryAddressLine1,
+                DeliveryAddressLine2 = j.DeliveryAddressLine2,
+                DeliveryAddressLine3 = j.DeliveryAddressLine3,
+                DeliveryAddressLine4 = j.DeliveryAddressLine4,
+                DeliveryAddressLine5 = j.DeliveryAddressLine5,
+                DeliveryAddressLine6 = j.DeliveryAddressLine6,
+                DeliveryAddressLine7 = j.DeliveryAddressLine7,
+                DeliveryAddressLine8 = j.DeliveryAddressLine8,
+                DeliveryTimeZone = j.DeliverByTimeZone != null ? j.DeliverByTimeZone.Name : null,
+                CourierId = j.UcjbCourier != null ? j.UcjbCourier.UccrId : null,
+                CourierName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
+                CourierSurname = j.UcjbCourier != null ? j.UcjbCourier.UccrSurname : null,
+                Quantity = j.UcjbQty ?? 0,
+                PackageTypeName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
+                TotalDistance = j.TotalDistance ?? 0m,
+                DeliveryTime = j.DeliverByTime,
+                SpeedMinutes = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null
+            })
+            .TagWith("GetOpenJobs - Step 1: Job Data")
+            .ToListAsync();
+
+        if (jobDtos.Count == 0) return new List<OpenJobResponse>();
+
+        var courierIds = jobDtos
+            .Where(j => j.CourierId.HasValue)
+            .Select(j => j.CourierId.Value)
+            .Distinct()
+            .ToList();
+
+        Dictionary<int, CourierCompletionData> courierCompletionDict = new();
+
+        if (courierIds.Count > 0)
         {
-            var now = _clock.TenantNow;
-            var tenantTimeZone = _infoService.GetTenantTimeZone();
-            var currentDate = now.Date;
+            // Use range comparisons instead of .Date to allow index usage
+            // Scope to last 30 days to avoid scanning full job history
+            var completionCutoff = currentDate.AddDays(-30);
 
-            var query = Context.TucJobs
-                .Where(j =>
-                    j.UcjbStatus != (int)JobStatus.Completed &&
-                    j.UcjbStatus != (int)JobStatus.Rejected &&
-                    j.UcjbStatus != (int)JobStatus.Void
-                );
-
-            // Apply date range filter
-            if (parameters.StartDate.HasValue)
-                query = query.Where(j => j.UcjbDate.Date >= parameters.StartDate.Value.Date);
-            if (parameters.EndDate.HasValue)
-                query = query.Where(j => j.UcjbDate.Date <= parameters.EndDate.Value.Date);
-
-            // Apply region filter if provided
-            if (parameters.Regions.Count > 0)
-                query = query.Where(j =>
-                    j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
-                );
-
-            // Apply speed filter if provided
-            if (parameters.Speeds.Count > 0)
-                query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
-
-            // Apply courier filter if provided
-            if (parameters.Couriers.Count > 0)
-                query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
-
-            // Order
-            query = query.OrderBy(j => j.PickUpTime.Value);
-
-            var jobDtos = await query
-                .Select(j => new OpenJobDto
+            var courierCompletions = await Context.TucJobs
+                .Where(j => j.UcjbCourierId.HasValue &&
+                            courierIds.Contains(j.UcjbCourierId.Value) &&
+                            j.UcjbStatus == (int)JobStatus.Completed &&
+                            j.UcjbComplTime.HasValue &&
+                            j.UcjbComplTime.Value >= completionCutoff)
+                .GroupBy(j => j.UcjbCourierId.Value)
+                .Select(g => new
                 {
-                    JobId = j.UcjbId,
-                    Reference = j.UcjbNumber,
-                    StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : "Unknown",
-                    PickupTime = j.PickUpTime,
-                    PickupFromContact = j.PickupFromContact,
-                    PickupAddressLine1 = j.PickupAddressLine1,
-                    PickupAddressLine2 = j.PickupAddressLine2,
-                    PickupAddressLine3 = j.PickupAddressLine3,
-                    PickupAddressLine4 = j.PickupAddressLine4,
-                    PickupAddressLine5 = j.PickupAddressLine5,
-                    PickupAddressLine6 = j.PickupAddressLine6,
-                    PickupAddressLine7 = j.PickupAddressLine7,
-                    PickupAddressLine8 = j.PickupAddressLine8,
-                    PickupTimeZone = j.PickupTimeZone != null ? j.PickupTimeZone.Name : null,
-                    DeliverToContact = j.DeliverToContact,
-                    DeliveryAddressLine1 = j.DeliveryAddressLine1,
-                    DeliveryAddressLine2 = j.DeliveryAddressLine2,
-                    DeliveryAddressLine3 = j.DeliveryAddressLine3,
-                    DeliveryAddressLine4 = j.DeliveryAddressLine4,
-                    DeliveryAddressLine5 = j.DeliveryAddressLine5,
-                    DeliveryAddressLine6 = j.DeliveryAddressLine6,
-                    DeliveryAddressLine7 = j.DeliveryAddressLine7,
-                    DeliveryAddressLine8 = j.DeliveryAddressLine8,
-                    DeliveryTimeZone = j.DeliverByTimeZone != null ? j.DeliverByTimeZone.Name : null,
-                    CourierId = j.UcjbCourier != null ? j.UcjbCourier.UccrId : null,
-                    CourierName = j.UcjbCourier != null ? j.UcjbCourier.UccrName : null,
-                    CourierSurname = j.UcjbCourier != null ? j.UcjbCourier.UccrSurname : null,
-                    Quantity = j.UcjbQty ?? 0,
-                    PackageTypeName = j.AcceptedJobType != null ? j.AcceptedJobType.UcjtName : null,
-                    TotalDistance = j.TotalDistance ?? 0m,
-                    DeliveryTime = j.DeliverByTime,
-                    SpeedMinutes = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.Minutes : null
+                    CourierId = g.Key,
+                    CompletedToday = g.Count(j => j.UcjbComplTime.Value >= currentDate
+                                                  && j.UcjbComplTime.Value < nextDate),
+                    LastCompleted = g.OrderByDescending(j => j.UcjbComplTime).Select(j => j.UcjbComplTime)
+                        .FirstOrDefault()
                 })
-                .TagWith("GetOpenJobs - Step 1: Job Data")
+                .TagWith("GetOpenJobs - Step 2: Courier Completion Data")
                 .ToListAsync();
 
-            if (jobDtos.Count == 0) return new List<OpenJobResponse>();
-
-            var courierIds = jobDtos
-                .Where(j => j.CourierId.HasValue)
-                .Select(j => j.CourierId.Value)
-                .Distinct()
-                .ToList();
-
-            Dictionary<int, CourierCompletionData> courierCompletionDict = new();
-
-            if (courierIds.Count > 0)
-            {
-                var courierCompletions = await Context.TucJobs
-                    .Where(j => j.UcjbCourierId.HasValue &&
-                                courierIds.Contains(j.UcjbCourierId.Value) &&
-                                j.UcjbStatus == (int)JobStatus.Completed &&
-                                j.UcjbComplTime.HasValue)
-                    .GroupBy(j => j.UcjbCourierId.Value)
-                    .Select(g => new
-                    {
-                        CourierId = g.Key,
-                        CompletedToday = g.Count(j => j.UcjbComplTime.Value.Date == currentDate),
-                        LastCompleted = g.OrderByDescending(j => j.UcjbComplTime).Select(j => j.UcjbComplTime)
-                            .FirstOrDefault()
-                    })
-                    .TagWith("GetOpenJobs - Step 2: Courier Completion Data")
-                    .ToListAsync();
-
-                courierCompletionDict = courierCompletions.ToDictionary(
-                    c => c.CourierId,
-                    c => new CourierCompletionData
-                    {
-                        CompletedToday = c.CompletedToday,
-                        LastCompleted = c.LastCompleted
-                    }
-                );
-            }
-
-            var openJobs = jobDtos.Select(dto =>
-            {
-                var courierData = dto.CourierId.HasValue &&
-                                  courierCompletionDict.TryGetValue(dto.CourierId.Value, out var data)
-                    ? data
-                    : new CourierCompletionData { CompletedToday = 0, LastCompleted = null };
-
-                return MapToOpenJobResponse(dto, courierData, tenantTimeZone);
-            }).ToList();
-
-            return openJobs;
+            courierCompletionDict = courierCompletions.ToDictionary(
+                c => c.CourierId,
+                c => new CourierCompletionData
+                {
+                    CompletedToday = c.CompletedToday,
+                    LastCompleted = c.LastCompleted
+                }
+            );
         }
-        catch (Exception ex)
+
+        var openJobs = jobDtos.Select(dto =>
         {
-            Log.Error(ex, "Error getting open jobs");
-            throw;
-        }
+            var courierData = dto.CourierId.HasValue &&
+                              courierCompletionDict.TryGetValue(dto.CourierId.Value, out var data)
+                ? data
+                : new CourierCompletionData { CompletedToday = 0, LastCompleted = null };
+
+            return MapToOpenJobResponse(dto, courierData, tenantTimeZone);
+        }).ToList();
+
+        return openJobs;
     }
 
     private static IQueryable<TucJob> ApplySorting(

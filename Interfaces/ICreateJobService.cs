@@ -1,4 +1,3 @@
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Models;
 
 namespace DespatchWeb.Interfaces;
@@ -16,14 +15,5 @@ public interface ICreateJobService
     /// </summary>
     Task<CreateMinimalTucJobResponse> CreateJobAsync(
         CreateMinimalTucJobInputModel data,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Creates a job using a caller-provided <see cref="DespatchContext"/>,
-    /// allowing the operation to participate in an existing transaction.
-    /// </summary>
-    Task<CreateMinimalTucJobResponse> CreateJobAsync(
-        CreateMinimalTucJobInputModel data,
-        DespatchContext context,
         CancellationToken cancellationToken = default);
 }

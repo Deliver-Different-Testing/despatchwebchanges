@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import {renderWithTheme} from '../../__testUtils__';
 import {JobListToolbar} from './JobListToolbar';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
+import {AppPage} from '../../interfaces/dispatchJob';
 
 function createDefaultProps(overrides?: Partial<{
     selectedCategory: JobCategory;
@@ -20,6 +21,7 @@ function createDefaultProps(overrides?: Partial<{
     densityMode: DensityMode;
     onDensityModeChange: jest.Mock;
     onResetColumns: jest.Mock;
+    appPage: number;
 }>) {
     return {
         selectedCategory: 'all' as JobCategory,
@@ -31,6 +33,7 @@ function createDefaultProps(overrides?: Partial<{
         densityMode: 'dense' as DensityMode,
         onDensityModeChange: jest.fn(),
         onResetColumns: jest.fn(),
+        appPage: AppPage.Dispatch,
         ...overrides,
     };
 }
@@ -56,6 +59,21 @@ describe('JobListToolbar', () => {
         await user.click(screen.getByText('Unassigned'));
 
         expect(props.onCategoryChange).toHaveBeenCalledWith('needs-dispatch');
+    });
+
+    it('shows logged-in only toggle when dispatching is enabled', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})}/>);
+        expect(screen.getByText('Logged-in only')).toBeInTheDocument();
+    });
+
+    it('shows logged-in only toggle on job search page', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.JobSearch})}/>);
+        expect(screen.getByText('Logged-in only')).toBeInTheDocument();
+    });
+
+    it('hides logged-in only toggle when dispatching is not enabled', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})}/>);
+        expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
     });
 
     it('fires onResetColumns when reset button is clicked', async () => {

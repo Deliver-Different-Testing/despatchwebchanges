@@ -49,7 +49,10 @@ public class DynamicDespatchDbContextFactory(
 
         var optionsBuilder = new DbContextOptionsBuilder<DespatchContext>(_options);
         optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
-            sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+        {
+            sqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            sqlOptions.EnableRetryOnFailure(maxRetryCount: 3);
+        });
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 
         return new DespatchContext(optionsBuilder.Options);

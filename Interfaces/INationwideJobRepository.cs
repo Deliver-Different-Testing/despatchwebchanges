@@ -1,3 +1,5 @@
+#nullable enable
+
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
@@ -9,7 +11,7 @@ namespace DespatchWeb.Interfaces;
 public interface INationwideJobRepository
 {
     Task<JobSearchResult> NationwideJobListAsync(JobQueryParams queryParams, bool isInternal,
-        bool isUsTenant, string clientIds, NationwideWidget windowPane, IReadOnlyList<int> selectedViewIds,
+        bool isUsTenant, string? clientIds, NationwideWidget windowPane, IReadOnlyList<int> selectedViewIds,
         CancellationToken cancellationToken = default);
 
     Task AddJobNationwideAsync(AssignFlightToJobRequest requestData, IReadOnlyList<string> webhookIds,

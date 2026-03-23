@@ -767,7 +767,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var queryParams = new Models.JobQueryParams();
 
         // Act
-        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: "", DespatchWeb.Enums.NationwideWidget.JobList, []);
+        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: string.Empty, DespatchWeb.Enums.NationwideWidget.JobList, [], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -803,7 +803,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert
-        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100);
+        var flightRecord = await _context.TucJobNationwides.FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
         Assert.NotNull(flightRecord);
         Assert.Equal("NZ123", flightRecord.UcnwFlightNo);
         Assert.Equal("JOB001-F", flightRecord.UcnwJobNumber);
@@ -1101,7 +1101,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var journeyRecord = await _context.JobDeliveryJourneys
-            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment");
+            .FirstOrDefaultAsync(j => j.JobId == 100 && j.ChangeType == "FlightAssignment", TestContext.Current.CancellationToken);
         Assert.NotNull(journeyRecord);
         Assert.Equal(1, journeyRecord.StaffId);
         Assert.Equal("Staff", journeyRecord.UpdatedByType);
@@ -1144,7 +1144,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var note = await _context.TucNotes
-            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)DespatchWeb.Enums.NoteType.FlightUpdate);
+            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)DespatchWeb.Enums.NoteType.FlightUpdate, TestContext.Current.CancellationToken);
         Assert.NotNull(note);
         Assert.Contains("Flight", note.NoteText);
         Assert.Contains("123", note.NoteText); // Flight number from segment

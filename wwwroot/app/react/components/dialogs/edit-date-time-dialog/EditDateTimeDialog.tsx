@@ -37,13 +37,16 @@ dayjs.extend(timezone);
 /**
  * Format timezone for display (e.g., "Pacific/Auckland" -> "Pacific/Auckland (NZDT)")
  */
-function formatTimezoneDisplay(tz: string): string {
+function formatTimezoneDisplay(tz: string | { text?: string } | undefined | null): string {
+    // Handle timezone objects (e.g. {text: "Pacific/Auckland"}) that may be passed via `as any`
+    const tzStr = typeof tz === 'string' ? tz : tz?.text ?? '';
+    if (!tzStr) return '';
     try {
-        const now = dayjs().tz(tz);
+        const now = dayjs().tz(tzStr);
         const abbr = now.format('z');
-        return `${tz.replace(/_/g, ' ')} (${abbr})`;
+        return `${tzStr.replace(/_/g, ' ')} (${abbr})`;
     } catch {
-        return tz.replace(/_/g, ' ');
+        return tzStr.replace(/_/g, ' ');
     }
 }
 
@@ -63,7 +66,11 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
     // State
     const [dateTime, setDateTime] = useState<Dayjs>(dayjs());
     const [isLoading, setIsLoading] = useState(false);
-    const [selectedTimeZone] = useState(defaultTimeZone || getIanaTimezone());
+    // Handle timezone objects that may arrive via `as any` from callers
+    const resolvedTz = typeof defaultTimeZone === 'string'
+        ? defaultTimeZone
+        : (defaultTimeZone as unknown as { text?: string })?.text ?? undefined;
+    const [selectedTimeZone] = useState(resolvedTz || getIanaTimezone());
     const browserTimeZone = dayjs.tz.guess();
 
     // Initialize dateTime when dialog opens or initialDateTime changes

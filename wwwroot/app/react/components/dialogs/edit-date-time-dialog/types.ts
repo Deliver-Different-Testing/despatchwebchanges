@@ -49,7 +49,7 @@ export interface EditDateTimeDialogOptions {
     fieldName: JobPropertyField;
     dateTime?: Dayjs;
     defaultTimeZone?: string;
-    showDate: boolean;
-    showTime: boolean;
+    showDate?: boolean;
+    showTime?: boolean;
     isUSCustomer?: boolean;
 }

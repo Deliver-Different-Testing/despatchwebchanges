@@ -56,6 +56,8 @@ public class MessageRepository(
             .Where(m => m.UcmmDate >= cutoffDate)
             .ForStaff(staffId)
             .IncludeParticipants()
+            .OrderByDescending(m => m.UcmmDate)
+            .Take(1000)
             .ToListAsync();
 
         // Group by another party and build a result using helper service

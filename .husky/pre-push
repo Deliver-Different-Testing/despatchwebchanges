@@ -3,7 +3,14 @@ echo "Running tests before push..."
 # Run .NET tests
 dotnet test --no-build --verbosity minimal
 if [ $? -ne 0 ]; then
-    echo "Tests failed. Push aborted."
+    echo ".NET tests failed. Push aborted."
+    exit 1
+fi
+
+# Run Jest tests
+npx jest --silent
+if [ $? -ne 0 ]; then
+    echo "Jest tests failed. Push aborted."
     exit 1
 fi
 

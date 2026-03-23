@@ -19,6 +19,36 @@ public class BaseJobRepository(
 {
     protected const string Space = " ";
 
+    private static readonly Regex[] DangerousSqlPatterns =
+    [
+        new(@"\bDROP\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bDELETE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bTRUNCATE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bALTER\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bCREATE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bINSERT\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bUPDATE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bEXEC\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bEXECUTE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bXP_", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bSP_", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bINTO\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bUNION\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bGRANT\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bREVOKE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new("--", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"/\*", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bSHUTDOWN\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bWAITFOR\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bDELAY\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bOPENROWSET\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bOPENQUERY\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bBULK\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bDBCC\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
+        new(@"\bMERGE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+    ];
+
     private (int? economySpeedId, DateTime? ecoDeliveryTime)? _economyCache;
 
     protected async Task<JobSearchResult> DespatchQry(
@@ -94,30 +124,42 @@ public class BaseJobRepository(
                     };
             }
 
-            var projectedQuery = query.Select(JobMappings.JobDispatchMapping(isUsTenant));
-
             // Apply server-side pagination when Page is provided
             var requestedPage = queryParams.Page ?? 0;
             var pageSize = queryParams.PageSize ?? 500;
             int? totalCount = null;
             var hasMore = false;
 
+            List<DispatchJobViewModel> allJobs;
+
             if (requestedPage > 0)
             {
-                totalCount = await projectedQuery.Select(j => j.Id).Distinct().CountAsync(cancellationToken);
-                projectedQuery = projectedQuery
-                    .OrderBy(j => j.Id)
+                // Paginate over distinct job IDs to ensure consistent page sizes,
+                // then project only the page's jobs to avoid transferring duplicate rows
+                var distinctIdsQuery = query.Select(j => j.UcjbId).Distinct();
+                totalCount = await distinctIdsQuery.CountAsync(cancellationToken);
+
+                var pageJobIds = await distinctIdsQuery
+                    .OrderBy(id => id)
                     .Skip((requestedPage - 1) * pageSize)
-                    .Take(pageSize);
+                    .Take(pageSize)
+                    .ToListAsync(cancellationToken);
+
                 hasMore = totalCount > requestedPage * pageSize;
+
+                allJobs = await Context.TucJobs
+                    .Where(j => pageJobIds.Contains(j.UcjbId))
+                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
+                    .ToListAsync(cancellationToken);
             }
+            else
+            {
+                allJobs = await query
+                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
+                    .ToListAsync(cancellationToken);
 
-            var allJobs = await projectedQuery.ToListAsync(cancellationToken);
-
-            allJobs = allJobs
-                .GroupBy(j => j.Id)
-                .Select(g => g.First())
-                .ToList();
+                allJobs = allJobs.DistinctBy(j => j.Id).ToList();
+            }
 
             totalCount ??= allJobs.Count;
 
@@ -257,18 +299,7 @@ public class BaseJobRepository(
         if (string.IsNullOrWhiteSpace(condition))
             return false;
 
-        // Reject dangerous SQL keywords and patterns (case-insensitive)
-        // Note: XP_ and SP_ use only leading word boundary to catch prefixed procedures like xp_cmdshell, sp_executesql
-        var dangerousPatterns = new[]
-        {
-            @"\bDROP\b", @"\bDELETE\b", @"\bTRUNCATE\b", @"\bALTER\b", @"\bCREATE\b",
-            @"\bINSERT\b", @"\bUPDATE\b", @"\bEXEC\b", @"\bEXECUTE\b", @"\bXP_",
-            @"\bSP_", @"\bINTO\b", @"\bUNION\b", @"\bGRANT\b", @"\bREVOKE\b",
-            "--", @"/\*", @"\*/", @"\bSHUTDOWN\b", @"\bWAITFOR\b", @"\bDELAY\b",
-            @"\bOPENROWSET\b", @"\bOPENQUERY\b", @"\bBULK\b", @"\bDBCC\b"
-        };
-
-        return dangerousPatterns.All(pattern => !Regex.IsMatch(condition, pattern, RegexOptions.IgnoreCase));
+        return DangerousSqlPatterns.All(pattern => !pattern.IsMatch(condition));
     }
 
     private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
@@ -526,80 +557,69 @@ public class BaseJobRepository(
         return noteType;
     }
 
+    /// <summary>
+    /// Adds notes to the context for multiple jobs. Does NOT call SaveChangesAsync — the caller must save.
+    /// </summary>
     protected async Task SaveNoteToMultipleJobsAsync(IReadOnlyList<int> jobIds, string noteText,
         bool isImportant = false,
         bool isRecurringJobs = false, NoteType noteType = NoteType.InternalNote)
     {
-        try
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
-            // If a note type is not found, default to the internal note
-            noteType = await ConfirmNoteTypeExists(noteType);
+        // If a note type is not found, default to the internal note
+        noteType = await ConfirmNoteTypeExists(noteType);
 
-            var now = clock.TenantNow;
-            var staffId = infoService.GetStaffId();
+        var now = clock.TenantNow;
+        var staffId = infoService.GetStaffId();
 
-            var newNotes = jobIds.Select(jobId => new TucNote
-                {
-                    JobId = isRecurringJobs ? null : jobId,
-                    JobBookingId = isRecurringJobs ? jobId : null,
-                    NoteText = noteText,
-                    IsImportant = isImportant,
-                    NoteTypeId = (int)noteType,
-                    CreatedDate = now,
-                    CreatedBy = staffId,
-                    UpdatedBy = staffId,
-                    UpdatedDate = now
-                })
-                .ToList();
+        var newNotes = jobIds.Select(jobId => new TucNote
+            {
+                JobId = isRecurringJobs ? null : jobId,
+                JobBookingId = isRecurringJobs ? jobId : null,
+                NoteText = noteText,
+                IsImportant = isImportant,
+                NoteTypeId = (int)noteType,
+                CreatedDate = now,
+                CreatedBy = staffId,
+                UpdatedBy = staffId,
+                UpdatedDate = now
+            })
+            .ToList();
 
-            await Context.TucNotes.AddRangeAsync(newNotes);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
-        }
+        await Context.TucNotes.AddRangeAsync(newNotes);
     }
 
+    /// <summary>
+    /// Adds notes to the context for multiple archived jobs. Does NOT call SaveChangesAsync — the caller must save.
+    /// </summary>
     protected async Task SaveNoteToMultipleArchivedJobsAsync(
         IReadOnlyList<int> jobIds,
         string noteText,
         bool isImportant = false,
         NoteType noteType = NoteType.InternalNote)
     {
-        try
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
+        ArgumentException.ThrowIfNullOrWhiteSpace(noteText);
 
-            // If a note type is not found, default to the internal note
-            noteType = await ConfirmNoteTypeExists(noteType);
+        // If a note type is not found, default to the internal note
+        noteType = await ConfirmNoteTypeExists(noteType);
 
-            var now = clock.TenantNow;
-            var staffId = infoService.GetStaffId();
+        var now = clock.TenantNow;
+        var staffId = infoService.GetStaffId();
 
-            var newNotes = jobIds.Select(jobId => new TucNoteArchive
-                {
-                    JobId = jobId,
-                    NoteText = noteText,
-                    IsImportant = isImportant,
-                    NoteTypeId = (int)noteType,
-                    CreatedDate = now,
-                    CreatedBy = staffId,
-                    UpdatedBy = staffId,
-                    UpdatedDate = now
-                })
-                .ToList();
+        var newNotes = jobIds.Select(jobId => new TucNoteArchive
+            {
+                JobId = jobId,
+                NoteText = noteText,
+                IsImportant = isImportant,
+                NoteTypeId = (int)noteType,
+                CreatedDate = now,
+                CreatedBy = staffId,
+                UpdatedBy = staffId,
+                UpdatedDate = now
+            })
+            .ToList();
 
-            await Context.TucNoteArchives.AddRangeAsync(newNotes);
-        }
-        catch (Exception e)
-        {
-            Log.Error(e, "{Message}",
-                ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
-                    nameof(SaveNoteToMultipleArchivedJobsAsync)));
-        }
+        await Context.TucNoteArchives.AddRangeAsync(newNotes);
     }
 
     protected async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
@@ -635,6 +655,7 @@ public class BaseJobRepository(
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository), nameof(SaveNoteAsync)));
+            throw;
         }
     }
 
@@ -662,7 +683,6 @@ public class BaseJobRepository(
 
             if (job.SpeedId == economySpeedId)
             {
-                if (!job.Booked.HasValue) throw new ArgumentException("Booked date is required.", nameof(job));
                 if (!ecoDeliveryTime.HasValue) throw new ArgumentNullException(nameof(ecoDeliveryTime));
 
                 var targetDateTime = new DateTime(
@@ -732,47 +752,55 @@ public class BaseJobRepository(
             var staffId = infoService.GetStaffId();
             var currentTime = clock.TenantNow;
 
-            // Fetch current state for history before updating
-            var currentNote = await Context.TucNotes
-                .Where(c => c.NoteId == noteId)
-                .Select(c => new { c.NoteText, c.NoteTypeId, c.IsImportant })
-                .FirstOrDefaultAsync();
-
-            if (currentNote != null)
+            var strategy = Context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                var history = new TucNoteHistory
+                await using var transaction = await Context.Database.BeginTransactionAsync();
+
+                // Fetch current state for history before updating
+                var currentNote = await Context.TucNotes
+                    .Where(c => c.NoteId == noteId)
+                    .Select(c => new { c.NoteText, c.NoteTypeId, c.IsImportant })
+                    .FirstOrDefaultAsync();
+
+                var rowsAffected = await Context.TucNotes
+                    .Where(c => c.NoteId == noteId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(e => e.NoteText, noteText)
+                        .SetProperty(e => e.NoteTypeId, (int)noteType)
+                        .SetProperty(e => e.IsImportant, isImportant)
+                        .SetProperty(e => e.UpdatedBy, staffId)
+                        .SetProperty(e => e.UpdatedDate, currentTime)
+                    );
+
+                if (rowsAffected == 0) throw new Exception($"Existing note under {noteId} not found");
+
+                if (currentNote != null)
                 {
-                    NoteId = noteId,
-                    EditedBy = staffId,
-                    EditedAtUtc = DateTime.UtcNow,
-                    OldNoteText = currentNote.NoteText,
-                    NewNoteText = noteText,
-                    OldNoteTypeId = currentNote.NoteTypeId,
-                    NewNoteTypeId = (int)noteType,
-                    OldIsImportant = currentNote.IsImportant,
-                    NewIsImportant = isImportant
-                };
-                await Context.TucNoteHistories.AddAsync(history);
-                await Context.SaveChangesAsync();
-            }
+                    var history = new TucNoteHistory
+                    {
+                        NoteId = noteId,
+                        EditedBy = staffId,
+                        EditedAtUtc = DateTime.UtcNow,
+                        OldNoteText = currentNote.NoteText,
+                        NewNoteText = noteText,
+                        OldNoteTypeId = currentNote.NoteTypeId,
+                        NewNoteTypeId = (int)noteType,
+                        OldIsImportant = currentNote.IsImportant,
+                        NewIsImportant = isImportant
+                    };
+                    await Context.TucNoteHistories.AddAsync(history);
+                    await Context.SaveChangesAsync();
+                }
 
-            var rowsAffected = await Context.TucNotes
-                .Where(c => c.NoteId == noteId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(e => e.NoteText, noteText)
-                    .SetProperty(e => e.NoteTypeId, (int)noteType)
-                    .SetProperty(e => e.IsImportant, isImportant)
-                    .SetProperty(e => e.UpdatedBy, staffId)
-                    .SetProperty(e => e.UpdatedDate, currentTime)
-                );
-
-            if (rowsAffected == 0) throw new Exception($"Existing note under {noteId} not found");
+                await transaction.CommitAsync();
+            });
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(RecurringJobRepository),
-                    nameof(CreateNewRecurringJobNote)));
+                    nameof(UpdateRecurringJobNote)));
             throw;
         }
     }
@@ -782,16 +810,10 @@ public class BaseJobRepository(
         if (_economyCache.HasValue)
             return _economyCache.Value;
 
-        // Run both queries in parallel using separate contexts (DbContext is not thread-safe)
-        await using var economyContext = CreateNewContext();
-        await using var deliveryTimeContext = CreateNewContext();
+        var economySpeedId = await Context.GetEconomySpeedIdAsync();
+        var ecoDeliveryTime = await Context.GetEcoDeliveryTimeAsync();
 
-        var economySpeedTask = economyContext.GetEconomySpeedIdAsync();
-        var ecoDeliveryTimeTask = deliveryTimeContext.GetEcoDeliveryTimeAsync();
-
-        await Task.WhenAll(economySpeedTask, ecoDeliveryTimeTask);
-
-        _economyCache = (await economySpeedTask, await ecoDeliveryTimeTask);
+        _economyCache = (economySpeedId, ecoDeliveryTime);
         return _economyCache.Value;
     }
 
