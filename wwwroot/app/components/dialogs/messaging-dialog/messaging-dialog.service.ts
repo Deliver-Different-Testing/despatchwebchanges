@@ -39,7 +39,7 @@ class MessagingDialogService implements angular.IServiceProvider {
             const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
 
             // Load vendor-react first (if not already loaded)
-            if (!(window as any).React) {
+            if (!window.React) {
                 await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
             }
 

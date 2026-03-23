@@ -30,12 +30,3 @@ export async function openJobFileUploadDialog(jobId: number): Promise<void> {
     const service = injector.get('jobFileUploadDialogService');
     await service.openJobFileUploadDialog(null, {id: jobId});
 }
-
-/**
- * Open the Truck Courier Status dialog (AngularJS).
- */
-export async function openTruckCourierStatusDialog(truckCourierStatus: any): Promise<void> {
-    const injector = getAngularInjector();
-    const service = injector.get('truckCourierStatusDialogService');
-    await service.showTruckLoadingStatus(null, truckCourierStatus);
-}

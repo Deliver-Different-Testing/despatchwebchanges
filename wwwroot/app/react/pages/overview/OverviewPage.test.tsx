@@ -167,7 +167,7 @@ describe('OverviewPage', () => {
         it('saves collapse state when toggled', () => {
             renderOverviewPage();
 
-            const collapseButton = screen.getByText('expand_less').closest('button')!;
+            const collapseButton = screen.getByTestId('ExpandLessIcon').closest('button')!;
             fireEvent.click(collapseButton);
 
             // Verify state was persisted to localStorage
@@ -179,8 +179,8 @@ describe('OverviewPage', () => {
             localStorage.setItem('cardCollapseStates', JSON.stringify({overview: true}));
             renderOverviewPage();
 
-            // When collapsed, the icon should be expand_more
-            expect(screen.getByText('expand_more')).toBeInTheDocument();
+            // When collapsed, the icon should be ExpandMoreIcon
+            expect(screen.getByTestId('ExpandMoreIcon')).toBeInTheDocument();
         });
     });
 

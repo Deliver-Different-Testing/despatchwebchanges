@@ -16,6 +16,7 @@ import {
     type IColumn,
     type ILayout,
 } from '../DispatchPage.interfaces';
+import {migrateDispatchLayoutsIfNeeded} from './migrateDispatchLayouts';
 
 const contactId = () => window.ContactID || 0;
 
@@ -61,7 +62,7 @@ const DEFAULT_LAYOUT: ILayout = {
 };
 
 /** Convert the column-based ILayout format to RGL Layout (readonly LayoutItem[]) */
-function columnsToRglLayout(columns: IColumn[]): Layout {
+export function columnsToRglLayout(columns: IColumn[]): Layout {
     const items: LayoutItem[] = [];
     const totalWidthParts = 12; // RGL uses 12-column grid
 
@@ -177,6 +178,8 @@ export interface UseDispatchLayoutReturn {
 }
 
 export function useDispatchLayout(): UseDispatchLayoutReturn {
+    migrateDispatchLayoutsIfNeeded();
+
     const cols = 12;
     const rowHeight = 80;
 

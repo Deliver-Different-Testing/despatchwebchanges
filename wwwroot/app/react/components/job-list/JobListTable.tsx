@@ -610,7 +610,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 <TableBody>
                     {jobs.map((job) => (
                         <JobRow
-                            key={job.id}
+                            key={job.angularId}
                             job={job}
                             isSelected={selectedJobId === job.id}
                             isRelated={relatedJobIds.has(job.id)}

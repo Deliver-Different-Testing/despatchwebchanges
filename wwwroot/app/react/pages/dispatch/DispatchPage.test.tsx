@@ -106,29 +106,29 @@ jest.mock('../../components/job-list/JobListPanel', () => ({
 }));
 
 jest.mock('../../components/common/job-details/JobDetails', () => ({
-    JobDetails: (props: any) => <div data-testid="job-details">JobDetails</div>,
+    JobDetails: (_props: any) => <div data-testid="job-details">JobDetails</div>,
 }));
 
 jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
-    DispatchMap: (props: any) => <div data-testid="dispatch-map">DispatchMap</div>,
+    DispatchMap: (_props: any) => <div data-testid="dispatch-map">DispatchMap</div>,
 }));
 
 jest.mock('../../components/common/driver-locations/DriverLocations', () => ({
-    DriverLocations: (props: any) => <div data-testid="driver-locations-widget">DriverLocations</div>,
+    DriverLocations: (_props: any) => <div data-testid="driver-locations-widget">DriverLocations</div>,
 }));
 
 jest.mock('../../components/common/current-work-all-drivers/CurrentWorkAllDrivers', () => ({
-    CurrentWorkAllDrivers: (props: any) => (
+    CurrentWorkAllDrivers: (_props: any) => (
         <div data-testid="current-work-all-drivers">CurrentWorkAllDrivers</div>
     ),
 }));
 
 jest.mock('./components/SupportTasksPanel', () => ({
-    SupportTasksPanel: (props: any) => <div data-testid="support-tasks-panel">SupportTasks</div>,
+    SupportTasksPanel: (_props: any) => <div data-testid="support-tasks-panel">SupportTasks</div>,
 }));
 
 jest.mock('./components/JobDetailFab', () => ({
-    JobDetailFab: (props: any) => <div data-testid="job-detail-fab">JobDetailFab</div>,
+    JobDetailFab: (_props: any) => <div data-testid="job-detail-fab">JobDetailFab</div>,
 }));
 
 // ── Service mocks ───────────────────────────────────────────────────────
@@ -189,7 +189,6 @@ jest.mock('../../components/dialogs/swap-pods-dialog/swap-pods-dialog-react.modu
 jest.mock('../../services/angularDialogBridge', () => ({
     openInterCourierChargeDialog: jest.fn(() => Promise.resolve()),
     openJobFileUploadDialog: jest.fn(() => Promise.resolve()),
-    openTruckCourierStatusDialog: jest.fn(() => Promise.resolve()),
 }));
 
 import {getPotentialCouriers, getExactCourierMatch, getTruckCourierStatus} from '../../services/dispatchApi';
@@ -683,9 +682,20 @@ describe('DispatchPage', () => {
     });
 
     describe('CurrentWork toolbar (selectedDriver mode)', () => {
-        it('shows back button and truck loading status button', async () => {
+        it('shows back button and truck loading status button that opens React dialog', async () => {
             const backToOverview = jest.fn();
-            mockGetTruckCourierStatus.mockResolvedValueOnce({} as any);
+            mockGetTruckCourierStatus.mockResolvedValueOnce({
+                courierId: 10,
+                courierCode: 'C10',
+                firstName: 'John',
+                maxPallets: 20,
+                maxPayLoad: 1000,
+                currentPallets: 5,
+                currentWeight: 300,
+                availablePalletCapacity: 15,
+                availablePallets: 15,
+                lastUpdated: '2026-01-01',
+            });
 
             setupDefaultMocks({
                 currentWork: defaultCurrentWorkReturn({
@@ -705,13 +715,16 @@ describe('DispatchPage', () => {
             fireEvent.click(backButton);
             expect(backToOverview).toHaveBeenCalled();
 
-            // Truck Loading Status button present
+            // Truck Loading Status button opens React dialog
             const truckButton = within(toolbarActions).getByLabelText('Truck Loading Status');
             fireEvent.click(truckButton);
 
+            // Dialog should appear with the header and courier subtitle
             await waitFor(() => {
-                expect(mockGetTruckCourierStatus).toHaveBeenCalledWith(10);
+                expect(screen.getByText('Truck Loading Status')).toBeInTheDocument();
+                expect(screen.getByText('C10 John')).toBeInTheDocument();
             });
+            expect(mockGetTruckCourierStatus).toHaveBeenCalledWith(10);
         });
     });
 
