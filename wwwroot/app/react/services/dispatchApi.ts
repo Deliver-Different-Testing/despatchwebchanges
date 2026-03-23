@@ -121,9 +121,10 @@ export function createCurrentWorkFetchFn(courierId: number) {
  * Fetch available dispatch page views.
  */
 export async function getPageViews(
+    pageId: number = 1,
     options?: RequestOptions,
 ): Promise<DfrntPageViewModel[]> {
-    return apiClient.get<DfrntPageViewModel[]>('home/GetPageViews', undefined, options);
+    return apiClient.get<DfrntPageViewModel[]>('home/GetPageViews', { pageId }, options);
 }
 
 // ── Potential Couriers ──────────────────────────────────────────────

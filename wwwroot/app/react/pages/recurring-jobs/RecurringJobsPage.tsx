@@ -19,6 +19,7 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import TuneIcon from '@mui/icons-material/Tune';
+import type {SxProps, Theme} from '@mui/material';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 import {
@@ -30,6 +31,32 @@ import {
 import {RecurringJobsTable} from './components/RecurringJobsTable';
 import {RecurringJobsToolbar, RecurringJobsFilters} from './components/RecurringJobsToolbar';
 import {RecurringJobsContextMenu} from './components/RecurringJobsContextMenu';
+
+const styles: Record<string, SxProps<Theme>> = {
+    root: {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        p: 2,
+        bgcolor: 'background.default',
+    },
+    cardHeader: {
+        bgcolor: 'background.paper',
+        color: 'text.primary',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        minHeight: 44,
+        flexShrink: 0,
+    },
+    tableCard: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        minHeight: 0,
+    },
+};
 
 const DEFAULT_QUERY: RecurringJobQuery = {
     order: 'booked',
@@ -205,22 +232,12 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     }, [onAddStop]);
 
     return (
-        <Box sx={{
-            height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
-            p: 2,
-            bgcolor: 'background.default',
-        }}>
+        <Box sx={styles.root}>
             {/* Filters Card */}
             <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
                 <Toolbar
                     variant="dense"
-                    sx={{
-                        bgcolor: 'background.paper',
-                        color: 'text.primary',
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        minHeight: 44,
-                    }}
+                    sx={styles.cardHeader}
                 >
                     <TuneIcon sx={{mr: 1}} />
                     <Typography variant="subtitle1">Filters</Typography>
@@ -247,24 +264,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             {/* Recurring Jobs Table Card */}
             <Card
                 variant="outlined"
-                sx={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    minHeight: 0,
-                }}
+                sx={styles.tableCard}
             >
                 <Toolbar
                     variant="dense"
-                    sx={{
-                        bgcolor: 'background.paper',
-                        color: 'text.primary',
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        minHeight: 44,
-                        flexShrink: 0,
-                    }}
+                    sx={styles.cardHeader}
                 >
                     <EventRepeatIcon sx={{mr: 1}} />
                     <Typography variant="subtitle1">

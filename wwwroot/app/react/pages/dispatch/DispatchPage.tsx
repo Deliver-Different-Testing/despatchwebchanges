@@ -41,6 +41,7 @@ import {usePageViews} from './hooks/usePageViews';
 import {useDateFilter} from './hooks/useDateFilter';
 import {useMessaging} from './hooks/useMessaging';
 import {useAutoRefresh} from './hooks/useAutoRefresh';
+import {useDispatchExecutor} from './hooks/useDispatchExecutor';
 import {
     BOX_CONFIGS,
     DispatchBox,
@@ -84,7 +85,11 @@ import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {executeAddStopFlow} from '../../services/addStopFlow';
 import {openSwapPodsDialog} from '../../components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module';
-import {openInterCourierChargeDialog, openJobFileUploadDialog, openTruckCourierStatusDialog} from '../../services/angularDialogBridge';
+import {openInterCourierChargeDialog, openJobFileUploadDialog} from '../../services/angularDialogBridge';
+import {TruckCourierStatusDialog} from './components/TruckCourierStatusDialog';
+import {ConfirmDialog} from './components/ConfirmDialog';
+import {CourierSelectionDialog} from './components/CourierSelectionDialog';
+import type {ITruckCourierStatus} from '../../services/dispatchApi';
 
 // Types
 import type {DispatchJob, AppPage, JobCategory} from '../../interfaces/dispatchJob';
@@ -320,6 +325,9 @@ export function DispatchPage({
     const dateFilter = useDateFilter();
     const messaging = useMessaging(showToast);
 
+    // Dispatch executor (validation, confirmation dialogs, allocation)
+    const dispatchExecutor = useDispatchExecutor(showToast);
+
     // Auto-refresh intervals (configurable, persisted to localStorage)
     const jobListRefresh = useAutoRefresh('dispatch_jobListRefreshInterval', 0);
     const driverLocationRefresh = useAutoRefresh('dispatch_driverLocationRefreshInterval', 60_000);
@@ -335,6 +343,9 @@ export function DispatchPage({
     // Save-layout dialog state
     const [saveLayoutOpen, setSaveLayoutOpen] = useState(false);
     const [saveLayoutName, setSaveLayoutName] = useState('');
+
+    // Truck loading status dialog state
+    const [truckStatus, setTruckStatus] = useState<{open: boolean; data: ITruckCourierStatus | null; isRefreshing: boolean}>({open: false, data: null, isRefreshing: false});
 
     // Potential couriers for unassigned job selection
     const [potentialCouriers, setPotentialCouriers] = useState<IPotentialCourier[]>([]);
@@ -427,10 +438,13 @@ export function DispatchPage({
         jobSelection.selectJob(job);
     }, [jobSelection.selectJob]);
 
-    const handleJobDispatch = useCallback((job: DispatchJob, courierId: number) => {
-        showToast(`Job #${job.jobNo || job.id} dispatched`, 'success');
-        jobSelection.refreshJobListRef.current?.();
-    }, [showToast, jobSelection.refreshJobListRef]);
+    const handleJobDispatch = useCallback(async (job: DispatchJob, courierId: number) => {
+        const success = await dispatchExecutor.dispatchJobs(courierId, [job]);
+        if (success) {
+            jobSelection.refreshJobListRef.current?.();
+            currentWork.refetch();
+        }
+    }, [dispatchExecutor, jobSelection.refreshJobListRef, currentWork]);
 
     const handleMapMarkerClick = useCallback((mapItem: IDispatchMapItem) => {
         jobSelection.selectJobById(mapItem.jobId);
@@ -715,12 +729,26 @@ export function DispatchPage({
         if (!courierId) return;
         try {
             const status = await getTruckCourierStatus(courierId);
-            await openTruckCourierStatusDialog(status);
+            setTruckStatus({open: true, data: status, isRefreshing: false});
         } catch (error) {
             console.error('Error fetching truck status:', error);
             showToast('Error loading truck status', 'error');
         }
     }, [currentWork.selectedCourierId, showToast]);
+
+    const handleTruckStatusRefresh = useCallback(async () => {
+        const courierId = truckStatus.data?.courierId;
+        if (!courierId) return;
+        setTruckStatus(prev => ({...prev, isRefreshing: true}));
+        try {
+            const status = await getTruckCourierStatus(courierId);
+            setTruckStatus({open: true, data: status, isRefreshing: false});
+        } catch (error) {
+            console.error('Error refreshing truck status:', error);
+            showToast('Error refreshing truck status', 'error');
+            setTruckStatus(prev => ({...prev, isRefreshing: false}));
+        }
+    }, [truckStatus.data?.courierId, showToast]);
 
     // ── Per-widget toolbar actions ───────────────────────────────────
 
@@ -1083,6 +1111,40 @@ export function DispatchPage({
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Truck Loading Status Dialog */}
+            <TruckCourierStatusDialog
+                open={truckStatus.open}
+                onClose={() => setTruckStatus(prev => ({...prev, open: false}))}
+                truckCourierStatus={truckStatus.data}
+                isUsCustomer={isUsCustomer}
+                onRefresh={handleTruckStatusRefresh}
+                isRefreshing={truckStatus.isRefreshing}
+            />
+
+            {/* Dispatch Confirmation Dialog (offline courier, chilled warning) */}
+            {dispatchExecutor.pendingConfirmation && (
+                <ConfirmDialog
+                    open
+                    onClose={() => dispatchExecutor.resolveConfirmation(false)}
+                    onConfirm={() => dispatchExecutor.resolveConfirmation(true)}
+                    title={dispatchExecutor.pendingConfirmation.title}
+                    message={dispatchExecutor.pendingConfirmation.message}
+                    confirmLabel={dispatchExecutor.pendingConfirmation.confirmLabel}
+                    severity={dispatchExecutor.pendingConfirmation.type === 'chilled-warning' ? 'warning' : 'info'}
+                />
+            )}
+
+            {/* Courier Selection Dialog (for reallocation) */}
+            {dispatchExecutor.pendingCourierSelection && (
+                <CourierSelectionDialog
+                    open
+                    onClose={() => dispatchExecutor.resolveCourierSelection(null)}
+                    onSelect={(courier) => dispatchExecutor.resolveCourierSelection(courier.courierId)}
+                    jobNo={dispatchExecutor.pendingCourierSelection.jobNo}
+                    potentialCouriers={potentialCouriers}
+                />
+            )}
         </DispatchProvider>
     );
 }

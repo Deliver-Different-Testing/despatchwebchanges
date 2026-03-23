@@ -61,6 +61,63 @@ import {tasksApi} from '../../services/tasksApi';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../components/common/ai-summary-panel/AiSummaryPanel';
 import {isAiEnabled} from '../../../functions/aiSettings';
+import type {SxProps, Theme} from '@mui/material';
+
+const styles: Record<string, SxProps<Theme>> = {
+    root: {
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        p: 2,
+        bgcolor: 'background.default',
+    },
+    statCardsRow: {
+        display: 'flex',
+        gap: 2,
+        mb: 2,
+        flexShrink: 0,
+    },
+    filterCard: {
+        mb: 2,
+        flexShrink: 0,
+    },
+    filterCardContent: {
+        py: 1.5,
+        '&:last-child': {pb: 1.5},
+    },
+    mainContent: {
+        flex: 1,
+        display: 'flex',
+        gap: 2,
+        minHeight: 0,
+    },
+    leftPanel: {
+        flex: 11,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    rightPanel: {
+        flex: 9,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+    },
+    panelCard: {
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+    },
+    cardHeader: {
+        bgcolor: 'background.paper',
+        color: 'text.primary',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        minHeight: 44,
+        flexShrink: 0,
+    },
+};
 
 // Local storage keys
 const getViewPreferenceKey = () => {
@@ -439,18 +496,12 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     let globalTaskIndex = 0;
 
     return (
-        <Box sx={{
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            p: 2,
-            bgcolor: 'background.default',
-        }}>
+        <Box sx={styles.root}>
             {/* Inject animation keyframes */}
             <style>{fadeInUpKeyframes}</style>
 
             {/* Stat Cards Row */}
-            <Box sx={{display: 'flex', gap: 2, mb: 2, flexShrink: 0}}>
+            <Box sx={styles.statCardsRow}>
                 {STAT_CARDS.map((card) => {
                     const isSelected = statusFilter === card.status;
                     const count = statusCounts[card.countKey];
@@ -502,8 +553,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             </Box>
 
             {/* Inline Filter Bar */}
-            <Card variant="outlined" sx={{mb: 2, flexShrink: 0}}>
-                <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
+            <Card variant="outlined" sx={styles.filterCard}>
+                <CardContent sx={styles.filterCardContent}>
                     <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
                         <TextField
                             size="small"
@@ -600,21 +651,14 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             )}
 
             {/* Main Content - Two Column Layout */}
-            <Box sx={{flex: 1, display: 'flex', gap: 2, minHeight: 0}}>
+            <Box sx={styles.mainContent}>
                 {/* Left Panel: Tasks or Calendar */}
-                <Box sx={{flex: 11, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
+                <Box sx={styles.leftPanel}>
                     <Card variant="outlined"
-                          sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                          sx={styles.panelCard}>
                         <Toolbar
                             variant="dense"
-                            sx={{
-                                bgcolor: 'background.paper',
-                                color: 'text.primary',
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                                minHeight: 44,
-                                flexShrink: 0,
-                            }}
+                            sx={styles.cardHeader}
                         >
                             {showFullCalendar ? (
                                 <>
@@ -770,19 +814,12 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                 </Box>
 
                 {/* Right Panel: Delivery Journey */}
-                <Box sx={{flex: 9, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
+                <Box sx={styles.rightPanel}>
                     <Card variant="outlined"
-                          sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                          sx={styles.panelCard}>
                         <Toolbar
                             variant="dense"
-                            sx={{
-                                bgcolor: 'background.paper',
-                                color: 'text.primary',
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                                minHeight: 44,
-                                flexShrink: 0,
-                            }}
+                            sx={styles.cardHeader}
                         >
                             <RocketLaunchIcon sx={{mr: 1}}/>
                             <Typography variant="subtitle1">

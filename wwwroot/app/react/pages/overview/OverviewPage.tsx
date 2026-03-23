@@ -6,6 +6,11 @@ import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import Collapse from '@mui/material/Collapse';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import SearchIcon from '@mui/icons-material/Search';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import type {SxProps, Theme} from '@mui/material';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
 import {
@@ -31,6 +36,40 @@ import type {
 } from './OverviewPage.interfaces';
 
 // Window.ReactAiAssistant type is declared in wwwroot/types/global.d.ts
+
+const styles: Record<string, SxProps<Theme>> = {
+    root: {
+        p: 2,
+        display: 'flex',
+        flexDirection: {xs: 'column', md: 'row'},
+        gap: 2,
+        bgcolor: 'background.default',
+    },
+    filterPanel: {
+        flex: '0 0 20%',
+        minWidth: 250,
+    },
+    mainPanel: {
+        flex: 1,
+        minWidth: 0,
+    },
+    cardHeader: {
+        display: 'flex',
+        alignItems: 'center',
+        px: 2,
+        py: 1,
+        bgcolor: 'background.paper',
+        color: 'text.primary',
+        borderBottom: '1px solid',
+        borderColor: 'divider',
+        minHeight: 44,
+    },
+    searchContainer: {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        mb: 2,
+    },
+};
 
 const OVERVIEW_LIMIT_KEY = `overviewJobLimitDisplay-${ContactID}`;
 
@@ -297,17 +336,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     }, []);
     
     return (
-        <Box
-            sx={{
-                p: 2,
-                display: 'flex',
-                flexDirection: {xs: 'column', md: 'row'},
-                gap: 2,
-                bgcolor: 'background.default',
-            }}
-        >
+        <Box sx={styles.root}>
             {/* Left Panel — Filters */}
-            <Box sx={{flex: '0 0 20%', minWidth: 250}}>
+            <Box sx={styles.filterPanel}>
                 <FilterPanel
                     regions={regions}
                     regionsLoading={regionsLoading}
@@ -330,39 +361,23 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </Box>
 
             {/* Right Panel — Overview + Open Jobs */}
-            <Box sx={{flex: 1, minWidth: 0}}>
+            <Box sx={styles.mainPanel}>
                 <Card variant="outlined">
                     {/* Card Header */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 2,
-                            py: 1,
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            minHeight: 44,
-                        }}
-                    >
-                        <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                            overview
-                        </span>
+                    <Box sx={styles.cardHeader}>
+                        <DashboardIcon sx={{fontSize: 20}} />
                         <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
                             Overview
                         </Typography>
                         <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
-                            <span className="material-symbols-outlined">
-                                {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
-                            </span>
+                            {isOverviewCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
                         </IconButton>
                     </Box>
 
                     <Collapse in={!isOverviewCollapsed}>
                         <Box sx={{p: 2}}>
                             {/* Search */}
-                            <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
+                            <Box sx={styles.searchContainer}>
                                 <TextField
                                     size="small"
                                     placeholder="Search deliveries..."
@@ -372,9 +387,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                                         input: {
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                                                        search
-                                                    </span>
+                                                    <SearchIcon sx={{fontSize: 20}} />
                                                 </InputAdornment>
                                             ),
                                         },
