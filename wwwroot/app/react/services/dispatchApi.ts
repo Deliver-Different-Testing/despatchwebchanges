@@ -72,7 +72,7 @@ export async function getDriverLocations(
 export async function getDriverWorkOverview(
     options?: RequestOptions,
 ): Promise<IDriverWorkOverview[]> {
-    return apiClient.get<IDriverWorkOverview[]>('courier/DriverWorkOverview', undefined, options);
+    return apiClient.get<IDriverWorkOverview[]>('courier/GetDriverWorkOverview', undefined, options);
 }
 
 // ── Current Jobs for a Courier ──────────────────────────────────────
@@ -86,7 +86,7 @@ export async function getJobsCurrent(
     endDate: unknown,
     options?: RequestOptions,
 ): Promise<JobSearchResult> {
-    const dto = await apiClient.get<IJobSearchResultDto>('job/GetJobsCurrent', {
+    const dto = await apiClient.get<IJobSearchResultDto>('job/GetCurrentWorkList', {
         courierId,
         startDate: formatDate(startDate),
         endDate: formatDate(endDate),
@@ -123,7 +123,7 @@ export function createCurrentWorkFetchFn(courierId: number) {
 export async function getPageViews(
     options?: RequestOptions,
 ): Promise<DfrntPageViewModel[]> {
-    return apiClient.get<DfrntPageViewModel[]>('DispatchView', undefined, options);
+    return apiClient.get<DfrntPageViewModel[]>('home/GetPageViews', undefined, options);
 }
 
 // ── Potential Couriers ──────────────────────────────────────────────

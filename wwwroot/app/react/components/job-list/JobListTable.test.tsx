@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
+import {act, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithTheme} from '../../__testUtils__';
 import {JobListTable} from './JobListTable';
@@ -231,8 +231,11 @@ describe('JobListTable', () => {
     });
 
     describe('Courier Autocomplete Search', () => {
+        beforeEach(() => { jest.useFakeTimers(); });
+        afterEach(() => { jest.useRealTimers(); });
+
         it('shows autocomplete, calls search, passes dgOnly for DG jobs, and dispatches on selection', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockedSearch.mockResolvedValue([{id: 42, text: '101 - John Smith'}]);
 
             const props = createDefaultProps();
@@ -244,6 +247,9 @@ describe('JobListTable', () => {
             await user.click(screen.getByPlaceholderText('Search courier...'));
             await user.paste('John');
 
+            // Flush 300ms courier search debounce
+            await act(async () => { jest.advanceTimersByTime(300); });
+
             await waitFor(() => {
                 expect(mockedSearch).toHaveBeenCalledWith('John', expect.objectContaining({signal: expect.any(AbortSignal)}));
             });
@@ -254,7 +260,7 @@ describe('JobListTable', () => {
         });
 
         it('passes dgOnly=true for DG jobs', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockedSearch.mockResolvedValue([]);
 
             renderWithTheme(<JobListTable {...createDefaultProps({jobs: [createMockDispatchJob({dgClass: 3})]})}/>);
@@ -262,6 +268,9 @@ describe('JobListTable', () => {
             await user.click(screen.getByText('Assign'));
             await user.click(screen.getByPlaceholderText('Search courier...'));
             await user.paste('test');
+
+            // Flush 300ms courier search debounce
+            await act(async () => { jest.advanceTimersByTime(300); });
 
             await waitFor(() => {
                 expect(mockedSearch).toHaveBeenCalledWith('test', expect.objectContaining({dgOnly: true}));

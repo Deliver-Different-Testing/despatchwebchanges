@@ -42,6 +42,7 @@ import {useDateFilter} from './hooks/useDateFilter';
 import {useMessaging} from './hooks/useMessaging';
 import {useAutoRefresh} from './hooks/useAutoRefresh';
 import {
+    BOX_CONFIGS,
     DispatchBox,
     type DispatchPageProps,
 } from './DispatchPage.interfaces';
@@ -103,7 +104,7 @@ const styles: Record<string, SxProps<Theme>> = {
     gridArea: {
         flex: 1,
         minHeight: 0,
-        overflow: 'hidden',
+        overflow: 'auto',
     },
     widgetContent: {
         height: '100%',
@@ -539,18 +540,55 @@ export function DispatchPage({
 
     const handleOpenSettings = useCallback(async () => {
         try {
+            const formatRefreshLabel = (ms: number): string => {
+                if (ms === 0) return 'Disabled';
+                const totalSeconds = ms / 1000;
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                if (minutes === 0) return `${totalSeconds} seconds`;
+                if (seconds === 0) return minutes === 1 ? `${minutes} min` : `${minutes} mins`;
+                return `${minutes} ${minutes === 1 ? 'min' : 'mins'} ${seconds} seconds`;
+            };
+
             const result = await openDashboardSettingsDialog(
-                {title: 'Dashboard Settings'},
-                {},
+                {
+                    title: 'Dashboard Settings',
+                    showRefreshInterval: true,
+                    showDriverLocationRefresh: true,
+                    showDashboards: !layout.isDefaultLayout,
+                },
+                Object.fromEntries(
+                    Object.entries(BOX_CONFIGS).map(([key, cfg]) => [
+                        key,
+                        {
+                            name: cfg.id,
+                            title: cfg.title,
+                            icon: cfg.icon,
+                            description: cfg.description,
+                            visible: layout.boxStates[key]?.visible ?? true,
+                        },
+                    ])
+                ),
+                {id: jobListRefresh.intervalMs / 1000, text: formatRefreshLabel(jobListRefresh.intervalMs)},
+                {id: driverLocationRefresh.intervalMs / 1000, text: formatRefreshLabel(driverLocationRefresh.intervalMs)},
             );
             if (result) {
+                if (result.selectedRefreshInterval) {
+                    jobListRefresh.setIntervalMs(result.selectedRefreshInterval.id * 1000);
+                }
+                if (result.selectedDriverLocationRefreshInterval) {
+                    driverLocationRefresh.setIntervalMs(result.selectedDriverLocationRefreshInterval.id * 1000);
+                }
+                if (result.boxes) {
+                    layout.updateBoxStates(result.boxes);
+                }
                 showToast('Settings saved successfully', 'success');
             }
         } catch (error) {
             if (!error) return;
             console.error('Error opening settings dialog:', error);
         }
-    }, [showToast]);
+    }, [showToast, layout, jobListRefresh, driverLocationRefresh]);
 
     // ── Job Detail FAB action handlers ─────────────────────────────
 
