@@ -203,6 +203,7 @@ jest.mock('../../services/angularDialogBridge', () => ({
 
 import {getPotentialCouriers, getExactCourierMatch, getTruckCourierStatus} from '../../services/dispatchApi';
 import {fetchDispatchJobs, fetchClearListJobs} from '../../services/jobSearchApi';
+import {queryKeys} from '../../query/queryClient';
 
 const mockGetPotentialCouriers = getPotentialCouriers as jest.MockedFunction<typeof getPotentialCouriers>;
 const mockGetExactCourierMatch = getExactCourierMatch as jest.MockedFunction<typeof getExactCourierMatch>;
@@ -962,6 +963,179 @@ describe('DispatchPage', () => {
 
             const panel = screen.getByTestId('job-list-panel');
             expect(panel).toHaveAttribute('data-default-category', '');
+        });
+
+        // ── queryKeyFn must include all filter params (regression) ────
+        // Without date/view params in the query key, React Query serves
+        // cached data instead of re-fetching when filters change.
+
+        it('includes date params in queryKeyFn for dispatch jobs', () => {
+            const startDate = dayjs('2026-03-01');
+            const endDate = dayjs('2026-03-15');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate, endDate, useTime: true},
+                    onRefreshData: jest.fn(),
+                },
+            });
+
+            renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+
+            expect(queryKeys.dispatch.jobs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    startDate,
+                    endDate,
+                    useTime: true,
+                    despatchViewIds: [1],
+                }),
+            );
+        });
+
+        it('includes date params in queryKeyFn for clear list jobs', () => {
+            const startDate = dayjs('2026-03-01');
+            const endDate = dayjs('2026-03-15');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate, endDate, useTime: false},
+                    onRefreshData: jest.fn(),
+                },
+                driverLocations: defaultDriverLocationsReturn({activeAreaId: 7}),
+            });
+
+            renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+
+            expect(queryKeys.dispatch.clearList).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    startDate,
+                    endDate,
+                    useTime: false,
+                    despatchViewIds: [1],
+                    selectedClearListId: 7,
+                }),
+            );
+        });
+
+        it('queryKeyFn includes undefined dates when dateFilterData is null', () => {
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: defaultDateFilterReturn(),
+            });
+
+            renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+
+            expect(queryKeys.dispatch.jobs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    startDate: undefined,
+                    endDate: undefined,
+                    useTime: undefined,
+                }),
+            );
+        });
+
+        it('produces different query keys when date filter changes', () => {
+            const mockJobsKeyFn = queryKeys.dispatch.jobs as jest.Mock;
+
+            const startDate1 = dayjs('2026-03-01');
+            const endDate1 = dayjs('2026-03-15');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate: startDate1, endDate: endDate1, useTime: false},
+                    onRefreshData: jest.fn(),
+                },
+            });
+
+            const {unmount} = renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+            const firstCallArgs = mockJobsKeyFn.mock.calls[mockJobsKeyFn.mock.calls.length - 1][0];
+
+            unmount();
+            mockJobsKeyFn.mockClear();
+
+            // Re-render with different dates
+            const startDate2 = dayjs('2026-04-01');
+            const endDate2 = dayjs('2026-04-30');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate: startDate2, endDate: endDate2, useTime: true},
+                    onRefreshData: jest.fn(),
+                },
+            });
+
+            renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+            const secondCallArgs = mockJobsKeyFn.mock.calls[mockJobsKeyFn.mock.calls.length - 1][0];
+
+            // The query key params must differ so React Query triggers a re-fetch
+            expect(firstCallArgs.startDate).not.toBe(secondCallArgs.startDate);
+            expect(firstCallArgs.endDate).not.toBe(secondCallArgs.endDate);
+            expect(secondCallArgs.startDate).toBe(startDate2);
+            expect(secondCallArgs.endDate).toBe(endDate2);
+            expect(secondCallArgs.useTime).toBe(true);
+        });
+
+        it('produces different query keys when view IDs change', () => {
+            const mockJobsKeyFn = queryKeys.dispatch.jobs as jest.Mock;
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1, 2],
+                },
+            });
+
+            const {unmount} = renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+            const firstCallArgs = mockJobsKeyFn.mock.calls[mockJobsKeyFn.mock.calls.length - 1][0];
+
+            unmount();
+            mockJobsKeyFn.mockClear();
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [3],
+                },
+            });
+
+            renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.queryKeyFn({page: 0});
+            const secondCallArgs = mockJobsKeyFn.mock.calls[mockJobsKeyFn.mock.calls.length - 1][0];
+
+            expect(firstCallArgs.despatchViewIds).toEqual([1, 2]);
+            expect(secondCallArgs.despatchViewIds).toEqual([3]);
         });
     });
 

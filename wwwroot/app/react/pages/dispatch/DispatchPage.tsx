@@ -182,6 +182,9 @@ export function DispatchPage({
                 queryKeyFn: (params: any) => queryKeys.dispatch.clearList({
                     ...params,
                     despatchViewIds: viewIds,
+                    startDate,
+                    endDate,
+                    useTime,
                     selectedClearListId: driverLocations.activeAreaId,
                 }),
                 initialParams: {},
@@ -199,6 +202,9 @@ export function DispatchPage({
             queryKeyFn: (params: any) => queryKeys.dispatch.jobs({
                 ...params,
                 despatchViewIds: viewIds,
+                startDate,
+                endDate,
+                useTime,
             }),
             initialParams: {},
         };
