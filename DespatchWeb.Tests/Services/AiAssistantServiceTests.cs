@@ -10,7 +10,7 @@ public class AiAssistantServiceTests
 {
     private readonly Mock<IAiClientService> _aiClientMock = new();
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
     private readonly Mock<INoteRepository> _noteRepositoryMock = new();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings

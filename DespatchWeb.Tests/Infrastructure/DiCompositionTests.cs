@@ -60,7 +60,7 @@ public class DiCompositionTests
         using var scope = provider.CreateScope();
         var sp = scope.ServiceProvider;
 
-        Assert.NotNull(sp.GetRequiredService<IJobRepository>());
+        Assert.NotNull(sp.GetRequiredService<IJobQueryRepository>());
         Assert.NotNull(sp.GetRequiredService<ICourierRepository>());
         Assert.NotNull(sp.GetRequiredService<INoteRepository>());
         Assert.NotNull(sp.GetRequiredService<ITenantInfoService>());

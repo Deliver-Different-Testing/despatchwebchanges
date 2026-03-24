@@ -17,7 +17,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly DespatchContext _seedContext;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();

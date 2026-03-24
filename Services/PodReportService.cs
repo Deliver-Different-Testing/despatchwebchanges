@@ -16,7 +16,7 @@ namespace DespatchWeb.Services;
 public sealed class PodReportService(
     IHttpContextAccessor httpContextAccessor,
     ITenantBrandingService tenantBrandingService,
-    IJobRepository jobRepository,
+    IJobQueryRepository jobRepository,
     IJobPhotoService jobPhotoService,
     IDbContextFactory<DespatchContext> contextFactory
 ) : IPodReportService

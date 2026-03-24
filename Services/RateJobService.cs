@@ -15,7 +15,8 @@ namespace DespatchWeb.Services;
 /// Service for calculating job rates for NZ and US tenants, including distance calculations, DFRNT API integration, and courier payment processing.
 /// </summary>
 public sealed class RateJobService(
-    IJobRepository jobRepository,
+    IJobQueryRepository jobQueryRepository,
+    IJobCommandRepository jobCommandRepository,
     HttpClient httpClient,
     ITenantInfoService infoService,
     IHttpContextAccessor contextAccessor,
@@ -43,7 +44,7 @@ public sealed class RateJobService(
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
-                await jobRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
+                await jobCommandRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
             else
                 Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                     jobDetails.JobId,
@@ -84,7 +85,7 @@ public sealed class RateJobService(
             );
 
             // Calculate final rate
-            await jobRepository.RateJobUsAsync(new RateJobUsDto
+            await jobCommandRepository.RateJobUsAsync(new RateJobUsDto
             {
                 JobId = jobDetails.JobId,
                 ClientId = jobDetails.ClientId.Value,
@@ -190,7 +191,7 @@ public sealed class RateJobService(
             );
 
             // Get the rate without saving
-            var rate = await jobRepository.GetJobRateUsAsync(new RateJobUsDto
+            var rate = await jobQueryRepository.GetJobRateUsAsync(new RateJobUsDto
             {
                 JobId = jobDetails.JobId,
                 ClientId = jobDetails.ClientId.Value,
@@ -262,7 +263,7 @@ public sealed class RateJobService(
             throw new UnauthorizedAccessException(message);
         }
 
-        var currentAmounts = await jobRepository.GetJobCurrentAmountsAsync(jobIds);
+        var currentAmounts = await jobQueryRepository.GetJobCurrentAmountsAsync(jobIds);
 
         var resultRows = new List<BulkPricePreviewRow>();
         decimal totalOldAmount = 0;
@@ -285,7 +286,7 @@ public sealed class RateJobService(
                     {
                         await RecalculateJobRateInternalAsync(data.Id, jobInfo.IsPrebook);
                         // Get the new amount after recalculation
-                        var updatedAmounts = await jobRepository.GetJobCurrentAmountsAsync([data.Id]);
+                        var updatedAmounts = await jobQueryRepository.GetJobCurrentAmountsAsync([data.Id]);
                         if (updatedAmounts.TryGetValue(data.Id, out var updated))
                             newAmount = updated.Amount;
                     }
@@ -327,7 +328,7 @@ public sealed class RateJobService(
                     try
                     {
                         // Calculate total amount with fuel surcharge using DB function
-                        newAmount = await jobRepository.GetTotalAmountFromBaseAsync(data.Id, baseAmount);
+                        newAmount = await jobQueryRepository.GetTotalAmountFromBaseAsync(data.Id, baseAmount);
                     }
                     catch (Exception ex)
                     {
@@ -342,7 +343,7 @@ public sealed class RateJobService(
                     {
                         try
                         {
-                            newAmount = await jobRepository.RepriceJobWithBaseAmountAsync(
+                            newAmount = await jobCommandRepository.RepriceJobWithBaseAmountAsync(
                                 new RepriceJobWithBaseAmountModel
                                 {
                                     JobId = data.Id,
@@ -389,7 +390,7 @@ public sealed class RateJobService(
                 // Batch update non-prebook jobs using existing robust logic
                 if (updateModels.Count > 0)
                 {
-                    await jobRepository.UpdateManualPriceAsync(updateModels);
+                    await jobCommandRepository.UpdateManualPriceAsync(updateModels);
                 }
 
                 break;
@@ -419,7 +420,7 @@ public sealed class RateJobService(
                     totalNewAmount += newAmount;
                 }
 
-                await jobRepository.UpdateManualPriceAsync(parsedData);
+                await jobCommandRepository.UpdateManualPriceAsync(parsedData);
                 break;
             }
         }
@@ -435,7 +436,7 @@ public sealed class RateJobService(
                 TotalNewAmount = totalNewAmount
             };
 
-        await jobRepository.UpdateJobVoidStatusAsync(jobsToVoid);
+        await jobCommandRepository.UpdateJobVoidStatusAsync(jobsToVoid);
         Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
 
         return new BulkPricePreviewResponse
@@ -466,7 +467,7 @@ public sealed class RateJobService(
         }
         else
         {
-            var speed = await jobRepository.GetJobTypeByIdAsync(request.SpeedId);
+            var speed = await jobQueryRepository.GetJobTypeByIdAsync(request.SpeedId);
             isFlight = speed.Grouping.GroupingId == (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight);
         }
 
@@ -488,10 +489,10 @@ public sealed class RateJobService(
         else
         {
             // Get the closest airports in parallel — these are independent stored procedure calls
-            var fromAirportsTask = jobRepository.GetClosestAirportsAsync(
+            var fromAirportsTask = jobQueryRepository.GetClosestAirportsAsync(
                 request.PickupLat ?? 0,
                 request.PickupLong ?? 0);
-            var toAirportsTask = jobRepository.GetClosestAirportsAsync(
+            var toAirportsTask = jobQueryRepository.GetClosestAirportsAsync(
                 request.DeliveryLat ?? 0,
                 request.DeliveryLong ?? 0);
             await Task.WhenAll(fromAirportsTask, toAirportsTask);
@@ -777,22 +778,22 @@ public sealed class RateJobService(
     /// </summary>
     private async Task RecalculateJobRateInternalAsync(int jobId, bool isBooking)
     {
-        var isArchived = !isBooking && await jobRepository.IsJobArchived(jobId);
+        var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);
         var isUsCustomer = infoService.IsUsTenant();
 
         if (isUsCustomer)
         {
             var jobDetailsUs = isBooking
-                ? await jobRepository.GetJobBookingDetailsForRatingAsync(jobId)
-                : await jobRepository.GetJobDetailsForRatingAsync(jobId);
+                ? await jobQueryRepository.GetJobBookingDetailsForRatingAsync(jobId)
+                : await jobQueryRepository.GetJobDetailsForRatingAsync(jobId);
 
             await RateJobUsAsync(jobDetailsUs);
             return;
         }
 
         var jobDetailsNz = isBooking
-            ? await jobRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
-            : await jobRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
+            ? await jobQueryRepository.GetJobBookingDetailsForRatingNzAsync(jobId)
+            : await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
 
         await RateJobNzAsync(jobDetailsNz);
     }

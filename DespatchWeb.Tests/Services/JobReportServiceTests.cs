@@ -12,13 +12,15 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobReportServiceTests
 {
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
+    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
 
     private JobReportService CreateService() => new(
-        _jobRepositoryMock.Object,
+        _jobQueryRepositoryMock.Object,
+        _jobCommandRepositoryMock.Object,
         _recurringJobRepositoryMock.Object,
         _clock,
         _s3ClientMock.Object
@@ -261,7 +263,7 @@ public class JobReportServiceTests
             It.IsAny<CancellationToken>()), Times.Once);
 
         // Assert - verify repository update was called
-        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(
+        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(
             It.Is<IReadOnlyList<JobManualPriceModel>>(l => l.Count == 2)), Times.Once);
     }
 
@@ -280,7 +282,7 @@ public class JobReportServiceTests
         await service.ProcessJobPriceUploadAsync(fileMock.Object);
 
         // Assert - should not call update when no data
-        _jobRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
+        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
     }
 
     private static Mock<IFormFile> CreateMockFile(string fileName, string content)

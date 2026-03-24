@@ -10,7 +10,7 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class DispatchJobServiceTests
 {
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobCommandRepository> _jobRepositoryMock = new();
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
 
     private DispatchJobService CreateService() => new(

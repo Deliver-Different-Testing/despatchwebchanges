@@ -7,7 +7,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for dispatching jobs to couriers and managing courier assignments.
 /// </summary>
-public sealed class DispatchJobService(IJobRepository jobRepository, ICourierRepository courierRepository)
+public sealed class DispatchJobService(IJobCommandRepository jobRepository, ICourierRepository courierRepository)
     : IDispatchJobService
 {
     /// <summary>

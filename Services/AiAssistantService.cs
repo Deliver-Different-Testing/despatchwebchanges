@@ -12,7 +12,7 @@ namespace DespatchWeb.Services;
 
 public sealed class AiAssistantService(
     IAiClientService aiClient,
-    IJobRepository jobRepository,
+    IJobQueryRepository jobRepository,
     ICourierRepository courierRepository,
     INoteRepository noteRepository,
     ITaskRepository taskRepository,

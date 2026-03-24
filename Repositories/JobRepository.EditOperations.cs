@@ -969,9 +969,8 @@ public partial class JobRepository
     }
 
     private static IQueryable<TucJobArchive> AddRequiredArchiveIncludes(IQueryable<TucJobArchive> query,
-        JobProperty property)
-    {
-        return property switch
+        JobProperty property) =>
+        property switch
         {
             JobProperty.AirportOnly => query.Include(j => j.Nationwide),
             JobProperty.Weight => query.Include(j => j.Parent).Include(j => j.InverseParent),
@@ -986,18 +985,15 @@ public partial class JobRepository
             JobProperty.NotifiedJobTypeID => query.Include(j => j.NotifiedJobType).Include(j => j.Contact),
             _ => query
         };
-    }
 
     private static IQueryable<TblBulkJob> AddRequiredBulkJobIncludes(
         IQueryable<TblBulkJob> query,
-        JobProperty property)
-    {
-        return property switch
+        JobProperty property) =>
+        property switch
         {
             JobProperty.ClientID or JobProperty.ClientCode => query.Include(j => j.Client),
             JobProperty.SpeedID => query.Include(j => j.SpeedNavigation),
             JobProperty.DeliverToLeaveID => query.Include(j => j.DeliverToLeave),
             _ => query
         };
-    }
 }
