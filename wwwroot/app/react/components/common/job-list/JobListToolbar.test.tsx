@@ -76,4 +76,78 @@ describe('JobListToolbar', () => {
         renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Domestic})}/>);
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
     });
+
+    describe('Selection Action Bar', () => {
+        it('renders selection bar with all bulk actions, hides normal toolbar, fires callbacks on click', async () => {
+            const user = userEvent.setup();
+            const onClearSelection = jest.fn();
+            const onBulkRestore = jest.fn();
+            const onBulkMarkRead = jest.fn();
+            const onBulkMarkUnread = jest.fn();
+            renderWithTheme(
+                <JobListToolbar
+                    {...createDefaultProps()}
+                    selectedCount={3}
+                    onClearSelection={onClearSelection}
+                    onBulkRestore={onBulkRestore}
+                    onBulkMarkRead={onBulkMarkRead}
+                    onBulkMarkUnread={onBulkMarkUnread}
+                />,
+            );
+
+            // Selection bar content
+            expect(screen.getByText('3 jobs selected')).toBeInTheDocument();
+            expect(screen.getByText('Dispatch')).toBeInTheDocument();
+            expect(screen.getByText('Restore')).toBeInTheDocument();
+            expect(screen.getByText('Mark Read')).toBeInTheDocument();
+            expect(screen.getByText('Mark Unread')).toBeInTheDocument();
+
+            // Normal toolbar elements should NOT be present
+            expect(screen.queryByPlaceholderText('Search jobs...')).not.toBeInTheDocument();
+            expect(screen.queryByText('Unassigned')).not.toBeInTheDocument();
+
+            // Callbacks
+            await user.click(screen.getByTestId('CloseIcon').closest('button')!);
+            expect(onClearSelection).toHaveBeenCalledTimes(1);
+
+            await user.click(screen.getByText('Restore'));
+            expect(onBulkRestore).toHaveBeenCalledTimes(1);
+
+            await user.click(screen.getByText('Mark Read'));
+            expect(onBulkMarkRead).toHaveBeenCalledTimes(1);
+
+            await user.click(screen.getByText('Mark Unread'));
+            expect(onBulkMarkUnread).toHaveBeenCalledTimes(1);
+        });
+
+        it('uses singular "job" for selectedCount=1, hides Dispatch/Restore on non-dispatch pages, shows normal toolbar at 0', () => {
+            // selectedCount=1 → singular
+            const {unmount: u1} = renderWithTheme(
+                <JobListToolbar {...createDefaultProps()} selectedCount={1}/>,
+            );
+            expect(screen.getByText('1 job selected')).toBeInTheDocument();
+            u1();
+
+            // Non-dispatch page → no Dispatch/Restore
+            const {unmount: u2} = renderWithTheme(
+                <JobListToolbar
+                    {...createDefaultProps({appPage: AppPage.Domestic})}
+                    selectedCount={2}
+                />,
+            );
+            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+            expect(screen.queryByText('Dispatch')).not.toBeInTheDocument();
+            expect(screen.queryByText('Restore')).not.toBeInTheDocument();
+            expect(screen.getByText('Mark Read')).toBeInTheDocument();
+            u2();
+
+            // selectedCount=0 → normal toolbar
+            renderWithTheme(
+                <JobListToolbar {...createDefaultProps()} selectedCount={0}/>,
+            );
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+            expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
+            expect(screen.getByText('Unassigned')).toBeInTheDocument();
+        });
+    });
 });

@@ -23,8 +23,9 @@ import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../../interfaces/address';
 import type {CourierData} from '../../../interfaces/dispatchJob';
-import {allocateJobs} from '../../../services/jobListApi';
+import {allocateJobs, bulkUpdateReadStatus, restoreJobs} from '../../../services/jobListApi';
 import {useJobListData} from '../../../hooks/useJobListData';
+import {useMultiSelect} from '../../../hooks/useMultiSelect';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -425,6 +426,12 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
     }, [loggedInCouriersOnly, getStorageKey]);
 
+    // ── Multi-select ──────────────────────────────────────────────────
+    // We need orderedIds from visibleJobs, but visibleJobs depends on filteredJobs
+    // which is computed below. We compute filteredJobs first, then pass orderedIds.
+    // Since useMultiSelect needs orderedIds at hook call time, we use a memo'd
+    // version that updates each render.
+
     // ── Computed: filtered & sorted jobs ─────────────────────────────
     const {filteredJobs, stats} = useMemo(() => {
         let filtered = jobs;
@@ -471,23 +478,61 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // ── Visible jobs (backend controls ordering) ───────────────────
     const visibleJobs = filteredJobs;
 
+    const visibleJobIds = useMemo(() => visibleJobs.map(j => j.id), [visibleJobs]);
+    const multiSelect = useMultiSelect(visibleJobIds);
+
+    // Clear multi-select when category or search changes
+    useEffect(() => {
+        multiSelect.clear();
+    }, [selectedCategory, searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Escape key clears multi-select
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && multiSelect.selectCount > 0) {
+                multiSelect.clear();
+            }
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [multiSelect.selectCount]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Collect selected jobs for context menu
+    const selectedJobsForMenu = useMemo(() => {
+        if (multiSelect.selectCount < 2) return [];
+        return visibleJobs.filter(j => multiSelect.selectedIds.has(j.id));
+    }, [multiSelect.selectedIds, multiSelect.selectCount, visibleJobs]);
+
     // ── Handlers ─────────────────────────────────────────────────────
 
     const handleJobClick = useCallback(
-        (job: DispatchJob, _event: React.MouseEvent) => {
-            setSelectedJobId(job.id);
-            if (onJobSelect) onJobSelect(job);
+        (job: DispatchJob, event: React.MouseEvent) => {
+            const isCtrlOrCmd = event.ctrlKey || event.metaKey;
+            const isShift = event.shiftKey;
+
+            if (isCtrlOrCmd || isShift) {
+                // Modifier click → multi-select, don't change detail panel
+                multiSelect.toggle(job.id, event);
+            } else {
+                // Plain click → set detail panel selection
+                setSelectedJobId(job.id);
+                if (onJobSelect) onJobSelect(job);
+            }
         },
-        [onJobSelect],
+        [onJobSelect, multiSelect],
     );
 
     const handleContextMenu = useCallback(
         (job: DispatchJob, event: React.MouseEvent) => {
             event.preventDefault();
+            // If right-clicking an unselected job while multi-select is active (2+), clear multi-select
+            if (multiSelect.selectCount >= 2 && !multiSelect.selectedIds.has(job.id)) {
+                multiSelect.clear();
+            }
             setContextMenuJob(job);
             setContextMenuPos({mouseX: event.clientX, mouseY: event.clientY});
         },
-        [],
+        [multiSelect],
     );
 
     const handleCloseContextMenu = useCallback(() => {
@@ -566,6 +611,72 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [fetchConfig, onRefresh]);
 
+    // ── Bulk action handlers ───────────────────────────────────────────
+
+    const handleBulkRestore = useCallback(async () => {
+        const ids = [...multiSelect.selectedIds];
+        try {
+            await restoreJobs(ids);
+            showToast(`${ids.length} job(s) restored`, 'success');
+            multiSelect.clear();
+            if (fetchConfig) {
+                hookDataRef.current.refresh();
+            } else if (onRefresh) {
+                onRefresh();
+            }
+        } catch {
+            showToast('Failed to restore jobs', 'error');
+        }
+    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
+    const handleBulkMarkRead = useCallback(async () => {
+        const ids = [...multiSelect.selectedIds];
+        try {
+            await bulkUpdateReadStatus(ids, true);
+            showToast(`${ids.length} job(s) marked as read`, 'success');
+            multiSelect.clear();
+            if (fetchConfig) {
+                hookDataRef.current.refresh();
+            } else if (onRefresh) {
+                onRefresh();
+            }
+        } catch {
+            showToast('Failed to mark jobs as read', 'error');
+        }
+    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
+    const handleBulkMarkUnread = useCallback(async () => {
+        const ids = [...multiSelect.selectedIds];
+        try {
+            await bulkUpdateReadStatus(ids, false);
+            showToast(`${ids.length} job(s) marked as unread`, 'success');
+            multiSelect.clear();
+            if (fetchConfig) {
+                hookDataRef.current.refresh();
+            } else if (onRefresh) {
+                onRefresh();
+            }
+        } catch {
+            showToast('Failed to mark jobs as unread', 'error');
+        }
+    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
+    const handleBulkDispatch = useCallback(async (courierId: number, courierName: string) => {
+        const ids = [...multiSelect.selectedIds];
+        try {
+            await allocateJobs(courierId, ids);
+            showToast(`${ids.length} job(s) dispatched to ${courierName}`, 'success');
+            multiSelect.clear();
+            if (fetchConfig) {
+                hookDataRef.current.refresh();
+            } else if (onRefresh) {
+                onRefresh();
+            }
+        } catch {
+            showToast('Failed to dispatch jobs', 'error');
+        }
+    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
     const handleJobDispatch = useCallback(async (
         job: DispatchJob,
         courierId: number,
@@ -635,14 +746,25 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onDensityModeChange={handleDensityModeChange}
                 onResetColumns={handleResetColumns}
                 appPage={appPage}
+                selectedCount={multiSelect.selectCount}
+                onClearSelection={multiSelect.clear}
+                onBulkDispatch={handleBulkDispatch}
+                onBulkRestore={handleBulkRestore}
+                onBulkMarkRead={handleBulkMarkRead}
+                onBulkMarkUnread={handleBulkMarkUnread}
             />
             <JobListTable
                 jobs={visibleJobs}
                 selectedJobId={selectedJobId}
                 relatedJobIds={relatedJobIds}
+                multiSelectedIds={multiSelect.selectedIds}
                 onJobClick={handleJobClick}
                 onContextMenu={handleContextMenu}
                 onJobDispatch={handleJobDispatch}
+                onToggleSelect={multiSelect.toggle}
+                onToggleSelectAll={multiSelect.toggleAll}
+                isAllSelected={multiSelect.isAllSelected(visibleJobIds)}
+                isIndeterminate={multiSelect.isIndeterminate(visibleJobIds)}
                 sortState={sortState}
                 onSortChange={handleSortChange}
                 densityMode={densityMode}
@@ -668,6 +790,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh={handleRefresh}
                 onAddStop={onAddStop}
                 isUsCustomer={isUsCustomer}
+                selectedJobs={selectedJobsForMenu}
+                onBulkRestore={handleBulkRestore}
+                onBulkMarkRead={handleBulkMarkRead}
+                onBulkMarkUnread={handleBulkMarkUnread}
             />
         </Box>
     );

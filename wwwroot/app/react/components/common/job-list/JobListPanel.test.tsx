@@ -62,8 +62,10 @@ jest.mock('../../../services/jobListApi', () => ({
     restoreNationwideJob: jest.fn().mockResolvedValue(undefined),
 }));
 
-import {allocateJobs} from '../../../services/jobListApi';
+import {allocateJobs, bulkUpdateReadStatus, restoreJobs} from '../../../services/jobListApi';
 const mockedAllocateJobs = allocateJobs as jest.Mock;
+const mockedBulkUpdateReadStatus = bulkUpdateReadStatus as jest.Mock;
+const mockedRestoreJobs = restoreJobs as jest.Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────
 
@@ -551,6 +553,144 @@ describe('JobListPanel', () => {
                 expect.objectContaining({statusFilter: 'delivered'}),
                 expect.any(Object),
             ));
+        });
+    });
+
+    describe('Multi-Select', () => {
+        it('Ctrl+Click multi-selects, plain click sets detail panel, row checkbox does not trigger detail panel', async () => {
+            const user = userEvent.setup();
+            const onJobSelect = jest.fn();
+            const jobs = [
+                createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'MS-001'}),
+                createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'MS-002'}),
+                createMockDispatchJob({id: 3, angularId: 'j3', jobNo: 'MS-003'}),
+            ];
+            renderAndPushJobs(jobs, {onJobSelect});
+
+            // Plain click — sets detail panel, no selection bar
+            await user.click(screen.getByText('MS-001'));
+            expect(onJobSelect).toHaveBeenCalledWith(expect.objectContaining({id: 1}));
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+
+            // Ctrl+Click first job — enters multi-select
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('MS-001'));
+            await user.keyboard('{/Control}');
+
+            // Ctrl+Click second job
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('MS-002'));
+            await user.keyboard('{/Control}');
+
+            // Selection bar should show
+            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+
+            // Clear selection for next sub-test
+            await user.keyboard('{Escape}');
+            onJobSelect.mockClear();
+
+            // Row checkbox click toggles multi-select without changing detail panel
+            const checkboxes = screen.getAllByRole('checkbox');
+            await user.click(checkboxes[1]); // First row checkbox
+            expect(screen.getByText('1 job selected')).toBeInTheDocument();
+            expect(onJobSelect).not.toHaveBeenCalled();
+        });
+
+        it('header checkbox toggles all, Escape clears, close button (X) clears', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'CB-001'}),
+                createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'CB-002'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            // Should have checkboxes (header + 2 rows = 3)
+            const checkboxes = screen.getAllByRole('checkbox');
+            expect(checkboxes.length).toBe(3);
+
+            // Click header checkbox — selects all
+            await user.click(checkboxes[0]);
+            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+
+            // Click header checkbox again — deselects all
+            await user.click(screen.getAllByRole('checkbox')[0]);
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+
+            // Re-select all, then Escape clears
+            await user.click(screen.getAllByRole('checkbox')[0]);
+            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+            await user.keyboard('{Escape}');
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+
+            // Re-select via row checkbox, close button (X) clears
+            await user.click(screen.getAllByRole('checkbox')[1]);
+            expect(screen.getByText('1 job selected')).toBeInTheDocument();
+            await user.click(screen.getByTestId('CloseIcon').closest('button')!);
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+        });
+
+        it('selection bar shows Dispatch, Restore, Mark Read, Mark Unread on dispatch page', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'BTN-001'}),
+                createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'BTN-002'}),
+            ];
+            renderAndPushJobs(jobs, {appPage: AppPage.Dispatch});
+
+            // Select all via header checkbox
+            await user.click(screen.getAllByRole('checkbox')[0]);
+
+            expect(screen.getByText('Dispatch')).toBeInTheDocument();
+            expect(screen.getByText('Restore')).toBeInTheDocument();
+            expect(screen.getByText('Mark Read')).toBeInTheDocument();
+            expect(screen.getByText('Mark Unread')).toBeInTheDocument();
+        });
+
+        it('bulk Mark Read calls API and clears selection', async () => {
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            mockedBulkUpdateReadStatus.mockResolvedValue(undefined);
+
+            const jobs = [
+                createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'MR-001'}),
+                createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'MR-002'}),
+            ];
+            renderAndPushJobs(jobs, {showToast});
+
+            await user.click(screen.getAllByRole('checkbox')[0]);
+            await user.click(screen.getByText('Mark Read'));
+
+            await waitFor(() => {
+                expect(mockedBulkUpdateReadStatus).toHaveBeenCalledWith(
+                    expect.arrayContaining([1, 2]),
+                    true,
+                );
+            });
+            expect(showToast).toHaveBeenCalledWith('2 job(s) marked as read', 'success');
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+        });
+
+        it('bulk Restore calls API and clears selection', async () => {
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            mockedRestoreJobs.mockResolvedValue(undefined);
+
+            const jobs = [
+                createMockDispatchJob({id: 10, angularId: 'j10', jobNo: 'RS-001'}),
+                createMockDispatchJob({id: 20, angularId: 'j20', jobNo: 'RS-002'}),
+            ];
+            renderAndPushJobs(jobs, {showToast});
+
+            await user.click(screen.getAllByRole('checkbox')[0]);
+            await user.click(screen.getByText('Restore'));
+
+            await waitFor(() => {
+                expect(mockedRestoreJobs).toHaveBeenCalledWith(
+                    expect.arrayContaining([10, 20]),
+                );
+            });
+            expect(showToast).toHaveBeenCalledWith('2 job(s) restored', 'success');
+            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
         });
     });
 });
