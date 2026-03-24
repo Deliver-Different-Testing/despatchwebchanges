@@ -22,6 +22,12 @@ const mockPageViewsData = [
     {id: 3, name: 'Brisbane'},
 ];
 
+function renderPageViews() {
+    const queryClient = createTestQueryClient();
+    const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+    return renderHook(() => usePageViews(), {wrapper});
+}
+
 describe('usePageViews', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -30,9 +36,7 @@ describe('usePageViews', () => {
     });
 
     it('fetches page views from API', async () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+        const {result} = renderPageViews();
 
         await waitFor(() => {
             expect(result.current.views).not.toBeNull();
@@ -41,54 +45,57 @@ describe('usePageViews', () => {
         expect(mockGetPageViews).toHaveBeenCalled();
     });
 
-    it('initially has empty selected view IDs', () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+    // ── Auto-selection (regression: empty views → no jobs loaded) ────
 
-        expect(result.current.selectedViewIds).toEqual([]);
+    it('auto-selects all views when API data arrives and nothing is saved', async () => {
+        const {result} = renderPageViews();
+
+        await waitFor(() => {
+            expect(result.current.selectedViewIds).toEqual(
+                expect.arrayContaining([1, 2, 3]),
+            );
+        });
+        expect(result.current.selectedViewIds).toHaveLength(3);
+
+        // Should also persist the auto-selection
+        const stored = JSON.parse(localStorage.getItem('dispatch_selectedViews')!);
+        expect(stored).toEqual(expect.arrayContaining([1, 2, 3]));
     });
 
-    it('toggleView adds a view ID to selection', async () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+    it('does NOT auto-select when views are already saved in localStorage', async () => {
+        localStorage.setItem('dispatch_selectedViews', JSON.stringify([2]));
+
+        const {result} = renderPageViews();
 
         await waitFor(() => {
             expect(result.current.views).not.toBeNull();
         });
 
-        act(() => {
-            result.current.toggleView({id: 1, name: 'Sydney', selected: false});
-        });
-
-        expect(result.current.selectedViewIds).toContain(1);
+        // Should keep only the saved selection, not auto-select all
+        expect(result.current.selectedViewIds).toEqual([2]);
     });
 
-    it('toggleView removes an already-selected view ID', async () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+    // ── Toggle & clear ───────────────────────────────────────────────
+
+    it('toggleView removes an auto-selected view', async () => {
+        const {result} = renderPageViews();
 
         await waitFor(() => {
-            expect(result.current.views).not.toBeNull();
+            expect(result.current.selectedViewIds).toHaveLength(3);
         });
-
-        act(() => {
-            result.current.toggleView({id: 1, name: 'Sydney', selected: false});
-        });
-        expect(result.current.selectedViewIds).toContain(1);
 
         act(() => {
             result.current.toggleView({id: 1, name: 'Sydney', selected: true});
         });
+
         expect(result.current.selectedViewIds).not.toContain(1);
+        expect(result.current.selectedViewIds).toContain(2);
+        expect(result.current.selectedViewIds).toContain(3);
     });
 
-    it('clearAll empties all selections', async () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+    it('toggleView adds back a deselected view', async () => {
+        localStorage.setItem('dispatch_selectedViews', JSON.stringify([2, 3]));
+        const {result} = renderPageViews();
 
         await waitFor(() => {
             expect(result.current.views).not.toBeNull();
@@ -96,9 +103,19 @@ describe('usePageViews', () => {
 
         act(() => {
             result.current.toggleView({id: 1, name: 'Sydney', selected: false});
-            result.current.toggleView({id: 2, name: 'Melbourne', selected: false});
         });
-        expect(result.current.selectedViewIds.length).toBeGreaterThan(0);
+
+        expect(result.current.selectedViewIds).toContain(1);
+        expect(result.current.selectedViewIds).toContain(2);
+        expect(result.current.selectedViewIds).toContain(3);
+    });
+
+    it('clearAll empties all selections', async () => {
+        const {result} = renderPageViews();
+
+        await waitFor(() => {
+            expect(result.current.selectedViewIds).toHaveLength(3);
+        });
 
         act(() => {
             result.current.clearAll();
@@ -107,31 +124,32 @@ describe('usePageViews', () => {
         expect(result.current.selectedViewIds).toEqual([]);
     });
 
-    it('persists selections to localStorage', async () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+    // ── Persistence ──────────────────────────────────────────────────
+
+    it('persists toggle changes to localStorage', async () => {
+        const {result} = renderPageViews();
 
         await waitFor(() => {
-            expect(result.current.views).not.toBeNull();
+            expect(result.current.selectedViewIds).toHaveLength(3);
         });
 
         act(() => {
-            result.current.toggleView({id: 1, name: 'Sydney', selected: false});
+            result.current.toggleView({id: 3, name: 'Brisbane', selected: true});
         });
 
         const stored = JSON.parse(localStorage.getItem('dispatch_selectedViews')!);
         expect(stored).toContain(1);
+        expect(stored).toContain(2);
+        expect(stored).not.toContain(3);
     });
 
-    it('loads saved selections from localStorage', () => {
+    it('loads saved selections from localStorage on mount', () => {
         localStorage.setItem('dispatch_selectedViews', JSON.stringify([2, 3]));
 
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => usePageViews(), {wrapper});
+        const {result} = renderPageViews();
 
         expect(result.current.selectedViewIds).toContain(2);
         expect(result.current.selectedViewIds).toContain(3);
+        expect(result.current.selectedViewIds).not.toContain(1);
     });
 });

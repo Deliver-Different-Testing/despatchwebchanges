@@ -4,7 +4,7 @@
  * Fetches and manages dispatch page views (geographic view filters).
  */
 
-import {useCallback, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {getPageViews, type DfrntPageViewModel} from '../../../services/dispatchApi';
@@ -41,6 +41,17 @@ export function usePageViews(): UsePageViewsReturn {
         queryKey: queryKeys.dispatch.pageViews,
         queryFn: () => getPageViews(),
     });
+
+    // Auto-select all views when API data arrives and nothing is saved yet.
+    // Without this, an empty selectedIds sends despatchViewIds=[] to the API
+    // which returns zero jobs.
+    useEffect(() => {
+        if (data && data.length > 0 && selectedIds.size === 0) {
+            const allIds = new Set(data.map((v: DfrntPageViewModel) => v.id));
+            setSelectedIds(allIds);
+            saveSelectedViewIds(allIds);
+        }
+    }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const views = useMemo<View[] | null>(() => data
         ? data.map((v: DfrntPageViewModel) => ({
