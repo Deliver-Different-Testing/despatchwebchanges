@@ -244,6 +244,467 @@ describe('useDispatchExecutor', () => {
         });
     });
 
+    describe('chilled job detection', () => {
+        it('should show chilled-warning confirmation for a chilled vehicle job dispatched to a non-chilled courier', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+            expect(result.current.pendingConfirmation!.type).toBe('chilled-warning');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            expect(await dispatchPromise!).toBe(false);
+            expect(mockAllocateJobs).not.toHaveBeenCalled();
+        });
+
+        it('should show chilled-warning for a frozen vehicle job', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: {id: 2, text: 'Frozen Truck'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+            expect(result.current.pendingConfirmation!.type).toBe('chilled-warning');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+
+        it('should not show chilled warning for a standard vehicle job', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: {id: 3, text: 'Standard Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            await act(async () => {
+                await result.current.dispatchJobs(42, [job]);
+            });
+
+            expect(result.current.pendingConfirmation).toBeNull();
+            expect(mockAllocateJobs).toHaveBeenCalled();
+        });
+
+        it('should not show chilled warning for a job with no vehicle', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: undefined});
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            await act(async () => {
+                await result.current.dispatchJobs(42, [job]);
+            });
+
+            expect(result.current.pendingConfirmation).toBeNull();
+            expect(mockAllocateJobs).toHaveBeenCalled();
+        });
+
+        it('should be case-insensitive when checking vehicle text', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: {id: 1, text: 'CHILLED VAN'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+            expect(result.current.pendingConfirmation!.type).toBe('chilled-warning');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+    });
+
+    describe('chilled courier detection', () => {
+        it('should not show warning when courier vehicle is chilled', async () => {
+            const courier = createMockCourier({vehicleType: 'Chilled Van'});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            await act(async () => {
+                await result.current.dispatchJobs(42, [job]);
+            });
+
+            expect(result.current.pendingConfirmation).toBeNull();
+            expect(mockAllocateJobs).toHaveBeenCalled();
+        });
+
+        it('should not show warning when courier vehicle is frozen', async () => {
+            const courier = createMockCourier({vehicleType: 'Frozen Truck'});
+            const job = createMockJob({vehicle: {id: 1, text: 'Frozen Truck'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            await act(async () => {
+                await result.current.dispatchJobs(42, [job]);
+            });
+
+            expect(result.current.pendingConfirmation).toBeNull();
+            expect(mockAllocateJobs).toHaveBeenCalled();
+        });
+
+        it('should show warning when courier has empty vehicleType', async () => {
+            const courier = createMockCourier({vehicleType: ''});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+            expect(result.current.pendingConfirmation!.type).toBe('chilled-warning');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+    });
+
+    describe('chilled job warning dialog', () => {
+        it('should proceed with dispatch when user confirms chilled warning', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            await act(async () => {
+                result.current.resolveConfirmation(true);
+            });
+
+            expect(await dispatchPromise!).toBe(true);
+            expect(mockAllocateJobs).toHaveBeenCalled();
+        });
+
+        it('should abort dispatch when user cancels chilled warning', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+
+            expect(await dispatchPromise!).toBe(false);
+            expect(mockAllocateJobs).not.toHaveBeenCalled();
+        });
+
+        it('should use singular "Job" in message for a single chilled job', async () => {
+            const courier = createMockCourier({vehicleType: 'Car', id: 'C42'});
+            const job = createMockJob({jobNo: 'J100', vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            const message = result.current.pendingConfirmation!.message;
+            expect(message).toContain('Job J100');
+            expect(message).toContain('requires');
+            expect(message).toContain('courier C42');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+
+        it('should use plural "Jobs" in message for multiple chilled jobs', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const jobs = [
+                createMockJob({id: 100, jobNo: 'J100', vehicle: {id: 1, text: 'Chilled Van'}} as any),
+                createMockJob({id: 101, jobNo: 'J101', vehicle: {id: 2, text: 'Frozen Truck'}} as any),
+            ];
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, jobs);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            const message = result.current.pendingConfirmation!.message;
+            expect(message).toContain('Jobs J100, J101');
+            expect(message).toContain('require ');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+
+        it('should show courier vehicle type in warning message', async () => {
+            const courier = createMockCourier({vehicleType: 'Motorcycle'});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            expect(result.current.pendingConfirmation!.message).toContain('"Motorcycle"');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+
+        it('should show "unknown" when courier has no vehicleType', async () => {
+            const courier = createMockCourier({vehicleType: ''});
+            const job = createMockJob({vehicle: {id: 1, text: 'Chilled Van'}} as any);
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, [job]);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            expect(result.current.pendingConfirmation!.message).toContain('"unknown"');
+
+            await act(async () => {
+                result.current.resolveConfirmation(false);
+            });
+            await dispatchPromise!;
+        });
+
+        it('should only warn about chilled jobs in a mixed batch', async () => {
+            const courier = createMockCourier({vehicleType: 'Car'});
+            const jobs = [
+                createMockJob({id: 100, jobNo: 'J100', vehicle: {id: 1, text: 'Chilled Van'}} as any),
+                createMockJob({id: 200, jobNo: 'J200', vehicle: {id: 3, text: 'Standard Van'}} as any),
+            ];
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let dispatchPromise: Promise<boolean>;
+            act(() => {
+                dispatchPromise = result.current.dispatchJobs(42, jobs);
+            });
+
+            await waitFor(() => {
+                expect(result.current.pendingConfirmation).not.toBeNull();
+            });
+
+            const message = result.current.pendingConfirmation!.message;
+            expect(message).toContain('Job J100');
+            expect(message).not.toContain('J200');
+
+            // User confirms → both jobs dispatched
+            await act(async () => {
+                result.current.resolveConfirmation(true);
+            });
+
+            expect(await dispatchPromise!).toBe(true);
+            expect(mockAllocateJobs).toHaveBeenCalledWith(42, [100, 200]);
+        });
+    });
+
+    describe('dangerous goods validation', () => {
+        it('should reject DG job when courier has no DG license', async () => {
+            const courier = createMockCourier({dangerousGoods: 0, dgLicenseExpiry: null});
+            const dgJob = createMockJob({dgClass: 3});
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let success: boolean;
+            await act(async () => {
+                success = await result.current.dispatchJobs(42, [dgJob]);
+            });
+
+            expect(success!).toBe(false);
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringContaining("doesn't have DG License"),
+                'error',
+            );
+            expect(mockAllocateJobs).not.toHaveBeenCalled();
+        });
+
+        it('should reject DG job when courier DG license is expired', async () => {
+            const courier = createMockCourier({dangerousGoods: 1, dgLicenseExpiry: '2020-01-01'});
+            const dgJob = createMockJob({dgClass: 3});
+            mockGetCourierById.mockResolvedValueOnce(courier);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let success: boolean;
+            await act(async () => {
+                success = await result.current.dispatchJobs(42, [dgJob]);
+            });
+
+            expect(success!).toBe(false);
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringContaining('license has expired'),
+                'error',
+            );
+            expect(mockAllocateJobs).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('multiple jobs dispatch', () => {
+        it('should show plural toast message when dispatching multiple jobs', async () => {
+            const courier = createMockCourier();
+            const jobs = [
+                createMockJob({id: 100, jobNo: 'J100'}),
+                createMockJob({id: 101, jobNo: 'J101'}),
+            ];
+            mockGetCourierById.mockResolvedValueOnce(courier);
+            mockAllocateJobs.mockResolvedValueOnce(undefined);
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            await act(async () => {
+                await result.current.dispatchJobs(42, jobs);
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringContaining('2 jobs'),
+                'success',
+            );
+            expect(mockAllocateJobs).toHaveBeenCalledWith(42, [100, 101]);
+        });
+    });
+
+    describe('reassignJob edge cases', () => {
+        it('should return false when user cancels courier selection', async () => {
+            const job = createMockJob({jobNo: 'J300', courierData: {courierId: 10, courier: 'Old', courierNumber: 'C10'}});
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let reassignPromise: Promise<boolean>;
+            act(() => {
+                reassignPromise = result.current.reassignJob(job);
+            });
+
+            expect(result.current.pendingCourierSelection).not.toBeNull();
+
+            await act(async () => {
+                result.current.resolveCourierSelection(null);
+            });
+
+            expect(await reassignPromise!).toBe(false);
+            expect(mockReAllocateJobs).not.toHaveBeenCalled();
+        });
+
+        it('should show error toast when reassignment throws', async () => {
+            const job = createMockJob({jobNo: 'J300', courierData: {courierId: 10, courier: 'Old', courierNumber: 'C10'}});
+            const newCourier = createMockCourier({courierId: 50, id: 'C50'});
+            mockGetCourierById.mockResolvedValueOnce(newCourier);
+            mockReAllocateJobs.mockRejectedValueOnce(new Error('Server error'));
+
+            const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
+
+            let reassignPromise: Promise<boolean>;
+            act(() => {
+                reassignPromise = result.current.reassignJob(job);
+            });
+
+            await act(async () => {
+                result.current.resolveCourierSelection(50);
+            });
+
+            expect(await reassignPromise!).toBe(false);
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringContaining('Server error'),
+                'error',
+            );
+        });
+    });
+
     describe('assignSingleJobById', () => {
         it('should allocate a single job by ID', async () => {
             const courier = createMockCourier();
