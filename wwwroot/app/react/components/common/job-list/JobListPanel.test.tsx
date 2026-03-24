@@ -474,5 +474,83 @@ describe('JobListPanel', () => {
                 expect(within(statsArea).getByText('3')).toBeInTheDocument();
             });
         });
+
+        it('sends statusFilter to backend when category tab is clicked', async () => {
+            const user = userEvent.setup();
+            const fetchConfig = createMockFetchConfig();
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({fetchConfig})} />,
+            );
+
+            await screen.findByText('FETCHED-001');
+            const fetchFn = fetchConfig.fetchFn as jest.Mock;
+            fetchFn.mockClear();
+            fetchFn.mockResolvedValue({jobs: [], totalCount: 0, hasMore: false} as JobSearchResult);
+
+            // Click "Unassigned" category tab
+            await user.click(screen.getByText('Unassigned'));
+
+            await waitFor(() => expect(fetchFn).toHaveBeenCalledWith(
+                expect.objectContaining({statusFilter: 'needs-dispatch'}),
+                expect.any(Object),
+            ));
+        });
+
+        it('clears statusFilter when All category is selected', async () => {
+            const user = userEvent.setup();
+            const fetchConfig = createMockFetchConfig();
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({fetchConfig})} />,
+            );
+
+            await screen.findByText('FETCHED-001');
+            const fetchFn = fetchConfig.fetchFn as jest.Mock;
+
+            // Switch to Unassigned first
+            fetchFn.mockResolvedValue({jobs: [], totalCount: 0, hasMore: false} as JobSearchResult);
+            await user.click(screen.getByText('Unassigned'));
+            await waitFor(() => expect(fetchFn).toHaveBeenCalledWith(
+                expect.objectContaining({statusFilter: 'needs-dispatch'}),
+                expect.any(Object),
+            ));
+
+            // Switch back to All
+            fetchFn.mockClear();
+            fetchFn.mockResolvedValue({
+                jobs: [createMockDispatchJob({id: 1, jobNo: 'ALL-001'})],
+                totalCount: 1,
+                hasMore: false,
+            } as JobSearchResult);
+
+            await user.click(screen.getByRole('button', {name: 'All'}));
+
+            await waitFor(() => expect(fetchFn).toHaveBeenCalledWith(
+                expect.objectContaining({statusFilter: undefined}),
+                expect.any(Object),
+            ));
+        });
+
+        it('sends statusFilter for Done category', async () => {
+            const user = userEvent.setup();
+            const fetchConfig = createMockFetchConfig();
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({fetchConfig})} />,
+            );
+
+            await screen.findByText('FETCHED-001');
+            const fetchFn = fetchConfig.fetchFn as jest.Mock;
+            fetchFn.mockClear();
+            fetchFn.mockResolvedValue({jobs: [], totalCount: 0, hasMore: false} as JobSearchResult);
+
+            await user.click(screen.getByRole('button', {name: 'Done'}));
+
+            await waitFor(() => expect(fetchFn).toHaveBeenCalledWith(
+                expect.objectContaining({statusFilter: 'delivered'}),
+                expect.any(Object),
+            ));
+        });
     });
 });
