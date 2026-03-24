@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Job Search API Integration Tests
  *

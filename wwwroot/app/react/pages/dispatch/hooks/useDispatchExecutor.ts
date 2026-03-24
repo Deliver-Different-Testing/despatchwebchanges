@@ -9,7 +9,7 @@
 import {useState, useCallback, useRef} from 'react';
 import dayjs from 'dayjs';
 import {allocateJobs, reAllocateJobs} from '../../../services/jobListApi';
-import {getCourierById, addFollowupEvent} from '../../../services/dispatchExecutorApi';
+import {getCourierById, getDispatchJobDetail, addFollowupEvent} from '../../../services/dispatchExecutorApi';
 import type {ActiveCourierViewModel} from '../../../../interfaces/courier.interface';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../../services/toastService';
@@ -260,13 +260,17 @@ export function useDispatchExecutor(showToast: ShowToastFn): UseDispatchExecutor
         setDispatching(true);
 
         try {
-            const courier = await findCourierWithConfirmation(courierId);
+            const [job, courier] = await Promise.all([
+                getDispatchJobDetail(jobId),
+                findCourierWithConfirmation(courierId),
+            ]);
             if (!courier) return false;
 
-            // We don't have the full job object, so just allocate directly
-            await allocateJobs(courier.courierId, [jobId]);
-            showToast(`Job dispatched to ${courier.id}`, 'success');
-            return true;
+            const success = await executeJobDispatch(courier, [job]);
+            if (success) {
+                showToast(`Dispatched job #${job.jobNo || jobId} to ${courier.id}`, 'success');
+            }
+            return success;
         } catch (error) {
             console.error('Error dispatching job:', error);
             showToast(`Failed to dispatch job: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');

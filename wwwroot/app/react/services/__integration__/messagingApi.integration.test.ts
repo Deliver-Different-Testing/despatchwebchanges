@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Messaging API Integration Tests
  *
@@ -10,7 +11,7 @@ jest.mock('../../components/dialogs/messaging-dialog/messaging-dialog-react.modu
     openMessagingDialog: jest.fn(),
 }));
 
-import {server} from '../../__testUtils__/msw/server';
+import {server} from '../../__testUtils__/msw/setupIntegration';
 import {http, HttpResponse} from 'msw';
 import {messagingApi} from '../messagingApi';
 import {mockChatMessages,} from '../../__testUtils__/msw/handlers';

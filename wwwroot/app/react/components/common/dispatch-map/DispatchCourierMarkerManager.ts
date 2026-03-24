@@ -11,7 +11,6 @@ declare const H: any;
 
 export class DispatchCourierMarkerManager {
     private readonly map: any;
-    private ui: any;
     private readonly markerGroup: any;
     private courierMarkers: Map<number, CourierMarkerData> = new Map();
     private iconCache: Map<string, any> = new Map();
@@ -19,9 +18,8 @@ export class DispatchCourierMarkerManager {
     private autoZoomEnabled: boolean = true;
     private largeViewEnabled: boolean = false;
 
-    constructor(map: any, ui?: any) {
+    constructor(map: any, _ui?: any) {
         this.map = map;
-        this.ui = ui;
         this.markerGroup = new H.map.Group();
         this.map.addObject(this.markerGroup);
 

@@ -12,6 +12,7 @@ import {suppressConsoleError} from '../../../__testUtils__';
 // Mock API modules
 jest.mock('../../../services/dispatchExecutorApi', () => ({
     getCourierById: jest.fn(),
+    getDispatchJobDetail: jest.fn(),
     addFollowupEvent: jest.fn(),
 }));
 
@@ -20,10 +21,11 @@ jest.mock('../../../services/jobListApi', () => ({
     reAllocateJobs: jest.fn(),
 }));
 
-import {getCourierById, addFollowupEvent} from '../../../services/dispatchExecutorApi';
+import {getCourierById, getDispatchJobDetail, addFollowupEvent} from '../../../services/dispatchExecutorApi';
 import {allocateJobs, reAllocateJobs} from '../../../services/jobListApi';
 
 const mockGetCourierById = getCourierById as jest.MockedFunction<typeof getCourierById>;
+const mockGetDispatchJobDetail = getDispatchJobDetail as jest.MockedFunction<typeof getDispatchJobDetail>;
 const mockAddFollowupEvent = addFollowupEvent as jest.MockedFunction<typeof addFollowupEvent>;
 const mockAllocateJobs = allocateJobs as jest.MockedFunction<typeof allocateJobs>;
 const mockReAllocateJobs = reAllocateJobs as jest.MockedFunction<typeof reAllocateJobs>;
@@ -245,7 +247,9 @@ describe('useDispatchExecutor', () => {
     describe('assignSingleJobById', () => {
         it('should allocate a single job by ID', async () => {
             const courier = createMockCourier();
+            const job = createMockJob({id: 200, jobNo: 'J200'});
             mockGetCourierById.mockResolvedValueOnce(courier);
+            mockGetDispatchJobDetail.mockResolvedValueOnce(job);
             mockAllocateJobs.mockResolvedValueOnce(undefined);
 
             const {result} = renderHook(() => useDispatchExecutor(mockShowToast));
@@ -258,7 +262,7 @@ describe('useDispatchExecutor', () => {
             expect(success!).toBe(true);
             expect(mockAllocateJobs).toHaveBeenCalledWith(42, [200]);
             expect(mockShowToast).toHaveBeenCalledWith(
-                expect.stringContaining('Job dispatched to C42'),
+                expect.stringContaining('Dispatched job #J200 to C42'),
                 'success',
             );
         });

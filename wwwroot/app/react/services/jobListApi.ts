@@ -70,6 +70,10 @@ export async function restoreJobs(jobIds: number[]): Promise<void> {
     await apiClient.post('job/RestoreJobs', {jobIds});
 }
 
+export async function restoreSplitJobs(jobIds: number[]): Promise<void> {
+    await apiClient.post('job/RestoreSplitJobs', null, {params: {jobIds}});
+}
+
 // ── First Job ────────────────────────────────────────────────────────
 
 export async function setFirstJob(jobId: number, courierId: number): Promise<void> {
@@ -136,6 +140,7 @@ export const jobListApi = {
     allocateJobs,
     reAllocateJobs,
     restoreJobs,
+    restoreSplitJobs,
     setFirstJob,
     releaseBulkJob,
     splitJob,

@@ -11,10 +11,38 @@ import type {Layout} from 'react-grid-layout';
 import Box from '@mui/material/Box';
 import type {SxProps, Theme} from '@mui/material';
 import {BOX_CONFIGS, DispatchBox} from '../DispatchPage.interfaces';
+import type {BoxConfig} from '../DispatchPage.interfaces';
 import {WidgetPanel} from './WidgetPanel';
-import {useDispatchContext} from '../DispatchContext';
 
 import 'react-grid-layout/css/styles.css';
+
+/** Per-widget wrapper that avoids inline closures in the map loop */
+const GridWidget = memo(function GridWidget({boxId, config, subtitle, isDefaultLayout, onRefresh, toolbarContent, toolbarActions, children}: {
+    boxId: DispatchBox;
+    config: BoxConfig;
+    subtitle: string | undefined;
+    isDefaultLayout: boolean;
+    onRefresh: ((boxId: DispatchBox) => void) | undefined;
+    toolbarContent: React.ReactNode;
+    toolbarActions: React.ReactNode;
+    children: React.ReactNode;
+}) {
+    const handleRefresh = useCallback(() => onRefresh?.(boxId), [onRefresh, boxId]);
+    return (
+        <div key={boxId} style={{height: '100%'}}>
+            <WidgetPanel
+                config={config}
+                subtitle={subtitle}
+                isDefaultLayout={isDefaultLayout}
+                onRefresh={onRefresh ? handleRefresh : undefined}
+                toolbarContent={toolbarContent}
+                toolbarActions={toolbarActions}
+            >
+                {children}
+            </WidgetPanel>
+        </div>
+    );
+});
 
 interface DashboardGridProps {
     layout: Layout;
@@ -49,19 +77,11 @@ export const DashboardGrid = memo(function DashboardGrid({
     getSubtitle,
     onRefresh,
 }: DashboardGridProps) {
-    const {boxStates} = useDispatchContext();
     const {width: containerWidth, containerRef} = useContainerWidth();
 
     const filteredLayout = useMemo(
         () => layout.filter(item => visibleBoxIds.includes(item.i as DispatchBox)),
         [layout, visibleBoxIds]
-    );
-
-    const handleLayoutChange = useCallback(
-        (currentLayout: Layout) => {
-            onLayoutChange(currentLayout);
-        },
-        [onLayoutChange]
     );
 
     const dragConfig = useMemo(() => ({
@@ -82,7 +102,7 @@ export const DashboardGrid = memo(function DashboardGrid({
                     breakpoints={{lg: 1200, md: 900, sm: 600, xs: 0}}
                     cols={{lg: cols, md: 6, sm: 2, xs: 1}}
                     rowHeight={rowHeight}
-                    onLayoutChange={handleLayoutChange}
+                    onLayoutChange={onLayoutChange}
                     dragConfig={dragConfig}
                     resizeConfig={resizeConfig}
                     compactor={verticalCompactor}
@@ -94,18 +114,18 @@ export const DashboardGrid = memo(function DashboardGrid({
                         if (!config) return null;
 
                         return (
-                            <div key={boxId} style={{height: '100%'}}>
-                                <WidgetPanel
-                                    config={config}
-                                    subtitle={getSubtitle?.(boxId)}
-                                    isDefaultLayout={isDefaultLayout}
-                                    onRefresh={onRefresh ? () => onRefresh(boxId) : undefined}
-                                    toolbarContent={renderToolbarContent?.(boxId)}
-                                    toolbarActions={renderToolbarActions?.(boxId)}
-                                >
-                                    {renderWidget(boxId)}
-                                </WidgetPanel>
-                            </div>
+                            <GridWidget
+                                key={boxId}
+                                boxId={boxId}
+                                config={config}
+                                subtitle={getSubtitle?.(boxId)}
+                                isDefaultLayout={isDefaultLayout}
+                                onRefresh={onRefresh}
+                                toolbarContent={renderToolbarContent?.(boxId)}
+                                toolbarActions={renderToolbarActions?.(boxId)}
+                            >
+                                {renderWidget(boxId)}
+                            </GridWidget>
                         );
                     })}
                 </Responsive>

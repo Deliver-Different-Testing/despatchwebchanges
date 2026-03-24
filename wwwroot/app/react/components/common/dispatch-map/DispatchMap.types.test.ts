@@ -4,28 +4,20 @@
  * Tests for the type definitions and constants used by the DispatchMap component.
  */
 
+import type {ClearListEnvelopeData, CourierMarkerData, JobMarkerData, MapControlState} from './DispatchMap.types';
 import {
-    COURIER_REFRESH_INTERVAL_MS,
-    MAX_JOBS_TO_DISPLAY,
-    MARKER_BATCH_SIZE,
-    DEFAULT_MAP_ZOOM,
-    MAX_AUTO_ZOOM,
-    MARKER_COLORS,
     COURIER_LABEL_COLORS,
-    PREFERENCE_KEYS,
-    ICON_CACHE_LIMIT,
-    POSITION_THRESHOLD,
-    MARKER_PIN_PATH,
+    COURIER_REFRESH_INTERVAL_MS,
+    DEFAULT_MAP_ZOOM,
     FLAG_MARKER_PATH,
-} from './DispatchMap.types';
-import type {
-    DispatchMapProps,
-    ClearListEnvelopeData,
-    MapControlState,
-    MapControlButtonsProps,
-    JobMarkerData,
-    CourierMarkerData,
-    UseDispatchMapReturn,
+    ICON_CACHE_LIMIT,
+    MARKER_BATCH_SIZE,
+    MARKER_COLORS,
+    MARKER_PIN_PATH,
+    MAX_AUTO_ZOOM,
+    MAX_JOBS_TO_DISPLAY,
+    POSITION_THRESHOLD,
+    PREFERENCE_KEYS,
 } from './DispatchMap.types';
 
 describe('DispatchMap Constants', () => {

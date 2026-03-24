@@ -4,7 +4,7 @@
  * Manages the currently selected job and related state.
  */
 
-import {useCallback, useState, useRef} from 'react';
+import React, {useCallback, useState, useRef} from 'react';
 import type {DispatchJob} from '../../../interfaces/dispatchJob';
 
 export interface UseJobSelectionReturn {
@@ -19,9 +19,9 @@ export interface UseJobSelectionReturn {
     /** Select a job by ID only (when full object isn't available) */
     selectJobById: (jobId: number | null) => void;
     /** Callback ref for when job list provides a selectJob function */
-    selectJobInListRef: React.MutableRefObject<((jobId: number) => void) | null>;
+    selectJobInListRef: React.RefObject<((jobId: number) => void) | null>;
     /** Callback ref for refreshing the job list */
-    refreshJobListRef: React.MutableRefObject<(() => void) | null>;
+    refreshJobListRef: React.RefObject<(() => void) | null>;
 }
 
 export function useJobSelection(initialJobId?: number | null): UseJobSelectionReturn {

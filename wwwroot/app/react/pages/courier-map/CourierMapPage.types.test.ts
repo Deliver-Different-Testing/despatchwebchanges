@@ -21,8 +21,6 @@ import type {
     CourierMarker,
     RegionalBounds,
     CourierMapPageProps,
-    DriversPanelProps,
-    DriverListItemProps,
     MapControlsProps,
     UseCourierMapReturn,
 } from './CourierMapPage.types';

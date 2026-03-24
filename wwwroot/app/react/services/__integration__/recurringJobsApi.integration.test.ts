@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Recurring Jobs API Integration Tests
  *
@@ -6,7 +7,7 @@
  * and CSV export functionality.
  */
 
-import { server } from '../../__testUtils__/msw/server';
+import { server } from '../../__testUtils__/msw/setupIntegration';
 import { http, HttpResponse } from 'msw';
 import { recurringJobsApi } from '../recurringJobsApi';
 import { mockPaginatedRecurringJobsResponse } from '../../__testUtils__/msw/handlers';

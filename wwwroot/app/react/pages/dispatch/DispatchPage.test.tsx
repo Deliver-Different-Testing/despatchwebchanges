@@ -53,21 +53,21 @@ jest.mock('../../components/common/app-shell/AppShell', () => ({
 }));
 
 jest.mock('../../components/common/app-toolbar/ToolbarActions', () => ({
-    ActionsMenu: (props: any) => <div data-testid="actions-menu">ActionsMenu</div>,
+    ActionsMenu: (_props: any) => <div data-testid="actions-menu">ActionsMenu</div>,
     MessagesButton: (props: any) => (
         <div data-testid="messages-button" data-unread={props.unreadCount}>
             MessagesButton
         </div>
     ),
-    DateFilterMenu: (props: any) => <div data-testid="date-filter-menu">DateFilterMenu</div>,
-    ViewsMenu: (props: any) => <div data-testid="views-menu">ViewsMenu</div>,
+    DateFilterMenu: (_props: any) => <div data-testid="date-filter-menu">DateFilterMenu</div>,
+    ViewsMenu: (_props: any) => <div data-testid="views-menu">ViewsMenu</div>,
     LayoutsMenu: (props: any) => (
         <div data-testid="layouts-menu">
             <button data-testid="save-layout-btn" onClick={props.onSaveLayout}>SaveLayout</button>
             LayoutsMenu
         </div>
     ),
-    SettingsButton: (props: any) => <div data-testid="settings-button">SettingsButton</div>,
+    SettingsButton: (_props: any) => <div data-testid="settings-button">SettingsButton</div>,
 }));
 
 // DashboardGrid mock: invokes renderWidget, renderToolbarActions, getSubtitle, exposes onRefresh

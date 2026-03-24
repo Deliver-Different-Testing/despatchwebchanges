@@ -1,10 +1,11 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Driver Management API Integration Tests
  *
  * Tests the driverManagementApi service using MSW to intercept real HTTP requests.
  */
 
-import {server} from '../../__testUtils__/msw/server';
+import {server} from '../../__testUtils__/msw/setupIntegration';
 import {http, HttpResponse} from 'msw';
 import {driverManagementApi} from '../driverManagementApi';
 import {

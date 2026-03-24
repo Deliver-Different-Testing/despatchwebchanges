@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Pricing Breakdown API Integration Tests
  *
@@ -5,7 +6,7 @@
  * Verifies correct endpoint URLs, request parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/server';
+import { server } from '../../__testUtils__/msw/setupIntegration';
 import { http, HttpResponse } from 'msw';
 import { pricingBreakdownApi } from '../pricingBreakdownApi';
 import { mockPriceBreakdowns } from '../../__testUtils__/msw/handlers';

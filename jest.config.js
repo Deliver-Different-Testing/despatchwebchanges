@@ -13,7 +13,17 @@ const config = {
                 transform: { react: { runtime: 'automatic' } },
             },
         }],
+        '^.+\\.(js|jsx|mjs)$': ['@swc/jest', {
+            jsc: {
+                parser: { syntax: 'ecmascript' },
+            },
+        }],
     },
+
+    // Allow ESM-only packages (msw + transitive deps) to be transformed by @swc/jest
+    transformIgnorePatterns: [
+        'node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|until-async|outvariant|strict-event-emitter|is-node-process|headers-polyfill)/)',
+    ],
 
     moduleNameMapper: {
         '^angular$': '<rootDir>/node_modules/angular/angular.js',

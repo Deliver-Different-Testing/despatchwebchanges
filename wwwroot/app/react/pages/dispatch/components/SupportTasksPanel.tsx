@@ -1,42 +1,25 @@
 /**
  * SupportTasksPanel
  *
- * Displays support tasks for the currently selected job.
- * Includes per-task close button for open tasks.
+ * Displays support tasks for the currently selected job using the shared TaskItem component,
+ * matching the old AngularJS tasksList.html behavior.
  */
 
-import React from 'react';
+import React, {useMemo} from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
 import CircularProgress from '@mui/material/CircularProgress';
-import Chip from '@mui/material/Chip';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import type {SxProps, Theme} from '@mui/material';
-import type {Task} from '../../../interfaces';
+import {NoData} from '../../../components/common/no-data/NoData';
+import {TaskItem} from '../../../components/common/task-item/TaskItem';
+import type {Task, TaskItemConfig, TasksServiceInterface, DispatchServiceInterface} from '../../../components/common/task-item/TaskItem.interfaces';
+import {markTaskAsClosed, updateTaskDate, updateTaskTime, reassignTaskToStaff, getActiveStaff} from '../../../services/tasksApi';
+import type {ShowToastFn} from '../../../services/toastService';
 
 const styles: Record<string, SxProps<Theme>> = {
     container: {
         height: '100%',
         overflow: 'auto',
         p: 1,
-    },
-    empty: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        p: 2,
-    },
-    taskItem: {
-        p: 1.5,
-        borderBottom: 1,
-        borderColor: 'divider',
-        '&:last-child': {
-            borderBottom: 0,
-        },
     },
     loading: {
         display: 'flex',
@@ -46,21 +29,55 @@ const styles: Record<string, SxProps<Theme>> = {
     },
 };
 
+const taskItemConfig: TaskItemConfig = {
+    showAssignee: true,
+    allowCompletion: true,
+    showJobId: false,
+    showJobType: true,
+    showDateTime: true,
+    showDescription: true,
+    showStatusIndicators: true,
+    showOverdueWarning: true,
+    onTaskClick: true,
+};
+
+const tasksService: TasksServiceInterface = {
+    markTaskAsClosed,
+    updateTaskDate,
+    updateTaskTime,
+    reassignTaskToStaff,
+};
+
+const dispatchService: DispatchServiceInterface = {
+    getActiveStaff,
+};
+
 interface SupportTasksPanelProps {
     tasks: Task[];
     loading: boolean;
     jobId: number | null;
-    onCloseTask?: (taskId: number) => void;
+    onTaskUpdated?: () => void;
+    onTaskClick?: (task: Task) => void;
+    showToast?: ShowToastFn;
 }
 
-export function SupportTasksPanel({tasks, loading, jobId, onCloseTask}: SupportTasksPanelProps) {
+export function SupportTasksPanel({tasks, loading, jobId, onTaskUpdated, onTaskClick, showToast}: SupportTasksPanelProps) {
+    const showSuccessToast = useMemo(
+        () => showToast ? (msg: string) => showToast(msg, 'success') : undefined,
+        [showToast],
+    );
+    const showErrorToast = useMemo(
+        () => showToast ? (msg: string) => showToast(msg, 'error') : undefined,
+        [showToast],
+    );
+
     if (!jobId) {
         return (
-            <Box sx={styles.empty}>
-                <Typography variant="body2" color="text.secondary">
-                    Select a job to view support tasks
-                </Typography>
-            </Box>
+            <NoData
+                title="No Job Selected"
+                message="Select a job to view support tasks"
+                icon="support_agent"
+            />
         );
     }
 
@@ -74,46 +91,28 @@ export function SupportTasksPanel({tasks, loading, jobId, onCloseTask}: SupportT
 
     if (tasks.length === 0) {
         return (
-            <Box sx={styles.empty}>
-                <Typography variant="body2" color="text.secondary">
-                    No support tasks for this job
-                </Typography>
-            </Box>
+            <NoData
+                title="No Support Tasks"
+                message="No support tasks for this job"
+                icon="task_alt"
+            />
         );
     }
 
     return (
         <Box sx={styles.container}>
             {tasks.map(task => (
-                <Box key={task.id} sx={styles.taskItem}>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2" sx={{flex: 1}}>
-                            {task.description || task.eventType || `Task #${task.id}`}
-                        </Typography>
-                        <Chip
-                            label={task.closed ? 'Closed' : 'Open'}
-                            size="small"
-                            color={task.closed ? 'default' : 'primary'}
-                            variant="outlined"
-                        />
-                        {!task.closed && onCloseTask && (
-                            <Tooltip title="Close Task">
-                                <IconButton
-                                    size="small"
-                                    onClick={() => onCloseTask(task.id)}
-                                    sx={{p: 0.25}}
-                                >
-                                    <EventAvailableIcon fontSize="small" />
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                    </Stack>
-                    {task.assignee && (
-                        <Typography variant="caption" color="text.secondary">
-                            Assigned to: {task.assignee.text}
-                        </Typography>
-                    )}
-                </Box>
+                <TaskItem
+                    key={task.id}
+                    task={task}
+                    config={taskItemConfig}
+                    onTaskUpdated={onTaskUpdated}
+                    onTaskClick={onTaskClick}
+                    tasksService={tasksService}
+                    dispatchService={dispatchService}
+                    showSuccessToast={showSuccessToast}
+                    showErrorToast={showErrorToast}
+                />
             ))}
         </Box>
     );

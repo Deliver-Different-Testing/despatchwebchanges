@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * API Client Integration Tests
  *
@@ -5,7 +6,7 @@
  * Verifies headers, error handling, request transformation, and cancellation.
  */
 
-import { server } from '../../__testUtils__/msw/server';
+import { server } from '../../__testUtils__/msw/setupIntegration';
 import { http, HttpResponse, delay } from 'msw';
 import { apiClient } from '../apiClient';
 

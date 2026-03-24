@@ -515,17 +515,17 @@ export function useJobActions({
 
     const handleEditFirstDue = useCallback(() => {
         if (!job) return;
-        editDate(JobProperty.FirstDue, 'First Due', job.firstDue);
+        return editDate(JobProperty.FirstDue, 'First Due', job.firstDue);
     }, [job, editDate]);
 
     const handleEditStopDate = useCallback(() => {
         if (!job) return;
-        editDate(JobProperty.StopDate, 'Stop Date', job.stopDate);
+        return editDate(JobProperty.StopDate, 'Stop Date', job.stopDate);
     }, [job, editDate]);
 
     const handleEditRestartDate = useCallback(() => {
         if (!job) return;
-        editDate(JobProperty.RestartDate, 'Restart Date', job.restartDate);
+        return editDate(JobProperty.RestartDate, 'Restart Date', job.restartDate);
     }, [job, editDate]);
 
     return {
