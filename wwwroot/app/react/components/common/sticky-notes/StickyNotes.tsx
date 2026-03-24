@@ -242,38 +242,37 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
                         <MenuItem disabled>
                             <Typography variant="body2">No note categories available.</Typography>
                         </MenuItem>
-                    ) : (
-                        <>
+                    ) : ([
+                        <MenuItem
+                            key="all"
+                            onClick={() => handleFilterByCategory('all')}
+                            selected={selectedCategory === 'all'}
+                        >
+                            <ListItemIcon>
+                                <span className="material-symbols-outlined">topic</span>
+                            </ListItemIcon>
+                            <ListItemText>All Categories</ListItemText>
+                            <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
+                                ({getCategoryNoteCount()})
+                            </Typography>
+                        </MenuItem>,
+                        <Divider key="divider" />,
+                        ...noteCategories.map(category => (
                             <MenuItem
-                                onClick={() => handleFilterByCategory('all')}
-                                selected={selectedCategory === 'all'}
+                                key={category.id}
+                                onClick={() => handleFilterByCategory(category)}
+                                selected={selectedCategory === category.id?.toString()}
                             >
                                 <ListItemIcon>
                                     <span className="material-symbols-outlined">topic</span>
                                 </ListItemIcon>
-                                <ListItemText>All Categories</ListItemText>
+                                <ListItemText>{category.text}</ListItemText>
                                 <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                    ({getCategoryNoteCount()})
+                                    ({getCategoryNoteCount(category.id)})
                                 </Typography>
                             </MenuItem>
-                            <Divider />
-                            {noteCategories.map(category => (
-                                <MenuItem
-                                    key={category.id}
-                                    onClick={() => handleFilterByCategory(category)}
-                                    selected={selectedCategory === category.id?.toString()}
-                                >
-                                    <ListItemIcon>
-                                        <span className="material-symbols-outlined">topic</span>
-                                    </ListItemIcon>
-                                    <ListItemText>{category.text}</ListItemText>
-                                    <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                        ({getCategoryNoteCount(category.id)})
-                                    </Typography>
-                                </MenuItem>
-                            ))}
-                        </>
-                    )}
+                        )),
+                    ])}
                 </Menu>
 
                 {/* Add Note Button */}

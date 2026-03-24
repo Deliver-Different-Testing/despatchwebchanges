@@ -170,6 +170,26 @@ describe('StickyNotes', () => {
             expect(within(menu).getByText('Consignment')).toBeInTheDocument();
         });
 
+        it('does not produce Fragment children warning when category menu is open', async () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            const props = createDefaultProps();
+            renderWithProviders(<StickyNotes {...props} />);
+
+            expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
+
+            const categoryIcon = screen.getByText('category');
+            const filterButton = categoryIcon.closest('button');
+            fireEvent.click(filterButton!);
+
+            expect(await screen.findByText('All Categories')).toBeInTheDocument();
+
+            const fragmentWarnings = consoleErrorSpy.mock.calls.filter(
+                (args) => typeof args[0] === 'string' && args[0].includes('Fragment as a child')
+            );
+            expect(fragmentWarnings).toHaveLength(0);
+            consoleErrorSpy.mockRestore();
+        });
+
         it('filters notes by category when selected', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps();
