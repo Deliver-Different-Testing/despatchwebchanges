@@ -171,7 +171,7 @@ public sealed class PodReportService(
         };
     }
 
-    private static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
+    internal static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
     {
         if (parcels == null || parcels.Count == 0)
             return [];
@@ -184,7 +184,7 @@ public sealed class PodReportService(
         }).ToList();
     }
 
-    private static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)
+    internal static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)
     {
         if (photos.Count == 0)
             return [];

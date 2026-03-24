@@ -94,7 +94,7 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         };
     }
 
-    private static Dictionary<string, JsonElement> ParseToolProperties(string inputSchemaJson)
+    internal static Dictionary<string, JsonElement> ParseToolProperties(string inputSchemaJson)
     {
         using var doc = JsonDocument.Parse(inputSchemaJson);
         var result = new Dictionary<string, JsonElement>();
@@ -105,7 +105,7 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         return result;
     }
 
-    private static string[] ParseToolRequired(string inputSchemaJson)
+    internal static string[] ParseToolRequired(string inputSchemaJson)
     {
         using var doc = JsonDocument.Parse(inputSchemaJson);
         if (doc.RootElement.TryGetProperty("required", out var req) &&
