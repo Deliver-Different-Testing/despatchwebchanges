@@ -6,7 +6,7 @@
  * callbacks in DispatchPage that had 15+ shared dependencies.
  */
 
-import React, {memo, useCallback} from 'react';
+import React, {memo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -24,14 +24,12 @@ import ListItemText from '@mui/material/ListItemText';
 import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import type {SxProps, Theme} from '@mui/material';
-import {useState} from 'react';
 
 import {JobListPanel} from '../../../components/common/job-list/JobListPanel';
 import {JobDetails} from '../../../components/common/job-details/JobDetails';
 import {DispatchMap} from '../../../components/common/dispatch-map/DispatchMap';
 import {DriverLocations} from '../../../components/common/driver-locations/DriverLocations';
 import {CurrentWorkAllDrivers} from '../../../components/common/current-work-all-drivers/CurrentWorkAllDrivers';
-import {SupportTasksPanel} from './SupportTasksPanel';
 import {JobDetailFab} from './JobDetailFab';
 import {NoData} from '../../../components/common/no-data/NoData';
 
@@ -44,12 +42,12 @@ import {executeSplitJobFlow} from '../../../services/splitJobFlow';
 import {executeAddStopFlow} from '../../../services/addStopFlow';
 import {openSwapPodsDialog} from '../../../components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module';
 
-import type {DispatchJob, AppPage, JobCategory} from '../../../interfaces/dispatchJob';
+import type {AppPage, DispatchJob, JobCategory} from '../../../interfaces/dispatchJob';
 import type {MountJobDetailsConfig} from '../../../components/common/job-details/JobDetails.types';
 import type {IDispatchMapItem} from '../../../../interfaces/job.interface';
 import type {TruckMode} from '../../../components/common/driver-locations/DriverLocations.types';
 import type {ShowToastFn} from '../../../services/toastService';
-import type {StaffSuggestion, EventTypeSuggestion} from '../../../interfaces';
+import type {EventTypeSuggestion, StaffSuggestion} from '../../../interfaces';
 
 const styles: Record<string, SxProps<Theme>> = {
     widgetContent: {
