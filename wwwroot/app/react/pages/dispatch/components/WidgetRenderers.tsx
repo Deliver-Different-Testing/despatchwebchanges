@@ -269,13 +269,14 @@ export const DriverLocationsWidget = memo(function DriverLocationsWidget({
     driverLocations, loading, truckMode, activeAreaId,
     onAreaClick, onCourierClick, onClearFilter, isUsCustomer,
 }: DriverLocationsWidgetProps) {
+    const hasData = !!driverLocations && (driverLocations.columns?.length > 0 || driverLocations.areas?.length > 0);
     return (
         <Box sx={styles.widgetContent}>
             <DriverLocations
                 driverLocations={driverLocations}
                 loading={loading}
-                showData={!loading && !!driverLocations}
-                showNoData={!loading && !driverLocations}
+                showData={!loading && hasData}
+                showNoData={!loading && !hasData}
                 truckMode={truckMode}
                 activeAreaId={activeAreaId}
                 onAreaClick={onAreaClick}
