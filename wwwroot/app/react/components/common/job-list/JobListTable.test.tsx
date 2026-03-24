@@ -6,25 +6,25 @@
 import React from 'react';
 import {act, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithTheme} from '../../../__testUtils__';
 import {JobListTable} from './JobListTable';
-import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
-import {AppPage} from '../../interfaces/dispatchJob';
+import type {DensityMode, DispatchJob, JobListSort} from '../../../interfaces/dispatchJob';
+import {AppPage} from '../../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
-import {searchActiveCouriersExtended} from '../../services/courierApi';
-import {suggestCouriers} from '../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../functions/aiSettings';
+import {searchActiveCouriersExtended} from '../../../services/courierApi';
+import {suggestCouriers} from '../../../services/aiAssistantApi';
+import {isAiEnabled} from '../../../../functions/aiSettings';
 
-jest.mock('../../services/courierApi', () => ({
+jest.mock('../../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn(),
 }));
-jest.mock('../../services/aiAssistantApi', () => ({
+jest.mock('../../../services/aiAssistantApi', () => ({
     suggestCouriers: jest.fn(),
 }));
-jest.mock('../../../functions/aiSettings', () => ({
+jest.mock('../../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn().mockReturnValue(false),
 }));
-jest.mock('../../utils/dateUtils', () => ({
+jest.mock('../../../utils/dateUtils', () => ({
     formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
     formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),
     getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),

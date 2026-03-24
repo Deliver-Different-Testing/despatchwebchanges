@@ -97,7 +97,7 @@ jest.mock('./components/DashboardGrid', () => ({
     ),
 }));
 
-jest.mock('../../components/job-list/JobListPanel', () => ({
+jest.mock('../../components/common/job-list/JobListPanel', () => ({
     JobListPanel: (props: any) => (
         <div data-testid="job-list-panel" data-storage-prefix={props.storagePrefix ?? ''}>
             JobListPanel

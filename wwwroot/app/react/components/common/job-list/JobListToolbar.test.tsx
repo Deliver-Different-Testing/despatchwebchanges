@@ -6,10 +6,10 @@
 import React from 'react';
 import {screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithTheme} from '../../../__testUtils__';
 import {JobListToolbar} from './JobListToolbar';
-import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
-import {AppPage} from '../../interfaces/dispatchJob';
+import type {JobCategory, DensityMode} from '../../../interfaces/dispatchJob';
+import {AppPage} from '../../../interfaces/dispatchJob';
 
 function createDefaultProps(overrides?: Partial<{
     selectedCategory: JobCategory;

@@ -17,10 +17,10 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {JobListPanel} from './JobListPanel';
-import {getTheme} from '../../theme/muiTheme';
-import {ReactQueryProvider} from '../../query';
-import type {DispatchJob, MountJobListConfig, JobListSearchParams} from '../../interfaces';
-import {ErrorBoundary} from '../common/error-boundary';
+import {getTheme} from '../../../theme/muiTheme';
+import {ReactQueryProvider} from '../../../query';
+import type {DispatchJob, MountJobListConfig, JobListSearchParams} from '../../../interfaces';
+import {ErrorBoundary} from '../error-boundary';
 
 interface JobListInstance {
     root: Root;

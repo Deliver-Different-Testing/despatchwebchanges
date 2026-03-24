@@ -19,4 +19,8 @@ public sealed class TaskViewModel
     public int JobId { get; init; }
     
     public string JobNumber { get; init; }
+
+    public string CourierCode { get; init; }
+
+    public string CourierName { get; init; }
 }

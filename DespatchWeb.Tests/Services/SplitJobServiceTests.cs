@@ -18,6 +18,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     private readonly SqliteTestDatabase _db = new();
     private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly DespatchContext _seedContext;
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
@@ -190,7 +191,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _fakeTenantClock,
         _rateJobServiceMock.Object,
-        _jobRepositoryMock.Object);
+        _jobRepositoryMock.Object,
+        _jobCommandRepositoryMock.Object);
 
     private static AddressViewModel CreateMeetingPointAddress() => new(
         addressLine1: "100 Meeting Point Rd",

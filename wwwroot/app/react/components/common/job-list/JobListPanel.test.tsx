@@ -10,34 +10,34 @@
 import React from 'react';
 import {act, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {renderWithProviders} from '../../__testUtils__';
+import {renderWithProviders} from '../../../__testUtils__';
 import {JobListPanel} from './JobListPanel';
-import type {DispatchJob, FetchConfig, JobListPanelProps, JobListSearchParams, JobSearchResult} from '../../interfaces/dispatchJob';
-import {AppPage} from '../../interfaces/dispatchJob';
+import type {DispatchJob, FetchConfig, JobListPanelProps, JobListSearchParams, JobSearchResult} from '../../../interfaces/dispatchJob';
+import {AppPage} from '../../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 
 // Mock modules that depend on AngularJS (window.angular)
-jest.mock('../../services/splitJobFlow', () => ({
+jest.mock('../../../services/splitJobFlow', () => ({
     executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../dialogs/add-event-dialog', () => ({
+jest.mock('../../dialogs/add-event-dialog', () => ({
     openAddEventDialog: jest.fn().mockResolvedValue(true),
 }));
-jest.mock('../dialogs/event-group-dialog', () => ({
+jest.mock('../../dialogs/event-group-dialog', () => ({
     openEventGroupDialog: jest.fn().mockResolvedValue(true),
 }));
 
 // Mock child components' heavy dependencies
-jest.mock('../../services/courierApi', () => ({
+jest.mock('../../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn().mockResolvedValue([]),
 }));
-jest.mock('../../services/aiAssistantApi', () => ({
+jest.mock('../../../services/aiAssistantApi', () => ({
     suggestCouriers: jest.fn().mockResolvedValue({couriers: [], summary: '', usage: {inputTokens: 0, outputTokens: 0}}),
 }));
-jest.mock('../../../functions/aiSettings', () => ({
+jest.mock('../../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn().mockReturnValue(false),
 }));
-jest.mock('../../utils/dateUtils', () => ({
+jest.mock('../../../utils/dateUtils', () => ({
     formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
     formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),
     getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),
@@ -45,7 +45,7 @@ jest.mock('../../utils/dateUtils', () => ({
     getTimezoneAbbreviation: jest.fn(() => 'NZST'),
 }));
 
-jest.mock('../../services/jobListApi', () => ({
+jest.mock('../../../services/jobListApi', () => ({
     allocateJobs: jest.fn(),
     getEventGroups: jest.fn().mockResolvedValue([]),
     updateJobReadStatus: jest.fn().mockResolvedValue(undefined),
@@ -62,7 +62,7 @@ jest.mock('../../services/jobListApi', () => ({
     restoreNationwideJob: jest.fn().mockResolvedValue(undefined),
 }));
 
-import {allocateJobs} from '../../services/jobListApi';
+import {allocateJobs} from '../../../services/jobListApi';
 const mockedAllocateJobs = allocateJobs as jest.Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────

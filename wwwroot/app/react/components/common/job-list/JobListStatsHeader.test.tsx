@@ -5,7 +5,7 @@
 
 import React from 'react';
 import {screen} from '@testing-library/react';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithTheme} from '../../../__testUtils__';
 import {JobListStatsHeader} from './JobListStatsHeader';
 
 describe('JobListStatsHeader', () => {

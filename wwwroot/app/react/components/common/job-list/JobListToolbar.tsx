@@ -21,8 +21,8 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import type {SxProps, Theme} from '@mui/material';
-import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
-import {AppPage} from '../../interfaces/dispatchJob';
+import type {JobCategory, DensityMode} from '../../../interfaces/dispatchJob';
+import {AppPage} from '../../../interfaces/dispatchJob';
 
 interface JobListToolbarProps {
     selectedCategory: JobCategory;

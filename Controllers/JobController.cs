@@ -1351,28 +1351,25 @@ public class JobController(
             return StatusCode(500, e.Message + e.InnerException?.Message);
         }
 
+        if (!ShouldRecalculateRate(field)) return Ok();
+
         // Re-rate after successful update — failures are logged but do not fail the request
         try
         {
-            var shouldRecalculateRate = ShouldRecalculateRate(field);
-            if (!shouldRecalculateRate) return Ok();
-
             var isArchived = await jobQueryRepository.IsJobArchived(jobId);
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
             {
                 var jobDetails = await jobQueryRepository.GetJobDetailsForRatingAsync(jobId);
-                if (jobDetails.IsManuallyRated) return Ok();
-
-                await rateJobService.RateJobUsAsync(jobDetails);
+                if (!jobDetails.IsManuallyRated)
+                    await rateJobService.RateJobUsAsync(jobDetails);
             }
             else
             {
                 var jobDetails = await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
-                if (jobDetails.IsManuallyRated) return Ok();
-
-                await rateJobService.RateJobNzAsync(jobDetails);
+                if (!jobDetails.IsManuallyRated)
+                    await rateJobService.RateJobNzAsync(jobDetails);
             }
         }
         catch (Exception e)
@@ -1382,6 +1379,18 @@ public class JobController(
                 "Re-rating failed after updating field {JobProperty} for job {JobId}. The field update succeeded. Error: {Message}",
                 field, jobId, e.Message
             );
+        }
+
+        // Propagate field update and re-rate split children (best effort)
+        try
+        {
+            await splitJobService.PropagateUpdateToSplitChildrenAsync(jobId, field, value);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e,
+                "Failed to propagate {JobProperty} update to split children for job {JobId}. Error: {Message}",
+                field, jobId, e.Message);
         }
 
         return Ok();

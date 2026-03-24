@@ -26,7 +26,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import type {SxProps, Theme} from '@mui/material';
 import {useState} from 'react';
 
-import {JobListPanel} from '../../../components/job-list/JobListPanel';
+import {JobListPanel} from '../../../components/common/job-list/JobListPanel';
 import {JobDetails} from '../../../components/common/job-details/JobDetails';
 import {DispatchMap} from '../../../components/common/dispatch-map/DispatchMap';
 import {DriverLocations} from '../../../components/common/driver-locations/DriverLocations';

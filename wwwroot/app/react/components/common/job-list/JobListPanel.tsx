@@ -15,16 +15,16 @@ import type {
     JobCategory,
     JobListPanelProps,
     JobListSort,
-} from '../../interfaces/dispatchJob';
+} from '../../../interfaces/dispatchJob';
 import {JobListStatsHeader} from './JobListStatsHeader';
 import {JobListToolbar} from './JobListToolbar';
 import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
-import type {AddressViewModel} from '../../interfaces/address';
-import type {CourierData} from '../../interfaces/dispatchJob';
-import {allocateJobs} from '../../services/jobListApi';
-import {useJobListData} from '../../hooks/useJobListData';
+import type {AddressViewModel} from '../../../interfaces/address';
+import type {CourierData} from '../../../interfaces/dispatchJob';
+import {allocateJobs} from '../../../services/jobListApi';
+import {useJobListData} from '../../../hooks/useJobListData';
 
 // ── Constants ────────────────────────────────────────────────────────
 

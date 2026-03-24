@@ -54,7 +54,11 @@ public class TaskRepository(
                 DueDate = e.UcevDueTime,
                 Title = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetName : string.Empty,
                 EventType = e.UcevTypeNavigation != null ? e.UcevTypeNavigation.UcetGroup : string.Empty,
-                JobNumber = e.UcevJob.UcjbNumber
+                JobNumber = e.UcevJob.UcjbNumber,
+                CourierCode = e.UcevJob.UcjbCourier != null ? e.UcevJob.UcjbCourier.Code : null,
+                CourierName = e.UcevJob.UcjbCourier != null
+                    ? e.UcevJob.UcjbCourier.UccrName + " " + e.UcevJob.UcjbCourier.UccrSurname
+                    : null
             })
             .ToListAsync();
 
