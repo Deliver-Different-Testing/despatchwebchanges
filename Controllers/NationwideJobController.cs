@@ -26,7 +26,7 @@ public class NationwideJobController(
         try
         {
             var clientIds = await RetrieveAndFormatClientIds();
-           
+
             if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
             var isUsTenant = infoService.IsUsTenant();
 
@@ -208,7 +208,7 @@ public class NationwideJobController(
         try
         {
             var agents = await repository.GetAgentsAsync(jobId);
-            if (agents != null && agents.Count != 0) return Json(agents);
+            if (agents.Count != 0) return Json(agents);
 
             Log.Information("No agents found for job {JobId}", jobId);
             return Json(new List<AgentViewModel>());
@@ -487,7 +487,7 @@ public class NationwideJobController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-    
+
     private async Task<string> RetrieveAndFormatClientIds()
     {
         var contactId = infoService.GetContactId();

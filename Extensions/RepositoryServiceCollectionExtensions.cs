@@ -7,9 +7,9 @@ public static class RepositoryServiceCollectionExtensions
 {
     public static IServiceCollection AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<IJobRepository, JobRepository>();
-        services.AddScoped<IJobQueryRepository>(sp => sp.GetRequiredService<IJobRepository>());
-        services.AddScoped<IJobCommandRepository>(sp => sp.GetRequiredService<IJobRepository>());
+        services.AddScoped<JobRepository>();
+        services.AddScoped<IJobQueryRepository>(sp => sp.GetRequiredService<JobRepository>());
+        services.AddScoped<IJobCommandRepository>(sp => sp.GetRequiredService<JobRepository>());
         services.AddScoped<INoteRepository, NoteRepository>();
         services.AddScoped<INationwideJobRepository, NationwideJobRepository>();
         services.AddScoped<ICourierRepository, CourierRepository>();

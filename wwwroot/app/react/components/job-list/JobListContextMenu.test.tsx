@@ -364,70 +364,71 @@ describe('JobListContextMenu', () => {
     });
 
     describe('Late Call Dialog', () => {
-        it('opens dialog for pickup/delivery, submits with correct lateType, and handles Enter/Cancel/errors', async () => {
+        it('submits late pickup with correct lateType and shows success toast', async () => {
             const user = userEvent.setup();
-
-            // Late Pickup submission
-            const props1 = createDefaultProps();
-            const {unmount: u1} = renderWithTheme(<JobListContextMenu {...props1} />);
+            const props = createDefaultProps();
+            renderWithTheme(<JobListContextMenu {...props} />);
             await user.click(screen.getByText('Late Pickup'));
             expect(screen.getByText('Late Pickup', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
             await user.click(screen.getByLabelText('Minutes'));
             await user.paste('15');
             await user.click(screen.getByText('Save'));
             await waitFor(() => expect(mockedApi.lateCall).toHaveBeenCalledWith({jobId: 1, lateType: 1, lateTime: 15, calculationRequired: true}));
-            expect(props1.showToast).toHaveBeenCalledWith('Late call applied successfully', 'success');
-            expect(props1.onRefresh).toHaveBeenCalled();
-            u1();
+            expect(props.showToast).toHaveBeenCalledWith('Late call applied successfully', 'success');
+            expect(props.onRefresh).toHaveBeenCalled();
+        });
 
-            // Late Delivery submission
-            mockedApi.lateCall.mockClear();
-            const props2 = createDefaultProps();
-            const {unmount: u2} = renderWithTheme(<JobListContextMenu {...props2} />);
+        it('submits late delivery with correct lateType', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithTheme(<JobListContextMenu {...props} />);
             await user.click(screen.getByText('Late Delivery'));
             expect(screen.getByText('Late Delivery', {selector: '[class*="DialogTitle"]'})).toBeInTheDocument();
             await user.click(screen.getByLabelText('Minutes'));
             await user.paste('30');
             await user.click(screen.getByText('Save'));
             await waitFor(() => expect(mockedApi.lateCall).toHaveBeenCalledWith({jobId: 1, lateType: 2, lateTime: 30, calculationRequired: true}));
-            u2();
+        });
+
+        it('submits via Enter key, cancels without API call, and disables Save when empty', async () => {
+            const user = userEvent.setup();
 
             // Enter key submission
-            mockedApi.lateCall.mockClear();
-            const props3 = createDefaultProps();
-            const {unmount: u3} = renderWithTheme(<JobListContextMenu {...props3} />);
+            const props1 = createDefaultProps();
+            const {unmount: u1} = renderWithTheme(<JobListContextMenu {...props1} />);
             await user.click(screen.getByText('Late Pickup'));
             await user.click(screen.getByLabelText('Minutes'));
             await user.paste('10');
             await user.keyboard('{Enter}');
             await waitFor(() => expect(mockedApi.lateCall).toHaveBeenCalledWith(expect.objectContaining({lateTime: 10})));
-            u3();
+            u1();
 
             // Cancel closes without API call
             mockedApi.lateCall.mockClear();
-            const {unmount: u4} = renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            const {unmount: u2} = renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
             await user.click(screen.getByText('Late Pickup'));
             expect(screen.getByLabelText('Minutes')).toBeInTheDocument();
             await user.click(screen.getByText('Cancel'));
             await waitFor(() => expect(screen.queryByLabelText('Minutes')).not.toBeInTheDocument());
             expect(mockedApi.lateCall).not.toHaveBeenCalled();
-            u4();
+            u2();
 
             // Empty minutes disables Save
-            const {unmount: u5} = renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
             await user.click(screen.getByText('Late Pickup'));
             expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
-            u5();
+        });
 
-            // API error shows error toast
+        it('shows error toast on API failure', async () => {
+            const user = userEvent.setup();
             mockedApi.lateCall.mockRejectedValueOnce(new Error('Server error'));
-            const propsErr = createDefaultProps();
-            renderWithTheme(<JobListContextMenu {...propsErr} />);
+            const props = createDefaultProps();
+            renderWithTheme(<JobListContextMenu {...props} />);
             await user.click(screen.getByText('Late Pickup'));
             await user.click(screen.getByLabelText('Minutes'));
             await user.paste('5');
             await user.click(screen.getByText('Save'));
-            await waitFor(() => expect(propsErr.showToast).toHaveBeenCalledWith('Error applying late pickup', 'error'));
+            await waitFor(() => expect(props.showToast).toHaveBeenCalledWith('Error applying late pickup', 'error'));
         });
     });
 

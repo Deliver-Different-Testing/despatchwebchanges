@@ -22,7 +22,7 @@ public class SplitJobService(
     ITenantInfoService tenantInfoService,
     ITenantClock tenantClock,
     IRateJobService rateJobService,
-    IJobRepository jobRepository) : ISplitJobService
+    IJobQueryRepository jobRepository) : ISplitJobService
 {
     private const string ParentSystemName = "SplitParent";
     private const string ChildSystemName = "SplitChild";

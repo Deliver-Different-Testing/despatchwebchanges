@@ -7,7 +7,7 @@ using Moq;
 namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
-/// Tests for JobRepository IJobRepository interface methods.
+/// Tests for JobRepository IJobQueryRepository/IJobCommandRepository interface methods.
 /// Verifies that the public wrapper methods correctly delegate to the protected base implementations.
 /// Uses SQLite in-memory database to test repository operations.
 /// </summary>
@@ -45,16 +45,6 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         _clearListEnvelopeServiceMock.Object,
         _createJobServiceMock.Object
     );
-
-    [Fact]
-    public void JobRepository_ImplementsIJobRepository()
-    {
-        // Arrange & Act
-        var repository = CreateRepository();
-
-        // Assert
-        Assert.IsType<IJobRepository>(repository, exactMatch: false);
-    }
 
     [Fact]
     public async Task IsJobArchived_ViaInterface_WithArchivedJob_ReturnsTrue()

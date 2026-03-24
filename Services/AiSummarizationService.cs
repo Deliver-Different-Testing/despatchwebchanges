@@ -12,7 +12,7 @@ public sealed class AiSummarizationService(
     IAiClientService aiClient,
     INoteRepository noteRepository,
     ITaskRepository taskRepository,
-    IJobRepository jobRepository,
+    IJobQueryRepository jobRepository,
     ICourierRepository courierRepository,
     ITenantInfoService tenantInfo,
     IOptions<AnthropicSettings> settings) : IAiSummarizationService
@@ -23,108 +23,108 @@ public sealed class AiSummarizationService(
 
     private string SummarizationSystemPrompt =>
         $"""
-        You are a logistics data summarizer for {RegionContext}.
-        Provide concise, actionable summaries. Write in clear, professional language suitable for busy dispatchers.
+         You are a logistics data summarizer for {RegionContext}.
+         Provide concise, actionable summaries. Write in clear, professional language suitable for busy dispatchers.
 
-        Format rules:
-        - Use **bold** to highlight key information (job numbers, statuses, names)
-        - Use bullet points for multiple items
-        - Focus on: current status, key issues, timeline of important events, and pending actions
-        - Keep to 2-4 sentences unless bullet points are needed
-        """;
+         Format rules:
+         - Use **bold** to highlight key information (job numbers, statuses, names)
+         - Use bullet points for multiple items
+         - Focus on: current status, key issues, timeline of important events, and pending actions
+         - Keep to 2-4 sentences unless bullet points are needed
+         """;
 
     private string TaskBriefingSystemPrompt =>
         $"""
-        You are a dispatch operations briefing assistant for {RegionContext}.
-        Summarize today's task dashboard for a dispatcher starting their shift.
-        Write in clear, professional language suitable for busy dispatchers.
+         You are a dispatch operations briefing assistant for {RegionContext}.
+         Summarize today's task dashboard for a dispatcher starting their shift.
+         Write in clear, professional language suitable for busy dispatchers.
 
-        Structure your response with these markdown sections:
-        - Start with a **Shift Summary** line (e.g. "**Shift Summary:** X open tasks, Y overdue")
-        - **Overdue** — list overdue items with **bold job numbers**, most urgent first
-        - **Due Today** — brief count or list of today's tasks
-        - **Upcoming** — brief note on future tasks
-        - **Suggested Priority** — 2-3 bullet points recommending what to tackle first
+         Structure your response with these markdown sections:
+         - Start with a **Shift Summary** line (e.g. "**Shift Summary:** X open tasks, Y overdue")
+         - **Overdue** — list overdue items with **bold job numbers**, most urgent first
+         - **Due Today** — brief count or list of today's tasks
+         - **Upcoming** — brief note on future tasks
+         - **Suggested Priority** — 2-3 bullet points recommending what to tackle first
 
-        Skip any section that has no relevant data. Keep each section concise.
-        """;
+         Skip any section that has no relevant data. Keep each section concise.
+         """;
 
     private string JobSummarySystemPrompt =>
         $"""
-        You are a logistics job summarizer for {RegionContext}.
-        Produce a structured summary with the most important information first.
-        Write in clear, professional language suitable for busy dispatchers.
+         You are a logistics job summarizer for {RegionContext}.
+         Produce a structured summary with the most important information first.
+         Write in clear, professional language suitable for busy dispatchers.
 
-        Format your response using these markdown sections (skip any section with no relevant data):
+         Format your response using these markdown sections (skip any section with no relevant data):
 
-        **Status** — One line: current job status and courier assignment.
-        **Issues** — Bullet points for any problems, complaints, delays, or flags. Most urgent first.
-        **Actions** — Bullet points for open follow-ups or pending tasks that need attention.
-        **Timeline** — Brief chronological narrative of key milestones (booked, dispatched, picked up, delivered).
-        **Notes** — Any other notable staff comments or observations.
+         **Status** — One line: current job status and courier assignment.
+         **Issues** — Bullet points for any problems, complaints, delays, or flags. Most urgent first.
+         **Actions** — Bullet points for open follow-ups or pending tasks that need attention.
+         **Timeline** — Brief chronological narrative of key milestones (booked, dispatched, picked up, delivered).
+         **Notes** — Any other notable staff comments or observations.
 
-        Rules:
-        - Use **bold** for job numbers, courier names, statuses, and key details
-        - Keep each section concise (1-3 bullet points max)
-        - If the job is straightforward with no issues, keep the entire summary to 2-3 lines
-        """;
+         Rules:
+         - Use **bold** for job numbers, courier names, statuses, and key details
+         - Keep each section concise (1-3 bullet points max)
+         - If the job is straightforward with no issues, keep the entire summary to 2-3 lines
+         """;
 
     private string OperationsSystemPrompt =>
         $"""
-        You are a dispatch operations analyst for {RegionContext}.
-        Interpret the overview statistics and flag anomalies.
-        Write in clear, professional language suitable for busy dispatchers.
+         You are a dispatch operations analyst for {RegionContext}.
+         Interpret the overview statistics and flag anomalies.
+         Write in clear, professional language suitable for busy dispatchers.
 
-        Format rules:
-        - Start with a **one-line health summary** (e.g. "**Operations running normally** with X active jobs")
-        - Use **bold** for key metrics and numbers
-        - Compare active/inactive/completed counts, note if inactive jobs are unusually high
-        - If action is needed, add a **Recommended Actions** line with bold action items
-        - Include the current time context when assessing whether numbers are normal
-        - Keep it concise — 2-4 sentences plus action items if needed
-        """;
+         Format rules:
+         - Start with a **one-line health summary** (e.g. "**Operations running normally** with X active jobs")
+         - Use **bold** for key metrics and numbers
+         - Compare active/inactive/completed counts, note if inactive jobs are unusually high
+         - If action is needed, add a **Recommended Actions** line with bold action items
+         - Include the current time context when assessing whether numbers are normal
+         - Keep it concise — 2-4 sentences plus action items if needed
+         """;
 
     private string ComplianceSystemPrompt =>
         $"""
-        You are a fleet compliance risk analyst for {RegionContext}.
-        Summarize the compliance status of the driver fleet.
-        Write in clear, professional language suitable for busy dispatchers.
+         You are a fleet compliance risk analyst for {RegionContext}.
+         Summarize the compliance status of the driver fleet.
+         Write in clear, professional language suitable for busy dispatchers.
 
-        Format rules:
-        - Use severity labels: **CRITICAL** (expired), **URGENT** (expiring within 7 days), **WARNING** (expiring within 30 days)
-        - Use **bold** for driver names and compliance item types
-        - List items as bullet points grouped by severity, most critical first
-        - Flag any drivers with multiple expired items explicitly
-        - End with a **Recommended Actions** line summarizing what to do first
-        - Keep it concise — skip severity groups that have no items
-        """;
+         Format rules:
+         - Use severity labels: **CRITICAL** (expired), **URGENT** (expiring within 7 days), **WARNING** (expiring within 30 days)
+         - Use **bold** for driver names and compliance item types
+         - List items as bullet points grouped by severity, most critical first
+         - Flag any drivers with multiple expired items explicitly
+         - End with a **Recommended Actions** line summarizing what to do first
+         - Keep it concise — skip severity groups that have no items
+         """;
 
     private string LateAlertSystemPrompt =>
         $"""
-        You are a dispatch late-alert analyst for {RegionContext}.
-        Analyze a late-flagged job and provide a situation assessment.
-        Write in clear, professional language suitable for busy dispatchers.
+         You are a dispatch late-alert analyst for {RegionContext}.
+         Analyze a late-flagged job and provide a situation assessment.
+         Write in clear, professional language suitable for busy dispatchers.
 
-        Structure your response as:
-        - **Situation** — How late the job is and remaining SLA window, with key times in **bold**
-        - **Recommendation** — A decisive action: **Monitor**, **Contact Courier**, **Reassign**, or **Escalate**
+         Structure your response as:
+         - **Situation** — How late the job is and remaining SLA window, with key times in **bold**
+         - **Recommendation** — A decisive action: **Monitor**, **Contact Courier**, **Reassign**, or **Escalate**
 
-        Be brief (2-3 sentences total). Consider pickup/delivery times and minutes remaining.
-        """;
+         Be brief (2-3 sentences total). Consider pickup/delivery times and minutes remaining.
+         """;
 
     private string CourierSuggestionSystemPrompt =>
         $"""
-        You are a courier assignment advisor for {RegionContext}.
-        Given a job's details and available couriers with their workload,
-        rank the top 3-5 best couriers for this job.
-        Write in clear, professional language suitable for busy dispatchers.
+         You are a courier assignment advisor for {RegionContext}.
+         Given a job's details and available couriers with their workload,
+         rank the top 3-5 best couriers for this job.
+         Write in clear, professional language suitable for busy dispatchers.
 
-        Format rules:
-        - Start with a **Top Pick** summary line (e.g. "**Top Pick:** **John Smith** — lowest workload, good vehicle match")
-        - Then a numbered list with **bold courier names** and brief reasoning for each
-        - Consider: current job count (prefer lower), vehicle type match, driver status, and availability
-        - Keep each entry to one sentence
-        """;
+         Format rules:
+         - Start with a **Top Pick** summary line (e.g. "**Top Pick:** **John Smith** — lowest workload, good vehicle match")
+         - Then a numbered list with **bold courier names** and brief reasoning for each
+         - Consider: current job count (prefer lower), vehicle type match, driver status, and availability
+         - Keep each entry to one sentence
+         """;
 
     public async Task<AiSummaryResponse> SummarizeJobNotesAsync(int jobId, CancellationToken ct = default)
     {
@@ -144,7 +144,8 @@ public sealed class AiSummarizationService(
         foreach (var note in notes.OrderBy(n => n.CreatedDate))
         {
             var sanitized = AiDataSanitizer.Sanitize(note.NoteText);
-            sb.AppendLine($"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
+            sb.AppendLine(
+                $"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
         }
 
         var messages = new List<AiMessage>
@@ -252,7 +253,8 @@ public sealed class AiSummarizationService(
             var status = task.Closed ? "CLOSED" : task.DueDate < now ? "OVERDUE" : "OPEN";
             var sanitized = AiDataSanitizer.Sanitize(task.Description ?? task.Title);
             var assignee = task.Assignee?.Text ?? "Unassigned";
-            sb.AppendLine($"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
+            sb.AppendLine(
+                $"[{task.DueDate:yyyy-MM-dd HH:mm}] Job #{task.JobNumber} - {task.EventType} - {sanitized} [{status}] Assigned: {assignee}");
         }
 
         return await SendSummarizationRequestAsync(TaskBriefingSystemPrompt, sb.ToString(), ct);
@@ -291,8 +293,10 @@ public sealed class AiSummarizationService(
             foreach (var note in notes.OrderBy(n => n.CreatedDate))
             {
                 var sanitized = AiDataSanitizer.Sanitize(note.NoteText);
-                sb.AppendLine($"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
+                sb.AppendLine(
+                    $"[{note.CreatedDate:yyyy-MM-dd HH:mm}] ({note.NoteTypeName}) by {note.CreatedByName}: {sanitized}");
             }
+
             sb.AppendLine();
         }
 
@@ -338,7 +342,7 @@ public sealed class AiSummarizationService(
         var request = new CourierComplianceFilterRequest();
         var items = await courierRepository.GetCourierComplianceForExportAsync(request);
 
-        if (items == null || items.Count == 0)
+        if (items is not { Count: > 0 })
             return new AiSummaryResponse
             {
                 Summary = "No compliance records found.",
@@ -362,20 +366,23 @@ public sealed class AiSummarizationService(
         var sb = new StringBuilder();
         sb.AppendLine($"Analyze the following driver compliance data. Current date: {now:yyyy-MM-dd}.");
         sb.AppendLine($"Total records: {items.Count}");
-        sb.AppendLine($"Expired: {expired.Count}, Expiring within 7 days: {expiringWeek.Count}, Expiring within 30 days: {expiringMonth.Count}");
+        sb.AppendLine(
+            $"Expired: {expired.Count}, Expiring within 7 days: {expiringWeek.Count}, Expiring within 30 days: {expiringMonth.Count}");
         sb.AppendLine();
 
         if (expired.Count > 0)
         {
             sb.AppendLine("EXPIRED items:");
-            foreach (var item in expired.Take(20)) sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
+            foreach (var item in expired.Take(20))
+                sb.AppendLine(
+                    $"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
             if (expired.Count > 20) sb.AppendLine($"  ... and {expired.Count - 20} more");
             sb.AppendLine();
         }
 
         if (expiringWeek.Count <= 0)
             return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
-        
+
         sb.AppendLine("Expiring within 7 DAYS:");
         foreach (var item in expiringWeek.Take(10))
             sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expires {item.ExpiryDate:yyyy-MM-dd}");
@@ -411,7 +418,7 @@ public sealed class AiSummarizationService(
 
         if (events is not { Count: > 0 })
             return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
-        
+
         sb.AppendLine();
         sb.AppendLine("Recent events:");
         foreach (var evt in events.OrderByDescending(e => e.DueDate).Take(5))
@@ -454,10 +461,11 @@ public sealed class AiSummarizationService(
         if (driverOverview is { Count: > 0 })
         {
             sb.AppendLine("Driver workload overview:");
-            foreach (var d in driverOverview.Take(15)) sb.AppendLine($"  - {d.Name}: {d.VehicleType}, {d.JobCount} active jobs, Status: {d.DriverStatusText}");
+            foreach (var d in driverOverview.Take(15))
+                sb.AppendLine($"  - {d.Name}: {d.VehicleType}, {d.JobCount} active jobs, Status: {d.DriverStatusText}");
         }
 
-        if ((potentialCouriers == null || potentialCouriers.Count == 0) && (driverOverview == null || driverOverview.Count == 0))
+        if (potentialCouriers.Count == 0 && driverOverview.Count == 0)
             return new AiCourierSuggestionResponse
             {
                 Summary = "No courier data available for suggestions.",
@@ -466,7 +474,7 @@ public sealed class AiSummarizationService(
 
         var summaryResult = await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
 
-        var courierList = (potentialCouriers ?? [])
+        var courierList = potentialCouriers
             .Take(10)
             .Select(c => new SuggestedCourier
             {
@@ -484,7 +492,8 @@ public sealed class AiSummarizationService(
         };
     }
 
-    private async Task<AiSummaryResponse> SendSummarizationRequestAsync(string systemPrompt, string userMessage, CancellationToken ct)
+    private async Task<AiSummaryResponse> SendSummarizationRequestAsync(string systemPrompt, string userMessage,
+        CancellationToken ct)
     {
         var messages = new List<AiMessage>
         {

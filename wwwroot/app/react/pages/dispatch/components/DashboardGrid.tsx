@@ -5,7 +5,7 @@
  * drag-to-reorder dashboard grid for the dispatch page.
  */
 
-import React, {memo, useCallback, useMemo} from 'react';
+import React, {forwardRef, memo, useCallback, useMemo} from 'react';
 import {Responsive, useContainerWidth, verticalCompactor} from 'react-grid-layout';
 import type {Layout} from 'react-grid-layout';
 import Box from '@mui/material/Box';
@@ -16,8 +16,10 @@ import {WidgetPanel} from './WidgetPanel';
 
 import 'react-grid-layout/css/styles.css';
 
-/** Per-widget wrapper that avoids inline closures in the map loop */
-const GridWidget = memo(function GridWidget({boxId, config, subtitle, isDefaultLayout, onRefresh, toolbarContent, toolbarActions, children}: {
+/** Per-widget wrapper that avoids inline closures in the map loop.
+ *  Must forward ref, className, and style — react-grid-layout injects
+ *  positioning (CSS transforms, width, height) via React.cloneElement. */
+const GridWidget = memo(forwardRef<HTMLDivElement, {
     boxId: DispatchBox;
     config: BoxConfig;
     subtitle: string | undefined;
@@ -26,10 +28,12 @@ const GridWidget = memo(function GridWidget({boxId, config, subtitle, isDefaultL
     toolbarContent: React.ReactNode;
     toolbarActions: React.ReactNode;
     children: React.ReactNode;
-}) {
+    className?: string;
+    style?: React.CSSProperties;
+}>(function GridWidget({boxId, config, subtitle, isDefaultLayout, onRefresh, toolbarContent, toolbarActions, children, className, style}, ref) {
     const handleRefresh = useCallback(() => onRefresh?.(boxId), [onRefresh, boxId]);
     return (
-        <div key={boxId} style={{height: '100%'}}>
+        <div ref={ref} className={className} style={style}>
             <WidgetPanel
                 config={config}
                 subtitle={subtitle}
@@ -42,7 +46,7 @@ const GridWidget = memo(function GridWidget({boxId, config, subtitle, isDefaultL
             </WidgetPanel>
         </div>
     );
-});
+}));
 
 interface DashboardGridProps {
     layout: Layout;

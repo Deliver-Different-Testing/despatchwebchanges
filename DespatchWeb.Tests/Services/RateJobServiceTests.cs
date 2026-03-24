@@ -18,7 +18,8 @@ namespace DespatchWeb.Tests.Services;
 public class RateJobServiceTests : IDisposable
 {
     private readonly HttpClient _httpClient = new();
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
+    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
     private readonly Mock<IJobReportService> _jobReportServiceMock = new();
@@ -41,7 +42,8 @@ public class RateJobServiceTests : IDisposable
     public void Dispose() => _httpClient.Dispose();
 
     private RateJobService CreateService(HttpClient? httpClient = null) => new(
-        _jobRepositoryMock.Object,
+        _jobQueryRepositoryMock.Object,
+        _jobCommandRepositoryMock.Object,
         httpClient ?? _httpClient,
         _tenantInfoServiceMock.Object,
         _httpContextAccessorMock.Object,
@@ -209,7 +211,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -221,7 +223,7 @@ public class RateJobServiceTests : IDisposable
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
+        _jobCommandRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
         Assert.NotNull(capturedDto);
         Assert.Equal(10m, capturedDto!.TotalMiles); // 16093 meters / 1609.344 = ~10 miles
         Assert.Equal(0m, capturedDto.FromMiles); // Non-flight should not have FromMiles
@@ -239,7 +241,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -275,7 +277,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -298,7 +300,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -379,13 +381,13 @@ public class RateJobServiceTests : IDisposable
             StreetAddress = "LAX Airport"
         };
 
-        _jobRepositoryMock.Setup(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m))
+        _jobQueryRepositoryMock.Setup(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m))
             .ReturnsAsync([fromAirport]);
-        _jobRepositoryMock.Setup(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m))
+        _jobQueryRepositoryMock.Setup(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m))
             .ReturnsAsync([toAirport]);
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -397,8 +399,8 @@ public class RateJobServiceTests : IDisposable
         await service.RateJobUsAsync(jobDetails);
 
         // Assert - flight path calculates FromMiles and ToMiles separately
-        _jobRepositoryMock.Verify(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m), Times.Once);
-        _jobRepositoryMock.Verify(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m), Times.Once);
+        _jobQueryRepositoryMock.Verify(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m), Times.Once);
+        _jobQueryRepositoryMock.Verify(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m), Times.Once);
 
         Assert.NotNull(capturedDto);
         Assert.Equal(5m, capturedDto!.FromMiles); // 8046 meters / 1609.344 = ~5 miles
@@ -424,11 +426,11 @@ public class RateJobServiceTests : IDisposable
             StreetAddress = "Test"
         };
 
-        _jobRepositoryMock.Setup(x => x.GetClosestAirportsAsync(It.IsAny<decimal>(), It.IsAny<decimal>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetClosestAirportsAsync(It.IsAny<decimal>(), It.IsAny<decimal>()))
             .ReturnsAsync([airport]);
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -585,7 +587,7 @@ public class RateJobServiceTests : IDisposable
         // Arrange
         SetupNonFlightSpeed();
 
-        _jobRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
             .ReturnsAsync(250.75m);
 
         var jobDetails = CreateValidUsJobDetails(pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
@@ -597,7 +599,7 @@ public class RateJobServiceTests : IDisposable
 
         // Assert
         Assert.Equal(250.75m, rate);
-        _jobRepositoryMock.Verify(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
+        _jobQueryRepositoryMock.Verify(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
     }
 
     [Fact]
@@ -607,7 +609,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .ReturnsAsync(100m);
 
@@ -660,7 +662,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -686,7 +688,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -712,7 +714,7 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
             .Callback<RateJobUsDto>(dto => capturedDto = dto)
             .Returns(Task.CompletedTask);
 
@@ -739,7 +741,7 @@ public class RateJobServiceTests : IDisposable
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = true }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -752,7 +754,7 @@ public class RateJobServiceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(
+        _jobCommandRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(
             It.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(2))), Times.Once);
     }
 
@@ -767,7 +769,7 @@ public class RateJobServiceTests : IDisposable
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = null }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -780,7 +782,7 @@ public class RateJobServiceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(It.IsAny<IReadOnlyList<int>>()), Times.Never);
+        _jobCommandRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(It.IsAny<IReadOnlyList<int>>()), Times.Never);
     }
 
     [Fact]
@@ -795,7 +797,7 @@ public class RateJobServiceTests : IDisposable
                 new JobManualPriceModel { Id = 3, Amount = 300m, Void = true }
             ]);
 
-        _jobRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
             .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
@@ -809,7 +811,7 @@ public class RateJobServiceTests : IDisposable
         await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(
+        _jobCommandRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(
             It.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2))),
             Times.Once);
     }
@@ -928,7 +930,7 @@ public class RateJobServiceTests : IDisposable
     };
 
     private void SetupNonFlightSpeed() =>
-        _jobRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(It.IsAny<int>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(new TucJobType
             {
                 UcjtId = 1,
@@ -937,7 +939,7 @@ public class RateJobServiceTests : IDisposable
             });
 
     private void SetupFlightSpeed() =>
-        _jobRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(It.IsAny<int>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(new TucJobType
             {
                 UcjtId = 2,

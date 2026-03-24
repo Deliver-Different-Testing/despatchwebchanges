@@ -8,7 +8,7 @@ using Serilog;
 namespace DespatchWeb.Controllers;
 
 [Authorize]
-public class OverviewController(IJobRepository jobRepository, ICourierRepository courierRepository)
+public class OverviewController(IJobQueryRepository jobRepository, ICourierRepository courierRepository)
     : Controller
 {
     public async Task<IActionResult> Index([FromQuery] OverviewJobsRequest parameters)

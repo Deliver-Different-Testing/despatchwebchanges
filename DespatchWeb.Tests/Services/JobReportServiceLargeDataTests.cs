@@ -18,7 +18,8 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobReportServiceLargeDataTests
 {
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
+    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
     private readonly Mock<IAmazonS3> _s3ClientMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
@@ -26,7 +27,8 @@ public class JobReportServiceLargeDataTests
     private JobReportService CreateService()
     {
         return new JobReportService(
-            _jobRepositoryMock.Object,
+            _jobQueryRepositoryMock.Object,
+            _jobCommandRepositoryMock.Object,
             _recurringJobRepositoryMock.Object,
             _clock,
             _s3ClientMock.Object
@@ -39,7 +41,7 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 20000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -88,7 +90,7 @@ public class JobReportServiceLargeDataTests
     {
         // Arrange
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -129,7 +131,7 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 10000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -166,7 +168,7 @@ public class JobReportServiceLargeDataTests
         // Arrange - This tests memory handling with a very large dataset
         const int recordCount = 50000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -213,7 +215,7 @@ public class JobReportServiceLargeDataTests
             }
         };
 
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -260,7 +262,7 @@ public class JobReportServiceLargeDataTests
             }
         };
 
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -296,7 +298,7 @@ public class JobReportServiceLargeDataTests
     public async Task GenerateJobsReportAsync_EmptyDataset_ReturnsHeaderOnly()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
+        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<IReadOnlyList<int>>(),
                 It.IsAny<string>(),
@@ -334,7 +336,7 @@ public class JobReportServiceLargeDataTests
     {
         // Arrange
         var reports = GenerateLargePerformanceSpendDataset(recordCount);
-        _jobRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
             .ReturnsAsync(reports);
 
         var service = CreateService();
@@ -363,7 +365,7 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 10000;
         var reports = GenerateLargePerformanceSpendDataset(recordCount);
-        _jobRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
             .ReturnsAsync(reports);
 
         var service = CreateService();
@@ -388,7 +390,7 @@ public class JobReportServiceLargeDataTests
     public async Task GenerateClientJobsReportCsvAsync_NoData_ReturnsHeaderOnly()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
+        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
             .ReturnsAsync([]);
 
         var service = CreateService();

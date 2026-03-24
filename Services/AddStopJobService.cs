@@ -11,7 +11,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for creating additional stop jobs (extra pickups or deliveries) as child jobs linked to parent jobs.
 /// </summary>
-public sealed class AddStopJobService(IJobRepository repository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
+public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobCommandRepository commandRepository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
 {
     private const decimal ExtraStopAmount = 20m;
     private const decimal ExtraStopCourierPayment = 10m;
@@ -31,7 +31,7 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var job = await repository.GetByIdAsync<TucJob>(request.JobId);
+            var job = await queryRepository.GetByIdAsync<TucJob>(request.JobId);
             ArgumentNullException.ThrowIfNull(job);
 
             var newStopJobNumber = await GenerateNewStopJobNumberAsync(job.UcjbNumber);
@@ -41,12 +41,12 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
 
             // Create stop job via stored procedure
             var stopInput = BuildStopJobInputModel(job, newStopJobNumber, request, extras);
-            var stopResult = await repository.CreateMinimalTucJobAsync(stopInput);
+            var stopResult = await commandRepository.CreateMinimalTucJobAsync(stopInput);
             if (!stopResult.Success || !stopResult.JobId.HasValue)
                 throw new InvalidOperationException($"Failed to create stop job: {stopResult.Message}");
 
             // Load created job to update remaining fields
-            var newStopJob = await repository.GetByIdAsync<TucJob>(stopResult.JobId.Value);
+            var newStopJob = await queryRepository.GetByIdAsync<TucJob>(stopResult.JobId.Value);
 
             // Update fields not handled by the stored procedure
             newStopJob.UcjbDate = job.UcjbDate;
@@ -129,8 +129,8 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
             newStopJob.DeliveryLatitude = job.DeliveryLatitude;
             newStopJob.DeliveryLongitude = job.DeliveryLongitude;
 
-            await repository.SaveChangesAsync();
-            
+            await commandRepository.SaveChangesAsync();
+
             // Save packages
             await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
             
@@ -139,17 +139,17 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
 
             // Pricing Breakdown
             var pricingBreakdown = CreatePricingBreakdown(newStopJob.UcjbId);
-            await repository.AddEntityAsync(pricingBreakdown);
+            await commandRepository.AddEntityAsync(pricingBreakdown);
 
             // Add note
             if (!string.IsNullOrEmpty(extras.JobNotes))
             {
                 var note = CreateNote(job.UcjbId, extras.JobNotes, staffId, currentDate);
-                await repository.AddEntityAsync(note);
+                await commandRepository.AddEntityAsync(note);
             }
 
             // Save changes to a database
-            await repository.SaveChangesAsync();
+            await commandRepository.SaveChangesAsync();
 
             return newStopJob.UcjbId;
         }
@@ -172,7 +172,7 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var job = await repository.GetByIdAsync<TucJobBooking>(request.JobId);
+        var job = await queryRepository.GetByIdAsync<TucJobBooking>(request.JobId);
         ArgumentNullException.ThrowIfNull(job);
 
         var newStopJobNumber = await GenerateNewStopJobNumberAsync(job.UcbkJobNumber);
@@ -267,25 +267,25 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
         };
 
         // Insert the new job stop
-        await repository.AddEntityAsync(newStopJob);
-        await repository.SaveChangesAsync();
+        await commandRepository.AddEntityAsync(newStopJob);
+        await commandRepository.SaveChangesAsync();
 
         var staffId = infoService.GetStaffId();
         var currentDate = clock.TenantNow;
 
         // Pricing Breakdown
         var pricingBreakdown = CreateBookingPricingBreakdown(newStopJob.UcbkId);
-        await repository.AddEntityAsync(pricingBreakdown);
+        await commandRepository.AddEntityAsync(pricingBreakdown);
 
         // Add note
         if (!string.IsNullOrEmpty(extras.JobNotes))
         {
             var note = CreateBookingNote(job.UcbkId, extras.JobNotes, staffId, currentDate);
-            await repository.AddEntityAsync(note);
+            await commandRepository.AddEntityAsync(note);
         }
 
         // Save changes to a database
-        await repository.SaveChangesAsync();
+        await commandRepository.SaveChangesAsync();
 
         return newStopJob.UcbkId;
     }
@@ -303,7 +303,7 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
         {
             var newJobNumber = baseJobNumber + letter;
 
-            if (!await repository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
+            if (!await queryRepository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
 
             letter++;
         }
@@ -370,7 +370,7 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
     /// Calculates the raw amount for a stop job based on the parent job's client and service parameters.
     /// </summary>
     private async Task<decimal> CalculateRawAmountAsync(TucJob job) =>
-        await repository.GetNationwideServiceRawPriceAsync(
+        await queryRepository.GetNationwideServiceRawPriceAsync(
             job.UcjbClientId,
             job.UcjbFrom,
             AirportSuburbId,
@@ -474,6 +474,6 @@ public sealed class AddStopJobService(IJobRepository repository, ITenantInfoServ
             parcels.Add(parcel);
         }
 
-        await repository.AddPackagesToJobAsync(effectiveJobId, parcels);
+        await commandRepository.AddPackagesToJobAsync(effectiveJobId, parcels);
     }
 }

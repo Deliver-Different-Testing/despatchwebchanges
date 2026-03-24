@@ -10,11 +10,11 @@ public class ConnectionStringManager(
     IMemoryCache memoryCache)
     : IConnectionStringManager
 {
+    private const int MaxRetryAttempts = 3;
     private static readonly SemaphoreSlim WriteSemaphore = new(1, 1);
 
     // Cache settings - using sliding expiration so active users stay cached
     private static readonly TimeSpan CacheSlidingExpiry = TimeSpan.FromHours(8);
-    private const int MaxRetryAttempts = 3;
     private static readonly TimeSpan InitialRetryDelay = TimeSpan.FromMilliseconds(100);
 
     public async Task SetConnectionStringAsync(string tenantAppCacheKey, string connectionString)
@@ -51,9 +51,9 @@ public class ConnectionStringManager(
     public string GetConnectionStringFromMemoryCache(string tenantAppCacheKey)
     {
         return memoryCache.TryGetValue(tenantAppCacheKey, out string cached)
-            && !string.IsNullOrEmpty(cached)
-                ? cached
-                : null;
+               && !string.IsNullOrEmpty(cached)
+            ? cached
+            : null;
     }
 
     public async Task<string> GetConnectionStringAsync(string tenantAppCacheKey)
@@ -99,9 +99,7 @@ public class ConnectionStringManager(
 
                 // Key doesn't exist in cache - no point retrying
                 if (attempt == 1)
-                {
                     Log.Debug("Connection string not found in distributed cache for {CacheKey}", tenantAppCacheKey);
-                }
 
                 return null;
             }

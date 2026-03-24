@@ -10,7 +10,7 @@ using Serilog;
 
 namespace DespatchWeb.Repositories;
 
-public class BaseJobRepository(
+public partial class BaseJobRepository(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService infoService,
     ITenantClock clock,
@@ -21,33 +21,40 @@ public class BaseJobRepository(
 
     private static readonly Regex[] DangerousSqlPatterns =
     [
-        new(@"\bDROP\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bDELETE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bTRUNCATE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bALTER\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bCREATE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bINSERT\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bUPDATE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bEXEC\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bEXECUTE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bXP_", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bSP_", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bINTO\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bUNION\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bGRANT\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bREVOKE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new("--", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"/\*", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\*/", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bSHUTDOWN\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bWAITFOR\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bDELAY\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bOPENROWSET\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bOPENQUERY\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bBULK\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bDBCC\b", RegexOptions.IgnoreCase | RegexOptions.Compiled),
-        new(@"\bMERGE\b", RegexOptions.IgnoreCase | RegexOptions.Compiled)
+        DropRegex(), DeleteRegex(), TruncateRegex(), AlterRegex(), CreateRegex(),
+        InsertRegex(), UpdateRegex(), ExecRegex(), ExecuteRegex(), XpPrefixRegex(),
+        SpPrefixRegex(), IntoRegex(), UnionRegex(), GrantRegex(), RevokeRegex(),
+        DashDashRegex(), BlockCommentOpenRegex(), BlockCommentCloseRegex(),
+        ShutdownRegex(), WaitforRegex(), DelayRegex(), OpenrowsetRegex(),
+        OpenqueryRegex(), BulkRegex(), DbccRegex(), MergeRegex()
     ];
+
+    [GeneratedRegex(@"\bDROP\b", RegexOptions.IgnoreCase)] private static partial Regex DropRegex();
+    [GeneratedRegex(@"\bDELETE\b", RegexOptions.IgnoreCase)] private static partial Regex DeleteRegex();
+    [GeneratedRegex(@"\bTRUNCATE\b", RegexOptions.IgnoreCase)] private static partial Regex TruncateRegex();
+    [GeneratedRegex(@"\bALTER\b", RegexOptions.IgnoreCase)] private static partial Regex AlterRegex();
+    [GeneratedRegex(@"\bCREATE\b", RegexOptions.IgnoreCase)] private static partial Regex CreateRegex();
+    [GeneratedRegex(@"\bINSERT\b", RegexOptions.IgnoreCase)] private static partial Regex InsertRegex();
+    [GeneratedRegex(@"\bUPDATE\b", RegexOptions.IgnoreCase)] private static partial Regex UpdateRegex();
+    [GeneratedRegex(@"\bEXEC\b", RegexOptions.IgnoreCase)] private static partial Regex ExecRegex();
+    [GeneratedRegex(@"\bEXECUTE\b", RegexOptions.IgnoreCase)] private static partial Regex ExecuteRegex();
+    [GeneratedRegex(@"\bXP_", RegexOptions.IgnoreCase)] private static partial Regex XpPrefixRegex();
+    [GeneratedRegex(@"\bSP_", RegexOptions.IgnoreCase)] private static partial Regex SpPrefixRegex();
+    [GeneratedRegex(@"\bINTO\b", RegexOptions.IgnoreCase)] private static partial Regex IntoRegex();
+    [GeneratedRegex(@"\bUNION\b", RegexOptions.IgnoreCase)] private static partial Regex UnionRegex();
+    [GeneratedRegex(@"\bGRANT\b", RegexOptions.IgnoreCase)] private static partial Regex GrantRegex();
+    [GeneratedRegex(@"\bREVOKE\b", RegexOptions.IgnoreCase)] private static partial Regex RevokeRegex();
+    [GeneratedRegex("--")] private static partial Regex DashDashRegex();
+    [GeneratedRegex(@"/\*")] private static partial Regex BlockCommentOpenRegex();
+    [GeneratedRegex(@"\*/")] private static partial Regex BlockCommentCloseRegex();
+    [GeneratedRegex(@"\bSHUTDOWN\b", RegexOptions.IgnoreCase)] private static partial Regex ShutdownRegex();
+    [GeneratedRegex(@"\bWAITFOR\b", RegexOptions.IgnoreCase)] private static partial Regex WaitforRegex();
+    [GeneratedRegex(@"\bDELAY\b", RegexOptions.IgnoreCase)] private static partial Regex DelayRegex();
+    [GeneratedRegex(@"\bOPENROWSET\b", RegexOptions.IgnoreCase)] private static partial Regex OpenrowsetRegex();
+    [GeneratedRegex(@"\bOPENQUERY\b", RegexOptions.IgnoreCase)] private static partial Regex OpenqueryRegex();
+    [GeneratedRegex(@"\bBULK\b", RegexOptions.IgnoreCase)] private static partial Regex BulkRegex();
+    [GeneratedRegex(@"\bDBCC\b", RegexOptions.IgnoreCase)] private static partial Regex DbccRegex();
+    [GeneratedRegex(@"\bMERGE\b", RegexOptions.IgnoreCase)] private static partial Regex MergeRegex();
 
     private (int? economySpeedId, DateTime? ecoDeliveryTime)? _economyCache;
 
@@ -294,13 +301,8 @@ public class BaseJobRepository(
     /// <summary>
     /// Validates that a WhereCondition from the database doesn't contain SQL injection patterns.
     /// </summary>
-    private static bool IsValidWhereCondition(string condition)
-    {
-        if (string.IsNullOrWhiteSpace(condition))
-            return false;
-
-        return DangerousSqlPatterns.All(pattern => !pattern.IsMatch(condition));
-    }
+    private static bool IsValidWhereCondition(string condition) => !string.IsNullOrWhiteSpace(condition) 
+                                                                   && DangerousSqlPatterns.All(pattern => !pattern.IsMatch(condition));
 
     private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
     {

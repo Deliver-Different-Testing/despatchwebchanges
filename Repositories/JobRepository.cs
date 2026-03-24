@@ -24,7 +24,7 @@ public partial class JobRepository(
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
     ICreateJobService createJobService)
-    : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobRepository
+    : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository, IJobCommandRepository
 {
     private readonly ITenantClock _clock = clock;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;

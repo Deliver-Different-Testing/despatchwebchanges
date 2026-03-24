@@ -12,7 +12,7 @@ public class AiSummarizationServiceTests
     private readonly Mock<IAiClientService> _aiClientMock = new();
     private readonly Mock<INoteRepository> _noteRepositoryMock = new();
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<IJobRepository> _jobRepositoryMock = new();
+    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
 

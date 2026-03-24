@@ -20,7 +20,8 @@ namespace DespatchWeb.Services;
 /// Service for job-related spreadsheet operations including CSV exports, file parsing, and S3 archival.
 /// </summary>
 public sealed class JobReportService(
-    IJobRepository jobRepository,
+    IJobQueryRepository jobQueryRepository,
+    IJobCommandRepository jobCommandRepository,
     IRecurringJobRepository recurringJobRepository,
     ITenantClock clock,
     IAmazonS3 s3Client) : IJobReportService
@@ -52,7 +53,7 @@ public sealed class JobReportService(
     {
         var currentDate = clock.TenantNow;
 
-        var data = await jobRepository.PodSearchDownloadAsync(
+        var data = await jobQueryRepository.PodSearchDownloadAsync(
             request.CourierIds,
             request.SpeedIds,
             request.Wild ?? string.Empty,
@@ -157,7 +158,7 @@ public sealed class JobReportService(
         try
         {
             var currentDate = clock.TenantNow;
-            var data = await jobRepository.GetClientJobsReportDataAsync(request);
+            var data = await jobQueryRepository.GetClientJobsReportDataAsync(request);
 
             var clientCode = data.Count > 0
                 ? SanitizeFilename(data[0].UcclLegalName?.Replace(" ", "_") ?? "Unknown")
@@ -302,7 +303,7 @@ public sealed class JobReportService(
 
         var parsedData = await ParseBulkPriceFileAsync(file);
         if (parsedData.Count > 0)
-            await jobRepository.UpdateManualPriceAsync(parsedData);
+            await jobCommandRepository.UpdateManualPriceAsync(parsedData);
     }
 
     #endregion

@@ -10,7 +10,8 @@ namespace DespatchWeb.Services;
 /// Service for creating recovery agent jobs as child jobs linked to parent deliveries.
 /// </summary>
 public sealed class AddAgentRecoveryJobService(
-    IJobRepository repository,
+    IJobQueryRepository queryRepository,
+    IJobCommandRepository commandRepository,
     INationwideJobRepository nationwideJobRepository,
     ITenantInfoService infoService,
     ITenantClock clock) : IAddAgentRecoveryJobService
@@ -27,7 +28,7 @@ public sealed class AddAgentRecoveryJobService(
         {
             ArgumentNullException.ThrowIfNull(request);
 
-            var job = await repository.GetByIdAsync<TucJob>(request.JobId);
+            var job = await queryRepository.GetByIdAsync<TucJob>(request.JobId);
             ArgumentNullException.ThrowIfNull(job);
 
             var newStopJobNumber = await GenerateNewStopJobNumberAsync(job.UcjbNumber);
@@ -133,8 +134,8 @@ public sealed class AddAgentRecoveryJobService(
             };
 
             // Insert the new job stop — must save to generate UcjbId for downstream references
-            await repository.AddEntityAsync(newStopJob);
-            await repository.SaveChangesAsync();
+            await commandRepository.AddEntityAsync(newStopJob);
+            await commandRepository.SaveChangesAsync();
 
             Log.Debug("New Stop Job with ID: {JobId} has been created", newStopJob.UcjbId);
 
@@ -143,14 +144,14 @@ public sealed class AddAgentRecoveryJobService(
 
             // Add Note
             var note = CreateNote(job.UcjbId, agentName, staffId, currentDate);
-            await repository.AddEntityAsync(note);
+            await commandRepository.AddEntityAsync(note);
 
             // Add Recovery Agent Record
             var recoveryAgentRecord = CreateJobRecoveryAgent(newStopJob.UcjbId, request.AgentId, request.AirportId, staffId,
                 request.IsPrimaryRecoveryAgent);
-            await repository.AddEntityAsync(recoveryAgentRecord);
+            await commandRepository.AddEntityAsync(recoveryAgentRecord);
 
-            await repository.SaveChangesAsync();
+            await commandRepository.SaveChangesAsync();
 
             return newStopJob.UcjbId;
         }
@@ -174,7 +175,7 @@ public sealed class AddAgentRecoveryJobService(
         while (number <= 999) // Reasonable upper limit, adjust as needed
         {
             var newJobNumber = $"{baseJobNumber}R{number}";
-            if (!await repository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
+            if (!await queryRepository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
             number++;
         }
 
