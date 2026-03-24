@@ -171,8 +171,6 @@ export interface UseDispatchLayoutReturn {
     updateBoxStates: (boxes: Record<string, { visible?: boolean }>) => void;
     /** Number of grid columns */
     cols: number;
-    /** Row height in pixels */
-    rowHeight: number;
     /** Visible box IDs in layout order */
     visibleBoxIds: DispatchBox[];
 }
@@ -181,7 +179,6 @@ export function useDispatchLayout(): UseDispatchLayoutReturn {
     migrateDispatchLayoutsIfNeeded();
 
     const cols = 12;
-    const rowHeight = 80;
 
     // Load layouts from localStorage
     const [layouts, setLayouts] = useState<ILayout[]>(() => {
@@ -344,7 +341,6 @@ export function useDispatchLayout(): UseDispatchLayoutReturn {
         deleteLayout,
         updateBoxStates,
         cols,
-        rowHeight,
         visibleBoxIds,
     };
 }

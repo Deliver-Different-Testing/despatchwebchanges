@@ -85,7 +85,6 @@ describe('useDispatchLayout', () => {
     it('generates RGL layout with 12-column grid for default layout', () => {
         const {result} = renderHook(() => useDispatchLayout());
         expect(result.current.cols).toBe(12);
-        expect(result.current.rowHeight).toBe(80);
         expect(result.current.rglLayout.length).toBe(6);
     });
 

@@ -76,7 +76,7 @@ interface DashboardGridProps {
 }
 
 const containerStyle: SxProps<Theme> = {
-    minHeight: '100%',
+    height: '100%',
     position: 'relative',
 };
 

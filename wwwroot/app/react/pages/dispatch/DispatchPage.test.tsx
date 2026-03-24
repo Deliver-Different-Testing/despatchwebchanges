@@ -236,7 +236,6 @@ function defaultLayoutReturn() {
         saveLayoutAs: jest.fn(),
         deleteLayout: jest.fn(),
         cols: 12,
-        rowHeight: 80,
         visibleBoxIds: ALL_BOXES,
     } as any;
 }

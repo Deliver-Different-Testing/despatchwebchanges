@@ -6,7 +6,7 @@
  * Includes the AppShell (toolbar + sidenav) directly in React.
  */
 
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import type {SxProps, Theme} from '@mui/material';
 import {DashboardGrid} from './components/DashboardGrid';
@@ -84,7 +84,7 @@ const styles: Record<string, SxProps<Theme>> = {
     gridArea: {
         flex: 1,
         minHeight: 0,
-        overflow: 'auto',
+        overflow: 'hidden',
     },
 };
 
@@ -95,6 +95,35 @@ export function DispatchPage({
                                  onNavigate,
                              }: DispatchPageProps) {
     const layout = useDispatchLayout();
+
+    // Measure grid area height to compute dynamic rowHeight
+    const gridAreaRef = useRef<HTMLDivElement>(null);
+    const [gridAreaHeight, setGridAreaHeight] = useState(0);
+
+    useLayoutEffect(() => {
+        const el = gridAreaRef.current;
+        if (!el) return;
+
+        const observer = new ResizeObserver(([entry]) => {
+            setGridAreaHeight(entry.contentRect.height);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    const rowHeight = useMemo(() => {
+        if (gridAreaHeight <= 0) return 80; // fallback before measurement
+        // Compute max row extent from the layout (e.g. 12 for two rows of h=6)
+        const maxRowExtent = layout.rglLayout.reduce(
+            (max, item) => Math.max(max, item.y + item.h), 0
+        );
+        if (maxRowExtent <= 0) return 80;
+        // RGL total height = rows * rowHeight + (rows - 1) * marginY + 2 * containerPaddingY
+        const marginY = 8;
+        const containerPaddingY = 8;
+        const fixedSpace = (maxRowExtent - 1) * marginY + 2 * containerPaddingY;
+        return Math.floor((gridAreaHeight - fixedSpace) / maxRowExtent);
+    }, [gridAreaHeight, layout.rglLayout]);
     const jobSelection = useJobSelection(initialJobId);
     const currentWork = useCurrentWork(isUsCustomer);
     const supportTasksVisible = layout.visibleBoxIds.includes(DispatchBox.Supports);
@@ -610,12 +639,12 @@ export function DispatchPage({
                     <SettingsButton onClick={handleOpenSettings}/>
                 </AppShell>
 
-                <Box sx={styles.gridArea}>
+                <Box ref={gridAreaRef} sx={styles.gridArea}>
                     <DashboardGrid
                         layout={layout.rglLayout}
                         onLayoutChange={layout.onLayoutChange}
                         cols={layout.cols}
-                        rowHeight={layout.rowHeight}
+                        rowHeight={rowHeight}
                         isDefaultLayout={layout.isDefaultLayout}
                         visibleBoxIds={layout.visibleBoxIds}
                         renderWidget={renderWidget}
