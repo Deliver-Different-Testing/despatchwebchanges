@@ -10,7 +10,7 @@
 
 import React from 'react';
 import {act} from '@testing-library/react';
-import type {DispatchJob, MountJobListConfig} from '../../interfaces/dispatchJob';
+import type {DispatchJob, MountJobListConfig} from '../../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 
 // ── Callback spies ────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ jest.mock('./JobListPanel', () => ({
     },
 }));
 
-jest.mock('../../theme/muiTheme', () => ({
+jest.mock('../../../theme/muiTheme', () => ({
     getTheme: jest.fn(() => ({})),
 }));
 
@@ -45,11 +45,11 @@ jest.mock('@mui/material/styles', () => ({
 
 jest.mock('@mui/material/CssBaseline', () => () => null);
 
-jest.mock('../../query', () => ({
+jest.mock('../../../query', () => ({
     ReactQueryProvider: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
 
-jest.mock('../common/error-boundary', () => ({
+jest.mock('../error-boundary', () => ({
     ErrorBoundary: ({children}: {children: React.ReactNode}) => <>{children}</>,
 }));
 

@@ -22,7 +22,8 @@ public class SplitJobService(
     ITenantInfoService tenantInfoService,
     ITenantClock tenantClock,
     IRateJobService rateJobService,
-    IJobQueryRepository jobRepository) : ISplitJobService
+    IJobQueryRepository jobRepository,
+    IJobCommandRepository jobCommandRepository) : ISplitJobService
 {
     private const string ParentSystemName = "SplitParent";
     private const string ChildSystemName = "SplitChild";
@@ -195,6 +196,56 @@ public class SplitJobService(
             Log.Error(ex, "Error splitting job {JobId}", jobId);
             throw;
         }
+    }
+
+    /// <inheritdoc />
+    public async Task PropagateUpdateToSplitChildrenAsync(
+        int parentJobId,
+        JobProperty field,
+        string value,
+        CancellationToken ct = default)
+    {
+        await using var context = await contextFactory.CreateDbContextAsync(ct);
+
+        var parentInfo = await context.TucJobs
+            .Where(j => j.UcjbId == parentJobId)
+            .Select(j => new
+            {
+                j.JobRelationshipTypeId,
+                j.RootParentId,
+                j.UcjbAmount
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (parentInfo is null) return;
+        if (parentInfo.JobRelationshipTypeId != (int)JobRelationshipTypes.SplitParent) return;
+
+        var rootParentId = parentInfo.RootParentId ?? parentJobId;
+
+        var childJobIds = await context.TucJobs
+            .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
+            .OrderBy(j => j.Sequence)
+            .Select(j => j.UcjbId)
+            .ToListAsync(ct);
+
+        if (childJobIds.Count == 0) return;
+
+        // Propagate the field update to each child job
+        foreach (var childId in childJobIds)
+        {
+            try
+            {
+                await jobCommandRepository.UpdateJobAsync(childId, field, value);
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to propagate {Field} update to child job {ChildId}", field, childId);
+            }
+        }
+
+        // Redistribute the parent's current amount across children
+        var parentAmount = parentInfo.UcjbAmount ?? 0m;
+        await ReRateSplitJobsAsync(parentJobId, parentAmount, rootParentId, ct);
     }
 
     /// <summary>

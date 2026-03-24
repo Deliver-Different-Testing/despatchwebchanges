@@ -10,33 +10,33 @@
 import React from 'react';
 import {screen, waitFor, act} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {renderWithTheme} from '../../__testUtils__';
+import {renderWithTheme} from '../../../__testUtils__';
 import {JobListContextMenu} from './JobListContextMenu';
-import type {DispatchJob, AppPage} from '../../interfaces/dispatchJob';
-import {AppPage as AppPageEnum} from '../../interfaces/dispatchJob';
+import type {DispatchJob, AppPage} from '../../../interfaces/dispatchJob';
+import {AppPage as AppPageEnum} from '../../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 
 // ── Mocks ─────────────────────────────────────────────────────────────
 
-jest.mock('../../services/jobListApi');
-jest.mock('../../services/splitJobFlow', () => ({
+jest.mock('../../../services/jobListApi');
+jest.mock('../../../services/splitJobFlow', () => ({
     executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
 }));
-jest.mock('../dialogs/add-event-dialog', () => ({
+jest.mock('../../dialogs/add-event-dialog', () => ({
     openAddEventDialog: jest.fn().mockResolvedValue(true),
 }));
-jest.mock('../dialogs/event-group-dialog', () => ({
+jest.mock('../../dialogs/event-group-dialog', () => ({
     openEventGroupDialog: jest.fn().mockResolvedValue(true),
 }));
-jest.mock('../../../functions/aiSettings', () => ({
+jest.mock('../../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn().mockReturnValue(false),
 }));
 
-import * as api from '../../services/jobListApi';
-import {executeSplitJobFlow} from '../../services/splitJobFlow';
-import {openAddEventDialog} from '../dialogs/add-event-dialog';
-import {openEventGroupDialog} from '../dialogs/event-group-dialog';
-import {isAiEnabled} from '../../../functions/aiSettings';
+import * as api from '../../../services/jobListApi';
+import {executeSplitJobFlow} from '../../../services/splitJobFlow';
+import {openAddEventDialog} from '../../dialogs/add-event-dialog';
+import {openEventGroupDialog} from '../../dialogs/event-group-dialog';
+import {isAiEnabled} from '../../../../functions/aiSettings';
 
 const mockedApi = api as jest.Mocked<typeof api>;
 const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;

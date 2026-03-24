@@ -254,7 +254,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         return s3Files;
     }
 
-    private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/gif", "application/pdf"];
+    private static readonly HashSet<string> AllowedTypes = ["image/jpeg", "image/png", "image/gif", "image/heic", "image/heif", "application/pdf"];
 
     /// <summary>
     /// Uploads a file attachment for a job to S3. Only allows images and PDFs up to 10MB.
@@ -579,18 +579,28 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             
                 // Only load data for images, not for PDFs or other files
                 string data = null;
+                string displayContentType = contentType;
                 if (contentType.StartsWith("image/"))
                 {
                     using var memoryStream = new MemoryStream();
                     await response.ResponseStream.CopyToAsync(memoryStream);
-                    data = Convert.ToBase64String(memoryStream.ToArray());
+                    var imageBytes = memoryStream.ToArray();
+
+                    // Convert browser-incompatible formats (HEIC/HEIF) to JPEG for display
+                    if (contentType is "image/heic" or "image/heif")
+                    {
+                        imageBytes = ImageConversionHelper.ConvertToJpeg(imageBytes);
+                        displayContentType = "image/jpeg";
+                    }
+
+                    data = Convert.ToBase64String(imageBytes);
                 }
 
                 var photoInfo = new S3PhotoInfo
                 {
                     S3Key = s3Object.Key,
                     FileName = fileName,
-                    ContentType = contentType,
+                    ContentType = displayContentType,
                     LastModified = s3Object.LastModified,
                     Size = s3Object.Size,
                     Data = data
@@ -638,6 +648,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             ".jpg" or ".jpeg" => "image/jpeg",
             ".png" => "image/png",
             ".gif" => "image/gif",
+            ".heic" or ".heif" => "image/heic",
             ".pdf" => "application/pdf",
             _ => "application/octet-stream" // Default content type
         };

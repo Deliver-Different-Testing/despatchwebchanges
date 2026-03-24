@@ -307,6 +307,7 @@
     <PackageReference Include="AWSSDK.SecurityToken" />
     <PackageReference Include="AWSSDK.SSO" />
     <PackageReference Include="Dapper" />
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" />
     <PackageReference Include="DeliverDifferentReporting" />
     <PackageReference Include="ExcelDataReader" />
     <PackageReference Include="ExcelDataReader.DataSet" />

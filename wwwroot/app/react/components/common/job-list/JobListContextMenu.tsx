@@ -43,14 +43,14 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 
 import LinearProgress from '@mui/material/LinearProgress';
 
-import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
-import type {ShowToastFn} from '../../services/toastService';
-import * as api from '../../services/jobListApi';
-import {isAiEnabled} from '../../../functions/aiSettings';
-import {openAddEventDialog} from '../dialogs/add-event-dialog';
-import {openEventGroupDialog} from '../dialogs/event-group-dialog';
-import {executeSplitJobFlow} from '../../services/splitJobFlow';
-import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
+import type {AppPage, DispatchJob} from '../../../interfaces/dispatchJob';
+import type {ShowToastFn} from '../../../services/toastService';
+import * as api from '../../../services/jobListApi';
+import {isAiEnabled} from '../../../../functions/aiSettings';
+import {openAddEventDialog} from '../../dialogs/add-event-dialog';
+import {openEventGroupDialog} from '../../dialogs/event-group-dialog';
+import {executeSplitJobFlow} from '../../../services/splitJobFlow';
+import JobInternalStatusEnum from "../../../../enums/job-internal-status.enum";
 
 // Nationwide speed constant
 const NATIONWIDE_SPEED_ID =  415;
