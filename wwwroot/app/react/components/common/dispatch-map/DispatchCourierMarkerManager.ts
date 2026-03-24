@@ -72,7 +72,7 @@ export class DispatchCourierMarkerManager {
                 border-radius: 8px;
                 box-shadow: 0 2px 7px 1px rgba(0,0,0,0.3);
                 padding: 12px;
-                font-family: Roboto, Arial, sans-serif;
+                font-family: Satoshi, Arial, sans-serif;
                 font-size: 13px;
                 min-width: 120px;
             ">
