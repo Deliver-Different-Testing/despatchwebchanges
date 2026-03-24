@@ -409,7 +409,7 @@ describe('DispatchPage', () => {
 
     describe('Widget rendering - no job selected', () => {
         it('shows placeholder for JobDetail, overview mode for CurrentWork, and all widget components', () => {
-            renderDispatchPage();
+            renderDispatchPage({isUsCustomer: true});
 
             // JobDetail shows placeholder
             expect(screen.getByText('Select a job to view details')).toBeInTheDocument();
@@ -721,9 +721,9 @@ describe('DispatchPage', () => {
                 }),
             });
 
-            renderDispatchPage();
+            renderDispatchPage({isUsCustomer: true});
 
-            // Back button present and functional
+            // Back button present and functional (US tenants only)
             const toolbarActions = screen.getByTestId(`toolbar-actions-${DispatchBox.CurrentWork}`);
             const backButton = within(toolbarActions).getByLabelText('Back to All Drivers');
             fireEvent.click(backButton);
@@ -739,6 +739,39 @@ describe('DispatchPage', () => {
                 expect(screen.getByText('C10 John')).toBeInTheDocument();
             });
             expect(mockGetTruckCourierStatus).toHaveBeenCalledWith(10);
+        });
+    });
+
+    describe('CurrentWork toolbar (NZ tenant - no overview)', () => {
+        it('does not show back button for NZ tenants', () => {
+            setupDefaultMocks({
+                currentWork: defaultCurrentWorkReturn({
+                    viewMode: 'selectedDriver',
+                    selectedCourierId: 10,
+                    selectedDriverName: 'John Smith',
+                    driverJobsFetchConfig: {fetchFn: jest.fn(), queryKeyFn: jest.fn(), initialParams: {}},
+                }),
+            });
+
+            renderDispatchPage({isUsCustomer: false});
+
+            const toolbarActions = screen.getByTestId(`toolbar-actions-${DispatchBox.CurrentWork}`);
+            expect(within(toolbarActions).queryByLabelText('Back to All Drivers')).not.toBeInTheDocument();
+        });
+
+        it('shows NZ placeholder when no driver selected', () => {
+            setupDefaultMocks({
+                currentWork: defaultCurrentWorkReturn({
+                    viewMode: 'selectedDriver',
+                    selectedCourierId: undefined,
+                    driverJobsFetchConfig: null,
+                }),
+            });
+
+            renderDispatchPage({isUsCustomer: false});
+
+            expect(screen.getByText('No Driver Selected')).toBeInTheDocument();
+            expect(screen.queryByTestId('current-work-all-drivers')).not.toBeInTheDocument();
         });
     });
 

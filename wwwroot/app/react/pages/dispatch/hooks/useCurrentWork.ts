@@ -41,8 +41,11 @@ export interface UseCurrentWorkReturn {
     refetch: () => void;
 }
 
-export function useCurrentWork(): UseCurrentWorkReturn {
-    const [viewMode, setViewMode] = useState<CurrentWorkViewMode>('overview');
+export function useCurrentWork(isUsCustomer: boolean): UseCurrentWorkReturn {
+    // NZ tenants skip the driver overview and go straight to the job list
+    const [viewMode, setViewMode] = useState<CurrentWorkViewMode>(
+        isUsCustomer ? 'overview' : 'selectedDriver',
+    );
     const [selectedCourierId, setSelectedCourierId] = useState<number | undefined>();
     const [selectedDriverName, setSelectedDriverName] = useState('');
     const [currentWorkSelection, setCurrentWorkSelection] = useState('');
@@ -51,6 +54,8 @@ export function useCurrentWork(): UseCurrentWorkReturn {
         queryKey: ['dispatch', 'driverWorkOverview'],
         queryFn: () => getDriverWorkOverview(),
         refetchInterval: 60000,
+        // Only fetch driver overview for US tenants (NZ skips the overview)
+        enabled: isUsCustomer,
     });
 
     const selectDriver = useCallback((driver: IDriverWorkOverview) => {
@@ -61,11 +66,18 @@ export function useCurrentWork(): UseCurrentWorkReturn {
     }, []);
 
     const backToOverview = useCallback(() => {
+        // NZ tenants have no overview to go back to — just clear the selection
+        if (!isUsCustomer) {
+            setSelectedCourierId(undefined);
+            setSelectedDriverName('');
+            setCurrentWorkSelection('');
+            return;
+        }
         setViewMode('overview');
         setSelectedCourierId(undefined);
         setSelectedDriverName('');
         setCurrentWorkSelection('');
-    }, []);
+    }, [isUsCustomer]);
 
     // Build a FetchConfig for the selected driver's jobs
     const driverJobsFetchConfig = useMemo<FetchConfig | null>(() => {

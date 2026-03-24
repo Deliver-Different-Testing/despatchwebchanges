@@ -96,7 +96,7 @@ export function DispatchPage({
                              }: DispatchPageProps) {
     const layout = useDispatchLayout();
     const jobSelection = useJobSelection(initialJobId);
-    const currentWork = useCurrentWork();
+    const currentWork = useCurrentWork(isUsCustomer);
     const supportTasksVisible = layout.visibleBoxIds.includes(DispatchBox.Supports);
     const supportTasks = useSupportTasks(jobSelection.currentJobId, supportTasksVisible);
     const pageViews = usePageViews();
@@ -420,6 +420,7 @@ export function DispatchPage({
                 return (
                     <CurrentWorkToolbar
                         viewMode={currentWork.viewMode}
+                        isUsCustomer={isUsCustomer}
                         onBackToOverview={currentWork.backToOverview}
                         onTruckLoadingStatus={handleTruckLoadingStatus}
                         onCourierFound={handleCourierFound}

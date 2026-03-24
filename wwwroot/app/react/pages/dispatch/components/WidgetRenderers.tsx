@@ -395,6 +395,7 @@ export const CurrentWorkWidget = memo(function CurrentWorkWidget({
     selectedCourierId, onDriverSelect,
     showToast, isUsCustomer, onJobSelect, onJobDispatch,
 }: CurrentWorkWidgetProps) {
+    // Selected driver mode — show the driver's job list
     if (viewMode === 'selectedDriver' && driverJobsFetchConfig) {
         return (
             <Box sx={styles.widgetContent}>
@@ -411,6 +412,22 @@ export const CurrentWorkWidget = memo(function CurrentWorkWidget({
             </Box>
         );
     }
+
+    // NZ tenants skip the driver overview — show placeholder until a driver
+    // is selected (via job selection or courier code search)
+    if (!isUsCustomer) {
+        return (
+            <Box sx={styles.widgetContent}>
+                <NoData
+                    title="No Driver Selected"
+                    message="Select a job to view the assigned driver's current work."
+                    icon="local_shipping"
+                />
+            </Box>
+        );
+    }
+
+    // US tenants: driver overview grid
     return (
         <Box sx={styles.widgetContent}>
             <CurrentWorkAllDrivers
@@ -427,6 +444,7 @@ export const CurrentWorkWidget = memo(function CurrentWorkWidget({
 
 interface CurrentWorkToolbarProps {
     viewMode: 'overview' | 'selectedDriver';
+    isUsCustomer: boolean;
     onBackToOverview: () => void;
     onTruckLoadingStatus: () => void;
     onCourierFound: (courierId: number, courierName: string) => void;
@@ -434,21 +452,24 @@ interface CurrentWorkToolbarProps {
 }
 
 export const CurrentWorkToolbar = memo(function CurrentWorkToolbar({
-    viewMode, onBackToOverview, onTruckLoadingStatus, onCourierFound, showToast,
+    viewMode, isUsCustomer, onBackToOverview, onTruckLoadingStatus, onCourierFound, showToast,
 }: CurrentWorkToolbarProps) {
     return (
         <>
             {viewMode === 'selectedDriver' && (
                 <>
-                    <Tooltip title="Back to All Drivers" enterDelay={400}>
-                        <IconButton
-                            size="small"
-                            onClick={onBackToOverview}
-                            sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
-                        >
-                            <ArrowBackIcon sx={{fontSize: 18}} />
-                        </IconButton>
-                    </Tooltip>
+                    {/* Back to overview — only for US tenants (NZ has no driver overview) */}
+                    {isUsCustomer && (
+                        <Tooltip title="Back to All Drivers" enterDelay={400}>
+                            <IconButton
+                                size="small"
+                                onClick={onBackToOverview}
+                                sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
+                            >
+                                <ArrowBackIcon sx={{fontSize: 18}} />
+                            </IconButton>
+                        </Tooltip>
+                    )}
                     <Tooltip title="Truck Loading Status" enterDelay={400}>
                         <IconButton
                             size="small"
