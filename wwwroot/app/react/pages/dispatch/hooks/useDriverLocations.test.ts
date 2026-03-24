@@ -95,4 +95,51 @@ describe('useDriverLocations', () => {
 
         expect(result.current.activeAreaId).toBe(42);
     });
+
+    it('passes startDate and endDate to the API call', async () => {
+        const queryClient = createTestQueryClient();
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+        const start = '2026-03-01T00:00:00.000Z';
+        const end = '2026-03-15T23:59:59.000Z';
+
+        renderHook(() => useDriverLocations([1], start, end), {wrapper});
+
+        await waitFor(() => {
+            expect(mockGetDriverLocations).toHaveBeenCalledWith([1], start, end);
+        });
+    });
+
+    it('passes undefined dates when no date params provided', async () => {
+        const queryClient = createTestQueryClient();
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+
+        renderHook(() => useDriverLocations([1]), {wrapper});
+
+        await waitFor(() => {
+            expect(mockGetDriverLocations).toHaveBeenCalledWith([1], undefined, undefined);
+        });
+    });
+
+    it('includes dates in the query key so date changes trigger refetch', async () => {
+        const queryClient = createTestQueryClient();
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+
+        const {rerender} = renderHook(
+            ({viewIds, start, end}: { viewIds: number[]; start?: string; end?: string }) =>
+                useDriverLocations(viewIds, start, end),
+            {wrapper, initialProps: {viewIds: [1], start: '2026-03-01T00:00:00Z', end: '2026-03-15T00:00:00Z'}},
+        );
+
+        await waitFor(() => {
+            expect(mockGetDriverLocations).toHaveBeenCalledTimes(1);
+        });
+
+        mockGetDriverLocations.mockClear();
+
+        rerender({viewIds: [1], start: '2026-04-01T00:00:00Z', end: '2026-04-15T00:00:00Z'});
+
+        await waitFor(() => {
+            expect(mockGetDriverLocations).toHaveBeenCalledWith([1], '2026-04-01T00:00:00Z', '2026-04-15T00:00:00Z');
+        });
+    });
 });

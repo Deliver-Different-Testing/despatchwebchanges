@@ -6,6 +6,7 @@ import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {DispatchPage} from './DispatchPage';
 import {DispatchBox} from './DispatchPage.interfaces';
 import {createTestQueryClient} from '../../__testUtils__';
+import dayjs from 'dayjs';
 import type {DispatchJob} from '../../interfaces/dispatchJob';
 import type {TruckMode} from '../../components/common/driver-locations/DriverLocations.types';
 
@@ -97,12 +98,21 @@ jest.mock('./components/DashboardGrid', () => ({
     ),
 }));
 
+// Track props passed to JobListPanel so filter integration tests can inspect fetchConfig
+let lastJobListPanelProps: any = null;
 jest.mock('../../components/common/job-list/JobListPanel', () => ({
-    JobListPanel: (props: any) => (
-        <div data-testid="job-list-panel" data-storage-prefix={props.storagePrefix ?? ''}>
-            JobListPanel
-        </div>
-    ),
+    JobListPanel: (props: any) => {
+        lastJobListPanelProps = props;
+        return (
+            <div
+                data-testid="job-list-panel"
+                data-storage-prefix={props.storagePrefix ?? ''}
+                data-default-category={props.defaultCategory ?? ''}
+            >
+                JobListPanel
+            </div>
+        );
+    },
 }));
 
 jest.mock('../../components/common/job-details/JobDetails', () => ({
@@ -192,10 +202,13 @@ jest.mock('../../services/angularDialogBridge', () => ({
 }));
 
 import {getPotentialCouriers, getExactCourierMatch, getTruckCourierStatus} from '../../services/dispatchApi';
+import {fetchDispatchJobs, fetchClearListJobs} from '../../services/jobSearchApi';
 
 const mockGetPotentialCouriers = getPotentialCouriers as jest.MockedFunction<typeof getPotentialCouriers>;
 const mockGetExactCourierMatch = getExactCourierMatch as jest.MockedFunction<typeof getExactCourierMatch>;
 const mockGetTruckCourierStatus = getTruckCourierStatus as jest.MockedFunction<typeof getTruckCourierStatus>;
+const mockFetchDispatchJobs = fetchDispatchJobs as jest.MockedFunction<typeof fetchDispatchJobs>;
+const mockFetchClearListJobs = fetchClearListJobs as jest.MockedFunction<typeof fetchClearListJobs>;
 
 // ── Test helpers ────────────────────────────────────────────────────────
 
@@ -364,6 +377,7 @@ function renderDispatchPage(propsOverrides: Partial<typeof defaultProps> = {}) {
 describe('DispatchPage', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        lastJobListPanelProps = null;
         setupDefaultMocks();
     });
 
@@ -769,6 +783,198 @@ describe('DispatchPage', () => {
             expect(screen.getByTestId(`subtitle-${DispatchBox.CurrentWork}`)).toHaveTextContent('- John Smith');
             expect(screen.getByTestId(`subtitle-${DispatchBox.JobsList}`)).toHaveTextContent('');
             expect(screen.getByTestId(`subtitle-${DispatchBox.Map}`)).toHaveTextContent('');
+        });
+    });
+
+    describe('Filter integration: fetchConfig construction', () => {
+        it('passes view IDs and date filter data into fetchConfig.fetchFn for dispatch jobs', () => {
+            const startDate = dayjs('2026-03-01');
+            const endDate = dayjs('2026-03-15');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1, 2],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate, endDate, useTime: false},
+                    onRefreshData: jest.fn(),
+                },
+            });
+
+            renderDispatchPage();
+
+            // The fetchConfig should have been passed to JobListPanel
+            expect(lastJobListPanelProps).not.toBeNull();
+            expect(lastJobListPanelProps.fetchConfig).toBeDefined();
+
+            // Invoke the fetchFn to verify it calls fetchDispatchJobs with correct filter params
+            const params = {page: 0, pageSize: 50};
+            lastJobListPanelProps.fetchConfig.fetchFn(params, {});
+
+            expect(mockFetchDispatchJobs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    despatchViewIds: [1, 2],
+                    startDate,
+                    endDate,
+                    useTime: false,
+                    page: 0,
+                    pageSize: 50,
+                }),
+                {},
+            );
+            expect(mockFetchClearListJobs).not.toHaveBeenCalled();
+        });
+
+        it('passes useTime: true when date filter has useTime set', () => {
+            const startDate = dayjs(0);
+            const endDate = dayjs().add(3, 'hours');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [5],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate, endDate, useTime: true},
+                    onRefreshData: jest.fn(),
+                },
+            });
+
+            renderDispatchPage();
+            lastJobListPanelProps.fetchConfig.fetchFn({}, {});
+
+            expect(mockFetchDispatchJobs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    despatchViewIds: [5],
+                    startDate,
+                    endDate,
+                    useTime: true,
+                }),
+                {},
+            );
+        });
+
+        it('sends undefined dates when dateFilterData is null', () => {
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: defaultDateFilterReturn(), // dateFilterData: null
+            });
+
+            renderDispatchPage();
+            lastJobListPanelProps.fetchConfig.fetchFn({}, {});
+
+            expect(mockFetchDispatchJobs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    despatchViewIds: [1],
+                    startDate: undefined,
+                    endDate: undefined,
+                    useTime: undefined,
+                }),
+                {},
+            );
+        });
+
+        it('switches to fetchClearListJobs when activeAreaId is set', () => {
+            const startDate = dayjs('2026-03-01');
+            const endDate = dayjs('2026-03-15');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [3],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate, endDate, useTime: false},
+                    onRefreshData: jest.fn(),
+                },
+                driverLocations: defaultDriverLocationsReturn({activeAreaId: 7}),
+            });
+
+            renderDispatchPage();
+
+            lastJobListPanelProps.fetchConfig.fetchFn({page: 0}, {});
+
+            expect(mockFetchClearListJobs).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    despatchViewIds: [3],
+                    startDate,
+                    endDate,
+                    useTime: false,
+                    selectedClearListId: 7,
+                    statusFilter: 'needs-dispatch',
+                }),
+                {},
+            );
+            expect(mockFetchDispatchJobs).not.toHaveBeenCalled();
+        });
+
+        it('sets defaultCategory to needs-dispatch when activeAreaId is set', () => {
+            setupDefaultMocks({
+                driverLocations: defaultDriverLocationsReturn({activeAreaId: 7}),
+            });
+
+            renderDispatchPage();
+
+            const panel = screen.getByTestId('job-list-panel');
+            expect(panel).toHaveAttribute('data-default-category', 'needs-dispatch');
+        });
+
+        it('does not set defaultCategory when no activeAreaId', () => {
+            setupDefaultMocks();
+            renderDispatchPage();
+
+            const panel = screen.getByTestId('job-list-panel');
+            expect(panel).toHaveAttribute('data-default-category', '');
+        });
+    });
+
+    describe('Filter integration: driver locations receive date params', () => {
+        it('passes date filter ISO strings to useDriverLocations', () => {
+            const startDate = dayjs('2026-03-01T00:00:00Z');
+            const endDate = dayjs('2026-03-15T23:59:59Z');
+
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1, 2],
+                },
+                dateFilter: {
+                    dateFilterData: {startDate, endDate, useTime: false},
+                    onRefreshData: jest.fn(),
+                },
+            });
+
+            renderDispatchPage();
+
+            expect(mockDriverLocations).toHaveBeenCalledWith(
+                [1, 2],
+                startDate.toISOString(),
+                endDate.toISOString(),
+                expect.anything(), // refetchInterval
+            );
+        });
+
+        it('passes undefined dates to useDriverLocations when dateFilterData is null', () => {
+            setupDefaultMocks({
+                pageViews: {
+                    ...defaultPageViewsReturn(),
+                    selectedViewIds: [1],
+                },
+                dateFilter: defaultDateFilterReturn(),
+            });
+
+            renderDispatchPage();
+
+            expect(mockDriverLocations).toHaveBeenCalledWith(
+                [1],
+                undefined,
+                undefined,
+                expect.anything(),
+            );
         });
     });
 });

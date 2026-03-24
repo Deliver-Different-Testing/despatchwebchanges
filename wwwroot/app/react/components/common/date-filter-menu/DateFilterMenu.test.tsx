@@ -40,118 +40,55 @@ describe('DateFilterMenu', () => {
     };
 
     beforeEach(() => {
-        // Clear localStorage before each test
         localStorage.clear();
     });
 
     describe('Rendering', () => {
-        it('should render calendar icon button', () => {
+        it('should render calendar icon button that opens menu with all options and action buttons', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             expect(screen.getByRole('button')).toBeInTheDocument();
-        });
-
-        it('should open menu when button is clicked', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             fireEvent.click(screen.getByRole('button'));
 
             expect(await screen.findByText('Date Filter')).toBeInTheDocument();
-        });
-
-        it('should render All Time option', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
-            fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByLabelText('All Time')).toBeInTheDocument();
-        });
-
-        it('should render Time Range option', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
-            fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByLabelText('Time Range')).toBeInTheDocument();
-        });
-
-        it('should render Custom Dates option', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
-            fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByLabelText('Custom Dates')).toBeInTheDocument();
-        });
-
-        it('should render Today option', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
-            fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByLabelText('Today')).toBeInTheDocument();
-        });
-
-        it('should render Reset button', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
-            fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByText('Reset')).toBeInTheDocument();
-        });
-
-        it('should render Apply button', async () => {
-            renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
-            fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByText('Apply')).toBeInTheDocument();
+            expect(screen.getByLabelText('All Time')).toBeInTheDocument();
+            expect(screen.getByLabelText('Time Range')).toBeInTheDocument();
+            expect(screen.getByLabelText('Custom Dates')).toBeInTheDocument();
+            expect(screen.getByLabelText('Today')).toBeInTheDocument();
+            expect(screen.getByText('Reset')).toBeInTheDocument();
+            expect(screen.getByText('Apply')).toBeInTheDocument();
         });
     });
 
     describe('Date Range Options', () => {
         it('should select All Time by default', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                const allTimeRadio = screen.getByLabelText('All Time');
-                expect(allTimeRadio).toBeChecked();
-            });
+            const allTimeRadio = await screen.findByLabelText('All Time');
+            expect(allTimeRadio).toBeChecked();
         });
 
         it('should show date pickers when Custom Dates is selected', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
             fireEvent.click(screen.getByRole('button'));
 
-            expect(await screen.findByText('Custom Dates')).toBeInTheDocument();
-
-            // Get the label element and click on it to select the radio
-            const customDatesLabel = screen.getByText('Custom Dates').closest('label');
-            if (customDatesLabel) {
-                fireEvent.click(customDatesLabel);
-            }
+            const customDatesLabel = await screen.findByText('Custom Dates');
+            fireEvent.click(customDatesLabel.closest('label')!);
 
             await waitFor(() => {
                 // MUI DatePicker renders multiple elements with the label, use getAllByLabelText
-                const startDateElements = screen.getAllByLabelText(/start date/i);
-                const endDateElements = screen.getAllByLabelText(/end date/i);
-                expect(startDateElements.length).toBeGreaterThan(0);
-                expect(endDateElements.length).toBeGreaterThan(0);
+                expect(screen.getAllByLabelText(/start date/i).length).toBeGreaterThan(0);
+                expect(screen.getAllByLabelText(/end date/i).length).toBeGreaterThan(0);
             });
         });
 
         it('should show duration dropdown when Time Range is selected', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
-
             fireEvent.click(screen.getByRole('button'));
 
-            expect(await screen.findByText('Time Range')).toBeInTheDocument();
+            fireEvent.click(await screen.findByText('Time Range'));
 
-            // Click on the label text to select the radio (MUI handles this correctly)
-            fireEvent.click(screen.getByText('Time Range'));
-
-            // Duration dropdown should appear - look for the select element
             expect(await screen.findByRole('combobox')).toBeInTheDocument();
         });
     });
@@ -164,10 +101,7 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
-
-            await waitFor(() => {
-                fireEvent.click(screen.getByText('Apply'));
-            });
+            fireEvent.click(await screen.findByText('Apply'));
 
             expect(onRefreshData).toHaveBeenCalled();
         });
@@ -179,10 +113,7 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
-
-            await waitFor(() => {
-                fireEvent.click(screen.getByText('Reset'));
-            });
+            fireEvent.click(await screen.findByText('Reset'));
 
             expect(onRefreshData).toHaveBeenCalled();
         });
@@ -194,10 +125,7 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
-
-            await waitFor(() => {
-                fireEvent.click(screen.getByText('Apply'));
-            });
+            fireEvent.click(await screen.findByText('Apply'));
 
             expect(onShowToast).toHaveBeenCalledWith(
                 'Showing all up until the end of today',
@@ -212,14 +140,8 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
-
-            expect(await screen.findByText('Today')).toBeInTheDocument();
-
-            fireEvent.click(screen.getByText('Today'));
-
-            await waitFor(() => {
-                fireEvent.click(screen.getByText('Apply'));
-            });
+            fireEvent.click(await screen.findByText('Today'));
+            fireEvent.click(screen.getByText('Apply'));
 
             expect(onShowToast).toHaveBeenCalledWith(
                 expect.stringContaining('Showing today'),
@@ -231,7 +153,6 @@ describe('DateFilterMenu', () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             fireEvent.click(screen.getByRole('button'));
-
             expect(await screen.findByText('Date Filter')).toBeInTheDocument();
 
             fireEvent.click(screen.getByText('Apply'));
@@ -252,23 +173,14 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
-
-            await waitFor(() => {
-                // Should show some timezone indication
-                const menu = screen.getByRole('menu');
-                expect(menu).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('menu')).toBeInTheDocument();
         });
 
         it('should use default timezone when not provided', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             fireEvent.click(screen.getByRole('button'));
-
-            await waitFor(() => {
-                const menu = screen.getByRole('menu');
-                expect(menu).toBeInTheDocument();
-            });
+            expect(await screen.findByRole('menu')).toBeInTheDocument();
         });
     });
 
@@ -279,16 +191,9 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
+            fireEvent.click(await screen.findByText('Custom Dates'));
 
-            expect(await screen.findByText('Custom Dates')).toBeInTheDocument();
-
-            // Click on the label text to select the radio (MUI handles this correctly)
-            fireEvent.click(screen.getByText('Custom Dates'));
-
-            // Allow for async state update
-            await waitFor(() => {
-                expect(localStorage.getItem('dateRangeOption-testPage')).toBe('custom_date');
-            });
+            expect(localStorage.getItem('dateRangeOption-testPage')).toBe('custom_date');
         });
 
         it('should restore saved option from localStorage', async () => {
@@ -300,10 +205,8 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                const timeRangeRadio = screen.getByLabelText('Time Range');
-                expect(timeRangeRadio).toBeChecked();
-            });
+            const timeRangeRadio = await screen.findByLabelText('Time Range');
+            expect(timeRangeRadio).toBeChecked();
         });
 
         it('should restore today option from localStorage', async () => {
@@ -315,10 +218,8 @@ describe('DateFilterMenu', () => {
 
             fireEvent.click(screen.getByRole('button'));
 
-            await waitFor(() => {
-                const todayRadio = screen.getByLabelText('Today');
-                expect(todayRadio).toBeChecked();
-            });
+            const todayRadio = await screen.findByLabelText('Today');
+            expect(todayRadio).toBeChecked();
         });
     });
 
@@ -328,6 +229,115 @@ describe('DateFilterMenu', () => {
                 <DateFilterMenu {...defaultProps} dateFilterData={null} />
             );
             expect(screen.getByRole('button')).toBeInTheDocument();
+        });
+    });
+
+    describe('Mount-time initialization', () => {
+        it('should call onRefreshData on mount with all_time dates when no saved option', () => {
+            const onRefreshData = jest.fn();
+            renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={null}
+                    onRefreshData={onRefreshData}
+                    appPage="initTest"
+                />
+            );
+
+            expect(onRefreshData).toHaveBeenCalledTimes(1);
+
+            const call = onRefreshData.mock.calls[0][0] as DateFilterData;
+            expect(call.startDate.valueOf()).toBe(dayjs(0).valueOf());
+            expect(call.endDate.isAfter(dayjs())).toBe(true);
+            expect(call.useTime).toBeFalsy();
+        });
+
+        it('should call onRefreshData on mount with today dates when saved option is today', () => {
+            localStorage.setItem('dateRangeOption-initToday', 'today');
+            const onRefreshData = jest.fn();
+
+            renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={null}
+                    onRefreshData={onRefreshData}
+                    appPage="initToday"
+                />
+            );
+
+            expect(onRefreshData).toHaveBeenCalledTimes(1);
+
+            const call = onRefreshData.mock.calls[0][0] as DateFilterData;
+            const now = dayjs().tz('Pacific/Auckland');
+            expect(call.startDate.isSame(now.startOf('day'), 'minute')).toBe(true);
+            expect(call.endDate.isSame(now.endOf('day'), 'minute')).toBe(true);
+            expect(call.useTime).toBeFalsy();
+        });
+
+        it('should call onRefreshData on mount with useTime when saved option is custom_minutes', () => {
+            localStorage.setItem('dateRangeOption-initMins', 'custom_minutes');
+            const onRefreshData = jest.fn();
+
+            renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={null}
+                    onRefreshData={onRefreshData}
+                    appPage="initMins"
+                />
+            );
+
+            expect(onRefreshData).toHaveBeenCalledTimes(1);
+
+            const call = onRefreshData.mock.calls[0][0] as DateFilterData;
+            expect(call.startDate.valueOf()).toBe(dayjs(0).valueOf());
+            expect(call.endDate.isAfter(dayjs())).toBe(true);
+            expect(call.useTime).toBe(true);
+        });
+
+        it('should call onRefreshData on mount with default dates when saved option is custom_date', () => {
+            localStorage.setItem('dateRangeOption-initCustom', 'custom_date');
+            const onRefreshData = jest.fn();
+
+            renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={null}
+                    onRefreshData={onRefreshData}
+                    appPage="initCustom"
+                />
+            );
+
+            expect(onRefreshData).toHaveBeenCalledTimes(1);
+
+            const call = onRefreshData.mock.calls[0][0] as DateFilterData;
+            expect(call.startDate).toBeDefined();
+            expect(call.endDate).toBeDefined();
+            expect(call.useTime).toBeFalsy();
+        });
+
+        it('should only call onRefreshData once on mount (not on re-renders)', () => {
+            const onRefreshData = jest.fn();
+            const {rerender} = renderWithProviders(
+                <DateFilterMenu
+                    dateFilterData={null}
+                    onRefreshData={onRefreshData}
+                    appPage="initOnce"
+                />
+            );
+
+            expect(onRefreshData).toHaveBeenCalledTimes(1);
+
+            // Re-render with updated dateFilterData (simulating the parent receiving the init data)
+            rerender(
+                <ThemeProvider theme={theme}>
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DateFilterMenu
+                            dateFilterData={onRefreshData.mock.calls[0][0]}
+                            onRefreshData={onRefreshData}
+                            appPage="initOnce"
+                        />
+                    </LocalizationProvider>
+                </ThemeProvider>
+            );
+
+            expect(onRefreshData).toHaveBeenCalledTimes(1);
         });
     });
 });

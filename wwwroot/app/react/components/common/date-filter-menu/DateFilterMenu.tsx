@@ -142,17 +142,56 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     const minsUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const prevDateFilterRef = useRef<DateFilterData | null>(null);
 
-    // Load saved option from localStorage
+    // Load saved option from localStorage and emit initial date filter data
+    const initializedRef = useRef(false);
     useEffect(() => {
+        if (initializedRef.current) return;
+        initializedRef.current = true;
+
+        let option: DateRangeOption = 'all_time';
         try {
             const saved = localStorage.getItem(storageKey);
             if (saved && ['all_time', 'today', 'custom_minutes', 'custom_date'].includes(saved)) {
-                setSelectedRangeOption(saved as DateRangeOption);
+                option = saved as DateRangeOption;
+                setSelectedRangeOption(option);
             }
         } catch {
             // Ignore localStorage errors
         }
-    }, [storageKey]);
+
+        // Compute and emit initial dates so the job list fetches with the correct range
+        const defaults = setDateFilterDefaults(ianaTimeZone);
+        let initStart: Dayjs;
+        let initEnd: Dayjs;
+        let useTime = false;
+
+        switch (option) {
+            case 'today':
+                initStart = dayjs().tz(ianaTimeZone).startOf('day');
+                initEnd = dayjs().tz(ianaTimeZone).endOf('day');
+                break;
+            case 'custom_minutes':
+                initStart = defaults.startDate;
+                initEnd = dayjs().tz(ianaTimeZone).add(selectedMinsOption, 'seconds');
+                useTime = true;
+                startMinsUpdate(selectedMinsOption);
+                break;
+            case 'custom_date':
+                // For custom dates, use whatever is already in state (defaults)
+                initStart = startDate;
+                initEnd = endDate;
+                break;
+            case 'all_time':
+            default:
+                initStart = defaults.startDate;
+                initEnd = defaults.endDate;
+                break;
+        }
+
+        setStartDate(initStart);
+        setEndDate(initEnd);
+        onRefreshData({startDate: initStart, endDate: initEnd, useTime});
+    }, [storageKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Update local state when dateFilterData changes (compare actual values, not object reference)
     useEffect(() => {
