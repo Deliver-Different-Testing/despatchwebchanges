@@ -9,6 +9,7 @@ namespace DespatchWeb.Tests.Services;
 public class AiAssistantServiceTests
 {
     private readonly Mock<IAiClientService> _aiClientMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
     private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
     private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
     private readonly Mock<INoteRepository> _noteRepositoryMock = new();
@@ -21,7 +22,6 @@ public class AiAssistantServiceTests
 
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     public AiAssistantServiceTests()
     {
@@ -289,7 +289,7 @@ public class AiAssistantServiceTests
                 };
             });
 
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999))!
+        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999))
             .ReturnsAsync((JobViewModel?)null);
 
         var service = CreateService();
@@ -394,5 +394,4 @@ public class AiAssistantServiceTests
         // Assert
         Assert.Contains("US", capturedSystemPrompt);
     }
-
 }
