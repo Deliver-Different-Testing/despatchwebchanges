@@ -40,6 +40,7 @@ import CallSplitIcon from '@mui/icons-material/CallSplit';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import RedoIcon from '@mui/icons-material/Redo';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import RestoreIcon from '@mui/icons-material/Restore';
 
 import LinearProgress from '@mui/material/LinearProgress';
 
@@ -70,6 +71,10 @@ interface JobListContextMenuProps {
     onRefresh?: () => void;
     onAddStop?: (job: DispatchJob) => void;
     isUsCustomer?: boolean;
+    selectedJobs?: DispatchJob[];
+    onBulkRestore?: () => void;
+    onBulkMarkRead?: () => void;
+    onBulkMarkUnread?: () => void;
 }
 
 // Static cache for event groups
@@ -84,6 +89,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     showToast,
     onRefresh,
     onAddStop,
+    selectedJobs = [],
+    onBulkRestore,
+    onBulkMarkRead,
+    onBulkMarkUnread,
 }) => {
     const [lateDialogOpen, setLateDialogOpen] = useState(false);
     const [lateType, setLateType] = useState<'pickup' | 'delivery'>('pickup');
@@ -426,6 +435,33 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     },
                 }}
             >
+                {/* Bulk mode — show limited actions for multiple selected jobs */}
+                {selectedJobs.length > 1 ? [
+                    <MenuItem key="bulk-header" disabled>
+                        <ListItemText>
+                            <Typography variant="body2" sx={{fontWeight: 700}}>
+                                {selectedJobs.length} jobs selected
+                            </Typography>
+                        </ListItemText>
+                    </MenuItem>,
+                    <Divider key="bulk-divider-1"/>,
+                    <MenuItem key="bulk-mark-read" onClick={() => { closeAll(); onBulkMarkRead?.(); }}>
+                        <ListItemIcon><MarkEmailReadIcon fontSize="small"/></ListItemIcon>
+                        <ListItemText>Mark as Read</ListItemText>
+                    </MenuItem>,
+                    <MenuItem key="bulk-mark-unread" onClick={() => { closeAll(); onBulkMarkUnread?.(); }}>
+                        <ListItemIcon><MarkEmailUnreadIcon fontSize="small"/></ListItemIcon>
+                        <ListItemText>Mark as Unread</ListItemText>
+                    </MenuItem>,
+                    <Divider key="bulk-divider-2"/>,
+                    <MenuItem key="bulk-restore" onClick={() => { closeAll(); onBulkRestore?.(); }}>
+                        <ListItemIcon><RestoreIcon fontSize="small"/></ListItemIcon>
+                        <ListItemText>Restore</ListItemText>
+                    </MenuItem>,
+                ] : null}
+
+                {/* Single-job mode */}
+                {selectedJobs.length <= 1 && <>
                 {/* Mark Read / Unread */}
                 <MenuItem onClick={handleMarkReadUnread}>
                     <ListItemIcon>
@@ -565,6 +601,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     <ListItemIcon><HelpOutlineIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Mark Missing</ListItemText>
                 </MenuItem>
+                </>}
             </Menu>
 
             {/* Task Groups Submenu */}

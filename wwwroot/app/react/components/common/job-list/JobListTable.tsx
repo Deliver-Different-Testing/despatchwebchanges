@@ -27,6 +27,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
+import Checkbox from '@mui/material/Checkbox';
 import type {SxProps, Theme} from '@mui/material';
 
 // MUI Icons
@@ -287,6 +288,7 @@ function getRowSx(
     isSelected: boolean,
     isRelated: boolean,
     densityMode: DensityMode,
+    isMultiSelected: boolean,
 ): Record<string, any> {
     const basePy = densityMode === 'ultra-dense' ? 0 : densityMode === 'dense' ? 0.25 : 0.75;
 
@@ -317,7 +319,7 @@ function getRowSx(
     const isProactiveLate = isProactivelyLateForPickup(job) || isProactivelyLateForDelivery(job);
     const isChildJob = !job.isParentOrSingle && !!job.parentId;
     const isMultiPart = isMultiPartJob(job);
-    const isMultiSelected = !!job.selected;
+    // isMultiSelected is now passed as a parameter
 
     // Apply highlight in priority order (highest wins for bg/border)
     if (isSelected) {
@@ -480,9 +482,14 @@ interface JobListTableProps {
     jobs: DispatchJob[];
     selectedJobId: number | null;
     relatedJobIds: Set<number>;
+    multiSelectedIds: Set<number>;
     onJobClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
+    onToggleSelect: (jobId: number, event: React.MouseEvent) => void;
+    onToggleSelectAll: (allIds: number[]) => void;
+    isAllSelected: boolean;
+    isIndeterminate: boolean;
     sortState: JobListSort;
     onSortChange: (column: string) => void;
     densityMode: DensityMode;
@@ -498,9 +505,14 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     jobs,
     selectedJobId,
     relatedJobIds,
+    multiSelectedIds,
     onJobClick,
     onContextMenu,
     onJobDispatch,
+    onToggleSelect,
+    onToggleSelectAll,
+    isAllSelected,
+    isIndeterminate,
     sortState,
     onSortChange,
     densityMode,
@@ -533,6 +545,12 @@ export const JobListTable: React.FC<JobListTableProps> = ({
 
     const lastColumnKey = useMemo(() => columns[columns.length - 1]?.key, [columns]);
 
+    const allJobIds = useMemo(() => jobs.map(j => j.id), [jobs]);
+
+    const handleSelectAllClick = useCallback(() => {
+        onToggleSelectAll(allJobIds);
+    }, [onToggleSelectAll, allJobIds]);
+
     if (jobs.length === 0) {
         return (
             <Box sx={{
@@ -557,6 +575,23 @@ export const JobListTable: React.FC<JobListTableProps> = ({
             <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
                 <TableHead>
                     <TableRow>
+                        <TableCell
+                            padding="checkbox"
+                            sx={{
+                                ...headerCellSx,
+                                width: 40,
+                                minWidth: 40,
+                                maxWidth: 40,
+                            }}
+                        >
+                            <Checkbox
+                                size="small"
+                                checked={isAllSelected}
+                                indeterminate={isIndeterminate}
+                                onChange={handleSelectAllClick}
+                                sx={{p: 0}}
+                            />
+                        </TableCell>
                         {columns.map((col) => (
                             <TableCell
                                 key={col.key}
@@ -614,6 +649,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                             job={job}
                             isSelected={selectedJobId === job.id}
                             isRelated={relatedJobIds.has(job.id)}
+                            isMultiSelected={multiSelectedIds.has(job.id)}
                             columns={columns}
                             densityMode={densityMode}
                             isUsCustomer={isUsCustomer}
@@ -622,6 +658,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                             onClick={onJobClick}
                             onContextMenu={onContextMenu}
                             onJobDispatch={onJobDispatch}
+                            onToggleSelect={onToggleSelect}
                             loggedInCouriersOnly={loggedInCouriersOnly}
                         />
                     ))}
@@ -637,6 +674,7 @@ interface JobRowProps {
     job: DispatchJob;
     isSelected: boolean;
     isRelated: boolean;
+    isMultiSelected: boolean;
     columns: ColumnDef[];
     densityMode: DensityMode;
     isUsCustomer?: boolean;
@@ -645,6 +683,7 @@ interface JobRowProps {
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
+    onToggleSelect: (jobId: number, event: React.MouseEvent) => void;
     loggedInCouriersOnly?: boolean;
 }
 
@@ -652,6 +691,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     job,
     isSelected,
     isRelated,
+    isMultiSelected,
     columns,
     densityMode,
     isUsCustomer,
@@ -660,6 +700,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     onClick,
     onContextMenu,
     onJobDispatch,
+    onToggleSelect,
     loggedInCouriersOnly,
 }) => {
     const handleClick = useCallback(
@@ -674,6 +715,13 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
         },
         [job, onContextMenu],
     );
+    const handleCheckboxClick = useCallback(
+        (e: React.MouseEvent) => {
+            e.stopPropagation();
+            onToggleSelect(job.id, e);
+        },
+        [job.id, onToggleSelect],
+    );
 
     const isUltraDense = densityMode === 'ultra-dense';
 
@@ -683,8 +731,19 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
-            sx={getRowSx(job, isSelected, isRelated, densityMode)}
+            sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected)}
         >
+            <TableCell
+                padding="checkbox"
+                sx={{width: 40, minWidth: 40, maxWidth: 40}}
+                onClick={handleCheckboxClick}
+            >
+                <Checkbox
+                    size="small"
+                    checked={isMultiSelected}
+                    sx={{p: 0}}
+                />
+            </TableCell>
             {columns.map((col) => (
                 <TableCell
                     key={col.key}
