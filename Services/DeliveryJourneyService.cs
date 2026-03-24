@@ -543,7 +543,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds a detailed description from a list of live status updates.
     /// </summary>
-    private static string GetDescription(List<JobDeliveryJourneyDto> updates)
+    internal static string GetDescription(List<JobDeliveryJourneyDto> updates)
     {
         var descriptions = new List<string>();
 
@@ -587,7 +587,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Builds a detailed description from a list of archived status updates.
     /// </summary>
-    private static string GetDescription(List<JobDeliveryJourneyArchiveDto> updates)
+    internal static string GetDescription(List<JobDeliveryJourneyArchiveDto> updates)
     {
         var descriptions = new List<string>();
 
@@ -646,7 +646,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Gets a specific Material Design icon based on field name.
     /// </summary>
-    private static string GetIconForFieldName(string fieldName)
+    internal static string GetIconForFieldName(string fieldName)
     {
         if (string.IsNullOrEmpty(fieldName)) return "edit_note";
 
@@ -698,7 +698,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Converts a database field name to a human-readable display name.
     /// </summary>
-    private static string FormatFieldName(string fieldName)
+    internal static string FormatFieldName(string fieldName)
     {
         if (string.IsNullOrEmpty(fieldName)) return fieldName;
 
@@ -796,7 +796,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Converts a camelCase or PascalCase field name to title case with spaces.
     /// </summary>
-    private static string ConvertToTitleCase(string fieldName)
+    internal static string ConvertToTitleCase(string fieldName)
     {
         var cleanName = fieldName;
         if (cleanName.StartsWith("ucjb", StringComparison.OrdinalIgnoreCase))
@@ -809,7 +809,7 @@ public sealed partial class DeliveryJourneyService(
     /// <summary>
     /// Formats a field value for display, applying appropriate formatting based on field type (currency, boolean, etc.).
     /// </summary>
-    private static string FormatFieldValue(string fieldName, string value)
+    internal static string FormatFieldValue(string fieldName, string value)
     {
         if (string.IsNullOrEmpty(value)) return value;
 

@@ -1396,7 +1396,7 @@ public class JobController(
         return Ok();
     }
 
-    private static bool ShouldRecalculateRate(JobProperty property) =>
+    internal static bool ShouldRecalculateRate(JobProperty property) =>
         // Properties that affect job rating
         property switch
         {

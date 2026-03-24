@@ -4056,7 +4056,7 @@ public partial class JobRepository(
             .Select(j => j.UcjbId)
             .ToListAsync();
 
-    private static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
+    internal static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
     {
         var totalTime = row.Booked != null && row.Delivered != null
             ? (int?)Math.Round((row.Delivered.Value.TimeOfDay - row.Booked.Value.TimeOfDay).TotalMinutes)
@@ -4131,7 +4131,7 @@ public partial class JobRepository(
         return string.Join(", ", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
     }
 
-    private static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
+    internal static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
         IQueryable<TucJob> query,
         string sortColumn,
         bool descending) =>
@@ -4163,7 +4163,7 @@ public partial class JobRepository(
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
 
-    private static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
+    internal static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
         IQueryable<TucJobArchive> query,
         string sortColumn,
         bool descending) =>
@@ -4195,7 +4195,7 @@ public partial class JobRepository(
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
 
-    private static IEnumerable<DispatchJobViewModel> ApplyDispatchJobSorting(
+    internal static IEnumerable<DispatchJobViewModel> ApplyDispatchJobSorting(
         IEnumerable<DispatchJobViewModel> jobs,
         string sortColumn,
         bool descending)
@@ -4788,7 +4788,7 @@ public partial class JobRepository(
             _ => null
         };
 
-    private static string GetCourierDescription(int scanType,
+    internal static string GetCourierDescription(int scanType,
         TucCourier courier,
         TucCourier transferTo,
         TucCourier runViewerTransferTo,
