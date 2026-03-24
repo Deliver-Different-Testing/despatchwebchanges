@@ -8,7 +8,6 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class CsvFormattingTests
 {
-
     [Theory]
     [InlineData("Simple text", "Simple text")]
     [InlineData("Text, with comma", "\"Text, with comma\"")]
@@ -191,9 +190,9 @@ public class CsvFormattingTests
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
         }
+
         return value;
     }
-
 }
 
 /// <summary>

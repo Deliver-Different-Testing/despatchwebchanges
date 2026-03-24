@@ -5,7 +5,7 @@
  * Follows the app's standard toolbar pattern (44px minHeight, divider border).
  */
 
-import React, {useCallback, useRef, useEffect} from 'react';
+import React, {useCallback, useRef, useEffect, useState} from 'react';
 import Box from '@mui/material/Box';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -15,14 +15,30 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Tooltip from '@mui/material/Tooltip';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import Popover from '@mui/material/Popover';
+import Autocomplete from '@mui/material/Autocomplete';
+import CircularProgress from '@mui/material/CircularProgress';
 import SearchIcon from '@mui/icons-material/Search';
 import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import CloseIcon from '@mui/icons-material/Close';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import RestoreIcon from '@mui/icons-material/Restore';
+import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
+import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import type {SxProps, Theme} from '@mui/material';
 import type {JobCategory, DensityMode} from '../../../interfaces/dispatchJob';
 import {AppPage} from '../../../interfaces/dispatchJob';
+import {searchActiveCouriersExtended} from '../../../services/courierApi';
+
+interface CourierOption {
+    id: number;
+    text: string;
+}
 
 interface JobListToolbarProps {
     selectedCategory: JobCategory;
@@ -35,6 +51,12 @@ interface JobListToolbarProps {
     onDensityModeChange: (mode: DensityMode) => void;
     onResetColumns: () => void;
     appPage?: AppPage | number;
+    selectedCount?: number;
+    onClearSelection?: () => void;
+    onBulkDispatch?: (courierId: number, courierName: string) => void;
+    onBulkRestore?: () => void;
+    onBulkMarkRead?: () => void;
+    onBulkMarkUnread?: () => void;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -113,14 +135,29 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onDensityModeChange,
     onResetColumns,
     appPage,
+    selectedCount = 0,
+    onClearSelection,
+    onBulkDispatch,
+    onBulkRestore,
+    onBulkMarkRead,
+    onBulkMarkUnread,
 }) => {
     const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const localInputRef = useRef(searchQuery);
 
+    // Dispatch popover state
+    const [dispatchAnchor, setDispatchAnchor] = useState<HTMLElement | null>(null);
+    const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
+    const [courierLoading, setCourierLoading] = useState(false);
+    const courierDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const courierAbortRef = useRef<AbortController | null>(null);
+
     useEffect(() => {
         return () => {
             if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+            if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
+            if (courierAbortRef.current) courierAbortRef.current.abort();
         };
     }, []);
 
@@ -154,6 +191,132 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
         },
         [onDensityModeChange],
     );
+
+    const handleCourierSearch = useCallback((_event: React.SyntheticEvent, value: string) => {
+        if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
+        if (courierAbortRef.current) courierAbortRef.current.abort();
+
+        if (!value.trim()) {
+            setCourierOptions([]);
+            setCourierLoading(false);
+            return;
+        }
+
+        setCourierLoading(true);
+        courierDebounceRef.current = setTimeout(async () => {
+            const controller = new AbortController();
+            courierAbortRef.current = controller;
+            try {
+                const results = await searchActiveCouriersExtended(value, {
+                    loggedInOnly: loggedInCouriersOnly || undefined,
+                    signal: controller.signal,
+                });
+                setCourierOptions(results.map(r => ({id: r.id, text: r.text})));
+            } catch (err: any) {
+                if (err?.name !== 'AbortError') setCourierOptions([]);
+            } finally {
+                setCourierLoading(false);
+            }
+        }, 300);
+    }, [loggedInCouriersOnly]);
+
+    const handleCourierSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
+        if (value && onBulkDispatch) {
+            onBulkDispatch(value.id, value.text);
+        }
+        setDispatchAnchor(null);
+        setCourierOptions([]);
+    }, [onBulkDispatch]);
+
+    // Selection action bar
+    if (selectedCount > 0) {
+        return (
+            <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                px: 2,
+                py: 1,
+                borderBottom: 1,
+                borderColor: 'divider',
+                bgcolor: 'rgba(25, 118, 210, 0.08)',
+                minHeight: 44,
+            }}>
+                <IconButton size="small" onClick={onClearSelection} sx={{mr: 0.5}}>
+                    <CloseIcon fontSize="small"/>
+                </IconButton>
+                <Typography variant="body2" sx={{fontWeight: 600, mr: 2}}>
+                    {selectedCount} job{selectedCount !== 1 ? 's' : ''} selected
+                </Typography>
+
+                {allowDispatch && (
+                    <>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<LocalShippingIcon/>}
+                            onClick={(e) => setDispatchAnchor(e.currentTarget)}
+                        >
+                            Dispatch
+                        </Button>
+                        <Popover
+                            open={Boolean(dispatchAnchor)}
+                            anchorEl={dispatchAnchor}
+                            onClose={() => {
+                                setDispatchAnchor(null);
+                                setCourierOptions([]);
+                            }}
+                            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
+                        >
+                            <Box sx={{p: 2, width: 300}}>
+                                <Autocomplete
+                                    autoFocus
+                                    openOnFocus
+                                    size="small"
+                                    options={courierOptions}
+                                    getOptionLabel={(o) => o.text}
+                                    loading={courierLoading}
+                                    onInputChange={handleCourierSearch}
+                                    onChange={handleCourierSelect}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Search courier..."
+                                            autoFocus
+                                            slotProps={{
+                                                input: {
+                                                    ...params.InputProps,
+                                                    endAdornment: (
+                                                        <>
+                                                            {courierLoading ? <CircularProgress size={18}/> : null}
+                                                            {params.InputProps.endAdornment}
+                                                        </>
+                                                    ),
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+                        </Popover>
+                    </>
+                )}
+
+                {allowDispatch && (
+                    <Button size="small" variant="outlined" startIcon={<RestoreIcon/>} onClick={onBulkRestore}>
+                        Restore
+                    </Button>
+                )}
+
+                <Button size="small" variant="outlined" startIcon={<MarkEmailReadIcon/>} onClick={onBulkMarkRead}>
+                    Mark Read
+                </Button>
+                <Button size="small" variant="outlined" startIcon={<MarkEmailUnreadIcon/>} onClick={onBulkMarkUnread}>
+                    Mark Unread
+                </Button>
+            </Box>
+        );
+    }
 
     return (
         <Box sx={styles.container}>
