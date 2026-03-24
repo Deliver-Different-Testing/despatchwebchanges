@@ -7,11 +7,18 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run Jest tests
+# Run Jest unit tests
 npx jest --silent
 if [ $? -ne 0 ]; then
-    echo "Jest tests failed. Push aborted."
+    echo "Jest unit tests failed. Push aborted."
     exit 1
 fi
 
-echo "All tests passed!"
+# Run Jest integration tests (override testPathIgnorePatterns to include __integration__)
+echo "Running integration tests..."
+npx jest --silent --testPathPatterns="__integration__" --testPathIgnorePatterns="/node_modules/" --testPathIgnorePatterns="/DespatchWeb.Tests/"
+if [ $? -ne 0 ]; then
+    echo "⚠ Some integration tests failed (non-blocking). Review output above."
+fi
+
+echo "All required tests passed!"

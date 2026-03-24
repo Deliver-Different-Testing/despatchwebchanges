@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Courier API Integration Tests
  *
@@ -5,7 +6,7 @@
  * Verifies correct endpoint URLs, request parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/server';
+import { server } from '../../__testUtils__/msw/setupIntegration';
 import { http, HttpResponse } from 'msw';
 import { courierApi } from '../courierApi';
 import {
@@ -28,7 +29,7 @@ describe('courierApi integration', () => {
 
             const result = await courierApi.searchActiveCouriers('John');
 
-            expect(capturedUrl).toContain('searchText=John');
+            expect(capturedUrl).toContain('searchTerm=John');
             expect(result).toHaveLength(3);
         });
 

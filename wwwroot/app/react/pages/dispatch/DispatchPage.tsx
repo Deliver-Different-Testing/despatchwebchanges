@@ -7,30 +7,8 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
-import Icon from '@mui/material/Icon';
-import IconButton from '@mui/material/IconButton';
-import Menu from '@mui/material/Menu';
-import MenuItem from '@mui/material/MenuItem';
-import ListItemText from '@mui/material/ListItemText';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import PersonApronIcon from '@mui/icons-material/Person';
-import CategoryIcon from '@mui/icons-material/Category';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import type {SxProps, Theme} from '@mui/material';
-import {DispatchProvider, type DispatchContextValue} from './DispatchContext';
 import {DashboardGrid} from './components/DashboardGrid';
 import {useDispatchLayout} from './hooks/useDispatchLayout';
 import {useJobSelection} from './hooks/useJobSelection';
@@ -62,42 +40,39 @@ import {openHubUrl} from '../../services/navigationService';
 
 // Dialogs
 import {openCreateJobDialog} from '../../components/dialogs/create-job-dialog/create-job-dialog-react.module';
-import {openMessagingDialog} from '../../components/dialogs/messaging-dialog';
 import {
     openDashboardSettingsDialog
 } from '../../components/dialogs/dashboard-settings-dialog/dashboard-settings-dialog-react.module';
-import {openAccessorialChargesDialog} from '../../components/dialogs/accessorial-charges-dialog';
-
-// Widget components
-import {JobListPanel} from '../../components/job-list/JobListPanel';
-import {JobDetails} from '../../components/common/job-details/JobDetails';
-import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
-import {DriverLocations} from '../../components/common/driver-locations/DriverLocations';
-import {CurrentWorkAllDrivers} from '../../components/common/current-work-all-drivers/CurrentWorkAllDrivers';
-import {SupportTasksPanel} from './components/SupportTasksPanel';
-import {JobDetailFab} from './components/JobDetailFab';
-
-// Services
-import {updateJobDetail} from '../../services/jobDetailApi';
-import {getExactCourierMatch, getPotentialCouriers, getTruckCourierStatus} from '../../services/dispatchApi';
-import type {IPotentialCourier} from '../../services/dispatchApi';
-import {openAddEventDialog} from '../../components/dialogs/add-event-dialog';
-import {executeSplitJobFlow} from '../../services/splitJobFlow';
-import {executeAddStopFlow} from '../../services/addStopFlow';
-import {openSwapPodsDialog} from '../../components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module';
-import {openInterCourierChargeDialog, openJobFileUploadDialog} from '../../services/angularDialogBridge';
-import {TruckCourierStatusDialog} from './components/TruckCourierStatusDialog';
+import {openInterCourierChargeDialog} from '../../services/angularDialogBridge';
 import {ConfirmDialog} from './components/ConfirmDialog';
 import {CourierSelectionDialog} from './components/CourierSelectionDialog';
-import type {ITruckCourierStatus} from '../../services/dispatchApi';
+import {SaveLayoutDialog} from './components/SaveLayoutDialog';
+import {TruckStatusManager} from './components/TruckStatusManager';
+
+// Widget renderers (memoized per-widget components)
+import {
+    JobsListWidget,
+    JobDetailWidget,
+    JobDetailToolbarActions,
+    MapWidget,
+    DriverLocationsWidget,
+    DriverLocationsToolbar,
+    CurrentWorkWidget,
+    CurrentWorkToolbar,
+    SupportsToolbar,
+} from './components/WidgetRenderers';
+import {SupportTasksPanel} from './components/SupportTasksPanel';
+
+// Services
+import {getPotentialCouriers} from '../../services/dispatchApi';
+import type {IPotentialCourier} from '../../services/dispatchApi';
 
 // Types
-import type {DispatchJob, AppPage, JobCategory} from '../../interfaces/dispatchJob';
+import type {DispatchJob, JobCategory} from '../../interfaces/dispatchJob';
 import {fetchDispatchJobs, fetchClearListJobs} from '../../services/jobSearchApi';
 import {queryKeys} from '../../query/queryClient';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
 import type {IDispatchMapItem} from '../../../interfaces/job.interface';
-import type {TruckMode} from '../../components/common/driver-locations/DriverLocations.types';
 
 const styles: Record<string, SxProps<Theme>> = {
     root: {
@@ -111,205 +86,7 @@ const styles: Record<string, SxProps<Theme>> = {
         minHeight: 0,
         overflow: 'auto',
     },
-    widgetContent: {
-        height: '100%',
-        overflow: 'auto',
-    },
-    noSelection: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        p: 2,
-    },
-    toolbarActionIcon: {
-        fontSize: 18,
-        color: 'inherit',
-    },
 };
-
-/** Truck mode dropdown for driver locations toolbar */
-function TruckModeMenu({truckMode, onSetTruckMode}: {
-    truckMode: TruckMode;
-    onSetTruckMode: (mode: TruckMode) => void;
-}) {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-    return (
-        <>
-            <Chip
-                label={`Trucks: ${truckMode}`}
-                size="small"
-                deleteIcon={<ArrowDropDownIcon />}
-                onDelete={(e) => setAnchorEl(e.currentTarget as HTMLElement)}
-                onClick={(e) => setAnchorEl(e.currentTarget)}
-                sx={(theme) => ({
-                    height: 24,
-                    fontSize: '0.7rem',
-                    fontWeight: 500,
-                    bgcolor: alpha(theme.palette.common.white, 0.15),
-                    color: 'inherit',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 150ms ease',
-                    '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.25)},
-                    '& .MuiChip-deleteIcon': {
-                        color: 'inherit',
-                        fontSize: 18,
-                        mr: -0.25,
-                    },
-                })}
-            />
-            <Menu
-                anchorEl={anchorEl}
-                open={!!anchorEl}
-                onClose={() => setAnchorEl(null)}
-                slotProps={{paper: {elevation: 3, sx: {mt: 0.5, minWidth: 100}}}}
-            >
-                {(['On', 'Off', 'Only'] as TruckMode[]).map(mode => (
-                    <MenuItem
-                        key={mode}
-                        selected={truckMode === mode}
-                        onClick={() => {
-                            onSetTruckMode(mode);
-                            setAnchorEl(null);
-                        }}
-                        sx={{fontSize: '0.85rem'}}
-                    >
-                        {mode}
-                    </MenuItem>
-                ))}
-            </Menu>
-        </>
-    );
-}
-
-/** Courier code search input for current work toolbar */
-function CourierCodeSearch({onCourierFound, showToast}: {
-    onCourierFound: (courierId: number, courierName: string) => void;
-    showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
-}) {
-    const [code, setCode] = useState('');
-
-    const handleSearch = async () => {
-        if (!code.trim()) return;
-        try {
-            const courier = await getExactCourierMatch(code.trim());
-            if (courier?.id) {
-                onCourierFound(courier.id, courier.text);
-                setCode('');
-            } else {
-                showToast(`No courier found with code: ${code}`, 'warning');
-            }
-        } catch {
-            showToast(`No courier found with code: ${code}`, 'warning');
-        }
-    };
-
-    return (
-        <TextField
-            size="small"
-            placeholder="Courier #"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSearch();
-            }}
-            slotProps={{
-                input: {
-                    startAdornment: (
-                        <InputAdornment position="start">
-                            <LocalShippingIcon sx={{fontSize: 15, color: 'inherit', opacity: 0.7}}/>
-                        </InputAdornment>
-                    ),
-                    sx: (theme: Theme) => ({
-                        color: 'inherit',
-                        fontSize: '0.75rem',
-                        height: 26,
-                        borderRadius: 1.5,
-                        bgcolor: alpha(theme.palette.common.white, 0.1),
-                        transition: 'background-color 150ms ease',
-                        '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.18)},
-                        '&.Mui-focused': {bgcolor: alpha(theme.palette.common.white, 0.2)},
-                        '& input': {width: 60, p: 0.5},
-                        '& .MuiInputAdornment-root': {mr: 0.25},
-                    }),
-                },
-            }}
-            variant="outlined"
-            sx={{
-                '& .MuiOutlinedInput-notchedOutline': {borderColor: 'rgba(255,255,255,0.2)'},
-                '&:hover .MuiOutlinedInput-notchedOutline': {borderColor: 'rgba(255,255,255,0.35)'},
-                '& .Mui-focused .MuiOutlinedInput-notchedOutline': {borderColor: 'rgba(255,255,255,0.5)'},
-            }}
-        />
-    );
-}
-
-/** Filter dropdown for support tasks toolbar */
-function FilterDropdown({label, icon, items, selectedId, onSelect}: {
-    label: string;
-    icon: React.ReactNode;
-    items: Array<{ id: number; text: string }>;
-    selectedId: number | undefined;
-    onSelect: (id: number | undefined) => void;
-}) {
-    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const isActive = selectedId != null;
-
-    return (
-        <>
-            <Tooltip title={label} enterDelay={400}>
-                <IconButton
-                    size="small"
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                    sx={(theme) => ({
-                        p: 0.5,
-                        borderRadius: 1,
-                        color: 'inherit',
-                        bgcolor: isActive ? alpha(theme.palette.common.white, 0.2) : 'transparent',
-                        transition: 'background-color 150ms ease',
-                        '&:hover': {
-                            bgcolor: alpha(theme.palette.common.white, 0.15),
-                        },
-                    })}
-                >
-                    {icon}
-                </IconButton>
-            </Tooltip>
-            <Menu
-                anchorEl={anchorEl}
-                open={!!anchorEl}
-                onClose={() => setAnchorEl(null)}
-                slotProps={{paper: {elevation: 3, sx: {mt: 0.5, minWidth: 180}}}}
-            >
-                <MenuItem
-                    selected={!selectedId}
-                    onClick={() => {
-                        onSelect(undefined);
-                        setAnchorEl(null);
-                    }}
-                    sx={{fontSize: '0.85rem'}}
-                >
-                    <ListItemText>All</ListItemText>
-                </MenuItem>
-                {items.map(item => (
-                    <MenuItem
-                        key={item.id}
-                        selected={selectedId === item.id}
-                        onClick={() => {
-                            onSelect(item.id);
-                            setAnchorEl(null);
-                        }}
-                        sx={{fontSize: '0.85rem'}}
-                    >
-                        <ListItemText>{item.text}</ListItemText>
-                    </MenuItem>
-                ))}
-            </Menu>
-        </>
-    );
-}
 
 export function DispatchPage({
                                  showToast,
@@ -320,7 +97,8 @@ export function DispatchPage({
     const layout = useDispatchLayout();
     const jobSelection = useJobSelection(initialJobId);
     const currentWork = useCurrentWork();
-    const supportTasks = useSupportTasks(jobSelection.currentJobId);
+    const supportTasksVisible = layout.visibleBoxIds.includes(DispatchBox.Supports);
+    const supportTasks = useSupportTasks(jobSelection.currentJobId, supportTasksVisible);
     const pageViews = usePageViews();
     const dateFilter = useDateFilter();
     const messaging = useMessaging(showToast);
@@ -340,12 +118,9 @@ export function DispatchPage({
         driverLocationRefresh.refetchInterval,
     );
 
-    // Save-layout dialog state
-    const [saveLayoutOpen, setSaveLayoutOpen] = useState(false);
-    const [saveLayoutName, setSaveLayoutName] = useState('');
-
-    // Truck loading status dialog state
-    const [truckStatus, setTruckStatus] = useState<{open: boolean; data: ITruckCourierStatus | null; isRefreshing: boolean}>({open: false, data: null, isRefreshing: false});
+    // Dialog refs (state owned by child components)
+    const saveLayoutRef = useRef<import('./components/SaveLayoutDialog').SaveLayoutDialogHandle>(null);
+    const truckStatusRef = useRef<import('./components/TruckStatusManager').TruckStatusManagerHandle>(null);
 
     // Potential couriers for unassigned job selection
     const [potentialCouriers, setPotentialCouriers] = useState<IPotentialCourier[]>([]);
@@ -503,31 +278,6 @@ export function DispatchPage({
         }
     }, [jobSelection.refreshJobListRef, driverLocations, currentWork, supportTasks]);
 
-    const contextValue = useMemo<DispatchContextValue>(() => ({
-        isUsCustomer,
-        showToast,
-        layouts: layout.layouts,
-        currentLayoutName: layout.currentLayoutName,
-        boxStates: layout.boxStates,
-        isDefaultLayout: layout.isDefaultLayout,
-        refreshBox,
-        currentJobId: jobSelection.currentJobId,
-        currentJob: jobSelection.currentJob,
-        selectJob: jobSelection.selectJob,
-        selectJobById: jobSelection.selectJobById,
-        currentSelection: jobSelection.currentSelection,
-        currentWorkSelection: currentWork.currentWorkSelection,
-    }), [
-        isUsCustomer, showToast,
-        layout.layouts, layout.currentLayoutName, layout.boxStates,
-        layout.isDefaultLayout,
-        refreshBox,
-        jobSelection.currentJobId, jobSelection.currentJob,
-        jobSelection.selectJob, jobSelection.selectJobById,
-        jobSelection.currentSelection,
-        currentWork.currentWorkSelection,
-    ]);
-
     // ── Toolbar action handlers ──────────────────────────────────────
 
     const handleCreateNewJob = useCallback(async () => {
@@ -604,109 +354,7 @@ export function DispatchPage({
         }
     }, [showToast, layout, jobListRefresh, driverLocationRefresh]);
 
-    // ── Job Detail FAB action handlers ─────────────────────────────
-
-    const handleAddStop = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        await executeAddStopFlow({
-            job,
-            showToast,
-            onComplete: (newJobId) => {
-                jobSelection.selectJobById(newJobId);
-                jobSelection.refreshJobListRef.current?.();
-            },
-        });
-    }, [jobSelection.currentJob, showToast, jobSelection.selectJobById, jobSelection.refreshJobListRef]);
-
-    const handleAccessorialCharges = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        try {
-            await openAccessorialChargesDialog({
-                job: {
-                    id: job.id,
-                    accessorialChargeGroupId: job.accessorialChargeGroupId!,
-                },
-                toastService: {showToast},
-            });
-        } catch {
-            // User cancelled
-        }
-    }, [jobSelection.currentJob, showToast]);
-
-    const handleAttachments = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        try {
-            await openJobFileUploadDialog(job.id);
-        } catch (error) {
-            if (!error) return; // User cancelled
-            console.error('Error opening file upload dialog:', error);
-        }
-    }, [jobSelection.currentJob]);
-
-    const handleAddTask = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        await openAddEventDialog({
-            job: {
-                id: job.id,
-                jobNo: job.jobNo ?? '',
-                client: job.client ?? '',
-                clientId: job.clientId,
-            },
-            toastService: {showToast},
-        });
-        supportTasks.refetch();
-    }, [jobSelection.currentJob, showToast, supportTasks]);
-
-    const handleCloseFirstOpenTask = useCallback(async () => {
-        const openTask = supportTasks.tasks.find((t: any) => !t.closed);
-        if (openTask) {
-            await supportTasks.closeTask(openTask.id);
-            showToast('Task closed', 'success');
-        }
-    }, [supportTasks, showToast]);
-
-    const handleLockUnlock = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        const newLocked = !job.locked;
-        try {
-            await updateJobDetail(job.id, 'Locked', newLocked, false);
-            showToast(newLocked ? 'Job locked' : 'Job unlocked', 'success');
-            jobSelection.refreshJobListRef.current?.();
-        } catch {
-            showToast('Error updating lock status', 'error');
-        }
-    }, [jobSelection.currentJob, showToast, jobSelection.refreshJobListRef]);
-
-    const [splitJobLoading, setSplitJobLoading] = useState(false);
-
-    const handleSplitJob = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        await executeSplitJobFlow({
-            job,
-            showToast,
-            onComplete: () => jobSelection.refreshJobListRef.current?.(),
-            setLoading: setSplitJobLoading,
-        });
-    }, [jobSelection.currentJob, showToast, jobSelection.refreshJobListRef]);
-
-    const handleSwapPod = useCallback(async () => {
-        const job = jobSelection.currentJob;
-        if (!job) return;
-        try {
-            const result = await openSwapPodsDialog(job.jobNo ?? '', {showToast});
-            if (result) jobSelection.refreshJobListRef.current?.();
-        } catch {
-            // User cancelled
-        }
-    }, [jobSelection.currentJob, showToast, jobSelection.refreshJobListRef]);
-
-    // ── Current Work toolbar handler ─────────────────────────────────
+    // ── Current Work toolbar handlers ─────────────────────────────────
 
     const handleCourierFound = useCallback((courierId: number, courierName: string) => {
         currentWork.selectDriver({courierId, name: courierName, jobCount: 0} as any);
@@ -724,31 +372,22 @@ export function DispatchPage({
     }, [currentWork]);
 
     // 3.3: Truck loading status dialog
-    const handleTruckLoadingStatus = useCallback(async () => {
+    const handleTruckLoadingStatus = useCallback(() => {
         const courierId = currentWork.selectedCourierId;
-        if (!courierId) return;
-        try {
-            const status = await getTruckCourierStatus(courierId);
-            setTruckStatus({open: true, data: status, isRefreshing: false});
-        } catch (error) {
-            console.error('Error fetching truck status:', error);
-            showToast('Error loading truck status', 'error');
-        }
-    }, [currentWork.selectedCourierId, showToast]);
+        if (courierId) truckStatusRef.current?.show(courierId);
+    }, [currentWork.selectedCourierId]);
 
-    const handleTruckStatusRefresh = useCallback(async () => {
-        const courierId = truckStatus.data?.courierId;
-        if (!courierId) return;
-        setTruckStatus(prev => ({...prev, isRefreshing: true}));
-        try {
-            const status = await getTruckCourierStatus(courierId);
-            setTruckStatus({open: true, data: status, isRefreshing: false});
-        } catch (error) {
-            console.error('Error refreshing truck status:', error);
-            showToast('Error refreshing truck status', 'error');
-            setTruckStatus(prev => ({...prev, isRefreshing: false}));
-        }
-    }, [truckStatus.data?.courierId, showToast]);
+    const handleDriverLocationAreaClick = useCallback((area: any) => {
+        driverLocations.setActiveAreaId(area.id);
+    }, [driverLocations.setActiveAreaId]);
+
+    const handleDriverLocationClearFilter = useCallback(() => {
+        driverLocations.setActiveAreaId(undefined);
+    }, [driverLocations.setActiveAreaId]);
+
+    const handleRefreshJobList = useCallback(() => {
+        jobSelection.refreshJobListRef.current?.();
+    }, [jobSelection.refreshJobListRef]);
 
     // ── Per-widget toolbar actions ───────────────────────────────────
 
@@ -756,215 +395,122 @@ export function DispatchPage({
         switch (boxId) {
             case DispatchBox.DriverLocations:
                 return (
-                    <>
-                        {driverLocations.activeAreaId && (
-                            <Tooltip title="Clear Driver Location Selection" enterDelay={400}>
-                                <IconButton
-                                    size="small"
-                                    onClick={() => driverLocations.setActiveAreaId(undefined)}
-                                    sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
-                                >
-                                    <Icon sx={styles.toolbarActionIcon} baseClassName="material-symbols-outlined">
-                                        clear_all
-                                    </Icon>
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                        <TruckModeMenu
-                            truckMode={driverLocations.truckMode}
-                            onSetTruckMode={driverLocations.setTruckMode}
-                        />
-                    </>
-                );
-
-            case DispatchBox.JobDetail: {
-                const job = jobSelection.currentJob;
-                if (!job) return null;
-                const hasOpenTask = supportTasks.tasks.some((t: any) => !t.closed);
-                return (
-                    <JobDetailFab
-                        job={job}
-                        onAddStop={job.isAgentJob ? handleAddStop : undefined}
-                        onAccessorialCharges={handleAccessorialCharges}
-                        onAttachments={handleAttachments}
-                        onAddTask={handleAddTask}
-                        onCloseTask={handleCloseFirstOpenTask}
-                        onLockUnlock={handleLockUnlock}
-                        onSplitJob={handleSplitJob}
-                        onSwapPod={handleSwapPod}
-                        hasOpenTask={hasOpenTask}
+                    <DriverLocationsToolbar
+                        activeAreaId={driverLocations.activeAreaId}
+                        onClearArea={handleDriverLocationClearFilter}
+                        truckMode={driverLocations.truckMode}
+                        onSetTruckMode={driverLocations.setTruckMode}
                     />
                 );
-            }
+
+            case DispatchBox.JobDetail:
+                return (
+                    <JobDetailToolbarActions
+                        job={jobSelection.currentJob}
+                        showToast={showToast}
+                        tasks={supportTasks.tasks}
+                        refetchTasks={supportTasks.refetch}
+                        closeTask={supportTasks.closeTask}
+                        selectJobById={jobSelection.selectJobById}
+                        refreshJobList={handleRefreshJobList}
+                    />
+                );
 
             case DispatchBox.CurrentWork:
                 return (
-                    <>
-                        {currentWork.viewMode === 'selectedDriver' && (
-                            <>
-                                <Tooltip title="Back to All Drivers" enterDelay={400}>
-                                    <IconButton
-                                        size="small"
-                                        onClick={currentWork.backToOverview}
-                                        sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
-                                    >
-                                        <ArrowBackIcon sx={{fontSize: 18}} />
-                                    </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Truck Loading Status" enterDelay={400}>
-                                    <IconButton
-                                        size="small"
-                                        onClick={handleTruckLoadingStatus}
-                                        sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
-                                    >
-                                        <LocalShippingIcon sx={{fontSize: 18}} />
-                                    </IconButton>
-                                </Tooltip>
-                            </>
-                        )}
-                        <CourierCodeSearch
-                            onCourierFound={handleCourierFound}
-                            showToast={showToast}
-                        />
-                    </>
+                    <CurrentWorkToolbar
+                        viewMode={currentWork.viewMode}
+                        onBackToOverview={currentWork.backToOverview}
+                        onTruckLoadingStatus={handleTruckLoadingStatus}
+                        onCourierFound={handleCourierFound}
+                        showToast={showToast}
+                    />
                 );
 
             case DispatchBox.Supports:
                 return (
-                    <>
-                        <FilterDropdown
-                            label="Filter by Staff"
-                            icon={<PersonApronIcon sx={{fontSize: 18}}/>}
-                            items={supportTasks.staffList}
-                            selectedId={supportTasks.selectedStaffId}
-                            onSelect={supportTasks.setStaffId}
-                        />
-                        <FilterDropdown
-                            label="Filter by Event Type"
-                            icon={<CategoryIcon sx={{fontSize: 18}}/>}
-                            items={supportTasks.eventTypeList}
-                            selectedId={supportTasks.selectedEventTypeId}
-                            onSelect={supportTasks.setEventTypeId}
-                        />
-                    </>
+                    <SupportsToolbar
+                        staffList={supportTasks.staffList}
+                        eventTypeList={supportTasks.eventTypeList}
+                        selectedStaffId={supportTasks.selectedStaffId}
+                        selectedEventTypeId={supportTasks.selectedEventTypeId}
+                        onSelectStaff={supportTasks.setStaffId}
+                        onSelectEventType={supportTasks.setEventTypeId}
+                    />
                 );
 
             default:
                 return null;
         }
     }, [
-        driverLocations, jobSelection.currentJob,
-        handleAddStop, handleAccessorialCharges, handleAttachments,
-        handleAddTask, handleCloseFirstOpenTask, handleLockUnlock,
-        handleSplitJob, handleSwapPod, supportTasks.tasks,
-        handleCourierFound, showToast,
-        currentWork.viewMode, currentWork.backToOverview,
-        handleTruckLoadingStatus,
+        driverLocations.activeAreaId, driverLocations.truckMode, driverLocations.setTruckMode,
+        handleDriverLocationClearFilter,
+        jobSelection.currentJob, jobSelection.selectJobById, handleRefreshJobList,
+        showToast, supportTasks.tasks, supportTasks.refetch, supportTasks.closeTask,
         supportTasks.staffList, supportTasks.eventTypeList,
         supportTasks.selectedStaffId, supportTasks.selectedEventTypeId,
         supportTasks.setStaffId, supportTasks.setEventTypeId,
+        currentWork.viewMode, currentWork.backToOverview,
+        handleTruckLoadingStatus, handleCourierFound,
     ]);
 
     const renderWidget = useCallback((boxId: DispatchBox) => {
         switch (boxId) {
             case DispatchBox.JobsList:
                 return (
-                    <Box sx={styles.widgetContent}>
-                        <JobListPanel
-                            showToast={showToast}
-                            isUsCustomer={isUsCustomer}
-                            appPage={1 as AppPage}
-                            onJobSelect={handleJobSelect}
-                            onJobDispatch={handleJobDispatch}
-                            fetchConfig={fetchConfig}
-                            defaultCategory={jobListDefaultCategory}
-                            setRefreshCallback={(cb) => {
-                                jobSelection.refreshJobListRef.current = cb;
-                            }}
-                            setSelectJobCallback={(cb) => {
-                                jobSelection.selectJobInListRef.current = cb;
-                            }}
-                        />
-                    </Box>
+                    <JobsListWidget
+                        showToast={showToast}
+                        isUsCustomer={isUsCustomer}
+                        fetchConfig={fetchConfig}
+                        defaultCategory={jobListDefaultCategory}
+                        onJobSelect={handleJobSelect}
+                        onJobDispatch={handleJobDispatch}
+                        refreshJobListRef={jobSelection.refreshJobListRef}
+                        selectJobInListRef={jobSelection.selectJobInListRef}
+                    />
                 );
 
             case DispatchBox.JobDetail:
-                if (!jobDetailsConfig) {
-                    return (
-                        <Box sx={styles.noSelection}>
-                            <Typography variant="body2" color="text.secondary">
-                                Select a job to view details
-                            </Typography>
-                        </Box>
-                    );
-                }
-                return (
-                    <Box sx={styles.widgetContent}>
-                        <JobDetails config={jobDetailsConfig}/>
-                    </Box>
-                );
+                return <JobDetailWidget config={jobDetailsConfig} />;
 
             case DispatchBox.Map:
                 return (
-                    <Box sx={{height: '100%'}}>
-                        <DispatchMap
-                            currentJob={currentMapJob}
-                            jobs={mapJobs}
-                            clearListId={driverLocations.activeAreaId}
-                            onMarkerClick={handleMapMarkerClick}
-                            showAvailableCouriers
-                        />
-                    </Box>
+                    <MapWidget
+                        currentJob={currentMapJob}
+                        jobs={mapJobs}
+                        clearListId={driverLocations.activeAreaId}
+                        onMarkerClick={handleMapMarkerClick}
+                    />
                 );
 
             case DispatchBox.DriverLocations:
                 return (
-                    <Box sx={styles.widgetContent}>
-                        <DriverLocations
-                            driverLocations={driverLocations.driverLocations}
-                            loading={driverLocations.loading}
-                            showData={!driverLocations.loading && !!driverLocations.driverLocations}
-                            showNoData={!driverLocations.loading && !driverLocations.driverLocations}
-                            truckMode={driverLocations.truckMode}
-                            activeAreaId={driverLocations.activeAreaId}
-                            onAreaClick={(area) => {
-                                driverLocations.setActiveAreaId(area.id);
-                            }}
-                            onCourierClick={handleDriverLocationCourierClick}
-                            onClearFilter={() => {
-                                driverLocations.setActiveAreaId(undefined);
-                            }}
-                            isUsCustomer={isUsCustomer}
-                        />
-                    </Box>
+                    <DriverLocationsWidget
+                        driverLocations={driverLocations.driverLocations}
+                        loading={driverLocations.loading}
+                        truckMode={driverLocations.truckMode}
+                        activeAreaId={driverLocations.activeAreaId}
+                        onAreaClick={handleDriverLocationAreaClick}
+                        onCourierClick={handleDriverLocationCourierClick}
+                        onClearFilter={handleDriverLocationClearFilter}
+                        isUsCustomer={isUsCustomer}
+                    />
                 );
 
             case DispatchBox.CurrentWork:
-                if (currentWork.viewMode === 'selectedDriver' && currentWork.driverJobsFetchConfig) {
-                    return (
-                        <Box sx={styles.widgetContent}>
-                            <JobListPanel
-                                showToast={showToast}
-                                isUsCustomer={isUsCustomer}
-                                appPage={1 as AppPage}
-                                defaultCategory="in-progress"
-                                storagePrefix="currentWorkJobList"
-                                fetchConfig={currentWork.driverJobsFetchConfig}
-                                onJobSelect={handleJobSelect}
-                                onJobDispatch={handleJobDispatch}
-                            />
-                        </Box>
-                    );
-                }
                 return (
-                    <Box sx={styles.widgetContent}>
-                        <CurrentWorkAllDrivers
-                            drivers={currentWork.drivers}
-                            loading={currentWork.loading}
-                            selectedCourierId={currentWork.selectedCourierId}
-                            onDriverSelect={currentWork.selectDriver}
-                        />
-                    </Box>
+                    <CurrentWorkWidget
+                        viewMode={currentWork.viewMode}
+                        driverJobsFetchConfig={currentWork.driverJobsFetchConfig}
+                        drivers={currentWork.drivers}
+                        loading={currentWork.loading}
+                        selectedCourierId={currentWork.selectedCourierId}
+                        onDriverSelect={currentWork.selectDriver}
+                        showToast={showToast}
+                        isUsCustomer={isUsCustomer}
+                        onJobSelect={handleJobSelect}
+                        onJobDispatch={handleJobDispatch}
+                    />
                 );
 
             case DispatchBox.Supports:
@@ -973,7 +519,9 @@ export function DispatchPage({
                         tasks={supportTasks.tasks}
                         loading={supportTasks.loading}
                         jobId={jobSelection.currentJobId}
-                        onCloseTask={supportTasks.closeTask}
+                        onTaskUpdated={supportTasks.refetch}
+                        onTaskClick={(task) => jobSelection.selectJobById(task.jobId)}
+                        showToast={showToast}
                     />
                 );
 
@@ -986,8 +534,9 @@ export function DispatchPage({
         jobSelection.refreshJobListRef, jobSelection.selectJobInListRef,
         jobDetailsConfig, currentMapJob, mapJobs, handleMapMarkerClick,
         driverLocations, handleDriverLocationCourierClick,
+        handleDriverLocationAreaClick, handleDriverLocationClearFilter,
         currentWork, supportTasks,
-        jobSelection.currentJobId,
+        jobSelection.currentJobId, jobSelection.selectJobById,
     ]);
 
     const getSubtitle = useCallback((boxId: DispatchBox) => {
@@ -1001,7 +550,7 @@ export function DispatchPage({
     const timeZone = window.TimeZone || 'New Zealand Standard Time';
 
     return (
-        <DispatchProvider value={contextValue}>
+        <>
             <Box sx={styles.root}>
                 <AppShell
                     title="Dispatch Dashboard"
@@ -1021,7 +570,7 @@ export function DispatchPage({
                     {/* Messages */}
                     <MessagesButton
                         unreadCount={messaging.unreadCount}
-                        onClick={() => messaging.openMessages()}
+                        onClick={messaging.openMessages}
                     />
 
                     {/* Date Filter */}
@@ -1045,10 +594,7 @@ export function DispatchPage({
                     <LayoutsMenu
                         layouts={layout.layouts.map(l => ({name: l.name}))}
                         currentLayoutName={layout.currentLayoutName}
-                        onSaveLayout={() => {
-                            setSaveLayoutName('');
-                            setSaveLayoutOpen(true);
-                        }}
+                        onSaveLayout={() => saveLayoutRef.current?.open()}
                         onLoadLayout={layout.loadLayout}
                         onDeleteLayout={layout.deleteLayout}
                     />
@@ -1074,53 +620,10 @@ export function DispatchPage({
             </Box>
 
             {/* Save Layout Dialog */}
-            <Dialog
-                open={saveLayoutOpen}
-                onClose={() => setSaveLayoutOpen(false)}
-                maxWidth="xs"
-                fullWidth
-            >
-                <DialogTitle>Save Layout</DialogTitle>
-                <DialogContent>
-                    <TextField
-                        autoFocus
-                        label="Layout name"
-                        fullWidth
-                        value={saveLayoutName}
-                        onChange={(e) => setSaveLayoutName(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && saveLayoutName.trim()) {
-                                layout.saveLayoutAs(saveLayoutName.trim());
-                                setSaveLayoutOpen(false);
-                            }
-                        }}
-                        sx={{mt: 1}}
-                    />
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setSaveLayoutOpen(false)}>Cancel</Button>
-                    <Button
-                        variant="contained"
-                        disabled={!saveLayoutName.trim()}
-                        onClick={() => {
-                            layout.saveLayoutAs(saveLayoutName.trim());
-                            setSaveLayoutOpen(false);
-                        }}
-                    >
-                        Save
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            <SaveLayoutDialog ref={saveLayoutRef} onSave={layout.saveLayoutAs} />
 
             {/* Truck Loading Status Dialog */}
-            <TruckCourierStatusDialog
-                open={truckStatus.open}
-                onClose={() => setTruckStatus(prev => ({...prev, open: false}))}
-                truckCourierStatus={truckStatus.data}
-                isUsCustomer={isUsCustomer}
-                onRefresh={handleTruckStatusRefresh}
-                isRefreshing={truckStatus.isRefreshing}
-            />
+            <TruckStatusManager ref={truckStatusRef} isUsCustomer={isUsCustomer} showToast={showToast} />
 
             {/* Dispatch Confirmation Dialog (offline courier, chilled warning) */}
             {dispatchExecutor.pendingConfirmation && (
@@ -1145,6 +648,6 @@ export function DispatchPage({
                     potentialCouriers={potentialCouriers}
                 />
             )}
-        </DispatchProvider>
+        </>
     );
 }

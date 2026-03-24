@@ -5,21 +5,21 @@
  * Displays a HERE map with courier positions and a drivers panel sidebar.
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
-import type { CourierMapPageProps } from './CourierMapPage.types';
+import React, {useState, useCallback, useEffect, useMemo} from 'react';
+import {useQuery} from '@tanstack/react-query';
+import type {IAvailableCourierPosition} from '../../../interfaces/courier.interface';
+import type {CourierMapPageProps} from './CourierMapPage.types';
 import {
     US_BOUNDS,
     NZ_BOUNDS,
     REFRESH_INTERVAL_MS,
     SEARCH_DEBOUNCE_MS,
 } from './CourierMapPage.types';
-import { useCourierMap } from './useCourierMap';
-import { DriversPanel } from './components/DriversPanel';
-import { MapControls } from './components/MapControls';
-import { queryKeys } from '../../query';
-import { getAvailableCourierLocations } from '../../services/courierApi';
+import {useCourierMap} from './useCourierMap';
+import {DriversPanel} from './components/DriversPanel';
+import {MapControls} from './components/MapControls';
+import {queryKeys} from '../../query';
+import {getAvailableCourierLocations} from '../../services/courierApi';
 import styles from './CourierMapPage.module.css';
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
@@ -27,10 +27,10 @@ interface CourierMapPageInternalProps extends CourierMapPageProps {
 }
 
 export function CourierMapPage({
-    isUsCustomer,
-    mapCenter,
-    apiKey,
-}: CourierMapPageInternalProps) {
+                                   isUsCustomer,
+                                   mapCenter,
+                                   apiKey,
+                               }: CourierMapPageInternalProps) {
     // Panel state
     const [isPanelHidden, setIsPanelHidden] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -127,7 +127,7 @@ export function CourierMapPage({
         <div className={styles.courierMapContainer}>
             <div className={styles.mapWrapper}>
                 {/* Map Container */}
-                <div ref={mapContainerRef} className={styles.mapContainer} />
+                <div ref={mapContainerRef} className={styles.mapContainer}/>
 
                 {/* Drivers Panel */}
                 <DriversPanel

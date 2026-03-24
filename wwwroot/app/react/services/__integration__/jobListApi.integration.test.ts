@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Job List API Integration Tests
  *
@@ -6,7 +7,7 @@
  * response handling, and error propagation.
  */
 
-import { server } from '../../__testUtils__/msw/server';
+import { server } from '../../__testUtils__/msw/setupIntegration';
 import { http, HttpResponse } from 'msw';
 import {
     updateJobReadStatus,

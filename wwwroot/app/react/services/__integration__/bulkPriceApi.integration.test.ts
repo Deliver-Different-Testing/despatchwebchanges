@@ -1,3 +1,4 @@
+/** @jest-environment jest-fixed-jsdom */
 /**
  * Bulk Price API Integration Tests
  *
@@ -5,7 +6,7 @@
  * Verifies FormData upload, query parameters, and response handling.
  */
 
-import { server } from '../../__testUtils__/msw/server';
+import { server } from '../../__testUtils__/msw/setupIntegration';
 import { http, HttpResponse } from 'msw';
 import { bulkPriceApi } from '../bulkPriceApi';
 import { mockBulkPricePreviewResponse } from '../../__testUtils__/msw/handlers';

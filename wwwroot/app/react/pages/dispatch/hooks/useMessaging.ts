@@ -24,7 +24,7 @@ export function useMessaging(showToast: ShowToastFn): UseMessagingReturn {
     });
 
     const openMessages = useCallback(() => {
-        openMessagingDialog({toastService: {showToast}});
+        return openMessagingDialog({toastService: {showToast}});
     }, [showToast]);
 
     return {unreadCount: data ?? 0, openMessages};

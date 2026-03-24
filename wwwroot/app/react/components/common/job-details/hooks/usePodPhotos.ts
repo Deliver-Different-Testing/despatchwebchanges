@@ -18,7 +18,7 @@ interface UsePodPhotosOptions {
 }
 
 function processPhotoData(
-    photosData: Array<{data?: string; contentType?: string; fileName?: string; s3Key?: string}>,
+    photosData: Array<{ data?: string; contentType?: string; fileName?: string; s3Key?: string }>,
     job: IJob,
     isDelivery: boolean
 ): PodPhoto[] {

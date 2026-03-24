@@ -35,7 +35,7 @@ function loadStoredFilter(key: string): number | undefined {
     return undefined;
 }
 
-export function useSupportTasks(jobId: number | null): UseSupportTasksReturn {
+export function useSupportTasks(jobId: number | null, enabled = true): UseSupportTasksReturn {
     const [selectedStaffId, setStaffIdState] = useState<number | undefined>(() => loadStoredFilter(STAFF_FILTER_KEY));
     const [selectedEventTypeId, setEventTypeIdState] = useState<number | undefined>(() => loadStoredFilter(EVENT_TYPE_FILTER_KEY));
 
@@ -50,17 +50,19 @@ export function useSupportTasks(jobId: number | null): UseSupportTasksReturn {
             staffId: selectedStaffId,
             eventTypeId: selectedEventTypeId,
         }),
-        enabled: jobId != null,
+        enabled: enabled && jobId != null,
     });
 
     const {data: staffList} = useQuery({
         queryKey: queryKeys.tasks.staff,
         queryFn: () => getActiveStaff(),
+        enabled,
     });
 
     const {data: eventTypeList} = useQuery({
         queryKey: queryKeys.tasks.eventTypes,
         queryFn: () => getEventTypes(),
+        enabled,
     });
 
     const setStaffId = useCallback((id: number | undefined) => {
@@ -74,14 +76,13 @@ export function useSupportTasks(jobId: number | null): UseSupportTasksReturn {
     }, []);
 
     const closeTask = useCallback(async (taskId: number) => {
-        await markTaskAsClosed(taskId, true);
-        await refetch();
+        await Promise.all([markTaskAsClosed(taskId, true), refetch()]);
     }, [refetch]);
 
     return {
         tasks: data ?? [],
         loading: isLoading,
-        refetch: () => { refetch(); },
+        refetch: () => { return refetch(); },
         staffList: staffList ?? [],
         eventTypeList: eventTypeList ?? [],
         selectedStaffId,

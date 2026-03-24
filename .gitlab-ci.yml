@@ -52,11 +52,11 @@ workflow:
     - if: $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "master"
       changes:
         paths:
-          - "wwwroot/**"
+          - "wwwroot/**/*"
           - package.json
           - package-lock.json
-          - jest.config.ts
-          - jest.integration.config.ts
+          - jest.config.js
+          - jest.integration.config.js
           - tsconfig.json
           - tsconfig.test.json
           - eslint.config.mjs

@@ -4,7 +4,7 @@
  * Fetches and manages dispatch page views (geographic view filters).
  */
 
-import {useCallback, useState} from 'react';
+import {useCallback, useMemo, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {getPageViews, type DfrntPageViewModel} from '../../../services/dispatchApi';
@@ -42,13 +42,13 @@ export function usePageViews(): UsePageViewsReturn {
         queryFn: () => getPageViews(),
     });
 
-    const views: View[] | null = data
+    const views = useMemo<View[] | null>(() => data
         ? data.map((v: DfrntPageViewModel) => ({
             id: v.id,
             name: v.name,
             selected: selectedIds.has(v.id),
         }))
-        : null;
+        : null, [data, selectedIds]);
 
     const toggleView = useCallback((view: View) => {
         setSelectedIds(prev => {
@@ -68,7 +68,7 @@ export function usePageViews(): UsePageViewsReturn {
         saveSelectedViewIds(new Set());
     }, []);
 
-    const selectedViewIds = [...selectedIds];
+    const selectedViewIds = useMemo(() => [...selectedIds], [selectedIds]);
 
     return {views, loading: isLoading, selectedViewIds, toggleView, clearAll};
 }
