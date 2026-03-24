@@ -21,7 +21,6 @@ import {
     dispatchExecutorApi,
 } from './dispatchExecutorApi';
 import {apiClient} from './apiClient';
-import {createMockApiError} from '../__testUtils__';
 
 jest.mock('./apiClient', () => ({
     apiClient: {
@@ -216,7 +215,7 @@ describe('dispatchExecutorApi', () => {
     describe('createInterCourierCharge', () => {
         it('should call apiClient.post with charge data', async () => {
             mockApiClient.post.mockResolvedValueOnce(undefined);
-            const data = {jobId: 80, courierId: 42, amount: 50, description: 'Transfer fee'};
+            const data = {fromCourierId: 10, toCourierId: 20, clientId: 30, reference: 'REF-001', amount: 50};
 
             await createInterCourierCharge(data);
 

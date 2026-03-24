@@ -433,9 +433,14 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 })}
             >
                 <PriceChangeIcon sx={{ fontSize: 24 }} />
-                <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
-                    Edit Price
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" fontWeight={600}>
+                        Edit Price
+                    </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        Adjust the job price
+                    </Typography>
+                </Box>
                 <IconButton
                     onClick={onClose}
                     disabled={isLoading}

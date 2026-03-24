@@ -432,6 +432,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                     <Typography variant="h6" fontWeight={600}>
                         Add New Job
                     </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        Create a new dispatch job
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={onClose}

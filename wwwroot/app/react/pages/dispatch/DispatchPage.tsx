@@ -43,7 +43,7 @@ import {openCreateJobDialog} from '../../components/dialogs/create-job-dialog/cr
 import {
     openDashboardSettingsDialog
 } from '../../components/dialogs/dashboard-settings-dialog/dashboard-settings-dialog-react.module';
-import {openInterCourierChargeDialog} from '../../services/angularDialogBridge';
+import {openInterCourierChargeDialog} from '../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module';
 import {ConfirmDialog} from './components/ConfirmDialog';
 import {CourierSelectionDialog} from './components/CourierSelectionDialog';
 import {SaveLayoutDialog} from './components/SaveLayoutDialog';
@@ -330,12 +330,12 @@ export function DispatchPage({
 
     const handleInterCourierCharge = useCallback(async () => {
         try {
-            await openInterCourierChargeDialog();
+            await openInterCourierChargeDialog({showToast});
         } catch (error) {
             if (!error) return; // User cancelled
             console.error('Error opening inter-courier charge dialog:', error);
         }
-    }, []);
+    }, [showToast]);
 
     const handleOpenSettings = useCallback(async () => {
         try {

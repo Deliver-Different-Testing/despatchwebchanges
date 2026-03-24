@@ -196,8 +196,10 @@ jest.mock('../../services/addStopFlow', () => ({
 jest.mock('../../components/dialogs/swap-pods-dialog/swap-pods-dialog-react.module', () => ({
     openSwapPodsDialog: jest.fn(() => Promise.resolve()),
 }));
-jest.mock('../../services/angularDialogBridge', () => ({
+jest.mock('../../components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module', () => ({
     openInterCourierChargeDialog: jest.fn(() => Promise.resolve()),
+}));
+jest.mock('../../services/angularDialogBridge', () => ({
     openJobFileUploadDialog: jest.fn(() => Promise.resolve()),
 }));
 

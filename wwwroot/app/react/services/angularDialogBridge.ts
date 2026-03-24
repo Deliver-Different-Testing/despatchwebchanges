@@ -14,15 +14,6 @@ function getAngularInjector(): any {
 }
 
 /**
- * Open the Inter-Courier Charge dialog (AngularJS).
- */
-export async function openInterCourierChargeDialog(): Promise<void> {
-    const injector = getAngularInjector();
-    const service = injector.get('interCourierChargeDialogService');
-    await service.showInterCourierCharge(null);
-}
-
-/**
  * Open the Job File Upload dialog (AngularJS).
  */
 export async function openJobFileUploadDialog(jobId: number): Promise<void> {
