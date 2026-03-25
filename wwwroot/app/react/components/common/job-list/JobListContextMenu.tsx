@@ -461,9 +461,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 ] : null}
 
                 {/* Single-job mode */}
-                {selectedJobs.length <= 1 && <>
-                {/* Mark Read / Unread */}
-                <MenuItem onClick={handleMarkReadUnread}>
+                {selectedJobs.length <= 1 && [
+                /* Mark Read / Unread */
+                <MenuItem key="mark-read" onClick={handleMarkReadUnread}>
                     <ListItemIcon>
                         {activeJob.hasBeenRead
                             ? <MarkEmailUnreadIcon fontSize="small"/>
@@ -471,137 +471,139 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         }
                     </ListItemIcon>
                     <ListItemText>{activeJob.hasBeenRead ? 'Mark as Unread' : 'Mark as Read'}</ListItemText>
-                </MenuItem>
+                </MenuItem>,
 
-                <Divider/>
+                <Divider key="divider-1"/>,
 
-                {/* Unassign Flight (Domestic only) */}
-                {appPage === AppPageDomestic && activeJob.assignedFlight && activeJob.isFlightJob && (
-                    <MenuItem onClick={handleUnassignFlight}>
+                /* Unassign Flight (Domestic only) */
+                appPage === AppPageDomestic && activeJob.assignedFlight && activeJob.isFlightJob && (
+                    <MenuItem key="unassign-flight" onClick={handleUnassignFlight}>
                         <ListItemIcon><AirplanemodeInactiveIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Unassign Flight</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Unassign Agent (Domestic only) */}
-                {appPage === AppPageDomestic && activeJob.assignedAgent && (
-                    <MenuItem onClick={handleUnassignAgent}>
+                /* Unassign Agent (Domestic only) */
+                appPage === AppPageDomestic && activeJob.assignedAgent && (
+                    <MenuItem key="unassign-agent" onClick={handleUnassignAgent}>
                         <ListItemIcon><PersonRemoveIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Unassign Agent</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Add Stop (Agent jobs) */}
-                {activeJob.isAgentJob && (
-                    <MenuItem onClick={handleAddStop}>
+                /* Add Stop (Agent jobs) */
+                activeJob.isAgentJob && (
+                    <MenuItem key="add-stop" onClick={handleAddStop}>
                         <ListItemIcon><PinDropIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>
                             {activeJob.toAirportId && !activeJob.fromAirportId ? 'Add Pickup Stop' : 'Add Delivery Stop'}
                         </ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Late Pickup / Delivery (Dispatch or JobSearch) */}
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && [
+                /* Late Pickup / Delivery (Dispatch or JobSearch) */
+                (appPage === AppPageDispatch || appPage === AppPageJobSearch) && (
                     <MenuItem key="late-pickup" onClick={handleLatePickup}>
                         <ListItemIcon><ScheduleIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Late Pickup</ListItemText>
-                    </MenuItem>,
+                    </MenuItem>
+                ),
+                (appPage === AppPageDispatch || appPage === AppPageJobSearch) && (
                     <MenuItem key="late-delivery" onClick={handleLateDelivery}>
                         <ListItemIcon><LocalShippingIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Late Delivery</ListItemText>
-                    </MenuItem>,
-                ]}
+                    </MenuItem>
+                ),
 
-                {/* AI Late Alert Analysis */}
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && isAiEnabled() && (
-                    <MenuItem onClick={handleAiLateAlert}>
+                /* AI Late Alert Analysis */
+                (appPage === AppPageDispatch || appPage === AppPageJobSearch) && isAiEnabled() && (
+                    <MenuItem key="ai-late-alert" onClick={handleAiLateAlert}>
                         <ListItemIcon><AutoAwesomeIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>AI Late Alert Analysis (Beta)</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && <Divider/>}
+                (appPage === AppPageDispatch || appPage === AppPageJobSearch) && <Divider key="divider-2"/>,
 
-                {/* Reprice (Nationwide only) */}
-                {isNationwideSpeed && notReprice && !activeJob.preBook && (
-                    <MenuItem onClick={handleReprice}>
+                /* Reprice (Nationwide only) */
+                isNationwideSpeed && notReprice && !activeJob.preBook && (
+                    <MenuItem key="reprice" onClick={handleReprice}>
                         <ListItemIcon><PriceCheckIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Reprice Job</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Add Task / Task Groups */}
-                <MenuItem onClick={handleAddTaskOther}>
+                /* Add Task / Task Groups */
+                <MenuItem key="add-task" onClick={handleAddTaskOther}>
                     <ListItemIcon><AddIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Add Task - Other</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={(e) => setEventGroupsAnchor(e.currentTarget)}>
+                </MenuItem>,
+                <MenuItem key="task-groups" onClick={(e) => setEventGroupsAnchor(e.currentTarget)}>
                     <ListItemIcon><EventIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Task Groups</ListItemText>
                     <ChevronRightIcon fontSize="small" sx={{ml: 1, color: 'text.disabled'}}/>
-                </MenuItem>
+                </MenuItem>,
 
-                <Divider/>
+                <Divider key="divider-3"/>,
 
-                {/* Send to Live (bulk jobs not done) */}
-                {activeJob.isBulkJob && !activeJob.done && (
-                    <MenuItem onClick={handleSendToLive}>
+                /* Send to Live (bulk jobs not done) */
+                activeJob.isBulkJob && !activeJob.done && (
+                    <MenuItem key="send-to-live" onClick={handleSendToLive}>
                         <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Send to Live</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Void Job */}
-                <MenuItem onClick={handleVoidJob}>
+                /* Void Job */
+                <MenuItem key="void-job" onClick={handleVoidJob}>
                     <ListItemIcon><CancelIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Void Job</ListItemText>
-                </MenuItem>
+                </MenuItem>,
 
-                {/* Swap PODs (completed non-bulk non-prebook) */}
-                {activeJob.done && !activeJob.isBulkJob && !activeJob.preBook && (
-                    <MenuItem onClick={handleSwapPods}>
+                /* Swap PODs (completed non-bulk non-prebook) */
+                activeJob.done && !activeJob.isBulkJob && !activeJob.preBook && (
+                    <MenuItem key="swap-pods" onClick={handleSwapPods}>
                         <ListItemIcon><SwapHorizIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Swap PODs</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Split Job */}
-                {activeJob.allowSplit && !hasChildren && (
-                    <MenuItem onClick={handleSplitJob}>
+                /* Split Job */
+                activeJob.allowSplit && !hasChildren && (
+                    <MenuItem key="split-job" onClick={handleSplitJob}>
                         <ListItemIcon><CallSplitIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Split Job</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                <Divider/>
+                <Divider key="divider-4"/>,
 
-                {/* Set First Job */}
-                <MenuItem onClick={handleSetFirstJob}>
+                /* Set First Job */
+                <MenuItem key="set-first" onClick={handleSetFirstJob}>
                     <ListItemIcon><FirstPageIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Set First Job</ListItemText>
-                </MenuItem>
+                </MenuItem>,
 
-                {/* Re-Dispatch */}
-                {activeJob.assignedCourier && (
-                    <MenuItem onClick={handleRedispatch}>
+                /* Re-Dispatch */
+                activeJob.assignedCourier && (
+                    <MenuItem key="redispatch" onClick={handleRedispatch}>
                         <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Re-Dispatch</ListItemText>
                     </MenuItem>
-                )}
+                ),
 
-                {/* Restore */}
-                <MenuItem onClick={handleRestore}>
+                /* Restore */
+                <MenuItem key="restore" onClick={handleRestore}>
                     <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Restore</ListItemText>
-                </MenuItem>
+                </MenuItem>,
 
-                {/* Mark Missing */}
-                <MenuItem onClick={handleMarkMissing}>
+                /* Mark Missing */
+                <MenuItem key="mark-missing" onClick={handleMarkMissing}>
                     <ListItemIcon><HelpOutlineIcon fontSize="small"/></ListItemIcon>
                     <ListItemText>Mark Missing</ListItemText>
-                </MenuItem>
-                </>}
+                </MenuItem>,
+                ]}
             </Menu>
 
             {/* Task Groups Submenu */}
