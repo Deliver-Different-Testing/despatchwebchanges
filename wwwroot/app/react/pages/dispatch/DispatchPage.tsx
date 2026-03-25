@@ -7,6 +7,7 @@
  */
 
 import React, {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import type {SxProps, Theme} from '@mui/material';
 import {DashboardGrid} from './components/DashboardGrid';
@@ -151,8 +152,16 @@ export function DispatchPage({
     const saveLayoutRef = useRef<import('./components/SaveLayoutDialog').SaveLayoutDialogHandle>(null);
     const truckStatusRef = useRef<import('./components/TruckStatusManager').TruckStatusManagerHandle>(null);
 
-    // Potential couriers for unassigned job selection
-    const [potentialCouriers, setPotentialCouriers] = useState<IPotentialCourier[]>([]);
+    // Potential couriers for unassigned job selection (auto-cancelled via React Query)
+    const potentialCouriersJobId = jobSelection.currentJob?.courierData?.courierId
+        ? undefined // Skip for already-assigned jobs
+        : jobSelection.currentJobId;
+    const {data: potentialCouriers = []} = useQuery({
+        queryKey: ['potentialCouriers', potentialCouriersJobId],
+        queryFn: () => getPotentialCouriers(potentialCouriersJobId!),
+        enabled: !!potentialCouriersJobId,
+        staleTime: 30_000,
+    });
 
     // Map jobs for courier's current work display
     const currentWorkMapJobsRef = useRef<IDispatchMapItem[]>([]);
@@ -169,24 +178,7 @@ export function DispatchPage({
 
         if (courierId) {
             currentWork.selectDriver({courierId, name: courierName, jobCount: 0} as any);
-            setPotentialCouriers([]);
         }
-    }, [jobSelection.currentJob?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // 4.1: Fetch potential couriers when selecting an unassigned job
-    useEffect(() => {
-        const job = jobSelection.currentJob;
-        if (!job || job.courierData?.courierId) {
-            setPotentialCouriers([]);
-            return;
-        }
-
-        let cancelled = false;
-        getPotentialCouriers(job.id)
-            .then(couriers => { if (!cancelled) setPotentialCouriers(couriers); })
-            .catch(() => { if (!cancelled) setPotentialCouriers([]); });
-
-        return () => { cancelled = true; };
     }, [jobSelection.currentJob?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // FetchConfig for the job list — uses refs to avoid recreating function

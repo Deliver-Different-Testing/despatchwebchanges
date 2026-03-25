@@ -267,6 +267,28 @@ function formatJobTime(booked: dayjs.Dayjs | undefined): string {
     return tz ? `${time} ${tz}` : time;
 }
 
+// ── Late flags (pre-computed per tick to enable memo comparison) ─────
+
+interface LateFlags {
+    isLatePickup: boolean;
+    isLateDelivery: boolean;
+    isOverdue: boolean;
+    isUrgent: boolean;
+    isProactiveLatePickup: boolean;
+    isProactiveLateDelivery: boolean;
+}
+
+function computeLateFlags(job: DispatchJob): LateFlags {
+    return {
+        isLatePickup: isLateForPickup(job),
+        isLateDelivery: isLateForDelivery(job),
+        isOverdue: isOverdue(job),
+        isUrgent: isUrgent(job),
+        isProactiveLatePickup: isProactivelyLateForPickup(job),
+        isProactiveLateDelivery: isProactivelyLateForDelivery(job),
+    };
+}
+
 // ── Styles ───────────────────────────────────────────────────────────
 
 const headerCellSx: SxProps<Theme> = {
@@ -318,6 +340,7 @@ function getRowSx(
     isRelated: boolean,
     densityMode: DensityMode,
     isMultiSelected: boolean,
+    lateFlags: LateFlags,
 ): Record<string, any> {
     const basePy = densityMode === 'ultra-dense' ? 0 : densityMode === 'dense' ? 0.25 : 0.75;
 
@@ -343,13 +366,12 @@ function getRowSx(
     // Determine highlight flags
     const isDirect = !!job.direct;
     const isChilled = isChilledJob(job);
-    const latePickup = isLateForPickup(job);
-    const lateDelivery = isLateForDelivery(job);
+    const latePickup = lateFlags.isLatePickup;
+    const lateDelivery = lateFlags.isLateDelivery;
     const isWarning = job.statusId === JOB_STATUS.Warning || latePickup || lateDelivery;
-    const isProactiveLate = isProactivelyLateForPickup(job) || isProactivelyLateForDelivery(job);
+    const isProactiveLate = lateFlags.isProactiveLatePickup || lateFlags.isProactiveLateDelivery;
     const isChildJob = !job.isParentOrSingle && !!job.parentId;
     const isMultiPart = isMultiPartJob(job);
-    // isMultiSelected is now passed as a parameter
 
     // Apply highlight in priority order (highest wins for bg/border)
     if (isSelected) {
@@ -560,10 +582,10 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         return () => clearInterval(timer);
     }, []);
 
-    const columns = ALL_COLUMNS.filter((col) => {
+    const columns = useMemo(() => ALL_COLUMNS.filter((col) => {
         if (col.hideForUs && isUsCustomer) return false;
         return !(col.showOnlyJobSearch && !isJobSearchPage);
-    });
+    }), [isUsCustomer, isJobSearchPage]);
 
     const handleSort = useCallback(
         (column: string) => () => onSortChange(column),
@@ -675,25 +697,30 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {jobs.map((job) => (
-                        <JobRow
-                            key={job.angularId}
-                            job={job}
-                            isSelected={selectedJobId === job.id}
-                            isRelated={relatedJobIds.has(job.id)}
-                            isMultiSelected={multiSelectedIds.has(job.id)}
-                            columns={columns}
-                            densityMode={densityMode}
-                            isUsCustomer={isUsCustomer}
-                            appPage={appPage}
-                            tick={tick}
-                            onClick={onJobClick}
-                            onContextMenu={onContextMenu}
-                            onJobDispatch={onJobDispatch}
-                            onToggleSelect={onToggleSelect}
-                            loggedInCouriersOnly={loggedInCouriersOnly}
-                        />
-                    ))}
+                    {jobs.map((job) => {
+                        // Compute time-sensitive flags here so JobRow's memo
+                        // only re-renders rows whose late status actually changed.
+                        const lateFlags = tick >= 0 ? computeLateFlags(job) : computeLateFlags(job);
+                        return (
+                            <JobRow
+                                key={job.angularId}
+                                job={job}
+                                isSelected={selectedJobId === job.id}
+                                isRelated={relatedJobIds.has(job.id)}
+                                isMultiSelected={multiSelectedIds.has(job.id)}
+                                columns={columns}
+                                densityMode={densityMode}
+                                isUsCustomer={isUsCustomer}
+                                appPage={appPage}
+                                lateFlags={lateFlags}
+                                onClick={onJobClick}
+                                onContextMenu={onContextMenu}
+                                onJobDispatch={onJobDispatch}
+                                onToggleSelect={onToggleSelect}
+                                loggedInCouriersOnly={loggedInCouriersOnly}
+                            />
+                        );
+                    })}
                 </TableBody>
             </Table>
         </TableContainer>
@@ -711,7 +738,7 @@ interface JobRowProps {
     densityMode: DensityMode;
     isUsCustomer?: boolean;
     appPage?: number;
-    tick: number;
+    lateFlags: LateFlags;
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
@@ -728,7 +755,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     densityMode,
     isUsCustomer,
     appPage,
-    tick: _tick,
+    lateFlags,
     onClick,
     onContextMenu,
     onJobDispatch,
@@ -763,7 +790,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
-            sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected)}
+            sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected, lateFlags)}
         >
             <TableCell
                 padding="checkbox"
@@ -786,6 +813,30 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             ))}
         </TableRow>
     );
+}, (prev, next) => {
+    // Custom shallow comparison — lateFlags is a new object each tick,
+    // so compare its fields individually to skip re-render when unchanged.
+    if (prev.job !== next.job) return false;
+    if (prev.isSelected !== next.isSelected) return false;
+    if (prev.isRelated !== next.isRelated) return false;
+    if (prev.isMultiSelected !== next.isMultiSelected) return false;
+    if (prev.columns !== next.columns) return false;
+    if (prev.densityMode !== next.densityMode) return false;
+    if (prev.isUsCustomer !== next.isUsCustomer) return false;
+    if (prev.appPage !== next.appPage) return false;
+    if (prev.onClick !== next.onClick) return false;
+    if (prev.onContextMenu !== next.onContextMenu) return false;
+    if (prev.onJobDispatch !== next.onJobDispatch) return false;
+    if (prev.onToggleSelect !== next.onToggleSelect) return false;
+    if (prev.loggedInCouriersOnly !== next.loggedInCouriersOnly) return false;
+    // Shallow compare lateFlags fields
+    const pf = prev.lateFlags, nf = next.lateFlags;
+    return pf.isLatePickup === nf.isLatePickup
+        && pf.isLateDelivery === nf.isLateDelivery
+        && pf.isOverdue === nf.isOverdue
+        && pf.isUrgent === nf.isUrgent
+        && pf.isProactiveLatePickup === nf.isProactiveLatePickup
+        && pf.isProactiveLateDelivery === nf.isProactiveLateDelivery;
 });
 JobRow.displayName = 'JobRow';
 
@@ -1065,7 +1116,7 @@ CourierCell.displayName = 'CourierCell';
 
 // ── Cell Content ─────────────────────────────────────────────────────
 
-const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = ({
+const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = React.memo(({
     col,
     job,
     isUltraDense,
@@ -1219,4 +1270,5 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
         default:
             return null;
     }
-};
+});
+CellContent.displayName = 'CellContent';
