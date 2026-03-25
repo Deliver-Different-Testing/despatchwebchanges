@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {TextInputDialog} from './TextInputDialog';
@@ -19,7 +19,7 @@ describe('TextInputDialog', () => {
     const defaultProps = {
         open: true,
         title: 'Edit Reference',
-        placeholder: 'Enter reference',
+        label: 'Enter reference',
         initialValue: 'REF-001',
         onSubmit: jest.fn(),
         onCancel: jest.fn(),
@@ -41,40 +41,50 @@ describe('TextInputDialog', () => {
         expect(screen.getByDisplayValue('REF-001')).toBeInTheDocument();
     });
 
-    it('calls onCancel when Cancel button clicked', () => {
+    it('renders the floating label on the text field', () => {
         renderWithTheme(<TextInputDialog {...defaultProps} />);
-        fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+        expect(screen.getByLabelText('Enter reference')).toBeInTheDocument();
+    });
+
+    it('calls onCancel when Cancel button clicked', async () => {
+        const user = userEvent.setup({delay: null});
+        renderWithTheme(<TextInputDialog {...defaultProps} />);
+        await user.click(screen.getByRole('button', {name: 'Cancel'}));
         expect(defaultProps.onCancel).toHaveBeenCalledTimes(1);
     });
 
-    it('calls onSubmit with current value when Save clicked', () => {
+    it('calls onSubmit with current value when Save clicked', async () => {
+        const user = userEvent.setup({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
-        fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+        await user.click(screen.getByRole('button', {name: 'Save'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('REF-001');
     });
 
-    it('updates value as user types', () => {
+    it('updates value as user types and submits new value', async () => {
+        const user = userEvent.setup({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
         const input = screen.getByDisplayValue('REF-001');
-        fireEvent.change(input, {target: {value: 'NEW-REF'}});
+        await user.clear(input);
+        await user.type(input, 'NEW-REF');
 
-        fireEvent.click(screen.getByRole('button', {name: 'Save'}));
+        await user.click(screen.getByRole('button', {name: 'Save'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('NEW-REF');
     });
 
-    it('disables Save when required and value is empty', async () => {
-        const user = userEvent.setup();
+    it('disables Save and shows helper text when required and value is empty', async () => {
+        const user = userEvent.setup({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} />);
 
         const input = screen.getByDisplayValue('REF-001');
         await user.clear(input);
 
         expect(screen.getByRole('button', {name: 'Save'})).toBeDisabled();
+        expect(screen.getByText('This field is required')).toBeInTheDocument();
     });
 
     it('does not submit on Enter when required and value is empty', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} required={true} initialValue="" />);
 
         const input = screen.getByRole('textbox');
@@ -84,7 +94,7 @@ describe('TextInputDialog', () => {
     });
 
     it('submits on Enter key when value is valid', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({delay: null});
         renderWithTheme(<TextInputDialog {...defaultProps} />);
 
         const input = screen.getByDisplayValue('REF-001');

@@ -92,6 +92,7 @@ const rootStyles: Record<string, SxProps<Theme>> = {
     readStatusBar: {
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 1,
         mt: 1.5,
         px: 2,
@@ -453,7 +454,7 @@ export function JobDetails({config}: JobDetailsProps) {
             <TextInputDialog
                 open={actions.textDialog.open}
                 title={actions.textDialog.title}
-                placeholder={actions.textDialog.placeholder}
+                label={actions.textDialog.label}
                 initialValue={actions.textDialog.initialValue}
                 onSubmit={actions.handleTextDialogSubmit}
                 onCancel={actions.handleTextDialogCancel}

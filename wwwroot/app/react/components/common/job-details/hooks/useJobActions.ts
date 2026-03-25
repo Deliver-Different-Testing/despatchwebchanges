@@ -26,7 +26,7 @@ import {
 interface TextDialogState {
     open: boolean;
     title: string;
-    placeholder: string;
+    label: string;
     initialValue: string;
     field: string;
     okLabel?: string;
@@ -36,7 +36,7 @@ interface TextDialogState {
 const emptyTextDialog: TextDialogState = {
     open: false,
     title: '',
-    placeholder: '',
+    label: '',
     initialValue: '',
     field: '',
 };
@@ -81,7 +81,7 @@ export function useJobActions({
 
     const openTextDialog = useCallback((
         title: string,
-        placeholder: string,
+        label: string,
         field: string,
         initialValue: string | number | undefined,
         okLabel?: string,
@@ -90,7 +90,7 @@ export function useJobActions({
         setTextDialog({
             open: true,
             title,
-            placeholder,
+            label,
             initialValue: initialValue?.toString() ?? '',
             field,
             okLabel,

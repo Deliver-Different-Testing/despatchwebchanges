@@ -5,7 +5,7 @@
  * RefA, RefB, POD name, weight, tracking mobile/email, etc.
  */
 
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect} from 'react';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -16,7 +16,7 @@ import Button from '@mui/material/Button';
 export interface TextInputDialogProps {
     open: boolean;
     title: string;
-    placeholder: string;
+    label: string;
     initialValue: string;
     okLabel?: string;
     cancelLabel?: string;
@@ -28,7 +28,7 @@ export interface TextInputDialogProps {
 export function TextInputDialog({
     open,
     title,
-    placeholder,
+    label,
     initialValue,
     okLabel = 'Save',
     cancelLabel = 'Cancel',
@@ -37,7 +37,7 @@ export function TextInputDialog({
     onCancel,
 }: TextInputDialogProps) {
     const [value, setValue] = useState(initialValue);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const isEmpty = required && !value.trim();
 
     useEffect(() => {
         if (open) {
@@ -45,66 +45,41 @@ export function TextInputDialog({
         }
     }, [open, initialValue]);
 
-    // Autofocus input when dialog opens
-    useEffect(() => {
-        if (open) {
-            const timer = setTimeout(() => {
-                inputRef.current?.focus();
-                inputRef.current?.select();
-            }, 100);
-            return () => clearTimeout(timer);
-        }
-    }, [open]);
-
-    const handleSubmit = () => {
-        if (required && !value.trim()) return;
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isEmpty) return;
         onSubmit(value);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            handleSubmit();
-        }
-    };
-
     return (
-        <Dialog
-            open={open}
-            onClose={onCancel}
-            maxWidth="xs"
-            fullWidth
-            slotProps={{
-                paper: {sx: {borderRadius: 2}},
-            }}
-        >
-            <DialogTitle>{title}</DialogTitle>
-            <DialogContent>
-                <TextField
-                    inputRef={inputRef}
-                    fullWidth
-                    variant="outlined"
-                    placeholder={placeholder}
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    size="small"
-                    sx={{mt: 1}}
-                    error={required && !value.trim()}
-                />
-            </DialogContent>
-            <DialogActions>
-                <Button onClick={onCancel} color="inherit">
-                    {cancelLabel}
-                </Button>
-                <Button
-                    onClick={handleSubmit}
-                    variant="contained"
-                    disabled={required && !value.trim()}
-                >
-                    {okLabel}
-                </Button>
-            </DialogActions>
+        <Dialog open={open} onClose={onCancel} maxWidth="xs" fullWidth>
+            <form onSubmit={handleSubmit}>
+                <DialogTitle>{title}</DialogTitle>
+                <DialogContent>
+                    <TextField
+                        autoFocus
+                        fullWidth
+                        label={label}
+                        value={value}
+                        onChange={(e) => setValue(e.target.value)}
+                        margin="dense"
+                        error={isEmpty}
+                        helperText={isEmpty ? 'This field is required' : ' '}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={onCancel}>
+                        {cancelLabel}
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={isEmpty}
+                    >
+                        {okLabel}
+                    </Button>
+                </DialogActions>
+            </form>
         </Dialog>
     );
 }
