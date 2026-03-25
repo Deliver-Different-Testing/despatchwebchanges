@@ -243,13 +243,13 @@ function isMultiPartJob(job: DispatchJob): boolean {
 }
 
 function getFlightIcon(job: DispatchJob): React.ReactNode {
-    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
+    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     const lastChar = job.jobNo.toString().slice(-1);
     switch (lastChar) {
-        case '1': return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
-        case '2': return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
-        case '3': return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
-        default: return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
+        case '1': return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '2': return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '3': return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        default: return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     }
 }
 
@@ -265,28 +265,6 @@ function formatJobTime(booked: dayjs.Dayjs | undefined): string {
     const time = formatMins(dayjs(booked));
     const tz = getTimeZoneShort();
     return tz ? `${time} ${tz}` : time;
-}
-
-// ── Late flags (pre-computed per tick to enable memo comparison) ─────
-
-interface LateFlags {
-    isLatePickup: boolean;
-    isLateDelivery: boolean;
-    isOverdue: boolean;
-    isUrgent: boolean;
-    isProactiveLatePickup: boolean;
-    isProactiveLateDelivery: boolean;
-}
-
-function computeLateFlags(job: DispatchJob): LateFlags {
-    return {
-        isLatePickup: isLateForPickup(job),
-        isLateDelivery: isLateForDelivery(job),
-        isOverdue: isOverdue(job),
-        isUrgent: isUrgent(job),
-        isProactiveLatePickup: isProactivelyLateForPickup(job),
-        isProactiveLateDelivery: isProactivelyLateForDelivery(job),
-    };
 }
 
 // ── Styles ───────────────────────────────────────────────────────────
@@ -305,42 +283,12 @@ const headerCellSx: SxProps<Theme> = {
     letterSpacing: '0.025em',
 };
 
-// Hoisted icon/cell sx constants to avoid per-render allocations
-const iconSx = {
-    infoMain: {color: 'info.main'} as const,
-    errorMain: {color: 'error.main'} as const,
-    textSecondary: {color: 'text.secondary'} as const,
-    warningMain: {color: 'warning.main'} as const,
-    directBolt: {fontSize: 14, ml: 0.5, color: 'warning.main'} as const,
-};
-const dotSx = {
-    error: {width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'} as const,
-    warning: {width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', mx: 'auto'} as const,
-    info: {width: 8, height: 8, borderRadius: '50%', bgcolor: 'info.main', mx: 'auto'} as const,
-};
-const cellSx = {
-    inheritText: {fontWeight: 'inherit', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center'} as const,
-    caption: {display: 'block', color: 'text.secondary', lineHeight: 1.2} as const,
-    inheritFontSize: {fontSize: 'inherit'} as const,
-    courierText: {fontSize: 'inherit', color: 'text.primary'} as const,
-    remainContainer: {display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end'} as const,
-    lateBadge: {
-        fontSize: '0.625rem',
-        fontWeight: 700,
-        color: '#fff',
-        borderRadius: '3px',
-        px: 0.5,
-        lineHeight: 1.4,
-    } as const,
-};
-
 function getRowSx(
     job: DispatchJob,
     isSelected: boolean,
     isRelated: boolean,
     densityMode: DensityMode,
     isMultiSelected: boolean,
-    lateFlags: LateFlags,
 ): Record<string, any> {
     const basePy = densityMode === 'ultra-dense' ? 0 : densityMode === 'dense' ? 0.25 : 0.75;
 
@@ -356,7 +304,6 @@ function getRowSx(
         cursor: 'pointer',
         transition: 'background-color 150ms ease',
         '& .MuiTableCell-root': {...baseCellSx},
-        '& .MuiTableCell-paddingCheckbox': {px: 0, textAlign: 'center'},
         '&:hover': {
             bgcolor: '#cbd5e1',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
@@ -366,12 +313,13 @@ function getRowSx(
     // Determine highlight flags
     const isDirect = !!job.direct;
     const isChilled = isChilledJob(job);
-    const latePickup = lateFlags.isLatePickup;
-    const lateDelivery = lateFlags.isLateDelivery;
+    const latePickup = isLateForPickup(job);
+    const lateDelivery = isLateForDelivery(job);
     const isWarning = job.statusId === JOB_STATUS.Warning || latePickup || lateDelivery;
-    const isProactiveLate = lateFlags.isProactiveLatePickup || lateFlags.isProactiveLateDelivery;
+    const isProactiveLate = isProactivelyLateForPickup(job) || isProactivelyLateForDelivery(job);
     const isChildJob = !job.isParentOrSingle && !!job.parentId;
     const isMultiPart = isMultiPartJob(job);
+    // isMultiSelected is now passed as a parameter
 
     // Apply highlight in priority order (highest wins for bg/border)
     if (isSelected) {
@@ -489,25 +437,25 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
         return getFlightIcon(job);
     }
     if (isChilledJob(job)) {
-        return <Tooltip title="Chilled"><AcUnitIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
+        return <Tooltip title="Chilled"><AcUnitIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     }
     if (isMultiPartJob(job)) {
-        return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={iconSx.textSecondary}/></Tooltip>;
+        return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={{color: 'text.secondary'}}/></Tooltip>;
     }
     if (isLateForPickup(job)) {
-        return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={iconSx.errorMain}/></Tooltip>;
+        return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
     }
     if (isLateForDelivery(job)) {
-        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small" sx={iconSx.errorMain}/></Tooltip>;
+        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
     }
     if (isUrgent(job)) {
-        return <Box sx={dotSx.error}/>;
+        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'}}/>;
     }
     if (job.statusId === JOB_STATUS.Warning) {
-        return <Box sx={dotSx.warning}/>;
+        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', mx: 'auto'}}/>;
     }
     if (needsDispatch(job)) {
-        return <Box sx={dotSx.info}/>;
+        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'info.main', mx: 'auto'}}/>;
     }
     return null;
 }
@@ -582,10 +530,10 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         return () => clearInterval(timer);
     }, []);
 
-    const columns = useMemo(() => ALL_COLUMNS.filter((col) => {
+    const columns = ALL_COLUMNS.filter((col) => {
         if (col.hideForUs && isUsCustomer) return false;
         return !(col.showOnlyJobSearch && !isJobSearchPage);
-    }), [isUsCustomer, isJobSearchPage]);
+    });
 
     const handleSort = useCallback(
         (column: string) => () => onSortChange(column),
@@ -630,13 +578,10 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                         <TableCell
                             padding="checkbox"
                             sx={{
-                                bgcolor: 'grey.100',
-                                borderBottom: 2,
-                                borderColor: 'grey.300',
-                                width: 42,
-                                minWidth: 42,
-                                maxWidth: 42,
-                                textAlign: 'center',
+                                ...headerCellSx,
+                                width: 40,
+                                minWidth: 40,
+                                maxWidth: 40,
                             }}
                         >
                             <Checkbox
@@ -644,6 +589,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 checked={isAllSelected}
                                 indeterminate={isIndeterminate}
                                 onChange={handleSelectAllClick}
+                                sx={{p: 0}}
                             />
                         </TableCell>
                         {columns.map((col) => (
@@ -697,30 +643,25 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {jobs.map((job) => {
-                        // Compute time-sensitive flags here so JobRow's memo
-                        // only re-renders rows whose late status actually changed.
-                        const lateFlags = tick >= 0 ? computeLateFlags(job) : computeLateFlags(job);
-                        return (
-                            <JobRow
-                                key={job.angularId}
-                                job={job}
-                                isSelected={selectedJobId === job.id}
-                                isRelated={relatedJobIds.has(job.id)}
-                                isMultiSelected={multiSelectedIds.has(job.id)}
-                                columns={columns}
-                                densityMode={densityMode}
-                                isUsCustomer={isUsCustomer}
-                                appPage={appPage}
-                                lateFlags={lateFlags}
-                                onClick={onJobClick}
-                                onContextMenu={onContextMenu}
-                                onJobDispatch={onJobDispatch}
-                                onToggleSelect={onToggleSelect}
-                                loggedInCouriersOnly={loggedInCouriersOnly}
-                            />
-                        );
-                    })}
+                    {jobs.map((job) => (
+                        <JobRow
+                            key={job.angularId}
+                            job={job}
+                            isSelected={selectedJobId === job.id}
+                            isRelated={relatedJobIds.has(job.id)}
+                            isMultiSelected={multiSelectedIds.has(job.id)}
+                            columns={columns}
+                            densityMode={densityMode}
+                            isUsCustomer={isUsCustomer}
+                            appPage={appPage}
+                            tick={tick}
+                            onClick={onJobClick}
+                            onContextMenu={onContextMenu}
+                            onJobDispatch={onJobDispatch}
+                            onToggleSelect={onToggleSelect}
+                            loggedInCouriersOnly={loggedInCouriersOnly}
+                        />
+                    ))}
                 </TableBody>
             </Table>
         </TableContainer>
@@ -738,7 +679,7 @@ interface JobRowProps {
     densityMode: DensityMode;
     isUsCustomer?: boolean;
     appPage?: number;
-    lateFlags: LateFlags;
+    tick: number;
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
@@ -755,7 +696,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     densityMode,
     isUsCustomer,
     appPage,
-    lateFlags,
+    tick: _tick,
     onClick,
     onContextMenu,
     onJobDispatch,
@@ -790,16 +731,17 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
-            sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected, lateFlags)}
+            sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected)}
         >
             <TableCell
                 padding="checkbox"
-                sx={{width: 42, minWidth: 42, maxWidth: 42, textAlign: 'center'}}
+                sx={{width: 40, minWidth: 40, maxWidth: 40}}
                 onClick={handleCheckboxClick}
             >
                 <Checkbox
                     size="small"
                     checked={isMultiSelected}
+                    sx={{p: 0}}
                 />
             </TableCell>
             {columns.map((col) => (
@@ -813,30 +755,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             ))}
         </TableRow>
     );
-}, (prev, next) => {
-    // Custom shallow comparison — lateFlags is a new object each tick,
-    // so compare its fields individually to skip re-render when unchanged.
-    if (prev.job !== next.job) return false;
-    if (prev.isSelected !== next.isSelected) return false;
-    if (prev.isRelated !== next.isRelated) return false;
-    if (prev.isMultiSelected !== next.isMultiSelected) return false;
-    if (prev.columns !== next.columns) return false;
-    if (prev.densityMode !== next.densityMode) return false;
-    if (prev.isUsCustomer !== next.isUsCustomer) return false;
-    if (prev.appPage !== next.appPage) return false;
-    if (prev.onClick !== next.onClick) return false;
-    if (prev.onContextMenu !== next.onContextMenu) return false;
-    if (prev.onJobDispatch !== next.onJobDispatch) return false;
-    if (prev.onToggleSelect !== next.onToggleSelect) return false;
-    if (prev.loggedInCouriersOnly !== next.loggedInCouriersOnly) return false;
-    // Shallow compare lateFlags fields
-    const pf = prev.lateFlags, nf = next.lateFlags;
-    return pf.isLatePickup === nf.isLatePickup
-        && pf.isLateDelivery === nf.isLateDelivery
-        && pf.isOverdue === nf.isOverdue
-        && pf.isUrgent === nf.isUrgent
-        && pf.isProactiveLatePickup === nf.isProactiveLatePickup
-        && pf.isProactiveLateDelivery === nf.isProactiveLateDelivery;
 });
 JobRow.displayName = 'JobRow';
 
@@ -1116,7 +1034,7 @@ CourierCell.displayName = 'CourierCell';
 
 // ── Cell Content ─────────────────────────────────────────────────────
 
-const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = React.memo(({
+const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = ({
     col,
     job,
     isUltraDense,
@@ -1141,14 +1059,14 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
         case 'jobNo':
             return (
                 <>
-                    <Typography variant="body2" sx={cellSx.inheritText}>
+                    <Typography variant="body2" sx={{fontWeight: 'inherit', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center'}}>
                         {job.jobNo}
                         {job.direct && (
-                            <Tooltip title="Direct"><BoltIcon sx={iconSx.directBolt}/></Tooltip>
+                            <Tooltip title="Direct"><BoltIcon sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/></Tooltip>
                         )}
                     </Typography>
                     {isUsCustomer && job.clientName && (
-                        <Typography variant="caption" sx={cellSx.caption} noWrap>
+                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
                             {job.clientName}
                         </Typography>
                     )}
@@ -1160,9 +1078,9 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={cellSx.inheritFontSize} noWrap>{getPickupAddressUs(job)}</Typography>
+                        <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>{getPickupAddressUs(job)}</Typography>
                         {getPickupCityState(job) && (
-                            <Typography variant="caption" sx={cellSx.caption} noWrap>
+                            <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
                                 {getPickupCityState(job)}
                             </Typography>
                         )}
@@ -1174,9 +1092,9 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={cellSx.inheritFontSize} noWrap>{getDeliveryAddressUs(job)}</Typography>
+                        <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>{getDeliveryAddressUs(job)}</Typography>
                         {getDeliveryCityState(job) && (
-                            <Typography variant="caption" sx={cellSx.caption} noWrap>
+                            <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
                                 {getDeliveryCityState(job)}
                             </Typography>
                         )}
@@ -1188,7 +1106,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             // Flight assignment — show flight number, no Assign button
             if (job.assignedFlight) {
                 return (
-                    <Typography variant="body2" sx={cellSx.courierText} noWrap>
+                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
                         {job.assignedFlight.flightNumber}
                     </Typography>
                 );
@@ -1196,7 +1114,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             // Agent assignment — show agent name, no Assign button
             if (job.assignedAgent) {
                 return (
-                    <Typography variant="body2" sx={cellSx.courierText} noWrap>
+                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
                         {job.assignedAgent.agentName}
                     </Typography>
                 );
@@ -1221,7 +1139,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             const overdue = isOverdue(job);
             const lateLabel = lateForPickup ? 'LP' : lateForDelivery ? 'LD' : null;
             return (
-                <Box sx={cellSx.remainContainer}>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end'}}>
                     <Typography
                         variant="body2"
                         sx={{
@@ -1236,8 +1154,13 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
                         <Typography
                             variant="caption"
                             sx={{
-                                ...cellSx.lateBadge,
+                                fontSize: '0.625rem',
+                                fontWeight: 700,
+                                color: '#fff',
                                 bgcolor: lateForPickup ? '#d32f2f' : '#e65100',
+                                borderRadius: '3px',
+                                px: 0.5,
+                                lineHeight: 1.4,
                             }}
                         >
                             {lateLabel}
@@ -1270,5 +1193,4 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
         default:
             return null;
     }
-});
-CellContent.displayName = 'CellContent';
+};
