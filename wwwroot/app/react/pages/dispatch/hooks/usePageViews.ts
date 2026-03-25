@@ -4,7 +4,7 @@
  * Fetches and manages dispatch page views (geographic view filters).
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useMemo, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {getPageViews, type DfrntPageViewModel} from '../../../services/dispatchApi';
@@ -36,6 +36,8 @@ export interface UsePageViewsReturn {
 
 export function usePageViews(): UsePageViewsReturn {
     const [selectedIds, setSelectedIds] = useState<Set<number>>(loadSelectedViewIds);
+    // Track whether the auto-select-all has been applied so we only do it once.
+    const didAutoSelect = useRef(selectedIds.size > 0);
 
     const {data, isLoading} = useQuery({
         queryKey: queryKeys.dispatch.pageViews,
@@ -43,15 +45,14 @@ export function usePageViews(): UsePageViewsReturn {
     });
 
     // Auto-select all views when API data arrives and nothing is saved yet.
-    // Without this, an empty selectedIds sends despatchViewIds=[] to the API
-    // which returns zero jobs.
-    useEffect(() => {
-        if (data && data.length > 0 && selectedIds.size === 0) {
-            const allIds = new Set(data.map((v: DfrntPageViewModel) => v.id));
-            setSelectedIds(allIds);
-            saveSelectedViewIds(allIds);
-        }
-    }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
+    // Derived during render instead of a useEffect to avoid an extra render cycle.
+    // The ref prevents re-triggering after the user clears all views.
+    if (!didAutoSelect.current && data && data.length > 0 && selectedIds.size === 0) {
+        const allIds = new Set(data.map((v: DfrntPageViewModel) => v.id));
+        didAutoSelect.current = true;
+        setSelectedIds(allIds);
+        saveSelectedViewIds(allIds);
+    }
 
     const views = useMemo<View[] | null>(() => data
         ? data.map((v: DfrntPageViewModel) => ({
