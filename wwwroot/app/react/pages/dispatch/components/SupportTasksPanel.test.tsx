@@ -31,8 +31,8 @@ describe('SupportTasksPanel', () => {
         const {unmount} = renderWithTheme(
             <SupportTasksPanel tasks={[]} loading={false} jobId={null}/>
         );
-        unmount();
         expect(screen.getByText('Select a job to view support tasks')).toBeInTheDocument();
+        unmount();
 
 
         const {unmount: unmount2} = renderWithTheme(
