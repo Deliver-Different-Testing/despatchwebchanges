@@ -243,13 +243,13 @@ function isMultiPartJob(job: DispatchJob): boolean {
 }
 
 function getFlightIcon(job: DispatchJob): React.ReactNode {
-    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
     const lastChar = job.jobNo.toString().slice(-1);
     switch (lastChar) {
-        case '1': return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
-        case '2': return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
-        case '3': return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
-        default: return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '1': return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
+        case '2': return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
+        case '3': return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
+        default: return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
     }
 }
 
@@ -281,6 +281,35 @@ const headerCellSx: SxProps<Theme> = {
     color: 'text.secondary',
     textTransform: 'uppercase',
     letterSpacing: '0.025em',
+};
+
+// Hoisted icon/cell sx constants to avoid per-render allocations
+const iconSx = {
+    infoMain: {color: 'info.main'} as const,
+    errorMain: {color: 'error.main'} as const,
+    textSecondary: {color: 'text.secondary'} as const,
+    warningMain: {color: 'warning.main'} as const,
+    directBolt: {fontSize: 14, ml: 0.5, color: 'warning.main'} as const,
+};
+const dotSx = {
+    error: {width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'} as const,
+    warning: {width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', mx: 'auto'} as const,
+    info: {width: 8, height: 8, borderRadius: '50%', bgcolor: 'info.main', mx: 'auto'} as const,
+};
+const cellSx = {
+    inheritText: {fontWeight: 'inherit', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center'} as const,
+    caption: {display: 'block', color: 'text.secondary', lineHeight: 1.2} as const,
+    inheritFontSize: {fontSize: 'inherit'} as const,
+    courierText: {fontSize: 'inherit', color: 'text.primary'} as const,
+    remainContainer: {display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end'} as const,
+    lateBadge: {
+        fontSize: '0.625rem',
+        fontWeight: 700,
+        color: '#fff',
+        borderRadius: '3px',
+        px: 0.5,
+        lineHeight: 1.4,
+    } as const,
 };
 
 function getRowSx(
@@ -438,25 +467,25 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
         return getFlightIcon(job);
     }
     if (isChilledJob(job)) {
-        return <Tooltip title="Chilled"><AcUnitIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        return <Tooltip title="Chilled"><AcUnitIcon fontSize="small" sx={iconSx.infoMain}/></Tooltip>;
     }
     if (isMultiPartJob(job)) {
-        return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={{color: 'text.secondary'}}/></Tooltip>;
+        return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={iconSx.textSecondary}/></Tooltip>;
     }
     if (isLateForPickup(job)) {
-        return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
+        return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={iconSx.errorMain}/></Tooltip>;
     }
     if (isLateForDelivery(job)) {
-        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
+        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small" sx={iconSx.errorMain}/></Tooltip>;
     }
     if (isUrgent(job)) {
-        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'}}/>;
+        return <Box sx={dotSx.error}/>;
     }
     if (job.statusId === JOB_STATUS.Warning) {
-        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'warning.main', mx: 'auto'}}/>;
+        return <Box sx={dotSx.warning}/>;
     }
     if (needsDispatch(job)) {
-        return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'info.main', mx: 'auto'}}/>;
+        return <Box sx={dotSx.info}/>;
     }
     return null;
 }
@@ -1061,14 +1090,14 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
         case 'jobNo':
             return (
                 <>
-                    <Typography variant="body2" sx={{fontWeight: 'inherit', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center'}}>
+                    <Typography variant="body2" sx={cellSx.inheritText}>
                         {job.jobNo}
                         {job.direct && (
-                            <Tooltip title="Direct"><BoltIcon sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/></Tooltip>
+                            <Tooltip title="Direct"><BoltIcon sx={iconSx.directBolt}/></Tooltip>
                         )}
                     </Typography>
                     {isUsCustomer && job.clientName && (
-                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                        <Typography variant="caption" sx={cellSx.caption} noWrap>
                             {job.clientName}
                         </Typography>
                     )}
@@ -1080,9 +1109,9 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>{getPickupAddressUs(job)}</Typography>
+                        <Typography variant="body2" sx={cellSx.inheritFontSize} noWrap>{getPickupAddressUs(job)}</Typography>
                         {getPickupCityState(job) && (
-                            <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                            <Typography variant="caption" sx={cellSx.caption} noWrap>
                                 {getPickupCityState(job)}
                             </Typography>
                         )}
@@ -1094,9 +1123,9 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>{getDeliveryAddressUs(job)}</Typography>
+                        <Typography variant="body2" sx={cellSx.inheritFontSize} noWrap>{getDeliveryAddressUs(job)}</Typography>
                         {getDeliveryCityState(job) && (
-                            <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                            <Typography variant="caption" sx={cellSx.caption} noWrap>
                                 {getDeliveryCityState(job)}
                             </Typography>
                         )}
@@ -1108,7 +1137,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             // Flight assignment — show flight number, no Assign button
             if (job.assignedFlight) {
                 return (
-                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+                    <Typography variant="body2" sx={cellSx.courierText} noWrap>
                         {job.assignedFlight.flightNumber}
                     </Typography>
                 );
@@ -1116,7 +1145,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             // Agent assignment — show agent name, no Assign button
             if (job.assignedAgent) {
                 return (
-                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+                    <Typography variant="body2" sx={cellSx.courierText} noWrap>
                         {job.assignedAgent.agentName}
                     </Typography>
                 );
@@ -1141,7 +1170,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             const overdue = isOverdue(job);
             const lateLabel = lateForPickup ? 'LP' : lateForDelivery ? 'LD' : null;
             return (
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end'}}>
+                <Box sx={cellSx.remainContainer}>
                     <Typography
                         variant="body2"
                         sx={{
@@ -1156,13 +1185,8 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
                         <Typography
                             variant="caption"
                             sx={{
-                                fontSize: '0.625rem',
-                                fontWeight: 700,
-                                color: '#fff',
+                                ...cellSx.lateBadge,
                                 bgcolor: lateForPickup ? '#d32f2f' : '#e65100',
-                                borderRadius: '3px',
-                                px: 0.5,
-                                lineHeight: 1.4,
                             }}
                         >
                             {lateLabel}

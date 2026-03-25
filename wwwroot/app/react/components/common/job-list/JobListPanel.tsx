@@ -456,13 +456,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // Sort
         filtered = sortJobs(filtered, sortState, isUsCustomer);
 
-        // Stats from full (unfiltered) jobs
-        const statsResult = {
-            total: jobs.length,
-            active: jobs.filter((j) => isActive(j)).length,
-            transit: jobs.filter((j) => isInTransit(j)).length,
-            done: jobs.filter((j) => isDelivered(j)).length,
-        };
+        // Stats from full (unfiltered) jobs — single pass
+        const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
+        for (const j of jobs) {
+            if (isActive(j)) statsResult.active++;
+            if (isInTransit(j)) statsResult.transit++;
+            if (isDelivered(j)) statsResult.done++;
+        }
 
         return {filteredJobs: filtered, stats: statsResult};
     }, [jobs, selectedCategory, searchQuery, sortState, isUsCustomer]);
