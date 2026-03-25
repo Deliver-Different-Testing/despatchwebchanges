@@ -304,6 +304,7 @@ function getRowSx(
         cursor: 'pointer',
         transition: 'background-color 150ms ease',
         '& .MuiTableCell-root': {...baseCellSx},
+        '& .MuiTableCell-paddingCheckbox': {px: 0, textAlign: 'center'},
         '&:hover': {
             bgcolor: '#cbd5e1',
             boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12)',
@@ -578,10 +579,13 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                         <TableCell
                             padding="checkbox"
                             sx={{
-                                ...headerCellSx,
-                                width: 40,
-                                minWidth: 40,
-                                maxWidth: 40,
+                                bgcolor: 'grey.100',
+                                borderBottom: 2,
+                                borderColor: 'grey.300',
+                                width: 42,
+                                minWidth: 42,
+                                maxWidth: 42,
+                                textAlign: 'center',
                             }}
                         >
                             <Checkbox
@@ -589,7 +593,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 checked={isAllSelected}
                                 indeterminate={isIndeterminate}
                                 onChange={handleSelectAllClick}
-                                sx={{p: 0}}
                             />
                         </TableCell>
                         {columns.map((col) => (
@@ -735,13 +738,12 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
         >
             <TableCell
                 padding="checkbox"
-                sx={{width: 40, minWidth: 40, maxWidth: 40}}
+                sx={{width: 42, minWidth: 42, maxWidth: 42, textAlign: 'center'}}
                 onClick={handleCheckboxClick}
             >
                 <Checkbox
                     size="small"
                     checked={isMultiSelected}
-                    sx={{p: 0}}
                 />
             </TableCell>
             {columns.map((col) => (
