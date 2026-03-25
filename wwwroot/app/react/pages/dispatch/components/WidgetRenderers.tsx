@@ -76,30 +76,32 @@ interface JobsListWidgetProps {
     onClearViews?: () => void;
 }
 
-export const JobsListWidget = memo(function JobsListWidget({
-    showToast, isUsCustomer, fetchConfig, defaultCategory,
-    onJobSelect, onJobDispatch, refreshJobListRef, selectJobInListRef,
-    views, onToggleView, onClearViews,
-}: JobsListWidgetProps) {
-    return (
-        <Box sx={styles.widgetContent}>
-            <JobListPanel
-                showToast={showToast}
-                isUsCustomer={isUsCustomer}
-                appPage={1 as AppPage}
-                onJobSelect={onJobSelect}
-                onJobDispatch={onJobDispatch}
-                fetchConfig={fetchConfig}
-                defaultCategory={defaultCategory}
-                setRefreshCallback={(cb) => { refreshJobListRef.current = cb; }}
-                setSelectJobCallback={(cb) => { selectJobInListRef.current = cb; }}
-                views={views}
-                onToggleView={onToggleView}
-                onClearViews={onClearViews}
-            />
-        </Box>
-    );
-});
+export const JobsListWidget = memo(({
+                                        showToast, isUsCustomer, fetchConfig, defaultCategory,
+                                        onJobSelect, onJobDispatch, refreshJobListRef, selectJobInListRef,
+                                        views, onToggleView, onClearViews,
+                                    }: JobsListWidgetProps) => (
+    <Box sx={styles.widgetContent}>
+        <JobListPanel
+            showToast={showToast}
+            isUsCustomer={isUsCustomer}
+            appPage={1 as AppPage}
+            onJobSelect={onJobSelect}
+            onJobDispatch={onJobDispatch}
+            fetchConfig={fetchConfig}
+            defaultCategory={defaultCategory}
+            setRefreshCallback={(cb) => {
+                refreshJobListRef.current = cb;
+            }}
+            setSelectJobCallback={(cb) => {
+                selectJobInListRef.current = cb;
+            }}
+            views={views}
+            onToggleView={onToggleView}
+            onClearViews={onClearViews}
+        />
+    </Box>
+));
 
 // ── Job Detail Widget ─────────────────────────────────────────────────
 
@@ -107,7 +109,7 @@ interface JobDetailWidgetProps {
     config: MountJobDetailsConfig | null;
 }
 
-export const JobDetailWidget = memo(function JobDetailWidget({config}: JobDetailWidgetProps) {
+export const JobDetailWidget = memo(({config}: JobDetailWidgetProps) => {
     if (!config) {
         return (
             <NoData
@@ -136,10 +138,10 @@ interface JobDetailToolbarProps {
     refreshJobList: () => void;
 }
 
-export const JobDetailToolbarActions = memo(function JobDetailToolbarActions({
-    job, showToast, tasks, refetchTasks, closeTask,
-    selectJobById, refreshJobList,
-}: JobDetailToolbarProps) {
+export const JobDetailToolbarActions = memo(({
+                                                 job, showToast, tasks, refetchTasks, closeTask,
+                                                 selectJobById, refreshJobList,
+                                             }: JobDetailToolbarProps) => {
     if (!job) return null;
 
     const hasOpenTask = tasks.some((t: any) => !t.closed);
@@ -245,19 +247,17 @@ interface MapWidgetProps {
     onMarkerClick: (item: IDispatchMapItem) => void;
 }
 
-export const MapWidget = memo(function MapWidget({currentJob, jobs, clearListId, onMarkerClick}: MapWidgetProps) {
-    return (
-        <Box sx={{height: '100%'}}>
-            <DispatchMap
-                currentJob={currentJob}
-                jobs={jobs}
-                clearListId={clearListId}
-                onMarkerClick={onMarkerClick}
-                showAvailableCouriers
-            />
-        </Box>
-    );
-});
+export const MapWidget = memo(({currentJob, jobs, clearListId, onMarkerClick}: MapWidgetProps) => (
+    <Box sx={{height: '100%'}}>
+        <DispatchMap
+            currentJob={currentJob}
+            jobs={jobs}
+            clearListId={clearListId}
+            onMarkerClick={onMarkerClick}
+            showAvailableCouriers
+        />
+    </Box>
+));
 
 // ── Driver Locations Widget ───────────────────────────────────────────
 
@@ -272,10 +272,10 @@ interface DriverLocationsWidgetProps {
     isUsCustomer: boolean;
 }
 
-export const DriverLocationsWidget = memo(function DriverLocationsWidget({
-    driverLocations, loading, truckMode, activeAreaId,
-    onAreaClick, onCourierClick, onClearFilter, isUsCustomer,
-}: DriverLocationsWidgetProps) {
+export const DriverLocationsWidget = memo(({
+                                               driverLocations, loading, truckMode, activeAreaId,
+                                               onAreaClick, onCourierClick, onClearFilter, isUsCustomer,
+                                           }: DriverLocationsWidgetProps) => {
     const hasData = !!driverLocations && (driverLocations.columns?.length > 0 || driverLocations.areas?.length > 0);
     return (
         <Box sx={styles.widgetContent}>
@@ -304,28 +304,26 @@ interface DriverLocationsToolbarProps {
     onSetTruckMode: (mode: TruckMode) => void;
 }
 
-export const DriverLocationsToolbar = memo(function DriverLocationsToolbar({
-    activeAreaId, onClearArea, truckMode, onSetTruckMode,
-}: DriverLocationsToolbarProps) {
-    return (
-        <>
-            {activeAreaId && (
-                <Tooltip title="Clear Driver Location Selection" enterDelay={400}>
-                    <IconButton
-                        size="small"
-                        onClick={onClearArea}
-                        sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
-                    >
-                        <Icon sx={styles.toolbarActionIcon} baseClassName="material-symbols-outlined">
-                            clear_all
-                        </Icon>
-                    </IconButton>
-                </Tooltip>
-            )}
-            <TruckModeMenu truckMode={truckMode} onSetTruckMode={onSetTruckMode} />
-        </>
-    );
-});
+export const DriverLocationsToolbar = memo(({
+                                                activeAreaId, onClearArea, truckMode, onSetTruckMode,
+                                            }: DriverLocationsToolbarProps) => (
+    <>
+        {activeAreaId && (
+            <Tooltip title="Clear Driver Location Selection" enterDelay={400}>
+                <IconButton
+                    size="small"
+                    onClick={onClearArea}
+                    sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
+                >
+                    <Icon sx={styles.toolbarActionIcon} baseClassName="material-symbols-outlined">
+                        clear_all
+                    </Icon>
+                </IconButton>
+            </Tooltip>
+        )}
+        <TruckModeMenu truckMode={truckMode} onSetTruckMode={onSetTruckMode}/>
+    </>
+));
 
 /** Truck mode dropdown for driver locations toolbar */
 function TruckModeMenu({truckMode, onSetTruckMode}: {
@@ -398,11 +396,11 @@ interface CurrentWorkWidgetProps {
     onJobDispatch: (job: DispatchJob, courierId: number) => void;
 }
 
-export const CurrentWorkWidget = memo(function CurrentWorkWidget({
-    viewMode, driverJobsFetchConfig, drivers, loading,
-    selectedCourierId, onDriverSelect,
-    showToast, isUsCustomer, onJobSelect, onJobDispatch,
-}: CurrentWorkWidgetProps) {
+export const CurrentWorkWidget = memo(({
+                                           viewMode, driverJobsFetchConfig, drivers, loading,
+                                           selectedCourierId, onDriverSelect,
+                                           showToast, isUsCustomer, onJobSelect, onJobDispatch,
+                                       }: CurrentWorkWidgetProps) => {
     // Selected driver mode — show the driver's job list
     if (viewMode === 'selectedDriver' && driverJobsFetchConfig) {
         return (
@@ -459,40 +457,43 @@ interface CurrentWorkToolbarProps {
     showToast: ShowToastFn;
 }
 
-export const CurrentWorkToolbar = memo(function CurrentWorkToolbar({
-    viewMode, isUsCustomer, onBackToOverview, onTruckLoadingStatus, onCourierFound, showToast,
-}: CurrentWorkToolbarProps) {
-    return (
-        <>
-            {viewMode === 'selectedDriver' && (
-                <>
-                    {/* Back to overview — only for US tenants (NZ has no driver overview) */}
-                    {isUsCustomer && (
-                        <Tooltip title="Back to All Drivers" enterDelay={400}>
-                            <IconButton
-                                size="small"
-                                onClick={onBackToOverview}
-                                sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
-                            >
-                                <ArrowBackIcon sx={{fontSize: 18}} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    <Tooltip title="Truck Loading Status" enterDelay={400}>
+export const CurrentWorkToolbar = memo(({
+                                            viewMode,
+                                            isUsCustomer,
+                                            onBackToOverview,
+                                            onTruckLoadingStatus,
+                                            onCourierFound,
+                                            showToast,
+                                        }: CurrentWorkToolbarProps) => (
+    <>
+        {viewMode === 'selectedDriver' && (
+            <>
+                {/* Back to overview — only for US tenants (NZ has no driver overview) */}
+                {isUsCustomer && (
+                    <Tooltip title="Back to All Drivers" enterDelay={400}>
                         <IconButton
                             size="small"
-                            onClick={onTruckLoadingStatus}
+                            onClick={onBackToOverview}
                             sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
                         >
-                            <LocalShippingIcon sx={{fontSize: 18}} />
+                            <ArrowBackIcon sx={{fontSize: 18}}/>
                         </IconButton>
                     </Tooltip>
-                </>
-            )}
-            <CourierCodeSearch onCourierFound={onCourierFound} showToast={showToast} />
-        </>
-    );
-});
+                )}
+                <Tooltip title="Truck Loading Status" enterDelay={400}>
+                    <IconButton
+                        size="small"
+                        onClick={onTruckLoadingStatus}
+                        sx={{color: 'inherit', p: 0.5, borderRadius: 1}}
+                    >
+                        <LocalShippingIcon sx={{fontSize: 18}}/>
+                    </IconButton>
+                </Tooltip>
+            </>
+        )}
+        <CourierCodeSearch onCourierFound={onCourierFound} showToast={showToast}/>
+    </>
+));
 
 /** Courier code search input for current work toolbar */
 function CourierCodeSearch({onCourierFound, showToast}: {
@@ -571,29 +572,27 @@ interface SupportsToolbarProps {
     onSelectEventType: (id: number | undefined) => void;
 }
 
-export const SupportsToolbar = memo(function SupportsToolbar({
-    staffList, eventTypeList, selectedStaffId, selectedEventTypeId,
-    onSelectStaff, onSelectEventType,
-}: SupportsToolbarProps) {
-    return (
-        <>
-            <FilterDropdown
-                label="Filter by Staff"
-                icon={<PersonApronIcon sx={{fontSize: 18}}/>}
-                items={staffList}
-                selectedId={selectedStaffId}
-                onSelect={onSelectStaff}
-            />
-            <FilterDropdown
-                label="Filter by Event Type"
-                icon={<CategoryIcon sx={{fontSize: 18}}/>}
-                items={eventTypeList}
-                selectedId={selectedEventTypeId}
-                onSelect={onSelectEventType}
-            />
-        </>
-    );
-});
+export const SupportsToolbar = memo(({
+                                         staffList, eventTypeList, selectedStaffId, selectedEventTypeId,
+                                         onSelectStaff, onSelectEventType,
+                                     }: SupportsToolbarProps) => (
+    <>
+        <FilterDropdown
+            label="Filter by Staff"
+            icon={<PersonApronIcon sx={{fontSize: 18}}/>}
+            items={staffList}
+            selectedId={selectedStaffId}
+            onSelect={onSelectStaff}
+        />
+        <FilterDropdown
+            label="Filter by Event Type"
+            icon={<CategoryIcon sx={{fontSize: 18}}/>}
+            items={eventTypeList}
+            selectedId={selectedEventTypeId}
+            onSelect={onSelectEventType}
+        />
+    </>
+));
 
 /** Filter dropdown for toolbar */
 function FilterDropdown({label, icon, items, selectedId, onSelect}: {

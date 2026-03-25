@@ -118,7 +118,7 @@ export function ToggleProperties({
 
     return (
         <Box sx={{...cardContainerSx as object, bgcolor: 'grey.50', px: 2, py: 1.5}}>
-            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
+            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center'}}>
                 <PropertyCheckbox
                     label="Truck" checked={!!job.truck} dense={dense}
                     onChange={() => onToggleProperty(JobProperty.Truck, !!job.truck)}
@@ -169,7 +169,7 @@ export function ToggleProperties({
                                 sx={{mb: 0.5, display: 'block', fontWeight: 500}}>
                         Truck Options
                     </Typography>
-                    <Box sx={{display: 'flex', flexWrap: 'wrap'}}>
+                    <Box sx={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center'}}>
                         <PropertyCheckbox
                             label="Tail Lift PU" checked={job.tailLiftPu} dense={dense}
                             onChange={onTailLiftPickupClick}

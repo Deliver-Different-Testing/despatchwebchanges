@@ -64,7 +64,7 @@ const getStatusBorderColor = (theme: Theme, task: Task, isOverdue: boolean): str
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
 const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
 
-export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
+export const TaskItem = React.memo((props: TaskItemProps) => {
     const {
         task,
         config: configOverrides,

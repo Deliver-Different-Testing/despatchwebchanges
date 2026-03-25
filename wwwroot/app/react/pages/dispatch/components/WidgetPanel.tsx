@@ -105,72 +105,70 @@ const styles: Record<string, SxProps<Theme>> = {
     },
 };
 
-export const WidgetPanel = memo(function WidgetPanel({
-    config,
-    subtitle,
-    isDefaultLayout,
-    onRefresh,
-    toolbarContent,
-    toolbarActions,
-    children,
-}: WidgetPanelProps) {
-    return (
-        <Box sx={styles.root}>
-            {/* Toolbar header */}
-            <Toolbar variant="dense" disableGutters sx={styles.toolbar}>
-                {/* Box icon */}
-                <Icon sx={styles.icon} baseClassName="material-symbols-outlined">
-                    {config.icon}
-                </Icon>
+export const WidgetPanel = memo(({
+                                     config,
+                                     subtitle,
+                                     isDefaultLayout,
+                                     onRefresh,
+                                     toolbarContent,
+                                     toolbarActions,
+                                     children,
+                                 }: WidgetPanelProps) => (
+    <Box sx={styles.root}>
+        {/* Toolbar header */}
+        <Toolbar variant="dense" disableGutters sx={styles.toolbar}>
+            {/* Box icon */}
+            <Icon sx={styles.icon} baseClassName="material-symbols-outlined">
+                {config.icon}
+            </Icon>
 
-                {/* Title + subtitle */}
-                <Typography variant="subtitle2" noWrap sx={styles.title}>
-                    {config.title}
-                    {subtitle && (
-                        <Box component="span" sx={styles.subtitle}>
-                            {subtitle}
-                        </Box>
-                    )}
-                </Typography>
-
-                {/* Extra toolbar content (e.g., view tabs) */}
-                {toolbarContent}
-
-                {/* Spacer */}
-                <Box sx={styles.spacer} />
-
-                {/* Extra toolbar actions */}
-                {toolbarActions}
-
-                {/* Refresh button */}
-                {config.showRefresh && onRefresh && (
-                    <Tooltip title="Refresh" enterDelay={400}>
-                        <IconButton
-                            size="small"
-                            onClick={onRefresh}
-                            aria-label={`Refresh ${config.title}`}
-                        >
-                            <Icon sx={styles.toolbarIcon} baseClassName="material-symbols-outlined">
-                                refresh
-                            </Icon>
-                        </IconButton>
-                    </Tooltip>
-                )}
-
-                {/* Drag handle */}
-                {!isDefaultLayout && (
-                    <Box className="drag-handle" sx={styles.dragHandle}>
-                        <Icon sx={styles.toolbarIcon} baseClassName="material-symbols-outlined">
-                            drag_indicator
-                        </Icon>
+            {/* Title + subtitle */}
+            <Typography variant="subtitle2" noWrap sx={styles.title}>
+                {config.title}
+                {subtitle && (
+                    <Box component="span" sx={styles.subtitle}>
+                        {subtitle}
                     </Box>
                 )}
-            </Toolbar>
+            </Typography>
 
-            {/* Content */}
-            <Box sx={styles.content}>
-                {children}
-            </Box>
+            {/* Extra toolbar content (e.g., view tabs) */}
+            {toolbarContent}
+
+            {/* Spacer */}
+            <Box sx={styles.spacer}/>
+
+            {/* Extra toolbar actions */}
+            {toolbarActions}
+
+            {/* Refresh button */}
+            {config.showRefresh && onRefresh && (
+                <Tooltip title="Refresh" enterDelay={400}>
+                    <IconButton
+                        size="small"
+                        onClick={onRefresh}
+                        aria-label={`Refresh ${config.title}`}
+                    >
+                        <Icon sx={styles.toolbarIcon} baseClassName="material-symbols-outlined">
+                            refresh
+                        </Icon>
+                    </IconButton>
+                </Tooltip>
+            )}
+
+            {/* Drag handle */}
+            {!isDefaultLayout && (
+                <Box className="drag-handle" sx={styles.dragHandle}>
+                    <Icon sx={styles.toolbarIcon} baseClassName="material-symbols-outlined">
+                        drag_indicator
+                    </Icon>
+                </Box>
+            )}
+        </Toolbar>
+
+        {/* Content */}
+        <Box sx={styles.content}>
+            {children}
         </Box>
-    );
-});
+    </Box>
+));

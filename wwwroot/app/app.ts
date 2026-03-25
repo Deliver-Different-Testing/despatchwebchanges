@@ -92,6 +92,7 @@ app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     const root = document.documentElement;
     if (appConfig.US_Customer) {
         root.style.setProperty('--theme-primary', '#2196f3');
+        root.style.setProperty('--theme-primary-contrast', '#FFFFFF');
         root.style.setProperty('--theme-primary-light', 'rgba(33, 150, 243, 0.15)');
         root.style.setProperty('--theme-primary-medium', 'rgba(33, 150, 243, 0.3)');
         root.style.setProperty('--theme-primary-strong', 'rgba(33, 150, 243, 0.5)');
@@ -99,6 +100,7 @@ app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     } else {
         // Match MUI theme urgentPrimaryPalette[500] - warm amber gold
         root.style.setProperty('--theme-primary', '#f4c430');
+        root.style.setProperty('--theme-primary-contrast', 'rgba(0, 0, 0, 0.87)');
         root.style.setProperty('--theme-primary-light', 'rgba(244, 196, 48, 0.15)');
         root.style.setProperty('--theme-primary-medium', 'rgba(244, 196, 48, 0.3)');
         root.style.setProperty('--theme-primary-strong', 'rgba(244, 196, 48, 0.5)');

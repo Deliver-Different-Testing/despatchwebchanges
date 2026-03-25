@@ -42,7 +42,19 @@ const GridWidget = memo(forwardRef<HTMLDivElement, {
     children?: React.ReactNode;
     className?: string;
     style?: React.CSSProperties;
-}>(function GridWidget({boxId, config, subtitle, isDefaultLayout, onRefresh, toolbarContent, toolbarActions, content, children, className, style}, ref) {
+}>(({
+                                          boxId,
+                                          config,
+                                          subtitle,
+                                          isDefaultLayout,
+                                          onRefresh,
+                                          toolbarContent,
+                                          toolbarActions,
+                                          content,
+                                          children,
+                                          className,
+                                          style
+                                      }, ref) => {
     const handleRefresh = useCallback(() => onRefresh?.(boxId), [onRefresh, boxId]);
     return (
         <div ref={ref} className={className} style={style}>
@@ -80,19 +92,19 @@ const containerStyle: SxProps<Theme> = {
     position: 'relative',
 };
 
-export const DashboardGrid = memo(function DashboardGrid({
-    layout,
-    onLayoutChange,
-    cols,
-    rowHeight,
-    isDefaultLayout,
-    visibleBoxIds,
-    widgets,
-    toolbarContent,
-    toolbarActions,
-    subtitles,
-    onRefresh,
-}: DashboardGridProps) {
+export const DashboardGrid = memo(({
+                                       layout,
+                                       onLayoutChange,
+                                       cols,
+                                       rowHeight,
+                                       isDefaultLayout,
+                                       visibleBoxIds,
+                                       widgets,
+                                       toolbarContent,
+                                       toolbarActions,
+                                       subtitles,
+                                       onRefresh,
+                                   }: DashboardGridProps) => {
     const {width: containerWidth, containerRef} = useContainerWidth();
 
     const filteredLayout = useMemo(

@@ -1,15 +1,15 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
 import Collapse from '@mui/material/Collapse';
-import DashboardIcon from '@mui/icons-material/Dashboard';
+import Icon from '@mui/material/Icon';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import TextField from '@mui/material/TextField';
+import Toolbar from '@mui/material/Toolbar';
+import Typography from '@mui/material/Typography';
 import SearchIcon from '@mui/icons-material/Search';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import type {SxProps, Theme} from '@mui/material';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
@@ -53,16 +53,42 @@ const styles: Record<string, SxProps<Theme>> = {
         flex: 1,
         minWidth: 0,
     },
-    cardHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        px: 2,
-        py: 1,
-        bgcolor: 'background.paper',
-        color: 'text.primary',
-        borderBottom: '1px solid',
+    card: {
+        borderRadius: 1.5,
+        border: 1,
         borderColor: 'divider',
-        minHeight: 44,
+        boxShadow: 1,
+    },
+    cardHeader: (theme: Theme) => ({
+        bgcolor: 'primary.main',
+        color: 'primary.contrastText',
+        minHeight: 40,
+        px: 1.25,
+        gap: 0.5,
+        flexShrink: 0,
+        boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.2)}`,
+        '& .MuiIconButton-root': {
+            color: 'inherit',
+            p: 0.5,
+            borderRadius: 1,
+            transition: 'background-color 150ms ease, transform 150ms ease',
+            '&:hover': {
+                bgcolor: alpha(theme.palette.common.white, 0.15),
+            },
+            '&:active': {
+                transform: 'scale(0.92)',
+            },
+        },
+    }),
+    headerIcon: {
+        fontSize: 20,
+        mr: 0.75,
+        opacity: 0.9,
+    },
+    headerTitle: {
+        fontWeight: 600,
+        fontSize: '0.85rem',
+        letterSpacing: '0.01em',
     },
     searchContainer: {
         display: 'flex',
@@ -362,17 +388,19 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
             {/* Right Panel — Overview + Open Jobs */}
             <Box sx={styles.mainPanel}>
-                <Card variant="outlined">
+                <Card variant="outlined" sx={styles.card}>
                     {/* Card Header */}
-                    <Box sx={styles.cardHeader}>
-                        <DashboardIcon sx={{fontSize: 20}} />
-                        <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
+                    <Toolbar variant="dense" disableGutters sx={styles.cardHeader}>
+                        <Icon sx={styles.headerIcon} baseClassName="material-symbols-outlined">dashboard</Icon>
+                        <Typography variant="subtitle2" noWrap sx={{...styles.headerTitle as object, flex: 1}}>
                             Overview
                         </Typography>
-                        <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
-                            {isOverviewCollapsed ? <ExpandMoreIcon /> : <ExpandLessIcon />}
+                        <IconButton size="small" onClick={handleToggleOverviewCard}>
+                            <Icon sx={{fontSize: 18}} baseClassName="material-symbols-outlined">
+                                {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
+                            </Icon>
                         </IconButton>
-                    </Box>
+                    </Toolbar>
 
                     <Collapse in={!isOverviewCollapsed}>
                         <Box sx={{p: 2}}>
