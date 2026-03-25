@@ -70,123 +70,135 @@ public class TaskRepository(
 
     public async Task SetEventAsClosedAsync(int eventId, bool closed)
     {
-        await using var transaction = await Context.Database.BeginTransactionAsync();
-
-        try
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var existingEvent = await Context.TucEvents
-                .Where(e => e.UcevId == eventId)
-                .Select(e => new { e.UcevClosed })
-                .FirstOrDefaultAsync();
+            await using var transaction = await Context.Database.BeginTransactionAsync();
 
-            if (existingEvent == null)
-                throw new ArgumentException($"Event with ID {eventId} not found.");
-
-            // Only create audit record if value actually changed
-            if (existingEvent.UcevClosed != closed)
+            try
             {
-                await Context.TucEvents
+                var existingEvent = await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(e => e.UcevClosed, closed));
+                    .Select(e => new { e.UcevClosed })
+                    .FirstOrDefaultAsync();
 
-                await CreateEventAuditRecord(
-                    eventId,
-                    infoService.GetStaffId(),
-                    TucEventChangeType.Update,
-                    "UcevClosed",
-                    existingEvent.UcevClosed.ToString(),
-                    closed.ToString()
-                );
+                if (existingEvent == null)
+                    throw new ArgumentException($"Event with ID {eventId} not found.");
+
+                // Only create audit record if value actually changed
+                if (existingEvent.UcevClosed != closed)
+                {
+                    await Context.TucEvents
+                        .Where(e => e.UcevId == eventId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(e => e.UcevClosed, closed));
+
+                    await CreateEventAuditRecord(
+                        eventId,
+                        infoService.GetStaffId(),
+                        TucEventChangeType.Update,
+                        "UcevClosed",
+                        existingEvent.UcevClosed.ToString(),
+                        closed.ToString()
+                    );
+                }
+
+                await transaction.CommitAsync();
             }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     public async Task UpdateEventDueTimeAsync(int eventId, DateTimeOffset dueTime)
     {
-        await using var transaction = await Context.Database.BeginTransactionAsync();
-
-        try
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var existingEvent = await Context.TucEvents
-                .Where(e => e.UcevId == eventId)
-                .Select(e => new { e.UcevDueTime })
-                .FirstOrDefaultAsync();
+            await using var transaction = await Context.Database.BeginTransactionAsync();
 
-            if (existingEvent == null)
-                throw new ArgumentException($"Event with ID {eventId} not found.");
-
-            if (existingEvent.UcevDueTime != dueTime.DateTime)
+            try
             {
-                await Context.TucEvents
+                var existingEvent = await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(e => e.UcevDueTime, dueTime.DateTime));
+                    .Select(e => new { e.UcevDueTime })
+                    .FirstOrDefaultAsync();
 
-                await CreateEventAuditRecord(
-                    eventId,
-                    infoService.GetStaffId(),
-                    TucEventChangeType.Update,
-                    "UcevDueTime",
-                    existingEvent.UcevDueTime.ToString("O"),
-                    dueTime.ToString("O")
-                );
+                if (existingEvent == null)
+                    throw new ArgumentException($"Event with ID {eventId} not found.");
+
+                if (existingEvent.UcevDueTime != dueTime.DateTime)
+                {
+                    await Context.TucEvents
+                        .Where(e => e.UcevId == eventId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(e => e.UcevDueTime, dueTime.DateTime));
+
+                    await CreateEventAuditRecord(
+                        eventId,
+                        infoService.GetStaffId(),
+                        TucEventChangeType.Update,
+                        "UcevDueTime",
+                        existingEvent.UcevDueTime.ToString("O"),
+                        dueTime.ToString("O")
+                    );
+                }
+
+                await transaction.CommitAsync();
             }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     public async Task ReassignEventToUserAsync(int eventId, int staffId)
     {
-        await using var transaction = await Context.Database.BeginTransactionAsync();
-
-        try
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var existingEvent = await Context.TucEvents
-                .Where(e => e.UcevId == eventId)
-                .Select(e => new { e.UcevStaffIdin })
-                .FirstOrDefaultAsync();
+            await using var transaction = await Context.Database.BeginTransactionAsync();
 
-            if (existingEvent == null)
-                throw new ArgumentException($"Event with ID {eventId} not found.");
-
-            if (existingEvent.UcevStaffIdin != staffId)
+            try
             {
-                await Context.TucEvents
+                var existingEvent = await Context.TucEvents
                     .Where(e => e.UcevId == eventId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(e => e.UcevStaffIdin, staffId));
+                    .Select(e => new { e.UcevStaffIdin })
+                    .FirstOrDefaultAsync();
 
-                await CreateEventAuditRecord(
-                    eventId,
-                    infoService.GetStaffId(),
-                    TucEventChangeType.Update,
-                    "UcevStaffIdin",
-                    existingEvent.UcevStaffIdin?.ToString() ?? "null",
-                    staffId.ToString()
-                );
+                if (existingEvent == null)
+                    throw new ArgumentException($"Event with ID {eventId} not found.");
+
+                if (existingEvent.UcevStaffIdin != staffId)
+                {
+                    await Context.TucEvents
+                        .Where(e => e.UcevId == eventId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(e => e.UcevStaffIdin, staffId));
+
+                    await CreateEventAuditRecord(
+                        eventId,
+                        infoService.GetStaffId(),
+                        TucEventChangeType.Update,
+                        "UcevStaffIdin",
+                        existingEvent.UcevStaffIdin?.ToString() ?? "null",
+                        staffId.ToString()
+                    );
+                }
+
+                await transaction.CommitAsync();
             }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
     }
 
     public async Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync() =>

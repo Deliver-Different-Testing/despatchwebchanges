@@ -23,13 +23,7 @@ public sealed class FlightRateService(INationwideJobRepository repository) : IFl
         {
             // Get the job data required for rate calculation
             var dto = await repository.GetFlightRateCalculationDtoAsync(jobId, carrierCode, extraStopOffs, bookTime);
-
-            if (dto == null)
-            {
-                Log.Warning("No flight rate calculation data found for JobId: {JobId}, CarrierCode: {CarrierCode}",
-                    jobId, carrierCode);
-                return 0;
-            }
+            ArgumentNullException.ThrowIfNull(dto);
 
             // Call the stored procedure to calculate rates
             var rates = await repository.GetCarrierFlightRatesAsync(dto);

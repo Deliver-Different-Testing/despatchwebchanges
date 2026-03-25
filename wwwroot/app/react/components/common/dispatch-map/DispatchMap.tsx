@@ -48,7 +48,7 @@ export function DispatchMap({
 
     // Handle map ready
     const handleMapReady = useCallback(
-        (map: any, platform: any, ui: any) => {
+        (map: any, _platform: any, ui: any) => {
             uiRef.current = ui;
 
             // Initialize managers with UI for tooltips
@@ -141,24 +141,22 @@ export function DispatchMap({
         }
     }, [jobs, currentJob, isReady, controlState.couriersOnlyEnabled, controlState.couriersLargeViewEnabled, controlState.autoZoomEnabled, showAvailableCouriers]);
 
-    // Update courier markers when couriers change
+    // Update courier markers when couriers or view mode changes; clear when couriers panel is off
     useEffect(() => {
-        if (!courierMarkerManagerRef.current || !isReady || !showAvailableCouriers) return;
+        if (!courierMarkerManagerRef.current || !isReady) return;
+
+        if (!showAvailableCouriers) {
+            courierMarkerManagerRef.current.clearMarkers();
+            return;
+        }
 
         courierMarkerManagerRef.current.setAutoZoom(controlState.autoZoomEnabled);
         courierMarkerManagerRef.current.updateMarkers(
             couriers,
-            controlState.urgentArmyOnlyEnabled,
+            controlState.couriersLargeViewEnabled ? false : controlState.urgentArmyOnlyEnabled,
             controlState.couriersLargeViewEnabled
         );
     }, [couriers, isReady, showAvailableCouriers, controlState.urgentArmyOnlyEnabled, controlState.couriersLargeViewEnabled, controlState.autoZoomEnabled]);
-
-    // Clear courier markers when showAvailableCouriers is turned off
-    useEffect(() => {
-        if (!showAvailableCouriers && courierMarkerManagerRef.current) {
-            courierMarkerManagerRef.current.clearMarkers();
-        }
-    }, [showAvailableCouriers]);
 
     // Refetch couriers on map view change
     useEffect(() => {
@@ -169,8 +167,8 @@ export function DispatchMap({
         const handleMapViewChange = () => {
             // Debounce the refetch
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                refetchCouriers();
+            debounceTimer = setTimeout(async () => {
+                await refetchCouriers();
             }, 500);
         };
 
@@ -181,55 +179,6 @@ export function DispatchMap({
             clearTimeout(debounceTimer);
         };
     }, [map, showAvailableCouriers, refetchCouriers]);
-
-    // Handle couriers-only toggle
-    useEffect(() => {
-        if (!jobMarkerManagerRef.current || !isReady) return;
-
-        if (controlState.couriersOnlyEnabled) {
-            jobMarkerManagerRef.current.clearMarkers();
-        } else if (!controlState.couriersLargeViewEnabled) {
-            // Restore job markers when turning off couriers-only
-            const isShowingCourierJobs = Boolean(
-                currentJob?.assignedCourier && jobs && jobs.length > 1
-            );
-            jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
-        }
-    }, [controlState.couriersOnlyEnabled, controlState.couriersLargeViewEnabled, isReady, jobs, currentJob]);
-
-    // Handle large view toggle
-    useEffect(() => {
-        if (!isReady) return;
-
-        if (controlState.couriersLargeViewEnabled) {
-            // Clear job markers
-            jobMarkerManagerRef.current?.clearMarkers();
-            // Redraw courier markers in large view
-            if (showAvailableCouriers && courierMarkerManagerRef.current) {
-                courierMarkerManagerRef.current.updateMarkers(
-                    couriers,
-                    false, // No urgent army filter in large view
-                    true // Large view enabled
-                );
-            }
-        } else {
-            // Redraw courier markers in normal view
-            if (showAvailableCouriers && courierMarkerManagerRef.current) {
-                courierMarkerManagerRef.current.updateMarkers(
-                    couriers,
-                    controlState.urgentArmyOnlyEnabled,
-                    false
-                );
-            }
-            // Restore job markers
-            if (!controlState.couriersOnlyEnabled && jobMarkerManagerRef.current) {
-                const isShowingCourierJobs = Boolean(
-                    currentJob?.assignedCourier && jobs && jobs.length > 1
-                );
-                jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
-            }
-        }
-    }, [controlState.couriersLargeViewEnabled, isReady, showAvailableCouriers, couriers, controlState.urgentArmyOnlyEnabled, controlState.couriersOnlyEnabled, jobs, currentJob]);
 
     // Fetch and apply envelope when clearListId changes
     useEffect(() => {

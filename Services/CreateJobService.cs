@@ -1,16 +1,21 @@
+using System.Data;
+using System.Text;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 
 namespace DespatchWeb.Services;
 
 /// <summary>
 /// Service for creating jobs via the Excelerator flow.
-/// Replaces the stored procedure DD_stpJob_InsertExcelerator with C# implementation.
-/// Inner INSERT stored procedures are called via scaffolded EF Core stored proc methods.
+/// Inserts TucJob rows via raw SQL to bypass EF Core's PropagateResults issue
+/// caused by tucJob INSERT triggers producing extra result sets.
 /// </summary>
 public sealed class CreateJobService(
     IDbContextFactory<DespatchContext> contextFactory) : ICreateJobService
@@ -32,7 +37,74 @@ public sealed class CreateJobService(
         }
     }
 
-    private static async Task<CreateMinimalTucJobResponse> CreateJobCoreAsync(
+    /// <inheritdoc />
+    public async Task<int> InsertJobRawAsync(DespatchContext context, TucJob job, CancellationToken ct)
+    {
+        // SQLite (used in tests) doesn't have the INSERT trigger that causes
+        // PropagateResults to break, so normal EF Core works fine.
+        if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
+        {
+            context.TucJobs.Add(job);
+            await context.SaveChangesAsync(ct);
+            return job.UcjbId;
+        }
+
+        var entityType = context.Model.FindEntityType(typeof(TucJob))!;
+        var storeObject = StoreObjectIdentifier.Table(entityType.GetTableName()!, entityType.GetSchema());
+
+        var columns = new List<string>();
+        var paramNames = new List<string>();
+        var parameters = new List<SqlParameter>();
+
+        foreach (var property in entityType.GetProperties())
+        {
+            // Skip store-generated identity column
+            if (property.IsPrimaryKey() && property.ValueGenerated != ValueGenerated.Never)
+                continue;
+
+            // Skip shadow properties (no CLR backing member)
+            if (property.PropertyInfo == null && property.FieldInfo == null)
+                continue;
+
+            // Skip server-computed columns (always overwritten by the database)
+            if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate)
+                continue;
+
+            var columnName = property.GetColumnName(storeObject);
+            if (columnName == null) continue;
+
+            var value = property.PropertyInfo?.GetValue(job)
+                        ?? property.FieldInfo?.GetValue(job);
+
+            var paramName = $"@p{parameters.Count}";
+            columns.Add($"[{columnName}]");
+            paramNames.Add(paramName);
+            var sqlParam = new SqlParameter(paramName, value ?? DBNull.Value);
+            if (property.GetTypeMapping() is RelationalTypeMapping relMapping
+                && string.Equals(relMapping.StoreType, "image", StringComparison.OrdinalIgnoreCase))
+                sqlParam.SqlDbType = SqlDbType.Image;
+            parameters.Add(sqlParam);
+        }
+
+        // OUTPUT parameter to capture the new identity without SqlQueryRaw composability issues
+        var identityParam = new SqlParameter("@identity", SqlDbType.Int)
+        {
+            Direction = ParameterDirection.Output
+        };
+        parameters.Add(identityParam);
+
+        var sql = new StringBuilder();
+        sql.Append("SET NOCOUNT ON; INSERT INTO [tucJob] (");
+        sql.Append(string.Join(", ", columns));
+        sql.Append(") VALUES (");
+        sql.Append(string.Join(", ", paramNames));
+        sql.Append("); SET @identity = SCOPE_IDENTITY();");
+
+        await context.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray<object>(), ct);
+        return (int)identityParam.Value!;
+    }
+
+    private async Task<CreateMinimalTucJobResponse> CreateJobCoreAsync(
         CreateMinimalTucJobInputModel data,
         DespatchContext context,
         CancellationToken cancellationToken)
@@ -49,11 +121,118 @@ public sealed class CreateJobService(
 
         ParseRecurringBitmasks(data, resolved);
 
-        if (resolved.IsBulkSchedule)
-            return await InsertBulkScheduleJobAsync(context, data, resolved, cancellationToken);
+        var unknownSuburbId = await GetUnknownSuburbIdAsync(context, cancellationToken);
+        var job = BuildJobFromInput(data, resolved, unknownSuburbId);
 
-        return await InsertNormalJobAsync(context, data, resolved, cancellationToken);
+        var jobId = await InsertJobRawAsync(context, job, cancellationToken);
+
+        return new CreateMinimalTucJobResponse
+        {
+            Success = true,
+            JobId = jobId
+        };
     }
+
+    /// <summary>
+    /// Builds a TucJob entity from the input model and resolved data.
+    /// </summary>
+    private static TucJob BuildJobFromInput(
+        CreateMinimalTucJobInputModel data,
+        ResolvedJobData resolved,
+        int? unknownSuburbId)
+    {
+        var bookDate = data.Pickup ?? data.TenantCurrentTime;
+        var fromAddress = data.FromAddress;
+        var toAddress = data.ToAddress;
+
+        return new TucJob
+        {
+            UcjbNumber = data.JobNumber,
+            UcjbDate = bookDate,
+            UcjbTime = bookDate,
+            UcjbType = resolved.TypeId,
+            UcjbClientId = resolved.ClientId,
+            UcjbContact = data.BookedBy,
+            UcjbChargeType = resolved.ChargeType,
+            UcjbAmount = data.Amount,
+            UcjbSpeed = resolved.JobTypeId,
+            UcjbFrom = unknownSuburbId,
+            UcjbFromAddr = fromAddress?.FullAddress,
+            UcjbTo = unknownSuburbId,
+            UcjbToAddr = toAddress?.FullAddress,
+            UcjbSize = data.VehicleSizeId ?? resolved.Size,
+            UcjbQty = (short?)resolved.Quantity,
+            UcjbWeight = (double?)resolved.Weight,
+            UcjbOpId = resolved.OperatorId,
+            UcjbReturn = resolved.ReturnJob ?? false,
+            UcjbPickUpFrom = (short?)resolved.PickUpFrom,
+            UcjbClientRefa = resolved.ClientReferenceA,
+            UcjbClientRefb = resolved.ClientReferenceB,
+            UcjbOurRef = data.OurRef,
+            UcjbNotes = resolved.CourierNotes,
+            ClientNotes = resolved.ClientNotes,
+            UcjbClientCode = resolved.ClientCode,
+            ContactId = resolved.ContactId,
+            DeliverToPrivateBusiness = resolved.DeliverToPrivateBusiness,
+            DeliverToLeaveId = resolved.DeliverToLeaveId,
+            ProofOfDelivery = resolved.ProofOfDelivery.HasValue
+                ? resolved.ProofOfDelivery.Value ? 1 : 0
+                : null,
+            ProofOfDeliveryEmail = resolved.ProofOfDeliveryEmail,
+            ProofOfDeliveryMobile = resolved.ProofOfDeliveryMobile,
+            PickUpLatitude = data.PickUpLatitude,
+            PickUpLongitude = data.PickUpLongitude,
+            DeliveryLatitude = data.DeliveryLatitude,
+            DeliveryLongitude = data.DeliveryLongitude,
+            SourceId = (int)JobSource.DespatchWeb,
+            FuelSurchargeAmount = data.FuelSurchargeAmount ?? 0,
+            DryIceWeight = data.DryIceWeight,
+            Cubic = (double?)data.Cubic,
+            Dgclass = data.DgClass,
+            Dgdocument = data.DgClass.HasValue,
+            LoggedInContactId = data.LoggedInContactId,
+            AccessorialChargeGroupId = data.AccessorialChargeGroupId,
+            DeliverByTime = data.DeliverByDateTime,
+            UcjbCourierId = data.AgentCourierId,
+            DisplayInDespatch = true,
+            UcjbVoid = false,
+            UcjbJobDone = false,
+            UcjbPaged = false,
+            DesiredJobTypeId = resolved.JobTypeId,
+            PickupAddressLine1 = fromAddress?.AddressLine1,
+            PickupAddressLine2 = fromAddress?.AddressLine2,
+            PickupAddressLine3 = fromAddress?.AddressLine3,
+            PickupAddressLine4 = fromAddress?.AddressLine4,
+            PickupAddressLine5 = fromAddress?.AddressLine5,
+            PickupAddressLine6 = fromAddress?.AddressLine6,
+            PickupAddressLine7 = fromAddress?.AddressLine7,
+            PickupAddressLine8 = fromAddress?.AddressLine8,
+            DeliveryAddressLine1 = toAddress?.AddressLine1,
+            DeliveryAddressLine2 = toAddress?.AddressLine2,
+            DeliveryAddressLine3 = toAddress?.AddressLine3,
+            DeliveryAddressLine4 = toAddress?.AddressLine4,
+            DeliveryAddressLine5 = toAddress?.AddressLine5,
+            DeliveryAddressLine6 = toAddress?.AddressLine6,
+            DeliveryAddressLine7 = toAddress?.AddressLine7,
+            DeliveryAddressLine8 = toAddress?.AddressLine8,
+            PickupFromContact = data.FromContactName,
+            PickupFromPhone = data.FromPhoneNumber,
+            DeliverToContact = data.ToContactName,
+            DeliverToPhone = data.ToPhoneNumber,
+            ScheduleName = data.RecurringName,
+            IsRecurringJob = !string.IsNullOrWhiteSpace(data.RecurringName),
+        };
+    }
+
+    /// <summary>
+    /// Returns the "Unknown" suburb ID used as fallback.
+    /// Mirrors DD_stpJob_Excelerator_Insert: SELECT SuburbID FROM tblSuburb WHERE Name = N'Unknown'
+    /// </summary>
+    private static async Task<int?> GetUnknownSuburbIdAsync(DespatchContext context, CancellationToken ct) =>
+        await context.TucSuburbs
+            .Where(s => s.UcsuName == "Unknown")
+            .Select(s => (int?)s.UcsuId)
+            .FirstOrDefaultAsync(ct);
 
     /// <summary>
     /// 2G: Combined client + defaults + settings lookup (saves 2 roundtrips per call).
@@ -429,231 +608,6 @@ public sealed class CreateJobService(
         }
 
         return bitmask;
-    }
-
-    /// <summary>
-    /// Normal job insert path — calls DD_stpJob_Excelerator_Insert via scaffolded stored proc.
-    /// </summary>
-    private static async Task<CreateMinimalTucJobResponse> InsertNormalJobAsync(
-        DespatchContext context,
-        CreateMinimalTucJobInputModel data,
-        ResolvedJobData resolved,
-        CancellationToken ct)
-    {
-        var fromAddress = data.FromAddress;
-        var toAddress = data.ToAddress;
-
-        var jobIdOutput = new OutputParameter<int?>();
-        var jobNumberOutput = new OutputParameter<string> { _value = data.JobNumber };
-        var amountOutput = new OutputParameter<decimal?> { _value = data.Amount };
-        var poaOutput = new OutputParameter<bool?>();
-
-        await context.Procedures.DD_stpJob_Excelerator_InsertAsync(
-            type: resolved.TypeId,
-            clientID: resolved.ClientId,
-            bookdate: data.Pickup ?? data.TenantCurrentTime,
-            contact: data.BookedBy,
-            chargeType: resolved.ChargeType,
-            toCity: toAddress?.AddressLine5,
-            toState: toAddress?.AddressLine6,
-            toZipCode: SafeParseZipCode(toAddress?.AddressLine7),
-            toAddress: toAddress?.FullAddress,
-            toStreet: BuildStreet(toAddress),
-            toExtra: toAddress?.AddressLine2,
-            toCompany: toAddress?.AddressLine1,
-            fromCity: fromAddress?.AddressLine5,
-            fromState: fromAddress?.AddressLine6,
-            fromZipCode: SafeParseZipCode(fromAddress?.AddressLine7),
-            fromAddress: fromAddress?.FullAddress,
-            fromStreet: BuildStreet(fromAddress),
-            fromExtra: fromAddress?.AddressLine2,
-            fromCompany: fromAddress?.AddressLine1,
-            vehicleSizeID: data.VehicleSizeId,
-            qty: resolved.Quantity,
-            totalWeight: (double?)resolved.Weight,
-            totalDistance: null,
-            clientRefa: resolved.ClientReferenceA,
-            clientRefb: resolved.ClientReferenceB,
-            opID: resolved.OperatorId,
-            pickUpFrom: resolved.PickUpFrom,
-            notes: resolved.CourierNotes,
-            clientNotes: resolved.ClientNotes,
-            pickupNotes: data.PickupNotes,
-            deliveryNotes: data.DeliveryNotes,
-            contactPhone: null,
-            service: resolved.JobTypeId,
-            fromContact: data.FromContactName,
-            fromPhone: data.FromPhoneNumber,
-            toContact: data.ToContactName,
-            toPhone: data.ToPhoneNumber,
-            contactID: resolved.ContactId,
-            proofOfDelivery: resolved.ProofOfDelivery.HasValue
-                ? resolved.ProofOfDelivery.Value ? 1 : 0
-                : null,
-            proofOfDeliveryEmail: resolved.ProofOfDeliveryEmail,
-            proofOfDeliveryMobile: resolved.ProofOfDeliveryMobile,
-            ourRef: data.OurRef,
-            speed: resolved.SpeedId,
-            parked: data.Hold,
-            sigNotRequired: resolved.LeaveNotHomeId,
-            pickUpLatitude: data.PickUpLatitude?.ToString(),
-            pickUpLongitude: data.PickUpLongitude?.ToString(),
-            deliveryLatitude: data.DeliveryLatitude?.ToString(),
-            deliveryLongitude: data.DeliveryLongitude?.ToString(),
-            sourceId: (int)JobSource.DespatchWeb,
-            totalPallets: data.TotalPallets,
-            extraStopOffs: null,
-            dryIceWeight: data.DryIceWeight,
-            cubic: data.Cubic,
-            waitTime: null,
-            dGClass: data.DgClass,
-            dGDocs: data.DgClass.HasValue,
-            loggedInContactId: data.LoggedInContactId,
-            accessorialChargeGroupId: data.AccessorialChargeGroupId,
-            deliverByDateTime: data.DeliverByDateTime,
-            pickupTimeZone: data.PickupTimeZone,
-            deliverByTimeZone: data.DeliverByTimeZone,
-            recurringName: data.RecurringName,
-            recurringDays: resolved.RecurringDaysBitmask?.ToString(),
-            daysInt: resolved.RecurringDaysBitmask,
-            frequencyInt: resolved.RecurringFrequencyBitmask,
-            recurringHoliday: null,
-            recurringInitialDays: data.RecurringInitialDays,
-            courierID: data.AgentCourierId,
-            dimensionsType: null,
-            jobID: jobIdOutput,
-            jobNumber: jobNumberOutput,
-            amount: amountOutput,
-            pOA: poaOutput,
-            cancellationToken: ct
-        );
-
-        return new CreateMinimalTucJobResponse
-        {
-            Success = jobIdOutput.Value.HasValue,
-            JobId = jobIdOutput.Value
-        };
-    }
-
-    /// <summary>
-    /// Bulk schedule insert path — calls DD_stpBulkScheduleJob_Insert via scaffolded stored proc.
-    /// </summary>
-    private static async Task<CreateMinimalTucJobResponse> InsertBulkScheduleJobAsync(
-        DespatchContext context,
-        CreateMinimalTucJobInputModel data,
-        ResolvedJobData resolved,
-        CancellationToken ct)
-    {
-        var fromAddress = data.FromAddress;
-        var toAddress = data.ToAddress;
-
-        var jobIdOutput = new OutputParameter<int?>();
-        var jobNumberOutput = new OutputParameter<string>();
-        var amountOutput = new OutputParameter<decimal?>();
-
-        await context.Procedures.DD_stpBulkScheduleJob_InsertAsync(
-            type: resolved.TypeId,
-            dateTime: data.Pickup ?? data.TenantCurrentTime,
-            clientID: resolved.ClientId,
-            contact: data.BookedBy,
-            urgentScheduleSpeedID: resolved.SpeedId,
-            fromCompany: fromAddress?.AddressLine1,
-            fromAddress: fromAddress?.FullAddress,
-            fromCity: fromAddress?.AddressLine5,
-            fromState: fromAddress?.AddressLine6,
-            fromZipCode: SafeParseZipCode(fromAddress?.AddressLine7),
-            fromStreet: BuildStreet(fromAddress),
-            fromExtra: fromAddress?.AddressLine2,
-            fromContact: data.FromContactName,
-            fromPhone: data.FromPhoneNumber,
-            toCompany: toAddress?.AddressLine1,
-            toAddress: toAddress?.FullAddress,
-            toCity: toAddress?.AddressLine5,
-            toState: toAddress?.AddressLine6,
-            toZipCode: SafeParseZipCode(toAddress?.AddressLine7),
-            toStreet: BuildStreet(toAddress),
-            toExtra: toAddress?.AddressLine2,
-            toContact: data.ToContactName,
-            toContactPhone: data.ToPhoneNumber,
-            vehicleSizeID: data.VehicleSizeId,
-            opID: resolved.OperatorId,
-            size: (short?)resolved.Size,
-            qty: (short?)resolved.Quantity,
-            weight: resolved.Weight,
-            totalDistance: null,
-            courierID: null,
-            clientRefa: resolved.ClientReferenceA,
-            clientRefb: resolved.ClientReferenceB,
-            ourRef: data.OurRef,
-            deliverToPrivateBusiness: resolved.DeliverToPrivateBusiness.HasValue
-                ? resolved.DeliverToPrivateBusiness.Value > 0
-                : null,
-            deliverToLeaveID: resolved.DeliverToLeaveId,
-            notes: resolved.CourierNotes,
-            pickupNotes: data.PickupNotes,
-            deliveryNotes: data.DeliveryNotes,
-            clientNotes: resolved.ClientNotes,
-            remoteJob: null,
-            trackingMethod: null,
-            trackingEmail: null,
-            trackingMobile: null,
-            proofOfDelivery: resolved.ProofOfDelivery.HasValue
-                ? resolved.ProofOfDelivery.Value ? 1 : 0
-                : null,
-            proofOfDeliveryMobile: resolved.ProofOfDeliveryMobile,
-            proofOfDeliveryEmail: resolved.ProofOfDeliveryEmail,
-            pickUpLatitude: data.PickUpLatitude?.ToString(),
-            pickUpLongitude: data.PickUpLongitude?.ToString(),
-            deliveryLatitude: data.DeliveryLatitude?.ToString(),
-            deliveryLongitude: data.DeliveryLongitude?.ToString(),
-            prebookJob: null,
-            onHold: data.Hold,
-            orderRef: data.JobNumber,
-            storageState: null,
-            deliveryState: null,
-            bookFromAddress: null,
-            bookFromCompany: null,
-            bookFromExtra: null,
-            bookFromStreet: null,
-            bookFromCity: null,
-            bookFromState: null,
-            bookFromZipCode: null,
-            bookPickUpLatitude: null,
-            bookPickUpLongitude: null,
-            sourceId: (int)JobSource.DespatchWeb,
-            pickupReadyDateTime: null,
-            loggedInContactId: data.LoggedInContactId,
-            accessorialChargeGroupId: data.AccessorialChargeGroupId,
-            courierPercentageOverride: null,
-            cubicList: data.CubicList,
-            weightList: data.WeightList,
-            barcodeList: data.BarcodeList,
-            stockSizeId: null,
-            deliverByDateTime: data.DeliverByDateTime,
-            pickupTimeZone: data.PickupTimeZone,
-            deliverByTimeZone: data.DeliverByTimeZone,
-            dimensionsType: null,
-            jobID: jobIdOutput,
-            jobNumber: jobNumberOutput,
-            amount: amountOutput,
-            cancellationToken: ct
-        );
-
-        return new CreateMinimalTucJobResponse
-        {
-            Success = jobIdOutput.Value.HasValue,
-            JobId = jobIdOutput.Value
-        };
-    }
-
-    private static string BuildStreet(AddressViewModel addr) =>
-        addr != null ? (addr.AddressLine3 + " " + addr.AddressLine4).Trim() : null;
-
-    private static int? SafeParseZipCode(string zipCode)
-    {
-        if (string.IsNullOrWhiteSpace(zipCode) || !int.TryParse(zipCode, out var result))
-            return null;
-        return result;
     }
 
     /// <summary>

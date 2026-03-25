@@ -16,6 +16,22 @@ import type {DispatchJob, FetchConfig, JobListPanelProps, JobListSearchParams, J
 import {AppPage} from '../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 
+// Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
+jest.mock('@tanstack/react-virtual', () => ({
+    useVirtualizer: ({count}: {count: number}) => ({
+        getVirtualItems: () =>
+            Array.from({length: count}, (_, i) => ({
+                index: i,
+                start: i * 34,
+                end: (i + 1) * 34,
+                size: 34,
+                key: i,
+            })),
+        getTotalSize: () => count * 34,
+        measureElement: () => {},
+    }),
+}));
+
 // Mock modules that depend on AngularJS (window.angular)
 jest.mock('../../services/splitJobFlow', () => ({
     executeSplitJobFlow: jest.fn().mockResolvedValue(undefined),
@@ -432,6 +448,61 @@ describe('JobListPanel', () => {
         });
     });
 
+    describe('ASAP Job Late Detection', () => {
+        it('does not treat ASAP jobs (null time) as having issues when overdue', () => {
+            // ASAP jobs have no delivery time — they should never appear as "late"
+            const asapJob = createMockDispatchJob({
+                id: 1,
+                jobNo: 'ASAP-001',
+                statusId: 1, // Dispatched (pre-pickup)
+                time: null as any,
+                booked: dayjs().subtract(2, 'hour'), // booked 2 hours ago
+                assignedCourier: {id: 10, text: '10 - Runner'},
+                alertLatePickup: 0,
+            });
+
+            const timedJob = createMockDispatchJob({
+                id: 2,
+                jobNo: 'TIMED-001',
+                statusId: 0, // New
+            });
+
+            renderAndPushJobs([asapJob, timedJob]);
+
+            // ASAP job should be visible — it's not "late" and shouldn't be filtered out
+            expect(screen.getByText('ASAP-001')).toBeInTheDocument();
+            expect(screen.getByText('TIMED-001')).toBeInTheDocument();
+        });
+
+        it('does not flag ASAP job in transit as late delivery', () => {
+            const asapJob = createMockDispatchJob({
+                id: 1,
+                jobNo: 'ASAP-002',
+                statusId: 5, // PickedUp (in-transit status)
+                time: null as any, // ASAP — no delivery time
+                booked: dayjs().subtract(3, 'hour'),
+                assignedCourier: {id: 10, text: '10 - Runner'},
+                alertLateDelivery: 0,
+            });
+
+            const timedLateJob = createMockDispatchJob({
+                id: 2,
+                jobNo: 'TIMED-002',
+                statusId: 5, // PickedUp
+                time: dayjs().subtract(1, 'hour'), // overdue
+                booked: dayjs().subtract(2, 'hour'),
+                assignedCourier: {id: 20, text: '20 - Other'},
+                alertLateDelivery: 0,
+            });
+
+            renderAndPushJobs([asapJob, timedLateJob]);
+
+            // Both jobs should render
+            expect(screen.getByText('ASAP-002')).toBeInTheDocument();
+            expect(screen.getByText('TIMED-002')).toBeInTheDocument();
+        });
+    });
+
     describe('Logged-in Couriers Toggle', () => {
         it('defaults to unchecked and can be toggled on and off', async () => {
             const user = userEvent.setup();
@@ -482,9 +553,7 @@ describe('JobListPanel', () => {
                 })} />,
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('FETCHED-001')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
 
             // Verifies fetch was called correctly
             expect(fetchConfig.fetchFn).toHaveBeenCalledWith(
@@ -516,9 +585,7 @@ describe('JobListPanel', () => {
                 })} />,
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('INITIAL')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('INITIAL')).toBeInTheDocument();
 
             fetchFn.mockClear();
             fetchFn.mockResolvedValue({
@@ -550,9 +617,7 @@ describe('JobListPanel', () => {
                 })} />,
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('FETCHED-001')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
 
             (fetchConfig.fetchFn as jest.Mock).mockClear();
             (fetchConfig.fetchFn as jest.Mock).mockResolvedValue({
@@ -582,9 +647,7 @@ describe('JobListPanel', () => {
                 })} />,
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('FETCHED-001')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('FETCHED-001')).toBeInTheDocument();
 
             (fetchConfig.fetchFn as jest.Mock).mockClear();
 
@@ -617,9 +680,7 @@ describe('JobListPanel', () => {
                 <JobListPanel {...createDefaultProps({fetchConfig: emptyFetchConfig})} />,
             );
 
-            await waitFor(() => {
-                expect(screen.getByText('No jobs to display')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('No jobs to display')).toBeInTheDocument();
 
             unmount();
 

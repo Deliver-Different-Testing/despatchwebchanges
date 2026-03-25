@@ -23,8 +23,7 @@ import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dial
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import BulkPriceUploadDialogService from "../dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog.service";
 import IScanDetailResult from "./interfaces/IScanDetailResult";
-import InterCourierChargeDialogService
-    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
+import {openInterCourierChargeDialog} from "../../react/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module";
 import JobSearchDateRange from "./enums/JobSearchDateRange";
 import timezone from "dayjs/plugin/timezone";
 import utc from "dayjs/plugin/utc";
@@ -52,7 +51,6 @@ class JobSearchController extends BaseController {
         "accessorialChargesDialogService",
         "jobFileUploadDialogService",
         "bulkPriceUploadDialogService",
-        'interCourierChargeDialogService',
         'dashboardSettingsDialogService',
         'APP_CONFIG',
         '$scope',
@@ -119,7 +117,6 @@ class JobSearchController extends BaseController {
         private accessorialChargesDialogService: AccessorialChargesDialogService,
         private jobFileUploadDialogService: JobFileUploadDialogService,
         private bulkPriceUploadDialogService: BulkPriceUploadDialogService,
-        private interCourierChargeDialogService: InterCourierChargeDialogService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
         appConfig: IAppConfig,
         $scope: angular.IScope,
@@ -249,12 +246,12 @@ class JobSearchController extends BaseController {
                     sortDirection: this.currentSortDirection,
                 },
             },
-            onJobSelect: (job) => {
-                this.selectJobDetail(job.id as number);
+            onJobSelect: async (job) => {
+                await this.selectJobDetail(job.id as number);
                 this.applyScope();
             },
-            onJobDispatch: (job, courierId) => {
-                this.handleJobDispatch(job as any, courierId);
+            onJobDispatch: async (job, courierId) => {
+                await this.handleJobDispatch(job as any, courierId);
                 this.applyScope();
             },
             onRefresh: () => {
@@ -324,8 +321,8 @@ class JobSearchController extends BaseController {
                     wild: this.searchCriteria.wild,
                 },
             },
-            onJobSelect: (job) => {
-                this.selectBulkJobDetail(job.id as number);
+            onJobSelect: async (job) => {
+                await this.selectBulkJobDetail(job.id as number);
                 this.applyScope();
             },
             onRefresh: () => {
@@ -805,13 +802,21 @@ class JobSearchController extends BaseController {
         }
     }
 
-    async interCourierCharge($event: MouseEvent) {
+    async interCourierCharge() {
         try {
-            await this.interCourierChargeDialogService.showInterCourierCharge($event);
-            console.log("Inter-courier Charge Added!");
+            await openInterCourierChargeDialog({
+                showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
+                    switch (type) {
+                        case 'success': this.toastrService.showSuccessToast(message); break;
+                        case 'warning': this.toastrService.showWarningToast(message); break;
+                        case 'error': this.toastrService.showErrorToast(message); break;
+                        case 'info': this.toastrService.showInfoToast(message); break;
+                    }
+                },
+            });
         } catch (error) {
             if (!error) return;
-            console.log("Inter-courier Charge Canceled!");
+            console.error('Error opening inter-courier charge dialog:', error);
         }
     }
 

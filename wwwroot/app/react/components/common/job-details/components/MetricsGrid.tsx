@@ -40,29 +40,58 @@ function getTzStr(timezone?: { text?: string }): string {
     return getTimezoneAbbreviation(window.TimeZone || '');
 }
 
-export function MetricsGrid({
-                                job,
-                                showToast,
-                                onEditDateAndTime,
-                                onEditPodName,
-                                onEditCompletedTime,
-                                onClientClick,
-                                onPricingClick,
-                                onInternalStatusClick,
-                            }: MetricsGridProps) {
+export const MetricsGrid = React.memo(({
+                                           job,
+                                           showToast,
+                                           onEditDateAndTime,
+                                           onEditPodName,
+                                           onEditCompletedTime,
+                                           onClientClick,
+                                           onPricingClick,
+                                           onInternalStatusClick,
+                                       }: MetricsGridProps) => {
     const puTz = getTzStr(job.pickUpTimeZone);
     const delTz = getTzStr(job.deliveryTimeZone);
     const defaultTz = getTimezoneAbbreviation(window.TimeZone || '');
-
-    const notEditable = useCallback((item: string) => {
-        showToast(`${item} is not editable`, 'info');
-    }, [showToast]);
 
     const isLocked = !!job.locked;
 
     const canEditFollowUp = !isLocked
         && job.internalStatusId !== JobInternalStatusEnum.NewJobs
         && job.internalStatusId !== JobInternalStatusEnum.Reprice;
+
+    // Stable click handlers — avoid inline arrow functions to preserve MetricCard memo
+    const handleCreatedClick = useCallback(() => {
+        showToast('Created Date is not editable', 'info');
+    }, [showToast]);
+
+    const handleDispatchedClick = useCallback(() => {
+        showToast('Dispatch Time is not editable', 'info');
+    }, [showToast]);
+
+    const handleReadyClick = useCallback(() => {
+        onEditDateAndTime(JobProperty.BookedTime, 'Booked Date', job.booked, job.pickUpTimeZone);
+    }, [onEditDateAndTime, job.booked, job.pickUpTimeZone]);
+
+    const handlePuArrivalClick = useCallback(() => {
+        onEditDateAndTime(JobProperty.PickupArrivalTime, 'Pickup Arrival Time', job.pickupArrivalTime, job.pickUpTimeZone);
+    }, [onEditDateAndTime, job.pickupArrivalTime, job.pickUpTimeZone]);
+
+    const handlePuTimeClick = useCallback(() => {
+        onEditDateAndTime(JobProperty.PuTime, 'Pick Up Time', job.puTime, job.pickUpTimeZone);
+    }, [onEditDateAndTime, job.puTime, job.pickUpTimeZone]);
+
+    const handleDeliverByClick = useCallback(() => {
+        onEditDateAndTime(JobProperty.DeliverBy, 'Deliver By', job.deliverByTime, job.deliveryTimeZone);
+    }, [onEditDateAndTime, job.deliverByTime, job.deliveryTimeZone]);
+
+    const handleDelArrivalClick = useCallback(() => {
+        onEditDateAndTime(JobProperty.DeliveryArrivalTime, 'Delivery Arrival Time', job.deliveryArrivalTime, job.deliveryTimeZone);
+    }, [onEditDateAndTime, job.deliveryArrivalTime, job.deliveryTimeZone]);
+
+    const handleFollowUpClick = useCallback(() => {
+        onEditDateAndTime(JobProperty.FollowupTime, 'Follow Up Time', job.followupTime, job.deliveryTimeZone);
+    }, [onEditDateAndTime, job.followupTime, job.deliveryTimeZone]);
 
     return (
         <>
@@ -83,16 +112,14 @@ export function MetricsGrid({
                 <MetricCard
                     label="Created"
                     value={`${job._createdDateTimeStr || ''} ${defaultTz}`}
-                    onClick={() => notEditable('Created Date')}
+                    onClick={handleCreatedClick}
                     category="time"
                     filled
                 />
                 <MetricCard
                     label="Ready"
                     value={`${job._readyStr || ''} ${job._pickUpTimeZoneStr || puTz}`}
-                    onClick={() => !isLocked && onEditDateAndTime(
-                        JobProperty.BookedTime, 'Booked Date', job.booked, job.pickUpTimeZone
-                    )}
+                    onClick={handleReadyClick}
                     disabled={isLocked}
                     category="time"
                     filled
@@ -100,9 +127,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="PU Arrival"
                     value={job.pickupArrivalTime ? `${job._pickupArrivalTimeStr} ${job._pickUpTimeZoneStr || puTz}` : '-'}
-                    onClick={() => !isLocked && onEditDateAndTime(
-                        JobProperty.PickupArrivalTime, 'Pickup Arrival Time', job.pickupArrivalTime, job.pickUpTimeZone
-                    )}
+                    onClick={handlePuArrivalClick}
                     disabled={isLocked}
                     category="time"
                     filled
@@ -110,9 +135,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="PU Time"
                     value={job.puTime ? `${job._puTimeStr} ${job._pickUpTimeZoneStr || puTz}` : '-'}
-                    onClick={() => !isLocked && onEditDateAndTime(
-                        JobProperty.PuTime, 'Pick Up Time', job.puTime, job.pickUpTimeZone
-                    )}
+                    onClick={handlePuTimeClick}
                     disabled={isLocked}
                     category="time"
                     filled
@@ -120,9 +143,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="Deliver By"
                     value={job.deliverByTime ? `${job._deliverByTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
-                    onClick={() => !isLocked && onEditDateAndTime(
-                        JobProperty.DeliverBy, 'Deliver By', job.deliverByTime, job.deliveryTimeZone
-                    )}
+                    onClick={handleDeliverByClick}
                     disabled={isLocked}
                     category="time"
                     filled
@@ -134,16 +155,14 @@ export function MetricsGrid({
                 <MetricCard
                     label="Dispatched"
                     value={job.dispatchTime ? `${job._dispatchTimeStr} ${defaultTz}` : '-'}
-                    onClick={() => notEditable('Dispatch Time')}
+                    onClick={handleDispatchedClick}
                     category="time"
                     filled
                 />
                 <MetricCard
                     label="Del Arrival"
                     value={job.deliveryArrivalTime ? `${job._deliveryArrivalTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
-                    onClick={() => !isLocked && onEditDateAndTime(
-                        JobProperty.DeliveryArrivalTime, 'Delivery Arrival Time', job.deliveryArrivalTime, job.deliveryTimeZone
-                    )}
+                    onClick={handleDelArrivalClick}
                     disabled={isLocked}
                     category="time"
                     filled
@@ -151,7 +170,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="POD Name"
                     value={job.podName || '-'}
-                    onClick={() => !isLocked && onEditPodName()}
+                    onClick={onEditPodName}
                     disabled={isLocked}
                     category="pod"
                     filled
@@ -159,7 +178,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="POD Time"
                     value={job.completedTime ? `${job._completedTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
-                    onClick={() => !isLocked && onEditCompletedTime()}
+                    onClick={onEditCompletedTime}
                     disabled={isLocked}
                     category="pod"
                     filled
@@ -167,9 +186,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="Follow Up"
                     value={job.followupTime ? `${job._followupTimeStr} ${defaultTz}` : '-'}
-                    onClick={() => canEditFollowUp && onEditDateAndTime(
-                        JobProperty.FollowupTime, 'Follow Up Time', job.followupTime, job.deliveryTimeZone
-                    )}
+                    onClick={handleFollowUpClick}
                     disabled={!canEditFollowUp}
                     category="time"
                     filled
@@ -177,7 +194,7 @@ export function MetricsGrid({
                 <MetricCard
                     label="Client Name"
                     value={job.clientName || '-'}
-                    onClick={() => !isLocked && onClientClick()}
+                    onClick={onClientClick}
                     disabled={isLocked}
                     category="info"
                     filled
@@ -199,7 +216,7 @@ export function MetricsGrid({
             )}
         </>
     );
-}
+});
 
 function getInternalStatusLabel(id: number): string {
     switch (id) {

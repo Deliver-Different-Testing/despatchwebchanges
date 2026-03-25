@@ -5,13 +5,14 @@
  * into a single hook so the root component stays focused on layout and rendering.
  */
 
-import {useState, useCallback, useRef} from 'react';
+import {useState, useCallback, useRef, useEffect} from 'react';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {useDialogLoader} from './useDialogLoader';
 import {formatDateForApi} from '../../../../utils/dateUtils';
+import {getPriceBreakdowns} from '../../../../services/pricingBreakdownApi';
 import {
     getSpeedList,
     getVehicleSizes,
@@ -76,9 +77,14 @@ export function useJobActions({
         ensureAddressDialog,
         ensureVoidDialog,
         ensurePriceBreakdownDialog,
+        ensureSimplePriceEditDialog,
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
     } = useDialogLoader();
+
+    // Stable ref for job so callbacks don't recreate on every job change
+    const jobRef = useRef(job);
+    useEffect(() => { jobRef.current = job; }, [job]);
 
     // ── Text Dialog ────────────────────────────────────────────────
 
@@ -130,7 +136,8 @@ export function useJobActions({
     }, []);
 
     const handleTextDialogSubmit = useCallback(async (value: string) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const dialog = textDialogRef.current;
         const asyncResolve = textDialogResolveRef.current;
         textDialogResolveRef.current = null;
@@ -141,11 +148,11 @@ export function useJobActions({
             asyncResolve(value);
         } else {
             // State-based flow: save field directly (existing behavior)
-            await updateField({job, field: dialog.field, value, isRecurring: job.preBook});
+            await updateField({job: j, field: dialog.field, value, isRecurring: j.preBook});
             dialog.onSubmitExtra?.();
             await refreshAndNotify();
         }
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     const handleTextDialogCancel = useCallback(() => {
         const asyncResolve = textDialogResolveRef.current;
@@ -159,7 +166,8 @@ export function useJobActions({
     // ── Dialog Primitives ──────────────────────────────────────────
 
     const editDateAndTime = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureDateTimeDialog();
         const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
             title,
@@ -168,19 +176,20 @@ export function useJobActions({
             defaultTimeZone: timezone as any,
         });
         if (!result) return;
-        if (job.isBulkJob) {
+        if (j.isBulkJob) {
             const {updateBulkJobDetail} = await import('../../../../services/jobDetailApi');
-            await updateBulkJobDetail(job.id, result.fieldName, result.value, result.timezone);
+            await updateBulkJobDetail(j.id, result.fieldName, result.value, result.timezone);
         } else {
             const {updateJobDetail} = await import('../../../../services/jobDetailApi');
-            await updateJobDetail(job.id, result.fieldName, result.value, job.preBook, result.timezone);
+            await updateJobDetail(j.id, result.fieldName, result.value, j.preBook, result.timezone);
         }
-        showToast(`${job.jobNo} updated`, 'success');
+        showToast(`${j.jobNo} updated`, 'success');
         await refreshAndNotify();
-    }, [job, ensureDateTimeDialog, showToast, refreshAndNotify]);
+    }, [ensureDateTimeDialog, showToast, refreshAndNotify]);
 
     const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureDateTimeDialog();
         const result = await window.ReactEditDateTimeDialog?.showEditDateDialog({
             title,
@@ -189,9 +198,9 @@ export function useJobActions({
             defaultTimeZone: timezone as any,
         });
         if (!result) return;
-        await updateField({job, field: result.fieldName, value: result.value, isRecurring: job.preBook, timezone: result.timezone});
+        await updateField({job: j, field: result.fieldName, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
         await refreshAndNotify();
-    }, [job, ensureDateTimeDialog, updateField, refreshAndNotify]);
+    }, [ensureDateTimeDialog, updateField, refreshAndNotify]);
 
     const showSelectDialog = useCallback(async (
         items: Array<{id: number; text: string}>,
@@ -201,7 +210,8 @@ export function useJobActions({
         showCheckbox?: boolean,
         checkboxLabel?: string,
     ) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureSelectDialog();
         const result = await window.ReactSelectDialog?.showSelectDialog({
             title,
@@ -214,15 +224,15 @@ export function useJobActions({
         if (!result) return;
 
         if (fieldName === JobProperty.DGClass && result.checkboxValue !== undefined) {
-            await updateField({job, field: fieldName, value: result.value, isRecurring: job.preBook});
-            if (job.dgDocumentation !== result.checkboxValue) {
-                await updateField({job, field: JobProperty.DGDocumentation, value: result.checkboxValue, isRecurring: job.preBook});
+            await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
+            if (j.dgDocumentation !== result.checkboxValue) {
+                await updateField({job: j, field: JobProperty.DGDocumentation, value: result.checkboxValue, isRecurring: j.preBook});
             }
         } else {
-            await updateField({job, field: fieldName, value: result.value, isRecurring: job.preBook});
+            await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
         }
         await refreshAndNotify();
-    }, [job, ensureSelectDialog, updateField, refreshAndNotify]);
+    }, [ensureSelectDialog, updateField, refreshAndNotify]);
 
     const showAutocompleteDialog = useCallback(async (
         url: string,
@@ -232,7 +242,8 @@ export function useJobActions({
         existingItem?: any,
         showRerateOption?: boolean,
     ) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureAutoCompleteDialog();
         const result = await window.ReactAutoCompleteDialog?.open(
             title,
@@ -242,110 +253,119 @@ export function useJobActions({
             showRerateOption,
         );
         if (!result) return;
-        await updateField({job, field: fieldName, value: result.item.id, isRecurring: job.preBook});
+        await updateField({job: j, field: fieldName, value: result.item.id, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, ensureAutoCompleteDialog, updateField, refreshAndNotify]);
+    }, [ensureAutoCompleteDialog, updateField, refreshAndNotify]);
 
     // ── Address Handlers ───────────────────────────────────────────
 
     const handleEditAddress = useCallback(async (isDelivery: boolean) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureAddressDialog();
-        const existing = isDelivery ? job.deliveryAddress : job.pickupAddress;
+        const existing = isDelivery ? j.deliveryAddress : j.pickupAddress;
         const result = await window.ReactEditAddressDialog?.open(existing as any, undefined, undefined, undefined, isUsCustomer);
         if (!result) return;
-        await updateAddress({job, address: result as any, isDelivery});
+        await updateAddress({job: j, address: result as any, isDelivery});
         await refreshAndNotify();
-    }, [job, isUsCustomer, ensureAddressDialog, updateAddress, refreshAndNotify]);
+    }, [isUsCustomer, ensureAddressDialog, updateAddress, refreshAndNotify]);
 
     const handleEditPickupAddress = useCallback(() => handleEditAddress(false), [handleEditAddress]);
     const handleEditDeliveryAddress = useCallback(() => handleEditAddress(true), [handleEditAddress]);
 
     const handleEditFromContact = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit From Contact Name', 'From Contact Name...', JobProperty.FromContactName, job.fromContactName);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit From Contact Name', 'From Contact Name...', JobProperty.FromContactName, j.fromContactName);
+    }, [openTextDialog]);
 
     const handleEditToContact = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit To Contact Name', 'To Contact Name...', JobProperty.ToContactName, job.deliverToContact);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit To Contact Name', 'To Contact Name...', JobProperty.ToContactName, j.deliverToContact);
+    }, [openTextDialog]);
 
     const handleEditFromContactPhone = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit From Contact Phone', 'From Contact Phone...', JobProperty.FromContactPhone, job.fromContactNumber);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit From Contact Phone', 'From Contact Phone...', JobProperty.FromContactPhone, j.fromContactNumber);
+    }, [openTextDialog]);
 
     const handleEditToContactPhone = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit To Contact Phone', 'To Contact Phone...', JobProperty.ToContactPhone, job.toContactPhone);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit To Contact Phone', 'To Contact Phone...', JobProperty.ToContactPhone, j.toContactPhone);
+    }, [openTextDialog]);
 
     // ── Toggle Handlers ────────────────────────────────────────────
 
     const handleToggleProperty = useCallback(async (property: string, currentValue: boolean) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const updates: Promise<unknown>[] = [
-            updateField({job, field: property, value: !currentValue, isRecurring: job.preBook}),
+            updateField({job: j, field: property, value: !currentValue, isRecurring: j.preBook}),
         ];
         if (property === JobProperty.Reprice && !currentValue) {
-            updates.push(updateField({job, field: JobProperty.InternalStatusID, value: 4, isRecurring: job.preBook}));
+            updates.push(updateField({job: j, field: JobProperty.InternalStatusID, value: 4, isRecurring: j.preBook}));
         }
         await Promise.all(updates);
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     const handleVoidClick = useCallback(async () => {
-        if (!job) return;
-        if (!job.void) {
+        const j = jobRef.current;
+        if (!j) return;
+        if (!j.void) {
             await ensureVoidDialog();
             const result = await window.ReactVoidJobConfirmationDialog?.open({
-                id: job.id,
-                jobNo: job.jobNo,
-                isBulkJob: job.isBulkJob,
-                isArchived: job.isArchived,
+                id: j.id,
+                jobNo: j.jobNo,
+                isBulkJob: j.isBulkJob,
+                isArchived: j.isArchived,
             });
             if (result) await refreshAndNotify();
         } else {
-            await updateField({job, field: JobProperty.Void, value: false, isRecurring: job.preBook});
+            await updateField({job: j, field: JobProperty.Void, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
         }
-    }, [job, updateField, refreshAndNotify]);
+    }, [ensureVoidDialog, updateField, refreshAndNotify]);
 
     const handleActiveClick = useCallback(async () => {
-        if (!job) return;
-        await updateField({job, field: JobProperty.Active, value: !job.active, isRecurring: true});
+        const j = jobRef.current;
+        if (!j) return;
+        await updateField({job: j, field: JobProperty.Active, value: !j.active, isRecurring: true});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     /**
      * Guided "mark as done" flow — replicates the AngularJS markJobAsDone behaviour.
      * Prompts for any missing POD fields (time → name), offers file upload, then completes.
      */
     const markJobAsDone = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
 
         // Step 1: Collect POD time if missing
-        let podTime = job._completedTimeLongStr;
-        if (!job.completedTime) {
+        let podTime = j._completedTimeLongStr;
+        if (!j.completedTime) {
             await ensureDateTimeDialog();
             const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
                 title: 'POD Time',
                 fieldName: JobProperty.CompletedTime,
-                dateTime: job.completedTime,
-                defaultTimeZone: (job.deliveryTimeZone as any)?.text,
+                dateTime: j.completedTime,
+                defaultTimeZone: (j.deliveryTimeZone as any)?.text,
             });
             if (!result?.value) {
                 showToast('A POD time needs to be provided to close this job.', 'warning');
                 return;
             }
-            await updateField({job, field: JobProperty.CompletedTime, value: result.value, isRecurring: job.preBook, timezone: result.timezone});
-            podTime = formatDateForApi(result.value, (job.deliveryTimeZone as any)?.text);
+            await updateField({job: j, field: JobProperty.CompletedTime, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
+            podTime = formatDateForApi(result.value, (j.deliveryTimeZone as any)?.text);
             await refreshAndNotify();
         }
 
         // Step 2: Collect POD name if missing
-        let podName = job.podName;
+        let podName = j.podName;
         if (!podName) {
             const name = await openTextDialogAsync('POD Name', 'POD Name...', JobProperty.PodName, '', 'Complete Job');
             if (!name) {
@@ -353,84 +373,89 @@ export function useJobActions({
                 return;
             }
             podName = name;
-            await updateField({job, field: JobProperty.PodName, value: podName, isRecurring: job.preBook});
+            await updateField({job: j, field: JobProperty.PodName, value: podName, isRecurring: j.preBook});
             await refreshAndNotify();
         }
 
         // Step 3: POD file upload (optional — user can skip)
         try {
-            (window as any).ReactJobFileUploadDialog?.open?.(job.id, 'POD');
+            (window as any).ReactJobFileUploadDialog?.open?.(j.id, 'POD');
         } catch {
             // Upload dialog not available or user cancelled — continue
         }
 
         // Step 4: Mark as done
         await updatePod({
-            jobId: job.id,
+            jobId: j.id,
             jobStatus: '6',
             podName: podName,
             podTime: podTime || '',
         });
-        showToast(`${job.jobNo} Completed`, 'success');
+        showToast(`${j.jobNo} Completed`, 'success');
         await refreshAndNotify();
-    }, [job, ensureDateTimeDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, showToast]);
+    }, [ensureDateTimeDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, showToast]);
 
     const handleDoneClick = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         // Uncompleting: toggle done off
-        if (job.done) {
-            await updateField({job, field: JobProperty.Delivered, value: false, isRecurring: job.preBook});
+        if (j.done) {
+            await updateField({job: j, field: JobProperty.Delivered, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
             return;
         }
         // Completing: enter guided flow
         await markJobAsDone();
-    }, [job, updateField, refreshAndNotify, markJobAsDone]);
+    }, [updateField, refreshAndNotify, markJobAsDone]);
 
     const handleTailLiftPuClick = useCallback(async () => {
-        if (!job) return;
-        if (job.tailLiftPu && (!job.parcelDimensions || job.parcelDimensions.length === 0)) {
+        const j = jobRef.current;
+        if (!j) return;
+        if (j.tailLiftPu && (!j.parcelDimensions || j.parcelDimensions.length === 0)) {
             showToast('Please enter the parcels for this job before proceeding.', 'warning');
             return;
         }
-        if (job.isBulkJob) {
+        if (j.isBulkJob) {
             showToast('Tail Lift Pickup is not currently available for scheduled jobs.', 'warning');
             return;
         }
-        await updateField({job, field: JobProperty.TailLiftPu, value: !job.tailLiftPu, isRecurring: job.preBook});
+        await updateField({job: j, field: JobProperty.TailLiftPu, value: !j.tailLiftPu, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify, showToast]);
+    }, [updateField, refreshAndNotify, showToast]);
 
     const handleTailLiftDoClick = useCallback(async () => {
-        if (!job) return;
-        if (job.tailLiftPu && (!job.parcelDimensions || job.parcelDimensions.length === 0)) {
+        const j = jobRef.current;
+        if (!j) return;
+        if (j.tailLiftPu && (!j.parcelDimensions || j.parcelDimensions.length === 0)) {
             showToast('Please enter the parcels for this job before proceeding.', 'warning');
             return;
         }
-        if (job.isBulkJob) {
+        if (j.isBulkJob) {
             showToast('Tail Lift Drop-off is not currently available for scheduled jobs.', 'warning');
             return;
         }
-        await updateField({job, field: JobProperty.TailLiftDo, value: !job.tailLiftDo, isRecurring: job.preBook});
+        await updateField({job: j, field: JobProperty.TailLiftDo, value: !j.tailLiftDo, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify, showToast]);
+    }, [updateField, refreshAndNotify, showToast]);
 
     const handlePrivateResChange = useCallback(async (isResidential: boolean) => {
-        if (!job) return;
-        if (job.isBulkJob) {
+        const j = jobRef.current;
+        if (!j) return;
+        if (j.isBulkJob) {
             showToast('Deliver to Private Residential is not currently available for scheduled jobs.', 'warning');
             return;
         }
-        await updateField({job, field: JobProperty.DeliverToPrivateRes, value: isResidential, isRecurring: job.preBook});
+        await updateField({job: j, field: JobProperty.DeliverToPrivateRes, value: isResidential, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify, showToast]);
+    }, [updateField, refreshAndNotify, showToast]);
 
     // ── Field-Specific Handlers ────────────────────────────────────
 
     const handleCourierClick = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         if (isRecurringJob) {
-            await showAutocompleteDialog('/courier/AllActiveSearch', 'Search courier...', JobProperty.CourierID, 'Courier', job.assignedCourier, false);
+            await showAutocompleteDialog('/courier/AllActiveSearch', 'Search courier...', JobProperty.CourierID, 'Courier', j.assignedCourier, false);
         } else {
             await ensureAutoCompleteDialog();
             const result = await window.ReactAutoCompleteDialog?.open(
@@ -439,304 +464,350 @@ export function useJobActions({
                 (s: string) => autocompleteSearch(s, '/courier/AllActiveSearch'),
             );
             if (!result) return;
-            await dispatchJob({job, courierId: result.item.id});
+            await dispatchJob({job: j, courierId: result.item.id});
             await refreshAndNotify();
         }
-    }, [job, isRecurringJob, ensureAutoCompleteDialog, showAutocompleteDialog, dispatchJob, refreshAndNotify]);
+    }, [isRecurringJob, ensureAutoCompleteDialog, showAutocompleteDialog, dispatchJob, refreshAndNotify]);
 
     const handleEditPodName = useCallback(async () => {
-        if (!job) return;
-        if (job.done) {
-            // Already completed — just edit the name, no chaining
-            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, job.podName);
+        const j = jobRef.current;
+        if (!j) return;
+        if (j.done) {
+            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName);
             return;
         }
-        // Not yet completed — enter guided completion flow (will prompt for name if missing)
         await markJobAsDone();
-    }, [job, openTextDialog, markJobAsDone]);
+    }, [openTextDialog, markJobAsDone]);
 
     const handleEditCompletedTime = useCallback(async () => {
-        if (!job) return;
-        if (job.done) {
-            // Already completed — just edit the time, no chaining
-            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', job.completedTime, job.deliveryTimeZone);
+        const j = jobRef.current;
+        if (!j) return;
+        if (j.done) {
+            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone);
             return;
         }
-        // Not yet completed — enter guided completion flow (will prompt for time if missing)
         await markJobAsDone();
-    }, [job, editDateAndTime, markJobAsDone]);
+    }, [editDateAndTime, markJobAsDone]);
 
     const handlePricingClick = useCallback(async () => {
-        if (!job) return;
-        if (job.isInvoiced) {
-            showToast(`Job ${job.jobNo} is invoiced and cannot be modified.`, 'warning');
+        const j = jobRef.current;
+        if (!j) return;
+        if (j.isInvoiced) {
+            showToast(`Job ${j.jobNo} is invoiced and cannot be modified.`, 'warning');
             return;
         }
-        await ensurePriceBreakdownDialog();
-        await window.ReactPriceBreakdownDialog?.open([], job.id, job.preBook, job.isArchived);
+        const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
+        const isUsingOldAmountMethod = !isUsCustomer && j.charge > 0 && breakdowns.length === 0;
+        if (isUsingOldAmountMethod) {
+            await ensureSimplePriceEditDialog();
+            window.ReactSimplePriceEditDialog?.setToastService({showToast});
+            await window.ReactSimplePriceEditDialog?.open({
+                jobId: j.id,
+                jobNumber: j.jobNo,
+                currentCharge: j.charge,
+                isPrebook: j.preBook,
+            });
+        } else {
+            await ensurePriceBreakdownDialog();
+            await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived);
+        }
         await refreshAndNotify();
-    }, [job, ensurePriceBreakdownDialog, showToast, refreshAndNotify]);
+    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify]);
 
     const handleStatusClick = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const statusList = await getStatusList();
         await ensureSelectDialog();
         const result = await window.ReactSelectDialog?.showSelectDialog({
             title: 'Status',
             fieldName: JobProperty.Status,
             items: statusList,
-            initialValue: job.statusName,
+            initialValue: j.statusName,
         });
         if (!result) return;
-        await updateField({job, field: JobProperty.Status, value: result.value, isRecurring: job.preBook});
+        await updateField({job: j, field: JobProperty.Status, value: result.value, isRecurring: j.preBook});
         await refreshAndNotify();
         onStatusChange?.(result.value as number);
-    }, [job, ensureSelectDialog, updateField, refreshAndNotify, onStatusChange]);
+    }, [ensureSelectDialog, updateField, refreshAndNotify, onStatusChange]);
 
     const handleSpeedClick = useCallback(async () => {
         const speeds = await getSpeedList();
-        await showSelectDialog(speeds, JobProperty.SpeedID, 'Speed', job?.speedName);
-    }, [job, showSelectDialog]);
+        await showSelectDialog(speeds, JobProperty.SpeedID, 'Speed', jobRef.current?.speedName);
+    }, [showSelectDialog]);
 
     const handleSizeClick = useCallback(async () => {
         const sizes = await getVehicleSizes();
-        await showSelectDialog(sizes, JobProperty.Size, 'Size', job?.size?.text ?? null);
-    }, [job, showSelectDialog]);
+        await showSelectDialog(sizes, JobProperty.Size, 'Size', jobRef.current?.size?.text ?? null);
+    }, [showSelectDialog]);
 
     const handleJobTypeClick = useCallback(() => {
-        return showSelectDialog(JOB_TYPE_OPTIONS, JobProperty.AcceptedJobTypeID, 'Job Type', job?.jobTypeDescription);
-    }, [job, showSelectDialog]);
+        return showSelectDialog(JOB_TYPE_OPTIONS, JobProperty.AcceptedJobTypeID, 'Job Type', jobRef.current?.jobTypeDescription);
+    }, [showSelectDialog]);
 
     const handleDgClassClick = useCallback(() => {
         const opts = Array.from({length: 9}, (_, i) => ({id: i + 1, text: String(i + 1)}));
-        return showSelectDialog(opts, JobProperty.DGClass, 'DG Class', job?.dgClass ?? null, true, 'Has Documentation?');
-    }, [job, showSelectDialog]);
+        return showSelectDialog(opts, JobProperty.DGClass, 'DG Class', jobRef.current?.dgClass ?? null, true, 'Has Documentation?');
+    }, [showSelectDialog]);
 
     const handleLeaveClick = useCallback(async () => {
         const list = await getLeaveList();
-        await showSelectDialog(list, JobProperty.DeliverToLeaveID, 'Leave Parcel', job?.sigNotRequired || 'Signature Required');
-    }, [job, showSelectDialog]);
+        await showSelectDialog(list, JobProperty.DeliverToLeaveID, 'Leave Parcel', jobRef.current?.sigNotRequired || 'Signature Required');
+    }, [showSelectDialog]);
 
     const handleTrackingMethodClick = useCallback(() => {
-        return showSelectDialog(TRACKING_OPTIONS, JobProperty.TrackingMethod, 'Tracking Method', job?.trackingMethod ? TRACKING_OPTIONS.find(t => t.id === job.trackingMethod)?.text : undefined);
-    }, [job, showSelectDialog]);
+        const j = jobRef.current;
+        return showSelectDialog(TRACKING_OPTIONS, JobProperty.TrackingMethod, 'Tracking Method', j?.trackingMethod ? TRACKING_OPTIONS.find(t => t.id === j.trackingMethod)?.text : undefined);
+    }, [showSelectDialog]);
 
     const handleContactClick = useCallback(async () => {
-        if (!job?.clientId) return;
-        const contacts = await getContactList(job.clientId);
-        await showSelectDialog(contacts, JobProperty.FromContactName, 'From Contact Name', job.fromContactName);
-    }, [job, showSelectDialog]);
+        const j = jobRef.current;
+        if (!j?.clientId) return;
+        const contacts = await getContactList(j.clientId);
+        await showSelectDialog(contacts, JobProperty.FromContactName, 'From Contact Name', j.fromContactName);
+    }, [showSelectDialog]);
 
     const handleClientClick = useCallback(async () => {
-        if (!job) return;
-        await showAutocompleteDialog('/home/ActiveClients', 'Start typing to enter new client...', JobProperty.ClientID, 'Client', {id: job.clientId, text: job.clientName}, true);
-    }, [job, showAutocompleteDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        await showAutocompleteDialog('/home/ActiveClients', 'Start typing to enter new client...', JobProperty.ClientID, 'Client', {id: j.clientId, text: j.clientName}, true);
+    }, [showAutocompleteDialog]);
 
     const handleInActiveByClick = useCallback(async () => {
         const staff = await getActiveStaff();
-        await showSelectDialog(staff, JobProperty.InActiveDate, 'InActive By', job?.inActiveBy?.text ?? '');
-    }, [job, showSelectDialog]);
+        await showSelectDialog(staff, JobProperty.InActiveDate, 'InActive By', jobRef.current?.inActiveBy?.text ?? '');
+    }, [showSelectDialog]);
 
     const handleEditDimensions = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureParcelDimensionsDialog();
         await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
-            jobId: job.isBulkJob ? undefined : job.id,
-            bulkJobId: job.isBulkJob ? job.id : undefined,
-            parcels: job.parcelDimensions || [],
+            jobId: j.isBulkJob ? undefined : j.id,
+            bulkJobId: j.isBulkJob ? j.id : undefined,
+            parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
         });
         await refreshAndNotify();
-    }, [job, ensureParcelDimensionsDialog, refreshAndNotify]);
+    }, [ensureParcelDimensionsDialog, isUsCustomer, refreshAndNotify]);
 
     const handleEditRefA = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit RefA', 'RefA...', JobProperty.RefA, job.refA);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit RefA', 'RefA...', JobProperty.RefA, j.refA);
+    }, [openTextDialog]);
 
     const handleEditRefB = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit RefB', 'RefB...', JobProperty.RefB, job.refB);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit RefB', 'RefB...', JobProperty.RefB, j.refB);
+    }, [openTextDialog]);
 
     const handleEditOurRef = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Our Reference', 'Our Reference...', JobProperty.OurRef, job.ourRef);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Our Reference', 'Our Reference...', JobProperty.OurRef, j.ourRef);
+    }, [openTextDialog]);
 
     const handleEditConNote = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit AWB', 'AWB...', JobProperty.ConNote, job.conNote);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit AWB', 'AWB...', JobProperty.ConNote, j.conNote);
+    }, [openTextDialog]);
 
     const handleEditWeight = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Weight', 'Job Weight...', JobProperty.Weight, job.weight);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Weight', 'Job Weight...', JobProperty.Weight, j.weight);
+    }, [openTextDialog]);
 
     const handleEditTrackingMobile = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Tracking Mobile', 'Tracking Mobile...', JobProperty.TrackingMobile, job.trackingMobile);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Tracking Mobile', 'Tracking Mobile...', JobProperty.TrackingMobile, j.trackingMobile);
+    }, [openTextDialog]);
 
     const handleEditTrackingEmail = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Tracking Email', 'Tracking Email...', JobProperty.TrackingEmail, job.trackingEmail);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Tracking Email', 'Tracking Email...', JobProperty.TrackingEmail, j.trackingEmail);
+    }, [openTextDialog]);
 
     const handleEditCustomJobName = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Job Name', 'Job Name...', JobProperty.CustomJobName, job.customJobName);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Job Name', 'Job Name...', JobProperty.CustomJobName, j.customJobName);
+    }, [openTextDialog]);
 
     // ── POD Handlers ───────────────────────────────────────────────
 
     const handlePodUpload = useCallback(() => {
-        if (!job) return;
-        (window as any).ReactJobFileUploadDialog?.open?.(job.id, 'POD');
-    }, [job]);
+        const j = jobRef.current;
+        if (!j) return;
+        (window as any).ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+    }, []);
 
     const handlePodReport = useCallback(() => {
-        if (!job) return;
-        window.open(getPodReportUrl(job.id), '_blank');
-    }, [job]);
+        const j = jobRef.current;
+        if (!j) return;
+        window.open(getPodReportUrl(j.id), '_blank');
+    }, []);
 
     const handlePodSpreadsheet = useCallback(() => {
-        if (!job) return;
-        window.open(getPodSpreadsheetUrl(job.id), '_blank');
-    }, [job]);
+        const j = jobRef.current;
+        if (!j) return;
+        window.open(getPodSpreadsheetUrl(j.id), '_blank');
+    }, []);
 
     const handleSendPodEmail = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         await ensureSendPodDialog();
         const result = await window.ReactSendPodDialog?.open({
-            jobId: job.id,
-            jobNo: job.jobNo,
-            clientName: job.clientName,
-            driverName: job.courierData?.courierName || '',
-            deliveryAddress: job.deliveryAddress?.fullAddress || '',
-            deliveryDateTime: job._completedTimeLongStr || '',
-            bookingContactEmail: job.bookingContactEmail || undefined,
-            trackingEmail: job.trackingEmail || undefined,
+            jobId: j.id,
+            jobNo: j.jobNo,
+            clientName: j.clientName,
+            driverName: j.courierData?.courierName || '',
+            deliveryAddress: j.deliveryAddress?.fullAddress || '',
+            deliveryDateTime: j._completedTimeLongStr || '',
+            bookingContactEmail: j.bookingContactEmail || undefined,
+            trackingEmail: j.trackingEmail || undefined,
         });
         if (result) {
             showToast('POD report email sent successfully', 'success');
         }
-    }, [job, ensureSendPodDialog, showToast]);
+    }, [ensureSendPodDialog, showToast]);
 
     // ── Recurring Job Handlers ─────────────────────────────────────
 
     const handleDaysOfWeekChange = useCallback(async (days: DaysOfWeek[]) => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const daysValue = DaysOfWeekHelpers.arrayToBitwise(days);
-        await updateField({job, field: JobProperty.DaysOfWeek, value: daysValue, isRecurring: job.preBook});
+        await updateField({job: j, field: JobProperty.DaysOfWeek, value: daysValue, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     const handleFrequencyChange = useCallback(async (frequency: number) => {
-        if (!job) return;
-        await updateField({job, field: JobProperty.Frequency, value: frequency, isRecurring: job.preBook});
+        const j = jobRef.current;
+        if (!j) return;
+        await updateField({job: j, field: JobProperty.Frequency, value: frequency, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     const handleHolidayOptionChange = useCallback(async (option: number) => {
-        if (!job) return;
-        await updateField({job, field: JobProperty.HolidayDelivery, value: option, isRecurring: job.preBook});
+        const j = jobRef.current;
+        if (!j) return;
+        await updateField({job: j, field: JobProperty.HolidayDelivery, value: option, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     const handleEditFirstDue = useCallback(() => {
-        if (!job) return;
-        return editDate(JobProperty.FirstDue, 'First Due', job.firstDue);
-    }, [job, editDate]);
+        const j = jobRef.current;
+        if (!j) return;
+        return editDate(JobProperty.FirstDue, 'First Due', j.firstDue);
+    }, [editDate]);
 
     const handleEditStopDate = useCallback(() => {
-        if (!job) return;
-        return editDate(JobProperty.StopDate, 'Stop Date', job.stopDate);
-    }, [job, editDate]);
+        const j = jobRef.current;
+        if (!j) return;
+        return editDate(JobProperty.StopDate, 'Stop Date', j.stopDate);
+    }, [editDate]);
 
     const handleEditRestartDate = useCallback(() => {
-        if (!job) return;
-        return editDate(JobProperty.RestartDate, 'Restart Date', job.restartDate);
-    }, [job, editDate]);
+        const j = jobRef.current;
+        if (!j) return;
+        return editDate(JobProperty.RestartDate, 'Restart Date', j.restartDate);
+    }, [editDate]);
 
     // ── Missing Field Edit Handlers ────────────────────────────────
 
     const handleEditAmount = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Amount', 'Amount...', JobProperty.Amount, job.charge);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Amount', 'Amount...', JobProperty.Amount, j.charge);
+    }, [openTextDialog]);
 
     const handleEditItems = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Items', 'Items...', JobProperty.Items, job.items);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Items', 'Items...', JobProperty.Items, j.items);
+    }, [openTextDialog]);
 
     const handleEditClientCode = useCallback(() => {
-        if (!job) return;
-        openTextDialog('Edit Client Code', 'Client Code...', JobProperty.ClientCode, (job as any).clientCode);
-    }, [job, openTextDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        openTextDialog('Edit Client Code', 'Client Code...', JobProperty.ClientCode, (j as any).clientCode);
+    }, [openTextDialog]);
 
     // ── Lock/Unlock ────────────────────────────────────────────────
 
     const handleLockToggle = useCallback(async () => {
-        if (!job) return;
-        await updateField({job, field: JobProperty.Locked, value: !job.locked, isRecurring: job.preBook});
+        const j = jobRef.current;
+        if (!j) return;
+        await updateField({job: j, field: JobProperty.Locked, value: !j.locked, isRecurring: j.preBook});
         await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify]);
 
     // ── Notify / Accepted ──────────────────────────────────────────
 
     const handleNotifyClick = useCallback(async () => {
-        if (!job) return;
-        await showSelectDialog(NOTIFY_OPTIONS, JobProperty.NotifiedType, 'Notified', job.notifiedName);
-    }, [job, showSelectDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        await showSelectDialog(NOTIFY_OPTIONS, JobProperty.NotifiedType, 'Notified', j.notifiedName);
+    }, [showSelectDialog]);
 
     const handleAcceptedClick = useCallback(async () => {
-        if (!job) return;
-        await showSelectDialog(ACCEPTED_OPTIONS, JobProperty.AcceptedType, 'Accepted', job.acceptedName);
-    }, [job, showSelectDialog]);
+        const j = jobRef.current;
+        if (!j) return;
+        await showSelectDialog(ACCEPTED_OPTIONS, JobProperty.AcceptedType, 'Accepted', j.acceptedName);
+    }, [showSelectDialog]);
 
     // ── Undeliverable ──────────────────────────────────────────────
 
     const handleUndeliverableClick = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const list = await getUndeliverableList();
         await showSelectDialog(list, JobProperty.UndeliverableLocationID, 'Undeliverable Location', null);
-    }, [job, showSelectDialog]);
+    }, [showSelectDialog]);
 
     // ── Internal Status ────────────────────────────────────────────
 
     const handleInternalStatusClick = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const list = await getInternalStatusList();
         const items = list.map(s => ({id: s.id, text: s.text}));
-        await showSelectDialog(items, JobProperty.InternalStatusID, 'Internal Status', job.internalStatusId ?? null);
-    }, [job, showSelectDialog]);
+        await showSelectDialog(items, JobProperty.InternalStatusID, 'Internal Status', j.internalStatusId ?? null);
+    }, [showSelectDialog]);
 
     // ── Push to Live (Bulk Jobs) ───────────────────────────────────
 
     const handlePushToLive = useCallback(async () => {
-        if (!job) return;
+        const j = jobRef.current;
+        if (!j) return;
         const {releaseBulkJob} = await import('../../../../services/jobListApi');
-        await releaseBulkJob(job.id);
-        showToast(`Bulk job ${job.jobNo} sent to live successfully`, 'success');
+        await releaseBulkJob(j.id);
+        showToast(`Bulk job ${j.jobNo} sent to live successfully`, 'success');
         await refreshAndNotify();
-    }, [job, showToast, refreshAndNotify]);
+    }, [showToast, refreshAndNotify]);
 
     // ── Pallet CRUD ────────────────────────────────────────────────
 
     const handleNewPallet = useCallback(async () => {
-        if (!job) return;
-        (window as any).ReactPalletDialog?.open?.({jobId: job.id, isBulkJob: job.isBulkJob});
+        const j = jobRef.current;
+        if (!j) return;
+        (window as any).ReactPalletDialog?.open?.({jobId: j.id, isBulkJob: j.isBulkJob});
         await refreshAndNotify();
-    }, [job, refreshAndNotify]);
+    }, [refreshAndNotify]);
 
     const handleEditPallet = useCallback(async (pallet: any) => {
-        if (!job) return;
-        (window as any).ReactPalletDialog?.open?.({jobId: job.id, isBulkJob: job.isBulkJob, existingPallet: pallet});
+        const j = jobRef.current;
+        if (!j) return;
+        (window as any).ReactPalletDialog?.open?.({jobId: j.id, isBulkJob: j.isBulkJob, existingPallet: pallet});
         await refreshAndNotify();
-    }, [job, refreshAndNotify]);
+    }, [refreshAndNotify]);
 
     return {
         // Text dialog state

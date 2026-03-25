@@ -1,10 +1,6 @@
 ﻿import HomeComponent from "./home.controller";
 import TasksService from "../../services/tasks.service";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
-import InterCourierChargeDialogService
-    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
-import InterCourierChargeDialogController
-    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.controller";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
     FeatureInDevelopmentDialogService
@@ -36,12 +32,8 @@ homeModule
 homeModule
     .service("tasksService", TasksService)
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
-    .service("interCourierChargeDialogService", InterCourierChargeDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("createJobDialogService", CreateJobDialogService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
-homeModule
-    .controller("InterCourierChargeDialog", InterCourierChargeDialogController);
-
 export default homeModule;

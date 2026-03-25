@@ -14,6 +14,7 @@ type DialogName =
     | 'editAddressDialogReact'
     | 'voidJobConfirmationDialogReact'
     | 'priceBreakdownDialogReact'
+    | 'simplePriceEditDialogReact'
     | 'editParcelDimensionsDialogReact'
     | 'sendPodDialogReact';
 
@@ -25,6 +26,7 @@ const DIALOG_GLOBALS: Record<DialogName, () => boolean> = {
     editAddressDialogReact: () => !!window.ReactEditAddressDialog,
     voidJobConfirmationDialogReact: () => !!window.ReactVoidJobConfirmationDialog,
     priceBreakdownDialogReact: () => !!window.ReactPriceBreakdownDialog,
+    simplePriceEditDialogReact: () => !!window.ReactSimplePriceEditDialog,
     editParcelDimensionsDialogReact: () => !!window.ReactEditParcelDimensionsDialog,
     sendPodDialogReact: () => !!window.ReactSendPodDialog,
 };
@@ -121,6 +123,10 @@ export function useDialogLoader() {
         await loadDialogBundle('priceBreakdownDialogReact');
     }, []);
 
+    const ensureSimplePriceEditDialog = useCallback(async () => {
+        await loadDialogBundle('simplePriceEditDialogReact');
+    }, []);
+
     const ensureParcelDimensionsDialog = useCallback(async () => {
         await loadDialogBundle('editParcelDimensionsDialogReact');
     }, []);
@@ -136,6 +142,7 @@ export function useDialogLoader() {
         ensureAddressDialog,
         ensureVoidDialog,
         ensurePriceBreakdownDialog,
+        ensureSimplePriceEditDialog,
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
     };

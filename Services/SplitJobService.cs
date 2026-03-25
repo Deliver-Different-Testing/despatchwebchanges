@@ -1,13 +1,8 @@
-using System.Data;
-using System.Text;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
-using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Storage;
 using Serilog;
 
 namespace DespatchWeb.Services;
@@ -23,7 +18,8 @@ public class SplitJobService(
     ITenantClock tenantClock,
     IRateJobService rateJobService,
     IJobQueryRepository jobRepository,
-    IJobCommandRepository jobCommandRepository) : ISplitJobService
+    IJobCommandRepository jobCommandRepository,
+    ICreateJobService createJobService) : ISplitJobService
 {
     private const string ParentSystemName = "SplitParent";
     private const string ChildSystemName = "SplitChild";
@@ -39,163 +35,168 @@ public class SplitJobService(
         CancellationToken ct = default)
     {
         await using var context = await contextFactory.CreateDbContextAsync(ct);
-        await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-        try
+        var strategy = context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
-                jobId, userName);
+            await using var transaction = await context.Database.BeginTransactionAsync(ct);
 
-            // Load the parent job (no speed navigation needed — we use UcjbSpeed directly)
-            var job = await context.TucJobs
-                          .AsTracking()
-                          .FirstOrDefaultAsync(j => j.UcjbId == jobId, ct)
-                      ?? throw new InvalidOperationException($"Job {jobId} not found");
-
-            var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context, ct);
-
-            var hasFlightAssigned = await context.TucJobNationwides.AnyAsync(n => n.UcnwJobId == jobId, ct);
-            if (hasFlightAssigned)
-                throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
-
-            var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
-
-            // Generate child job numbers using letter suffixes (no SP = no speed suffix appended)
-            var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job, ct);
-
-            // For US tenants, the tucJob INSERT triggers require non-null suburb IDs
-            // (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid, etc.).
-            // Mirror DD_stpJob_Excelerator_Insert which uses the "Unknown" suburb as fallback.
-            var meetingPointSuburbId = await GetUnknownSuburbIdAsync(context, ct);
-
-            // Capture original courier ID before modifying parent
-            var originalCourierId = job.UcjbCourierId;
-
-            // Determine root parent ID - preserve existing if job is already a child
-            var rootParentId = job.RootParentId ?? job.UcjbId;
-
-            // Current tenant time
-            var currentTenantTime = tenantClock.TenantNow;
-
-            // Update parent job
-            job.JobRelationshipTypeId = parentRelTypeId;
-            job.UcjbCourierId = parentJobCourierId;
-            if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
-            job.RootParentId ??= jobId;
-            job.InformationParentId ??= job.RootParentId;
-            job.DisplayInDespatch = false;
-
-            // Build pickup child job via direct entity insert
-            var pickupJob = BuildChildJob(job, pickupJobNumber, childRelTypeId, rootParentId, 1);
-            pickupJob.CreatedTimeUtc = tenantClock.UtcNow;
-            pickupJob.UcjbCourierId = originalCourierId;
-            pickupJob.UcjbDispTime = currentTenantTime;
-            pickupJob.UcjbDispDate = currentTenantTime;
-            pickupJob.UcjbDispId = job.UcjbDispId;
-            pickupJob.UcjbFrom = job.UcjbFrom;
-            pickupJob.UcjbFromAddr = job.UcjbFromAddr;
-            pickupJob.UcjbTo = meetingPointSuburbId;
-            pickupJob.UcjbToAddr = meetingPointAddress.FullAddress;
-            pickupJob.DeliverToPrivateBusiness = PrivateResidenceDeliverTo;
-            pickupJob.DeliverToLeaveId = HandOffLeaveType;
-            pickupJob.FromAirportId = job.FromAirportId;
-            pickupJob.ToAirportId = null;
-            pickupJob.UcjbAttention = job.UcjbAttention;
-            pickupJob.PickupFromContact = job.PickupFromContact;
-            pickupJob.PickupFromPhone = job.PickupFromPhone;
-            pickupJob.PickupAddressLine1 = job.PickupAddressLine1;
-            pickupJob.PickupAddressLine2 = job.PickupAddressLine2;
-            pickupJob.PickupAddressLine3 = job.PickupAddressLine3;
-            pickupJob.PickupAddressLine4 = job.PickupAddressLine4;
-            pickupJob.PickupAddressLine5 = job.PickupAddressLine5;
-            pickupJob.PickupAddressLine6 = job.PickupAddressLine6;
-            pickupJob.PickupAddressLine7 = job.PickupAddressLine7;
-            pickupJob.PickupAddressLine8 = job.PickupAddressLine8;
-            pickupJob.PickUpLatitude = job.PickUpLatitude;
-            pickupJob.PickUpLongitude = job.PickUpLongitude;
-            pickupJob.DeliveryAddressLine1 = meetingPointAddress.AddressLine1;
-            pickupJob.DeliveryAddressLine2 = meetingPointAddress.AddressLine2;
-            pickupJob.DeliveryAddressLine3 = meetingPointAddress.AddressLine3;
-            pickupJob.DeliveryAddressLine4 = meetingPointAddress.AddressLine4;
-            pickupJob.DeliveryAddressLine5 = meetingPointAddress.AddressLine5;
-            pickupJob.DeliveryAddressLine6 = meetingPointAddress.AddressLine6;
-            pickupJob.DeliveryAddressLine7 = meetingPointAddress.AddressLine7;
-            pickupJob.DeliveryAddressLine8 = meetingPointAddress.AddressLine8;
-            pickupJob.DeliveryLatitude = meetingPointAddress.Latitude;
-            pickupJob.DeliveryLongitude = meetingPointAddress.Longitude;
-
-            // Build delivery child job via direct entity insert
-            var deliveryJob = BuildChildJob(job, deliveryJobNumber, childRelTypeId, rootParentId, 2);
-            deliveryJob.CreatedTimeUtc = tenantClock.UtcNow;
-            deliveryJob.UcjbCourierId = courierIdForLegB;
-            if (courierIdForLegB.HasValue)
+            try
             {
-                deliveryJob.UcjbDispTime = currentTenantTime;
-                deliveryJob.UcjbDispDate = currentTenantTime;
-                deliveryJob.UcjbDispId = job.UcjbDispId;
+                Log.Information("Splitting job {JobId} by user {UserName} with meeting point address",
+                    jobId, userName);
+
+                // Load the parent job (no speed navigation needed — we use UcjbSpeed directly)
+                var job = await context.TucJobs
+                              .AsTracking()
+                              .FirstOrDefaultAsync(j => j.UcjbId == jobId, ct)
+                          ?? throw new InvalidOperationException($"Job {jobId} not found");
+
+                var (parentRelTypeId, childRelTypeId) = await GetRelationshipTypeIdsAsync(context, ct);
+
+                var hasFlightAssigned = await context.TucJobNationwides.AnyAsync(n => n.UcnwJobId == jobId, ct);
+                if (hasFlightAssigned)
+                    throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
+
+                var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
+
+                // Generate child job numbers using letter suffixes (no SP = no speed suffix appended)
+                var (pickupJobNumber, deliveryJobNumber) = await GenerateChildJobNumbersAsync(context, job, ct);
+
+                // For US tenants, the tucJob INSERT triggers require non-null suburb IDs
+                // (UTL_fncFuelSurcharge_InclusiveAmount, UTL_fncJob_IsValid, etc.).
+                // Mirror DD_stpJob_Excelerator_Insert which uses the "Unknown" suburb as fallback.
+                var meetingPointSuburbId = await GetUnknownSuburbIdAsync(context, ct);
+
+                // Capture original courier ID before modifying parent
+                var originalCourierId = job.UcjbCourierId;
+
+                // Determine root parent ID - preserve existing if job is already a child
+                var rootParentId = job.RootParentId ?? job.UcjbId;
+
+                // Current tenant time
+                var currentTenantTime = tenantClock.TenantNow;
+
+                // Update parent job
+                job.JobRelationshipTypeId = parentRelTypeId;
+                job.UcjbCourierId = parentJobCourierId;
+                if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
+                job.RootParentId ??= jobId;
+                job.InformationParentId ??= job.RootParentId;
+                job.DisplayInDespatch = false;
+
+                // Build pickup child job via direct entity insert
+                var pickupJob = BuildChildJob(job, pickupJobNumber, childRelTypeId, rootParentId, 1);
+                pickupJob.CreatedTimeUtc = tenantClock.UtcNow;
+                pickupJob.UcjbCourierId = originalCourierId;
+                pickupJob.UcjbDispTime = currentTenantTime;
+                pickupJob.UcjbDispDate = currentTenantTime;
+                pickupJob.UcjbDispId = job.UcjbDispId;
+                pickupJob.UcjbFrom = job.UcjbFrom;
+                pickupJob.UcjbFromAddr = job.UcjbFromAddr;
+                pickupJob.UcjbTo = meetingPointSuburbId;
+                pickupJob.UcjbToAddr = meetingPointAddress.FullAddress;
+                pickupJob.DeliverToPrivateBusiness = PrivateResidenceDeliverTo;
+                pickupJob.DeliverToLeaveId = HandOffLeaveType;
+                pickupJob.FromAirportId = job.FromAirportId;
+                pickupJob.ToAirportId = null;
+                pickupJob.UcjbAttention = job.UcjbAttention;
+                pickupJob.PickupFromContact = job.PickupFromContact;
+                pickupJob.PickupFromPhone = job.PickupFromPhone;
+                pickupJob.PickupAddressLine1 = job.PickupAddressLine1;
+                pickupJob.PickupAddressLine2 = job.PickupAddressLine2;
+                pickupJob.PickupAddressLine3 = job.PickupAddressLine3;
+                pickupJob.PickupAddressLine4 = job.PickupAddressLine4;
+                pickupJob.PickupAddressLine5 = job.PickupAddressLine5;
+                pickupJob.PickupAddressLine6 = job.PickupAddressLine6;
+                pickupJob.PickupAddressLine7 = job.PickupAddressLine7;
+                pickupJob.PickupAddressLine8 = job.PickupAddressLine8;
+                pickupJob.PickUpLatitude = job.PickUpLatitude;
+                pickupJob.PickUpLongitude = job.PickUpLongitude;
+                pickupJob.DeliveryAddressLine1 = meetingPointAddress.AddressLine1;
+                pickupJob.DeliveryAddressLine2 = meetingPointAddress.AddressLine2;
+                pickupJob.DeliveryAddressLine3 = meetingPointAddress.AddressLine3;
+                pickupJob.DeliveryAddressLine4 = meetingPointAddress.AddressLine4;
+                pickupJob.DeliveryAddressLine5 = meetingPointAddress.AddressLine5;
+                pickupJob.DeliveryAddressLine6 = meetingPointAddress.AddressLine6;
+                pickupJob.DeliveryAddressLine7 = meetingPointAddress.AddressLine7;
+                pickupJob.DeliveryAddressLine8 = meetingPointAddress.AddressLine8;
+                pickupJob.DeliveryLatitude = meetingPointAddress.Latitude;
+                pickupJob.DeliveryLongitude = meetingPointAddress.Longitude;
+
+                // Build delivery child job via direct entity insert
+                var deliveryJob = BuildChildJob(job, deliveryJobNumber, childRelTypeId, rootParentId, 2);
+                deliveryJob.CreatedTimeUtc = tenantClock.UtcNow;
+                deliveryJob.UcjbCourierId = courierIdForLegB;
+                if (courierIdForLegB.HasValue)
+                {
+                    deliveryJob.UcjbDispTime = currentTenantTime;
+                    deliveryJob.UcjbDispDate = currentTenantTime;
+                    deliveryJob.UcjbDispId = job.UcjbDispId;
+                }
+
+                deliveryJob.UcjbFrom = meetingPointSuburbId;
+                deliveryJob.UcjbFromAddr = meetingPointAddress.FullAddress;
+                deliveryJob.UcjbTo = job.UcjbTo;
+                deliveryJob.UcjbToAddr = job.UcjbToAddr;
+                deliveryJob.DeliverToPrivateBusiness = job.DeliverToPrivateBusiness;
+                deliveryJob.DeliverToLeaveId = job.DeliverToLeaveId;
+                deliveryJob.FromAirportId = null;
+                deliveryJob.ToAirportId = job.ToAirportId;
+                deliveryJob.DeliverToContact = job.DeliverToContact;
+                deliveryJob.DeliverToPhone = job.DeliverToPhone;
+                deliveryJob.PickupAddressLine1 = meetingPointAddress.AddressLine1;
+                deliveryJob.PickupAddressLine2 = meetingPointAddress.AddressLine2;
+                deliveryJob.PickupAddressLine3 = meetingPointAddress.AddressLine3;
+                deliveryJob.PickupAddressLine4 = meetingPointAddress.AddressLine4;
+                deliveryJob.PickupAddressLine5 = meetingPointAddress.AddressLine5;
+                deliveryJob.PickupAddressLine6 = meetingPointAddress.AddressLine6;
+                deliveryJob.PickupAddressLine7 = meetingPointAddress.AddressLine7;
+                deliveryJob.PickupAddressLine8 = meetingPointAddress.AddressLine8;
+                deliveryJob.PickUpLatitude = meetingPointAddress.Latitude;
+                deliveryJob.PickUpLongitude = meetingPointAddress.Longitude;
+                deliveryJob.DeliveryAddressLine1 = job.DeliveryAddressLine1;
+                deliveryJob.DeliveryAddressLine2 = job.DeliveryAddressLine2;
+                deliveryJob.DeliveryAddressLine3 = job.DeliveryAddressLine3;
+                deliveryJob.DeliveryAddressLine4 = job.DeliveryAddressLine4;
+                deliveryJob.DeliveryAddressLine5 = job.DeliveryAddressLine5;
+                deliveryJob.DeliveryAddressLine6 = job.DeliveryAddressLine6;
+                deliveryJob.DeliveryAddressLine7 = job.DeliveryAddressLine7;
+                deliveryJob.DeliveryAddressLine8 = job.DeliveryAddressLine8;
+                deliveryJob.DeliveryLatitude = job.DeliveryLatitude;
+                deliveryJob.DeliveryLongitude = job.DeliveryLongitude;
+
+                // Save the parent update first (UPDATE doesn't hit the identity read-back issue)
+                await context.SaveChangesAsync(ct);
+
+                // INSERT child jobs via raw SQL — tucJob INSERT triggers produce extra
+                // result sets that break EF Core's PropagateResults identity read-back.
+                pickupJob.UcjbId = await createJobService.InsertJobRawAsync(context, pickupJob, ct);
+                deliveryJob.UcjbId = await createJobService.InsertJobRawAsync(context, deliveryJob, ct);
+
+                // Create notes (requires child job IDs)
+                await CreateSplitJobNotesAsync(context, pickupJob.UcjbId, deliveryJob.UcjbId, job.UcjbNotes, ct);
+
+                // Consolidate MARS information
+                await ConsolidateMarsInformationAsync(context, jobId, userName, ct);
+
+                await transaction.CommitAsync(ct);
+
+                Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
+                    jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
+
+                // Re-rate outside transaction ( the best effort — jobs are already committed)
+                await ReRateSplitJobsAsync(jobId, job.UcjbAmount ?? 0m, rootParentId, ct);
+
+                return (pickupJob.UcjbId, deliveryJob.UcjbId);
             }
-
-            deliveryJob.UcjbFrom = meetingPointSuburbId;
-            deliveryJob.UcjbFromAddr = meetingPointAddress.FullAddress;
-            deliveryJob.UcjbTo = job.UcjbTo;
-            deliveryJob.UcjbToAddr = job.UcjbToAddr;
-            deliveryJob.DeliverToPrivateBusiness = job.DeliverToPrivateBusiness;
-            deliveryJob.DeliverToLeaveId = job.DeliverToLeaveId;
-            deliveryJob.FromAirportId = null;
-            deliveryJob.ToAirportId = job.ToAirportId;
-            deliveryJob.DeliverToContact = job.DeliverToContact;
-            deliveryJob.DeliverToPhone = job.DeliverToPhone;
-            deliveryJob.PickupAddressLine1 = meetingPointAddress.AddressLine1;
-            deliveryJob.PickupAddressLine2 = meetingPointAddress.AddressLine2;
-            deliveryJob.PickupAddressLine3 = meetingPointAddress.AddressLine3;
-            deliveryJob.PickupAddressLine4 = meetingPointAddress.AddressLine4;
-            deliveryJob.PickupAddressLine5 = meetingPointAddress.AddressLine5;
-            deliveryJob.PickupAddressLine6 = meetingPointAddress.AddressLine6;
-            deliveryJob.PickupAddressLine7 = meetingPointAddress.AddressLine7;
-            deliveryJob.PickupAddressLine8 = meetingPointAddress.AddressLine8;
-            deliveryJob.PickUpLatitude = meetingPointAddress.Latitude;
-            deliveryJob.PickUpLongitude = meetingPointAddress.Longitude;
-            deliveryJob.DeliveryAddressLine1 = job.DeliveryAddressLine1;
-            deliveryJob.DeliveryAddressLine2 = job.DeliveryAddressLine2;
-            deliveryJob.DeliveryAddressLine3 = job.DeliveryAddressLine3;
-            deliveryJob.DeliveryAddressLine4 = job.DeliveryAddressLine4;
-            deliveryJob.DeliveryAddressLine5 = job.DeliveryAddressLine5;
-            deliveryJob.DeliveryAddressLine6 = job.DeliveryAddressLine6;
-            deliveryJob.DeliveryAddressLine7 = job.DeliveryAddressLine7;
-            deliveryJob.DeliveryAddressLine8 = job.DeliveryAddressLine8;
-            deliveryJob.DeliveryLatitude = job.DeliveryLatitude;
-            deliveryJob.DeliveryLongitude = job.DeliveryLongitude;
-
-            // Save the parent update first (UPDATE doesn't hit the identity read-back issue)
-            await context.SaveChangesAsync(ct);
-
-            // INSERT child jobs via raw SQL — tucJob INSERT triggers produce extra
-            // result sets that break EF Core's PropagateResults identity read-back.
-            pickupJob.UcjbId = await InsertJobRawAsync(context, pickupJob, ct);
-            deliveryJob.UcjbId = await InsertJobRawAsync(context, deliveryJob, ct);
-
-            // Create notes (requires child job IDs)
-            await CreateSplitJobNotesAsync(context, pickupJob.UcjbId, deliveryJob.UcjbId, job.UcjbNotes, ct);
-
-            // Consolidate MARS information
-            await ConsolidateMarsInformationAsync(context, jobId, userName, ct);
-
-            await transaction.CommitAsync(ct);
-
-            Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
-                jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
-
-            // Re-rate outside transaction (best effort — jobs are already committed)
-            await ReRateSplitJobsAsync(jobId, job.UcjbAmount ?? 0m, rootParentId, ct);
-
-            return (pickupJob.UcjbId, deliveryJob.UcjbId);
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(ct);
-            Log.Error(ex, "Error splitting job {JobId}", jobId);
-            throw;
-        }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(ct);
+                Log.Error(ex, "Error splitting job {JobId}", jobId);
+                throw;
+            }
+        });
     }
 
     /// <inheritdoc />
@@ -572,76 +573,4 @@ public class SplitJobService(
         }
     }
 
-    /// <summary>
-    /// Inserts a TucJob via raw SQL to bypass EF Core's PropagateResults which
-    /// breaks on tucJob due to INSERT triggers producing extra result sets.
-    /// Uses an OUTPUT parameter for SCOPE_IDENTITY() to avoid composability issues.
-    /// Do not batch multiple inserts into a single call — SCOPE_IDENTITY() returns
-    /// the identity of the last INSERT only.
-    /// </summary>
-    private static async Task<int> InsertJobRawAsync(DespatchContext context, TucJob job, CancellationToken ct)
-    {
-        // SQLite (used in tests) doesn't have the INSERT trigger that causes
-        // PropagateResults to break, so normal EF Core works fine.
-        if (context.Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite")
-        {
-            context.TucJobs.Add(job);
-            await context.SaveChangesAsync(ct);
-            return job.UcjbId;
-        }
-
-        var entityType = context.Model.FindEntityType(typeof(TucJob))!;
-        var storeObject = StoreObjectIdentifier.Table(entityType.GetTableName()!, entityType.GetSchema());
-
-        var columns = new List<string>();
-        var paramNames = new List<string>();
-        var parameters = new List<SqlParameter>();
-
-        foreach (var property in entityType.GetProperties())
-        {
-            // Skip store-generated identity column
-            if (property.IsPrimaryKey() && property.ValueGenerated != ValueGenerated.Never)
-                continue;
-
-            // Skip shadow properties (no CLR backing member)
-            if (property.PropertyInfo == null && property.FieldInfo == null)
-                continue;
-
-            // Skip server-computed columns (always overwritten by the database)
-            if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate)
-                continue;
-
-            var columnName = property.GetColumnName(storeObject);
-            if (columnName == null) continue;
-
-            var value = property.PropertyInfo?.GetValue(job)
-                        ?? property.FieldInfo?.GetValue(job);
-
-            var paramName = $"@p{parameters.Count}";
-            columns.Add($"[{columnName}]");
-            paramNames.Add(paramName);
-            var sqlParam = new SqlParameter(paramName, value ?? DBNull.Value);
-            if (property.GetTypeMapping() is RelationalTypeMapping relMapping
-                && string.Equals(relMapping.StoreType, "image", StringComparison.OrdinalIgnoreCase))
-                sqlParam.SqlDbType = SqlDbType.Image;
-            parameters.Add(sqlParam);
-        }
-
-        // OUTPUT parameter to capture the new identity without SqlQueryRaw composability issues
-        var identityParam = new SqlParameter("@identity", SqlDbType.Int)
-        {
-            Direction = ParameterDirection.Output
-        };
-        parameters.Add(identityParam);
-
-        var sql = new StringBuilder();
-        sql.Append("SET NOCOUNT ON; INSERT INTO [tucJob] (");
-        sql.Append(string.Join(", ", columns));
-        sql.Append(") VALUES (");
-        sql.Append(string.Join(", ", paramNames));
-        sql.Append("); SET @identity = SCOPE_IDENTITY();");
-
-        await context.Database.ExecuteSqlRawAsync(sql.ToString(), parameters.ToArray<object>(), ct);
-        return (int)identityParam.Value!;
-    }
 }

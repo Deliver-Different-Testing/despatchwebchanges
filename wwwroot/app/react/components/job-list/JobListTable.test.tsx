@@ -26,6 +26,22 @@ jest.mock('../../services/aiAssistantApi', () => ({
 jest.mock('../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn().mockReturnValue(false),
 }));
+// Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
+jest.mock('@tanstack/react-virtual', () => ({
+    useVirtualizer: ({count}: {count: number}) => ({
+        getVirtualItems: () =>
+            Array.from({length: count}, (_, i) => ({
+                index: i,
+                start: i * 34,
+                end: (i + 1) * 34,
+                size: 34,
+                key: i,
+            })),
+        getTotalSize: () => count * 34,
+        measureElement: () => {},
+    }),
+}));
+
 jest.mock('../../utils/dateUtils', () => ({
     formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
     formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),
@@ -376,6 +392,83 @@ describe('JobListTable', () => {
             expect(screen.getByText('J001')).toBeInTheDocument();
             expect(screen.getByText('J002')).toBeInTheDocument();
             expect(screen.getByText('J003')).toBeInTheDocument();
+        });
+    });
+
+    // ── ASAP Job Late Detection ────────────────────────────────────────
+    describe('ASAP Job Late Detection', () => {
+        it('does not show late pickup icon for ASAP jobs with null time in pre-pickup status', () => {
+            const asapJob = createMockDispatchJob({
+                id: 1,
+                jobNo: 'ASAP-001',
+                statusId: 1, // Dispatched — pre-pickup status
+                time: null as any, // ASAP job has no delivery time
+                booked: dayjs().subtract(2, 'hour'), // overdue by booked time
+                assignedCourier: {id: 10, text: '10 - Runner'},
+                alertLatePickup: 0, // alerts enabled
+            });
+
+            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+
+            expect(screen.getByText('ASAP-001')).toBeInTheDocument();
+            // No ScheduleIcon (late pickup) or LocalShippingIcon (late delivery)
+            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeInTheDocument();
+        });
+
+        it('does not show late delivery icon for ASAP jobs with null time in transit', () => {
+            const asapJob = createMockDispatchJob({
+                id: 1,
+                jobNo: 'ASAP-002',
+                statusId: 11, // InTransit
+                time: null as any,
+                booked: dayjs().subtract(3, 'hour'),
+                assignedCourier: {id: 10, text: '10 - Runner'},
+                alertLateDelivery: 0, // alerts enabled
+            });
+
+            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+
+            expect(screen.getByText('ASAP-002')).toBeInTheDocument();
+            // No late delivery icon
+            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).not.toBeInTheDocument();
+            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+        });
+
+        it('does not show late pickup icon for ASAP jobs in Accepted status', () => {
+            const asapJob = createMockDispatchJob({
+                id: 1,
+                jobNo: 'ASAP-003',
+                statusId: 2, // Accepted — pre-pickup status
+                time: null as any,
+                booked: dayjs().subtract(1, 'hour'),
+                assignedCourier: {id: 10, text: '10 - Runner'},
+                alertLatePickup: null as any, // null = default (alerts enabled)
+            });
+
+            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [asapJob]})}/>);
+
+            expect(screen.getByText('ASAP-003')).toBeInTheDocument();
+            expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
+        });
+
+        it('still shows late pickup icon for timed jobs that are overdue', () => {
+            const lateTimedJob = createMockDispatchJob({
+                id: 1,
+                jobNo: 'TIMED-LATE',
+                statusId: 1, // Dispatched
+                time: dayjs().subtract(1, 'hour'), // delivery time is in the past
+                booked: dayjs().subtract(2, 'hour'),
+                assignedCourier: {id: 10, text: '10 - Runner'},
+                alertLatePickup: 0,
+            });
+
+            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [lateTimedJob]})}/>);
+
+            expect(screen.getByText('TIMED-LATE')).toBeInTheDocument();
+
+            // ScheduleIcon SVG should render for a late timed job
+            expect(container.querySelector('[data-testid="ScheduleIcon"]')).toBeInTheDocument();
         });
     });
 

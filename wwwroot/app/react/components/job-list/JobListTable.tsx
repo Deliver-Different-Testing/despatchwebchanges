@@ -12,6 +12,7 @@
  */
 
 import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import {useVirtualizer} from '@tanstack/react-virtual';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -173,14 +174,26 @@ function getTimeZoneShort(): string {
     return _cachedTimezoneShort;
 }
 
+// Cached "now" — refreshed at most once per second
+let _cachedNow: dayjs.Dayjs | null = null;
+let _cachedNowTs = 0;
+function getNow(): dayjs.Dayjs {
+    const ts = Date.now();
+    if (!_cachedNow || ts - _cachedNowTs > 1000) {
+        _cachedNow = dayjs();
+        _cachedNowTs = ts;
+    }
+    return _cachedNow;
+}
+
 function isOverdue(job: DispatchJob): boolean {
-    const now = dayjs();
+    const now = getNow();
     const deliveryTime = dayjs(job.time || job.booked);
     return deliveryTime.isBefore(now);
 }
 
 function isUrgent(job: DispatchJob): boolean {
-    const now = dayjs();
+    const now = getNow();
     const deliveryTime = dayjs(job.time);
     const minutesUntilDelivery = deliveryTime.diff(now, 'minutes');
     return minutesUntilDelivery <= 30 && minutesUntilDelivery > 0;
@@ -199,6 +212,7 @@ function isLateDeliveryStatus(job: DispatchJob): boolean {
 /** Proactive late pickup: job not yet picked up and overdue */
 function isProactivelyLateForPickup(job: DispatchJob): boolean {
     if (isLatePickupStatus(job)) return false; // Already flagged server-side
+    if (!job.time) return false; // No delivery time (ASAP job) — matches server-side guard
     const prePickupStatuses = [JOB_STATUS.New, JOB_STATUS.Dispatched, JOB_STATUS.Accepted];
     if (!prePickupStatuses.includes(job.statusId as any)) return false;
     if (job.alertLatePickup != null && job.alertLatePickup < 0) return false; // Client disabled late pickup alerts
@@ -208,6 +222,7 @@ function isProactivelyLateForPickup(job: DispatchJob): boolean {
 /** Proactive late delivery: job picked up but delivery overdue */
 function isProactivelyLateForDelivery(job: DispatchJob): boolean {
     if (isLateDeliveryStatus(job)) return false; // Already flagged server-side
+    if (!job.time) return false; // No delivery time (ASAP job) — matches server-side guard
     const inTransitStatuses = [JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
     if (!inTransitStatuses.includes(job.statusId as any)) return false;
     if (job.alertLateDelivery != null && job.alertLateDelivery < 0) return false; // Client disabled late delivery alerts
@@ -513,10 +528,13 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     isJobSearchPage,
     loggedInCouriersOnly,
 }) => {
-    // Tick every 60s to keep time-dependent late/overdue checks current
-    const [tick, setTick] = useState(0);
+    // Tick every 60s to keep time-dependent late/overdue checks current.
+    // Stored as a ref to avoid re-rendering every row — only rows with
+    // time-sensitive status (late/urgent) will pick up changes via the
+    // parent's useMemo recomputation on the next data refresh.
+    const tickRef = useRef(0);
     useEffect(() => {
-        const timer = setInterval(() => setTick((t) => t + 1), 60_000);
+        const timer = setInterval(() => { tickRef.current++; }, 60_000);
         return () => clearInterval(timer);
     }, []);
 
@@ -534,6 +552,18 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     const {handleResizeStart} = useColumnResize({columnWidths, onColumnWidthsChange, tableRef});
 
     const lastColumnKey = useMemo(() => columns[columns.length - 1]?.key, [columns]);
+
+    // Row height estimate based on density mode
+    const estimatedRowHeight = densityMode === 'ultra-dense' ? 28 : densityMode === 'dense' ? 34 : 44;
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const virtualizer = useVirtualizer({
+        count: jobs.length,
+        getScrollElement: () => scrollContainerRef.current,
+        estimateSize: () => estimatedRowHeight,
+        overscan: 15,
+    });
 
     if (jobs.length === 0) {
         return (
@@ -555,7 +585,14 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     }
 
     return (
-        <TableContainer ref={tableRef} sx={{flex: 1, overflow: 'auto'}}>
+        <TableContainer
+            ref={(node: HTMLDivElement | null) => {
+                scrollContainerRef.current = node;
+                // Also share with column-resize hook
+                (tableRef as React.RefObject<HTMLDivElement | null>).current = node;
+            }}
+            sx={{flex: 1, overflow: 'auto'}}
+        >
             <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
                 <TableHead>
                     <TableRow>
@@ -610,24 +647,34 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {jobs.map((job) => (
-                        <JobRow
-                            key={job.id}
-                            job={job}
-                            isSelected={selectedJobId === job.id}
-                            isRelated={relatedJobIds.has(job.id)}
-                            isMultiSelected={multiSelectedIds.has(job.id)}
-                            columns={columns}
-                            densityMode={densityMode}
-                            isUsCustomer={isUsCustomer}
-                            appPage={appPage}
-                            tick={tick}
-                            onClick={onJobClick}
-                            onContextMenu={onContextMenu}
-                            onJobDispatch={onJobDispatch}
-                            loggedInCouriersOnly={loggedInCouriersOnly}
-                        />
-                    ))}
+                    {/* Spacer row for virtual scroll offset */}
+                    {virtualizer.getVirtualItems().length > 0 && (
+                        <tr style={{height: virtualizer.getVirtualItems()[0].start}} />
+                    )}
+                    {virtualizer.getVirtualItems().map((virtualRow) => {
+                        const job = jobs[virtualRow.index];
+                        return (
+                            <JobRow
+                                key={job.id}
+                                job={job}
+                                isSelected={selectedJobId === job.id}
+                                isRelated={relatedJobIds.has(job.id)}
+                                isMultiSelected={multiSelectedIds.has(job.id)}
+                                columns={columns}
+                                densityMode={densityMode}
+                                isUsCustomer={isUsCustomer}
+                                appPage={appPage}
+                                onClick={onJobClick}
+                                onContextMenu={onContextMenu}
+                                onJobDispatch={onJobDispatch}
+                                loggedInCouriersOnly={loggedInCouriersOnly}
+                            />
+                        );
+                    })}
+                    {/* Spacer row for remaining virtual scroll space */}
+                    {virtualizer.getVirtualItems().length > 0 && (
+                        <tr style={{height: virtualizer.getTotalSize() - (virtualizer.getVirtualItems()[virtualizer.getVirtualItems().length - 1].end)}} />
+                    )}
                 </TableBody>
             </Table>
         </TableContainer>
@@ -645,7 +692,6 @@ interface JobRowProps {
     densityMode: DensityMode;
     isUsCustomer?: boolean;
     appPage?: number;
-    tick: number;
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
@@ -661,7 +707,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     densityMode,
     isUsCustomer,
     appPage,
-    tick: _tick,
     onClick,
     onContextMenu,
     onJobDispatch,
@@ -682,13 +727,18 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
 
     const isUltraDense = densityMode === 'ultra-dense';
 
+    const rowSx = useMemo(
+        () => getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected),
+        [job.statusId, job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job.hasBeenRead, job.time, job.booked, job.assignedCourier, job.alertLatePickup, job.alertLateDelivery, job._groupChildren, isSelected, isRelated, densityMode, isMultiSelected],
+    );
+
     return (
         <TableRow
             hover
             selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
-            sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected)}
+            sx={rowSx}
         >
             {columns.map((col) => (
                 <TableCell
@@ -696,7 +746,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                     align={col.align || 'left'}
                     sx={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
                 >
-                    <CellContent col={col.key} job={job} isUltraDense={isUltraDense} isUsCustomer={isUsCustomer} appPage={appPage} onJobDispatch={onJobDispatch} loggedInCouriersOnly={loggedInCouriersOnly}/>
+                    <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense} isUsCustomer={isUsCustomer} appPage={appPage} onJobDispatch={onJobDispatch} loggedInCouriersOnly={loggedInCouriersOnly}/>
                 </TableCell>
             ))}
         </TableRow>
@@ -980,7 +1030,7 @@ CourierCell.displayName = 'CourierCell';
 
 // ── Cell Content ─────────────────────────────────────────────────────
 
-const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = ({
+const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = React.memo(({
     col,
     job,
     isUltraDense,
@@ -1139,4 +1189,6 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
         default:
             return null;
     }
-};
+});
+CellContent.displayName = 'CellContent';
+const MemoizedCellContent = CellContent;

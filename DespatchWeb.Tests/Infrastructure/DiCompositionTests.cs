@@ -44,9 +44,12 @@ public class DiCompositionTests
         services.AddScoped(_ => new HttpClient());
         services.AddLogging();
 
-        // Register the four extension method groups under test
+        // Register the extension method groups under test
         services.AddRepositories();
         services.AddJobServices();
+        services.AddPricingServices();
+        services.AddReportingServices();
+        services.AddSupportServices();
         services.AddTenantServices();
         services.AddAiServices();
 

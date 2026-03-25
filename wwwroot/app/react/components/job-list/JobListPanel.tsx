@@ -63,8 +63,21 @@ const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
 // ── Filter / Sort Helpers ────────────────────────────────────────────
 
+// Cached "now" timestamp — refreshed at most once per second to avoid
+// creating a new dayjs instance for every job in every helper call.
+let _cachedNow: dayjs.Dayjs | null = null;
+let _cachedNowTs = 0;
+function getNow(): dayjs.Dayjs {
+    const ts = Date.now();
+    if (!_cachedNow || ts - _cachedNowTs > 1000) {
+        _cachedNow = dayjs();
+        _cachedNowTs = ts;
+    }
+    return _cachedNow;
+}
+
 function isUrgent(job: DispatchJob): boolean {
-    const now = dayjs();
+    const now = getNow();
     const deliveryTime = dayjs(job.time);
     const minutesUntilDelivery = deliveryTime.diff(now, 'minutes');
     return minutesUntilDelivery <= 30 && minutesUntilDelivery > 0;
@@ -93,12 +106,13 @@ function needsDispatch(job: DispatchJob): boolean {
 }
 
 function isOverdue(job: DispatchJob): boolean {
-    const now = dayjs();
+    const now = getNow();
     const deliveryTime = dayjs(job.time || job.booked);
     return deliveryTime.isBefore(now);
 }
 
 function isProactivelyLate(job: DispatchJob): boolean {
+    if (!job.time) return false; // No delivery time (ASAP job) — matches server-side guard
     // Late for pickup: not yet picked up and overdue
     const prePickupStatuses = [JOB_STATUS.New, JOB_STATUS.Dispatched, JOB_STATUS.Accepted];
     if (prePickupStatuses.includes(job.statusId as any) && isOverdue(job)) {
@@ -247,14 +261,17 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
 
     if (!sortState.column || !sortState.direction) {
         // Default: urgent first, then by delivery time
+        // Pre-compute valueOf for each job to avoid repeated dayjs construction during sort
+        const timeCache = new Map<number, number>();
+        for (const job of sorted) {
+            timeCache.set(job.id, job.time ? dayjs(job.time).valueOf() : (job.booked ? dayjs(job.booked).valueOf() : 0));
+        }
         return sorted.sort((a, b) => {
             const aUrgent = isUrgent(a);
             const bUrgent = isUrgent(b);
             if (aUrgent && !bUrgent) return -1;
             if (!aUrgent && bUrgent) return 1;
-            const aTime = a.time ? dayjs(a.time).valueOf() : (a.booked ? dayjs(a.booked).valueOf() : 0);
-            const bTime = b.time ? dayjs(b.time).valueOf() : (b.booked ? dayjs(b.booked).valueOf() : 0);
-            return aTime - bTime;
+            return (timeCache.get(a.id) ?? 0) - (timeCache.get(b.id) ?? 0);
         });
     }
 
@@ -450,13 +467,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // Sort
         filtered = sortJobs(filtered, sortState, isUsCustomer);
 
-        // Stats from full (unfiltered) jobs
-        const statsResult = {
-            total: jobs.length,
-            active: jobs.filter((j) => isActive(j)).length,
-            transit: jobs.filter((j) => isInTransit(j)).length,
-            done: jobs.filter((j) => isDelivered(j)).length,
-        };
+        // Stats from full (unfiltered) jobs — single pass
+        const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
+        for (const j of jobs) {
+            if (isActive(j)) statsResult.active++;
+            if (isInTransit(j)) statsResult.transit++;
+            if (isDelivered(j)) statsResult.done++;
+        }
 
         return {filteredJobs: filtered, stats: statsResult};
     }, [jobs, selectedCategory, searchQuery, sortState, isUsCustomer, fetchConfig]);
