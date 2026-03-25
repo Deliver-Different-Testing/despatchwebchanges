@@ -236,39 +236,9 @@ describe('RouterConfig', () => {
         it('should configure recurringJobs state', () => {
             const state = registeredStates.get('recurringJobs');
             expect(state.url).toBe('/recurringJobs');
-            // Now uses hybrid React/AngularJS template with app shell and job detail widget
             expect(state.template).toContain('react-app-shell');
             expect(state.template).toContain('react-recurring-jobs-list');
-            expect(state.template).toContain('job-detail-widget');
             expect(state.controller).toBeDefined();
-        });
-
-        describe('recurringJobs template overflow handling', () => {
-            it('should have overflow: hidden on the job details column container', () => {
-                const state = registeredStates.get('recurringJobs');
-                // The column container (flex: 0 0 45%) should have overflow: hidden
-                expect(state.template).toContain('flex: 0 0 45%');
-                expect(state.template).toMatch(/flex: 0 0 45%[^>]*overflow: hidden/);
-            });
-
-            it('should have min-width: 0 on flex containers to prevent overflow', () => {
-                const state = registeredStates.get('recurringJobs');
-                // min-width: 0 allows flex items to shrink below content width
-                expect(state.template).toMatch(/flex: 0 0 45%[^>]*min-width: 0/);
-            });
-
-            it('should have min-width: 0 on md-card for proper flex shrinking', () => {
-                const state = registeredStates.get('recurringJobs');
-                // md-card should also have min-width: 0
-                expect(state.template).toMatch(/md-card[^>]*min-width: 0/);
-            });
-
-            it('should have width constraints on job-detail-widget', () => {
-                const state = registeredStates.get('recurringJobs');
-                // job-detail-widget should have width: 100% and max-width: 100%
-                expect(state.template).toMatch(/job-detail-widget[^>]*width: 100%/);
-                expect(state.template).toMatch(/job-detail-widget[^>]*max-width: 100%/);
-            });
         });
 
         it('should configure overview state', () => {

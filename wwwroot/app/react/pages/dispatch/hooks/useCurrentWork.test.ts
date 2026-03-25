@@ -25,6 +25,12 @@ const mockDriver: IDriverWorkOverview = {
     jobCount: 5,
 } as IDriverWorkOverview;
 
+function renderCurrentWork(isUsCustomer: boolean) {
+    const queryClient = createTestQueryClient();
+    const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+    return renderHook(() => useCurrentWork(isUsCustomer), {wrapper});
+}
+
 describe('useCurrentWork', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -33,104 +39,140 @@ describe('useCurrentWork', () => {
         mockCreateCurrentWorkFetchFn.mockReturnValue(jest.fn());
     });
 
-    it('initially in overview mode with empty drivers', () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
+    // ── US tenant (has driver overview) ─────────────────────────────────
 
-        expect(result.current.viewMode).toBe('overview');
-        expect(result.current.drivers).toEqual([]);
-        expect(result.current.selectedCourierId).toBeUndefined();
-        expect(result.current.selectedDriverName).toBe('');
+    describe('US tenant (isUsCustomer=true)', () => {
+        it('initially in overview mode with empty drivers', () => {
+            const {result} = renderCurrentWork(true);
+
+            expect(result.current.viewMode).toBe('overview');
+            expect(result.current.drivers).toEqual([]);
+            expect(result.current.selectedCourierId).toBeUndefined();
+            expect(result.current.selectedDriverName).toBe('');
+        });
+
+        it('fetches driver overview data', async () => {
+            mockGetDriverWorkOverview.mockResolvedValue([mockDriver]);
+            const {result} = renderCurrentWork(true);
+
+            await waitFor(() => {
+                expect(result.current.drivers).toEqual([mockDriver]);
+            });
+            expect(mockGetDriverWorkOverview).toHaveBeenCalled();
+        });
+
+        it('selectDriver switches to selectedDriver mode and sets driver name', async () => {
+            mockGetDriverWorkOverview.mockResolvedValue([mockDriver]);
+            const {result} = renderCurrentWork(true);
+
+            await waitFor(() => {
+                expect(result.current.drivers).toHaveLength(1);
+            });
+
+            act(() => result.current.selectDriver(mockDriver));
+
+            expect(result.current.viewMode).toBe('selectedDriver');
+            expect(result.current.selectedCourierId).toBe(10);
+            expect(result.current.selectedDriverName).toBe('John Smith');
+        });
+
+        it('backToOverview resets to overview mode', () => {
+            const {result} = renderCurrentWork(true);
+
+            act(() => result.current.selectDriver(mockDriver));
+            expect(result.current.viewMode).toBe('selectedDriver');
+
+            act(() => result.current.backToOverview());
+
+            expect(result.current.viewMode).toBe('overview');
+            expect(result.current.selectedCourierId).toBeUndefined();
+            expect(result.current.selectedDriverName).toBe('');
+            expect(result.current.currentWorkSelection).toBe('');
+        });
+
+        it('driverJobsFetchConfig is null in overview mode', () => {
+            const {result} = renderCurrentWork(true);
+            expect(result.current.driverJobsFetchConfig).toBeNull();
+        });
+
+        it('driverJobsFetchConfig has fetchFn in selectedDriver mode', () => {
+            const mockFetchFn = jest.fn();
+            mockCreateCurrentWorkFetchFn.mockReturnValue(mockFetchFn);
+            const {result} = renderCurrentWork(true);
+
+            act(() => result.current.selectDriver(mockDriver));
+
+            expect(result.current.driverJobsFetchConfig).not.toBeNull();
+            expect(result.current.driverJobsFetchConfig!.fetchFn).toBe(mockFetchFn);
+            expect(mockCreateCurrentWorkFetchFn).toHaveBeenCalledWith(10);
+        });
+
+        it('currentWorkSelection shows driver name when selected', () => {
+            const {result} = renderCurrentWork(true);
+
+            act(() => result.current.selectDriver(mockDriver));
+
+            expect(result.current.currentWorkSelection).toBe(' - John Smith');
+        });
     });
 
-    it('fetches driver overview data', async () => {
-        mockGetDriverWorkOverview.mockResolvedValue([mockDriver]);
+    // ── NZ tenant (no driver overview) ──────────────────────────────────
 
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
+    describe('NZ tenant (isUsCustomer=false)', () => {
+        it('initially in selectedDriver mode (skips overview)', () => {
+            const {result} = renderCurrentWork(false);
 
-        await waitFor(() => {
-            expect(result.current.drivers).toEqual([mockDriver]);
-        });
-        expect(mockGetDriverWorkOverview).toHaveBeenCalled();
-    });
-
-    it('selectDriver switches to selectedDriver mode and sets driver name', async () => {
-        mockGetDriverWorkOverview.mockResolvedValue([mockDriver]);
-
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
-
-        await waitFor(() => {
-            expect(result.current.drivers).toHaveLength(1);
+            expect(result.current.viewMode).toBe('selectedDriver');
+            expect(result.current.selectedCourierId).toBeUndefined();
         });
 
-        act(() => {
-            result.current.selectDriver(mockDriver);
+        it('does NOT fetch driver overview data', async () => {
+            const {result} = renderCurrentWork(false);
+
+            // Give React Query a tick to potentially fire
+            await waitFor(() => {
+                expect(result.current.drivers).toEqual([]);
+            });
+
+            expect(mockGetDriverWorkOverview).not.toHaveBeenCalled();
         });
 
-        expect(result.current.viewMode).toBe('selectedDriver');
-        expect(result.current.selectedCourierId).toBe(10);
-        expect(result.current.selectedDriverName).toBe('John Smith');
-    });
+        it('selectDriver sets courier and stays in selectedDriver mode', () => {
+            const {result} = renderCurrentWork(false);
 
-    it('backToOverview resets to overview mode', async () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
+            act(() => result.current.selectDriver(mockDriver));
 
-        act(() => {
-            result.current.selectDriver(mockDriver);
-        });
-        expect(result.current.viewMode).toBe('selectedDriver');
-
-        act(() => {
-            result.current.backToOverview();
+            expect(result.current.viewMode).toBe('selectedDriver');
+            expect(result.current.selectedCourierId).toBe(10);
+            expect(result.current.selectedDriverName).toBe('John Smith');
         });
 
-        expect(result.current.viewMode).toBe('overview');
-        expect(result.current.selectedCourierId).toBeUndefined();
-        expect(result.current.selectedDriverName).toBe('');
-        expect(result.current.currentWorkSelection).toBe('');
-    });
+        it('backToOverview clears selection but stays in selectedDriver mode', () => {
+            const {result} = renderCurrentWork(false);
 
-    it('driverJobsFetchConfig is null in overview mode', () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
+            act(() => result.current.selectDriver(mockDriver));
+            act(() => result.current.backToOverview());
 
-        expect(result.current.driverJobsFetchConfig).toBeNull();
-    });
-
-    it('driverJobsFetchConfig has fetchFn in selectedDriver mode', () => {
-        const mockFetchFn = jest.fn();
-        mockCreateCurrentWorkFetchFn.mockReturnValue(mockFetchFn);
-
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
-
-        act(() => {
-            result.current.selectDriver(mockDriver);
+            expect(result.current.viewMode).toBe('selectedDriver');
+            expect(result.current.selectedCourierId).toBeUndefined();
+            expect(result.current.selectedDriverName).toBe('');
+            expect(result.current.currentWorkSelection).toBe('');
         });
 
-        expect(result.current.driverJobsFetchConfig).not.toBeNull();
-        expect(result.current.driverJobsFetchConfig!.fetchFn).toBe(mockFetchFn);
-        expect(mockCreateCurrentWorkFetchFn).toHaveBeenCalledWith(10);
-    });
-
-    it('currentWorkSelection shows driver name when selected', () => {
-        const queryClient = createTestQueryClient();
-        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        const {result} = renderHook(() => useCurrentWork(), {wrapper});
-
-        act(() => {
-            result.current.selectDriver(mockDriver);
+        it('driverJobsFetchConfig is null when no driver selected', () => {
+            const {result} = renderCurrentWork(false);
+            expect(result.current.driverJobsFetchConfig).toBeNull();
         });
 
-        expect(result.current.currentWorkSelection).toBe(' - John Smith');
+        it('driverJobsFetchConfig has fetchFn when driver selected', () => {
+            const mockFetchFn = jest.fn();
+            mockCreateCurrentWorkFetchFn.mockReturnValue(mockFetchFn);
+            const {result} = renderCurrentWork(false);
+
+            act(() => result.current.selectDriver(mockDriver));
+
+            expect(result.current.driverJobsFetchConfig).not.toBeNull();
+            expect(result.current.driverJobsFetchConfig!.fetchFn).toBe(mockFetchFn);
+        });
     });
 });

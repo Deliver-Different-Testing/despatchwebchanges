@@ -9,9 +9,9 @@ public class SecurityHeadersMiddleware(RequestDelegate next, IHostEnvironment en
     private const string ContentSecurityPolicy =
         "default-src 'self'; " +
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.api.here.com https://ajax.googleapis.com https://cdnjs.cloudflare.com; " +
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://js.api.here.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://ajax.googleapis.com https://js.api.here.com https://api.fontshare.com; " +
         "img-src 'self' data: blob: https:; " +
-        "font-src 'self' https://fonts.gstatic.com data:; " +
+        "font-src 'self' https://fonts.gstatic.com https://api.fontshare.com data:; " +
         "connect-src 'self' blob: https://*.here.com https://*.hereapi.com https://*.googleapis.com; " +
         "worker-src 'self' blob:; " +
         "frame-ancestors 'none'; " +

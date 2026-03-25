@@ -1,21 +1,25 @@
 import React, {useCallback, useMemo, useState} from 'react';
+import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Chip from '@mui/material/Chip';
 import Collapse from '@mui/material/Collapse';
 import Divider from '@mui/material/Divider';
+import Icon from '@mui/material/Icon';
 import IconButton from '@mui/material/IconButton';
 import Switch from '@mui/material/Switch';
-import TablePagination from '@mui/material/TablePagination';
-import Tooltip from '@mui/material/Tooltip';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
+import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
+import Toolbar from '@mui/material/Toolbar';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import type {SxProps, Theme} from '@mui/material';
 import dayjs from 'dayjs';
 import {formatMins} from '../../../utils/dateUtils';
 import type {DriverViewModel, IOpenJobResponse, TableSort, ViewJob,} from '../OverviewPage.interfaces';
@@ -203,34 +207,42 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
         }));
     };
 
+    const cardHeaderStyle: SxProps<Theme> = (theme: Theme) => ({
+        bgcolor: 'primary.main',
+        color: 'primary.contrastText',
+        minHeight: 40,
+        px: 1.25,
+        gap: 0.5,
+        flexShrink: 0,
+        boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.2)}`,
+        '& .MuiIconButton-root': {
+            color: 'inherit',
+            p: 0.5,
+            borderRadius: 1,
+            transition: 'background-color 150ms ease, transform 150ms ease',
+            '&:hover': {
+                bgcolor: alpha(theme.palette.common.white, 0.15),
+            },
+            '&:active': {
+                transform: 'scale(0.92)',
+            },
+        },
+    });
+
     return (
-        <Card variant="outlined" sx={{mt: 2}}>
+        <Card variant="outlined" sx={{mt: 2, borderRadius: 1.5, border: 1, borderColor: 'divider', boxShadow: 1}}>
             {/* Toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 2,
-                    py: 1,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    minHeight: 44,
-                }}
-            >
-                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                    inventory_2
-                </span>
-                <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
+            <Toolbar variant="dense" disableGutters sx={cardHeaderStyle}>
+                <Icon sx={{fontSize: 20, mr: 0.75, opacity: 0.9}} baseClassName="material-symbols-outlined">inventory_2</Icon>
+                <Typography variant="subtitle2" noWrap sx={{flex: 1, fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.01em'}}>
                     Open Jobs
                 </Typography>
 
                 <Tooltip title={isTableView ? 'Card View' : 'Table View'}>
                     <Box sx={{display: 'flex', alignItems: 'center'}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 18, marginRight: 0.5}}>
+                        <Icon sx={{fontSize: 18, mr: 0.5}} baseClassName="material-symbols-outlined">
                             {isTableView ? 'dashboard' : 'view_list'}
-                        </span>
+                        </Icon>
                         <Switch
                             checked={isTableView}
                             onChange={toggleViewMode}
@@ -239,12 +251,12 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                     </Box>
                 </Tooltip>
 
-                <IconButton size="small" onClick={toggleCollapse} sx={{color: 'inherit'}}>
-                    <span className="material-symbols-outlined">
+                <IconButton size="small" onClick={toggleCollapse}>
+                    <Icon sx={{fontSize: 18}} baseClassName="material-symbols-outlined">
                         {isCollapsed ? 'expand_more' : 'expand_less'}
-                    </span>
+                    </Icon>
                 </IconButton>
-            </Box>
+            </Toolbar>
 
             <Collapse in={!isCollapsed}>
                 <Box sx={{p: 2}}>

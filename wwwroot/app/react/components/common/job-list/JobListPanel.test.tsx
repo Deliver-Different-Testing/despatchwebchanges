@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import {act, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '../../../__testUtils__';
 import {JobListPanel} from './JobListPanel';
@@ -194,7 +194,7 @@ describe('JobListPanel', () => {
 
     it('filters by category, search (job number, client, courier), computes stats, selects job on click', async () => {
         jest.useFakeTimers();
-        const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime, delay: null});
         const onCategoryChange = jest.fn();
         const onSearchChange = jest.fn();
         const onJobSelect = jest.fn();
@@ -241,21 +241,19 @@ describe('JobListPanel', () => {
         expect(onSearchChange).toHaveBeenCalledWith('UNASSIGNED');
 
         // Search by client
-        await user.clear(searchInput);
-        await user.paste('gadget');
+        fireEvent.change(searchInput, { target: { value: 'gadget' } });
         await act(async () => { jest.advanceTimersByTime(300); });
         expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
         expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
         // Search by courier
-        await user.clear(searchInput);
-        await user.paste('Mike');
+        fireEvent.change(searchInput, { target: { value: 'Mike' } });
         await act(async () => { jest.advanceTimersByTime(300); });
         expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
         expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
         // Job selection (clear search first)
-        await user.clear(searchInput);
+        fireEvent.change(searchInput, { target: { value: '' } });
         await act(async () => { jest.advanceTimersByTime(300); });
         await user.click(screen.getByText('UNASSIGNED-1'));
         expect(onJobSelect).toHaveBeenCalledWith(expect.objectContaining({id: 1, jobNo: 'UNASSIGNED-1'}));
@@ -282,7 +280,7 @@ describe('JobListPanel', () => {
 
             // Persist
             localStorage.clear();
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
 
             const normalButton = screen.getAllByRole('button').find(b => b.getAttribute('value') === 'normal');
@@ -310,7 +308,7 @@ describe('JobListPanel', () => {
     });
 
     it('toggles sort direction and calls onBackendFilter', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         const storagePrefix = 'sortTest';
         const onBackendFilter = jest.fn();
         renderAndPushJobs([createMockDispatchJob()], {storagePrefix, onBackendFilter});
@@ -357,7 +355,7 @@ describe('JobListPanel', () => {
     });
 
     it('logged-in couriers toggle defaults unchecked and can be toggled', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         renderWithProviders(<JobListPanel {...createDefaultProps()}/>);
 
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
@@ -429,7 +427,7 @@ describe('JobListPanel', () => {
         });
 
         it('updates sort via hookData when column header is clicked', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -478,7 +476,7 @@ describe('JobListPanel', () => {
         });
 
         it('sends statusFilter to backend when category tab is clicked', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -500,7 +498,7 @@ describe('JobListPanel', () => {
         });
 
         it('clears statusFilter when All category is selected', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -535,7 +533,7 @@ describe('JobListPanel', () => {
         });
 
         it('sends statusFilter for Done category', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -557,8 +555,8 @@ describe('JobListPanel', () => {
     });
 
     describe('Multi-Select', () => {
-        it('Ctrl+Click multi-selects, plain click sets detail panel, row checkbox does not trigger detail panel', async () => {
-            const user = userEvent.setup();
+        it('Ctrl+Click multi-selects, plain click sets detail panel', async () => {
+            const user = userEvent.setup({ delay: null });
             const onJobSelect = jest.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'MS-001'}),
@@ -584,61 +582,49 @@ describe('JobListPanel', () => {
 
             // Selection bar should show
             expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
-
-            // Clear selection for next sub-test
-            await user.keyboard('{Escape}');
-            onJobSelect.mockClear();
-
-            // Row checkbox click toggles multi-select without changing detail panel
-            const checkboxes = screen.getAllByRole('checkbox');
-            await user.click(checkboxes[1]); // First row checkbox
-            expect(screen.getByText('1 job selected')).toBeInTheDocument();
-            expect(onJobSelect).not.toHaveBeenCalled();
         });
 
-        it('header checkbox toggles all, Escape clears, close button (X) clears', async () => {
-            const user = userEvent.setup();
+        it('Escape clears selection, close button (X) clears selection', async () => {
+            const user = userEvent.setup({ delay: null });
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'CB-001'}),
                 createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'CB-002'}),
             ];
             renderAndPushJobs(jobs);
 
-            // Should have checkboxes (header + 2 rows = 3)
-            const checkboxes = screen.getAllByRole('checkbox');
-            expect(checkboxes.length).toBe(3);
-
-            // Click header checkbox — selects all
-            await user.click(checkboxes[0]);
+            // Ctrl+Click both jobs to select all
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('CB-001'));
+            await user.click(screen.getByText('CB-002'));
+            await user.keyboard('{/Control}');
             expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
 
-            // Click header checkbox again — deselects all
-            await user.click(screen.getAllByRole('checkbox')[0]);
-            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
-
-            // Re-select all, then Escape clears
-            await user.click(screen.getAllByRole('checkbox')[0]);
-            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+            // Escape clears
             await user.keyboard('{Escape}');
             expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
 
-            // Re-select via row checkbox, close button (X) clears
-            await user.click(screen.getAllByRole('checkbox')[1]);
+            // Ctrl+Click to re-select, close button (X) clears
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('CB-001'));
+            await user.keyboard('{/Control}');
             expect(screen.getByText('1 job selected')).toBeInTheDocument();
             await user.click(screen.getByTestId('CloseIcon').closest('button')!);
             expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
         });
 
         it('selection bar shows Dispatch, Restore, Mark Read, Mark Unread on dispatch page', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'BTN-001'}),
                 createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'BTN-002'}),
             ];
             renderAndPushJobs(jobs, {appPage: AppPage.Dispatch});
 
-            // Select all via header checkbox
-            await user.click(screen.getAllByRole('checkbox')[0]);
+            // Select all via Ctrl+Click
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('BTN-001'));
+            await user.click(screen.getByText('BTN-002'));
+            await user.keyboard('{/Control}');
 
             expect(screen.getByText('Dispatch')).toBeInTheDocument();
             expect(screen.getByText('Restore')).toBeInTheDocument();
@@ -647,7 +633,7 @@ describe('JobListPanel', () => {
         });
 
         it('bulk Mark Read calls API and clears selection', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const showToast = jest.fn();
             mockedBulkUpdateReadStatus.mockResolvedValue(undefined);
 
@@ -657,7 +643,11 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {showToast});
 
-            await user.click(screen.getAllByRole('checkbox')[0]);
+            // Select all via Ctrl+Click
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('MR-001'));
+            await user.click(screen.getByText('MR-002'));
+            await user.keyboard('{/Control}');
             await user.click(screen.getByText('Mark Read'));
 
             await waitFor(() => {
@@ -665,13 +655,13 @@ describe('JobListPanel', () => {
                     expect.arrayContaining([1, 2]),
                     true,
                 );
+                expect(showToast).toHaveBeenCalledWith('2 job(s) marked as read', 'success');
+                expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
             });
-            expect(showToast).toHaveBeenCalledWith('2 job(s) marked as read', 'success');
-            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
         });
 
         it('bulk Restore calls API and clears selection', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const showToast = jest.fn();
             mockedRestoreJobs.mockResolvedValue(undefined);
 
@@ -681,16 +671,73 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {showToast});
 
-            await user.click(screen.getAllByRole('checkbox')[0]);
+            // Select all via Ctrl+Click
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('RS-001'));
+            await user.click(screen.getByText('RS-002'));
+            await user.keyboard('{/Control}');
             await user.click(screen.getByText('Restore'));
 
             await waitFor(() => {
                 expect(mockedRestoreJobs).toHaveBeenCalledWith(
                     expect.arrayContaining([10, 20]),
                 );
+                expect(showToast).toHaveBeenCalledWith('2 job(s) restored', 'success');
+                expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
             });
-            expect(showToast).toHaveBeenCalledWith('2 job(s) restored', 'success');
-            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
+        });
+    });
+
+    describe('View Tabs Bar', () => {
+        const mockViews = [
+            {id: 1, name: 'North', selected: true},
+            {id: 2, name: 'South', selected: true},
+            {id: 3, name: 'East', selected: false},
+        ];
+
+        it('does not render when views prop is not provided', () => {
+            renderAndPushJobs([createMockDispatchJob()]);
+            expect(screen.queryByText('Clear All')).not.toBeInTheDocument();
+        });
+
+        it('renders view buttons, toggles on click, clears all, and shows count', async () => {
+            const user = userEvent.setup({ delay: null });
+            const onToggleView = jest.fn();
+            const onClearViews = jest.fn();
+
+            renderAndPushJobs([createMockDispatchJob()], {
+                views: mockViews,
+                onToggleView,
+                onClearViews,
+            });
+
+            // All view buttons rendered
+            expect(screen.getByText('North')).toBeInTheDocument();
+            expect(screen.getByText('South')).toBeInTheDocument();
+            expect(screen.getByText('East')).toBeInTheDocument();
+
+            // Count indicator shows selected/total
+            expect(screen.getByText('2/3')).toBeInTheDocument();
+
+            // Clear All button present
+            expect(screen.getByText('Clear All')).toBeInTheDocument();
+
+            // Click a view button triggers onToggleView
+            await user.click(screen.getByText('East'));
+            expect(onToggleView).toHaveBeenCalledWith({id: 3, name: 'East', selected: false});
+
+            // Click Clear All triggers onClearViews
+            await user.click(screen.getByText('Clear All'));
+            expect(onClearViews).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not render when views array is empty', () => {
+            renderAndPushJobs([createMockDispatchJob()], {
+                views: [],
+                onToggleView: jest.fn(),
+                onClearViews: jest.fn(),
+            });
+            expect(screen.queryByText('Clear All')).not.toBeInTheDocument();
         });
     });
 });

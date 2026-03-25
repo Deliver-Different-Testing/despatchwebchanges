@@ -174,6 +174,19 @@ describe('JobListContextMenu', () => {
             expect(screen.getByText('Mark as Read')).toBeInTheDocument();
         });
 
+        it('does not produce Fragment children warning when single-job menu renders', () => {
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+            renderWithTheme(<JobListContextMenu {...createDefaultProps()} />);
+
+            expect(screen.getByRole('menu')).toBeInTheDocument();
+
+            const fragmentWarnings = consoleErrorSpy.mock.calls.filter(
+                (args) => typeof args[0] === 'string' && args[0].includes('Fragment as a child')
+            );
+            expect(fragmentWarnings).toHaveLength(0);
+            consoleErrorSpy.mockRestore();
+        });
+
         it('shows/hides Late Pickup/Delivery based on page type', () => {
             // JobSearch shows them
             const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.JobSearch})} />);

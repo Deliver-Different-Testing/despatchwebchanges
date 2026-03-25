@@ -4,7 +4,7 @@
  * Orchestrates data fetching, dialog integrations, and child component rendering.
  */
 
-import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
+import React, {useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense} from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -33,8 +33,8 @@ import {FlightInformation} from './components/FlightInformation';
 import {AgentInformation} from './components/AgentInformation';
 import {JobFieldsSection} from './components/JobFieldsSection';
 import {ToggleProperties} from './components/ToggleProperties';
-import {RecurringJobFields} from './components/RecurringJobFields';
-import {PodPhotosSection} from './components/PodPhotosSection';
+const RecurringJobFields = lazy(() => import('./components/RecurringJobFields').then(m => ({default: m.RecurringJobFields})));
+const PodPhotosSection = lazy(() => import('./components/PodPhotosSection').then(m => ({default: m.PodPhotosSection})));
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
@@ -92,6 +92,7 @@ const rootStyles: Record<string, SxProps<Theme>> = {
     readStatusBar: {
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
         gap: 1,
         mt: 1.5,
         px: 2,
@@ -125,6 +126,17 @@ const rootStyles: Record<string, SxProps<Theme>> = {
         p: 4,
         textAlign: 'center',
     },
+    containerDense: {
+        bgcolor: 'grey.50',
+        fontSize: '0.8125rem',
+    },
+    mainPaperPositioned: {
+        borderRadius: 2,
+        overflow: 'hidden',
+        border: 1,
+        borderColor: 'divider',
+        position: 'relative',
+    },
 };
 
 export function JobDetails({config}: JobDetailsProps) {
@@ -155,7 +167,7 @@ export function JobDetails({config}: JobDetailsProps) {
     );
 
     // AI panel state
-    const aiEnabled = useMemo(() => isAiEnabled(), []);
+    const [aiEnabled] = useState(() => isAiEnabled());
     const [showAiPanel, setShowAiPanel] = useState(false);
     const aiContainerRef = useRef<HTMLDivElement>(null);
 
@@ -197,7 +209,8 @@ export function JobDetails({config}: JobDetailsProps) {
             const idx = sortedRelatedJobs.findIndex(j => j.id === jobId);
             setSelectedTabIndex(idx >= 0 ? idx : 0);
         }
-    }, [jobId, sortedRelatedJobs]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [jobId, sortedRelatedJobs.length]);
 
     // AI panel render effect
     useEffect(() => {
@@ -259,9 +272,9 @@ export function JobDetails({config}: JobDetailsProps) {
     const isRead = job.readTrackerInfo?.hasBeenRead;
 
     return (
-        <Box sx={{...rootStyles.container as object, ...(isDense ? {fontSize: '0.8125rem'} : {})}}>
+        <Box sx={isDense ? rootStyles.containerDense : rootStyles.container}>
             {/* Main card */}
-            <Paper elevation={0} sx={{...rootStyles.mainPaper as object, position: 'relative'}}>
+            <Paper elevation={0} sx={rootStyles.mainPaperPositioned}>
                 {/* Progress indicator */}
                 {(isLoading || isUpdating) && <LinearProgress sx={rootStyles.progressBar} />}
 
@@ -389,17 +402,19 @@ export function JobDetails({config}: JobDetailsProps) {
                     />
 
                     {isRecurringJob && (
-                        <RecurringJobFields
-                            job={job}
-                            daysOfWeekArray={daysOfWeekArray}
-                            dense={isDense}
-                            onDaysOfWeekChange={actions.handleDaysOfWeekChange}
-                            onFrequencyChange={actions.handleFrequencyChange}
-                            onHolidayOptionChange={actions.handleHolidayOptionChange}
-                            onEditFirstDue={actions.handleEditFirstDue}
-                            onEditStopDate={actions.handleEditStopDate}
-                            onEditRestartDate={actions.handleEditRestartDate}
-                        />
+                        <Suspense fallback={null}>
+                            <RecurringJobFields
+                                job={job}
+                                daysOfWeekArray={daysOfWeekArray}
+                                dense={isDense}
+                                onDaysOfWeekChange={actions.handleDaysOfWeekChange}
+                                onFrequencyChange={actions.handleFrequencyChange}
+                                onHolidayOptionChange={actions.handleHolidayOptionChange}
+                                onEditFirstDue={actions.handleEditFirstDue}
+                                onEditStopDate={actions.handleEditStopDate}
+                                onEditRestartDate={actions.handleEditRestartDate}
+                            />
+                        </Suspense>
                     )}
 
                     {job.palletInfo && job.palletInfo.length > 0 && (
@@ -437,23 +452,25 @@ export function JobDetails({config}: JobDetailsProps) {
 
             {/* POD Photos */}
             <Box sx={rootStyles.photosWrapper}>
-                <PodPhotosSection
-                    deliveryPhotos={deliveryPhotos}
-                    pickupPhotos={pickupPhotos}
-                    imageOnlyDeliveryPhotos={imageOnlyDeliveryPhotos}
-                    imageOnlyPickupPhotos={imageOnlyPickupPhotos}
-                    isLoading={photosLoading}
-                    showToast={showToast}
-                    onUploadPhotos={actions.handlePodUpload}
-                    onSendPod={actions.handleSendPodEmail}
-                />
+                <Suspense fallback={null}>
+                    <PodPhotosSection
+                        deliveryPhotos={deliveryPhotos}
+                        pickupPhotos={pickupPhotos}
+                        imageOnlyDeliveryPhotos={imageOnlyDeliveryPhotos}
+                        imageOnlyPickupPhotos={imageOnlyPickupPhotos}
+                        isLoading={photosLoading}
+                        showToast={showToast}
+                        onUploadPhotos={actions.handlePodUpload}
+                        onSendPod={actions.handleSendPodEmail}
+                    />
+                </Suspense>
             </Box>
 
             {/* Text Input Dialog */}
             <TextInputDialog
                 open={actions.textDialog.open}
                 title={actions.textDialog.title}
-                placeholder={actions.textDialog.placeholder}
+                label={actions.textDialog.label}
                 initialValue={actions.textDialog.initialValue}
                 onSubmit={actions.handleTextDialogSubmit}
                 onCancel={actions.handleTextDialogCancel}

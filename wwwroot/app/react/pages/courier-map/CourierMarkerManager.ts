@@ -251,7 +251,7 @@ export class CourierMarkerManager {
             <rect x="1" y="2" width="104" height="26" rx="13" fill="rgba(0,0,0,0.1)"/>
             <rect x="0" y="0" width="104" height="26" rx="13" fill="${colors.bg}"/>
             <rect x="0" y="0" width="104" height="26" rx="13" fill="none" stroke="${colors.border}" stroke-width="0.75" opacity="0.5"/>
-            <text x="52" y="17" font-family="Roboto,Arial,sans-serif" font-size="11" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedName}</text>
+            <text x="52" y="17" font-family="Satoshi,Arial,sans-serif" font-size="11" font-weight="600" fill="${colors.text}" text-anchor="middle">${escapedName}</text>
         </svg>`;
     }
 }

@@ -139,6 +139,9 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
                     <Typography variant="h6" fontWeight={600}>
                         Edit {title}
                     </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        Select an option from the list
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={onClose}

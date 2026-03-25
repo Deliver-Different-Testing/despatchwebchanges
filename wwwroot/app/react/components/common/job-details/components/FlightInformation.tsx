@@ -65,7 +65,7 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
     );
 }
 
-export const FlightInformation = React.memo(function FlightInformation({flight}: FlightInformationProps) {
+export const FlightInformation = React.memo(({flight}: FlightInformationProps) => {
     const segments = flight?.flightSegments;
     if (!segments?.length) return null;
 

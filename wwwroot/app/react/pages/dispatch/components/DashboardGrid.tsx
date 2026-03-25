@@ -18,7 +18,15 @@ import 'react-grid-layout/css/styles.css';
 
 /** Per-widget wrapper that avoids inline closures in the map loop.
  *  Must forward ref, className, and style — react-grid-layout injects
- *  positioning (CSS transforms, width, height) via React.cloneElement. */
+ *  positioning (CSS transforms, width, height) via React.cloneElement.
+ *
+ *  IMPORTANT: Widget content is passed via the explicit `content` prop, NOT
+ *  `children`.  react-resizable injects resize-handle elements by cloning
+ *  this component and appending them to `children`.  Rendering those handles
+ *  outside WidgetPanel keeps them as direct children of the grid-item div,
+ *  which is required for the `.react-grid-item > .react-resizable-handle`
+ *  CSS selector (visibility + positioning) and for react-resizable's drag
+ *  coordinate tracking. */
 const GridWidget = memo(forwardRef<HTMLDivElement, {
     boxId: DispatchBox;
     config: BoxConfig;
@@ -27,10 +35,26 @@ const GridWidget = memo(forwardRef<HTMLDivElement, {
     onRefresh: ((boxId: DispatchBox) => void) | undefined;
     toolbarContent: React.ReactNode;
     toolbarActions: React.ReactNode;
-    children: React.ReactNode;
+    /** Widget body — passed explicitly so `children` stays free for RGL resize handles. */
+    content: React.ReactNode;
+    /** Injected by react-resizable (resize handle elements). Rendered at the
+     *  grid-item root so the handle CSS and coordinate math work correctly. */
+    children?: React.ReactNode;
     className?: string;
     style?: React.CSSProperties;
-}>(function GridWidget({boxId, config, subtitle, isDefaultLayout, onRefresh, toolbarContent, toolbarActions, children, className, style}, ref) {
+}>(({
+                                          boxId,
+                                          config,
+                                          subtitle,
+                                          isDefaultLayout,
+                                          onRefresh,
+                                          toolbarContent,
+                                          toolbarActions,
+                                          content,
+                                          children,
+                                          className,
+                                          style
+                                      }, ref) => {
     const handleRefresh = useCallback(() => onRefresh?.(boxId), [onRefresh, boxId]);
     return (
         <div ref={ref} className={className} style={style}>
@@ -42,8 +66,9 @@ const GridWidget = memo(forwardRef<HTMLDivElement, {
                 toolbarContent={toolbarContent}
                 toolbarActions={toolbarActions}
             >
-                {children}
+                {content}
             </WidgetPanel>
+            {children}
         </div>
     );
 }));
@@ -55,31 +80,31 @@ interface DashboardGridProps {
     rowHeight: number;
     isDefaultLayout: boolean;
     visibleBoxIds: DispatchBox[];
-    renderWidget: (boxId: DispatchBox) => React.ReactNode;
-    renderToolbarContent?: (boxId: DispatchBox) => React.ReactNode;
-    renderToolbarActions?: (boxId: DispatchBox) => React.ReactNode;
-    getSubtitle?: (boxId: DispatchBox) => string | undefined;
+    widgets: Partial<Record<DispatchBox, React.ReactNode>>;
+    toolbarContent?: Partial<Record<DispatchBox, React.ReactNode>>;
+    toolbarActions?: Partial<Record<DispatchBox, React.ReactNode>>;
+    subtitles?: Partial<Record<DispatchBox, string | undefined>>;
     onRefresh?: (boxId: DispatchBox) => void;
 }
 
 const containerStyle: SxProps<Theme> = {
-    minHeight: '100%',
+    height: '100%',
     position: 'relative',
 };
 
-export const DashboardGrid = memo(function DashboardGrid({
-    layout,
-    onLayoutChange,
-    cols,
-    rowHeight,
-    isDefaultLayout,
-    visibleBoxIds,
-    renderWidget,
-    renderToolbarContent,
-    renderToolbarActions,
-    getSubtitle,
-    onRefresh,
-}: DashboardGridProps) {
+export const DashboardGrid = memo(({
+                                       layout,
+                                       onLayoutChange,
+                                       cols,
+                                       rowHeight,
+                                       isDefaultLayout,
+                                       visibleBoxIds,
+                                       widgets,
+                                       toolbarContent,
+                                       toolbarActions,
+                                       subtitles,
+                                       onRefresh,
+                                   }: DashboardGridProps) => {
     const {width: containerWidth, containerRef} = useContainerWidth();
 
     const filteredLayout = useMemo(
@@ -111,6 +136,7 @@ export const DashboardGrid = memo(function DashboardGrid({
                     compactor={verticalCompactor}
                     margin={[8, 8] as [number, number]}
                     containerPadding={[8, 8] as [number, number]}
+                    style={{position: 'relative'}}
                 >
                     {visibleBoxIds.map(boxId => {
                         const config = BOX_CONFIGS[boxId];
@@ -121,14 +147,13 @@ export const DashboardGrid = memo(function DashboardGrid({
                                 key={boxId}
                                 boxId={boxId}
                                 config={config}
-                                subtitle={getSubtitle?.(boxId)}
+                                subtitle={subtitles?.[boxId]}
                                 isDefaultLayout={isDefaultLayout}
                                 onRefresh={onRefresh}
-                                toolbarContent={renderToolbarContent?.(boxId)}
-                                toolbarActions={renderToolbarActions?.(boxId)}
-                            >
-                                {renderWidget(boxId)}
-                            </GridWidget>
+                                toolbarContent={toolbarContent?.[boxId]}
+                                toolbarActions={toolbarActions?.[boxId]}
+                                content={widgets[boxId]}
+                            />
                         );
                     })}
                 </Responsive>
