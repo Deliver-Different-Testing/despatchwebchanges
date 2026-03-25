@@ -1,44 +1,26 @@
 import React, {useState} from 'react';
-import {alpha} from '@mui/material/styles';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import Icon from '@mui/material/Icon';
 import TextField from '@mui/material/TextField';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import BadgeIcon from '@mui/icons-material/Badge';
+import PhoneIcon from '@mui/icons-material/Phone';
+import CarIcon from '@mui/icons-material/DirectionsCar';
+import VerifiedIcon from '@mui/icons-material/VerifiedUser';
+import BankIcon from '@mui/icons-material/AccountBalance';
 import EmailIcon from '@mui/icons-material/Email';
+import InfoIcon from '@mui/icons-material/Info';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
-import type {SxProps, Theme} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
 import {FleetOption} from '../../../interfaces';
 import type {ShowToastFn} from '../../../services/toastService';
 import dayjs from 'dayjs';
-
-const cardHeaderStyle: SxProps<Theme> = (theme: Theme) => ({
-    bgcolor: 'primary.main',
-    color: 'primary.contrastText',
-    minHeight: 40,
-    px: 1.25,
-    gap: 0.5,
-    flexShrink: 0,
-    boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.2)}`,
-    '& .MuiIconButton-root': {
-        color: 'inherit',
-        p: 0.5,
-        borderRadius: 1,
-        transition: 'background-color 150ms ease, transform 150ms ease',
-        '&:hover': {
-            bgcolor: alpha(theme.palette.common.white, 0.15),
-        },
-        '&:active': {
-            transform: 'scale(0.92)',
-        },
-    },
-});
 
 interface DriverDetailsTabProps {
     showToast: ShowToastFn;
@@ -77,11 +59,14 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
         </Box>
     );
 
-    const InfoCard = ({iconName, title, children}: { iconName: string; title: string; children: React.ReactNode }) => (
-        <Card sx={{overflow: 'hidden'}}>
-            <Toolbar variant="dense" disableGutters sx={cardHeaderStyle}>
-                <Icon sx={{fontSize: 20, mr: 0.75, opacity: 0.9}} baseClassName="material-symbols-outlined">{iconName}</Icon>
-                <Typography variant="subtitle2" noWrap sx={{fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.01em'}}>{title}</Typography>
+    const InfoCard = ({icon, title, children}: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
+        <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
+            <Toolbar
+                variant="dense"
+                sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
+            >
+                <Box sx={{mr: 1, display: 'flex', alignItems: 'center', '& .MuiSvgIcon-root': {fontSize: 20, color: 'inherit'}}}>{icon}</Box>
+                <Typography variant="subtitle2">{title}</Typography>
             </Toolbar>
             <CardContent>
                 {children}
@@ -92,11 +77,14 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
     return (
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
             {/* Search Section */}
-            <Card sx={{overflow: 'hidden'}}>
-                <Toolbar variant="dense" disableGutters sx={cardHeaderStyle}>
-                    <Icon sx={{fontSize: 20, mr: 0.75, opacity: 0.9}} baseClassName="material-symbols-outlined">search</Icon>
-                    <Typography variant="subtitle2" noWrap sx={{fontWeight: 600, fontSize: '0.85rem', letterSpacing: '0.01em'}}>Driver Search</Typography>
-                    <Typography variant="caption" sx={{ml: 1, opacity: 0.75}}>Tip: This is a wildcard search!</Typography>
+            <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
+                <Toolbar
+                    variant="dense"
+                    sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
+                >
+                    <SearchIcon sx={{mr: 1, fontSize: 20}} />
+                    <Typography variant="subtitle2">Driver Search</Typography>
+                    <Typography variant="caption" sx={{ml: 1, opacity: 0.8}}>Tip: This is a wildcard search!</Typography>
                 </Toolbar>
                 <CardContent>
                     <Autocomplete
@@ -123,9 +111,12 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
 
             {/* Driver Summary Bar */}
             {!isLoadingDetails && driver && (
-                <Card sx={{overflow: 'hidden'}}>
-                    <Toolbar variant="dense" disableGutters sx={cardHeaderStyle}>
-                        <Icon sx={{fontSize: 20, mr: 0.75, opacity: 0.9}} baseClassName="material-symbols-outlined">badge</Icon>
+                <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
+                    <Toolbar
+                        variant="dense"
+                        sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44, gap: 2}}
+                    >
+                        <BadgeIcon sx={{fontSize: 20}} />
                         <Typography variant="subtitle2" sx={{fontWeight: 600}}>
                             {driver.basicInformation.code}
                         </Typography>
@@ -151,40 +142,40 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
             {/* Driver Information Grid */}
             {!isLoadingDetails && driver && (
                 <Box sx={{display: 'grid', gridTemplateColumns: {xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr'}, gap: 2}}>
-                    <InfoCard iconName="badge" title="Basic Information">
+                    <InfoCard icon={<BadgeIcon />} title="Basic Information">
                         <InfoRow label="Code" value={driver.basicInformation.code} />
                         <InfoRow label="Name" value={`${driver.basicInformation.firstName} ${driver.basicInformation.surname}`} />
                         <InfoRow label="Email" value={driver.basicInformation.email} />
                         <InfoRow label="Address" value={driver.basicInformation.address} />
                     </InfoCard>
 
-                    <InfoCard iconName="phone" title="Contact Information">
+                    <InfoCard icon={<PhoneIcon />} title="Contact Information">
                         <InfoRow label="Home Phone" value={driver.contactInformation.home || '\u2014'} />
                         <InfoRow label="Mobile" value={driver.contactInformation.mobile} />
                         <InfoRow label="GST Number" value={driver.contactInformation.gstNumber || '\u2014'} />
                         <InfoRow label="IRD Number" value={driver.contactInformation.irdNumber || '\u2014'} />
                     </InfoCard>
 
-                    <InfoCard iconName="directions_car" title="Vehicle Information">
+                    <InfoCard icon={<CarIcon />} title="Vehicle Information">
                         <InfoRow label="Registration" value={driver.vehicleInformation.rego} />
                         <InfoRow label="Model" value={driver.vehicleInformation.vehicleModel} />
                         <InfoRow label="Year" value={driver.vehicleInformation.vehicleYear ?? '\u2014'} />
                         <InfoRow label="Insurance" value={driver.vehicleInformation.vehicleInsurance || '\u2014'} />
                     </InfoCard>
 
-                    <InfoCard iconName="verified_user" title="Compliance">
+                    <InfoCard icon={<VerifiedIcon />} title="Compliance">
                         <InfoRow label="Dangerous Goods" value={<BoolBadge value={driver.compliance.dangerousGoods} />} />
                         <InfoRow label="DG Expiry" value={formatDate(driver.compliance.dangerousGoodsExpiry)} />
                         <InfoRow label="License Expiry" value={formatDate(driver.compliance.driversLicenceExpiry)} />
                     </InfoCard>
 
-                    <InfoCard iconName="account_balance" title="Banking & Emergency">
+                    <InfoCard icon={<BankIcon />} title="Banking & Emergency">
                         <InfoRow label="Emergency Contact" value={<BoolBadge value={driver.bankingAndEmergency.emergencyContact} />} />
                         <InfoRow label="Bank" value={driver.bankingAndEmergency.bank || '\u2014'} />
                         <InfoRow label="Security Check" value={<BoolBadge value={driver.bankingAndEmergency.securityCheck} />} />
                     </InfoCard>
 
-                    <InfoCard iconName="info" title="Additional Information">
+                    <InfoCard icon={<InfoIcon />} title="Additional Information">
                         <InfoRow label="Contract Date" value={formatDate(driver.additionalInformation.contactSignDate)} />
                         <InfoRow label="Mobile Insurance" value={driver.additionalInformation.mobileInsurence ?? '\u2014'} />
                         <InfoRow label="Daily Profit Adjust" value={driver.additionalInformation.dailyProfitAdjust || '\u2014'} />

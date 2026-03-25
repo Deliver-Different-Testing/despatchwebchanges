@@ -30,6 +30,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onEditCompletedTime: jest.fn(),
         onClientClick: jest.fn(),
         onPricingClick: jest.fn(),
+        onInternalStatusClick: jest.fn(),
         ...overrides,
     };
 }

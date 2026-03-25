@@ -160,6 +160,10 @@ export function getActiveStaff(options?: RequestOptions): Promise<ISuggestion[]>
     return apiClient.get<ISuggestion[]>('task/GetStaff', undefined, options);
 }
 
+export function getUndeliverableList(options?: RequestOptions): Promise<ISuggestion[]> {
+    return apiClient.get<ISuggestion[]>('job/UndeliverableList', undefined, options);
+}
+
 // ── Job Dispatch Operations ─────────────────────────────────────────
 
 export function restoreJobs(jobIds: number[]): Promise<void> {

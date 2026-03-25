@@ -832,14 +832,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                 })}
             >
                 <UploadFileIcon sx={{ fontSize: 24 }} />
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={500}>
-                        Bulk Price Upload
-                    </Typography>
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Upload prices from a spreadsheet
-                    </Typography>
-                </Box>
+                <Typography variant="h6" fontWeight={500} sx={{ flex: 1 }}>
+                    Bulk Price Upload
+                </Typography>
                 <IconButton
                     onClick={onClose}
                     disabled={isLoading}

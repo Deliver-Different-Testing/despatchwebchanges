@@ -53,6 +53,7 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                 <Typography variant="caption" color="text.disabled" sx={{ml: 0.5}}>
                     ({pallets.length})
                 </Typography>
+                <Box sx={{flex: 1}} />
             </Box>
             <Table size="small">
                 <TableHead>
@@ -68,7 +69,10 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                 </TableHead>
                 <TableBody>
                     {pallets.map((pallet, index) => (
-                        <TableRow key={pallet.id || index} hover>
+                        <TableRow
+                            key={pallet.id || index}
+                            hover
+                        >
                             <TableCell sx={cellSx}>{pallet.itemId || '\u2014'}</TableCell>
                             <TableCell sx={cellSx} align="right">{pallet.quantity}</TableCell>
                             <TableCell sx={cellSx} align="right">{pallet.weight}</TableCell>

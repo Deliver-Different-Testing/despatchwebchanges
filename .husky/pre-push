@@ -14,9 +14,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Run Jest integration tests (override testPathIgnorePatterns to include __integration__)
+# Run Jest integration tests using dedicated integration config
 echo "Running integration tests..."
-npx jest --silent --testPathPatterns="__integration__" --testPathIgnorePatterns="/node_modules/" --testPathIgnorePatterns="/DespatchWeb.Tests/"
+npx jest --silent --config jest.integration.config.js
 if [ $? -ne 0 ]; then
     echo "⚠ Some integration tests failed (non-blocking). Review output above."
 fi

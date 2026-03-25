@@ -1,0 +1,531 @@
+/** @jest-environment jest-environment-jsdom */
+/**
+ * useJobActions Hook Tests — Guided POD Collection (markJobAsDone) Flow
+ */
+
+import {renderHook, act} from '@testing-library/react';
+import {useJobActions} from './useJobActions';
+import {JobProperty} from '../../../../../enums/job-property.enum';
+import dayjs from 'dayjs';
+
+// ── Mocks ────────────────────────────────────────────────────────────
+
+// Mock the dialog loader so ensureDateTimeDialog etc. are no-ops
+jest.mock('./useDialogLoader', () => ({
+    useDialogLoader: () => ({
+        ensureSelectDialog: jest.fn().mockResolvedValue(undefined),
+        ensureDateTimeDialog: jest.fn().mockResolvedValue(undefined),
+        ensureAutoCompleteDialog: jest.fn().mockResolvedValue(undefined),
+        ensureAddressDialog: jest.fn().mockResolvedValue(undefined),
+        ensureVoidDialog: jest.fn().mockResolvedValue(undefined),
+        ensurePriceBreakdownDialog: jest.fn().mockResolvedValue(undefined),
+        ensureParcelDimensionsDialog: jest.fn().mockResolvedValue(undefined),
+        ensureSendPodDialog: jest.fn().mockResolvedValue(undefined),
+    }),
+}));
+
+// Mock dateUtils — formatDateForApi returns a predictable string
+jest.mock('../../../../utils/dateUtils', () => ({
+    formatDateForApi: jest.fn((_date: unknown, _tz?: string) => '2026-03-23T11:45:00+13:00'),
+}));
+
+// Mock jobDetailApi so dynamic imports inside editDateAndTime resolve
+jest.mock('../../../../services/jobDetailApi', () => ({
+    getSpeedList: jest.fn(),
+    getVehicleSizes: jest.fn(),
+    getLeaveList: jest.fn(),
+    getContactList: jest.fn(),
+    getStatusList: jest.fn(),
+    getActiveStaff: jest.fn(),
+    getUndeliverableList: jest.fn(),
+    getInternalStatusList: jest.fn(),
+    autocompleteSearch: jest.fn(),
+    getPodReportUrl: jest.fn(),
+    getPodSpreadsheetUrl: jest.fn(),
+    updateJobDetail: jest.fn().mockResolvedValue(undefined),
+    updateBulkJobDetail: jest.fn().mockResolvedValue(undefined),
+}));
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function createMockJob(overrides?: Record<string, unknown>) {
+    return {
+        id: 1001,
+        jobNo: 'J-1001',
+        done: false,
+        completedTime: null as any,
+        _completedTimeLongStr: undefined as string | undefined,
+        podName: '',
+        preBook: false,
+        isBulkJob: false,
+        deliveryTimeZone: {id: 1, text: 'Pacific/Auckland'},
+        ...overrides,
+    } as any;
+}
+
+interface SetupOptions {
+    job?: ReturnType<typeof createMockJob>;
+}
+
+function setup(opts: SetupOptions = {}) {
+    const mockShowToast = jest.fn();
+    const mockUpdateField = jest.fn().mockResolvedValue(undefined);
+    const mockUpdateAddress = jest.fn().mockResolvedValue(undefined);
+    const mockUpdatePod = jest.fn().mockResolvedValue(undefined);
+    const mockDispatchJob = jest.fn().mockResolvedValue(undefined);
+    const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
+
+    const {result} = renderHook(() =>
+        useJobActions({
+            job: opts.job ?? createMockJob(),
+            isRecurringJob: false,
+            isUsCustomer: false,
+            showToast: mockShowToast,
+            updateField: mockUpdateField,
+            updateAddress: mockUpdateAddress,
+            updatePod: mockUpdatePod,
+            dispatchJob: mockDispatchJob,
+            refreshAndNotify: mockRefreshAndNotify,
+        }),
+    );
+
+    return {
+        result,
+        mockShowToast,
+        mockUpdateField,
+        mockUpdatePod,
+        mockRefreshAndNotify,
+    };
+}
+
+// ── Date/Time Dialog Mock ────────────────────────────────────────────
+
+function mockDateTimeDialog(returnValue: {value: unknown; fieldName: string; timezone: string} | null) {
+    (window as any).ReactEditDateTimeDialog = {
+        showEditDateAndTimeDialog: jest.fn().mockResolvedValue(returnValue),
+    };
+}
+
+function clearWindowDialogs() {
+    delete (window as any).ReactEditDateTimeDialog;
+    delete (window as any).ReactJobFileUploadDialog;
+}
+
+// ── Tests ────────────────────────────────────────────────────────────
+
+describe('useJobActions — markJobAsDone / handleDoneClick', () => {
+    afterEach(() => {
+        clearWindowDialogs();
+        jest.restoreAllMocks();
+    });
+
+    describe('handleDoneClick — uncompleting a job', () => {
+        it('toggles done off when job is already completed', async () => {
+            const job = createMockJob({done: true, completedTime: dayjs(), podName: 'Bob'});
+            const {result, mockUpdateField, mockRefreshAndNotify, mockUpdatePod} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({field: JobProperty.Delivered, value: false}),
+            );
+            expect(mockRefreshAndNotify).toHaveBeenCalled();
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleDoneClick — completing (guided flow)', () => {
+        it('completes immediately when both POD time and name exist', async () => {
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: 'Bob Smith',
+            });
+            const {result, mockUpdatePod, mockShowToast, mockRefreshAndNotify} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockUpdatePod).toHaveBeenCalledWith({
+                jobId: 1001,
+                jobStatus: '6',
+                podName: 'Bob Smith',
+                podTime: '2026-03-23T11:45:00+13:00',
+            });
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
+            expect(mockRefreshAndNotify).toHaveBeenCalled();
+        });
+
+        it('prompts for POD time when missing, then completes after user provides it', async () => {
+            const dialogValue = dayjs('2026-03-23T11:45:00');
+            mockDateTimeDialog({
+                value: dialogValue,
+                fieldName: JobProperty.CompletedTime,
+                timezone: 'Pacific/Auckland',
+            });
+
+            const job = createMockJob({completedTime: null, podName: 'Bob Smith'});
+            const {result, mockUpdateField, mockUpdatePod, mockRefreshAndNotify} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            // Should have saved the completed time
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    field: JobProperty.CompletedTime,
+                    value: dialogValue,
+                }),
+            );
+            // Should have called updatePod to complete the job
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    jobId: 1001,
+                    jobStatus: '6',
+                    podName: 'Bob Smith',
+                }),
+            );
+            expect(mockRefreshAndNotify).toHaveBeenCalled();
+        });
+
+        it('stops and shows warning when user cancels POD time dialog', async () => {
+            mockDateTimeDialog(null);
+
+            const job = createMockJob({completedTime: null, podName: 'Bob Smith'});
+            const {result, mockShowToast, mockUpdatePod} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'A POD time needs to be provided to close this job.',
+                'warning',
+            );
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+        });
+
+        it('prompts for POD name when missing (via text dialog), then completes after submit', async () => {
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: '',
+            });
+            const {result, mockUpdateField, mockUpdatePod, mockShowToast} = setup({job});
+
+            // Start the done click — it will open the text dialog and await
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+
+            // The text dialog should now be open
+            expect(result.current.textDialog.open).toBe(true);
+            expect(result.current.textDialog.title).toBe('POD Name');
+            expect(result.current.textDialog.okLabel).toBe('Complete Job');
+
+            // Simulate user submitting the text dialog
+            await act(() => result.current.handleTextDialogSubmit('Jane Doe'));
+            await act(() => donePromise!);
+
+            // Should have saved the POD name
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    field: JobProperty.PodName,
+                    value: 'Jane Doe',
+                }),
+            );
+            // Should have called updatePod to complete the job
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    jobId: 1001,
+                    jobStatus: '6',
+                    podName: 'Jane Doe',
+                }),
+            );
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 Completed', 'success');
+        });
+
+        it('stops and shows warning when user cancels POD name dialog', async () => {
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: '',
+            });
+            const {result, mockShowToast, mockUpdatePod} = setup({job});
+
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+
+            // Cancel the text dialog
+            await act(() => result.current.handleTextDialogCancel());
+            await act(() => donePromise!);
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                'A POD name needs to be provided to close this job.',
+                'warning',
+            );
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+        });
+
+        it('prompts for both POD time and name when both are missing', async () => {
+            const dialogValue = dayjs('2026-03-23T11:45:00');
+            mockDateTimeDialog({
+                value: dialogValue,
+                fieldName: JobProperty.CompletedTime,
+                timezone: 'Pacific/Auckland',
+            });
+
+            const job = createMockJob({completedTime: null, podName: ''});
+            const {result, mockUpdateField, mockUpdatePod} = setup({job});
+
+            // Start the flow — first the date dialog resolves, then the text dialog opens
+            let donePromise: Promise<void>;
+            await act(async () => {
+                donePromise = result.current.handleDoneClick();
+                // Wait a tick for the date dialog promise to resolve
+                await Promise.resolve();
+            });
+
+            // Date dialog resolved. POD time should have been saved.
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({field: JobProperty.CompletedTime}),
+            );
+
+            // Text dialog should now be open for POD name
+            expect(result.current.textDialog.open).toBe(true);
+            expect(result.current.textDialog.title).toBe('POD Name');
+
+            // Submit POD name
+            await act(() => result.current.handleTextDialogSubmit('Alice'));
+            await act(() => donePromise!);
+
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({field: JobProperty.PodName, value: 'Alice'}),
+            );
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    jobId: 1001,
+                    jobStatus: '6',
+                    podName: 'Alice',
+                }),
+            );
+        });
+
+        it('does nothing when job is undefined', async () => {
+            const mockShowToast = jest.fn();
+            const mockUpdatePod = jest.fn();
+            const {result} = renderHook(() =>
+                useJobActions({
+                    job: undefined,
+                    isRecurringJob: false,
+                    isUsCustomer: false,
+                    showToast: mockShowToast,
+                    updateField: jest.fn().mockResolvedValue(undefined),
+                    updateAddress: jest.fn().mockResolvedValue(undefined),
+                    updatePod: mockUpdatePod,
+                    dispatchJob: jest.fn().mockResolvedValue(undefined),
+                    refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+                }),
+            );
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+            expect(mockShowToast).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('handleEditCompletedTime — chaining into completion flow', () => {
+        it('chains into markJobAsDone when job is not yet done', async () => {
+            const job = createMockJob({
+                completedTime: null,
+                podName: 'Bob',
+            });
+            const dialogValue = dayjs('2026-03-23T11:45:00');
+            mockDateTimeDialog({
+                value: dialogValue,
+                fieldName: JobProperty.CompletedTime,
+                timezone: 'Pacific/Auckland',
+            });
+
+            const {result, mockUpdatePod} = setup({job});
+
+            await act(() => result.current.handleEditCompletedTime());
+
+            // Should have completed the job (POD name was already set)
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({jobStatus: '6', podName: 'Bob'}),
+            );
+        });
+
+        it('edits time without chaining when job is already done', async () => {
+            const job = createMockJob({
+                done: true,
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                podName: 'Bob',
+            });
+            mockDateTimeDialog({
+                value: dayjs('2026-03-23T12:00:00'),
+                fieldName: JobProperty.CompletedTime,
+                timezone: 'Pacific/Auckland',
+            });
+
+            const {result, mockUpdatePod, mockShowToast} = setup({job});
+
+            await act(() => result.current.handleEditCompletedTime());
+
+            // Should NOT have called updatePod (no completion flow)
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+            // Should show "updated" toast from editDateAndTime, not "Completed"
+            expect(mockShowToast).toHaveBeenCalledWith('J-1001 updated', 'success');
+        });
+    });
+
+    describe('handleEditPodName — chaining into completion flow', () => {
+        it('chains into markJobAsDone when job is not yet done', async () => {
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: '',
+            });
+            const {result, mockUpdatePod} = setup({job});
+
+            // Start edit — should open text dialog via markJobAsDone
+            let editPromise: Promise<void>;
+            act(() => {
+                editPromise = result.current.handleEditPodName();
+            });
+
+            // Text dialog opens as part of the guided flow
+            expect(result.current.textDialog.open).toBe(true);
+            expect(result.current.textDialog.okLabel).toBe('Complete Job');
+
+            await act(() => result.current.handleTextDialogSubmit('Charlie'));
+            await act(() => editPromise!);
+
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({jobStatus: '6', podName: 'Charlie'}),
+            );
+        });
+
+        it('edits name without chaining when job is already done', async () => {
+            const job = createMockJob({
+                done: true,
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                podName: 'Bob',
+            });
+            const {result, mockUpdatePod} = setup({job});
+
+            act(() => {
+                result.current.handleEditPodName();
+            });
+
+            // Should open text dialog for simple editing (no "Complete Job" button)
+            expect(result.current.textDialog.open).toBe(true);
+            expect(result.current.textDialog.title).toBe('Edit POD Name');
+            expect(result.current.textDialog.okLabel).toBeUndefined();
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('openTextDialogAsync / text dialog promise integration', () => {
+        it('resolves with submitted value in async mode', async () => {
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: '',
+            });
+            const {result, mockUpdateField} = setup({job});
+
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+
+            // Submit via text dialog
+            await act(() => result.current.handleTextDialogSubmit('Async Name'));
+            await act(() => donePromise!);
+
+            // In async mode, the caller (markJobAsDone) saves the field, not handleTextDialogSubmit
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({field: JobProperty.PodName, value: 'Async Name'}),
+            );
+        });
+
+        it('resolves with null on cancel in async mode', async () => {
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: '',
+            });
+            const {result, mockUpdatePod} = setup({job});
+
+            let donePromise: Promise<void>;
+            act(() => {
+                donePromise = result.current.handleDoneClick();
+            });
+
+            await act(() => result.current.handleTextDialogCancel());
+            await act(() => donePromise!);
+
+            expect(mockUpdatePod).not.toHaveBeenCalled();
+        });
+
+        it('still works in state-based (non-async) mode for other text dialogs', async () => {
+            const job = createMockJob({
+                done: true,
+                completedTime: dayjs(),
+                podName: 'Bob',
+            });
+            const {result, mockUpdateField, mockRefreshAndNotify} = setup({job});
+
+            // Open a regular text dialog (e.g., Edit RefA)
+            act(() => {
+                result.current.handleEditRefA();
+            });
+
+            expect(result.current.textDialog.open).toBe(true);
+
+            // Submit it — should use state-based flow (save directly)
+            await act(() => result.current.handleTextDialogSubmit('NEW-REF'));
+
+            expect(mockUpdateField).toHaveBeenCalledWith(
+                expect.objectContaining({field: JobProperty.RefA, value: 'NEW-REF'}),
+            );
+            expect(mockRefreshAndNotify).toHaveBeenCalled();
+        });
+    });
+
+    describe('file upload step (step 3)', () => {
+        it('attempts to open file upload dialog when available', async () => {
+            const openMock = jest.fn();
+            (window as any).ReactJobFileUploadDialog = {open: openMock};
+
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: 'Bob',
+            });
+            const {result} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(openMock).toHaveBeenCalledWith(1001, 'POD');
+        });
+
+        it('completes the job even when file upload dialog is not available', async () => {
+            // No ReactJobFileUploadDialog on window
+            const job = createMockJob({
+                completedTime: dayjs('2026-03-23T11:45:00'),
+                _completedTimeLongStr: '2026-03-23T11:45:00+13:00',
+                podName: 'Bob',
+            });
+            const {result, mockUpdatePod} = setup({job});
+
+            await act(() => result.current.handleDoneClick());
+
+            expect(mockUpdatePod).toHaveBeenCalledWith(
+                expect.objectContaining({jobStatus: '6'}),
+            );
+        });
+    });
+});

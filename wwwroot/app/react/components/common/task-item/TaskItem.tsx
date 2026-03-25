@@ -6,9 +6,9 @@
  * and date/time editing.
  */
 
-import React, {useCallback, useMemo, useState} from 'react';
-import type {Theme} from '@mui/material/styles';
+import React, {useState, useMemo, useCallback} from 'react';
 import {alpha} from '@mui/material/styles';
+import type {Theme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
@@ -25,19 +25,17 @@ import PersonIcon from '@mui/icons-material/Person';
 import CalendarIcon from '@mui/icons-material/CalendarToday';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import SearchIcon from '@mui/icons-material/Search';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {TimeClock} from '@mui/x-date-pickers/TimeClock';
 import dayjs, {Dayjs} from 'dayjs';
-import {Task, TaskItemConfig, TaskItemProps} from './TaskItem.interfaces';
-import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation, formatLongDate, formatTime} from '../../../utils/dateUtils';
+import {TaskItemProps, TaskItemConfig, Task} from './TaskItem.interfaces';
+import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
 
 const defaultConfig: TaskItemConfig = {
     showJobId: true,
     showAssignee: true,
-    showCourier: true,
     showJobType: true,
     showDateTime: true,
     showStatusIndicators: true,
@@ -64,7 +62,7 @@ const getStatusBorderColor = (theme: Theme, task: Task, isOverdue: boolean): str
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
 const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
 
-export const TaskItem = React.memo((props: TaskItemProps) => {
+export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const {
         task,
         config: configOverrides,
@@ -88,9 +86,6 @@ export const TaskItem = React.memo((props: TaskItemProps) => {
     const [isCompleting, setIsCompleting] = useState(false);
 
     // Derived state
-    const dueDateString = task._dueDateString || formatLongDate(task.dueDate);
-    const dueTimeString = task._dueTimeString || formatTime(task.dueDate);
-
     const isOverdue = useMemo(() => {
         if (task.closed) return false;
         return task.dueDate.isBefore(dayjs());
@@ -368,27 +363,7 @@ export const TaskItem = React.memo((props: TaskItemProps) => {
                                     color: 'primary.dark',
                                     fontSize: '0.75rem',
                                     fontWeight: 600,
-                                })}
-                            />
-                        )}
-
-                        {/* Courier */}
-                        {config.showCourier !== false && task.courierCode && (
-                            <Chip
-                                icon={<LocalShippingIcon sx={{fontSize: 14}} />}
-                                label={`#${task.courierCode}`}
-                                title={task.courierName}
-                                size="small"
-                                sx={(theme) => ({
-                                    height: 24,
-                                    bgcolor: alpha(theme.palette.warning.main, 0.1),
-                                    border: `1px solid ${alpha(theme.palette.warning.main, 0.2)}`,
-                                    color: 'warning.dark',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 600,
-                                    '& .MuiChip-icon': {
-                                        color: 'warning.main',
-                                    },
+                                    fontFamily: '"SF Mono", "Monaco", "Inconsolata", "Roboto Mono", monospace',
                                 })}
                             />
                         )}
@@ -454,7 +429,7 @@ export const TaskItem = React.memo((props: TaskItemProps) => {
                                 },
                             })}
                         >
-                            {dueDateString} {timeZoneShort}
+                            {task._dueDateString} {timeZoneShort}
                         </Button>
 
                         {/* Time Button */}
@@ -486,7 +461,7 @@ export const TaskItem = React.memo((props: TaskItemProps) => {
                                 },
                             })}
                         >
-                            {dueTimeString} {timeZoneShort}
+                            {task._dueTimeString} {timeZoneShort}
                         </Button>
                     </Box>
                 )}

@@ -48,7 +48,7 @@ export function DispatchMap({
 
     // Handle map ready
     const handleMapReady = useCallback(
-        (map: any, _platform: any, ui: any) => {
+        (map: any, platform: any, ui: any) => {
             uiRef.current = ui;
 
             // Initialize managers with UI for tooltips
@@ -130,7 +130,7 @@ export function DispatchMap({
             currentJob?.assignedCourier && jobs && jobs.length > 1
         );
 
-        void jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
+        jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
 
         // Auto-fit if enabled
         if (controlState.autoZoomEnabled && jobMarkerManagerRef.current.getMarkerCount() > 0) {
@@ -169,8 +169,8 @@ export function DispatchMap({
         const handleMapViewChange = () => {
             // Debounce the refetch
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(async () => {
-                await refetchCouriers();
+            debounceTimer = setTimeout(() => {
+                refetchCouriers();
             }, 500);
         };
 
@@ -193,7 +193,7 @@ export function DispatchMap({
             const isShowingCourierJobs = Boolean(
                 currentJob?.assignedCourier && jobs && jobs.length > 1
             );
-            void jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
+            jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
         }
     }, [controlState.couriersOnlyEnabled, controlState.couriersLargeViewEnabled, isReady, jobs, currentJob]);
 
@@ -226,7 +226,7 @@ export function DispatchMap({
                 const isShowingCourierJobs = Boolean(
                     currentJob?.assignedCourier && jobs && jobs.length > 1
                 );
-                void jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
+                jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
             }
         }
     }, [controlState.couriersLargeViewEnabled, isReady, showAvailableCouriers, couriers, controlState.urgentArmyOnlyEnabled, controlState.couriersOnlyEnabled, jobs, currentJob]);

@@ -1,0 +1,137 @@
+<md-dialog aria-label="Inter-Courier Charge" class="inter-courier-charge-dialog">
+    <form name="ctrl.courierChargeForm" ng-cloak>
+        <md-toolbar class="md-hue-1">
+            <div class="md-toolbar-tools">
+                <md-icon class="popup-icon" md-font-set="material-symbols-outlined">payments</md-icon>
+                <h2>Inter-Courier Charge</h2>
+                <span flex></span>
+                <md-button class="md-icon-button close-dialog-button" ng-click="ctrl.cancel()">
+                    <md-tooltip md-direction="bottom">Close</md-tooltip>
+                    <md-icon aria-label="Close dialog" md-font-set="material-symbols-outlined">close</md-icon>
+                </md-button>
+            </div>
+        </md-toolbar>
+
+        <md-dialog-content>
+            <div class="md-dialog-content">
+                <div layout="column">
+                    <!-- From Courier -->
+                    <md-autocomplete
+                            style="margin-top: 20px"
+                            md-selected-item="ctrl.fromCourierSelectedItem"
+                            md-search-text="ctrl.fromCourierSearchText"
+                            md-items="item in ctrl.courierSearch(ctrl.fromCourierSearchText)"
+                            md-item-text="item.text"
+                            md-min-length="2"
+                            md-floating-label="From Courier"
+                            md-select-on-focus
+                            md-autoselect
+                            md-autocomplete-enter-select
+                            md-select-on-match="true"
+                            placeholder="Search Courier..."
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.fromCourierSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.fromCourierSearchText}}" were found.
+                        </md-not-found>
+                        <div ng-messages="ctrl.courierChargeForm.fromCourier.$error">
+                            <div ng-message="required">This field is required.</div>
+                        </div>
+                    </md-autocomplete>
+
+                    <!-- To Courier -->
+                    <md-autocomplete
+                            md-selected-item="ctrl.toCourierSelectedItem"
+                            md-search-text="ctrl.toCourierSearchText"
+                            md-items="item in ctrl.courierSearch(ctrl.toCourierSearchText)"
+                            md-item-text="item.text"
+                            md-min-length="2"
+                            md-floating-label="To Courier"
+                            md-select-on-focus
+                            md-autoselect
+                            md-autocomplete-enter-select
+                            md-select-on-match="true"
+                            placeholder="Search Courier..."
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.toCourierSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.toCourierSearchText}}" were found.
+                        </md-not-found>
+                        <div ng-messages="ctrl.courierChargeForm.toCourier.$error">
+                            <div ng-message="required">This field is required.</div>
+                        </div>
+                    </md-autocomplete>     
+                    
+                    <!-- Client -->
+                    <md-autocomplete
+                            md-selected-item="ctrl.clientSelectedItem"
+                            md-search-text="ctrl.clientSearchText"
+                            md-items="item in ctrl.clientSearch(ctrl.clientSearchText)"
+                            md-item-text="item.text"
+                            md-min-length="2"
+                            md-floating-label="Client"
+                            md-select-on-focus
+                            md-autoselect
+                            md-autocomplete-enter-select
+                            md-select-on-match="true"
+                            placeholder="Search Client..."
+                            required>
+                        <md-item-template>
+                            <span md-highlight-text="ctrl.clientSearchText">{{item.text}}</span>
+                        </md-item-template>
+                        <md-not-found>
+                            No couriers matching "{{ctrl.clientSearchText}}" were found.
+                        </md-not-found>
+                        <div ng-messages="ctrl.courierChargeForm.client.$error">
+                            <div ng-message="required">This field is required.</div>
+                        </div>
+                    </md-autocomplete>
+
+                    <!-- Reference -->
+                    <md-input-container class="md-block">
+                        <label for="reference">Reference</label>
+                        <input id="reference" type="text" ng-model="ctrl.data.reference" required>
+                        <div ng-messages="ctrl.courierChargeForm.reference.$error">
+                            <div ng-message="required">This field is required.</div>
+                        </div>
+                    </md-input-container>
+
+                    <!-- Zones and Amount (side by side) -->
+                    <div layout="row" layout-align="space-between center">
+                        <md-input-container flex="40">
+                            <label for="zones">Zones</label>
+                            <input id="zones" type="number" ng-model="ctrl.data.zones" min="0" required ng-change="ctrl.updateAmountByZones(ctrl.data.zones)">
+                            <div ng-messages="ctrl.courierChargeForm.zones.$error">
+                                <div ng-message="required">This field is required.</div>
+                                <div ng-message="min">Value must be zero or greater.</div>
+                            </div>
+                        </md-input-container>
+
+                        <md-input-container flex="55">
+                            <label for="amount">Amount</label>
+                            <input id="amount" type="number" ng-model="ctrl.data.amount" step="0.01" min="0" required>
+                            <div ng-messages="ctrl.courierChargeForm.amount.$error">
+                                <div ng-message="required">This field is required.</div>
+                                <div ng-message="min">Value must be zero or greater.</div>
+                            </div>
+                        </md-input-container>
+                    </div>
+                </div>
+            </div>
+        </md-dialog-content>
+
+        <md-dialog-actions layout="row">
+            <span flex></span>
+            <md-button class="md-raised md-primary" ng-click="ctrl.submit(ctrl.data)" ng-disabled="ctrl.isLoading">
+                <md-icon md-font-set="material-symbols-outlined" ng-if="ctrl.isLoading">
+                    <md-progress-circular md-mode="indeterminate" md-diameter="18"></md-progress-circular>
+                </md-icon>
+                Add Charge
+            </md-button>
+        </md-dialog-actions>
+    </form>
+</md-dialog>

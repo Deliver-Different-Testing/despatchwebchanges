@@ -72,9 +72,6 @@ jest.mock('../../filters', () => ({
 }));
 
 jest.mock('./jobSearch.template.html', () => '<div></div>', {virtual: true});
-jest.mock('../../react/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module', () => ({
-    openInterCourierChargeDialog: jest.fn(() => Promise.resolve()),
-}));
 
 // Set globals before module import so module-level ContactID is captured correctly
 (window as any).ContactID = 42;
@@ -189,6 +186,7 @@ function createController(overrides: Record<string, any> = {}): InstanceType<typ
     const accessorialChargesDialogService = {showAccessorialChargesDialog: jest.fn()};
     const jobFileUploadDialogService = {openJobFileUploadDialog: jest.fn()};
     const bulkPriceUploadDialogService = {openBulkPriceUploadDialog: jest.fn()};
+    const interCourierChargeDialogService = {showInterCourierCharge: jest.fn()};
     const dashboardSettingsDialogService = {openSettingsDialog: jest.fn()};
     const appConfig = {
         US_Customer: overrides.isUsCustomer ?? false,
@@ -214,7 +212,7 @@ function createController(overrides: Record<string, any> = {}): InstanceType<typ
         jobSearchService, $mdDialog, dispatchExecutor, toastrService, dispatchCore,
         $mdSidenav, $document, messagingDialogService, createJobDialogService,
         accessorialChargesDialogService, jobFileUploadDialogService, bulkPriceUploadDialogService,
-        dashboardSettingsDialogService, appConfig,
+        interCourierChargeDialogService, dashboardSettingsDialogService, appConfig,
         $scope, $timeout, $interval,
     );
 }

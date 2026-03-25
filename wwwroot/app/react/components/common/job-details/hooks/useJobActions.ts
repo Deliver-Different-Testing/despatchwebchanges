@@ -6,11 +6,12 @@
  */
 
 import {useState, useCallback, useRef} from 'react';
-import type {IJob, IAddressViewModel} from '../JobDetails.types';
-import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS} from '../JobDetails.types';
+import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
+import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {useDialogLoader} from './useDialogLoader';
+import {formatDateForApi} from '../../../../utils/dateUtils';
 import {
     getSpeedList,
     getVehicleSizes,
@@ -18,6 +19,8 @@ import {
     getContactList,
     getStatusList,
     getActiveStaff,
+    getUndeliverableList,
+    getInternalStatusList,
     autocompleteSearch,
     getPodReportUrl,
     getPodSpreadsheetUrl,
@@ -48,8 +51,10 @@ interface UseJobActionsOptions {
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     updateField: (args: {job: IJob; field: string; value: unknown; isRecurring: boolean; timezone?: string}) => Promise<unknown>;
     updateAddress: (args: {job: IJob; address: IAddressViewModel; isDelivery: boolean}) => Promise<unknown>;
+    updatePod: (data: UpdatePodDetailsRequest) => Promise<unknown>;
     dispatchJob: (args: {job: IJob; courierId: number}) => Promise<unknown>;
     refreshAndNotify: () => Promise<void>;
+    onStatusChange?: (statusId: number) => void;
 }
 
 export function useJobActions({
@@ -59,8 +64,10 @@ export function useJobActions({
     showToast,
     updateField,
     updateAddress,
+    updatePod,
     dispatchJob,
     refreshAndNotify,
+    onStatusChange,
 }: UseJobActionsOptions) {
     const {
         ensureSelectDialog,
@@ -78,6 +85,9 @@ export function useJobActions({
     const [textDialog, setTextDialog] = useState<TextDialogState>(emptyTextDialog);
     const textDialogRef = useRef(textDialog);
     textDialogRef.current = textDialog;
+
+    // Resolve/reject refs for promise-based text dialog (openTextDialogAsync)
+    const textDialogResolveRef = useRef<((value: string | null) => void) | null>(null);
 
     const openTextDialog = useCallback((
         title: string,
@@ -98,16 +108,53 @@ export function useJobActions({
         });
     }, []);
 
+    /** Promise-based wrapper around the text dialog. Resolves with entered value, or null on cancel. */
+    const openTextDialogAsync = useCallback((
+        title: string,
+        label: string,
+        field: string,
+        initialValue: string,
+        okLabel?: string,
+    ): Promise<string | null> => {
+        return new Promise((resolve) => {
+            textDialogResolveRef.current = resolve;
+            setTextDialog({
+                open: true,
+                title,
+                label,
+                initialValue,
+                field,
+                okLabel,
+            });
+        });
+    }, []);
+
     const handleTextDialogSubmit = useCallback(async (value: string) => {
         if (!job) return;
         const dialog = textDialogRef.current;
+        const asyncResolve = textDialogResolveRef.current;
+        textDialogResolveRef.current = null;
         setTextDialog(emptyTextDialog);
-        await updateField({job, field: dialog.field, value, isRecurring: job.preBook});
-        dialog.onSubmitExtra?.();
-        await refreshAndNotify();
+
+        if (asyncResolve) {
+            // Promise-based flow: resolve with value, caller handles save
+            asyncResolve(value);
+        } else {
+            // State-based flow: save field directly (existing behavior)
+            await updateField({job, field: dialog.field, value, isRecurring: job.preBook});
+            dialog.onSubmitExtra?.();
+            await refreshAndNotify();
+        }
     }, [job, updateField, refreshAndNotify]);
 
-    const handleTextDialogCancel = useCallback(() => setTextDialog(emptyTextDialog), []);
+    const handleTextDialogCancel = useCallback(() => {
+        const asyncResolve = textDialogResolveRef.current;
+        textDialogResolveRef.current = null;
+        setTextDialog(emptyTextDialog);
+        if (asyncResolve) {
+            asyncResolve(null);
+        }
+    }, []);
 
     // ── Dialog Primitives ──────────────────────────────────────────
 
@@ -271,11 +318,74 @@ export function useJobActions({
         await refreshAndNotify();
     }, [job, updateField, refreshAndNotify]);
 
+    /**
+     * Guided "mark as done" flow — replicates the AngularJS markJobAsDone behaviour.
+     * Prompts for any missing POD fields (time → name), offers file upload, then completes.
+     */
+    const markJobAsDone = useCallback(async () => {
+        if (!job) return;
+
+        // Step 1: Collect POD time if missing
+        let podTime = job._completedTimeLongStr;
+        if (!job.completedTime) {
+            await ensureDateTimeDialog();
+            const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
+                title: 'POD Time',
+                fieldName: JobProperty.CompletedTime,
+                dateTime: job.completedTime,
+                defaultTimeZone: (job.deliveryTimeZone as any)?.text,
+            });
+            if (!result?.value) {
+                showToast('A POD time needs to be provided to close this job.', 'warning');
+                return;
+            }
+            await updateField({job, field: JobProperty.CompletedTime, value: result.value, isRecurring: job.preBook, timezone: result.timezone});
+            podTime = formatDateForApi(result.value, (job.deliveryTimeZone as any)?.text);
+            await refreshAndNotify();
+        }
+
+        // Step 2: Collect POD name if missing
+        let podName = job.podName;
+        if (!podName) {
+            const name = await openTextDialogAsync('POD Name', 'POD Name...', JobProperty.PodName, '', 'Complete Job');
+            if (!name) {
+                showToast('A POD name needs to be provided to close this job.', 'warning');
+                return;
+            }
+            podName = name;
+            await updateField({job, field: JobProperty.PodName, value: podName, isRecurring: job.preBook});
+            await refreshAndNotify();
+        }
+
+        // Step 3: POD file upload (optional — user can skip)
+        try {
+            (window as any).ReactJobFileUploadDialog?.open?.(job.id, 'POD');
+        } catch {
+            // Upload dialog not available or user cancelled — continue
+        }
+
+        // Step 4: Mark as done
+        await updatePod({
+            jobId: job.id,
+            jobStatus: '6',
+            podName: podName,
+            podTime: podTime || '',
+        });
+        showToast(`${job.jobNo} Completed`, 'success');
+        await refreshAndNotify();
+    }, [job, ensureDateTimeDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, showToast]);
+
     const handleDoneClick = useCallback(async () => {
         if (!job) return;
-        await updateField({job, field: JobProperty.Delivered, value: !job.done, isRecurring: job.preBook});
-        await refreshAndNotify();
-    }, [job, updateField, refreshAndNotify]);
+        // Uncompleting: toggle done off
+        if (job.done) {
+            await updateField({job, field: JobProperty.Delivered, value: false, isRecurring: job.preBook});
+            await refreshAndNotify();
+            return;
+        }
+        // Completing: enter guided flow
+        await markJobAsDone();
+    }, [job, updateField, refreshAndNotify, markJobAsDone]);
 
     const handleTailLiftPuClick = useCallback(async () => {
         if (!job) return;
@@ -334,15 +444,27 @@ export function useJobActions({
         }
     }, [job, isRecurringJob, ensureAutoCompleteDialog, showAutocompleteDialog, dispatchJob, refreshAndNotify]);
 
-    const handleEditPodName = useCallback(() => {
+    const handleEditPodName = useCallback(async () => {
         if (!job) return;
-        openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, job.podName);
-    }, [job, openTextDialog]);
+        if (job.done) {
+            // Already completed — just edit the name, no chaining
+            openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, job.podName);
+            return;
+        }
+        // Not yet completed — enter guided completion flow (will prompt for name if missing)
+        await markJobAsDone();
+    }, [job, openTextDialog, markJobAsDone]);
 
     const handleEditCompletedTime = useCallback(async () => {
         if (!job) return;
-        await editDateAndTime(JobProperty.CompletedTime, 'POD Time', job.completedTime, job.deliveryTimeZone);
-    }, [job, editDateAndTime]);
+        if (job.done) {
+            // Already completed — just edit the time, no chaining
+            await editDateAndTime(JobProperty.CompletedTime, 'POD Time', job.completedTime, job.deliveryTimeZone);
+            return;
+        }
+        // Not yet completed — enter guided completion flow (will prompt for time if missing)
+        await markJobAsDone();
+    }, [job, editDateAndTime, markJobAsDone]);
 
     const handlePricingClick = useCallback(async () => {
         if (!job) return;
@@ -358,8 +480,18 @@ export function useJobActions({
     const handleStatusClick = useCallback(async () => {
         if (!job) return;
         const statusList = await getStatusList();
-        await showSelectDialog(statusList, JobProperty.Status, 'Status', job.statusName);
-    }, [job, showSelectDialog]);
+        await ensureSelectDialog();
+        const result = await window.ReactSelectDialog?.showSelectDialog({
+            title: 'Status',
+            fieldName: JobProperty.Status,
+            items: statusList,
+            initialValue: job.statusName,
+        });
+        if (!result) return;
+        await updateField({job, field: JobProperty.Status, value: result.value, isRecurring: job.preBook});
+        await refreshAndNotify();
+        onStatusChange?.(result.value as number);
+    }, [job, ensureSelectDialog, updateField, refreshAndNotify, onStatusChange]);
 
     const handleSpeedClick = useCallback(async () => {
         const speeds = await getSpeedList();
@@ -528,6 +660,84 @@ export function useJobActions({
         return editDate(JobProperty.RestartDate, 'Restart Date', job.restartDate);
     }, [job, editDate]);
 
+    // ── Missing Field Edit Handlers ────────────────────────────────
+
+    const handleEditAmount = useCallback(() => {
+        if (!job) return;
+        openTextDialog('Edit Amount', 'Amount...', JobProperty.Amount, job.charge);
+    }, [job, openTextDialog]);
+
+    const handleEditItems = useCallback(() => {
+        if (!job) return;
+        openTextDialog('Edit Items', 'Items...', JobProperty.Items, job.items);
+    }, [job, openTextDialog]);
+
+    const handleEditClientCode = useCallback(() => {
+        if (!job) return;
+        openTextDialog('Edit Client Code', 'Client Code...', JobProperty.ClientCode, (job as any).clientCode);
+    }, [job, openTextDialog]);
+
+    // ── Lock/Unlock ────────────────────────────────────────────────
+
+    const handleLockToggle = useCallback(async () => {
+        if (!job) return;
+        await updateField({job, field: JobProperty.Locked, value: !job.locked, isRecurring: job.preBook});
+        await refreshAndNotify();
+    }, [job, updateField, refreshAndNotify]);
+
+    // ── Notify / Accepted ──────────────────────────────────────────
+
+    const handleNotifyClick = useCallback(async () => {
+        if (!job) return;
+        await showSelectDialog(NOTIFY_OPTIONS, JobProperty.NotifiedType, 'Notified', job.notifiedName);
+    }, [job, showSelectDialog]);
+
+    const handleAcceptedClick = useCallback(async () => {
+        if (!job) return;
+        await showSelectDialog(ACCEPTED_OPTIONS, JobProperty.AcceptedType, 'Accepted', job.acceptedName);
+    }, [job, showSelectDialog]);
+
+    // ── Undeliverable ──────────────────────────────────────────────
+
+    const handleUndeliverableClick = useCallback(async () => {
+        if (!job) return;
+        const list = await getUndeliverableList();
+        await showSelectDialog(list, JobProperty.UndeliverableLocationID, 'Undeliverable Location', null);
+    }, [job, showSelectDialog]);
+
+    // ── Internal Status ────────────────────────────────────────────
+
+    const handleInternalStatusClick = useCallback(async () => {
+        if (!job) return;
+        const list = await getInternalStatusList();
+        const items = list.map(s => ({id: s.id, text: s.text}));
+        await showSelectDialog(items, JobProperty.InternalStatusID, 'Internal Status', job.internalStatusId ?? null);
+    }, [job, showSelectDialog]);
+
+    // ── Push to Live (Bulk Jobs) ───────────────────────────────────
+
+    const handlePushToLive = useCallback(async () => {
+        if (!job) return;
+        const {releaseBulkJob} = await import('../../../../services/jobListApi');
+        await releaseBulkJob(job.id);
+        showToast(`Bulk job ${job.jobNo} sent to live successfully`, 'success');
+        await refreshAndNotify();
+    }, [job, showToast, refreshAndNotify]);
+
+    // ── Pallet CRUD ────────────────────────────────────────────────
+
+    const handleNewPallet = useCallback(async () => {
+        if (!job) return;
+        (window as any).ReactPalletDialog?.open?.({jobId: job.id, isBulkJob: job.isBulkJob});
+        await refreshAndNotify();
+    }, [job, refreshAndNotify]);
+
+    const handleEditPallet = useCallback(async (pallet: any) => {
+        if (!job) return;
+        (window as any).ReactPalletDialog?.open?.({jobId: job.id, isBulkJob: job.isBulkJob, existingPallet: pallet});
+        await refreshAndNotify();
+    }, [job, refreshAndNotify]);
+
     return {
         // Text dialog state
         textDialog,
@@ -592,5 +802,30 @@ export function useJobActions({
         handleEditFirstDue,
         handleEditStopDate,
         handleEditRestartDate,
+
+        // Missing field editors
+        handleEditAmount,
+        handleEditItems,
+        handleEditClientCode,
+
+        // Lock/Unlock
+        handleLockToggle,
+
+        // Notify / Accepted
+        handleNotifyClick,
+        handleAcceptedClick,
+
+        // Undeliverable
+        handleUndeliverableClick,
+
+        // Internal Status
+        handleInternalStatusClick,
+
+        // Push to Live
+        handlePushToLive,
+
+        // Pallet CRUD
+        handleNewPallet,
+        handleEditPallet,
     };
 }

@@ -60,15 +60,15 @@ function getNumberBackgroundColor(variant: 'top' | 'middle' | 'bottom', isActive
 /**
  * Driver Row Component - renders a single courier row
  */
-const DriverRow = React.memo(({
-                                  section,
-                                  variant,
-                                  onCourierClick,
-                              }: {
+const DriverRow = React.memo(function DriverRow({
+    section,
+    variant,
+    onCourierClick,
+}: {
     section: IClearListSection;
     variant: 'top' | 'middle' | 'bottom';
     onCourierClick?: (courier: ICourierData) => void;
-}) => {
+}) {
     const [isHovered, setIsHovered] = useState(false);
     const isActive = (section as IClearListSection & { isActive?: boolean }).isActive || false;
 
@@ -136,17 +136,17 @@ const DriverRow = React.memo(({
 /**
  * Area Section Component - renders a single area with its driver sections
  */
-const AreaSection = React.memo(({
-                                    area,
-                                    truckMode,
-                                    onAreaClick,
-                                    onCourierClick,
-                                }: {
+const AreaSection = React.memo(function AreaSection({
+    area,
+    truckMode,
+    onAreaClick,
+    onCourierClick,
+}: {
     area: IAreaClearList;
     truckMode: TruckMode;
     onAreaClick?: (area: IAreaClearList) => void;
     onCourierClick?: (courier: ICourierData) => void;
-}) => {
+}) {
     const [isTitleHovered, setIsTitleHovered] = useState(false);
     const isActive = area.isActive || false;
 
@@ -264,17 +264,17 @@ const AreaSection = React.memo(({
 /**
  * Main Driver Locations Component
  */
-export const DriverLocations = React.memo(({
-                                               driverLocations,
-                                               loading = false,
-                                               showNoData = false,
-                                               showData = false,
-                                               truckMode = 'On',
-                                               activeAreaId,
-                                               onAreaClick,
-                                               onCourierClick,
-                                               onClearFilter,
-                                           }: DriverLocationsProps) => {
+export const DriverLocations = React.memo(function DriverLocations({
+    driverLocations,
+    loading = false,
+    showNoData = false,
+    showData = false,
+    truckMode = 'On',
+    activeAreaId,
+    onAreaClick,
+    onCourierClick,
+    onClearFilter,
+}: DriverLocationsProps) {
     const handleClearFilter = useCallback(() => {
         onClearFilter?.();
     }, [onClearFilter]);

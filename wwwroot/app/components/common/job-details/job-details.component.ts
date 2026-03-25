@@ -29,7 +29,7 @@ class JobDetailBridgeController implements angular.IController {
     onStatusChange?: (args: { $event: number }) => void;
     onJobUpdate?: () => void;
 
-    private readonly containerId: string;
+    private containerId: string;
     private loadPromise: Promise<void> | null = null;
     private manifest: Record<string, string> | null = null;
     private initialized = false;

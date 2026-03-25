@@ -1,10 +1,8 @@
 import React, {useEffect, useState} from 'react';
-import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
-import type {Theme} from '@mui/material';
 import {useFleetOptions} from '../../hooks/useDriverManagementApi';
 import {DriverManagementPageProps} from '../../interfaces';
 import {DriverDetailsTab} from './components/DriverDetailsTab';
@@ -64,34 +62,20 @@ export const DriverManagementPage: React.FC<DriverManagementPageProps> = ({
             height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
             maxWidth: 1400, mx: 'auto', p: {xs: 2, md: 3},
             '& .MuiCard-root': {
-                borderRadius: 1.5,
-                border: 1,
-                borderColor: 'divider',
+                borderRadius: 3,
                 boxShadow: 1,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                '&:hover': {boxShadow: 3},
             },
         }}>
             {/* Page Header */}
-            <Card sx={{flexShrink: 0, overflow: 'hidden'}}>
+            <Card sx={{flexShrink: 0, borderRadius: 1, overflow: 'hidden'}}>
                 <Tabs
                     value={selectedTab}
                     onChange={handleTabChange}
                     variant="scrollable"
                     scrollButtons="auto"
-                    sx={(theme: Theme) => ({
-                        bgcolor: 'primary.main',
-                        '& .MuiTab-root': {
-                            color: alpha(theme.palette.primary.contrastText, 0.7),
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                            letterSpacing: '0.01em',
-                            '&.Mui-selected': {
-                                color: 'primary.contrastText',
-                            },
-                        },
-                        '& .MuiTabs-indicator': {
-                            bgcolor: 'primary.contrastText',
-                        },
-                    })}
+                    sx={{bgcolor: 'background.paper'}}
                 >
                     <Tab label="Driver Details" />
                     <Tab label="Today's Active" />

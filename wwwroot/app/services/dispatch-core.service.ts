@@ -45,6 +45,7 @@ import {JobEventData} from "../react/interfaces";
 import {IDeliveryJourney, IDeliveryJourneyDto} from "../react/components/common/task-history/TaskHistory.interfaces";
 import {formatDateForApiWithTzs} from "../react/utils/dateUtils";
 import IDateFilterData from "../interfaces/date-filter-data.interface";
+import IInterCourierData from "../components/dialogs/inter-courier-charge-dialog/interfaces/IInterCourierData";
 import {Is3PhotoInfo} from "../interfaces/aws.interfaces";
 import dayjs, {Dayjs} from "dayjs";
 import {
@@ -935,6 +936,10 @@ class DispatchCoreService implements angular.IServiceProvider {
     async quickCreateJob(job: JobCreateViewModelDto): Promise<number> {
         const response = await this.$http.post<number>('/job/QuickCreateJob', job);
         return response.data;
+    }
+
+    async createInterCourierCharge(data: IInterCourierData) {
+        await this.$http.post("job/InterCourierCharge", data);
     }
 
     async downloadFile(s3Key: string, fileName: string): Promise<void> {

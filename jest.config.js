@@ -13,17 +13,7 @@ const config = {
                 transform: { react: { runtime: 'automatic' } },
             },
         }],
-        '^.+\\.(js|jsx|mjs)$': ['@swc/jest', {
-            jsc: {
-                parser: { syntax: 'ecmascript' },
-            },
-        }],
     },
-
-    // Allow ESM-only packages (msw + transitive deps) to be transformed by @swc/jest
-    transformIgnorePatterns: [
-        'node_modules/(?!(msw|@mswjs|@bundled-es-modules|@open-draft|until-async|outvariant|strict-event-emitter|is-node-process|headers-polyfill)/)',
-    ],
 
     moduleNameMapper: {
         '^angular$': '<rootDir>/node_modules/angular/angular.js',
@@ -46,8 +36,6 @@ const config = {
         '<rootDir>/wwwroot/app/tests/setup.ts',
     ],
 
-    // Only collect coverage when explicitly requested via --coverage flag
-    collectCoverage: false,
     collectCoverageFrom: [
         'wwwroot/app/**/*.ts',
         'wwwroot/app/**/*.tsx',
@@ -66,11 +54,6 @@ const config = {
             statements: 15,
         },
     },
-
-    reporters: [
-        'default',
-        ['jest-slow-test-reporter', { numTests: 10, warnOnSlowerThan: 300, color: true }],
-    ],
 
     testPathIgnorePatterns: ['/node_modules/', '/DespatchWeb.Tests/', '/__integration__/'],
 

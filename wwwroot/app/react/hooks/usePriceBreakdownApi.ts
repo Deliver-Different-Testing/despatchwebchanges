@@ -60,11 +60,11 @@ export function useAddPriceBreakdown() {
 
     return useMutation<number, Error, CreatePriceBreakdownRequest & {jobIdForCache?: number; isPrebookForCache?: boolean; isArchivedForCache?: boolean}>({
         mutationFn: (breakdown) => pricingBreakdownApi.addPriceBreakdown(breakdown),
-        onSuccess: async (_, variables) => {
+        onSuccess: (_, variables) => {
             const jobId = variables.jobIdForCache ?? variables.childJobId ?? variables.prebookJobId ?? 0;
             const isPrebook = variables.isPrebookForCache ?? !!variables.prebookJobId;
             const isArchived = variables.isArchivedForCache ?? variables.isArchived ?? false;
-            await queryClient.invalidateQueries({
+            queryClient.invalidateQueries({
                 queryKey: queryKeys.priceBreakdowns.job(jobId, isPrebook, isArchived),
             });
         },
@@ -87,11 +87,11 @@ export function useUpdatePriceBreakdown() {
 
     return useMutation<void, Error, PriceBreakdown & {jobIdForCache?: number; isPrebookForCache?: boolean; isArchivedForCache?: boolean}>({
         mutationFn: (breakdown) => pricingBreakdownApi.updatePriceBreakdown(breakdown),
-        onSuccess: async (_, variables) => {
+        onSuccess: (_, variables) => {
             const jobId = variables.jobIdForCache ?? variables.childJobId ?? variables.jobId ?? variables.prebookJobId ?? 0;
             const isPrebook = variables.isPrebookForCache ?? !!variables.prebookJobId;
             const isArchived = variables.isArchivedForCache ?? variables.isArchived ?? false;
-            await queryClient.invalidateQueries({
+            queryClient.invalidateQueries({
                 queryKey: queryKeys.priceBreakdowns.job(jobId, isPrebook, isArchived),
             });
         },
@@ -114,10 +114,10 @@ export function useDeletePriceBreakdown() {
 
     return useMutation<void, Error, DeletePriceBreakdownRequest & {isPrebookForCache?: boolean}>({
         mutationFn: (request) => pricingBreakdownApi.deletePriceBreakdown(request),
-        onSuccess: async (_, variables) => {
+        onSuccess: (_, variables) => {
             const isPrebook = variables.isPrebookForCache ?? false;
             const isArchived = variables.isArchived ?? false;
-           await queryClient.invalidateQueries({
+            queryClient.invalidateQueries({
                 queryKey: queryKeys.priceBreakdowns.job(variables.jobId, isPrebook, isArchived),
             });
         },
