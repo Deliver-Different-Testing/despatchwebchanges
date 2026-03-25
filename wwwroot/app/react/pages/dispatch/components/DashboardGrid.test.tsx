@@ -65,8 +65,11 @@ const defaultLayout: LayoutItem[] = allBoxIds.map((id, i) => ({
     i: id, x: (i % 3) * 4, y: Math.floor(i / 3) * 6, w: 4, h: 6, minW: 2, minH: 3,
 }));
 
-const renderWidget = (boxId: DispatchBox) => (
-    <div data-testid={`widget-content-${boxId}`}>Content for {boxId}</div>
+const defaultWidgets: Partial<Record<DispatchBox, React.ReactNode>> = Object.fromEntries(
+    Object.values(DispatchBox).map(boxId => [
+        boxId,
+        <div key={boxId} data-testid={`widget-content-${boxId}`}>Content for {boxId}</div>,
+    ]),
 );
 
 function renderGrid(overrides: Partial<React.ComponentProps<typeof DashboardGrid>> = {}) {
@@ -77,7 +80,7 @@ function renderGrid(overrides: Partial<React.ComponentProps<typeof DashboardGrid
         rowHeight: 80,
         isDefaultLayout: false,
         visibleBoxIds: allBoxIds,
-        renderWidget,
+        widgets: defaultWidgets,
         ...overrides,
     };
 
@@ -243,17 +246,18 @@ describe('DashboardGrid', () => {
     // ── Toolbar extras ──────────────────────────────────────────────────
 
     it('renders toolbar actions for each widget', () => {
-        const renderToolbarActions = (boxId: DispatchBox) => (
-            <span data-testid={`toolbar-action-${boxId}`}>action</span>
-        );
-        renderGrid({visibleBoxIds: [DispatchBox.JobsList], renderToolbarActions});
+        const toolbarActions: Partial<Record<DispatchBox, React.ReactNode>> = {
+            [DispatchBox.JobsList]: <span data-testid={`toolbar-action-list`}>action</span>,
+        };
+        renderGrid({visibleBoxIds: [DispatchBox.JobsList], toolbarActions});
         expect(screen.getByTestId('toolbar-action-list')).toBeInTheDocument();
     });
 
-    it('renders subtitles via getSubtitle', () => {
-        const getSubtitle = (boxId: DispatchBox) =>
-            boxId === DispatchBox.JobsList ? ' - 42 jobs' : undefined;
-        renderGrid({visibleBoxIds: [DispatchBox.JobsList], getSubtitle});
+    it('renders subtitles via subtitles map', () => {
+        const subtitles: Partial<Record<DispatchBox, string | undefined>> = {
+            [DispatchBox.JobsList]: ' - 42 jobs',
+        };
+        renderGrid({visibleBoxIds: [DispatchBox.JobsList], subtitles});
         expect(screen.getByText('- 42 jobs')).toBeInTheDocument();
     });
 });

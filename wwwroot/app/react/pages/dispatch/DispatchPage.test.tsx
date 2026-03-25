@@ -71,20 +71,20 @@ jest.mock('../../components/common/app-toolbar/ToolbarActions', () => ({
     SettingsButton: (_props: any) => <div data-testid="settings-button">SettingsButton</div>,
 }));
 
-// DashboardGrid mock: invokes renderWidget, renderToolbarActions, getSubtitle, exposes onRefresh
+// DashboardGrid mock: reads widgets, toolbarActions, subtitles maps, exposes onRefresh
 jest.mock('./components/DashboardGrid', () => ({
     DashboardGrid: (props: any) => (
         <div data-testid="dashboard-grid">
             {props.visibleBoxIds.map((boxId: string) => (
                 <div key={boxId} data-testid={`box-${boxId}`}>
                     <div data-testid={`widget-${boxId}`}>
-                        {props.renderWidget(boxId)}
+                        {props.widgets?.[boxId]}
                     </div>
                     <div data-testid={`toolbar-actions-${boxId}`}>
-                        {props.renderToolbarActions?.(boxId)}
+                        {props.toolbarActions?.[boxId]}
                     </div>
                     <div data-testid={`subtitle-${boxId}`}>
-                        {props.getSubtitle?.(boxId) ?? ''}
+                        {props.subtitles?.[boxId] ?? ''}
                     </div>
                     <button
                         data-testid={`refresh-${boxId}`}

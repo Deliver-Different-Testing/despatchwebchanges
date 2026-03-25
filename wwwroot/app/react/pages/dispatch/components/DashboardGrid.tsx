@@ -68,10 +68,10 @@ interface DashboardGridProps {
     rowHeight: number;
     isDefaultLayout: boolean;
     visibleBoxIds: DispatchBox[];
-    renderWidget: (boxId: DispatchBox) => React.ReactNode;
-    renderToolbarContent?: (boxId: DispatchBox) => React.ReactNode;
-    renderToolbarActions?: (boxId: DispatchBox) => React.ReactNode;
-    getSubtitle?: (boxId: DispatchBox) => string | undefined;
+    widgets: Partial<Record<DispatchBox, React.ReactNode>>;
+    toolbarContent?: Partial<Record<DispatchBox, React.ReactNode>>;
+    toolbarActions?: Partial<Record<DispatchBox, React.ReactNode>>;
+    subtitles?: Partial<Record<DispatchBox, string | undefined>>;
     onRefresh?: (boxId: DispatchBox) => void;
 }
 
@@ -87,10 +87,10 @@ export const DashboardGrid = memo(function DashboardGrid({
     rowHeight,
     isDefaultLayout,
     visibleBoxIds,
-    renderWidget,
-    renderToolbarContent,
-    renderToolbarActions,
-    getSubtitle,
+    widgets,
+    toolbarContent,
+    toolbarActions,
+    subtitles,
     onRefresh,
 }: DashboardGridProps) {
     const {width: containerWidth, containerRef} = useContainerWidth();
@@ -135,12 +135,12 @@ export const DashboardGrid = memo(function DashboardGrid({
                                 key={boxId}
                                 boxId={boxId}
                                 config={config}
-                                subtitle={getSubtitle?.(boxId)}
+                                subtitle={subtitles?.[boxId]}
                                 isDefaultLayout={isDefaultLayout}
                                 onRefresh={onRefresh}
-                                toolbarContent={renderToolbarContent?.(boxId)}
-                                toolbarActions={renderToolbarActions?.(boxId)}
-                                content={renderWidget(boxId)}
+                                toolbarContent={toolbarContent?.[boxId]}
+                                toolbarActions={toolbarActions?.[boxId]}
+                                content={widgets[boxId]}
                             />
                         );
                     })}

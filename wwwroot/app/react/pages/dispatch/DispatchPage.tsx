@@ -189,55 +189,82 @@ export function DispatchPage({
         return () => { cancelled = true; };
     }, [jobSelection.currentJob?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // FetchConfig for the job list — includes view/date context and clear list filtering
-    const fetchConfig = useMemo(() => {
-        const viewIds = pageViews.selectedViewIds;
-        const startDate = dateFilter.dateFilterData?.startDate;
-        const endDate = dateFilter.dateFilterData?.endDate;
-        const useTime = dateFilter.dateFilterData?.useTime;
+    // FetchConfig for the job list — uses refs to avoid recreating function
+    // identities on every view/date change (the functions read current values
+    // from refs at call time).
+    const fetchContextRef = useRef({
+        viewIds: pageViews.selectedViewIds,
+        startDate: dateFilter.dateFilterData?.startDate,
+        endDate: dateFilter.dateFilterData?.endDate,
+        useTime: dateFilter.dateFilterData?.useTime,
+        activeAreaId: driverLocations.activeAreaId,
+    });
+    fetchContextRef.current = {
+        viewIds: pageViews.selectedViewIds,
+        startDate: dateFilter.dateFilterData?.startDate,
+        endDate: dateFilter.dateFilterData?.endDate,
+        useTime: dateFilter.dateFilterData?.useTime,
+        activeAreaId: driverLocations.activeAreaId,
+    };
 
-        // 1.3: When a clear list area is active, filter to that area's jobs
-        if (driverLocations.activeAreaId) {
+    // Only recreate fetchConfig when the activeAreaId changes (switches
+    // between normal fetch and clear-list fetch), not on every view/date tweak.
+    const fetchConfig = useMemo(() => {
+        const activeAreaId = driverLocations.activeAreaId;
+
+        if (activeAreaId) {
             return {
-                fetchFn: (params: any, options?: any) => fetchClearListJobs({
-                    ...params,
-                    despatchViewIds: viewIds,
-                    startDate,
-                    endDate,
-                    useTime,
-                    selectedClearListId: driverLocations.activeAreaId,
-                    statusFilter: params.statusFilter ?? 'needs-dispatch',
-                }, options),
-                queryKeyFn: (params: any) => queryKeys.dispatch.clearList({
-                    ...params,
-                    despatchViewIds: viewIds,
-                    startDate,
-                    endDate,
-                    useTime,
-                    selectedClearListId: driverLocations.activeAreaId,
-                }),
+                fetchFn: (params: any, options?: any) => {
+                    const ctx = fetchContextRef.current;
+                    return fetchClearListJobs({
+                        ...params,
+                        despatchViewIds: ctx.viewIds,
+                        startDate: ctx.startDate,
+                        endDate: ctx.endDate,
+                        useTime: ctx.useTime,
+                        selectedClearListId: ctx.activeAreaId,
+                        statusFilter: params.statusFilter ?? 'needs-dispatch',
+                    }, options);
+                },
+                queryKeyFn: (params: any) => {
+                    const ctx = fetchContextRef.current;
+                    return queryKeys.dispatch.clearList({
+                        ...params,
+                        despatchViewIds: ctx.viewIds,
+                        startDate: ctx.startDate,
+                        endDate: ctx.endDate,
+                        useTime: ctx.useTime,
+                        selectedClearListId: ctx.activeAreaId,
+                    });
+                },
                 initialParams: {},
             };
         }
 
         return {
-            fetchFn: (params: any, options?: any) => fetchDispatchJobs({
-                ...params,
-                despatchViewIds: viewIds,
-                startDate,
-                endDate,
-                useTime,
-            }, options),
-            queryKeyFn: (params: any) => queryKeys.dispatch.jobs({
-                ...params,
-                despatchViewIds: viewIds,
-                startDate,
-                endDate,
-                useTime,
-            }),
+            fetchFn: (params: any, options?: any) => {
+                const ctx = fetchContextRef.current;
+                return fetchDispatchJobs({
+                    ...params,
+                    despatchViewIds: ctx.viewIds,
+                    startDate: ctx.startDate,
+                    endDate: ctx.endDate,
+                    useTime: ctx.useTime,
+                }, options);
+            },
+            queryKeyFn: (params: any) => {
+                const ctx = fetchContextRef.current;
+                return queryKeys.dispatch.jobs({
+                    ...params,
+                    despatchViewIds: ctx.viewIds,
+                    startDate: ctx.startDate,
+                    endDate: ctx.endDate,
+                    useTime: ctx.useTime,
+                });
+            },
             initialParams: {},
         };
-    }, [pageViews.selectedViewIds, dateFilter.dateFilterData, driverLocations.activeAreaId]);
+    }, [driverLocations.activeAreaId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Default category switches to "needs-dispatch" when viewing a clear list area
     const jobListDefaultCategory: JobCategory | undefined = driverLocations.activeAreaId
@@ -424,61 +451,49 @@ export function DispatchPage({
         jobSelection.refreshJobListRef.current?.();
     }, [jobSelection.refreshJobListRef]);
 
-    // ── Per-widget toolbar actions ───────────────────────────────────
+    // ── Per-widget toolbar actions (individually memoized) ─────────
 
-    const renderToolbarActions = useCallback((boxId: DispatchBox): React.ReactNode => {
-        switch (boxId) {
-            case DispatchBox.DriverLocations:
-                return (
-                    <DriverLocationsToolbar
-                        activeAreaId={driverLocations.activeAreaId}
-                        onClearArea={handleDriverLocationClearFilter}
-                        truckMode={driverLocations.truckMode}
-                        onSetTruckMode={driverLocations.setTruckMode}
-                    />
-                );
-
-            case DispatchBox.JobDetail:
-                return (
-                    <JobDetailToolbarActions
-                        job={jobSelection.currentJob}
-                        showToast={showToast}
-                        tasks={supportTasks.tasks}
-                        refetchTasks={supportTasks.refetch}
-                        closeTask={supportTasks.closeTask}
-                        selectJobById={jobSelection.selectJobById}
-                        refreshJobList={handleRefreshJobList}
-                    />
-                );
-
-            case DispatchBox.CurrentWork:
-                return (
-                    <CurrentWorkToolbar
-                        viewMode={currentWork.viewMode}
-                        isUsCustomer={isUsCustomer}
-                        onBackToOverview={currentWork.backToOverview}
-                        onTruckLoadingStatus={handleTruckLoadingStatus}
-                        onCourierFound={handleCourierFound}
-                        showToast={showToast}
-                    />
-                );
-
-            case DispatchBox.Supports:
-                return (
-                    <SupportsToolbar
-                        staffList={supportTasks.staffList}
-                        eventTypeList={supportTasks.eventTypeList}
-                        selectedStaffId={supportTasks.selectedStaffId}
-                        selectedEventTypeId={supportTasks.selectedEventTypeId}
-                        onSelectStaff={supportTasks.setStaffId}
-                        onSelectEventType={supportTasks.setEventTypeId}
-                    />
-                );
-
-            default:
-                return null;
-        }
-    }, [
+    const toolbarActions = useMemo<Partial<Record<DispatchBox, React.ReactNode>>>(() => ({
+        [DispatchBox.DriverLocations]: (
+            <DriverLocationsToolbar
+                activeAreaId={driverLocations.activeAreaId}
+                onClearArea={handleDriverLocationClearFilter}
+                truckMode={driverLocations.truckMode}
+                onSetTruckMode={driverLocations.setTruckMode}
+            />
+        ),
+        [DispatchBox.JobDetail]: (
+            <JobDetailToolbarActions
+                job={jobSelection.currentJob}
+                showToast={showToast}
+                tasks={supportTasks.tasks}
+                refetchTasks={supportTasks.refetch}
+                closeTask={supportTasks.closeTask}
+                selectJobById={jobSelection.selectJobById}
+                refreshJobList={handleRefreshJobList}
+            />
+        ),
+        [DispatchBox.CurrentWork]: (
+            <CurrentWorkToolbar
+                viewMode={currentWork.viewMode}
+                isUsCustomer={isUsCustomer}
+                onBackToOverview={currentWork.backToOverview}
+                onTruckLoadingStatus={handleTruckLoadingStatus}
+                onCourierFound={handleCourierFound}
+                showToast={showToast}
+            />
+        ),
+        [DispatchBox.Supports]: (
+            <SupportsToolbar
+                staffList={supportTasks.staffList}
+                eventTypeList={supportTasks.eventTypeList}
+                selectedStaffId={supportTasks.selectedStaffId}
+                selectedEventTypeId={supportTasks.selectedEventTypeId}
+                onSelectStaff={supportTasks.setStaffId}
+                onSelectEventType={supportTasks.setEventTypeId}
+            />
+        ),
+    }), [
         driverLocations.activeAreaId, driverLocations.truckMode, driverLocations.setTruckMode,
         handleDriverLocationClearFilter,
         jobSelection.currentJob, jobSelection.selectJobById, handleRefreshJobList,
@@ -486,100 +501,95 @@ export function DispatchPage({
         supportTasks.staffList, supportTasks.eventTypeList,
         supportTasks.selectedStaffId, supportTasks.selectedEventTypeId,
         supportTasks.setStaffId, supportTasks.setEventTypeId,
-        currentWork.viewMode, currentWork.backToOverview,
+        currentWork.viewMode, currentWork.backToOverview, isUsCustomer,
         handleTruckLoadingStatus, handleCourierFound,
     ]);
 
-    const renderWidget = useCallback((boxId: DispatchBox) => {
-        switch (boxId) {
-            case DispatchBox.JobsList:
-                return (
-                    <JobsListWidget
-                        showToast={showToast}
-                        isUsCustomer={isUsCustomer}
-                        fetchConfig={fetchConfig}
-                        defaultCategory={jobListDefaultCategory}
-                        onJobSelect={handleJobSelect}
-                        onJobDispatch={handleJobDispatch}
-                        refreshJobListRef={jobSelection.refreshJobListRef}
-                        selectJobInListRef={jobSelection.selectJobInListRef}
-                    />
-                );
+    // ── Per-widget content (individually memoized to isolate re-renders) ─
 
-            case DispatchBox.JobDetail:
-                return <JobDetailWidget config={jobDetailsConfig} />;
+    const handleSupportTaskClick = useCallback(
+        (task: any) => jobSelection.selectJobById(task.jobId),
+        [jobSelection.selectJobById],
+    );
 
-            case DispatchBox.Map:
-                return (
-                    <MapWidget
-                        currentJob={currentMapJob}
-                        jobs={mapJobs}
-                        clearListId={driverLocations.activeAreaId}
-                        onMarkerClick={handleMapMarkerClick}
-                    />
-                );
+    const widgetJobsList = useMemo(() => (
+        <JobsListWidget
+            showToast={showToast}
+            isUsCustomer={isUsCustomer}
+            fetchConfig={fetchConfig}
+            defaultCategory={jobListDefaultCategory}
+            onJobSelect={handleJobSelect}
+            onJobDispatch={handleJobDispatch}
+            refreshJobListRef={jobSelection.refreshJobListRef}
+            selectJobInListRef={jobSelection.selectJobInListRef}
+        />
+    ), [showToast, isUsCustomer, fetchConfig, jobListDefaultCategory, handleJobSelect, handleJobDispatch, jobSelection.refreshJobListRef, jobSelection.selectJobInListRef]);
 
-            case DispatchBox.DriverLocations:
-                return (
-                    <DriverLocationsWidget
-                        driverLocations={driverLocations.driverLocations}
-                        loading={driverLocations.loading}
-                        truckMode={driverLocations.truckMode}
-                        activeAreaId={driverLocations.activeAreaId}
-                        onAreaClick={handleDriverLocationAreaClick}
-                        onCourierClick={handleDriverLocationCourierClick}
-                        onClearFilter={handleDriverLocationClearFilter}
-                        isUsCustomer={isUsCustomer}
-                    />
-                );
+    const widgetJobDetail = useMemo(() => (
+        <JobDetailWidget config={jobDetailsConfig} />
+    ), [jobDetailsConfig]);
 
-            case DispatchBox.CurrentWork:
-                return (
-                    <CurrentWorkWidget
-                        viewMode={currentWork.viewMode}
-                        driverJobsFetchConfig={currentWork.driverJobsFetchConfig}
-                        drivers={currentWork.drivers}
-                        loading={currentWork.loading}
-                        selectedCourierId={currentWork.selectedCourierId}
-                        onDriverSelect={currentWork.selectDriver}
-                        showToast={showToast}
-                        isUsCustomer={isUsCustomer}
-                        onJobSelect={handleJobSelect}
-                        onJobDispatch={handleJobDispatch}
-                    />
-                );
+    const widgetMap = useMemo(() => (
+        <MapWidget
+            currentJob={currentMapJob}
+            jobs={mapJobs}
+            clearListId={driverLocations.activeAreaId}
+            onMarkerClick={handleMapMarkerClick}
+        />
+    ), [currentMapJob, mapJobs, driverLocations.activeAreaId, handleMapMarkerClick]);
 
-            case DispatchBox.Supports:
-                return (
-                    <SupportTasksPanel
-                        tasks={supportTasks.tasks}
-                        loading={supportTasks.loading}
-                        jobId={jobSelection.currentJobId}
-                        onTaskUpdated={supportTasks.refetch}
-                        onTaskClick={(task) => jobSelection.selectJobById(task.jobId)}
-                        showToast={showToast}
-                    />
-                );
+    const widgetDriverLocations = useMemo(() => (
+        <DriverLocationsWidget
+            driverLocations={driverLocations.driverLocations}
+            loading={driverLocations.loading}
+            truckMode={driverLocations.truckMode}
+            activeAreaId={driverLocations.activeAreaId}
+            onAreaClick={handleDriverLocationAreaClick}
+            onCourierClick={handleDriverLocationCourierClick}
+            onClearFilter={handleDriverLocationClearFilter}
+            isUsCustomer={isUsCustomer}
+        />
+    ), [driverLocations.driverLocations, driverLocations.loading, driverLocations.truckMode, driverLocations.activeAreaId, handleDriverLocationAreaClick, handleDriverLocationCourierClick, handleDriverLocationClearFilter, isUsCustomer]);
 
-            default:
-                return null;
-        }
-    }, [
-        showToast, isUsCustomer, fetchConfig, jobListDefaultCategory,
-        handleJobSelect, handleJobDispatch,
-        jobSelection.refreshJobListRef, jobSelection.selectJobInListRef,
-        jobDetailsConfig, currentMapJob, mapJobs, handleMapMarkerClick,
-        driverLocations, handleDriverLocationCourierClick,
-        handleDriverLocationAreaClick, handleDriverLocationClearFilter,
-        currentWork, supportTasks,
-        jobSelection.currentJobId, jobSelection.selectJobById,
-    ]);
+    const widgetCurrentWork = useMemo(() => (
+        <CurrentWorkWidget
+            viewMode={currentWork.viewMode}
+            driverJobsFetchConfig={currentWork.driverJobsFetchConfig}
+            drivers={currentWork.drivers}
+            loading={currentWork.loading}
+            selectedCourierId={currentWork.selectedCourierId}
+            onDriverSelect={currentWork.selectDriver}
+            showToast={showToast}
+            isUsCustomer={isUsCustomer}
+            onJobSelect={handleJobSelect}
+            onJobDispatch={handleJobDispatch}
+        />
+    ), [currentWork.viewMode, currentWork.driverJobsFetchConfig, currentWork.drivers, currentWork.loading, currentWork.selectedCourierId, currentWork.selectDriver, showToast, isUsCustomer, handleJobSelect, handleJobDispatch]);
 
-    const getSubtitle = useCallback((boxId: DispatchBox) => {
-        if (boxId === DispatchBox.JobDetail) return jobSelection.currentSelection;
-        if (boxId === DispatchBox.CurrentWork) return currentWork.currentWorkSelection;
-        return undefined;
-    }, [jobSelection.currentSelection, currentWork.currentWorkSelection]);
+    const widgetSupports = useMemo(() => (
+        <SupportTasksPanel
+            tasks={supportTasks.tasks}
+            loading={supportTasks.loading}
+            jobId={jobSelection.currentJobId}
+            onTaskUpdated={supportTasks.refetch}
+            onTaskClick={handleSupportTaskClick}
+            showToast={showToast}
+        />
+    ), [supportTasks.tasks, supportTasks.loading, jobSelection.currentJobId, supportTasks.refetch, handleSupportTaskClick, showToast]);
+
+    const widgets = useMemo<Partial<Record<DispatchBox, React.ReactNode>>>(() => ({
+        [DispatchBox.JobsList]: widgetJobsList,
+        [DispatchBox.JobDetail]: widgetJobDetail,
+        [DispatchBox.Map]: widgetMap,
+        [DispatchBox.DriverLocations]: widgetDriverLocations,
+        [DispatchBox.CurrentWork]: widgetCurrentWork,
+        [DispatchBox.Supports]: widgetSupports,
+    }), [widgetJobsList, widgetJobDetail, widgetMap, widgetDriverLocations, widgetCurrentWork, widgetSupports]);
+
+    const subtitles = useMemo<Partial<Record<DispatchBox, string | undefined>>>(() => ({
+        [DispatchBox.JobDetail]: jobSelection.currentSelection,
+        [DispatchBox.CurrentWork]: currentWork.currentWorkSelection,
+    }), [jobSelection.currentSelection, currentWork.currentWorkSelection]);
 
     const firstName = window.FirstName || 'User';
     const fullName = window.FullName || 'User';
@@ -647,9 +657,9 @@ export function DispatchPage({
                         rowHeight={rowHeight}
                         isDefaultLayout={layout.isDefaultLayout}
                         visibleBoxIds={layout.visibleBoxIds}
-                        renderWidget={renderWidget}
-                        renderToolbarActions={renderToolbarActions}
-                        getSubtitle={getSubtitle}
+                        widgets={widgets}
+                        toolbarActions={toolbarActions}
+                        subtitles={subtitles}
                         onRefresh={refreshBox}
                     />
                 </Box>
