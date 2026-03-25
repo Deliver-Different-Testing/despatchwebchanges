@@ -555,7 +555,7 @@ describe('JobListPanel', () => {
     });
 
     describe('Multi-Select', () => {
-        it('Ctrl+Click multi-selects, plain click sets detail panel, row checkbox does not trigger detail panel', async () => {
+        it('Ctrl+Click multi-selects, plain click sets detail panel', async () => {
             const user = userEvent.setup({ delay: null });
             const onJobSelect = jest.fn();
             const jobs = [
@@ -582,19 +582,9 @@ describe('JobListPanel', () => {
 
             // Selection bar should show
             expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
-
-            // Clear selection for next sub-test
-            await user.keyboard('{Escape}');
-            onJobSelect.mockClear();
-
-            // Row checkbox click toggles multi-select without changing detail panel
-            const checkboxes = screen.getAllByRole('checkbox');
-            await user.click(checkboxes[1]); // First row checkbox
-            expect(screen.getByText('1 job selected')).toBeInTheDocument();
-            expect(onJobSelect).not.toHaveBeenCalled();
         });
 
-        it('header checkbox toggles all, Escape clears, close button (X) clears', async () => {
+        it('Escape clears selection, close button (X) clears selection', async () => {
             const user = userEvent.setup({ delay: null });
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'CB-001'}),
@@ -602,26 +592,21 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs);
 
-            // Should have checkboxes (header + 2 rows = 3)
-            const checkboxes = screen.getAllByRole('checkbox');
-            expect(checkboxes.length).toBe(3);
-
-            // Click header checkbox — selects all
-            await user.click(checkboxes[0]);
+            // Ctrl+Click both jobs to select all
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('CB-001'));
+            await user.click(screen.getByText('CB-002'));
+            await user.keyboard('{/Control}');
             expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
 
-            // Click header checkbox again — deselects all
-            await user.click(screen.getAllByRole('checkbox')[0]);
-            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
-
-            // Re-select all, then Escape clears
-            await user.click(screen.getAllByRole('checkbox')[0]);
-            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+            // Escape clears
             await user.keyboard('{Escape}');
             expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
 
-            // Re-select via row checkbox, close button (X) clears
-            await user.click(screen.getAllByRole('checkbox')[1]);
+            // Ctrl+Click to re-select, close button (X) clears
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('CB-001'));
+            await user.keyboard('{/Control}');
             expect(screen.getByText('1 job selected')).toBeInTheDocument();
             await user.click(screen.getByTestId('CloseIcon').closest('button')!);
             expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
@@ -635,8 +620,11 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {appPage: AppPage.Dispatch});
 
-            // Select all via header checkbox
-            await user.click(screen.getAllByRole('checkbox')[0]);
+            // Select all via Ctrl+Click
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('BTN-001'));
+            await user.click(screen.getByText('BTN-002'));
+            await user.keyboard('{/Control}');
 
             expect(screen.getByText('Dispatch')).toBeInTheDocument();
             expect(screen.getByText('Restore')).toBeInTheDocument();
@@ -655,7 +643,11 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {showToast});
 
-            await user.click(screen.getAllByRole('checkbox')[0]);
+            // Select all via Ctrl+Click
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('MR-001'));
+            await user.click(screen.getByText('MR-002'));
+            await user.keyboard('{/Control}');
             await user.click(screen.getByText('Mark Read'));
 
             await waitFor(() => {
@@ -679,7 +671,11 @@ describe('JobListPanel', () => {
             ];
             renderAndPushJobs(jobs, {showToast});
 
-            await user.click(screen.getAllByRole('checkbox')[0]);
+            // Select all via Ctrl+Click
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('RS-001'));
+            await user.click(screen.getByText('RS-002'));
+            await user.keyboard('{/Control}');
             await user.click(screen.getByText('Restore'));
 
             await waitFor(() => {

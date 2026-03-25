@@ -485,10 +485,6 @@ interface JobListTableProps {
     onJobClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
-    onToggleSelect: (jobId: number, event: React.MouseEvent) => void;
-    onToggleSelectAll: (allIds: number[]) => void;
-    isAllSelected: boolean;
-    isIndeterminate: boolean;
     sortState: JobListSort;
     onSortChange: (column: string) => void;
     densityMode: DensityMode;
@@ -508,10 +504,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     onJobClick,
     onContextMenu,
     onJobDispatch,
-    onToggleSelect,
-    onToggleSelectAll,
-    isAllSelected,
-    isIndeterminate,
     sortState,
     onSortChange,
     densityMode,
@@ -543,8 +535,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     const {handleResizeStart} = useColumnResize({columnWidths, onColumnWidthsChange, tableRef});
 
     const lastColumnKey = useMemo(() => columns[columns.length - 1]?.key, [columns]);
-
-    const allJobIds = useMemo(() => jobs.map(j => j.id), [jobs]);
 
 
     if (jobs.length === 0) {
@@ -637,7 +627,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                             onClick={onJobClick}
                             onContextMenu={onContextMenu}
                             onJobDispatch={onJobDispatch}
-                            onToggleSelect={onToggleSelect}
                             loggedInCouriersOnly={loggedInCouriersOnly}
                         />
                     ))}
@@ -662,7 +651,6 @@ interface JobRowProps {
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
-    onToggleSelect: (jobId: number, event: React.MouseEvent) => void;
     loggedInCouriersOnly?: boolean;
 }
 
@@ -679,7 +667,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     onClick,
     onContextMenu,
     onJobDispatch,
-    onToggleSelect,
     loggedInCouriersOnly,
 }) => {
     const handleClick = useCallback(
