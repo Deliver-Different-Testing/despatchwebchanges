@@ -558,7 +558,7 @@ describe('JobListPanel', () => {
 
     describe('Multi-Select', () => {
         it('Ctrl+Click multi-selects, plain click sets detail panel, row checkbox does not trigger detail panel', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const onJobSelect = jest.fn();
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'MS-001'}),
@@ -597,7 +597,7 @@ describe('JobListPanel', () => {
         });
 
         it('header checkbox toggles all, Escape clears, close button (X) clears', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'CB-001'}),
                 createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'CB-002'}),
@@ -630,7 +630,7 @@ describe('JobListPanel', () => {
         });
 
         it('selection bar shows Dispatch, Restore, Mark Read, Mark Unread on dispatch page', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const jobs = [
                 createMockDispatchJob({id: 1, angularId: 'j1', jobNo: 'BTN-001'}),
                 createMockDispatchJob({id: 2, angularId: 'j2', jobNo: 'BTN-002'}),
@@ -647,7 +647,7 @@ describe('JobListPanel', () => {
         });
 
         it('bulk Mark Read calls API and clears selection', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const showToast = jest.fn();
             mockedBulkUpdateReadStatus.mockResolvedValue(undefined);
 
@@ -671,7 +671,7 @@ describe('JobListPanel', () => {
         });
 
         it('bulk Restore calls API and clears selection', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const showToast = jest.fn();
             mockedRestoreJobs.mockResolvedValue(undefined);
 

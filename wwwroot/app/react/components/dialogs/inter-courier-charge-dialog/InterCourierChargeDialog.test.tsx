@@ -133,7 +133,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Courier Search', () => {
         it('searches couriers after typing at least 2 characters with debounce', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
@@ -150,7 +150,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('does not search couriers with fewer than 2 characters', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/from courier/i);
@@ -165,7 +165,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Client Search', () => {
         it('searches clients after typing at least 2 characters', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             mockSearchActiveClients.mockResolvedValue(clientSuggestions);
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
@@ -183,7 +183,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Zones and Amount Calculation', () => {
         it('auto-calculates amount as zones * 7 when zones is changed', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
@@ -195,7 +195,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('sets amount to 0 when zones is cleared', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
@@ -210,7 +210,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('allows manual editing of the amount field', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
@@ -223,7 +223,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Validation', () => {
         it('shows warning toast and does not submit when form is incomplete', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({showToast})} />);
 
@@ -234,7 +234,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('shows required error messages on fields after submit attempt', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
@@ -247,7 +247,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Successful Submission', () => {
         it('submits form data and shows success toast', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const onClose = jest.fn();
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
@@ -274,7 +274,7 @@ describe('InterCourierChargeDialog', () => {
     describe('Failed Submission', () => {
         it('shows error toast and does not close on API failure', async () => {
             const errorSpy = suppressConsoleError();
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const onClose = jest.fn();
             const showToast = jest.fn();
             mockCreateInterCourierCharge.mockRejectedValueOnce(new Error('Server error'));
@@ -295,7 +295,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('State Reset', () => {
         it('resets all fields when dialog is reopened', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             const props = createMockProps();
             const {rerender} = renderWithTheme(<InterCourierChargeDialog {...props} />);
@@ -318,7 +318,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Submit Guard', () => {
         it('disables Cancel and Add Charge buttons while submitting', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             let resolveSubmit: () => void;
             mockCreateInterCourierCharge.mockImplementation(() =>
                 new Promise<void>(resolve => { resolveSubmit = resolve; })
