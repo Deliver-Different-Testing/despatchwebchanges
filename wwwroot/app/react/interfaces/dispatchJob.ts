@@ -304,4 +304,8 @@ export interface JobListPanelProps {
     setSelectJobCallback?: (cb: (jobId: number) => void) => void;
     /** Called by mount module to allow updating search params from AngularJS */
     setUpdateSearchParamsCallback?: (cb: (params: Partial<JobListSearchParams>) => void) => void;
+    /** Dispatch page views (geographic territory filters) shown as inline toggle buttons */
+    views?: Array<{ id: number; name: string; selected: boolean }> | null;
+    onToggleView?: (view: { id: number; name: string; selected: boolean }) => void;
+    onClearViews?: () => void;
 }

@@ -71,11 +71,15 @@ interface JobsListWidgetProps {
     onJobDispatch: (job: DispatchJob, courierId: number) => void;
     refreshJobListRef: React.RefObject<(() => void) | null>;
     selectJobInListRef: React.RefObject<((jobId: number) => void) | null>;
+    views?: Array<{ id: number; name: string; selected: boolean }> | null;
+    onToggleView?: (view: { id: number; name: string; selected: boolean }) => void;
+    onClearViews?: () => void;
 }
 
 export const JobsListWidget = memo(function JobsListWidget({
     showToast, isUsCustomer, fetchConfig, defaultCategory,
     onJobSelect, onJobDispatch, refreshJobListRef, selectJobInListRef,
+    views, onToggleView, onClearViews,
 }: JobsListWidgetProps) {
     return (
         <Box sx={styles.widgetContent}>
@@ -89,6 +93,9 @@ export const JobsListWidget = memo(function JobsListWidget({
                 defaultCategory={defaultCategory}
                 setRefreshCallback={(cb) => { refreshJobListRef.current = cb; }}
                 setSelectJobCallback={(cb) => { selectJobInListRef.current = cb; }}
+                views={views}
+                onToggleView={onToggleView}
+                onClearViews={onClearViews}
             />
         </Box>
     );

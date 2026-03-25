@@ -514,8 +514,11 @@ export function DispatchPage({
             onJobDispatch={handleJobDispatch}
             refreshJobListRef={jobSelection.refreshJobListRef}
             selectJobInListRef={jobSelection.selectJobInListRef}
+            views={pageViews.views}
+            onToggleView={pageViews.toggleView}
+            onClearViews={pageViews.clearAll}
         />
-    ), [showToast, isUsCustomer, fetchConfig, jobListDefaultCategory, handleJobSelect, handleJobDispatch, jobSelection.refreshJobListRef, jobSelection.selectJobInListRef]);
+    ), [showToast, isUsCustomer, fetchConfig, jobListDefaultCategory, handleJobSelect, handleJobDispatch, jobSelection.refreshJobListRef, jobSelection.selectJobInListRef, pageViews.views, pageViews.toggleView, pageViews.clearAll]);
 
     const widgetJobDetail = useMemo(() => (
         <JobDetailWidget config={jobDetailsConfig} />

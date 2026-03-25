@@ -693,4 +693,57 @@ describe('JobListPanel', () => {
             });
         });
     });
+
+    describe('View Tabs Bar', () => {
+        const mockViews = [
+            {id: 1, name: 'North', selected: true},
+            {id: 2, name: 'South', selected: true},
+            {id: 3, name: 'East', selected: false},
+        ];
+
+        it('does not render when views prop is not provided', () => {
+            renderAndPushJobs([createMockDispatchJob()]);
+            expect(screen.queryByText('Clear All')).not.toBeInTheDocument();
+        });
+
+        it('renders view buttons, toggles on click, clears all, and shows count', async () => {
+            const user = userEvent.setup({ delay: null });
+            const onToggleView = jest.fn();
+            const onClearViews = jest.fn();
+
+            renderAndPushJobs([createMockDispatchJob()], {
+                views: mockViews,
+                onToggleView,
+                onClearViews,
+            });
+
+            // All view buttons rendered
+            expect(screen.getByText('North')).toBeInTheDocument();
+            expect(screen.getByText('South')).toBeInTheDocument();
+            expect(screen.getByText('East')).toBeInTheDocument();
+
+            // Count indicator shows selected/total
+            expect(screen.getByText('2/3')).toBeInTheDocument();
+
+            // Clear All button present
+            expect(screen.getByText('Clear All')).toBeInTheDocument();
+
+            // Click a view button triggers onToggleView
+            await user.click(screen.getByText('East'));
+            expect(onToggleView).toHaveBeenCalledWith({id: 3, name: 'East', selected: false});
+
+            // Click Clear All triggers onClearViews
+            await user.click(screen.getByText('Clear All'));
+            expect(onClearViews).toHaveBeenCalledTimes(1);
+        });
+
+        it('does not render when views array is empty', () => {
+            renderAndPushJobs([createMockDispatchJob()], {
+                views: [],
+                onToggleView: jest.fn(),
+                onClearViews: jest.fn(),
+            });
+            expect(screen.queryByText('Clear All')).not.toBeInTheDocument();
+        });
+    });
 });
