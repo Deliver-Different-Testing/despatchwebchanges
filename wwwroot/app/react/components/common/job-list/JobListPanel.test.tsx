@@ -194,7 +194,7 @@ describe('JobListPanel', () => {
 
     it('filters by category, search (job number, client, courier), computes stats, selects job on click', async () => {
         jest.useFakeTimers();
-        const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+        const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime, delay: null});
         const onCategoryChange = jest.fn();
         const onSearchChange = jest.fn();
         const onJobSelect = jest.fn();
@@ -282,7 +282,7 @@ describe('JobListPanel', () => {
 
             // Persist
             localStorage.clear();
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             renderAndPushJobs([createMockDispatchJob()], {storagePrefix});
 
             const normalButton = screen.getAllByRole('button').find(b => b.getAttribute('value') === 'normal');
@@ -310,7 +310,7 @@ describe('JobListPanel', () => {
     });
 
     it('toggles sort direction and calls onBackendFilter', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         const storagePrefix = 'sortTest';
         const onBackendFilter = jest.fn();
         renderAndPushJobs([createMockDispatchJob()], {storagePrefix, onBackendFilter});
@@ -357,7 +357,7 @@ describe('JobListPanel', () => {
     });
 
     it('logged-in couriers toggle defaults unchecked and can be toggled', async () => {
-        const user = userEvent.setup();
+        const user = userEvent.setup({ delay: null });
         renderWithProviders(<JobListPanel {...createDefaultProps()}/>);
 
         expect(screen.getByText('Logged-in only')).toBeInTheDocument();
@@ -429,7 +429,7 @@ describe('JobListPanel', () => {
         });
 
         it('updates sort via hookData when column header is clicked', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -478,7 +478,7 @@ describe('JobListPanel', () => {
         });
 
         it('sends statusFilter to backend when category tab is clicked', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -500,7 +500,7 @@ describe('JobListPanel', () => {
         });
 
         it('clears statusFilter when All category is selected', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -535,7 +535,7 @@ describe('JobListPanel', () => {
         });
 
         it('sends statusFilter for Done category', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({ delay: null });
             const fetchConfig = createMockFetchConfig();
 
             renderWithProviders(
@@ -665,9 +665,9 @@ describe('JobListPanel', () => {
                     expect.arrayContaining([1, 2]),
                     true,
                 );
+                expect(showToast).toHaveBeenCalledWith('2 job(s) marked as read', 'success');
+                expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
             });
-            expect(showToast).toHaveBeenCalledWith('2 job(s) marked as read', 'success');
-            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
         });
 
         it('bulk Restore calls API and clears selection', async () => {
@@ -688,9 +688,9 @@ describe('JobListPanel', () => {
                 expect(mockedRestoreJobs).toHaveBeenCalledWith(
                     expect.arrayContaining([10, 20]),
                 );
+                expect(showToast).toHaveBeenCalledWith('2 job(s) restored', 'success');
+                expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
             });
-            expect(showToast).toHaveBeenCalledWith('2 job(s) restored', 'success');
-            expect(screen.queryByText(/job.*selected/i)).not.toBeInTheDocument();
         });
     });
 });
