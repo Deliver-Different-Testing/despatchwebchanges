@@ -124,6 +124,7 @@ export const DashboardGrid = memo(function DashboardGrid({
                     compactor={verticalCompactor}
                     margin={[8, 8] as [number, number]}
                     containerPadding={[8, 8] as [number, number]}
+                    style={{position: 'relative'}}
                 >
                     {visibleBoxIds.map(boxId => {
                         const config = BOX_CONFIGS[boxId];

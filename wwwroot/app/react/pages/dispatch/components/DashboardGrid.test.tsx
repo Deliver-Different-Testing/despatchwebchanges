@@ -26,7 +26,7 @@ jest.mock('react-grid-layout', () => {
             // React.cloneElement, then wrap with a fake Resizable that
             // appends a resize-handle span to the child's children.
             return (
-                <div data-testid="rgl-responsive" className="react-grid-layout">
+                <div data-testid="rgl-responsive" className="react-grid-layout" style={props.style}>
                     {React.Children.map(props.children, (child: any) => {
                         if (!React.isValidElement(child)) return child;
                         // Simulate react-grid-layout's cloneElement behaviour:
@@ -196,6 +196,48 @@ describe('DashboardGrid', () => {
 
         // But it should exist somewhere inside the grid-item (inside WidgetPanel)
         expect(gridItem!.contains(widgetContent)).toBe(true);
+    });
+
+    // ── Drag-and-drop prerequisites (regression: offsetParent guard) ───
+    // react-grid-layout's GridItem.onDragStart silently aborts if
+    // `node.offsetParent` is null (line 144-145 in chunk-XM2M6TC6.mjs).
+    // The grid container must be a positioned element so grid items'
+    // offsetParent is never null.  Resize has no such guard, so resize
+    // can work while drag is broken — which is exactly the bug we hit.
+
+    it('grid container has position:relative so offsetParent is never null for grid items', () => {
+        renderGrid({isDefaultLayout: false, visibleBoxIds: [DispatchBox.JobsList]});
+
+        const gridContainer = screen.getByTestId('rgl-responsive');
+        expect(gridContainer.style.position).toBe('relative');
+
+        // Grid items are positioned absolutely inside the container.
+        // Verify the parent-child relationship that offsetParent depends on.
+        const gridItem = gridContainer.querySelector('.react-grid-item');
+        expect(gridItem).toBeInTheDocument();
+        expect(gridItem!.parentElement).toBe(gridContainer);
+    });
+
+    it('drag handle is inside grid item and not matched by the resize cancel selector', () => {
+        renderGrid({isDefaultLayout: false, visibleBoxIds: [DispatchBox.JobsList]});
+
+        const gridItem = document.querySelector('.react-grid-item');
+        const dragHandle = gridItem!.querySelector('.drag-handle');
+        expect(dragHandle).toBeInTheDocument();
+
+        // The drag handle must NOT match the resize-handle class, otherwise
+        // react-draggable's cancel selector would prevent drag initiation
+        expect(dragHandle!.classList.contains('react-resizable-handle')).toBe(false);
+    });
+
+    it('drag and resize configs are both wired to the Responsive component', () => {
+        renderGrid({isDefaultLayout: false});
+
+        expect(capturedDragConfig).toBeDefined();
+        expect(capturedDragConfig.enabled).toBe(true);
+        expect(capturedDragConfig.handle).toBe('.drag-handle');
+        expect(capturedResizeConfig).toBeDefined();
+        expect(capturedResizeConfig.enabled).toBe(true);
     });
 
     // ── Toolbar extras ──────────────────────────────────────────────────
