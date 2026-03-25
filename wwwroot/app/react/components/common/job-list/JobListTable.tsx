@@ -27,7 +27,6 @@ import Autocomplete from '@mui/material/Autocomplete';
 import TextField from '@mui/material/TextField';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
-import Checkbox from '@mui/material/Checkbox';
 import type {SxProps, Theme} from '@mui/material';
 
 // MUI Icons
@@ -547,9 +546,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
 
     const allJobIds = useMemo(() => jobs.map(j => j.id), [jobs]);
 
-    const handleSelectAllClick = useCallback(() => {
-        onToggleSelectAll(allJobIds);
-    }, [onToggleSelectAll, allJobIds]);
 
     if (jobs.length === 0) {
         return (
@@ -575,23 +571,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
             <Table stickyHeader size="small" sx={{tableLayout: 'fixed'}}>
                 <TableHead>
                     <TableRow>
-                        <TableCell
-                            padding="checkbox"
-                            sx={{
-                                ...headerCellSx,
-                                width: 40,
-                                minWidth: 40,
-                                maxWidth: 40,
-                            }}
-                        >
-                            <Checkbox
-                                size="small"
-                                checked={isAllSelected}
-                                indeterminate={isIndeterminate}
-                                onChange={handleSelectAllClick}
-                                sx={{p: 0}}
-                            />
-                        </TableCell>
                         {columns.map((col) => (
                             <TableCell
                                 key={col.key}
@@ -715,13 +694,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
         },
         [job, onContextMenu],
     );
-    const handleCheckboxClick = useCallback(
-        (e: React.MouseEvent) => {
-            e.stopPropagation();
-            onToggleSelect(job.id, e);
-        },
-        [job.id, onToggleSelect],
-    );
 
     const isUltraDense = densityMode === 'ultra-dense';
 
@@ -733,17 +705,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             onContextMenu={handleContextMenu}
             sx={getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected)}
         >
-            <TableCell
-                padding="checkbox"
-                sx={{width: 40, minWidth: 40, maxWidth: 40}}
-                onClick={handleCheckboxClick}
-            >
-                <Checkbox
-                    size="small"
-                    checked={isMultiSelected}
-                    sx={{p: 0}}
-                />
-            </TableCell>
             {columns.map((col) => (
                 <TableCell
                     key={col.key}
