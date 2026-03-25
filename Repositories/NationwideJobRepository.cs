@@ -52,132 +52,136 @@ public class NationwideJobRepository(
         ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.CarrierFsCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(primaryFlight.FlightNumber);
 
-        await using var transaction = await Context.Database.BeginTransactionAsync(cancellationToken);
-        try
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            Log.Debug("Fetching job details for JobId: {JobId}, PrimaryFlight: {PrimaryFlightNumber}",
-                requestData.JobId, primaryFlightNumber);
-
-            var job = await Context.TucJobs
-                .AsTracking()
-                .Include(j => j.Parent)
-                .Where(j => j.UcjbId == requestData.JobId)
-                .FirstOrDefaultAsync(cancellationToken);
-            ArgumentNullException.ThrowIfNull(job);
-
-            var timeZoneLookup = await BuildTimeZoneLookupAsync(cancellationToken);
-
-            Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
-                job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
-
-            var firstFlightDepartureTimeZoneId =
-                GetTimeZoneId(timeZoneLookup, primaryFlight.DepartureAirportTimeZone);
-            var lastFlightArrivalTimeZoneId = GetTimeZoneId(timeZoneLookup, lastFlight.ArrivalAirportTimeZone);
-
-            var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
-            if (!departureAirportId.HasValue)
-                throw new InvalidOperationException("Departure airport ID is required but was not set on the job or request.");
-
-            var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
-            if (!arrivalAirportId.HasValue)
-                throw new InvalidOperationException("Arrival airport ID is required but was not set on the job or request.");
-
-            var airports = await GetAirportAddressInfosAsync(
-                [departureAirportId.Value, arrivalAirportId.Value]);
-
-            Log.Debug(
-                "Processing airports for PrimaryFlight: {PrimaryFlightNumber}, DepartureAirportId: {DepartureAirportId}, ArrivalAirportId: {ArrivalAirportId}",
-                primaryFlightNumber, departureAirportId, arrivalAirportId);
-
-            // Update flight job status
-            UpdateFlightJobStatus(job, primaryFlight);
-
-            // Update pickup job if applicable
-            if (job.FromAirportId != null || requestData.FromAirportId != null)
+            await using var transaction = await Context.Database.BeginTransactionAsync(cancellationToken);
+            try
             {
-                var pickUpJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.PickupJobSuffix,
-                    isUsCustomer);
-                await UpdatePickupJobAsync(pickUpJob, primaryFlight, departureAirportId.Value,
-                    firstFlightDepartureTimeZoneId, airports, primaryFlightNumber);
+                Log.Debug("Fetching job details for JobId: {JobId}, PrimaryFlight: {PrimaryFlightNumber}",
+                    requestData.JobId, primaryFlightNumber);
+
+                var job = await Context.TucJobs
+                    .AsTracking()
+                    .Include(j => j.Parent)
+                    .Where(j => j.UcjbId == requestData.JobId)
+                    .FirstOrDefaultAsync(cancellationToken);
+                ArgumentNullException.ThrowIfNull(job);
+
+                var timeZoneLookup = await BuildTimeZoneLookupAsync(cancellationToken);
+
+                Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
+                    job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
+
+                var firstFlightDepartureTimeZoneId =
+                    GetTimeZoneId(timeZoneLookup, primaryFlight.DepartureAirportTimeZone);
+                var lastFlightArrivalTimeZoneId = GetTimeZoneId(timeZoneLookup, lastFlight.ArrivalAirportTimeZone);
+
+                var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
+                if (!departureAirportId.HasValue)
+                    throw new InvalidOperationException("Departure airport ID is required but was not set on the job or request.");
+
+                var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
+                if (!arrivalAirportId.HasValue)
+                    throw new InvalidOperationException("Arrival airport ID is required but was not set on the job or request.");
+
+                var airports = await GetAirportAddressInfosAsync(
+                    [departureAirportId.Value, arrivalAirportId.Value]);
+
+                Log.Debug(
+                    "Processing airports for PrimaryFlight: {PrimaryFlightNumber}, DepartureAirportId: {DepartureAirportId}, ArrivalAirportId: {ArrivalAirportId}",
+                    primaryFlightNumber, departureAirportId, arrivalAirportId);
+
+                // Update flight job status
+                UpdateFlightJobStatus(job, primaryFlight);
+
+                // Update pickup job if applicable
+                if (job.FromAirportId != null || requestData.FromAirportId != null)
+                {
+                    var pickUpJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.PickupJobSuffix,
+                        isUsCustomer);
+                    await UpdatePickupJobAsync(pickUpJob, primaryFlight, departureAirportId.Value,
+                        firstFlightDepartureTimeZoneId, airports, primaryFlightNumber);
+                }
+
+                // Update main job addresses
+                job.DeliverByTime = lastFlight.ArrivalTime.DateTime;
+                UpdateJobAddressWithAirportInfo(airports, job, departureAirportId.Value,
+                    firstFlightDepartureTimeZoneId, false);
+                UpdateJobAddressWithAirportInfo(airports, job, arrivalAirportId.Value,
+                    lastFlightArrivalTimeZoneId, true);
+
+                // Update delivery job if applicable
+                Log.Information(
+                    "Checking delivery job update: job.ToAirportId={ToAirportId}, requestData.ToAirportId={RequestToAirportId}, job.ParentId={ParentId}",
+                    job.ToAirportId, requestData.ToAirportId, job.ParentId);
+
+                if (job.ToAirportId != null || requestData.ToAirportId != null)
+                {
+                    var deliveryJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.DeliveryJobSuffix,
+                        isUsCustomer);
+
+                    Log.Information("Delivery job lookup result: Found={Found}, DeliveryJobId={DeliveryJobId}",
+                        deliveryJob != null, deliveryJob?.UcjbId);
+
+                    await UpdateDeliveryJobAsync(deliveryJob, job.Parent, lastFlight, requestData,
+                        arrivalAirportId.Value, lastFlightArrivalTimeZoneId, airports, primaryFlightNumber);
+                }
+                else
+                {
+                    Log.Warning(
+                        "Skipping delivery job update: Neither job.ToAirportId nor requestData.ToAirportId is set for JobId={JobId}",
+                        requestData.JobId);
+                }
+
+                var currentTime = _clock.TenantNow;
+                job.UcjbDispDate = currentTime;
+                job.UcjbDispTime = currentTime;
+
+                // Create all flight records
+                var primaryFlightRecord = await CreateFlightRecordsAsync(
+                    job, orderedSegments, webhookIds, timeZoneLookup,
+                    firstFlightDepartureTimeZoneId, lastFlight.ArrivalTime, primaryFlightNumber);
+
+                await SaveNoteAsync(requestData.JobId,
+                    $"Flight {primaryFlight.FlightNumber} added to job {requestData.JobId}",
+                    false,
+                    false,
+                    NoteType.FlightUpdate);
+
+                Log.Debug("Saving changes for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
+                    primaryFlightNumber, requestData.JobId);
+
+                await Context.SaveChangesAsync(cancellationToken);
+
+                // Create journey record (requires primary flight record ID from first save)
+                var journeyRecord = new JobDeliveryJourney
+                {
+                    JobId = requestData.JobId,
+                    FlightId = primaryFlightRecord.UcnwId,
+                    ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
+                    StaffId = _infoService.GetStaffId(),
+                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+                };
+                await Context.JobDeliveryJourneys.AddAsync(journeyRecord, cancellationToken);
+
+                await Context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                Log.Information(
+                    "Successfully completed AddJobNationwideAsync for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}, FlightId: {FlightId}",
+                    primaryFlightNumber, requestData.JobId, primaryFlightRecord.UcnwId);
             }
-
-            // Update main job addresses
-            job.DeliverByTime = lastFlight.ArrivalTime.DateTime;
-            UpdateJobAddressWithAirportInfo(airports, job, departureAirportId.Value,
-                firstFlightDepartureTimeZoneId, false);
-            UpdateJobAddressWithAirportInfo(airports, job, arrivalAirportId.Value,
-                lastFlightArrivalTimeZoneId, true);
-
-            // Update delivery job if applicable
-            Log.Information(
-                "Checking delivery job update: job.ToAirportId={ToAirportId}, requestData.ToAirportId={RequestToAirportId}, job.ParentId={ParentId}",
-                job.ToAirportId, requestData.ToAirportId, job.ParentId);
-
-            if (job.ToAirportId != null || requestData.ToAirportId != null)
+            catch (Exception e)
             {
-                var deliveryJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.DeliveryJobSuffix,
-                    isUsCustomer);
-
-                Log.Information("Delivery job lookup result: Found={Found}, DeliveryJobId={DeliveryJobId}",
-                    deliveryJob != null, deliveryJob?.UcjbId);
-
-                await UpdateDeliveryJobAsync(deliveryJob, job.Parent, lastFlight, requestData,
-                    arrivalAirportId.Value, lastFlightArrivalTimeZoneId, airports, primaryFlightNumber);
-            }
-            else
-            {
-                Log.Warning(
-                    "Skipping delivery job update: Neither job.ToAirportId nor requestData.ToAirportId is set for JobId={JobId}",
+                await transaction.RollbackAsync(cancellationToken);
+                Log.Error(e, "An error occured adding PrimaryFlight: {PrimaryFlightNumber} to job {JobId}",
+                    requestData.FlightSegments[0]?.FlightNumber,
                     requestData.JobId);
+                throw;
             }
-
-            var currentTime = _clock.TenantNow;
-            job.UcjbDispDate = currentTime;
-            job.UcjbDispTime = currentTime;
-
-            // Create all flight records
-            var primaryFlightRecord = await CreateFlightRecordsAsync(
-                job, orderedSegments, webhookIds, timeZoneLookup,
-                firstFlightDepartureTimeZoneId, lastFlight.ArrivalTime, primaryFlightNumber);
-
-            await SaveNoteAsync(requestData.JobId,
-                $"Flight {primaryFlight.FlightNumber} added to job {requestData.JobId}",
-                false,
-                false,
-                NoteType.FlightUpdate);
-
-            Log.Debug("Saving changes for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
-                primaryFlightNumber, requestData.JobId);
-
-            await Context.SaveChangesAsync(cancellationToken);
-
-            // Create journey record (requires primary flight record ID from first save)
-            var journeyRecord = new JobDeliveryJourney
-            {
-                JobId = requestData.JobId,
-                FlightId = primaryFlightRecord.UcnwId,
-                ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
-                StaffId = _infoService.GetStaffId(),
-                UpdatedAt = DateTime.UtcNow,
-                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
-            };
-            await Context.JobDeliveryJourneys.AddAsync(journeyRecord, cancellationToken);
-
-            await Context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            Log.Information(
-                "Successfully completed AddJobNationwideAsync for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}, FlightId: {FlightId}",
-                primaryFlightNumber, requestData.JobId, primaryFlightRecord.UcnwId);
-        }
-        catch (Exception e)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            Log.Error(e, "An error occured adding PrimaryFlight: {PrimaryFlightNumber} to job {JobId}",
-                requestData.FlightSegments[0]?.FlightNumber,
-                requestData.JobId);
-            throw;
-        }
+        });
     }
 
     public async Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true)

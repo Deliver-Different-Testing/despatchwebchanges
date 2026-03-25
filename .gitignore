@@ -363,3 +363,6 @@ nul
 # Claude Code local config and skills
 .claude/
 .agents/
+
+# Markdown files (project-specific docs, Claude instructions, etc.)
+*.md

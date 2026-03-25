@@ -54,7 +54,15 @@ const clickableCardSx: SxProps<Theme> = {
     },
 };
 
-export function MetricCard({label, value, onClick, disabled, highlight, category = 'info', filled}: MetricCardProps) {
+export const MetricCard = React.memo(({
+                                          label,
+                                          value,
+                                          onClick,
+                                          disabled,
+                                          highlight,
+                                          category = 'info',
+                                          filled
+                                      }: MetricCardProps) => {
     const isClickable = onClick && !disabled;
     const accentColor = categoryAccentMap[category];
     const hasValue = !!value && value !== '-' && value !== '\u2014';
@@ -112,4 +120,4 @@ export function MetricCard({label, value, onClick, disabled, highlight, category
     }
 
     return content;
-}
+});

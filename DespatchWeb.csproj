@@ -115,10 +115,6 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\edit-address-dialog\edit-address-dialog.controller.min.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.min.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.min.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\job-file-upload-dialog\job-file-upload.controller.min.js" />
@@ -344,7 +340,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\interfaces\IInterCourierData.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
@@ -362,8 +357,6 @@
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\inter-courier-charge-dialog\inter-courier-charge-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload.controller.ts" />

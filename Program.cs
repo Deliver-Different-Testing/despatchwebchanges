@@ -1,20 +1,13 @@
 ﻿using System.Security.AccessControl;
-using Amazon;
-using Amazon.Runtime;
-using Amazon.Runtime.CredentialManagement;
-using Amazon.S3;
 using DespatchWeb;
 using DespatchWeb.Extensions;
-using DespatchWeb.Interfaces;
 using DespatchWeb.Middleware;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
 using DeliverDifferentReporting.Extensions;
 using DespatchWeb.Models;
 using Serilog;
@@ -37,6 +30,12 @@ Log.Logger = new LoggerConfiguration().ReadFrom.Configuration(builder.Configurat
 
 if (builder.Environment.IsDevelopment())
 {
+    builder.Host.UseDefaultServiceProvider(options =>
+    {
+        options.ValidateScopes = true;
+        options.ValidateOnBuild = true;
+    });
+
     var keyDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "DeliverDifferent", "DataProtection-Keys");
 
@@ -85,20 +84,7 @@ else
 }
 
 
-builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
-builder.Services.AddSingleton<IAmazonS3>(sp =>
-{
-    var config = sp.GetRequiredService<IConfiguration>();
-    var awsOptions = config.GetAWSOptions();
-
-    Log.Information("AWS Region from config: {Region}", awsOptions.Region?.SystemName ?? "null");
-
-    var ssoCreds = LoadSsoCredentials("default");
-    return new AmazonS3Client(ssoCreds, new AmazonS3Config
-    {
-        RegionEndpoint = awsOptions.Region ?? RegionEndpoint.APSoutheast2
-    });
-});
+builder.Services.AddInfrastructureServices();
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
@@ -120,9 +106,6 @@ builder.Services.Configure<IISServerOptions>(options => { options?.MaxRequestBod
 
 builder.Services.Configure<KestrelServerOptions>(options => { options?.Limits.MaxRequestBodySize = maxFileSize; });
 
-builder.Services.AddHttpClient();
-builder.Services.AddHttpContextAccessor();
-
 // Bind application settings from environment variables and validate at startup
 builder.Services.AddOptions<AppSettings>()
     .Configure<IConfiguration>((settings, config) =>
@@ -139,6 +122,9 @@ builder.Services.AddOptions<AppSettings>()
 builder.Services
     .AddRepositories()
     .AddJobServices()
+    .AddPricingServices()
+    .AddReportingServices()
+    .AddSupportServices()
     .AddTenantServices()
     .AddAiServices();
 
@@ -162,31 +148,7 @@ builder.Services.AddStackExchangeRedisCache(redisCacheConfig =>
     redisCacheConfig.ConfigurationOptions = redisConfigurationOptions;
 });
 
-builder.Services.AddAuthentication("Identity.Application")
-    .AddCookie("Identity.Application", options =>
-    {
-        options.Cookie.Name = ".AspNet.SharedCookie";
-        options.ExpireTimeSpan = TimeSpan.FromMinutes(20);
-        options.SlidingExpiration = true;
-        options.AccessDeniedPath = "/Forbidden/";
-        options.Events = new CookieAuthenticationEvents
-        {
-            OnRedirectToLogin = context =>
-            {
-                var appSettings = context.HttpContext.RequestServices.GetRequiredService<IOptions<AppSettings>>().Value;
-                context.HttpContext.Response.Redirect(appSettings.PublicPath);
-                return Task.CompletedTask;
-            }
-        };
-        options.Cookie.HttpOnly = true;
-        options.Cookie.Domain = domain;
-    });
-
-builder.Services.AddSession(options =>
-{
-    options.Cookie.Name = "hub_session";
-    options.IdleTimeout = TimeSpan.FromMinutes(60 * 24);
-});
+builder.Services.AddAppAuthentication(domain);
 
 
 var app = builder.Build();
@@ -249,19 +211,3 @@ app.MapControllerRoute(
 if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"])) Log.Warning("S3BucketMars environment variable is not set");
 
 app.Run();
-return;
-
-// Method to get SSO credentials from the information in the shared config file.
-static AWSCredentials LoadSsoCredentials(string profile)
-{
-    var chain = new CredentialProfileStoreChain();
-    if (chain.TryGetAWSCredentials(profile, out var credentials)) return credentials;
-    // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
-#pragma warning disable CS0618 // Type or member is obsolete
-    credentials = FallbackCredentialsFactory.GetCredentials();
-#pragma warning restore CS0618 // Type or member is obsolete
-    return credentials ?? throw new Exception($"Failed to find the {profile} profile or any fallback credentials");
-}
-
-// Enable WebApplicationFactory<Program> in integration tests
-public abstract partial class Program;

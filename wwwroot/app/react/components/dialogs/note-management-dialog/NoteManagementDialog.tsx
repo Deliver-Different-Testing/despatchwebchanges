@@ -287,9 +287,14 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                 >
                     <NoteIcon sx={{fontSize: 24}} />
                 </Box>
-                <Typography variant="h6" fontWeight={600} sx={{flex: 1}}>
-                    {title}
-                </Typography>
+                <Box sx={{flex: 1}}>
+                    <Typography variant="h6" fontWeight={600}>
+                        {title}
+                    </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        {isNew ? 'Create a new note for this job' : 'Update an existing note'}
+                    </Typography>
+                </Box>
                 <IconButton
                     onClick={onClose}
                     sx={{

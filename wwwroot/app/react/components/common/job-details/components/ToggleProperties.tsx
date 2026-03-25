@@ -66,21 +66,21 @@ function PropertyCheckbox({
     );
 }
 
-export function ToggleProperties({
-                                     job,
-                                     isRecurringJob,
-                                     dense,
-                                     isEditMode,
-                                     isFieldVisible,
-                                     onToggleField,
-                                     onToggleProperty,
-                                     onVoidClick,
-                                     onActiveClick,
-                                     onTailLiftPickupClick,
-                                     onTailLiftDropOffClick,
-                                     onDeliverToPrivateResChanged,
-                                     onDoneClick,
-                                 }: TogglePropertiesProps) {
+export const ToggleProperties = React.memo(({
+                                                job,
+                                                isRecurringJob,
+                                                dense,
+                                                isEditMode,
+                                                isFieldVisible,
+                                                onToggleField,
+                                                onToggleProperty,
+                                                onVoidClick,
+                                                onActiveClick,
+                                                onTailLiftPickupClick,
+                                                onTailLiftDropOffClick,
+                                                onDeliverToPrivateResChanged,
+                                                onDoneClick,
+                                            }: TogglePropertiesProps) => {
     if (isEditMode) {
         return (
             <Box sx={{borderTop: 1, borderColor: 'divider'}}>
@@ -198,4 +198,4 @@ export function ToggleProperties({
             )}
         </Box>
     );
-}
+});

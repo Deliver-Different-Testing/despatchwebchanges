@@ -24,8 +24,9 @@ import {AppPage} from "../../enums/app-pages.enum";
 import JobFileUploadDialogService from "../dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import type {ToastType} from "../../react/services/toastService";
-import InterCourierChargeDialogService
-    from "../dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog.service";
+import {
+    openInterCourierChargeDialog
+} from "../../react/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module";
 import {Coordinates} from "../../interfaces/coordinates.interface";
 import {ContactID} from "../../contants";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
@@ -52,6 +53,7 @@ import CurrentWorkLists from "./enums/CurrentWorkLists";
 import {fetchClearListJobs, fetchDispatchJobs} from "../../react/services/jobSearchApi";
 import {queryKeys} from "../../react/query/queryClient";
 import angular from "angular";
+import {DispatchJob} from "../../react/interfaces";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -68,7 +70,6 @@ class HomeController extends BaseController {
         '$stateParams',
         'accessorialChargesDialogService',
         'jobFileUploadDialogService',
-        'interCourierChargeDialogService',
         'truckCourierStatusDialogService',
         'jobAddStopService',
         'messagingDialogService',
@@ -94,7 +95,7 @@ class HomeController extends BaseController {
     readonly dispatchListName: JobListType = JobListType.DispatchJobList;
 
     private readonly currentAppPage: AppPage = AppPage.Dispatch;
-    
+
 // Layout
     boxes?: Record<string, IBox>;
     currentLayoutName?: string;
@@ -201,7 +202,6 @@ class HomeController extends BaseController {
         private $stateParams: angular.ui.IStateParamsService,
         private accessorialChargesDialog: AccessorialChargesDialogService,
         private jobFileUploadDialog: JobFileUploadDialogService,
-        private interCourierChargeDialog: InterCourierChargeDialogService,
         private truckCourierStatusDialog: TruckCourierStatusDialogService,
         private jobAddStopService: JobAddStopService,
         private messagingDialog: MessagingDialogService,
@@ -1044,10 +1044,18 @@ class HomeController extends BaseController {
         return {
             showToast: (message: string, type: ToastType) => {
                 switch (type) {
-                    case 'success': this.toastrService.showSuccessToast(message); break;
-                    case 'warning': this.toastrService.showWarningToast(message); break;
-                    case 'error': this.toastrService.showErrorToast(message); break;
-                    case 'info': this.toastrService.showSuccessToast(message); break;
+                    case 'success':
+                        this.toastrService.showSuccessToast(message);
+                        break;
+                    case 'warning':
+                        this.toastrService.showWarningToast(message);
+                        break;
+                    case 'error':
+                        this.toastrService.showErrorToast(message);
+                        break;
+                    case 'info':
+                        this.toastrService.showSuccessToast(message);
+                        break;
                 }
             },
         };
@@ -1098,7 +1106,7 @@ class HomeController extends BaseController {
         try {
             const {executeSplitJobFlow} = await import(
                 /* webpackChunkName: "splitJobFlow" */ '../../react/services/splitJobFlow'
-            );
+                );
             const toastMap = {
                 success: (m: string) => this.toastrService.showSuccessToast(m),
                 error: (m: string) => this.toastrService.showErrorToast(m),
@@ -1221,14 +1229,16 @@ class HomeController extends BaseController {
                 console.debug(`No jobs found for courier ${courierId}`);
             }
 
-            // Push data to React current work panel
-            this.updateReactCurrentWorkJobList();
         } catch (error) {
             console.error("Error getting current jobs:", error);
             this.jobsCurrentList = [];
         } finally {
             this.currentListLoading = false;
             this.applyScope();
+
+            // Push data to React current work panel after applyScope so the
+            // ng-if="ctrl.jobsCurrentList" container is in the DOM.
+            this.updateReactCurrentWorkJobList();
         }
     }
 
@@ -1693,8 +1703,8 @@ class HomeController extends BaseController {
         this.toastrService.showSuccessToast("New Job Created Successfully");
     }
 
-    async interCourierCharge($event: MouseEvent): Promise<void> {
-        await this.interCourierChargeDialog.showInterCourierCharge($event);
+    async interCourierCharge(): Promise<void> {
+        await openInterCourierChargeDialog(this.createToastAdapter());
     }
 
     async openFileAttachmentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
@@ -1765,7 +1775,7 @@ class HomeController extends BaseController {
 
         await this.DispatchData.updateJobReadStatus(jobId, isRead);
     }
-    
+
     private updateDriverLocationsDisplay(): void {
         const hasAreas = this.driverLocations && this.driverLocations.areas && this.driverLocations.areas.length > 0;
 
@@ -2051,7 +2061,7 @@ class HomeController extends BaseController {
             this.driverLocationRefreshIntervalPromise = undefined;
         }
     }
-    
+
     async onCourierSearchSelect(selectedCourier: ISuggestion): Promise<void> {
         try {
             await this.getCurrentJobs(selectedCourier.id);
@@ -2356,10 +2366,18 @@ class HomeController extends BaseController {
 
         const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
             switch (type) {
-                case 'success': this.toastrService.showSuccessToast(message); break;
-                case 'warning': this.toastrService.showWarningToast(message); break;
-                case 'error': this.toastrService.showErrorToast(message); break;
-                case 'info': this.toastrService.showInfoToast(message); break;
+                case 'success':
+                    this.toastrService.showSuccessToast(message);
+                    break;
+                case 'warning':
+                    this.toastrService.showWarningToast(message);
+                    break;
+                case 'error':
+                    this.toastrService.showErrorToast(message);
+                    break;
+                case 'info':
+                    this.toastrService.showInfoToast(message);
+                    break;
             }
         };
 
@@ -2397,28 +2415,28 @@ class HomeController extends BaseController {
                     despatchViewIds: this.selectedViews.map(v => v.id),
                 },
             },
-            onJobSelect: (job) => {
+            onJobSelect: async (job: DispatchJob) => {
                 // Bridge back to AngularJS job selection
-                this.selectJob(job as any);
+                await this.selectJob(job as IDispatchJob);
                 this.applyScope();
             },
-            onJobDispatch: (job, courierId) => {
-                this.handleJobDispatch(job as any, courierId);
+            onJobDispatch: async (job: DispatchJob, courierId: number) => {
+                await this.handleJobDispatch(job as IDispatchJob, courierId);
                 this.applyScope();
             },
-            onRefresh: () => {
+            onRefresh: async () => {
                 // React handles data refresh; also refresh AngularJS-owned data (map, supports)
                 this.loadSupportsInBackground();
-                if (this.isUsCustomer) this.loadDriversWithJobCounts();
+                if (this.isUsCustomer) await this.loadDriversWithJobCounts();
             },
-            onSearchChange: (searchText) => {
-                this.updateJobSearchText(searchText);
+            onSearchChange: async (searchText: string) => {
+                await this.updateJobSearchText(searchText);
             },
-            onCategoryChange: (category) => {
-                this.handleCategoryChange(category);
+            onCategoryChange: async (category: string) => {
+                await this.handleCategoryChange(category);
             },
-            onAddStop: (job) => {
-                this.jobAddStopService.addNewStop(job as any);
+            onAddStop: async (job: DispatchJob) => {
+                await this.jobAddStopService.addNewStop(job as IDispatchJob);
             },
         });
 
@@ -2476,10 +2494,18 @@ class HomeController extends BaseController {
 
         const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
             switch (type) {
-                case 'success': this.toastrService.showSuccessToast(message); break;
-                case 'warning': this.toastrService.showWarningToast(message); break;
-                case 'error': this.toastrService.showErrorToast(message); break;
-                case 'info': this.toastrService.showInfoToast(message); break;
+                case 'success':
+                    this.toastrService.showSuccessToast(message);
+                    break;
+                case 'warning':
+                    this.toastrService.showWarningToast(message);
+                    break;
+                case 'error':
+                    this.toastrService.showErrorToast(message);
+                    break;
+                case 'info':
+                    this.toastrService.showInfoToast(message);
+                    break;
             }
         };
 
@@ -2489,21 +2515,21 @@ class HomeController extends BaseController {
             appPage: AppPage.Dispatch,
             defaultCategory: 'in-progress',
             storagePrefix: 'currentWorkJobList',
-            onJobSelect: (job) => {
-                this.selectJob(job as any);
+            onJobSelect: async (job: DispatchJob) => {
+                await this.selectJob(job as any);
                 this.applyScope();
             },
-            onJobDispatch: (job, courierId) => {
-                this.handleJobDispatch(job as any, courierId);
+            onJobDispatch: async (job: DispatchJob, courierId: number) => {
+                await this.handleJobDispatch(job as any, courierId);
                 this.applyScope();
             },
-            onRefresh: () => {
+            onRefresh: async () => {
                 if (this.currentCourier) {
-                    this.getCurrentJobs(this.currentCourier.id);
+                    await this.getCurrentJobs(this.currentCourier.id);
                 }
             },
-            onAddStop: (job) => {
-                this.jobAddStopService.addNewStop(job as any);
+            onAddStop: async (job: DispatchJob) => {
+                await this.jobAddStopService.addNewStop(job as any);
             },
         });
 

@@ -192,7 +192,8 @@ public class SplitJobServiceTests : IAsyncDisposable
         _fakeTenantClock,
         _rateJobServiceMock.Object,
         _jobRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object);
+        _jobCommandRepositoryMock.Object,
+        new CreateJobService(_contextFactoryMock.Object));
 
     private static AddressViewModel CreateMeetingPointAddress() => new(
         addressLine1: "100 Meeting Point Rd",

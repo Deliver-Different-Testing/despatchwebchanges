@@ -239,7 +239,8 @@ function AddressBlock({
                         locked={locked}
                     >
                         {phoneSource && (
-                            <Chip label={phoneSource} size="small" variant="outlined" sx={{height: 20, fontSize: '0.6875rem', ml: 0.5}} />
+                            <Chip label={phoneSource} size="small" variant="outlined"
+                                  sx={{height: 20, fontSize: '0.6875rem', ml: 0.5}}/>
                         )}
                         {contactPhone && (
                             <Tooltip title={`Call ${contactPhone}`}>
@@ -270,20 +271,25 @@ const flowArrowSx: SxProps<Theme> = {
     flexShrink: 0,
 };
 
-export function AddressSection({
-                                   job,
-                                   dense,
-                                   onEditPickupAddress,
-                                   onEditDeliveryAddress,
-                                   onEditFromContact,
-                                   onEditToContact,
-                                   onEditFromContactPhone,
-                                   onEditToContactPhone,
-                               }: AddressSectionProps) {
+export const AddressSection = React.memo(({
+                                              job,
+                                              dense,
+                                              onEditPickupAddress,
+                                              onEditDeliveryAddress,
+                                              onEditFromContact,
+                                              onEditToContact,
+                                              onEditFromContactPhone,
+                                              onEditToContactPhone,
+                                          }: AddressSectionProps) => {
     const addressIcon = job.isFlightAssigned ? FlightTakeoffIcon : PlaceIcon;
 
     return (
-        <Box sx={{display: 'flex', gap: 1, flexDirection: {xs: 'column', sm: 'row'}, alignItems: {xs: 'center', sm: 'stretch'}}}>
+        <Box sx={{
+            display: 'flex',
+            gap: 1,
+            flexDirection: {xs: 'column', sm: 'row'},
+            alignItems: {xs: 'center', sm: 'stretch'}
+        }}>
             <AddressBlock
                 title="Pickup"
                 variant="pickup"
@@ -299,8 +305,8 @@ export function AddressSection({
                 dense={dense}
             />
             <Box sx={flowArrowSx}>
-                <ArrowForwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'none', sm: 'block'}}} />
-                <ArrowDownwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'block', sm: 'none'}}} />
+                <ArrowForwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'none', sm: 'block'}}}/>
+                <ArrowDownwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'block', sm: 'none'}}}/>
             </Box>
             <AddressBlock
                 title="Delivery"
@@ -317,4 +323,4 @@ export function AddressSection({
             />
         </Box>
     );
-}
+});

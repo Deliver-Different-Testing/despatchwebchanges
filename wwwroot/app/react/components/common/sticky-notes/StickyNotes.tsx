@@ -4,7 +4,7 @@
  * React functional component for displaying and managing job notes with a sticky note design.
  */
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -16,6 +16,8 @@ import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from '../../../query/queryClient';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
@@ -39,7 +41,7 @@ function getNoteTypeColor(noteTypeName?: string, isImportant?: boolean): string 
     }
 }
 
-export const StickyNotes: React.FC<StickyNotesProps> = ({
+export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     jobId,
     bulkJobId,
     isRecurringJob = false,
@@ -47,12 +49,34 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
     showSuccessToast,
     noteManagementDialogService,
 }) => {
-    const [notes, setNotes] = useState<JobNote[]>([]);
-    const [noteCategories, setNoteCategories] = useState<NoteType[]>([]);
+    const queryClient = useQueryClient();
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [loading, setLoading] = useState(false);
-    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
+
+    // Note types are global/static — cache indefinitely
+    const noteCategoriesQuery = useQuery({
+        queryKey: queryKeys.notes.types,
+        queryFn: ({signal}) => notesApi.getNoteTypes({signal}),
+        staleTime: Infinity,
+    });
+
+    // Job notes — fetched in parallel with parent job detail query
+    const notesQuery = useQuery({
+        queryKey: bulkJobId
+            ? queryKeys.notes.bulkJob(bulkJobId)
+            : queryKeys.notes.job(jobId ?? 0, isRecurringJob),
+        queryFn: ({signal}) => {
+            if (bulkJobId) return notesApi.getBulkJobNotes(bulkJobId, {signal});
+            if (jobId) return notesApi.getJobNotes(jobId, isRecurringJob, {signal});
+            return Promise.resolve([]);
+        },
+        enabled: !!(jobId || bulkJobId),
+    });
+
+    const notes = notesQuery.data ?? [];
+    const noteCategories = noteCategoriesQuery.data ?? [];
+    const loading = notesQuery.isLoading;
+    const categoriesLoading = noteCategoriesQuery.isLoading;
 
     const filteredNotes = useMemo(() => {
         if (selectedCategory === 'all') return notes;
@@ -62,48 +86,13 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
 
     const isFilterActive = selectedCategory !== 'all';
 
-    const loadNotes = useCallback(async (): Promise<void> => {
-        if (!jobId && !bulkJobId) return;
-
-        setLoading(true);
-        try {
-            let fetchedNotes: JobNote[];
-            if (bulkJobId) {
-                fetchedNotes = await notesApi.getBulkJobNotes(bulkJobId);
-            } else if (jobId) {
-                fetchedNotes = await notesApi.getJobNotes(jobId, isRecurringJob);
-            } else {
-                fetchedNotes = [];
-            }
-            setNotes(fetchedNotes);
-        } catch (error) {
-            console.error('Error loading notes:', error);
-            showErrorToast?.('Failed to load notes');
-        } finally {
-            setLoading(false);
+    const invalidateNotes = useCallback(() => {
+        if (bulkJobId) {
+            queryClient.invalidateQueries({queryKey: queryKeys.notes.bulkJob(bulkJobId)});
+        } else if (jobId) {
+            queryClient.invalidateQueries({queryKey: queryKeys.notes.job(jobId, isRecurringJob)});
         }
-    }, [jobId, bulkJobId, isRecurringJob, showErrorToast]);
-
-    // Load note categories on mount
-    useEffect(() => {
-        const loadNoteCategories = async (): Promise<void> => {
-            setCategoriesLoading(true);
-            try {
-                const types = await notesApi.getNoteTypes();
-                setNoteCategories(types);
-            } catch (error) {
-                console.error('Error loading note categories:', error);
-            } finally {
-                setCategoriesLoading(false);
-            }
-        };
-        loadNoteCategories();
-    }, []);
-
-    // Load notes on mount and when jobId/bulkJobId/isRecurringJob changes
-    useEffect(() => {
-        loadNotes();
-    }, [loadNotes]);
+    }, [queryClient, jobId, bulkJobId, isRecurringJob]);
 
     const getCategoryName = (): string => {
         if (selectedCategory === 'all') return 'All Categories';
@@ -147,7 +136,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
 
         try {
             await noteManagementDialogService.openNoteDialog(event.nativeEvent, emptyNote);
-            await loadNotes();
+            invalidateNotes();
         } catch (error) {
             // Dialog was canceled
             if (!error) return;
@@ -158,7 +147,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
     const handleEditNote = async (event: React.MouseEvent<HTMLElement>, note: JobNote): Promise<void> => {
         try {
             await noteManagementDialogService.openNoteDialog(event.nativeEvent, note);
-            await loadNotes();
+            invalidateNotes();
         } catch (error) {
             // Dialog was canceled
             if (!error) return;
@@ -174,7 +163,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
 
         try {
             await notesApi.deleteNote(note.noteId ?? 0);
-            await loadNotes();
+            invalidateNotes();
             showSuccessToast?.('Note deleted successfully');
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -436,6 +425,8 @@ export const StickyNotes: React.FC<StickyNotesProps> = ({
             </Box>
         </Box>
     );
-};
+});
+
+StickyNotes.displayName = 'StickyNotes';
 
 export default StickyNotes;

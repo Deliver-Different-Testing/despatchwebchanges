@@ -8,6 +8,7 @@ import React from 'react';
 import {render, screen, waitFor, within, fireEvent} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {StickyNotes} from './StickyNotes';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
@@ -19,11 +20,22 @@ const mockedNotesApi = notesApi as jest.Mocked<typeof notesApi>;
 
 const theme = createTheme();
 
+function createTestQueryClient() {
+    return new QueryClient({
+        defaultOptions: {
+            queries: {retry: false, gcTime: 0},
+        },
+    });
+}
+
 const renderWithProviders = (ui: React.ReactElement) => {
+    const queryClient = createTestQueryClient();
     return render(
-        <ThemeProvider theme={theme}>
-            {ui}
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider theme={theme}>
+                {ui}
+            </ThemeProvider>
+        </QueryClientProvider>
     );
 };
 
@@ -142,7 +154,7 @@ describe('StickyNotes', () => {
             renderWithProviders(<StickyNotes {...props} />);
 
             await waitFor(() => {
-                expect(mockedNotesApi.getBulkJobNotes).toHaveBeenCalledWith(456);
+                expect(mockedNotesApi.getBulkJobNotes).toHaveBeenCalledWith(456, expect.anything());
             });
         });
     });
@@ -342,10 +354,13 @@ describe('StickyNotes', () => {
             // NZ theme
             const nzTheme = createTheme({palette: {primary: {main: '#f4c430'}}});
             const nzProps = createDefaultProps();
+            const nzQueryClient = createTestQueryClient();
             render(
-                <ThemeProvider theme={nzTheme}>
-                    <StickyNotes {...nzProps} />
-                </ThemeProvider>
+                <QueryClientProvider client={nzQueryClient}>
+                    <ThemeProvider theme={nzTheme}>
+                        <StickyNotes {...nzProps} />
+                    </ThemeProvider>
+                </QueryClientProvider>
             );
 
             expect(await screen.findByText('Notes')).toBeInTheDocument();
@@ -358,7 +373,7 @@ describe('StickyNotes', () => {
             renderWithProviders(<StickyNotes {...props} />);
 
             await waitFor(() => {
-                expect(mockedNotesApi.getJobNotes).toHaveBeenCalledWith(123, false);
+                expect(mockedNotesApi.getJobNotes).toHaveBeenCalledWith(123, false, expect.anything());
                 expect(mockedNotesApi.getNoteTypes).toHaveBeenCalled();
             });
         });
@@ -368,7 +383,7 @@ describe('StickyNotes', () => {
             renderWithProviders(<StickyNotes {...props} />);
 
             await waitFor(() => {
-                expect(mockedNotesApi.getJobNotes).toHaveBeenCalledWith(123, true);
+                expect(mockedNotesApi.getJobNotes).toHaveBeenCalledWith(123, true, expect.anything());
             });
         });
     });

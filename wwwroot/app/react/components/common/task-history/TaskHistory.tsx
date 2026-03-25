@@ -66,21 +66,20 @@ function getIconColor(index: number): string {
     return ICON_COLORS[index % ICON_COLORS.length];
 }
 
-function getStatusColor(theme: Theme, status: string): {main: string; light: string} {
+function getStatusColor(theme: Theme, status: string): { main: string; light: string } {
     const statusColors = getStatusColors(theme);
     return statusColors[status as keyof typeof statusColors] || statusColors.waiting;
 }
 
 export const TaskHistory: React.FC<TaskHistoryProps> = ({
-    jobId,
-    isUsCustomer = true,
-    config: propConfig,
-    dispatchService,
-    showErrorToast,
-    showInfoToast,
-    showSuccessToast,
-    onDeliveryEventClick,
-}) => {
+                                                            jobId,
+                                                            config: propConfig,
+                                                            dispatchService,
+                                                            showErrorToast,
+                                                            showInfoToast,
+                                                            showSuccessToast,
+                                                            onDeliveryEventClick,
+                                                        }) => {
     const theme = useTheme();
     const config = useMemo(() => ({...defaultConfig, ...propConfig}), [propConfig]);
 
@@ -126,18 +125,20 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         return () => clearTimeout(timer);
     }, []);
 
-    // Setup refresh interval (2 minute polling)
+    // Setup refresh interval (2 minute polling) - use ref to avoid interval recreation
     const jobIdRef = useRef(jobId);
     jobIdRef.current = jobId;
+    const loadDeliveryJourneyRef = useRef(loadDeliveryJourney);
+    loadDeliveryJourneyRef.current = loadDeliveryJourney;
 
     useEffect(() => {
         const interval = setInterval(async () => {
             if (jobIdRef.current) {
-                await loadDeliveryJourney();
+                await loadDeliveryJourneyRef.current();
             }
         }, 120000);
         return () => clearInterval(interval);
-    }, [loadDeliveryJourney]);
+    }, []);
 
     const cycleDensityMode = (): void => {
         setDensityMode(prev => {
@@ -150,13 +151,13 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     const getDensityModeIcon = (): React.ReactNode => {
         switch (densityMode) {
             case DensityMode.Normal:
-                return <ViewAgendaIcon />;
+                return <ViewAgendaIcon/>;
             case DensityMode.Dense:
-                return <ViewCompactIcon />;
+                return <ViewCompactIcon/>;
             case DensityMode.UltraDense:
-                return <ViewCompactAltIcon />;
+                return <ViewCompactAltIcon/>;
             default:
-                return <ViewAgendaIcon />;
+                return <ViewAgendaIcon/>;
         }
     };
 
@@ -188,7 +189,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         onDeliveryEventClick?.(deliveryEvent);
     };
 
-    const getDensitySizes = () => {
+    const sizes = useMemo(() => {
         switch (densityMode) {
             case DensityMode.Dense:
                 return {
@@ -230,44 +231,42 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                     tagLimit: 10,
                 };
         }
-    };
-
-    const sizes = getDensitySizes();
+    }, [densityMode]);
 
     // No job selected state
     if (!jobId) {
         return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                backgroundColor: 'background.paper',
-                borderRadius: 2,
-                overflow: 'hidden',
-            }}
-        >
             <Box
                 sx={{
-                    flex: 1,
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 4,
-                    textAlign: 'center',
+                    height: '100%',
+                    backgroundColor: 'background.paper',
+                    borderRadius: 2,
+                    overflow: 'hidden',
                 }}
             >
-                <SelectAllIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}} />
-                <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
-                    Select a Job
-                </Typography>
-                <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                    Select a job to view its delivery journey.
-                </Typography>
+                <Box
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: 4,
+                        textAlign: 'center',
+                    }}
+                >
+                    <SelectAllIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}}/>
+                    <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
+                        Select a Job
+                    </Typography>
+                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                        Select a job to view its delivery journey.
+                    </Typography>
+                </Box>
             </Box>
-        </Box>
-    );
+        );
     }
 
     return (
@@ -321,7 +320,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                 '& svg': loading ? {animation: 'spin 1s linear infinite'} : {},
                             }}
                         >
-                            <SyncIcon />
+                            <SyncIcon/>
                         </IconButton>
                     </Tooltip>
                 </Box>
@@ -418,7 +417,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                     },
                                                 }}
                                             >
-                                                <CircleIcon sx={{fontSize: sizes.iconSize}} />
+                                                <CircleIcon sx={{fontSize: sizes.iconSize}}/>
                                             </Box>
                                             {!isLast && (
                                                 <Box
@@ -483,7 +482,10 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                     >
                                                         {event._dateStr}
                                                         {densityMode === DensityMode.Normal && (
-                                                            <Box component="span" sx={{color: 'text.disabled', ml: 0.25}}>{timeZoneShort}</Box>
+                                                            <Box component="span" sx={{
+                                                                color: 'text.disabled',
+                                                                ml: 0.25
+                                                            }}>{timeZoneShort}</Box>
                                                         )}
                                                     </Typography>
                                                 )}
@@ -545,7 +547,8 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                         fontStyle: 'italic',
                                                     }}
                                                 >
-                                                    <NotesIcon sx={{color: 'text.disabled', fontSize: 16, flexShrink: 0}} />
+                                                    <NotesIcon
+                                                        sx={{color: 'text.disabled', fontSize: 16, flexShrink: 0}}/>
                                                     <span>{event.notes}</span>
                                                 </Box>
                                             )}
@@ -568,7 +571,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                             textAlign: 'center',
                         }}
                     >
-                        <PackageIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}} />
+                        <PackageIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}}/>
                         <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
                             No Journey Events
                         </Typography>

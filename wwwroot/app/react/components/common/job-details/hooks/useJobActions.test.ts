@@ -19,6 +19,7 @@ jest.mock('./useDialogLoader', () => ({
         ensureAddressDialog: jest.fn().mockResolvedValue(undefined),
         ensureVoidDialog: jest.fn().mockResolvedValue(undefined),
         ensurePriceBreakdownDialog: jest.fn().mockResolvedValue(undefined),
+        ensureSimplePriceEditDialog: jest.fn().mockResolvedValue(undefined),
         ensureParcelDimensionsDialog: jest.fn().mockResolvedValue(undefined),
         ensureSendPodDialog: jest.fn().mockResolvedValue(undefined),
     }),
@@ -27,6 +28,11 @@ jest.mock('./useDialogLoader', () => ({
 // Mock dateUtils — formatDateForApi returns a predictable string
 jest.mock('../../../../utils/dateUtils', () => ({
     formatDateForApi: jest.fn((_date: unknown, _tz?: string) => '2026-03-23T11:45:00+13:00'),
+}));
+
+// Mock pricingBreakdownApi
+jest.mock('../../../../services/pricingBreakdownApi', () => ({
+    getPriceBreakdowns: jest.fn().mockResolvedValue([]),
 }));
 
 // Mock jobDetailApi so dynamic imports inside editDateAndTime resolve

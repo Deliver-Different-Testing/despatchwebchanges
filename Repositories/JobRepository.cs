@@ -30,7 +30,6 @@ public partial class JobRepository(
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
 
-
     /// <summary>
     /// Retrieves a bulk job and its related family jobs (parent and siblings).
     /// </summary>
@@ -2603,121 +2602,125 @@ public partial class JobRepository(
     /// <param name="bulkJobId">The bulk job ID to release.</param>
     public async Task ReleaseBulkJobByIdAsync(int bulkJobId)
     {
-        await using var transaction = await Context.Database.BeginTransactionAsync();
-
-        try
+        var strategy = Context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            var currentTenantTime = _clock.TenantNow;
-            var releaseNote = $"Bulk Job Released Manually at {currentTenantTime:dd/MM/yyyy HH:mm}\r\n";
+            await using var transaction = await Context.Database.BeginTransactionAsync();
 
-            // Update book date and notes in a single query
-            var updatedCount = await Context.TblBulkJobs
-                .Where(b => b.BulkJobId == bulkJobId || b.ParentId == bulkJobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(b => b.BookDate, currentTenantTime)
-                    .SetProperty(b => b.Notes, b => releaseNote + (b.Notes ?? string.Empty)));
-
-            if (updatedCount == 0)
+            try
             {
-                await transaction.CommitAsync();
-                return; // No bulk jobs to process
-            }
+                var currentTenantTime = _clock.TenantNow;
+                var releaseNote = $"Bulk Job Released Manually at {currentTenantTime:dd/MM/yyyy HH:mm}\r\n";
 
-            // Get bulk job info and existing run name in a single query
-            var bulkJobInfo = await Context.TblBulkJobs
-                .Where(b => (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId) && b.Done == false)
-                .Select(b => new
+                // Update book date and notes in a single query
+                var updatedCount = await Context.TblBulkJobs
+                    .Where(b => b.BulkJobId == bulkJobId || b.ParentId == bulkJobId)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(b => b.BookDate, currentTenantTime)
+                        .SetProperty(b => b.Notes, b => releaseNote + (b.Notes ?? string.Empty)));
+
+                if (updatedCount == 0)
                 {
-                    b.BulkJobId,
-                    b.ClientCode,
-                    ExistingRunName = Context.TblBulkJobRuns
-                        .Where(jr => jr.BulkJobId == b.BulkJobId)
-                        .Join(Context.TblBulkRuns,
-                            jr => jr.RunId,
-                            r => r.Id,
-                            (jr, r) => r.Name)
-                        .FirstOrDefault()
-                })
-                .FirstOrDefaultAsync();
+                    await transaction.CommitAsync();
+                    return; // No bulk jobs to process
+                }
 
-            if (bulkJobInfo == null)
-            {
-                await transaction.CommitAsync();
-                return;
-            }
+                // Get bulk job info and existing run name in a single query
+                var bulkJobInfo = await Context.TblBulkJobs
+                    .Where(b => (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId) && b.Done == false)
+                    .Select(b => new
+                    {
+                        b.BulkJobId,
+                        b.ClientCode,
+                        ExistingRunName = Context.TblBulkJobRuns
+                            .Where(jr => jr.BulkJobId == b.BulkJobId)
+                            .Join(Context.TblBulkRuns,
+                                jr => jr.RunId,
+                                r => r.Id,
+                                (jr, r) => r.Name)
+                            .FirstOrDefault()
+                    })
+                    .FirstOrDefaultAsync();
 
-            var runName = bulkJobInfo.ExistingRunName;
-
-            // Create a run if it doesn't exist
-            if (string.IsNullOrEmpty(runName))
-            {
-                runName = bulkJobInfo.ClientCode + currentTenantTime.ToString("HHmm");
-
-                var newRun = new TblBulkRun
+                if (bulkJobInfo == null)
                 {
-                    Name = runName,
-                    Mins = null,
-                    Kms = null,
-                    CourierId = null,
-                    Status = 0,
-                    Revenue = null,
-                    Payout = null,
-                    CourierPercentage = null,
-                    GoogleRouteResponse = null,
-                    Created = currentTenantTime,
-                    LastModified = currentTenantTime
-                };
+                    await transaction.CommitAsync();
+                    return;
+                }
 
-                await Context.TblBulkRuns.AddAsync(newRun);
-                await Context.SaveChangesAsync();
+                var runName = bulkJobInfo.ExistingRunName;
 
-                // Get all bulk job IDs in a single query
-                var bulkJobIds = await Context.TblBulkJobs
+                // Create a run if it doesn't exist
+                if (string.IsNullOrEmpty(runName))
+                {
+                    runName = bulkJobInfo.ClientCode + currentTenantTime.ToString("HHmm");
+
+                    var newRun = new TblBulkRun
+                    {
+                        Name = runName,
+                        Mins = null,
+                        Kms = null,
+                        CourierId = null,
+                        Status = 0,
+                        Revenue = null,
+                        Payout = null,
+                        CourierPercentage = null,
+                        GoogleRouteResponse = null,
+                        Created = currentTenantTime,
+                        LastModified = currentTenantTime
+                    };
+
+                    await Context.TblBulkRuns.AddAsync(newRun);
+                    await Context.SaveChangesAsync();
+
+                    // Get all bulk job IDs in a single query
+                    var bulkJobIds = await Context.TblBulkJobs
+                        .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
+                        .Select(b => b.BulkJobId)
+                        .ToListAsync();
+
+                    // Bulk insert job-run relationships
+                    var jobRuns = bulkJobIds.Select(bjId => new TblBulkJobRun
+                    {
+                        RunId = newRun.Id,
+                        BulkJobId = bjId,
+                        PickRunOrder = null
+                    }).ToList();
+
+                    await Context.TblBulkJobRuns.AddRangeAsync(jobRuns);
+                    await Context.SaveChangesAsync();
+                }
+
+                // Get bulk jobs to create
+                var bulkJobsToCreate = await Context.TblBulkJobs
                     .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
+                    .OrderBy(b => b.BookDate)
+                    .ThenBy(b => b.BookTime)
+                    .ThenBy(b => b.BulkJobId)
                     .Select(b => b.BulkJobId)
                     .ToListAsync();
 
-                // Bulk insert job-run relationships
-                var jobRuns = bulkJobIds.Select(bjId => new TblBulkJobRun
+                // Process each bulk job with the run name (either existing or newly created)
+                foreach (var bjId in bulkJobsToCreate)
                 {
-                    RunId = newRun.Id,
-                    BulkJobId = bjId,
-                    PickRunOrder = null
-                }).ToList();
+                    await Context.Procedures.UTL_stpJob_InsertFromTblBulkJobAsync(
+                        bulkJobID: bjId,
+                        runName: runName,
+                        courierID: null,
+                        runStatus: null,
+                        returnValue: null,
+                        cancellationToken: CancellationToken.None
+                    );
+                }
 
-                await Context.TblBulkJobRuns.AddRangeAsync(jobRuns);
-                await Context.SaveChangesAsync();
+                await transaction.CommitAsync();
             }
-
-            // Get bulk jobs to create
-            var bulkJobsToCreate = await Context.TblBulkJobs
-                .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
-                .OrderBy(b => b.BookDate)
-                .ThenBy(b => b.BookTime)
-                .ThenBy(b => b.BulkJobId)
-                .Select(b => b.BulkJobId)
-                .ToListAsync();
-
-            // Process each bulk job with the run name (either existing or newly created)
-            foreach (var bjId in bulkJobsToCreate)
+            catch
             {
-                await Context.Procedures.UTL_stpJob_InsertFromTblBulkJobAsync(
-                    bulkJobID: bjId,
-                    runName: runName,
-                    courierID: null,
-                    runStatus: null,
-                    returnValue: null,
-                    cancellationToken: CancellationToken.None
-                );
+                await transaction.RollbackAsync();
+                throw;
             }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+        });
     }
 
     /// <summary>

@@ -31,7 +31,7 @@ import JobDataType from "./enums/JobDataType";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
 import {openAddEventDialog} from "../../react/components/dialogs/add-event-dialog";
 import type {ToastType} from "../../react/services/toastService";
-import type {MountJobListConfig} from "../../react/interfaces";
+import type {DispatchJob, MountJobListConfig} from "../../react/interfaces";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import {ExtendedTask, ITask} from "../../interfaces/task.interfaces";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
@@ -54,7 +54,11 @@ import JobListType from "../../enums/job-list-type.enum";
 import RecoveryAgentManagementService
     from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import {formatDateForApiWithTzs, getIanaTimezone} from "../../react/utils/dateUtils";
-import {fetchNationwideJobsNew, fetchNationwideJobsPod, fetchNationwideJobsReprice} from "../../react/services/jobSearchApi";
+import {
+    fetchNationwideJobsNew,
+    fetchNationwideJobsPod,
+    fetchNationwideJobsReprice
+} from "../../react/services/jobSearchApi";
 import {queryKeys} from "../../react/query/queryClient";
 import IDateFilterData from "../../interfaces/date-filter-data.interface";
 import setDateFilterDefaults from "../../functions/setDateFilterDefaults";
@@ -2351,16 +2355,16 @@ class NationwideControl extends BaseController {
             showToast,
             isUsCustomer: this.isUsCustomer,
             appPage: AppPage.Domestic,
-            onJobSelect: (job) => {
-                this.selectJob(job as any);
+            onJobSelect: async (job: DispatchJob) => {
+                await this.selectJob(job as IDispatchJob);
                 this.applyScope();
             },
-            onJobDispatch: (job, courierId) => {
-                this.handleJobDispatch(job as any, courierId);
+            onJobDispatch: async (job, courierId) => {
+                await this.handleJobDispatch(job as any, courierId);
                 this.applyScope();
             },
-            onAddStop: (job) => {
-                this.jobAddStopService.addNewStop(job as any);
+            onAddStop: async (job: DispatchJob) => {
+                await this.jobAddStopService.addNewStop(job as IDispatchJob);
             },
         };
 
@@ -2391,8 +2395,8 @@ class NationwideControl extends BaseController {
             onRefresh: () => {
                 // React handles data refresh via React Query
             },
-            onSearchChange: (searchText) => {
-                this.updateJobSearchText(searchText, JobListType.NationwideJobList);
+            onSearchChange: async (searchText: string) => {
+                await this.updateJobSearchText(searchText, JobListType.NationwideJobList);
             },
         } as MountJobListConfig);
 
@@ -2416,8 +2420,8 @@ class NationwideControl extends BaseController {
             onRefresh: () => {
                 // React handles data refresh via React Query
             },
-            onSearchChange: (searchText) => {
-                this.updateJobSearchText(searchText, JobListType.NationwidePodJobList);
+            onSearchChange: async (searchText: string) => {
+                await this.updateJobSearchText(searchText, JobListType.NationwidePodJobList);
             },
         } as MountJobListConfig);
 
@@ -2441,8 +2445,8 @@ class NationwideControl extends BaseController {
             onRefresh: () => {
                 // React handles data refresh via React Query
             },
-            onSearchChange: (searchText) => {
-                this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList);
+            onSearchChange: async (searchText: string) => {
+                await this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList);
             },
         } as MountJobListConfig);
     }
@@ -2462,7 +2466,9 @@ class NationwideControl extends BaseController {
                     fetchFn: fetchNationwideJobsNew,
                     queryKeyFn: (params: any) => queryKeys.nationwide.newJobs(params),
                     filters: this.jobFilters,
-                    onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwideJobList); },
+                    onSearchChange: async (searchText: string) => {
+                        await this.updateJobSearchText(searchText, JobListType.NationwideJobList);
+                    },
                 },
                 podJobs: {
                     containerId: 'react-nationwide-pod-jobs',
@@ -2470,7 +2476,9 @@ class NationwideControl extends BaseController {
                     fetchFn: fetchNationwideJobsPod,
                     queryKeyFn: (params: any) => queryKeys.nationwide.podJobs(params),
                     filters: this.jobPodFilters,
-                    onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwidePodJobList); },
+                    onSearchChange: async (searchText: string) => {
+                        await this.updateJobSearchText(searchText, JobListType.NationwidePodJobList);
+                    },
                 },
                 repriceJobs: {
                     containerId: 'react-nationwide-reprice-jobs',
@@ -2478,7 +2486,9 @@ class NationwideControl extends BaseController {
                     fetchFn: fetchNationwideJobsReprice,
                     queryKeyFn: (params: any) => queryKeys.nationwide.repriceJobs(params),
                     filters: this.jobRepriceFilters,
-                    onSearchChange: (searchText) => { this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList); },
+                    onSearchChange: async (searchText: string) => {
+                        await this.updateJobSearchText(searchText, JobListType.NationwideRepriceJobList);
+                    },
                 },
             };
 
@@ -2515,16 +2525,16 @@ class NationwideControl extends BaseController {
                         pageSize: 50,
                     },
                 },
-                onJobSelect: (job) => {
-                    this.selectJob(job as any);
+                onJobSelect: async (job: DispatchJob) => {
+                    await this.selectJob(job as IDispatchJob);
                     this.applyScope();
                 },
-                onJobDispatch: (job, courierId) => {
-                    this.handleJobDispatch(job as any, courierId);
+                onJobDispatch: async (job: DispatchJob, courierId: number) => {
+                    await this.handleJobDispatch(job as any, courierId);
                     this.applyScope();
                 },
-                onAddStop: (job) => {
-                    this.jobAddStopService.addNewStop(job as any);
+                onAddStop: async (job: DispatchJob) => {
+                    await this.jobAddStopService.addNewStop(job as any);
                 },
                 onRefresh: () => {
                     // React handles data refresh via React Query

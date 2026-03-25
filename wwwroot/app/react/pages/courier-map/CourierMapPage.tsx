@@ -78,7 +78,7 @@ export function CourierMapPage({
                 bounds.maxLng,
                 bounds.maxLat
             ),
-        enabled: isInitialized,
+        enabled: true,
         refetchInterval: REFRESH_INTERVAL_MS,
         staleTime: REFRESH_INTERVAL_MS - 5000, // Consider stale 5 seconds before next refresh
     });

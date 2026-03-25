@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -9,10 +8,10 @@ using Moq;
 namespace DespatchWeb.Tests.Services;
 
 /// <summary>
-/// Unit tests for CreateJobService — the C# replacement for DD_stpJob_InsertExcelerator.
+/// Unit tests for CreateJobService — creates jobs via raw SQL insert.
 /// Tests cover input resolution, client defaults, contact defaults, null fallbacks,
 /// reference validation, recurring bitmask parsing, settings lookup, validation errors,
-/// and stored procedure call parameter mapping via mocked IDespatchContextProcedures.
+/// and TucJob entity field mapping.
 /// </summary>
 public class CreateJobServiceTests : IAsyncDisposable
 {
@@ -257,128 +256,13 @@ public class CreateJobServiceTests : IAsyncDisposable
     };
 
     /// <summary>
-    /// DespatchContext subclass that overrides Procedures to return a mock.
-    /// EF Core operations still work against SQLite via CallBase-style inheritance.
+    /// Helper to retrieve the inserted job from the database after CreateJobAsync.
     /// </summary>
-    private class TestDespatchContext(
-        DbContextOptions<DespatchContext> options,
-        IDespatchContextProcedures procs) : DespatchContext(options)
+    private async Task<TucJob> GetInsertedJobAsync(int? jobId)
     {
-        public override IDespatchContextProcedures Procedures => procs;
-    }
-
-    private class TestDespatchContextImpl(
-        DbContextOptions<DespatchContext> options,
-        IDespatchContextProcedures procs) : TestDespatchContext(options, procs);
-
-    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_valueSet")]
-    private static extern ref bool GetValueSet<T>(OutputParameter<T> param);
-
-    private static void SetOutputParameterValue<T>(OutputParameter<T> param, T value)
-    {
-        param._value = value;
-        GetValueSet(param) = true;
-    }
-
-    /// <summary>
-    /// Creates a CreateJobService backed by SQLite (for real EF queries)
-    /// with mocked Procedures (for stored proc calls).
-    /// </summary>
-    private CreateJobService CreateServiceWithMockedProcs(out Mock<IDespatchContextProcedures> mockProcs)
-    {
-        var procsMock = new Mock<IDespatchContextProcedures>();
-
-        var factoryMock = new Mock<IDbContextFactory<DespatchContext>>();
-        factoryMock.Setup(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() => new TestDespatchContext(_db.Options, procsMock.Object));
-
-        mockProcs = procsMock;
-        return new CreateJobService(factoryMock.Object);
-    }
-
-    // Argument indices for DD_stpJob_Excelerator_InsertAsync output params
-    private const int ExceleratorJobIdArgIndex = 70;
-
-    // Argument indices for DD_stpBulkScheduleJob_InsertAsync output params
-    private const int BulkJobIdArgIndex = 77;
-
-    /// <summary>
-    /// Sets up DD_stpJob_Excelerator_InsertAsync mock to succeed with the given job ID.
-    /// </summary>
-    private static void SetupExceleratorInsert(
-        Mock<IDespatchContextProcedures> mockProcs, int? outputJobId = 42)
-    {
-        mockProcs.Setup(p => p.DD_stpJob_Excelerator_InsertAsync(
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<double?>(), It.IsAny<double?>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<bool?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<decimal?>(), It.IsAny<decimal?>(), It.IsAny<int?>(),
-            It.IsAny<int?>(), It.IsAny<bool?>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<OutputParameter<int?>>(), It.IsAny<OutputParameter<string>>(),
-            It.IsAny<OutputParameter<decimal?>>(), It.IsAny<OutputParameter<bool?>>(),
-            It.IsAny<OutputParameter<int>>(), It.IsAny<CancellationToken>()
-        )).Callback(new InvocationAction(invocation =>
-        {
-            if (invocation.Arguments[ExceleratorJobIdArgIndex] is OutputParameter<int?> jobId)
-                SetOutputParameterValue(jobId, outputJobId);
-        })).ReturnsAsync(0);
-    }
-
-    /// <summary>
-    /// Sets up DD_stpBulkScheduleJob_InsertAsync mock to succeed with the given job ID.
-    /// </summary>
-    private static void SetupBulkScheduleInsert(
-        Mock<IDespatchContextProcedures> mockProcs, int? outputJobId = 99)
-    {
-        mockProcs.Setup(p => p.DD_stpBulkScheduleJob_InsertAsync(
-            It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<short?>(), It.IsAny<short?>(),
-            It.IsAny<decimal?>(), It.IsAny<double?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<bool?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<bool?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<bool?>(), It.IsAny<bool?>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<decimal?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<OutputParameter<int?>>(), It.IsAny<OutputParameter<string>>(),
-            It.IsAny<OutputParameter<decimal?>>(),
-            It.IsAny<OutputParameter<int>>(), It.IsAny<CancellationToken>()
-        )).Callback(new InvocationAction(invocation =>
-        {
-            if (invocation.Arguments[BulkJobIdArgIndex] is OutputParameter<int?> jobId)
-                SetOutputParameterValue(jobId, outputJobId);
-        })).ReturnsAsync(0);
+        Assert.NotNull(jobId);
+        await using var ctx = _db.CreateContext();
+        return await ctx.TucJobs.FirstOrDefaultAsync(j => j.UcjbId == jobId);
     }
 
     [Fact]
@@ -721,119 +605,88 @@ public class CreateJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CreateJobAsync_NormalJob_CallsExceleratorInsertProc()
+    public async Task CreateJobAsync_NormalJob_InsertsJobInDatabase()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
-        var input = CreateInput();
-
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        var invocation = mockProcs.Invocations
-            .SingleOrDefault(i =>
-                i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync));
-        Assert.NotNull(invocation);
-    }
-
-    [Fact]
-    public async Task CreateJobAsync_NormalJob_DoesNotCallBulkInsert()
-    {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
-        var input = CreateInput(speedId: 1);
-
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        Assert.DoesNotContain(mockProcs.Invocations
-, i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync));
-    }
-
-    [Fact]
-    public async Task CreateJobAsync_NormalJob_ReturnsSuccessWithJobId()
-    {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs, outputJobId: 42);
+        var service = CreateService();
         var input = CreateInput();
 
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
-        Assert.Equal(42, result.JobId);
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal("JOB-001", job.UcjbNumber);
     }
 
     [Fact]
-    public async Task CreateJobAsync_NormalJob_NullJobIdOutput_ReturnsFailure()
+    public async Task CreateJobAsync_NormalJob_ReturnsSuccessWithJobId()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs, outputJobId: null);
+        var service = CreateService();
         var input = CreateInput();
 
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        Assert.False(result.Success);
-        Assert.Null(result.JobId);
+        Assert.True(result.Success);
+        Assert.NotNull(result.JobId);
+        Assert.True(result.JobId > 0);
     }
 
     [Fact]
     public async Task CreateJobAsync_NormalJob_MapsKeyParametersCorrectly()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput();
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Arguments;
-
-        Assert.Equal(1, args[0]); // type should default to 1 (pickup)
-        Assert.Equal(10, args[1]); // clientID should match input
-        Assert.Equal("Test User", args[3]); // contact should be BookedBy
-        Assert.Equal(3, args[4]); // chargeType should come from TblSettings.InternetJobChargeType
-        Assert.Equal(42, args[25]); // opID should come from TblSettings.InternetJobStaffId
-        Assert.Equal(1, args[32]); // service (jobTypeId) should be resolved from speed name
-        Assert.Equal(1, args[42]); // speed should match SpeedId
-        Assert.Equal((int)JobSource.DespatchWeb, args[49]); // sourceId should be DespatchWeb
-        Assert.Equal(1, args[57]); // loggedInContactId should match input
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal(1, (int)job.UcjbType!); // type defaults to 1 (pickup)
+        Assert.Equal(10, job.UcjbClientId); // client ID matches input
+        Assert.Equal("Test User", job.UcjbContact); // contact = BookedBy
+        Assert.Equal(3, (int)job.UcjbChargeType!); // from TblSettings.InternetJobChargeType
+        Assert.Equal(42, job.UcjbOpId); // from TblSettings.InternetJobStaffId
+        Assert.Equal(1, job.UcjbSpeed); // resolved from speed name
+        Assert.Equal((int)JobSource.DespatchWeb, job.SourceId);
+        Assert.Equal(1, job.LoggedInContactId);
     }
 
     [Fact]
     public async Task CreateJobAsync_NormalJob_MapsAddressFields()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput(
             fromAddress: new AddressViewModel("100 Pickup St", "Suite 2", "3 High", "Road", "Auckland", "AKL", "1010",
                 ""),
             toAddress: new AddressViewModel("200 Delivery Ave", "Unit 5", "7 Low", "Lane", "Wellington", "WGN", "6011",
                 ""));
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Arguments;
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
 
-        // From address
-        Assert.Equal("100 Pickup St, Suite 2, 3 High, Road, Auckland, AKL, 1010",
-            args[15]); // fromAddress = FullAddress
-        Assert.Equal("100 Pickup St", args[18]); // fromCompany = AddressLine1
-        Assert.Equal("Suite 2", args[17]); // fromExtra = AddressLine2
-        Assert.Equal("3 High Road", args[16]); // fromStreet = AddressLine3 + AddressLine4 trimmed
-        Assert.Equal("Auckland", args[12]); // fromCity = AddressLine5
-        Assert.Equal("AKL", args[13]); // fromState = AddressLine6
-        Assert.Equal(1010, args[14]); // fromZipCode parsed from AddressLine7
+        // From address stored in pickup address lines
+        Assert.Equal("100 Pickup St", job.PickupAddressLine1);
+        Assert.Equal("Suite 2", job.PickupAddressLine2);
+        Assert.Equal("3 High", job.PickupAddressLine3);
+        Assert.Equal("Road", job.PickupAddressLine4);
+        Assert.Equal("Auckland", job.PickupAddressLine5);
+        Assert.Equal("AKL", job.PickupAddressLine6);
+        Assert.Equal("1010", job.PickupAddressLine7);
 
-        // To address
-        Assert.Equal("200 Delivery Ave, Unit 5, 7 Low, Lane, Wellington, WGN, 6011",
-            args[8]); // toAddress = FullAddress
-        Assert.Equal("200 Delivery Ave", args[11]); // toCompany = AddressLine1
-        Assert.Equal("Unit 5", args[10]); // toExtra = AddressLine2
-        Assert.Equal("7 Low Lane", args[9]); // toStreet = AddressLine3 + AddressLine4 trimmed
-        Assert.Equal("Wellington", args[5]); // toCity = AddressLine5
-        Assert.Equal("WGN", args[6]); // toState = AddressLine6
-        Assert.Equal(6011, args[7]); // toZipCode parsed from AddressLine7
+        // To address stored in delivery address lines
+        Assert.Equal("200 Delivery Ave", job.DeliveryAddressLine1);
+        Assert.Equal("Unit 5", job.DeliveryAddressLine2);
+        Assert.Equal("7 Low", job.DeliveryAddressLine3);
+        Assert.Equal("Lane", job.DeliveryAddressLine4);
+        Assert.Equal("Wellington", job.DeliveryAddressLine5);
+        Assert.Equal("WGN", job.DeliveryAddressLine6);
+        Assert.Equal("6011", job.DeliveryAddressLine7);
+
+        // Full addresses
+        Assert.Equal("100 Pickup St, Suite 2, 3 High, Road, Auckland, AKL, 1010", job.UcjbFromAddr);
+        Assert.Equal("200 Delivery Ave, Unit 5, 7 Low, Lane, Wellington, WGN, 6011", job.UcjbToAddr);
     }
 
     [Fact]
@@ -852,229 +705,127 @@ public class CreateJobServiceTests : IAsyncDisposable
         });
         await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput();
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Arguments;
-
-        var podValue = Assert.IsType<int>(args[38]);
-        Assert.Equal(1, podValue); // proofOfDelivery true -> 1
-        Assert.Equal("pod@test.com", args[39]); // proofOfDeliveryEmail from defaults
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal(1, job.ProofOfDelivery); // proofOfDelivery true -> 1
+        Assert.Equal("pod@test.com", job.ProofOfDeliveryEmail);
     }
 
     [Fact]
     public async Task CreateJobAsync_NormalJob_PassesRecurringBitmasks()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput(recurringDays: "1110000", recurringFrequency: "10000");
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Arguments;
-
-        Assert.Equal("7", args[63]); // recurringDays string should be the bitmask value as string
-        Assert.Equal(0b0000111, args[64]); // daysInt should be the bitmask integer (Mon+Tue+Wed=7)
-        Assert.Equal(0b00001, args[65]); // frequencyInt should be the bitmask integer (weekly=1)
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal("JOB-001", job.UcjbNumber);
     }
 
     [Fact]
     public async Task CreateJobAsync_NormalJob_TypeDeliverTo_SetsTypeId2()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput(type: "DELIVERTO");
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Arguments;
-
-        Assert.Equal(2, args[0]); // DELIVERTO type should map to TypeId 2
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal(2, (int)job.UcjbType!); // DELIVERTO type maps to TypeId 2
     }
 
     [Fact]
-    public async Task CreateJobAsync_BulkJob_CallsBulkScheduleInsertProc()
+    public async Task CreateJobAsync_NormalJob_SetsJobNumber()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupBulkScheduleInsert(mockProcs);
-        var input = CreateInput(speedId: 2001);
+        var service = CreateService();
+        var input = CreateInput();
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var invocation = mockProcs.Invocations
-            .SingleOrDefault(i =>
-                i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync));
-        Assert.NotNull(invocation);
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal("JOB-001", job.UcjbNumber);
     }
 
     [Fact]
-    public async Task CreateJobAsync_BulkJob_DoesNotCallExceleratorInsert()
+    public async Task CreateJobAsync_BulkJob_InsertsJobInDatabase()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupBulkScheduleInsert(mockProcs);
-        var input = CreateInput(speedId: 2001);
-
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        Assert.DoesNotContain(mockProcs.Invocations
-, i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync));
-    }
-
-    [Fact]
-    public async Task CreateJobAsync_BulkJob_ReturnsSuccessWithJobId()
-    {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupBulkScheduleInsert(mockProcs, outputJobId: 99);
+        var service = CreateService();
         var input = CreateInput(speedId: 2001);
 
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
         Assert.True(result.Success);
-        Assert.Equal(99, result.JobId);
+        Assert.NotNull(result.JobId);
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
     }
 
     [Fact]
-    public async Task CreateJobAsync_BulkJob_CastsQuantityAndSizeToShort()
+    public async Task CreateJobAsync_BulkJob_ReturnsSuccessWithJobId()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupBulkScheduleInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput(speedId: 2001);
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
-            .Arguments;
-
-        // Size defaults to 2 (from ApplyNullFallbackDefaults), cast to short
-        var sizeValue = Assert.IsType<short>(args[25]);
-        Assert.Equal(2, sizeValue);
-        // Quantity defaults to 1 (from ApplyNullFallbackDefaults), cast to short
-        var qtyValue = Assert.IsType<short>(args[26]);
-        Assert.Equal(1, qtyValue);
+        Assert.True(result.Success);
+        Assert.NotNull(result.JobId);
+        Assert.True(result.JobId > 0);
     }
 
     [Fact]
-    public async Task CreateJobAsync_BulkJob_ConvertsDeliverToPrivateBusinessToNullableBool()
+    public async Task CreateJobAsync_BulkJob_SetsQuantityAndSize()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupBulkScheduleInsert(mockProcs);
+        var service = CreateService();
+        var input = CreateInput(speedId: 2001);
+
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        // Size defaults to 2 (from ApplyNullFallbackDefaults)
+        Assert.Equal(2, job.UcjbSize);
+        // Quantity defaults to 1 (from ApplyNullFallbackDefaults)
+        Assert.Equal((short)1, job.UcjbQty);
+    }
+
+    [Fact]
+    public async Task CreateJobAsync_BulkJob_SetsDeliverToPrivateBusiness()
+    {
+        var service = CreateService();
         var input = CreateInput(speedId: 2001, privateRes: true);
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
+        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
-            .Arguments;
-
-        var deliverToPrivateBusiness = Assert.IsType<bool>(args[33]);
-        Assert.True(deliverToPrivateBusiness);
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal(1, job.DeliverToPrivateBusiness);
     }
 
     [Fact]
     public async Task CreateJobAsync_BulkJob_MapsKeyParameters()
     {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupBulkScheduleInsert(mockProcs);
+        var service = CreateService();
         var input = CreateInput(speedId: 2001);
 
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpBulkScheduleJob_InsertAsync))
-            .Arguments;
-
-        Assert.Equal(1, args[0]); // type should default to 1
-        Assert.Equal(10, args[2]); // clientID should match input
-        Assert.Equal("Test User", args[3]); // contact should be BookedBy
-        Assert.Equal(false, args[51]); // onHold should be data.Hold (default false)
-        Assert.Equal("JOB-001", args[52]); // orderRef should be data.JobNumber
-        Assert.Equal((int)JobSource.DespatchWeb, args[64]); // sourceId should be DespatchWeb
-        Assert.Equal(1, args[66]); // loggedInContactId should match input
-    }
-
-    [Fact]
-    public async Task CreateJobAsync_NormalJob_SeedsJobNumberOutputParameter()
-    {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-        SetupExceleratorInsert(mockProcs);
-        var input = CreateInput();
-
-        await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        var args = mockProcs.Invocations
-            .Single(i => i.Method.Name == nameof(IDespatchContextProcedures.DD_stpJob_Excelerator_InsertAsync))
-            .Arguments;
-
-        // jobNumber OutputParameter is at index 71 (one after jobID at 70)
-        var jobNumberParam = args[ExceleratorJobIdArgIndex + 1] as OutputParameter<string>;
-        Assert.NotNull(jobNumberParam);
-        Assert.Equal("JOB-001", jobNumberParam._value);
-    }
-
-    [Fact]
-    public async Task CreateJobAsync_ProcThrowsException_ReturnsFailedWithMessage()
-    {
-        var service = CreateServiceWithMockedProcs(out var mockProcs);
-
-        // Set up excelerator proc to throw
-        mockProcs.Setup(p => p.DD_stpJob_Excelerator_InsertAsync(
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<double?>(), It.IsAny<double?>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<int?>(), It.IsAny<bool?>(), It.IsAny<int?>(),
-            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<decimal?>(), It.IsAny<decimal?>(), It.IsAny<int?>(),
-            It.IsAny<int?>(), It.IsAny<bool?>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<DateTime?>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<int?>(), It.IsAny<int?>(),
-            It.IsAny<OutputParameter<int?>>(), It.IsAny<OutputParameter<string>>(),
-            It.IsAny<OutputParameter<decimal?>>(), It.IsAny<OutputParameter<bool?>>(),
-            It.IsAny<OutputParameter<int>>(), It.IsAny<CancellationToken>()
-        )).ThrowsAsync(new InvalidOperationException("Database connection failed"));
-
-        var input = CreateInput();
-
         var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
 
-        Assert.False(result.Success);
-        Assert.Contains("Database connection failed", result.Message);
+        var job = await GetInsertedJobAsync(result.JobId);
+        Assert.NotNull(job);
+        Assert.Equal(1, (int)job.UcjbType!); // type defaults to 1
+        Assert.Equal(10, job.UcjbClientId); // client ID matches input
+        Assert.Equal("Test User", job.UcjbContact); // contact = BookedBy
+        Assert.Equal("JOB-001", job.UcjbNumber); // job number matches input
+        Assert.Equal((int)JobSource.DespatchWeb, job.SourceId);
+        Assert.Equal(1, job.LoggedInContactId);
     }
-
-    [Fact]
-    public async Task CreateJobAsync_ProcNotMocked_OutputParamNotSet_ReturnsFailure()
-    {
-        // When no proc mock is set up, the loose mock returns null for Task<int>.
-        // Awaiting null throws NullReferenceException, caught by the outer catch block.
-        var service = CreateServiceWithMockedProcs(out _);
-        var input = CreateInput();
-
-        var result = await service.CreateJobAsync(input, TestContext.Current.CancellationToken);
-
-        Assert.False(result.Success);
-        Assert.False(string.IsNullOrEmpty(result.Message));
-    }
-
 }

@@ -55,11 +55,6 @@
             transition: opacity 0.3s ease-out;
         }
 
-        .app-loader.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
         .loader-content {
             display: flex;
             flex-direction: column;
@@ -118,8 +113,14 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap" rel="stylesheet">
+
+    @{
+        var vendorReactJs = manifest.GetValueOrDefault("vendor-react.js", "vendor-react.js");
+    }
+    <link rel="preload" href="/dist/manifest.json" as="fetch" crossorigin />
+    <link rel="preload" href="/dist/@vendorReactJs" as="script" />
 
     @if (!string.IsNullOrEmpty(vendorCoreCss))
     {
@@ -148,28 +149,28 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
             integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
             integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
-            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" defer></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js" defer></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" defer></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" defer></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" defer></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js" defer></script>
 
-    <script src="/dist/@vendorCoreJs"></script>
-    <script src="/dist/@vendorPluginsJs"></script>
-    <script src="/dist/@appBundleFile"></script>
+    <script src="/dist/@vendorCoreJs" defer></script>
+    <script src="/dist/@vendorPluginsJs" defer></script>
+    <script src="/dist/@appBundleFile" defer></script>
 
     <script>
-        (function() {
+        (() => {
             let resourcesLoaded = false;
             let angularReady = false;
 
-            setTimeout(function() {
+            setTimeout(() => {
                 hideLoader();
             }, 15000);
 
@@ -178,7 +179,7 @@
                 if (loaderElement && !loaderElement.classList.contains('hidden')) {
                     loaderElement.classList.add('hidden');
 
-                    setTimeout(function() {
+                    setTimeout(() => {
                         if (loaderElement.parentNode) {
                             loaderElement.parentNode.removeChild(loaderElement);
                         }
@@ -186,21 +187,24 @@
                 }
             }
 
-            window.addEventListener('load', function() {
+            window.addEventListener('load', () => {
                 resourcesLoaded = true;
                 if (angularReady) {
                     hideLoader();
                 }
             });
 
-            window.angular.module('uDispatch').run(['$timeout', $timeout => {
-                $timeout(function() {
-                    angularReady = true;
-                    if (resourcesLoaded) {
-                        hideLoader();
-                    }
-                });
-            }]);
+            // Deferred scripts execute before DOMContentLoaded, so angular is available here
+            document.addEventListener('DOMContentLoaded', () => {
+                window.angular.module('uDispatch').run(['$timeout', $timeout => {
+                    $timeout(() => {
+                        angularReady = true;
+                        if (resourcesLoaded) {
+                            hideLoader();
+                        }
+                    });
+                }]);
+            });
         })();
     </script>
 </body>
