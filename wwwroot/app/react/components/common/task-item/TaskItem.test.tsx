@@ -18,6 +18,8 @@ jest.mock('../../../utils/dateUtils', () => ({
     getIanaTimezone: jest.fn(() => 'America/New_York'),
     getTenantTimezone: jest.fn(() => 'America/New_York'),
     getTimezoneAbbreviation: jest.fn(() => '(EST)'),
+    formatLongDate: jest.fn((date: any) => date?.format?.('MMM/DD/YYYY') ?? ''),
+    formatTime: jest.fn((date: any) => date?.format?.('HH:mm') ?? ''),
 }));
 
 const theme = createTheme();
