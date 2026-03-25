@@ -159,14 +159,12 @@ export interface MountRecurringJobsConfig {
     showToast: ShowToastFn;
     isUsCustomer?: boolean;
     onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
-    onJobSelect?: (jobId: number | null) => void;
 }
 
 export interface RecurringJobsPageProps {
     showToast: ShowToastFn;
     isUsCustomer?: boolean;
     onAddStop?: (job: PrebookListModel, isPickup: boolean) => void;
-    onJobSelect?: (jobId: number | null) => void;
     setRefreshCallback?: (callback: () => void) => void;
 }
 

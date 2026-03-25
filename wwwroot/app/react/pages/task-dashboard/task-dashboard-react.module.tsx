@@ -66,7 +66,6 @@ export function mountTaskDashboardPage(
                     <TaskDashboardPage
                         showToast={config.showToast}
                         isUsCustomer={config.isUsCustomer}
-                        onTaskSelect={config.onTaskSelect}
                         setRefreshCallback={(cb) => {
                             refreshCallback = cb;
                         }}
