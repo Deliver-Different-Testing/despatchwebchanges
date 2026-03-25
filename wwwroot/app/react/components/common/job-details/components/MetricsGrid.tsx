@@ -6,6 +6,7 @@
 import React, {useCallback} from 'react';
 import Box from '@mui/material/Box';
 import type {SxProps, Theme} from '@mui/material/styles';
+import Chip from '@mui/material/Chip';
 import {MetricCard} from './MetricCard';
 import type {IJob} from '../JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../../utils/dateUtils';
@@ -20,6 +21,7 @@ interface MetricsGridProps {
     onEditCompletedTime: () => void;
     onClientClick: () => void;
     onPricingClick: () => void;
+    onInternalStatusClick: () => void;
 }
 
 const gridSx: SxProps<Theme> = {
@@ -46,6 +48,7 @@ export function MetricsGrid({
                                 onEditCompletedTime,
                                 onClientClick,
                                 onPricingClick,
+                                onInternalStatusClick,
                             }: MetricsGridProps) {
     const puTz = getTzStr(job.pickUpTimeZone);
     const delTz = getTzStr(job.deliveryTimeZone);
@@ -180,6 +183,31 @@ export function MetricsGrid({
                     filled
                 />
             </Box>
+
+            {/* Internal Status - only editable on nationwide jobs */}
+            {job.hasNationwide && job.internalStatusId != null && (
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 0.75, borderTop: 1, borderColor: 'divider'}}>
+                    <Chip
+                        label={`Internal: ${getInternalStatusLabel(job.internalStatusId)}`}
+                        size="small"
+                        variant="outlined"
+                        clickable
+                        onClick={onInternalStatusClick}
+                        sx={{fontSize: '0.75rem', fontWeight: 500}}
+                    />
+                </Box>
+            )}
         </>
     );
+}
+
+function getInternalStatusLabel(id: number): string {
+    switch (id) {
+        case JobInternalStatusEnum.NewJobs: return 'New Jobs';
+        case JobInternalStatusEnum.ActionRequired: return 'Action Required';
+        case JobInternalStatusEnum.AwaitingPod: return 'Awaiting POD';
+        case JobInternalStatusEnum.Reprice: return 'Reprice';
+        case JobInternalStatusEnum.OvernightCp: return 'Overnight CP';
+        default: return `Status ${id}`;
+    }
 }

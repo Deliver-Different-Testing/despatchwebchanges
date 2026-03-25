@@ -151,9 +151,6 @@ export const queryKeys = {
         all: ['dispatch'] as const,
         jobs: (params: JobListSearchParams) => ['dispatch', 'jobs', params] as const,
         clearList: (params: JobListSearchParams) => ['dispatch', 'clearList', params] as const,
-        currentWorkJobs: (courierId: number, params: JobListSearchParams) => ['dispatch', 'currentWorkJobs', courierId, params] as const,
-        pageViews: ['dispatch', 'pageViews'] as const,
-        unreadMessages: ['dispatch', 'unreadMessages'] as const,
     },
     nationwide: {
         all: ['nationwide'] as const,

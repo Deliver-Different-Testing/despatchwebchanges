@@ -1,24 +1,19 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {alpha} from '@mui/material/styles';
+import React, {useState, useCallback, useMemo, useEffect, useRef} from 'react';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Collapse from '@mui/material/Collapse';
-import Icon from '@mui/material/Icon';
-import IconButton from '@mui/material/IconButton';
-import InputAdornment from '@mui/material/InputAdornment';
-import TextField from '@mui/material/TextField';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import SearchIcon from '@mui/icons-material/Search';
-import type {SxProps, Theme} from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import TextField from '@mui/material/TextField';
+import InputAdornment from '@mui/material/InputAdornment';
+import Collapse from '@mui/material/Collapse';
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../query';
 import {
     useOverviewJobs,
-    useOverviewOpenJobs,
     useOverviewRegions,
     useOverviewSpeeds,
     useOverviewStats,
+    useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
 import {FilterPanel} from './components/FilterPanel';
@@ -27,75 +22,15 @@ import {DeliveriesTable} from './components/DeliveriesTable';
 import {OpenJobsWidget} from './components/OpenJobsWidget';
 import {MapDialog} from './components/MapDialog';
 import type {
-    DateRange,
-    ISuggestion,
     OverviewPageProps,
     OverviewQueryParams,
     OverviewTableParentJob,
+    ISuggestion,
+    DateRange,
     TableSort,
 } from './OverviewPage.interfaces';
 
 // Window.ReactAiAssistant type is declared in wwwroot/types/global.d.ts
-
-const styles: Record<string, SxProps<Theme>> = {
-    root: {
-        p: 2,
-        display: 'flex',
-        flexDirection: {xs: 'column', md: 'row'},
-        gap: 2,
-        bgcolor: 'background.default',
-    },
-    filterPanel: {
-        flex: '0 0 20%',
-        minWidth: 250,
-    },
-    mainPanel: {
-        flex: 1,
-        minWidth: 0,
-    },
-    card: {
-        borderRadius: 1.5,
-        border: 1,
-        borderColor: 'divider',
-        boxShadow: 1,
-    },
-    cardHeader: (theme: Theme) => ({
-        bgcolor: 'primary.main',
-        color: 'primary.contrastText',
-        minHeight: 40,
-        px: 1.25,
-        gap: 0.5,
-        flexShrink: 0,
-        boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.2)}`,
-        '& .MuiIconButton-root': {
-            color: 'inherit',
-            p: 0.5,
-            borderRadius: 1,
-            transition: 'background-color 150ms ease, transform 150ms ease',
-            '&:hover': {
-                bgcolor: alpha(theme.palette.common.white, 0.15),
-            },
-            '&:active': {
-                transform: 'scale(0.92)',
-            },
-        },
-    }),
-    headerIcon: {
-        fontSize: 20,
-        mr: 0.75,
-        opacity: 0.9,
-    },
-    headerTitle: {
-        fontWeight: 600,
-        fontSize: '0.85rem',
-        letterSpacing: '0.01em',
-    },
-    searchContainer: {
-        display: 'flex',
-        justifyContent: 'flex-end',
-        mb: 2,
-    },
-};
 
 const OVERVIEW_LIMIT_KEY = `overviewJobLimitDisplay-${ContactID}`;
 
@@ -223,7 +158,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
     // ── Refresh callback (exposed to AngularJS) ──
     const handleRefresh = useCallback(() => {
-        return queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
+        queryClient.invalidateQueries({queryKey: queryKeys.overview.all});
     }, [queryClient]);
 
     useEffect(() => {
@@ -362,9 +297,17 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     }, []);
     
     return (
-        <Box sx={styles.root}>
+        <Box
+            sx={{
+                p: 2,
+                display: 'flex',
+                flexDirection: {xs: 'column', md: 'row'},
+                gap: 2,
+                bgcolor: 'background.default',
+            }}
+        >
             {/* Left Panel — Filters */}
-            <Box sx={styles.filterPanel}>
+            <Box sx={{flex: '0 0 20%', minWidth: 250}}>
                 <FilterPanel
                     regions={regions}
                     regionsLoading={regionsLoading}
@@ -387,25 +330,39 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             </Box>
 
             {/* Right Panel — Overview + Open Jobs */}
-            <Box sx={styles.mainPanel}>
-                <Card variant="outlined" sx={styles.card}>
+            <Box sx={{flex: 1, minWidth: 0}}>
+                <Card variant="outlined">
                     {/* Card Header */}
-                    <Toolbar variant="dense" disableGutters sx={styles.cardHeader}>
-                        <Icon sx={styles.headerIcon} baseClassName="material-symbols-outlined">dashboard</Icon>
-                        <Typography variant="subtitle2" noWrap sx={{...styles.headerTitle as object, flex: 1}}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            px: 2,
+                            py: 1,
+                            bgcolor: 'background.paper',
+                            color: 'text.primary',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            minHeight: 44,
+                        }}
+                    >
+                        <span className="material-symbols-outlined" style={{fontSize: 20}}>
+                            overview
+                        </span>
+                        <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
                             Overview
                         </Typography>
-                        <IconButton size="small" onClick={handleToggleOverviewCard}>
-                            <Icon sx={{fontSize: 18}} baseClassName="material-symbols-outlined">
+                        <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
+                            <span className="material-symbols-outlined">
                                 {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
-                            </Icon>
+                            </span>
                         </IconButton>
-                    </Toolbar>
+                    </Box>
 
                     <Collapse in={!isOverviewCollapsed}>
                         <Box sx={{p: 2}}>
                             {/* Search */}
-                            <Box sx={styles.searchContainer}>
+                            <Box sx={{display: 'flex', justifyContent: 'flex-end', mb: 2}}>
                                 <TextField
                                     size="small"
                                     placeholder="Search deliveries..."
@@ -415,7 +372,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
                                         input: {
                                             startAdornment: (
                                                 <InputAdornment position="start">
-                                                    <SearchIcon sx={{fontSize: 20}} />
+                                                    <span className="material-symbols-outlined" style={{fontSize: 20}}>
+                                                        search
+                                                    </span>
                                                 </InputAdornment>
                                             ),
                                         },

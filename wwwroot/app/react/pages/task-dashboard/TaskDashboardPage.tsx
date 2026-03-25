@@ -7,12 +7,10 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {alpha, useTheme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import FormControl from '@mui/material/FormControl';
-import Icon from '@mui/material/Icon';
 import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
 import List from '@mui/material/List';
@@ -24,10 +22,12 @@ import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
+import {useTheme} from '@mui/material/styles';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoIcon from '@mui/icons-material/Info';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SearchIcon from '@mui/icons-material/Search';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -45,10 +45,9 @@ import {
 import {TaskFiltersRequest} from '../../interfaces';
 import {TaskItem} from '../../components/common/task-item/TaskItem';
 import {TaskCalendarView} from '../../components/common/task-calendar-view/TaskCalendarView';
-import {JobDetails} from '../../components/common/job-details/JobDetails';
-import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
-import {NoData} from '../../components/common/no-data/NoData';
+import {TaskHistory} from '../../components/common/task-history/TaskHistory';
 import {formatDateForApi} from '../../utils/dateUtils';
+import DensityMode from '../../../enums/densityMode';
 import {
     useActiveStaff,
     useEventTypes,
@@ -62,90 +61,6 @@ import {tasksApi} from '../../services/tasksApi';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
 import {AiSummaryPanel} from '../../components/common/ai-summary-panel/AiSummaryPanel';
 import {isAiEnabled} from '../../../functions/aiSettings';
-import type {SxProps, Theme} from '@mui/material';
-
-const styles: Record<string, SxProps<Theme>> = {
-    root: {
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        p: 2,
-        bgcolor: 'background.default',
-    },
-    statCardsRow: {
-        display: 'flex',
-        gap: 2,
-        mb: 2,
-        flexShrink: 0,
-    },
-    filterCard: {
-        mb: 2,
-        flexShrink: 0,
-    },
-    filterCardContent: {
-        py: 1.5,
-        '&:last-child': {pb: 1.5},
-    },
-    mainContent: {
-        flex: 1,
-        display: 'flex',
-        gap: 2,
-        minHeight: 0,
-    },
-    leftPanel: {
-        flex: 11,
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    rightPanel: {
-        flex: 9,
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-    },
-    panelCard: {
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        borderRadius: 1.5,
-        border: 1,
-        borderColor: 'divider',
-        boxShadow: 1,
-    },
-    cardHeader: (theme: Theme) => ({
-        bgcolor: 'primary.main',
-        color: 'primary.contrastText',
-        minHeight: 40,
-        px: 1.25,
-        gap: 0.5,
-        flexShrink: 0,
-        boxShadow: `0 1px 3px ${alpha(theme.palette.common.black, 0.2)}`,
-        '& .MuiIconButton-root': {
-            color: 'inherit',
-            p: 0.5,
-            borderRadius: 1,
-            transition: 'background-color 150ms ease, transform 150ms ease',
-            '&:hover': {
-                bgcolor: alpha(theme.palette.common.white, 0.15),
-            },
-            '&:active': {
-                transform: 'scale(0.92)',
-            },
-        },
-    }),
-    headerIcon: {
-        fontSize: 20,
-        mr: 0.75,
-        opacity: 0.9,
-    },
-    headerTitle: {
-        fontWeight: 600,
-        fontSize: '0.85rem',
-        letterSpacing: '0.01em',
-    },
-};
 
 // Local storage keys
 const getViewPreferenceKey = () => {
@@ -223,6 +138,7 @@ const fadeInUpKeyframes = `
 export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                                         showToast,
                                                                         isUsCustomer,
+                                                                        onTaskSelect,
                                                                         setRefreshCallback,
                                                                     }) => {
     const theme = useTheme();
@@ -462,15 +378,11 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         }
     }, [refetchTasks]);
 
-    const jobDetailsConfig = useMemo<MountJobDetailsConfig | null>(() => {
-        if (!selectedTask?.jobId) return null;
-        return { jobId: selectedTask.jobId, isRecurringJob: false, isBulkJob: false, isUsCustomer, showToast };
-    }, [selectedTask?.jobId, isUsCustomer, showToast]);
-
     // Handle task selection
     const selectTaskForHistory = useCallback((task: ExtendedTask) => {
         setSelectedTask(task);
-    }, []);
+        onTaskSelect(task);
+    }, [onTaskSelect]);
 
     // Handle task completion
     const handleTaskCompletion = useCallback(async () => {
@@ -499,6 +411,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Toast helpers
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
+    const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
 
     // Create a tasks service interface for child components
     const tasksServiceForComponents = useMemo(() => ({
@@ -526,12 +439,18 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     let globalTaskIndex = 0;
 
     return (
-        <Box sx={styles.root}>
+        <Box sx={{
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            p: 2,
+            bgcolor: 'background.default',
+        }}>
             {/* Inject animation keyframes */}
             <style>{fadeInUpKeyframes}</style>
 
             {/* Stat Cards Row */}
-            <Box sx={styles.statCardsRow}>
+            <Box sx={{display: 'flex', gap: 2, mb: 2, flexShrink: 0}}>
                 {STAT_CARDS.map((card) => {
                     const isSelected = statusFilter === card.status;
                     const count = statusCounts[card.countKey];
@@ -583,8 +502,8 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             </Box>
 
             {/* Inline Filter Bar */}
-            <Card variant="outlined" sx={styles.filterCard}>
-                <CardContent sx={styles.filterCardContent}>
+            <Card variant="outlined" sx={{mb: 2, flexShrink: 0}}>
+                <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
                     <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
                         <TextField
                             size="small"
@@ -681,21 +600,31 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             )}
 
             {/* Main Content - Two Column Layout */}
-            <Box sx={styles.mainContent}>
+            <Box sx={{flex: 1, display: 'flex', gap: 2, minHeight: 0}}>
                 {/* Left Panel: Tasks or Calendar */}
-                <Box sx={styles.leftPanel}>
+                <Box sx={{flex: 11, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
                     <Card variant="outlined"
-                          sx={styles.panelCard}>
-                        <Toolbar variant="dense" disableGutters sx={styles.cardHeader}>
+                          sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                        <Toolbar
+                            variant="dense"
+                            sx={{
+                                bgcolor: 'background.paper',
+                                color: 'text.primary',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                                minHeight: 44,
+                                flexShrink: 0,
+                            }}
+                        >
                             {showFullCalendar ? (
                                 <>
-                                    <Icon sx={styles.headerIcon} baseClassName="material-symbols-outlined">calendar_month</Icon>
-                                    <Typography variant="subtitle2" noWrap sx={styles.headerTitle}>Calendar</Typography>
+                                    <CalendarMonthIcon sx={{mr: 1}}/>
+                                    <Typography variant="subtitle1">Calendar</Typography>
                                 </>
                             ) : (
                                 <>
-                                    <Icon sx={styles.headerIcon} baseClassName="material-symbols-outlined">task_alt</Icon>
-                                    <Typography variant="subtitle2" noWrap sx={styles.headerTitle}>
+                                    <TaskAltIcon sx={{mr: 1}}/>
+                                    <Typography variant="subtitle1">
                                         Tasks ({filteredTasks.length})
                                     </Typography>
                                 </>
@@ -840,18 +769,39 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     </Card>
                 </Box>
 
-                {/* Right Panel: Job Details */}
-                <Box sx={styles.rightPanel}>
+                {/* Right Panel: Delivery Journey */}
+                <Box sx={{flex: 9, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
                     <Card variant="outlined"
-                          sx={styles.panelCard}>
-                        <Toolbar variant="dense" disableGutters sx={styles.cardHeader}>
-                            <Icon sx={styles.headerIcon} baseClassName="material-symbols-outlined">info</Icon>
-                            <Typography variant="subtitle2" noWrap sx={styles.headerTitle}>
-                                Job Details{selectedTask ? ` - Job #${selectedTask.jobNumber}` : ''}
+                          sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
+                        <Toolbar
+                            variant="dense"
+                            sx={{
+                                bgcolor: 'background.paper',
+                                color: 'text.primary',
+                                borderBottom: '1px solid',
+                                borderColor: 'divider',
+                                minHeight: 44,
+                                flexShrink: 0,
+                            }}
+                        >
+                            <RocketLaunchIcon sx={{mr: 1}}/>
+                            <Typography variant="subtitle1">
+                                Delivery Journey {selectedTask ? `for Job ${selectedTask.jobNumber}` : ''}
                             </Typography>
                         </Toolbar>
                         <Box sx={{flex: 1, overflow: 'auto'}}>
-                            {jobDetailsConfig ? <JobDetails config={jobDetailsConfig} /> : <NoData title="No Job Selected" message="Select a task to view job details" icon="info" />}
+                            <TaskHistory
+                                jobId={selectedTask?.jobId}
+                                config={{
+                                    showSummaryStats: true,
+                                    densityMode: DensityMode.Normal,
+                                }}
+                                dispatchService={dispatchServiceForComponents}
+                                showSuccessToast={showSuccessToast}
+                                showErrorToast={showErrorToast}
+                                showInfoToast={showInfoToast}
+                                isUsCustomer={isUsCustomer}
+                            />
                         </Box>
                     </Card>
                 </Box>

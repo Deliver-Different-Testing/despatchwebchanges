@@ -172,7 +172,7 @@ export function JobDetails({config}: JobDetailsProps) {
     const aiContainerRef = useRef<HTMLDivElement>(null);
 
     // Update mutations
-    const {updateField, updateAddress, toggleReadStatus, dispatchJob, isUpdating} = useJobUpdate(showToast);
+    const {updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating} = useJobUpdate(showToast);
 
     // Photos
     const {deliveryPhotos, pickupPhotos, imageOnlyDeliveryPhotos, imageOnlyPickupPhotos, isLoading: photosLoading} = usePodPhotos({
@@ -199,8 +199,10 @@ export function JobDetails({config}: JobDetailsProps) {
         showToast,
         updateField,
         updateAddress,
+        updatePod,
         dispatchJob,
         refreshAndNotify,
+        onStatusChange: config.onStatusChange,
     });
 
     // Reset tab index when jobId changes
@@ -318,6 +320,7 @@ export function JobDetails({config}: JobDetailsProps) {
                         onEditCompletedTime={actions.handleEditCompletedTime}
                         onClientClick={actions.handleClientClick}
                         onPricingClick={actions.handlePricingClick}
+                        onInternalStatusClick={actions.handleInternalStatusClick}
                     />
                 </Box>
 
@@ -418,7 +421,10 @@ export function JobDetails({config}: JobDetailsProps) {
                     )}
 
                     {job.palletInfo && job.palletInfo.length > 0 && (
-                        <PalletSection pallets={job.palletInfo} isUsCustomer={isUsCustomer} />
+                        <PalletSection
+                            pallets={job.palletInfo}
+                            isUsCustomer={isUsCustomer}
+                        />
                     )}
                 </Box>
             </Paper>

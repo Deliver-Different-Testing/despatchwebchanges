@@ -110,6 +110,22 @@ export const JOB_TYPE_OPTIONS = [
     {id: 3, text: '3rd-Party'},
 ];
 
+/** Notification type options */
+export const NOTIFY_OPTIONS = [
+    {id: 0, text: 'Not Set'},
+    {id: 1, text: 'Pickup'},
+    {id: 2, text: 'Delivery'},
+    {id: 3, text: '3rd-Party'},
+];
+
+/** Accepted type options */
+export const ACCEPTED_OPTIONS = [
+    {id: 0, text: 'Not Set'},
+    {id: 1, text: 'Pickup'},
+    {id: 2, text: 'Delivery'},
+    {id: 3, text: '3rd-Party'},
+];
+
 /** Tracking method options */
 export const TRACKING_OPTIONS = [
     {id: 1, text: 'Email'},

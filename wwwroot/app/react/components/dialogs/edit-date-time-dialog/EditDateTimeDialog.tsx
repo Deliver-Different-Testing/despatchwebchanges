@@ -242,9 +242,6 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                         <Typography variant="h6" fontWeight={600}>
                             {title}
                         </Typography>
-                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                            Update the date and time
-                        </Typography>
                     </Box>
                     <IconButton
                         onClick={onClose}

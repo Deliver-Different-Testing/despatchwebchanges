@@ -23,15 +23,6 @@ jest.mock('../../hooks/useCourierApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
-// Mock JobDetails (transitively imports AngularJS modules)
-jest.mock('../../components/common/job-details/JobDetails', () => ({
-    JobDetails: ({config}: {config: {jobId: number}}) => <div data-testid="job-details">JobDetails for job {config.jobId}</div>,
-}));
-
-jest.mock('../../components/common/no-data/NoData', () => ({
-    NoData: ({title, message}: {title: string; message: string}) => <div data-testid="no-data">{title}: {message}</div>,
-}));
-
 // Mock the API
 jest.mock('../../services/recurringJobsApi', () => ({
     recurringJobsApi: {
@@ -108,6 +99,7 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsPageProps>): Recurr
     showToast: jest.fn(),
     isUsCustomer: false,
     onAddStop: jest.fn(),
+    onJobSelect: jest.fn(),
     setRefreshCallback: jest.fn(),
     ...overrides,
 });
@@ -215,6 +207,7 @@ describe('RecurringJobsPage', () => {
 
     // ── Job list + selection + filter clear (single render) ─────────
     it('displays jobs, selects on click, and clears selection on filter switch', () => {
+        const onJobSelect = jest.fn();
         const jobs = [createMockJob(1, 'ABC Corp'), createMockJob(2, 'XYZ Inc')];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
@@ -223,19 +216,19 @@ describe('RecurringJobsPage', () => {
             refetch: jest.fn(),
         } as any);
 
-        renderWithProviders(createDefaultProps());
+        renderWithProviders(createDefaultProps({onJobSelect}));
 
         // Jobs displayed
         expect(screen.getByText('ABC Corp')).toBeInTheDocument();
         expect(screen.getByText('XYZ Inc')).toBeInTheDocument();
 
-        // Select job — header updates to show job ID
+        // Select job
         fireEvent.click(screen.getByText('ABC Corp').closest('tr')!);
-        expect(screen.getByText(/Job Details - Job #1/)).toBeInTheDocument();
+        expect(onJobSelect).toHaveBeenCalledWith(1);
 
         // Switch to Inactive → clears selection
         fireEvent.click(screen.getByText('Inactive'));
-        expect(screen.getByText(/No Job Selected/)).toBeInTheDocument();
+        expect(onJobSelect).toHaveBeenCalledWith(null);
     });
 
     // ── Void job: open dialog + close with No (single render) ───────

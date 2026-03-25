@@ -123,7 +123,7 @@ test:frontend:unit:
   allow_failure: false
   parallel: 2
   script:
-    - node --expose-gc ./node_modules/.bin/jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --forceExit --maxWorkers=2
+    - node --expose-gc ./node_modules/.bin/jest --ci --shard=$CI_NODE_INDEX/$CI_NODE_TOTAL --forceExit --maxWorkers=50%
 
 test:frontend:integration:
   stage: .pre
@@ -132,4 +132,4 @@ test:frontend:integration:
     - .frontend-test-rules
   allow_failure: true
   script:
-    - node --expose-gc ./node_modules/.bin/jest --config jest.integration.config.js --ci --forceExit --maxWorkers=2
+    - node --expose-gc ./node_modules/.bin/jest --config jest.integration.config.js --ci --forceExit --maxWorkers=50%

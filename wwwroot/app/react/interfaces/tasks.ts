@@ -21,8 +21,6 @@ export interface Task {
     jobId: number;
     eventType: string;
     jobNumber: string;
-    courierCode?: string;
-    courierName?: string;
     priority?: 'high' | 'medium' | 'low';
     _dueDateString?: string;
     _dueTimeString?: string;
@@ -82,8 +80,6 @@ export interface TaskApiResponse {
     jobId: number;
     eventType: string;
     jobNumber: string;
-    courierCode?: string;
-    courierName?: string;
     priority?: 'high' | 'medium' | 'low';
 }
 

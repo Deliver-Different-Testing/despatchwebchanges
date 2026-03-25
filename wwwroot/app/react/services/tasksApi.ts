@@ -18,7 +18,7 @@ import {
     EventTypeSuggestion,
     EventGroupViewModel,
 } from '../interfaces';
-import {formatDateForApi, parseDateFromApi, formatRelativeDateTime, formatLongDate, formatTime} from '../utils/dateUtils';
+import {formatDateForApi, parseDateFromApi, formatRelativeDateTime} from '../utils/dateUtils';
 import {Dayjs} from 'dayjs';
 import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-history/TaskHistory.interfaces';
 
@@ -26,12 +26,9 @@ import {DeliveryJourney, DeliveryJourneyDto} from '../components/common/task-his
  * Transform API response to Task with Dayjs date
  */
 function transformTask(apiTask: TaskApiResponse): Task {
-    const dueDate = parseDateFromApi(apiTask.dueDate);
     return {
         ...apiTask,
-        dueDate,
-        _dueDateString: formatLongDate(dueDate),
-        _dueTimeString: formatTime(dueDate),
+        dueDate: parseDateFromApi(apiTask.dueDate),
     };
 }
 

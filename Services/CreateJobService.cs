@@ -32,22 +32,6 @@ public sealed class CreateJobService(
         }
     }
 
-    public async Task<CreateMinimalTucJobResponse> CreateJobAsync(
-        CreateMinimalTucJobInputModel data,
-        DespatchContext context,
-        CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            return await CreateJobCoreAsync(data, context, cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "Error creating job via CreateJobService (transactional)");
-            return new CreateMinimalTucJobResponse { Success = false, Message = ex.Message };
-        }
-    }
-
     private static async Task<CreateMinimalTucJobResponse> CreateJobCoreAsync(
         CreateMinimalTucJobInputModel data,
         DespatchContext context,

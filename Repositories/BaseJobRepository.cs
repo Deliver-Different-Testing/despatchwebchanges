@@ -98,6 +98,7 @@ public partial class BaseJobRepository(
 
             query = ApplyGeographicFilters(query, clearListEnvelope, isNeedsDispatchFilter);
             query = ApplyStatusFilter(query, queryParams.StatusFilter);
+            query = ApplySearchTextFilter(query, queryParams.SearchText);
 
             switch (page)
             {
@@ -376,6 +377,41 @@ public partial class BaseJobRepository(
                 j.UcjbStatus == completed),
             _ => query // "all" or null — no filter
         };
+    }
+
+    private static IQueryable<TucJob> ApplySearchTextFilter(IQueryable<TucJob> query, string searchText)
+    {
+        if (string.IsNullOrWhiteSpace(searchText)) return query;
+
+        var search = searchText.Trim().ToLower();
+        return query.Where(j =>
+            EF.Functions.Like(j.UcjbNumber, $"%{search}%")
+            || EF.Functions.Like(j.UcjbClient.UcclName, $"%{search}%")
+            || EF.Functions.Like(j.UcjbStatusNavigation.UcjsName, $"%{search}%")
+            || (j.UcjbCourier != null
+                && (EF.Functions.Like(j.UcjbCourier.UccrName, $"%{search}%")
+                    || EF.Functions.Like(j.UcjbCourier.UccrSurname, $"%{search}%")))
+            || EF.Functions.Like(j.PickupFromContact, $"%{search}%")
+            || EF.Functions.Like(j.DeliverToContact, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine1, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine2, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine3, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine4, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine5, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine6, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine7, $"%{search}%")
+            || EF.Functions.Like(j.PickupAddressLine8, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine1, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine2, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine3, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine4, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine5, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine6, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine7, $"%{search}%")
+            || EF.Functions.Like(j.DeliveryAddressLine8, $"%{search}%")
+            || EF.Functions.Like(j.UcjbSpeedNavigation.ShortName, $"%{search}%")
+            || EF.Functions.Like(j.Connote, $"%{search}%")
+        );
     }
 
     private static IQueryable<TucJob> ApplyGeographicFilters(

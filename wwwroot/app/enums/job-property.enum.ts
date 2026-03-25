@@ -56,4 +56,7 @@ export enum JobProperty {
     Barcode = 'Barcode',
     PickupArrivalTime = 'PickupArrivalTime',
     DeliveryArrivalTime = 'DeliveryArrivalTime',
+    NotifiedType = 'NotifiedType',
+    AcceptedType = 'AcceptedType',
+    UndeliverableLocationID = 'UndeliverableLocationID',
 }

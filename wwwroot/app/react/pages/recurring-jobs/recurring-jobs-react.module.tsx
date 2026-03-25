@@ -67,6 +67,7 @@ export function mountRecurringJobsPage(
                         showToast={config.showToast}
                         isUsCustomer={config.isUsCustomer}
                         onAddStop={config.onAddStop}
+                        onJobSelect={config.onJobSelect}
                         setRefreshCallback={(cb) => {
                             refreshCallback = cb;
                         }}

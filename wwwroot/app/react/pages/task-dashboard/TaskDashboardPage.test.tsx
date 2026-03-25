@@ -13,15 +13,6 @@ import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
-// Mock JobDetails (transitively imports AngularJS modules)
-jest.mock('../../components/common/job-details/JobDetails', () => ({
-    JobDetails: ({config}: {config: {jobId: number}}) => <div data-testid="job-details">JobDetails for job {config.jobId}</div>,
-}));
-
-jest.mock('../../components/common/no-data/NoData', () => ({
-    NoData: ({title, message}: {title: string; message: string}) => <div data-testid="no-data">{title}: {message}</div>,
-}));
-
 import {TaskDashboardPage} from './TaskDashboardPage';
 import {TaskDashboardPageProps} from './TaskDashboardPage.interfaces';
 import {Task} from '../../interfaces';
@@ -46,8 +37,6 @@ jest.mock('../../utils/dateUtils', () => ({
     formatDateForApi: jest.fn((date) => date.toISOString()),
     parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
     formatRelativeDateTime: jest.fn((dateStr) => dateStr),
-    formatLongDate: jest.fn((date) => date?.format?.('MMM/DD/YYYY') ?? ''),
-    formatTime: jest.fn((date) => date?.format?.('HH:mm') ?? ''),
     getIanaTimezone: jest.fn(() => 'America/New_York'),
     getTenantTimezone: jest.fn(() => 'America/New_York'),
     getTimezoneAbbreviation: jest.fn(() => '(EST)'),
@@ -158,6 +147,7 @@ const mockEventTypes = [
 const createDefaultProps = (overrides?: Partial<TaskDashboardPageProps>): TaskDashboardPageProps => ({
     showToast: jest.fn(),
     isUsCustomer: true,
+    onTaskSelect: jest.fn(),
     setRefreshCallback: jest.fn(),
     ...overrides,
 });
@@ -199,7 +189,7 @@ describe('TaskDashboardPage', () => {
         expect(screen.getAllByText('Task Type').length).toBeGreaterThan(0);
 
         // Delivery journey panel
-        expect(screen.getByText(/Job Details/)).toBeInTheDocument();
+        expect(screen.getByText(/Delivery Journey/)).toBeInTheDocument();
 
         // Two-column layout: tasks panel + delivery journey
         expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
@@ -227,7 +217,7 @@ describe('TaskDashboardPage', () => {
     // ── Skeleton loading state ──────────────────────────────────────
     it('renders skeleton loading state while fetching tasks', async () => {
         mockTasksApi.getAllTasks.mockImplementation(
-            () => new Promise(() => {}) // Never resolves — loading state is guaranteed
+            () => new Promise((resolve) => setTimeout(() => resolve([]), 500))
         );
 
         const props = createDefaultProps();
@@ -270,8 +260,8 @@ describe('TaskDashboardPage', () => {
             'calendar'
         );
 
-        // Job Details still visible in two-column layout
-        expect(screen.getByText(/Job Details/)).toBeInTheDocument();
+        // Delivery Journey still visible in two-column layout
+        expect(screen.getByText(/Delivery Journey/)).toBeInTheDocument();
     });
 
     // ── Load view preference from localStorage ──────────────────────
@@ -330,17 +320,18 @@ describe('TaskDashboardPage', () => {
     });
 
     // ── Task Selection (single render) ──────────────────────────────
-    it('updates job details panel on task click', async () => {
+    it('calls onTaskSelect and updates delivery journey on task click', async () => {
         const user = userEvent.setup();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
-        expect(screen.getByText(/Job Details$/)).toBeInTheDocument();
+        expect(screen.getByText(/Delivery Journey$/)).toBeInTheDocument();
 
         await user.click(screen.getByText('Overdue follow up call'));
 
-        expect(await screen.findByText(/Job Details - Job #JOB-100/)).toBeInTheDocument();
+        expect(props.onTaskSelect).toHaveBeenCalled();
+        expect(await screen.findByText(/Delivery Journey for Job JOB-100/)).toBeInTheDocument();
     });
 
     // ── Error Handling ──────────────────────────────────────────────

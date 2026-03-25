@@ -92,8 +92,7 @@ describe('SearchCriteriaPanel', () => {
 
         // Job ID
         const jobIdInput = screen.getByPlaceholderText('Enter job ID');
-        await user.click(jobIdInput);
-        await user.paste('123');
+        await user.type(jobIdInput, '123');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('jobId', 123);
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(jobIdInput);
@@ -102,8 +101,7 @@ describe('SearchCriteriaPanel', () => {
         // Job Number
         (props.onCriteriaChange as jest.Mock).mockClear();
         const jobNoInput = screen.getByPlaceholderText('Enter job number');
-        await user.click(jobNoInput);
-        await user.paste('JOB-001');
+        await user.type(jobNoInput, 'JOB-001');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('job', 'JOB-001');
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(jobNoInput);
@@ -112,8 +110,7 @@ describe('SearchCriteriaPanel', () => {
         // General Search
         (props.onCriteriaChange as jest.Mock).mockClear();
         const wildInput = screen.getByPlaceholderText('Address, name, reference...');
-        await user.click(wildInput);
-        await user.paste('test query');
+        await user.type(wildInput, 'test query');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('wild', 'test query');
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(wildInput);

@@ -55,6 +55,20 @@ function PhotoGrid({
         setSelectedIndex(prev => prev >= photos.length ? 0 : prev);
     }, [photos.length]);
 
+    // Keyboard navigation for photo carousel
+    useEffect(() => {
+        if (photos.length <= 1) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'ArrowLeft') {
+                setSelectedIndex(prev => (prev - 1 + photos.length) % photos.length);
+            } else if (e.key === 'ArrowRight') {
+                setSelectedIndex(prev => (prev + 1) % photos.length);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [photos.length]);
+
     const openViewer = useCallback((index: number) => {
         const photo = photos[index];
         if (!photo) return;
