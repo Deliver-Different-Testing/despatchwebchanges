@@ -299,9 +299,14 @@ function getRowSx(
         borderColor: 'divider',
     };
 
+    const rowHeight = densityMode === 'ultra-dense' ? 28 : densityMode === 'dense' ? 36 : 48;
+
     const sx: Record<string, any> = {
         cursor: 'pointer',
         transition: 'background-color 150ms ease',
+        // Skip layout/paint for off-screen rows — significant perf win on large lists
+        contentVisibility: 'auto',
+        containIntrinsicBlockSize: `${rowHeight}px`,
         '& .MuiTableCell-root': {...baseCellSx},
         '&:hover': {
             bgcolor: '#cbd5e1',
