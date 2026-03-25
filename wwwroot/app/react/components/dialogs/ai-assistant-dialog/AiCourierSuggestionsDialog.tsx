@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -15,7 +15,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonIcon from '@mui/icons-material/Person';
-import { AiMarkdownRenderer } from '../../common/ai-summary-panel/AiMarkdownRenderer';
+const AiMarkdownRenderer = lazy(() => import('../../common/ai-summary-panel/AiMarkdownRenderer').then(m => ({default: m.AiMarkdownRenderer})));
 import { suggestCouriers, AiCourierSuggestionResponse, SuggestedCourier } from '../../../services/aiAssistantApi';
 
 export interface AiCourierSuggestionsDialogProps {
@@ -193,7 +193,9 @@ export const AiCourierSuggestionsDialog: React.FC<AiCourierSuggestionsDialogProp
                     <Box>
                         {/* AI Reasoning */}
                         <Box sx={{ mb: 2 }}>
-                            <AiMarkdownRenderer content={data.summary} />
+                            <Suspense fallback={null}>
+                                <AiMarkdownRenderer content={data.summary} />
+                            </Suspense>
                         </Box>
 
                         {/* Assign error */}

@@ -6,7 +6,7 @@
  * Supports cancellation of in-flight requests via AbortSignal.
  */
 
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {lazy, Suspense, useCallback, useEffect, useRef, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -25,7 +25,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StopIcon from '@mui/icons-material/Stop';
 import {AiSummaryResponse} from '../../../services/aiAssistantApi';
 import {aiAccentColor} from '../../../theme/designTokens';
-import {AiMarkdownRenderer} from './AiMarkdownRenderer';
+const AiMarkdownRenderer = lazy(() => import('./AiMarkdownRenderer').then(m => ({default: m.AiMarkdownRenderer})));
 
 interface AiSummaryPanelProps {
     title: string;
@@ -247,7 +247,9 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     )}
 
                     {summary && (
-                        <AiMarkdownRenderer content={summary} />
+                        <Suspense fallback={null}>
+                            <AiMarkdownRenderer content={summary} />
+                        </Suspense>
                     )}
 
                     {!loading && !error && !summary && (
