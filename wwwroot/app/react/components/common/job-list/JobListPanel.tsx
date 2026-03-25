@@ -8,6 +8,8 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import type {
     DensityMode,
@@ -275,6 +277,102 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
     });
 }
 
+// ── View Tabs Bar ────────────────────────────────────────────────────
+
+interface ViewTabsBarProps {
+    views: Array<{ id: number; name: string; selected: boolean }>;
+    onToggleView: (view: { id: number; name: string; selected: boolean }) => void;
+    onClearAll: () => void;
+}
+
+const viewTabsBarStyles = {
+    container: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        px: 2,
+        py: 0.5,
+        borderBottom: 1,
+        borderColor: 'divider',
+        bgcolor: 'background.paper',
+        minHeight: 32,
+    },
+    scrollArea: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        flex: 1,
+        overflow: 'auto',
+        '&::-webkit-scrollbar': { height: 4 },
+        '&::-webkit-scrollbar-thumb': { bgcolor: 'action.disabled', borderRadius: 2 },
+    },
+} as const;
+
+const ViewTabsBar: React.FC<ViewTabsBarProps> = ({views, onToggleView, onClearAll}) => {
+    const selectedCount = views.filter(v => v.selected).length;
+
+    return (
+        <Box sx={viewTabsBarStyles.container}>
+            <Button
+                size="small"
+                variant="text"
+                onClick={onClearAll}
+                disabled={selectedCount === 0}
+                sx={{
+                    minWidth: 'auto',
+                    px: 1,
+                    py: 0.25,
+                    fontSize: '0.7rem',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    whiteSpace: 'nowrap',
+                    color: 'primary.main',
+                }}
+            >
+                Clear All
+            </Button>
+            <Box sx={viewTabsBarStyles.scrollArea}>
+                {views.map(view => (
+                    <Button
+                        key={view.id}
+                        size="small"
+                        variant={view.selected ? 'contained' : 'outlined'}
+                        onClick={() => onToggleView(view)}
+                        sx={{
+                            minWidth: 'auto',
+                            px: 1.5,
+                            py: 0.25,
+                            fontSize: '0.7rem',
+                            fontWeight: view.selected ? 600 : 400,
+                            textTransform: 'none',
+                            whiteSpace: 'nowrap',
+                            borderRadius: 1,
+                            ...(view.selected
+                                ? {
+                                    bgcolor: 'grey.800',
+                                    color: 'common.white',
+                                    '&:hover': { bgcolor: 'grey.700' },
+                                }
+                                : {
+                                    borderColor: 'divider',
+                                    color: 'text.primary',
+                                    '&:hover': { bgcolor: 'action.hover' },
+                                }),
+                        }}
+                    >
+                        {view.name}
+                    </Button>
+                ))}
+            </Box>
+            {selectedCount > 0 && (
+                <Typography variant="caption" sx={{ color: 'text.secondary', whiteSpace: 'nowrap', ml: 0.5 }}>
+                    {selectedCount}/{views.length}
+                </Typography>
+            )}
+        </Box>
+    );
+};
+
 // ── Main Component ───────────────────────────────────────────────────
 
 export const JobListPanel: React.FC<JobListPanelProps> = ({
@@ -294,6 +392,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               setRefreshCallback,
                                                               setSelectJobCallback,
                                                               setUpdateSearchParamsCallback,
+                                                              views,
+                                                              onToggleView,
+                                                              onClearViews,
                                                           }) => {
     const getStorageKey = useCallback((suffix: string): string => {
         const contactId = window.ContactID ?? 0;
@@ -456,13 +557,13 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         // Sort
         filtered = sortJobs(filtered, sortState, isUsCustomer);
 
-        // Stats from full (unfiltered) jobs
-        const statsResult = {
-            total: jobs.length,
-            active: jobs.filter((j) => isActive(j)).length,
-            transit: jobs.filter((j) => isInTransit(j)).length,
-            done: jobs.filter((j) => isDelivered(j)).length,
-        };
+        // Stats from full (unfiltered) jobs — single pass
+        const statsResult = {total: jobs.length, active: 0, transit: 0, done: 0};
+        for (const j of jobs) {
+            if (isActive(j)) statsResult.active++;
+            if (isInTransit(j)) statsResult.transit++;
+            if (isDelivered(j)) statsResult.done++;
+        }
 
         return {filteredJobs: filtered, stats: statsResult};
     }, [jobs, selectedCategory, searchQuery, sortState, isUsCustomer]);
@@ -735,6 +836,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             overflow: 'hidden',
         }}>
             <JobListStatsHeader stats={stats}/>
+            {views && views.length > 0 && onToggleView && onClearViews && (
+                <ViewTabsBar views={views} onToggleView={onToggleView} onClearAll={onClearViews}/>
+            )}
             <JobListToolbar
                 selectedCategory={selectedCategory}
                 onCategoryChange={handleCategoryChange}
@@ -761,10 +865,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onJobClick={handleJobClick}
                 onContextMenu={handleContextMenu}
                 onJobDispatch={handleJobDispatch}
-                onToggleSelect={multiSelect.toggle}
-                onToggleSelectAll={multiSelect.toggleAll}
-                isAllSelected={multiSelect.isAllSelected(visibleJobIds)}
-                isIndeterminate={multiSelect.isIndeterminate(visibleJobIds)}
                 sortState={sortState}
                 onSortChange={handleSortChange}
                 densityMode={densityMode}

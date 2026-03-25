@@ -389,7 +389,7 @@ public class TaskRepository(
             : query.OrderByDescending(e => e.UcevDueTime.Date < today)
                 .ThenBy(e => e.UcevDueTime);
 
-    private static IQueryable<TucEvent> ApplyFilters(
+    internal static IQueryable<TucEvent> ApplyFilters(
         IQueryable<TucEvent> query,
         TaskTableFiltersRequest filters
     )

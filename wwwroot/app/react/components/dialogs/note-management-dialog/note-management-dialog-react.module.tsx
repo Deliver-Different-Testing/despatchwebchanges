@@ -114,7 +114,7 @@ function initializeDialogRoot(): void {
  * Opens the note management dialog
  *
  * @param note - The note to edit, or null/empty object for a new note
- * @returns Promise that resolves to true if saved, false if cancelled
+ * @returns Promise that resolves to true if saved, false if canceled
  */
 export function openNoteManagementDialog(note: JobNote | null): Promise<boolean> {
     initializeDialogRoot();

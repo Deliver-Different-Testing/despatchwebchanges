@@ -289,6 +289,18 @@ describe('DriverLocations', () => {
             // Should not throw
             expect(document.querySelector('#driverLocations')).toBeTruthy();
         });
+
+        it('shows NoData when showNoData is true and data has empty columns', () => {
+            const props = createDefaultProps({
+                driverLocations: { areas: [], columns: [] },
+                showNoData: true,
+                showData: false,
+            });
+            renderWithProviders(<DriverLocations {...props} />);
+
+            expect(screen.getByText('No Driver Locations')).toBeInTheDocument();
+            expect(screen.queryByText(/North/)).not.toBeInTheDocument();
+        });
     });
 });
 

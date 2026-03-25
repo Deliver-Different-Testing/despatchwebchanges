@@ -201,40 +201,38 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                             No views available
                         </Typography>
                     </Box>
-                ) : (
-                    <>
-                        <MenuItem onClick={() => {
-                            onClearAll();
-                        }}>
-                            <ListItemIcon>
-                                <ClearAllIcon fontSize="small"/>
-                            </ListItemIcon>
-                            <ListItemText>Clear Selection</ListItemText>
-                        </MenuItem>
-                        <Divider sx={{my: 0.5}}/>
-                        {views.map((view) => (
-                            <MenuItem
-                                key={view.id}
-                                onClick={() => onToggleView(view)}
-                                sx={{py: 0.75}}
+                ) : ([
+                    <MenuItem key="clear-all" onClick={() => {
+                        onClearAll();
+                    }}>
+                        <ListItemIcon>
+                            <ClearAllIcon fontSize="small"/>
+                        </ListItemIcon>
+                        <ListItemText>Clear Selection</ListItemText>
+                    </MenuItem>,
+                    <Divider key="divider" sx={{my: 0.5}}/>,
+                    ...views.map((view) => (
+                        <MenuItem
+                            key={view.id}
+                            onClick={() => onToggleView(view)}
+                            sx={{py: 0.75}}
+                        >
+                            <Checkbox
+                                checked={view.selected}
+                                size="small"
+                                sx={{p: 0, mr: 1.5}}
+                            />
+                            <ListItemText
+                                slotProps={{primary: {
+                                    variant: 'body2',
+                                    fontWeight: view.selected ? 500 : 400,
+                                }}}
                             >
-                                <Checkbox
-                                    checked={view.selected}
-                                    size="small"
-                                    sx={{p: 0, mr: 1.5}}
-                                />
-                                <ListItemText
-                                    slotProps={{primary: {
-                                        variant: 'body2',
-                                        fontWeight: view.selected ? 500 : 400,
-                                    }}}
-                                >
-                                    {view.name}
-                                </ListItemText>
-                            </MenuItem>
-                        ))}
-                    </>
-                )}
+                                {view.name}
+                            </ListItemText>
+                        </MenuItem>
+                    )),
+                ])}
             </Menu>
         </>
     );

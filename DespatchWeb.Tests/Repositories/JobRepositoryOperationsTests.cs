@@ -896,6 +896,217 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         }
     }
 
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_WithEmptyList_DoesNotThrow()
+    {
+        var repository = CreateRepository();
+        await repository.AssignCourierToChildJobsAsync([], InternalJobStatus.AwaitingPod);
+    }
+
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_WithNullList_DoesNotThrow()
+    {
+        var repository = CreateRepository();
+        await repository.AssignCourierToChildJobsAsync(null!, InternalJobStatus.AwaitingPod);
+    }
+
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_WithNoParentId_ReturnsEarly()
+    {
+        // Arrange - job has no ParentId so query returns empty
+        await using var context = CreateContext();
+        context.TucJobs.Add(CreateJob(5000, "JOB-NOPARENT"));
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act & Assert - should not throw
+        await repository.AssignCourierToChildJobsAsync([5000], InternalJobStatus.AwaitingPod);
+    }
+
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_DispatchesEligibleChildJobs()
+    {
+        // Arrange
+        await using var context = CreateContext();
+        context.TblJobRelationshipTypes.Add(CreateRelType(100, autoDispatch: true));
+        context.TucJobs.AddRange(
+            new TucJob
+            {
+                UcjbId = 5001, UcjbNumber = "PARENT-1", UcjbDate = new DateTime(2024, 6, 15)
+            },
+            new TucJob
+            {
+                UcjbId = 5010, UcjbNumber = "CHILD-DISPATCHED-1", ParentId = 5001,
+                UcjbCourierId = 5, UcjbDispId = 1,
+                UcjbDispTime = new DateTime(2024, 6, 15, 9, 0, 0),
+                UcjbDispDate = new DateTime(2024, 6, 15),
+                UcjbStatus = 4, UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 100
+            },
+            new TucJob
+            {
+                UcjbId = 5011, UcjbNumber = "CHILD-ELIGIBLE-1", ParentId = 5001,
+                UcjbCourierId = null, UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 100
+            });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignCourierToChildJobsAsync([5010], InternalJobStatus.AwaitingPod);
+
+        // Assert
+        await using var verifyContext = CreateContext();
+        var updated = await verifyContext.TucJobs.FirstAsync(
+            j => j.UcjbId == 5011, TestContext.Current.CancellationToken);
+
+        Assert.Equal(5, updated.UcjbCourierId!.Value);
+        Assert.Equal(1, updated.UcjbDispId!.Value);
+        Assert.Equal(4, updated.UcjbStatus!.Value);
+        Assert.Equal((int)InternalJobStatus.AwaitingPod, updated.InternalStatus!.Value);
+    }
+
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_DoesNotDispatchChildWithoutAutoDispatchFlag()
+    {
+        // Arrange
+        await using var context = CreateContext();
+        context.TblJobRelationshipTypes.Add(CreateRelType(101, autoDispatch: false));
+        context.TucJobs.AddRange(
+            new TucJob
+            {
+                UcjbId = 6001, UcjbNumber = "PARENT-2", UcjbDate = new DateTime(2024, 6, 15)
+            },
+            new TucJob
+            {
+                UcjbId = 6010, UcjbNumber = "CHILD-DISPATCHED-2", ParentId = 6001,
+                UcjbCourierId = 5, UcjbDispId = 1,
+                UcjbDispTime = new DateTime(2024, 6, 15, 9, 0, 0),
+                UcjbDispDate = new DateTime(2024, 6, 15),
+                UcjbStatus = 4, UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 101
+            },
+            new TucJob
+            {
+                UcjbId = 6011, UcjbNumber = "CHILD-INELIGIBLE", ParentId = 6001,
+                UcjbCourierId = null, UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 101
+            });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignCourierToChildJobsAsync([6010], InternalJobStatus.AwaitingPod);
+
+        // Assert - child should NOT be updated
+        await using var verifyContext = CreateContext();
+        var notUpdated = await verifyContext.TucJobs.FirstAsync(
+            j => j.UcjbId == 6011, TestContext.Current.CancellationToken);
+
+        Assert.Null(notUpdated.UcjbCourierId);
+        Assert.Null(notUpdated.InternalStatus);
+    }
+
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_DoesNotDispatchChildWithFutureDate()
+    {
+        // Arrange
+        await using var context = CreateContext();
+        context.TblJobRelationshipTypes.Add(CreateRelType(102, autoDispatch: true));
+        context.TucJobs.AddRange(
+            new TucJob
+            {
+                UcjbId = 7001, UcjbNumber = "PARENT-3", UcjbDate = new DateTime(2024, 6, 15)
+            },
+            new TucJob
+            {
+                UcjbId = 7010, UcjbNumber = "CHILD-DISPATCHED-3", ParentId = 7001,
+                UcjbCourierId = 5, UcjbDispId = 1,
+                UcjbDispTime = new DateTime(2024, 6, 15, 9, 0, 0),
+                UcjbDispDate = new DateTime(2024, 6, 15),
+                UcjbStatus = 4, UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 102
+            },
+            new TucJob
+            {
+                UcjbId = 7011, UcjbNumber = "CHILD-FUTURE", ParentId = 7001,
+                UcjbCourierId = null,
+                UcjbDate = new DateTime(2024, 6, 16), // Future date
+                JobRelationshipTypeId = 102
+            });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignCourierToChildJobsAsync([7010], InternalJobStatus.AwaitingPod);
+
+        // Assert - future child should NOT be updated
+        await using var verifyContext = CreateContext();
+        var notUpdated = await verifyContext.TucJobs.FirstAsync(
+            j => j.UcjbId == 7011, TestContext.Current.CancellationToken);
+
+        Assert.Null(notUpdated.UcjbCourierId);
+    }
+
+    [Fact]
+    public async Task AssignCourierToChildJobsAsync_SkipsChildAlreadyAssigned()
+    {
+        // Arrange
+        await using var context = CreateContext();
+        context.TblJobRelationshipTypes.Add(CreateRelType(103, autoDispatch: true));
+        context.TucJobs.AddRange(
+            new TucJob
+            {
+                UcjbId = 8001, UcjbNumber = "PARENT-4", UcjbDate = new DateTime(2024, 6, 15)
+            },
+            new TucJob
+            {
+                UcjbId = 8010, UcjbNumber = "CHILD-DISPATCHED-4", ParentId = 8001,
+                UcjbCourierId = 5, UcjbDispId = 1,
+                UcjbDispTime = new DateTime(2024, 6, 15, 9, 0, 0),
+                UcjbDispDate = new DateTime(2024, 6, 15),
+                UcjbStatus = 4, UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 103
+            },
+            new TucJob
+            {
+                UcjbId = 8011, UcjbNumber = "CHILD-ALREADY-ASSIGNED", ParentId = 8001,
+                UcjbCourierId = 99, // Already has a courier
+                UcjbDate = new DateTime(2024, 6, 15),
+                JobRelationshipTypeId = 103
+            });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignCourierToChildJobsAsync([8010], InternalJobStatus.AwaitingPod);
+
+        // Assert - already-assigned child should keep its original courier
+        await using var verifyContext = CreateContext();
+        var unchanged = await verifyContext.TucJobs.FirstAsync(
+            j => j.UcjbId == 8011, TestContext.Current.CancellationToken);
+
+        Assert.Equal(99, unchanged.UcjbCourierId);
+    }
+
+    private static TblJobRelationshipType CreateRelType(int id, bool autoDispatch) => new()
+    {
+        JobRelationshipTypeId = id,
+        Name = $"RelType-{id}",
+        SystemName = $"RelType-{id}",
+        AutoDespatchToOtherChildJobs = autoDispatch,
+        Created = TestDates.Now,
+        CreatedBy = "Test",
+        LastModified = TestDates.Now,
+        LastModifiedBy = "Test",
+        ShortName = $"RT{id}"
+    };
+
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,

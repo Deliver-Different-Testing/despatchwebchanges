@@ -42,9 +42,9 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         enabled: !!fetchConfig,
     });
 
-    const refresh = useCallback(() => {
+    const refresh = useCallback(async () => {
         if (!fetchConfig) return;
-        queryClient.invalidateQueries({queryKey: fetchConfig.queryKeyFn(params)});
+        await queryClient.invalidateQueries({queryKey: fetchConfig.queryKeyFn(params)});
     }, [queryClient, fetchConfig, params]);
 
     const updateSort = useCallback((column: string, direction: string) => {

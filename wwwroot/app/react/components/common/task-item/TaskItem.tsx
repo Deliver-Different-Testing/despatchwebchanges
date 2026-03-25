@@ -32,7 +32,7 @@ import {DateCalendar} from '@mui/x-date-pickers/DateCalendar';
 import {TimeClock} from '@mui/x-date-pickers/TimeClock';
 import dayjs, {Dayjs} from 'dayjs';
 import {Task, TaskItemConfig, TaskItemProps} from './TaskItem.interfaces';
-import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation, formatLongDate, formatTime} from '../../../utils/dateUtils';
 
 const defaultConfig: TaskItemConfig = {
     showJobId: true,
@@ -64,7 +64,7 @@ const getStatusBorderColor = (theme: Theme, task: Task, isOverdue: boolean): str
 const ianaTimeZone = getIanaTimezone(getTenantTimezone());
 const timeZoneShort = getTimezoneAbbreviation(ianaTimeZone);
 
-export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
+export const TaskItem = React.memo((props: TaskItemProps) => {
     const {
         task,
         config: configOverrides,
@@ -88,6 +88,9 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
     const [isCompleting, setIsCompleting] = useState(false);
 
     // Derived state
+    const dueDateString = task._dueDateString || formatLongDate(task.dueDate);
+    const dueTimeString = task._dueTimeString || formatTime(task.dueDate);
+
     const isOverdue = useMemo(() => {
         if (task.closed) return false;
         return task.dueDate.isBefore(dayjs());
@@ -451,7 +454,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 },
                             })}
                         >
-                            {task._dueDateString} {timeZoneShort}
+                            {dueDateString} {timeZoneShort}
                         </Button>
 
                         {/* Time Button */}
@@ -483,7 +486,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 },
                             })}
                         >
-                            {task._dueTimeString} {timeZoneShort}
+                            {dueTimeString} {timeZoneShort}
                         </Button>
                     </Box>
                 )}

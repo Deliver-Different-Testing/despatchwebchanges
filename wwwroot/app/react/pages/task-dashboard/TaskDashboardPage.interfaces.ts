@@ -41,7 +41,6 @@ export interface ExtendedTask extends Task {
 export interface MountTaskDashboardConfig {
     showToast: ShowToastFn;
     isUsCustomer: boolean;
-    onTaskSelect: (task: ExtendedTask | null) => void;
     onLayoutActionsChange?: (actions: LayoutActions) => void;
 }
 
@@ -57,7 +56,6 @@ export interface LayoutActions {
 export interface TaskDashboardPageProps {
     showToast: ShowToastFn;
     isUsCustomer: boolean;
-    onTaskSelect: (task: ExtendedTask | null) => void;
     setRefreshCallback?: (callback: () => void) => void;
     onLayoutActionsChange?: (actions: LayoutActions) => void;
 }

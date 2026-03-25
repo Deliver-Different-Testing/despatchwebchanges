@@ -175,6 +175,23 @@ describe('ViewsMenu', () => {
         renderWithTheme(<ViewsMenu {...defaultProps} loading={true} />);
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
     });
+
+    it('should not produce Fragment children warning when menu is open with views', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        renderWithTheme(<ViewsMenu {...defaultProps} />);
+
+        fireEvent.click(screen.getByRole('button'));
+
+        await waitFor(() => {
+            expect(screen.getByText('View 1')).toBeInTheDocument();
+        });
+
+        const fragmentWarnings = consoleErrorSpy.mock.calls.filter(
+            (args) => typeof args[0] === 'string' && args[0].includes('Fragment as a child')
+        );
+        expect(fragmentWarnings).toHaveLength(0);
+        consoleErrorSpy.mockRestore();
+    });
 });
 
 describe('LayoutsMenu', () => {

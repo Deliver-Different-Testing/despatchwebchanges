@@ -31,6 +31,8 @@ jest.mock('../utils/dateUtils', () => ({
     formatDateForApi: jest.fn((date) => date.toISOString()),
     parseDateFromApi: jest.fn((dateStr) => dayjs(dateStr)),
     formatRelativeDateTime: jest.fn((dateStr) => dateStr),
+    formatLongDate: jest.fn((date) => date.format('MMM/DD/YYYY')),
+    formatTime: jest.fn((date) => date.format('HH:mm')),
 }));
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;

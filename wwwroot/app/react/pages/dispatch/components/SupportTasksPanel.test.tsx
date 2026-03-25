@@ -29,26 +29,27 @@ const closedTask = createMockTask({
 describe('SupportTasksPanel', () => {
     it('shows placeholder when no job selected, spinner when loading, and empty message when no tasks', () => {
         const {unmount} = renderWithTheme(
-            <SupportTasksPanel tasks={[]} loading={false} jobId={null} />
+            <SupportTasksPanel tasks={[]} loading={false} jobId={null}/>
         );
         expect(screen.getByText('Select a job to view support tasks')).toBeInTheDocument();
         unmount();
 
+
         const {unmount: unmount2} = renderWithTheme(
-            <SupportTasksPanel tasks={[]} loading={true} jobId={1} />
+            <SupportTasksPanel tasks={[]} loading={true} jobId={1}/>
         );
         expect(screen.getByRole('progressbar')).toBeInTheDocument();
         unmount2();
 
         renderWithTheme(
-            <SupportTasksPanel tasks={[]} loading={false} jobId={1} />
+            <SupportTasksPanel tasks={[]} loading={false} jobId={1}/>
         );
         expect(screen.getByText('No support tasks for this job')).toBeInTheDocument();
     });
 
     it('renders tasks using TaskItem component with titles and status chips', () => {
         renderWithTheme(
-            <SupportTasksPanel tasks={[openTask, closedTask]} loading={false} jobId={1} />
+            <SupportTasksPanel tasks={[openTask, closedTask]} loading={false} jobId={1}/>
         );
 
         // TaskItem renders task titles
@@ -62,7 +63,7 @@ describe('SupportTasksPanel', () => {
 
     it('renders assignee via TaskItem assignee button', () => {
         renderWithTheme(
-            <SupportTasksPanel tasks={[openTask]} loading={false} jobId={1} />
+            <SupportTasksPanel tasks={[openTask]} loading={false} jobId={1}/>
         );
 
         expect(screen.getByText('Alice Smith')).toBeInTheDocument();
@@ -70,7 +71,7 @@ describe('SupportTasksPanel', () => {
 
     it('renders checkboxes for task completion', () => {
         renderWithTheme(
-            <SupportTasksPanel tasks={[openTask, closedTask]} loading={false} jobId={1} />
+            <SupportTasksPanel tasks={[openTask, closedTask]} loading={false} jobId={1}/>
         );
 
         const checkboxes = screen.getAllByRole('checkbox');

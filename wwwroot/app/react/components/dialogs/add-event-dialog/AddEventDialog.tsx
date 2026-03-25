@@ -210,6 +210,9 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
                         <Typography variant="h6" fontWeight={600}>
                             Add Task
                         </Typography>
+                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                            Create a new task for this job
+                        </Typography>
                     </Box>
                     <IconButton
                         onClick={onClose}

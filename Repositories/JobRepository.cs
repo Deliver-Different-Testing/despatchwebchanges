@@ -3921,94 +3921,99 @@ public partial class JobRepository(
     {
         if (jobIds == null || jobIds.Count == 0) return;
 
-        await using var transaction = await Context.Database.BeginTransactionAsync();
+        var strategy = Context.Database.CreateExecutionStrategy();
 
-        try
+        await strategy.ExecuteAsync(async () =>
         {
-            var parentJobValues = await Context.TucJobs
-                .Where(parent => jobIds.Contains(parent.UcjbId) && parent.ParentId.HasValue)
-                .Select(parent => new
-                {
-                    parent.ParentId,
-                    parent.UcjbCourierId,
-                    parent.UcjbDispId,
-                    parent.UcjbDispTime,
-                    parent.UcjbDispDate,
-                    parent.UcjbStatus,
-                    parent.UcjbDate
-                })
-                .ToListAsync();
+            await using var transaction = await Context.Database.BeginTransactionAsync();
 
-            if (parentJobValues.Count == 0) return;
-
-            var parentIds = parentJobValues
-                .Where(p => p.ParentId.HasValue)
-                .Select(p => p.ParentId.Value)
-                .Distinct()
-                .ToList();
-
-            var parentValuesByParentId = parentJobValues
-                .GroupBy(p => p.ParentId!.Value)
-                .ToDictionary(g => g.Key, g => g.OrderBy(p => p.UcjbDate).First());
-
-            var childJobsToUpdate = await Context.TucJobs
-                .Where(child => parentIds.Contains(child.ParentId.Value)
-                                && child.UcjbCourierId == null
-                                && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
-                                && !jobIds.Contains(child.UcjbId))
-                .Select(child => new
-                {
-                    child.UcjbId,
-                    child.ParentId,
-                    child.UcjbDate
-                })
-                .ToListAsync();
-
-            var allChildIdsToUpdate = new List<(int childId, int parentId)>();
-
-            foreach (var (parentId, parentValues) in parentValuesByParentId)
+            try
             {
-                var childIds = childJobsToUpdate
-                    .Where(c => c.ParentId == parentId && c.UcjbDate.Date <= parentValues.UcjbDate.Date)
-                    .Select(c => (c.UcjbId, parentId))
+                var parentJobValues = await Context.TucJobs
+                    .Where(parent => jobIds.Contains(parent.UcjbId) && parent.ParentId.HasValue)
+                    .Select(parent => new
+                    {
+                        parent.ParentId,
+                        parent.UcjbCourierId,
+                        parent.UcjbDispId,
+                        parent.UcjbDispTime,
+                        parent.UcjbDispDate,
+                        parent.UcjbStatus,
+                        parent.UcjbDate
+                    })
+                    .ToListAsync();
+
+                if (parentJobValues.Count == 0) return;
+
+                var parentIds = parentJobValues
+                    .Where(p => p.ParentId.HasValue)
+                    .Select(p => p.ParentId.Value)
+                    .Distinct()
                     .ToList();
 
-                allChildIdsToUpdate.AddRange(childIds);
-            }
+                var parentValuesByParentId = parentJobValues
+                    .GroupBy(p => p.ParentId!.Value)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(p => p.UcjbDate).First());
 
-            if (allChildIdsToUpdate.Count == 0)
-            {
+                var childJobsToUpdate = await Context.TucJobs
+                    .Where(child => parentIds.Contains(child.ParentId.Value)
+                                    && child.UcjbCourierId == null
+                                    && child.JobRelationshipType.AutoDespatchToOtherChildJobs == true
+                                    && !jobIds.Contains(child.UcjbId))
+                    .Select(child => new
+                    {
+                        child.UcjbId,
+                        child.ParentId,
+                        child.UcjbDate
+                    })
+                    .ToListAsync();
+
+                var allChildIdsToUpdate = new List<(int childId, int parentId)>();
+
+                foreach (var (parentId, parentValues) in parentValuesByParentId)
+                {
+                    var childIds = childJobsToUpdate
+                        .Where(c => c.ParentId == parentId && c.UcjbDate.Date <= parentValues.UcjbDate.Date)
+                        .Select(c => (c.UcjbId, parentId))
+                        .ToList();
+
+                    allChildIdsToUpdate.AddRange(childIds);
+                }
+
+                if (allChildIdsToUpdate.Count == 0)
+                {
+                    await transaction.CommitAsync();
+                    return;
+                }
+
+                foreach (var (parentId, parentValues) in parentValuesByParentId)
+                {
+                    var childIdsForThisParent = allChildIdsToUpdate
+                        .Where(x => x.parentId == parentId)
+                        .Select(x => x.childId)
+                        .ToList();
+
+                    if (childIdsForThisParent.Count == 0) continue;
+
+                    await Context.TucJobs
+                        .Where(j => childIdsForThisParent.Contains(j.UcjbId))
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbCourierId, parentValues.UcjbCourierId)
+                            .SetProperty(j => j.UcjbDispId, parentValues.UcjbDispId)
+                            .SetProperty(j => j.UcjbDispTime, parentValues.UcjbDispTime)
+                            .SetProperty(j => j.UcjbDispDate, parentValues.UcjbDispDate)
+                            .SetProperty(j => j.UcjbStatus, parentValues.UcjbStatus)
+                            .SetProperty(j => j.InternalStatus, (int)internalStatus));
+                }
+
                 await transaction.CommitAsync();
-                return;
             }
-
-            foreach (var (parentId, parentValues) in parentValuesByParentId)
+            catch
             {
-                var childIdsForThisParent = allChildIdsToUpdate
-                    .Where(x => x.parentId == parentId)
-                    .Select(x => x.childId)
-                    .ToList();
-
-                if (childIdsForThisParent.Count == 0) continue;
-
-                await Context.TucJobs
-                    .Where(j => childIdsForThisParent.Contains(j.UcjbId))
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(j => j.UcjbCourierId, parentValues.UcjbCourierId)
-                        .SetProperty(j => j.UcjbDispId, parentValues.UcjbDispId)
-                        .SetProperty(j => j.UcjbDispTime, parentValues.UcjbDispTime)
-                        .SetProperty(j => j.UcjbDispDate, parentValues.UcjbDispDate)
-                        .SetProperty(j => j.UcjbStatus, parentValues.UcjbStatus)
-                        .SetProperty(j => j.InternalStatus, (int)internalStatus));
+                await transaction.RollbackAsync();
+                throw;
             }
-
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+        });
     }
 
 
@@ -4056,7 +4061,7 @@ public partial class JobRepository(
             .Select(j => j.UcjbId)
             .ToListAsync();
 
-    private static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
+    internal static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
     {
         var totalTime = row.Booked != null && row.Delivered != null
             ? (int?)Math.Round((row.Delivered.Value.TimeOfDay - row.Booked.Value.TimeOfDay).TotalMinutes)
@@ -4131,7 +4136,7 @@ public partial class JobRepository(
         return string.Join(", ", lines.Where(line => !string.IsNullOrWhiteSpace(line)));
     }
 
-    private static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
+    internal static IOrderedQueryable<TucJob> ApplyLiveJobSorting(
         IQueryable<TucJob> query,
         string sortColumn,
         bool descending) =>
@@ -4163,7 +4168,7 @@ public partial class JobRepository(
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
 
-    private static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
+    internal static IOrderedQueryable<TucJobArchive> ApplyArchivedJobSorting(
         IQueryable<TucJobArchive> query,
         string sortColumn,
         bool descending) =>
@@ -4195,7 +4200,7 @@ public partial class JobRepository(
             _ => query.OrderBy(j => j.UcjbDate).ThenBy(j => j.UcjbTime).ThenBy(j => j.UcjbId)
         };
 
-    private static IEnumerable<DispatchJobViewModel> ApplyDispatchJobSorting(
+    internal static IEnumerable<DispatchJobViewModel> ApplyDispatchJobSorting(
         IEnumerable<DispatchJobViewModel> jobs,
         string sortColumn,
         bool descending)
@@ -4788,7 +4793,7 @@ public partial class JobRepository(
             _ => null
         };
 
-    private static string GetCourierDescription(int scanType,
+    internal static string GetCourierDescription(int scanType,
         TucCourier courier,
         TucCourier transferTo,
         TucCourier runViewerTransferTo,

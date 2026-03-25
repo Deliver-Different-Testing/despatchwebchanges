@@ -214,7 +214,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             grey: accentPalette,
         },
         typography: {
-            fontFamily: 'Roboto, "Helvetica Neue", sans-serif',
+            fontFamily: 'Satoshi, "Helvetica Neue", sans-serif',
             fontSize: 14,
             fontWeightLight: 300,
             fontWeightRegular: 400,

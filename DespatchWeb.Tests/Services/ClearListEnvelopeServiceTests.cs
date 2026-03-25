@@ -1,23 +1,25 @@
-using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using Microsoft.EntityFrameworkCore;
-using Moq;
 
 namespace DespatchWeb.Tests.Services;
 
 /// <summary>
-/// Unit tests for ClearListEnvelopeService - tests validation and basic behavior.
-/// Note: Full integration tests with database would be needed to test the complex LINQ queries.
+/// Unit tests for ClearListEnvelopeService - tests validation and routing behavior.
 /// </summary>
-public class ClearListEnvelopeServiceTests
+public class ClearListEnvelopeServiceTests : IAsyncDisposable
 {
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock = new();
+    private readonly SqliteTestDatabase _db = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
+    public async ValueTask DisposeAsync()
+    {
+        GC.SuppressFinalize(this);
+        await _db.DisposeAsync();
+    }
+
     private ClearListEnvelopeService CreateService() => new(
-        _contextFactoryMock.Object,
+        _db.CreateFactoryMock().Object,
         _clock
     );
 
@@ -27,58 +29,58 @@ public class ClearListEnvelopeServiceTests
     [InlineData(-100)]
     public async Task GetClearListAreaEnvelopeAsync_InvalidClearListAreaId_ThrowsArgumentException(int invalidId)
     {
-        // Arrange
         var service = CreateService();
 
-        // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<ClearListEnvelopeViewModel>>?)Act ?? throw new InvalidOperationException());
-        Assert.Contains("Invalid clearListAreaId", ex.Message);
-        return;
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => service.GetClearListAreaEnvelopeAsync(invalidId, Country.Nz));
 
-        // Act
-        async Task<ClearListEnvelopeViewModel> Act() => await service.GetClearListAreaEnvelopeAsync(invalidId, Country.Nz);
+        Assert.Contains("Invalid clearListAreaId", ex.Message);
     }
 
     [Fact]
     public async Task GetClearListAreaEnvelopeAsync_InvalidCountry_ThrowsArgumentException()
     {
-        // Arrange
         var service = CreateService();
         const Country invalidCountry = (Country)999;
 
-        // Assert
-        var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<ClearListEnvelopeViewModel>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentException>(
+            () => service.GetClearListAreaEnvelopeAsync(1, invalidCountry));
+
         Assert.Contains("Invalid country", ex.Message);
-        return;
-
-        // Act
-        async Task<ClearListEnvelopeViewModel> Act() => await service.GetClearListAreaEnvelopeAsync(1, invalidCountry);
     }
 
     [Fact]
-    public void Dispose_WhenCalled_DoesNotThrow()
+    public async Task GetClearListAreaEnvelopeAsync_Nz_RoutesToNzLogic()
     {
-        // Arrange
         var service = CreateService();
 
-        // Act & Assert
-        var exception = Record.Exception(() => service.Dispose());
-        Assert.Null(exception);
+        var result = await service.GetClearListAreaEnvelopeAsync(1, Country.Nz);
+
+        Assert.NotNull(result);
+        Assert.IsType<ClearListEnvelopeViewModel>(result);
     }
 
     [Fact]
-    public void Dispose_CalledMultipleTimes_DoesNotThrow()
+    public async Task GetClearListAreaEnvelopeAsync_Us_RoutesToUsLogic()
     {
-        // Arrange
         var service = CreateService();
 
-        // Act & Assert
-        var exception = Record.Exception(() =>
-        {
-            service.Dispose();
-            service.Dispose();
-        });
-        Assert.Null(exception);
+        var result = await service.GetClearListAreaEnvelopeAsync(1, Country.Us);
+
+        Assert.NotNull(result);
+        Assert.IsType<ClearListEnvelopeViewModel>(result);
     }
 
+    [Fact]
+    public async Task GetClearListAreaEnvelopeAsync_NonExistingArea_ReturnsDefaultEnvelope()
+    {
+        var service = CreateService();
+
+        var result = await service.GetClearListAreaEnvelopeAsync(9999, Country.Nz);
+
+        Assert.Equal(0m, result.MinimumLongitude);
+        Assert.Equal(0m, result.MinimumLatitude);
+        Assert.Equal(0m, result.MaximumLongitude);
+        Assert.Equal(0m, result.MaximumLatitude);
+    }
 }

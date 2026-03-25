@@ -152,10 +152,11 @@ export async function searchSpeedOptions(searchTerm: string, options?: RequestOp
 // ── Inter-Courier Charge ────────────────────────────────────────────
 
 export interface InterCourierChargeData {
-    jobId?: number;
-    courierId?: number;
-    amount?: number;
-    description?: string;
+    fromCourierId: number;
+    toCourierId: number;
+    clientId: number;
+    reference: string;
+    amount: number;
 }
 
 /**

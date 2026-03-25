@@ -221,26 +221,7 @@ class RouterConfig {
                     <style>.prebook-view md-card { margin: 0; }</style>
                     <react-app-shell title="Recurring Jobs Dashboard"></react-app-shell>
                     <div class="dashboard-padding" style="height: calc(100vh - 64px);">
-                        <div style="display: flex; height: 100%; gap: 16px; padding: 16px;">
-                            <div id="react-recurring-jobs-list" style="flex: 0 0 55%; height: 100%; overflow: hidden;"></div>
-                            <div style="flex: 0 0 45%; height: 100%; display: flex; flex-direction: column; overflow: hidden; min-width: 0;">
-                                <md-card style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 4px; min-height: 0; min-width: 0;">
-                                    <div style="min-height: 48px; height: 48px; width: 100%; background-color: var(--theme-primary); padding: 0 16px; box-sizing: border-box; line-height: 48px; text-align: left; flex-shrink: 0;">
-                                        <md-icon md-font-set="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; color: rgba(0,0,0,0.87);">info</md-icon>
-                                        <span style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;">Job Details</span>
-                                        <span ng-if="selectedJobId" style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;"> - Job #{{selectedJobId}}</span>
-                                    </div>
-                                    <md-card-content style="flex: 1; overflow: auto; padding: 0; min-height: 0;">
-                                        <job-detail-widget
-                                            style="height: 100%; display: block; width: 100%; max-width: 100%;"
-                                            job-id="selectedJobId"
-                                            is-recurring-job="true"
-                                            on-job-update="onJobUpdate()">
-                                        </job-detail-widget>
-                                    </md-card-content>
-                                </md-card>
-                            </div>
-                        </div>
+                        <div id="react-recurring-jobs-list" style="height: 100%; padding: 16px;"></div>
                     </div>
                 </md-content>
             `,
@@ -267,7 +248,7 @@ class RouterConfig {
             },
             controller: ['$scope', 'toastrService', 'jobAddStopService', 'APP_CONFIG',
                 function(
-                    $scope: angular.IScope & { selectedJobId?: number; onJobUpdate: () => void },
+                    $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
                         showWarningToast: (m: string) => void;
@@ -277,14 +258,6 @@ class RouterConfig {
                     jobAddStopService: { addRecurringJobStop: (job: unknown, isPickup: boolean) => Promise<void> },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    $scope.selectedJobId = undefined;
-                    $scope.onJobUpdate = () => {
-                        // Trigger React refresh
-                        if (window.ReactRecurringJobs?.refresh) {
-                            window.ReactRecurringJobs.refresh();
-                        }
-                    };
-
                     const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                         switch (type) {
                             case 'success':
@@ -306,16 +279,10 @@ class RouterConfig {
                         await jobAddStopService.addRecurringJobStop(job, isPickup);
                     };
 
-                    const onJobSelect = (jobId: number | null) => {
-                        $scope.selectedJobId = jobId ?? undefined;
-                        $scope.$apply();
-                    };
-
                     window.ReactRecurringJobs!.mount('react-recurring-jobs-list', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
                         onAddStop,
-                        onJobSelect,
                     });
 
                     $scope.$on('$destroy', () => {
@@ -406,24 +373,7 @@ class RouterConfig {
                         on-delete-layout="deleteLayout(index)">
                     </react-app-shell>
                     <div class="dashboard-padding" style="height: calc(100vh - 64px);">
-                        <div style="display: flex; height: 100%; gap: 16px; padding: 16px;">
-                            <div id="react-task-dashboard" style="flex: 0 0 60%; height: 100%; overflow: hidden;"></div>
-                            <div style="flex: 0 0 40%; height: 100%; display: flex; flex-direction: column;">
-                                <md-card style="flex: 1; display: flex; flex-direction: column; overflow: hidden; border-radius: 4px;">
-                                    <div style="min-height: 48px; height: 48px; width: 100%; background-color: var(--theme-primary); padding: 0 16px; box-sizing: border-box; line-height: 48px; text-align: left;">
-                                        <md-icon md-font-set="material-symbols-outlined" style="vertical-align: middle; margin-right: 8px; color: rgba(0,0,0,0.87);">info</md-icon>
-                                        <span style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;">Job Details</span>
-                                        <span ng-if="selectedJobId" style="font-size: 16px; font-weight: 500; color: rgba(0,0,0,0.87); vertical-align: middle;"> - Job #{{selectedJobId}}</span>
-                                    </div>
-                                    <md-card-content style="flex: 1; overflow: auto; padding: 0;">
-                                        <job-detail-widget
-                                            style="height: 100%; display: block;"
-                                            job-id="selectedJobId">
-                                        </job-detail-widget>
-                                    </md-card-content>
-                                </md-card>
-                            </div>
-                        </div>
+                        <div id="react-task-dashboard" style="height: 100%; padding: 16px;"></div>
                     </div>
                 </md-content>
             `,
@@ -451,7 +401,6 @@ class RouterConfig {
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
                 function(
                     $scope: angular.IScope & {
-                        selectedJobId?: number;
                         layouts: { name: string }[];
                         currentLayoutName: string;
                         saveLayout: () => void;
@@ -466,8 +415,6 @@ class RouterConfig {
                     },
                     appConfig: { US_Customer: boolean }
                 ) {
-                    $scope.selectedJobId = undefined;
-
                     // Layout state - will be updated by React component
                     $scope.layouts = [];
                     $scope.currentLayoutName = 'Default';
@@ -518,11 +465,6 @@ class RouterConfig {
                         }
                     };
 
-                    const onTaskSelect = (task: { jobId?: number } | null) => {
-                        $scope.selectedJobId = task?.jobId;
-                        $scope.$apply();
-                    };
-
                     // Called by React component when layout actions change
                     const onLayoutActionsChange = (actions: {
                         layouts: { name: string }[];
@@ -551,7 +493,6 @@ class RouterConfig {
                     window.ReactTaskDashboard!.mount('react-task-dashboard', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
-                        onTaskSelect,
                         onLayoutActionsChange,
                     });
 
