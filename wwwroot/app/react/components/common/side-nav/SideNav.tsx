@@ -119,6 +119,7 @@ export const SideNav: React.FC<SideNavProps> = ({
             variant="temporary"
             ModalProps={{
                 keepMounted: true,
+                disableEnforceFocus: true,
             }}
             slotProps={{
                 paper: {
