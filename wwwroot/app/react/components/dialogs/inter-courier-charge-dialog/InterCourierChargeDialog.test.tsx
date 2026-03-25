@@ -53,8 +53,7 @@ const createMockProps = (overrides?: Partial<InterCourierChargeDialogProps>) =>
 async function fillAutocomplete(user: ReturnType<typeof userEvent.setup>, label: string, searchText: string, optionText: string) {
     const input = screen.getByLabelText(new RegExp(label, 'i'));
     await user.click(input);
-    await user.clear(input);
-    await user.type(input, searchText);
+    fireEvent.change(input, { target: { value: searchText } });
 
     const option = await screen.findByText(optionText);
     await user.click(option);

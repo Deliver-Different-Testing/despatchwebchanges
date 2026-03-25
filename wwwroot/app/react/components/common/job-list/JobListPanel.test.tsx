@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import {act, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '../../../__testUtils__';
 import {JobListPanel} from './JobListPanel';
@@ -241,21 +241,19 @@ describe('JobListPanel', () => {
         expect(onSearchChange).toHaveBeenCalledWith('UNASSIGNED');
 
         // Search by client
-        await user.clear(searchInput);
-        await user.paste('gadget');
+        fireEvent.change(searchInput, { target: { value: 'gadget' } });
         await act(async () => { jest.advanceTimersByTime(300); });
         expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
         expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
         // Search by courier
-        await user.clear(searchInput);
-        await user.paste('Mike');
+        fireEvent.change(searchInput, { target: { value: 'Mike' } });
         await act(async () => { jest.advanceTimersByTime(300); });
         expect(screen.getByText('DISPATCHED-1')).toBeInTheDocument();
         expect(screen.queryByText('UNASSIGNED-1')).not.toBeInTheDocument();
 
         // Job selection (clear search first)
-        await user.clear(searchInput);
+        fireEvent.change(searchInput, { target: { value: '' } });
         await act(async () => { jest.advanceTimersByTime(300); });
         await user.click(screen.getByText('UNASSIGNED-1'));
         expect(onJobSelect).toHaveBeenCalledWith(expect.objectContaining({id: 1, jobNo: 'UNASSIGNED-1'}));
