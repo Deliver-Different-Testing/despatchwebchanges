@@ -367,10 +367,11 @@ function getRowSx(
             boxShadow: '0 1px 3px rgba(59, 130, 246, 0.2)',
         };
     } else if (isMultiSelected) {
-        sx.bgcolor = '#e3f2fd';
-        sx.borderLeft = '3px solid #2196f3';
+        sx.bgcolor = '#d1c4e9';
+        sx.borderLeft = '4px solid #651fff';
         sx['&:hover'] = {
-            bgcolor: '#bbdefb',
+            bgcolor: '#b39ddb',
+            boxShadow: '0 1px 3px rgba(101, 31, 255, 0.2)',
         };
     } else if (isDirect && isChilled) {
         // Combined direct + chilled = purple
