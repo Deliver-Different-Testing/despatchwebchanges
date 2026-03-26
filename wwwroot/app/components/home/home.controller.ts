@@ -1086,7 +1086,7 @@ class HomeController extends BaseController {
 
             // Restore the job ID and refresh the job detail to show updated courier assignment
             this.currentJobId = savedJobId;
-            await this.refreshJobDetail();
+            this.refreshJobDetail();
         } catch (error) {
             console.error("Error dispatching jobs:", error);
             throw error;
@@ -1116,7 +1116,10 @@ class HomeController extends BaseController {
             await executeSplitJobFlow({
                 job: job as any,
                 showToast: (msg, type) => toastMap[type](msg),
-                onComplete: () => this.getData(),
+                onComplete: () => {
+                    window.ReactJobList?.refresh();
+                    this.getData();
+                },
             });
         } catch (error) {
             console.error('Error in splitJob:', error);
@@ -1168,6 +1171,7 @@ class HomeController extends BaseController {
     async selectCourier(courier: ICourierData): Promise<void> {
         try {
             this.currentListLoading = true;
+            this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
             this.applyScope();
 
             if (!courier || !courier.courierId) return;
@@ -1546,6 +1550,7 @@ class HomeController extends BaseController {
                 statusFilter: this.queryParams.statusFilter,
                 isInternal: ClientInternal ?? false,
                 despatchViewIds: this.selectedViews.map(v => v.id),
+                selectedClearListId: this.selectedClearListId,
             });
         }
     }
@@ -1584,12 +1589,16 @@ class HomeController extends BaseController {
 
         switch (boxName) {
             case DispatchBoxes.JobDetail:
-                await this.refreshJobDetail();
+                this.refreshJobDetail();
                 break;
             case DispatchBoxes.Supports:
                 await this.getSupports();
                 break;
             case DispatchBoxes.JobsList:
+                if (window.ReactJobList) {
+                    window.ReactJobList.refresh();
+                }
+                break;
             case DispatchBoxes.Map:
             default:
                 await this.getData();
@@ -1610,7 +1619,7 @@ class HomeController extends BaseController {
         return this.currentLayoutName === 'Default';
     }
 
-    async refreshJobDetail(): Promise<void> {
+    refreshJobDetail(): void {
         if (!this.currentJobId) {
             console.debug("No job selected to refresh");
             return;
@@ -1618,21 +1627,8 @@ class HomeController extends BaseController {
 
         console.debug('refreshing job detail!');
 
-        try {
-            const jobId = this.currentJobId;
-
-            // Trigger change detection by clearing and restoring the jobId
-            this.currentJobId = undefined;
-            this.applyScope();
-
-            // Use $timeout to ensure digest cycle completes before restoring jobId
-            this.$timeoutService?.(() => {
-                this.currentJobId = jobId;
-                this.applyScope();
-            }, 50);
-        } catch (error) {
-            console.error("Error refreshing job detail:", error);
-            this.toastrService.showErrorToast("Failed to refresh job details");
+        if (window.ReactJobDetails?.refresh) {
+            window.ReactJobDetails.refresh();
         }
     }
 

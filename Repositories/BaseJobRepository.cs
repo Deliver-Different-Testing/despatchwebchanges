@@ -184,31 +184,6 @@ public partial class BaseJobRepository(
                 parent.Children.Add(child);
             }
 
-            // Find children whose parents weren't returned by the view query
-            // (e.g. split parents with DisplayInDespatch = false)
-            var orphanedChildParentIds = allJobs
-                .Where(j => !j.IsParentOrSingle && j.ParentId.HasValue
-                                                && !parentJobMap.ContainsKey(j.ParentId.Value))
-                .Select(j => j.ParentId!.Value)
-                .Distinct()
-                .ToList();
-
-            if (orphanedChildParentIds.Count > 0)
-            {
-                var missingParents = await Context.TucJobs
-                    .Where(j => orphanedChildParentIds.Contains(j.UcjbId))
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
-                    .ToListAsync(cancellationToken);
-
-                foreach (var parent in missingParents)
-                {
-                    parent.Children = allJobs
-                        .Where(c => c.ParentId == parent.Id && !c.IsParentOrSingle)
-                        .ToList();
-                    allJobs.Add(parent);
-                }
-            }
-
             await EnrichJobsWithCollections(allJobs);
 
             var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
@@ -218,6 +193,8 @@ public partial class BaseJobRepository(
                 job.AngularId = Guid.NewGuid();
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
+
+            JobMappings.ComputeProactiveLateFlags(allJobs, now);
 
             var mapItems = page == AppPage.Dispatch
                 ? allJobs.Select(j => new DispatchMapItem
@@ -455,8 +432,6 @@ public partial class BaseJobRepository(
         string clientIds
     )
     {
-        query = query.Where(j => j.ParentId != j.UcjbId && !j.InverseParent.Any());
-
         // Filter dates
         if (queryParams.StartDate != null)
             query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
@@ -661,7 +636,7 @@ public partial class BaseJobRepository(
     }
 
     protected async Task SaveNoteAsync(int jobId, string noteText, bool isImportant = false,
-        bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote)
+        bool isRecurringJob = false, NoteType noteType = NoteType.InternalNote, bool saveChanges = true)
     {
         try
         {
@@ -687,6 +662,8 @@ public partial class BaseJobRepository(
             };
 
             await Context.TucNotes.AddAsync(newNote);
+
+            if (!saveChanges) return;
             await Context.SaveChangesAsync();
         }
         catch (Exception e)

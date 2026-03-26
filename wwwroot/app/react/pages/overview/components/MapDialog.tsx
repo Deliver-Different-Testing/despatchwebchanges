@@ -1,10 +1,10 @@
 import React, {useState, useEffect, useMemo} from 'react';
 import Dialog from '@mui/material/Dialog';
-import AppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import CloseIcon from '@mui/icons-material/Close';
+import MapIcon from '@mui/icons-material/Map';
 import CircularProgress from '@mui/material/CircularProgress';
 import {useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../query';
@@ -66,19 +66,28 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                 paper: {sx: {width: '90%', maxWidth: '90%', height: '80vh'}},
             }}
         >
-            <AppBar position="relative" color="default" elevation={1}>
-                <Toolbar variant="dense">
-                    <span className="material-symbols-outlined" style={{marginRight: 8}}>
-                        map
-                    </span>
-                    <Typography variant="h6" sx={{flex: 1}}>
-                        {delivery?.jobName} Map
-                    </Typography>
-                    <IconButton edge="end" onClick={onClose}>
-                        <span className="material-symbols-outlined">close</span>
-                    </IconButton>
-                </Toolbar>
-            </AppBar>
+            <Box
+                sx={(theme) => ({
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: 'white',
+                    px: 3,
+                    py: 2.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                })}
+            >
+                <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <MapIcon sx={{ fontSize: 28 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h5" fontWeight={600}>{delivery?.jobName} Map</Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>View delivery locations and routes</Typography>
+                </Box>
+                <IconButton onClick={onClose} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <CloseIcon />
+                </IconButton>
+            </Box>
 
             <Box sx={{flex: 1, position: 'relative', overflow: 'hidden'}}>
                 {isLoading && (

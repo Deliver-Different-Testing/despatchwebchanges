@@ -27,6 +27,12 @@ public sealed class FlightViewModel
     public string ArrivalTimeZone { get; init; }
 }
 
+public sealed class FlightSearchResponse
+{
+    public List<FlightViewModel> Flights { get; init; } = [];
+    public string Message { get; init; }
+}
+
 public sealed class FlightSegmentViewModel : ScheduledFlight
 {
     public new DateTimeOffset DepartureTime { get; set; }

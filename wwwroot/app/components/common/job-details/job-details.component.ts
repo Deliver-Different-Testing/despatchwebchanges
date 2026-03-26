@@ -58,10 +58,8 @@ class JobDetailBridgeController implements angular.IController {
 
         console.log('[JobDetailBridge] $onInit, jobId:', this.jobId, 'containerId:', this.containerId);
 
-        // If jobId was already set via binding before $onInit, mount now
-        if (this.jobId) {
-            this.loadAndMount();
-        }
+        // Always mount — the React component handles the no-job-selected state
+        this.loadAndMount();
     }
 
     $onChanges(changes: angular.IOnChangesObject): void {
@@ -70,9 +68,7 @@ class JobDetailBridgeController implements angular.IController {
 
         if (changes['jobId']) {
             console.log('[JobDetailBridge] $onChanges jobId:', changes['jobId'].currentValue);
-            if (this.jobId) {
-                this.loadAndMount();
-            }
+            this.loadAndMount();
         }
     }
 
@@ -84,8 +80,6 @@ class JobDetailBridgeController implements angular.IController {
     }
 
     private async loadAndMount(): Promise<void> {
-        if (!this.jobId) return;
-
         try {
             await this.ensureReactLoaded();
             this.mountReactComponent();
@@ -151,8 +145,8 @@ class JobDetailBridgeController implements angular.IController {
     }
 
     private mountReactComponent(): void {
-        if (!window.ReactJobDetails || !this.jobId) {
-            console.error('[JobDetailBridge] Cannot mount: ReactJobDetails=', !!window.ReactJobDetails, 'jobId=', this.jobId);
+        if (!window.ReactJobDetails) {
+            console.error('[JobDetailBridge] Cannot mount: ReactJobDetails not available');
             return;
         }
 

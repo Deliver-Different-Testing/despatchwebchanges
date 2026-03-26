@@ -203,6 +203,7 @@ function setupDefaultMocks(overrides?: {
     job?: IJob;
     sortedRelatedJobs?: IJob[];
     isLoading?: boolean;
+    isFetching?: boolean;
     isDense?: boolean;
     photosLoading?: boolean;
 }) {
@@ -212,6 +213,7 @@ function setupDefaultMocks(overrides?: {
     mockUseJobDetail.mockReturnValue({
         sortedRelatedJobs,
         isLoading: overrides?.isLoading ?? false,
+        isFetching: overrides?.isFetching ?? false,
         refetch: jest.fn().mockResolvedValue(undefined),
     });
 
@@ -296,13 +298,20 @@ describe('JobDetails', () => {
     });
 
     describe('lazy-loaded components', () => {
-        it('renders PodPhotosSection via Suspense', async () => {
-            setupDefaultMocks();
+        it('renders PodPhotosSection when photos are loading', async () => {
+            setupDefaultMocks({photosLoading: true});
             renderJobDetails();
 
             await waitFor(() => {
                 expect(screen.getByTestId('pod-photos-section')).toBeInTheDocument();
             });
+        });
+
+        it('does not render PodPhotosSection when no photos and not loading', () => {
+            setupDefaultMocks();
+            renderJobDetails();
+
+            expect(screen.queryByTestId('pod-photos-section')).not.toBeInTheDocument();
         });
 
         it('renders RecurringJobFields via Suspense for recurring jobs', async () => {
@@ -438,7 +447,13 @@ describe('JobDetails', () => {
     describe('progress indicator', () => {
         it('shows linear progress when loading', () => {
             setupDefaultMocks({isLoading: true});
-            // Need a job so we don't hit the skeleton path
+            renderJobDetails();
+
+            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+        });
+
+        it('shows linear progress when fetching (background refetch)', () => {
+            setupDefaultMocks({isFetching: true});
             renderJobDetails();
 
             expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
@@ -458,7 +473,7 @@ describe('JobDetails', () => {
             expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
         });
 
-        it('hides linear progress when neither loading nor updating', () => {
+        it('hides linear progress when not loading, fetching, or updating', () => {
             setupDefaultMocks();
             renderJobDetails();
 

@@ -114,6 +114,11 @@ export interface AssignFlightToJobRequest {
     packageDeliveryNotes?: string;
 }
 
+export interface IFlightSearchResponseDto {
+    flights: IFlightViewModelDto[];
+    message?: string;
+}
+
 export interface IFlightViewModelDto {
     airline: string;
     flightNumber: string;

@@ -119,7 +119,11 @@ public class NationwideJobController(
             if (flights is null || flights.Count == 0)
             {
                 stopwatch.Stop();
-                return Json(new List<FlightViewModel>());
+                return Json(new FlightSearchResponse
+                {
+                    Flights = [],
+                    Message = "No flights found for the selected route and date. Try adjusting the departure date or changing the airline filter."
+                });
             }
 
             // Get the rates
@@ -140,7 +144,27 @@ public class NationwideJobController(
                 "Flight search API completed in {ElapsedMs}ms for job {JobId}, returned {FlightCount} flights",
                 stopwatch.ElapsedMilliseconds, jobId, flights.Count);
 
-            return Json(flights);
+            return Json(new FlightSearchResponse { Flights = flights.ToList() });
+        }
+        catch (ArgumentException e)
+        {
+            stopwatch.Stop();
+            Log.Warning(e, "Flight search validation failed for job {JobId}: {Message}", jobId, e.Message);
+            return Json(new FlightSearchResponse
+            {
+                Flights = [],
+                Message = e.Message
+            });
+        }
+        catch (HttpRequestException e)
+        {
+            stopwatch.Stop();
+            Log.Error(e, "FlightStats API error for job {JobId}", jobId);
+            return Json(new FlightSearchResponse
+            {
+                Flights = [],
+                Message = "Flight search service is currently unavailable. Please try again later."
+            });
         }
         catch (Exception e)
         {
@@ -166,6 +190,11 @@ public class NationwideJobController(
             await repository.AddJobNationwideAsync(request, webhookIds);
 
             return Ok();
+        }
+        catch (InvalidOperationException ex)
+        {
+            Log.Warning(ex, "Flight assignment rejected for JobId: {JobId}", request.JobId);
+            return Conflict(ex.Message);
         }
         catch (Exception ex)
         {
@@ -200,6 +229,30 @@ public class NationwideJobController(
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(NationwideJobController),
                     nameof(CreateWebhooks)));
             throw;
+        }
+    }
+
+    public async Task<IActionResult> GetFlightWebhookStatus(int jobId)
+    {
+        try
+        {
+            var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(jobId);
+
+            if (webhookIds.Count == 0)
+                return Json(new { active = false });
+
+            // Check all webhook rules in parallel
+            var tasks = webhookIds.Select(flightService.IsFlightRuleActiveAsync);
+            var results = await Task.WhenAll(tasks);
+
+            return Json(new { active = results.Any(r => r) });
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(NationwideJobController),
+                    nameof(GetFlightWebhookStatus)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
 
@@ -266,8 +319,8 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (!data.AgentId.HasValue) throw new ArgumentNullException(nameof(data.AgentId));
-            if (!data.JobId.HasValue) throw new ArgumentNullException(nameof(data.JobId));
+            if (!data.AgentId.HasValue) throw new ArgumentNullException(nameof(data));
+            if (!data.JobId.HasValue) throw new ArgumentNullException(nameof(data));
 
             await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
             return Ok();

@@ -335,6 +335,9 @@ class NationwideControl extends BaseController {
         this.registerInterval(async () => {
             await this.getUnreadMessageCount();
         }, 10000);
+
+        // Show initial "No Job Selected" state in the flight/agent component
+        this.updateUIState();
     }
 
     $onDestroy(): void {
@@ -1303,6 +1306,11 @@ class NationwideControl extends BaseController {
 
     async addFlightToJob($event: MouseEvent, flight: IFlightViewModel, job: IDispatchJob): Promise<void> {
         try {
+            if (job.assignedFlight) {
+                this.toastrService.showErrorToast("A flight is already assigned to this job");
+                return;
+            }
+
             const result = await this.flightAgentConfirmationDialogService.flightConfirmationDialog($event, job, flight)
             if (!result.shouldAssign) return;
 

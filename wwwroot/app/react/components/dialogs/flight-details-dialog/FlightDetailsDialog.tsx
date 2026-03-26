@@ -188,6 +188,9 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                     <Typography variant="h6" fontWeight={600}>
                         Flight Details
                     </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                        View flight information and segments
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={onClose}

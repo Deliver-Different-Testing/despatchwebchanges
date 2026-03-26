@@ -34,7 +34,8 @@ public class JobReportServiceTests
 
         // Assert
         var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
-        Assert.Equal("No file provided.", ex.Message);
+        Assert.StartsWith("No file provided.", ex.Message);
+        Assert.Equal("file", ex.ParamName);
         return;
 
         // Act
@@ -52,7 +53,8 @@ public class JobReportServiceTests
 
         // Assert
         var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
-        Assert.Equal("No file provided.", ex.Message);
+        Assert.StartsWith("No file provided.", ex.Message);
+        Assert.Equal("file", ex.ParamName);
         return;
 
         // Act
@@ -88,7 +90,8 @@ public class JobReportServiceTests
 
         // Assert
         var ex = await Assert.ThrowsAsync<ArgumentException>((Func<Task<IReadOnlyList<JobManualPriceModel>>>?)Act ?? throw new InvalidOperationException());
-        Assert.Equal("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.", ex.Message);
+        Assert.StartsWith("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.", ex.Message);
+        Assert.Equal("file", ex.ParamName);
         return;
 
         // Act
@@ -236,7 +239,8 @@ public class JobReportServiceTests
 
         // Assert
         var ex = await Assert.ThrowsAsync<ArgumentException>(Act);
-        Assert.Equal("No file provided.", ex.Message);
+        Assert.StartsWith("No file provided.", ex.Message);
+        Assert.Equal("file", ex.ParamName);
         return;
 
         // Act

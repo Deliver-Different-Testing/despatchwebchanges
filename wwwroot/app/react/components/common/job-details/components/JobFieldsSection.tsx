@@ -79,8 +79,12 @@ function SectionToolbar({
     isEditMode?: boolean;
     sectionKey?: string;
     isVisible?: boolean;
-    onToggleVisibility?: () => void;
+    onToggleVisibility?: (key: string) => void;
 }) {
+    const handleClick = React.useCallback(() => {
+        if (sectionKey && onToggleVisibility) onToggleVisibility(sectionKey);
+    }, [sectionKey, onToggleVisibility]);
+
     return (
         <Box sx={sectionToolbarSx}>
             <IconComponent sx={sectionToolbarIconSx}/>
@@ -89,7 +93,7 @@ function SectionToolbar({
             </Typography>
             <Box sx={{flex: 1}}/>
             {isEditMode && sectionKey && onToggleVisibility && (
-                <IconButton size="small" onClick={onToggleVisibility}>
+                <IconButton size="small" onClick={handleClick}>
                     {isVisible ? <VisibilityIcon sx={{fontSize: 18}}/> : <VisibilityOffIcon sx={{fontSize: 18}}/>}
                 </IconButton>
             )}
@@ -146,7 +150,7 @@ export const JobFieldsSection = React.memo(({
                                     onClick={onEditDimensions} disabled={locked}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('dimensions')}
-                                    onToggleVisibility={() => onToggleField('dimensions')}
+                                    onToggleVisibility={onToggleField} fieldKey="dimensions"
                                     endAdornment={job.calculateDimsOncePerJob ?
                                         <Chip label="CALC ONCE" size="small" color="success" sx={{
                                             height: 20,
@@ -161,7 +165,7 @@ export const JobFieldsSection = React.memo(({
                                     onClick={onEditWeight} disabled={locked}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('weight')}
-                                    onToggleVisibility={() => onToggleField('weight')}
+                                    onToggleVisibility={onToggleField} fieldKey="weight"
                                     endAdornment={job.calculateDimsOncePerJob ?
                                         <Chip label="CALC ONCE" size="small" color="success" sx={{
                                             height: 20,
@@ -174,7 +178,7 @@ export const JobFieldsSection = React.memo(({
                                     icon="qr_code" label="Barcode" value={job.barcode}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('dimensions')}
-                                    onToggleVisibility={() => onToggleField('dimensions')}
+                                    onToggleVisibility={onToggleField} fieldKey="dimensions"
                                 />
                             </List>
                         </Box>
@@ -192,7 +196,7 @@ export const JobFieldsSection = React.memo(({
                                     onClick={onDgClassClick} disabled={locked}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('dgDocs')}
-                                    onToggleVisibility={() => onToggleField('dgDocs')}
+                                    onToggleVisibility={onToggleField} fieldKey="dgDocs"
                                 />
                                 {job.dgClass && (
                                     <EditableField
@@ -206,7 +210,7 @@ export const JobFieldsSection = React.memo(({
                                     onClick={onLeaveClick} disabled={locked}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('leaveParcel')}
-                                    onToggleVisibility={() => onToggleField('leaveParcel')}
+                                    onToggleVisibility={onToggleField} fieldKey="leaveParcel"
                                 />
                             </List>
                         </Box>
@@ -218,33 +222,33 @@ export const JobFieldsSection = React.memo(({
                             title="Delivery Details" icon={LocalShippingIcon}
                             isEditMode={isEditMode} sectionKey="deliveryDetails"
                             isVisible={isFieldVisible('deliveryDetails')}
-                            onToggleVisibility={() => onToggleField('deliveryDetails')}
+                            onToggleVisibility={onToggleField}
                         />
                         <List dense disablePadding>
                             <EditableField
                                 icon="person" label="Dispatcher" value={job.dispatcherName}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('dispatcherName')}
-                                onToggleVisibility={() => onToggleField('dispatcherName')}
+                                onToggleVisibility={onToggleField} fieldKey="dispatcherName"
                             />
                             <EditableField
                                 icon="delivery_truck_speed" label="Courier" value={job.courierData?.courierName}
                                 onClick={onCourierClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('courierName')}
-                                onToggleVisibility={() => onToggleField('courierName')}
+                                onToggleVisibility={onToggleField} fieldKey="courierName"
                             />
                             <EditableField
                                 icon="phone_android" label="Courier Mobile" value={job.courierData?.courierMobile}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('courierMobile')}
-                                onToggleVisibility={() => onToggleField('courierMobile')}
+                                onToggleVisibility={onToggleField} fieldKey="courierMobile"
                             />
                             <EditableField
                                 icon="schedule" label="Schedule" value={job.scheduleName}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('scheduleName')}
-                                onToggleVisibility={() => onToggleField('scheduleName')}
+                                onToggleVisibility={onToggleField} fieldKey="scheduleName"
                             />
                         </List>
                     </Box>
@@ -258,21 +262,21 @@ export const JobFieldsSection = React.memo(({
                                 onClick={onTrackingMethodClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('tracking')}
-                                onToggleVisibility={() => onToggleField('tracking')}
+                                onToggleVisibility={onToggleField} fieldKey="tracking"
                             />
                             <EditableField
                                 icon="phone" label="Mobile" value={job.trackingMobile}
                                 onClick={onEditTrackingMobile} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('mobile')}
-                                onToggleVisibility={() => onToggleField('mobile')}
+                                onToggleVisibility={onToggleField} fieldKey="mobile"
                             />
                             <EditableField
                                 icon="email" label="Email" value={job.trackingEmail}
                                 onClick={onEditTrackingEmail} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('email')}
-                                onToggleVisibility={() => onToggleField('email')}
+                                onToggleVisibility={onToggleField} fieldKey="email"
                             />
                         </List>
                     </Box>
@@ -289,33 +293,33 @@ export const JobFieldsSection = React.memo(({
                             title="Booked By" icon={PersonOutlineIcon}
                             isEditMode={isEditMode} sectionKey="bookedBy"
                             isVisible={isFieldVisible('bookedBy')}
-                            onToggleVisibility={() => onToggleField('bookedBy')}
+                            onToggleVisibility={onToggleField}
                         />
                         <List dense disablePadding>
                             <EditableField
                                 icon="account_circle" label="Logged In" value={job.loggedInContactName}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('loggedInContactName')}
-                                onToggleVisibility={() => onToggleField('loggedInContactName')}
+                                onToggleVisibility={onToggleField} fieldKey="loggedInContactName"
                             />
                             <EditableField
                                 icon="source" label="Source" value={job.bookingSource?.text}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('bookingSource')}
-                                onToggleVisibility={() => onToggleField('bookingSource')}
+                                onToggleVisibility={onToggleField} fieldKey="bookingSource"
                             />
                             <EditableField
                                 icon="contacts" label="Contact" value={job.fromContactName}
                                 onClick={onContactClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('fromContactName')}
-                                onToggleVisibility={() => onToggleField('fromContactName')}
+                                onToggleVisibility={onToggleField} fieldKey="fromContactName"
                             />
                             <EditableField
                                 icon="phone" label="Phone" value={job.fromContactNumber}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('fromContactNumber')}
-                                onToggleVisibility={() => onToggleField('fromContactNumber')}
+                                onToggleVisibility={onToggleField} fieldKey="fromContactNumber"
                             />
                         </List>
                     </Box>
@@ -328,7 +332,7 @@ export const JobFieldsSection = React.memo(({
                             title="Job Details" icon={WorkOutlineIcon}
                             isEditMode={isEditMode} sectionKey="jobDetails"
                             isVisible={isFieldVisible('jobDetails')}
-                            onToggleVisibility={() => onToggleField('jobDetails')}
+                            onToggleVisibility={onToggleField}
                         />
                         <List dense disablePadding>
                             <EditableField
@@ -341,55 +345,55 @@ export const JobFieldsSection = React.memo(({
                                 onClick={onSpeedClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('speedName')}
-                                onToggleVisibility={() => onToggleField('speedName')}
+                                onToggleVisibility={onToggleField} fieldKey="speedName"
                             />
                             <EditableField
                                 icon="notifications" label="Notified" value={job.notifiedName}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('notifiedSpeed')}
-                                onToggleVisibility={() => onToggleField('notifiedSpeed')}
+                                onToggleVisibility={onToggleField} fieldKey="notifiedSpeed"
                             />
                             <EditableField
                                 icon="category" label="Job Type" value={job.jobTypeDescription}
                                 onClick={onJobTypeClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('jobTypeDescription')}
-                                onToggleVisibility={() => onToggleField('jobTypeDescription')}
+                                onToggleVisibility={onToggleField} fieldKey="jobTypeDescription"
                             />
                             <EditableField
                                 icon="photo_size_select_large" label="Size" value={job.size?.text}
                                 onClick={onSizeClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('sizeText')}
-                                onToggleVisibility={() => onToggleField('sizeText')}
+                                onToggleVisibility={onToggleField} fieldKey="sizeText"
                             />
                             <EditableField
                                 icon="bookmark" label="Ref A" value={job.refA}
                                 onClick={onEditRefA} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('refA')}
-                                onToggleVisibility={() => onToggleField('refA')}
+                                onToggleVisibility={onToggleField} fieldKey="refA"
                             />
                             <EditableField
                                 icon="bookmark_border" label="Ref B" value={job.refB}
                                 onClick={onEditRefB} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('refB')}
-                                onToggleVisibility={() => onToggleField('refB')}
+                                onToggleVisibility={onToggleField} fieldKey="refB"
                             />
                             <EditableField
                                 icon="tag" label="Our Ref" value={job.ourRef}
                                 onClick={onEditOurRef} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('ourRef')}
-                                onToggleVisibility={() => onToggleField('ourRef')}
+                                onToggleVisibility={onToggleField} fieldKey="ourRef"
                             />
                             <EditableField
                                 icon="local_shipping" label="AWB" value={job.conNote}
                                 onClick={onEditConNote} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('conNote')}
-                                onToggleVisibility={() => onToggleField('conNote')}
+                                onToggleVisibility={onToggleField} fieldKey="conNote"
                             />
                         </List>
                     </Box>
@@ -405,7 +409,7 @@ export const JobFieldsSection = React.memo(({
                                 onClick={onClientClick} disabled={locked}
                                 dense={dense} isEditMode={isEditMode}
                                 isVisible={isFieldVisible('client')}
-                                onToggleVisibility={() => onToggleField('client')}
+                                onToggleVisibility={onToggleField} fieldKey="client"
                             />
                             {job.inActiveBy && (
                                 <EditableField

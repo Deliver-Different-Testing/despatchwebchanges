@@ -2957,6 +2957,83 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     }
 
     /// <summary>
+    /// Assigning a flight to a job that already has a flight should throw.
+    /// </summary>
+    [Fact]
+    public async Task AddJobNationwideAsync_JobAlreadyHasFlight_ThrowsInvalidOperationException()
+    {
+        // Arrange
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        _context.TucJobs.AddRange(parentJob, flightJob);
+
+        // Pre-existing flight record for this job
+        var existingFlight = CreateJobNationwide(1, 100, "webhook-existing");
+        _context.TucJobNationwides.Add(existingFlight);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var request = CreateFlightRequest(100, 1, 1, departureTime, arrivalTime);
+        var webhookIds = new List<string> { "webhook-456" };
+
+        var repository = CreateRepository();
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken));
+        Assert.Contains("already has a flight assigned", ex.Message);
+    }
+
+    /// <summary>
+    /// Assigning a flight to a job with no existing flight should succeed.
+    /// </summary>
+    [Fact]
+    public async Task AddJobNationwideAsync_JobHasNoFlight_Succeeds()
+    {
+        // Arrange
+        var departureTime = new DateTimeOffset(2024, 6, 15, 10, 0, 0, TimeSpan.Zero);
+        var arrivalTime = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero);
+
+        var parentJob = CreateJobWithParent(1, "JOB001");
+        var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
+        _context.TucJobs.AddRange(parentJob, flightJob);
+
+        // Flight exists on a DIFFERENT job - should not block
+        var otherJobFlight = CreateJobNationwide(1, 999, "webhook-other");
+        _context.TucJobNationwides.Add(otherJobFlight);
+
+        var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
+        _context.TblAirports.Add(airport);
+
+        var timeZone = CreateTimeZone(1, "Pacific/Auckland", "NZST");
+        _context.TimeZones.Add(timeZone);
+
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var request = CreateFlightRequest(100, 1, 1, departureTime, arrivalTime);
+        var webhookIds = new List<string> { "webhook-123" };
+
+        var repository = CreateRepository();
+
+        // Act - should not throw
+        await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
+
+        // Assert
+        var flightRecord = await _context.TucJobNationwides
+            .FirstOrDefaultAsync(f => f.UcnwJobId == 100, TestContext.Current.CancellationToken);
+        Assert.NotNull(flightRecord);
+    }
+
+    /// <summary>
     /// Test Scenario 6: NZ tenant with US grouping (Agent=3) should NOT find delivery job.
     /// </summary>
     [Fact]

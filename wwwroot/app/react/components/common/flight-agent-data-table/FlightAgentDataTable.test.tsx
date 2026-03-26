@@ -178,15 +178,63 @@ describe('FlightAgentDataTable', () => {
                 expect(screen.getByText(expectedText)).toBeInTheDocument();
             });
 
-            it('shows no flights available message', () => {
-                renderWithTheme(
-                    <FlightAgentDataTable {...createMockProps({
-                        showNoFlightsAvailableMessage: true,
-                        showFlightList: false,
-                        flightMessage: 'No flights found for this route',
-                    })} />
-                );
+            it('shows no flights available message with airline chips and airport selectors', () => {
+                const props = createMockProps({
+                    showNoFlightsAvailableMessage: true,
+                    showFlightList: false,
+                    flightMessage: 'No flights found for this route',
+                });
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                // No flights message
                 expect(screen.getByText('No Flights Available')).toBeInTheDocument();
+                expect(screen.getByText('No flights found for this route')).toBeInTheDocument();
+
+                // Airline filter chips visible
+                expect(screen.getByText('All')).toBeInTheDocument();
+                expect(screen.getAllByText('AA').length).toBeGreaterThanOrEqual(1);
+
+                // Airport selectors visible
+                expect(screen.getAllByText('LAX').length).toBeGreaterThanOrEqual(1);
+                expect(screen.getAllByText('JFK').length).toBeGreaterThanOrEqual(1);
+            });
+
+            it('allows changing airline filter from no-flights state', async () => {
+                const props = createMockProps({
+                    showNoFlightsAvailableMessage: true,
+                    showFlightList: false,
+                });
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                await userEvent.click(screen.getAllByText('AA')[0]);
+                expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(expect.objectContaining({id: 1, text: 'AA'}));
+
+                await userEvent.click(screen.getByText('All'));
+                expect(props.onFilterFlightsByAirline).toHaveBeenCalledWith(null);
+            });
+
+            it('opens departure airport menu from no-flights state', async () => {
+                const props = createMockProps({
+                    showNoFlightsAvailableMessage: true,
+                    showFlightList: false,
+                });
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                const departureButton = screen.getAllByRole('button').find(btn => btn.textContent?.includes('LAX'));
+                await userEvent.click(departureButton!);
+                expect(await screen.findByText('LAX - Los Angeles')).toBeInTheDocument();
+            });
+
+            it('opens arrival airport menu from no-flights state', async () => {
+                const props = createMockProps({
+                    showNoFlightsAvailableMessage: true,
+                    showFlightList: false,
+                });
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                const arrivalButton = screen.getAllByRole('button').find(btn => btn.textContent?.includes('JFK'));
+                await userEvent.click(arrivalButton!);
+                expect(await screen.findByText('JFK - New York')).toBeInTheDocument();
             });
         });
 

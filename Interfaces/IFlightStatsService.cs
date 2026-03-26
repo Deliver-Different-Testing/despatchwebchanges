@@ -9,6 +9,8 @@ public interface IFlightStatsService
 
     Task DeleteFlightRuleById(string webhookId);
 
+    Task<bool> IsFlightRuleActiveAsync(string webhookId);
+
     Task<IReadOnlyList<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTimeOffset? departureDateTime = null,

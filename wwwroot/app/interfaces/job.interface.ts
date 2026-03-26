@@ -69,6 +69,8 @@ export interface IJob {
     deliveryTime?: number;
     alertLatePickup?: number;
     alertLateDelivery?: number;
+    isProactiveLatePickup?: boolean;
+    isProactiveLateDelivery?: boolean;
     minutes?: number;
     statusId?: number;
     status: string;
@@ -266,6 +268,8 @@ export interface IJobDto {
     deliveryTime?: number;
     alertLatePickup?: number;
     alertLateDelivery?: number;
+    isProactiveLatePickup?: boolean;
+    isProactiveLateDelivery?: boolean;
     minutes?: number;
     statusId?: number;
     status: string;
@@ -745,6 +749,8 @@ export interface IDispatchJob {
     alertLatePickup?: number;
     deliveryTime?: number;
     alertLateDelivery?: number;
+    isProactiveLatePickup?: boolean;
+    isProactiveLateDelivery?: boolean;
 
     // Late call fields
     lp?: number;
@@ -871,6 +877,8 @@ export interface IDispatchJobDto {
     alertLatePickup?: number;
     deliveryTime?: number;
     alertLateDelivery?: number;
+    isProactiveLatePickup?: boolean;
+    isProactiveLateDelivery?: boolean;
 
     // Late call fields
     lp?: number;

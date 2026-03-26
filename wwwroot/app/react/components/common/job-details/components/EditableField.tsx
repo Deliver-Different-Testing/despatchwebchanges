@@ -89,7 +89,8 @@ interface EditableFieldProps {
     disabled?: boolean;
     isEditMode?: boolean;
     isVisible?: boolean;
-    onToggleVisibility?: () => void;
+    onToggleVisibility?: ((fieldKey: string) => void) | (() => void);
+    fieldKey?: string;
     dense?: boolean;
     sx?: SxProps<Theme>;
     endAdornment?: React.ReactNode;
@@ -98,18 +99,19 @@ interface EditableFieldProps {
 const getDensePy = (dense?: boolean) => (dense ? 0.25 : 0.5);
 const getDenseMinHeight = (dense?: boolean) => (dense ? 36 : 44);
 
-export function EditableField({
-                                  icon,
-                                  label,
-                                  value,
-                                  onClick,
-                                  disabled,
-                                  isEditMode,
-                                  isVisible = true,
-                                  onToggleVisibility,
-                                  dense,
-                                  endAdornment,
-                              }: EditableFieldProps) {
+export const EditableField = React.memo(({
+                                             icon,
+                                             label,
+                                             value,
+                                             onClick,
+                                             disabled,
+                                             isEditMode,
+                                             isVisible = true,
+                                             onToggleVisibility,
+                                             fieldKey,
+                                             dense,
+                                             endAdornment,
+                                         }: EditableFieldProps) => {
     const IconComponent = icon ? iconMap[icon] : undefined;
     const displayValue = value != null && value !== '' ? String(value) : '\u2014';
 
@@ -119,6 +121,14 @@ export function EditableField({
         </ListItemIcon>
     ) : undefined;
 
+    const handleToggle = React.useCallback(() => {
+        if (onToggleVisibility && fieldKey) {
+            (onToggleVisibility as (fieldKey: string) => void)(fieldKey);
+        } else if (onToggleVisibility) {
+            (onToggleVisibility as () => void)();
+        }
+    }, [onToggleVisibility, fieldKey]);
+
     // Edit mode: show visibility toggle
     if (isEditMode) {
         return (
@@ -127,7 +137,7 @@ export function EditableField({
                 disablePadding
                 secondaryAction={
                     onToggleVisibility ? (
-                        <IconButton edge="end" size="small" onClick={onToggleVisibility}>
+                        <IconButton edge="end" size="small" onClick={handleToggle}>
                             {isVisible ? <VisibilityIcon sx={{fontSize: 18}}/> :
                                 <VisibilityOffIcon sx={{fontSize: 18}}/>}
                         </IconButton>
@@ -135,7 +145,7 @@ export function EditableField({
                 }
                 sx={{minHeight: dense ? 36 : 40}}
             >
-                <ListItemButton dense onClick={onToggleVisibility} sx={{py: getDensePy(dense)}}>
+                <ListItemButton dense onClick={handleToggle} sx={{py: getDensePy(dense)}}>
                     {iconElement}
                     <ListItemText
                         primary={label}
@@ -194,4 +204,4 @@ export function EditableField({
             {endAdornment}
         </ListItem>
     );
-}
+});

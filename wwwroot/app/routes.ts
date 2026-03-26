@@ -58,23 +58,28 @@ class RouterConfig {
                     }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
-                    const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
-                    await $ocLazyLoad.load([
-                        getAssetPath('home.js'),
-                        getAssetPath('home.css')
-                    ]);
-                    // Load React job list for the dispatch page
-                    if (!window.React) {
-                        await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                    try {
+                        const getAssetPath = (filename: string) => `dist/${manifest[filename] || filename}`;
+                        await $ocLazyLoad.load([
+                            getAssetPath('home.js'),
+                            getAssetPath('home.css')
+                        ]);
+                        // Load React job list for the dispatch page
+                        if (!window.React) {
+                            await $ocLazyLoad.load(getAssetPath('vendor-react.js'));
+                        }
+                        await $ocLazyLoad.load({
+                            name: 'uDispatch.jobListReact',
+                            files: [getAssetPath('jobListReact.js')]
+                        });
+                        await $ocLazyLoad.load({
+                            name: 'uDispatch.currentWorkJobListReact',
+                            files: [getAssetPath('currentWorkJobListReact.js')]
+                        });
+                    } catch (error) {
+                        console.error('[ROUTES] Failed to load home modules:', error);
+                        throw error;
                     }
-                    await $ocLazyLoad.load({
-                        name: 'uDispatch.jobListReact',
-                        files: [getAssetPath('jobListReact.js')]
-                    });
-                    await $ocLazyLoad.load({
-                        name: 'uDispatch.currentWorkJobListReact',
-                        files: [getAssetPath('currentWorkJobListReact.js')]
-                    });
                 }]
             },
             component: "homeComponent"

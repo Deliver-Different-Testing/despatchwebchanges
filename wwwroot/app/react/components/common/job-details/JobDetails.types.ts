@@ -28,7 +28,7 @@ export type {Is3PhotoInfo} from '../../../../interfaces/aws.interfaces';
 
 /** Configuration passed from AngularJS bridge to mount the React component */
 export interface MountJobDetailsConfig {
-    jobId: number;
+    jobId?: number;
     isRecurringJob: boolean;
     isBulkJob: boolean;
     isUsCustomer: boolean;

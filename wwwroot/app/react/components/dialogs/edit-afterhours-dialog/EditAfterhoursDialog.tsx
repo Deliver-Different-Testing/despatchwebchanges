@@ -340,6 +340,9 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                     <Typography variant="h6" fontWeight={600}>
                         {isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule
                     </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        Set courier availability outside business hours
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={onClose}

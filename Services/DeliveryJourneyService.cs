@@ -120,81 +120,56 @@ public sealed partial class DeliveryJourneyService(
         int jobId,
         bool isLiveJob)
     {
-        var timezone = infoService.GetTenantTimeZone();
         var isUsCustomer = infoService.IsUsTenant();
         var dateFormat = isUsCustomer ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm";
 
-        if (isLiveJob)
-        {
-            var noteDtos = await context.TucNotes
-                .Where(n => n.JobId == jobId)
-                .Select(n => new NoteDto
-                {
-                    NoteId = n.NoteId,
-                    NoteText = n.NoteText,
-                    CreatedDate = n.CreatedDate,
-                    UpdatedDate = n.UpdatedDate,
-                    CreatedByFirstName = n.CreatedByNavigation != null ? n.CreatedByNavigation.UcstFirstName : null,
-                    CreatedByLastName = n.CreatedByNavigation != null ? n.CreatedByNavigation.UcstLastName : null,
-                    UpdatedByFirstName = n.UpdatedByNavigation != null ? n.UpdatedByNavigation.UcstFirstName : null,
-                    UpdatedByLastName = n.UpdatedByNavigation != null ? n.UpdatedByNavigation.UcstLastName : null
-                })
-                .TagWith("DeliveryJourney - Live Notes")
-                .ToListAsync();
+        var historyQuery = isLiveJob
+            ? context.TucNoteHistories
+                .Where(h => h.Note != null && h.Note.JobId == jobId)
+            : context.TucNoteHistories
+                .Where(h => h.ArchiveNoteId != null &&
+                    context.TucNoteArchives.Any(a => a.NoteId == h.ArchiveNoteId && a.JobId == jobId));
 
-            return noteDtos.Select(n => new DeliveryJourneyViewModel
+        var histories = await historyQuery
+            .OrderBy(h => h.EditedAtUtc)
+            .Select(h => new
+            {
+                h.NoteHistoryId,
+                h.EditedAtUtc,
+                h.OldNoteText,
+                h.NewNoteText,
+                EditedByFirstName = context.TucStaffs.Where(s => s.UcstId == h.EditedBy).Select(s => s.UcstFirstName).FirstOrDefault(),
+                EditedByLastName = context.TucStaffs.Where(s => s.UcstId == h.EditedBy).Select(s => s.UcstLastName).FirstOrDefault()
+            })
+            .TagWith(isLiveJob ? "DeliveryJourney - Live Note Histories" : "DeliveryJourney - Archived Note Histories")
+            .ToListAsync();
+
+        return histories.Select(h =>
+        {
+            var editedByName = !string.IsNullOrEmpty(h.EditedByFirstName)
+                ? $"{h.EditedByFirstName} {h.EditedByLastName}"
+                : "System";
+            var editDate = infoService.ConvertUtcToTenantTimeZone(h.EditedAtUtc);
+
+            return new DeliveryJourneyViewModel
             {
                 Id = Guid.NewGuid(),
                 JobId = jobId,
-                Title = !string.IsNullOrEmpty(n.CreatedByFirstName)
-                    ? $"Note added by {n.CreatedByFirstName} {n.CreatedByLastName}"
-                    : "Note added by System",
+                Title = string.IsNullOrEmpty(h.OldNoteText)
+                    ? $"Note added by {editedByName}"
+                    : $"Note edited by {editedByName}",
                 Icon = "sticky_note_2",
-                Description = n.NoteText,
-                Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate, timezone),
+                Description = h.NewNoteText,
+                Date = editDate,
                 Tags = new[]
                 {
                     "Note",
-                    !string.IsNullOrEmpty(n.CreatedByFirstName)
-                        ? $"Created by {n.CreatedByFirstName} {n.CreatedByLastName} on {TimeZoneHelper.SetDateTimeWithTimeZone(n.CreatedDate, timezone).ToString(dateFormat)}"
-                        : null,
-                    !string.IsNullOrEmpty(n.UpdatedByFirstName) && n.UpdatedDate.HasValue
-                        ? $"Updated by {n.UpdatedByFirstName} {n.UpdatedByLastName} on {TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate.Value, timezone).ToString(dateFormat)}"
+                    $"Edited by {editedByName} on {editDate.ToString(dateFormat)}",
+                    !string.IsNullOrEmpty(h.OldNoteText)
+                        ? $"Previous: {h.OldNoteText}"
                         : null
                 }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
-            }).ToList();
-        }
-
-        var archivedNoteTemps = await context.TucNoteArchives
-            .Where(n => n.JobId == jobId)
-            .Select(n => new ArchivedNoteDto
-            {
-                NoteId = n.NoteId,
-                NoteText = n.NoteText,
-                CreatedDate = n.CreatedDate,
-                UpdatedDate = n.UpdatedDate
-            })
-            .TagWith("DeliveryJourney - Archived Notes")
-            .ToListAsync();
-
-        return archivedNoteTemps.Select(n => new DeliveryJourneyViewModel
-        {
-            Id = Guid.NewGuid(),
-            JobId = jobId,
-            Title = "Note added by System",
-            Icon = "sticky_note_2",
-            Description = n.NoteText,
-            Date = TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate ?? n.CreatedDate ?? DateTime.MinValue, timezone),
-            Tags = new[]
-            {
-                "Note",
-                n.CreatedDate.HasValue
-                    ? $"Created on {TimeZoneHelper.SetDateTimeWithTimeZone(n.CreatedDate.Value, timezone).ToString(dateFormat)}"
-                    : null,
-                n.UpdatedDate.HasValue
-                    ? $"Updated on {TimeZoneHelper.SetDateTimeWithTimeZone(n.UpdatedDate.Value, timezone).ToString(dateFormat)}"
-                    : null
-            }.Where(tag => !string.IsNullOrWhiteSpace(tag)).ToList()
+            };
         }).ToList();
     }
 

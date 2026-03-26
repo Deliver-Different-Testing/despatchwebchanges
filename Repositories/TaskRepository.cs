@@ -83,7 +83,7 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
-                    throw new ArgumentException($"Event with ID {eventId} not found.");
+                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
 
                 // Only create audit record if value actually changed
                 if (existingEvent.UcevClosed != closed)
@@ -128,7 +128,7 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
-                    throw new ArgumentException($"Event with ID {eventId} not found.");
+                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
 
                 if (existingEvent.UcevDueTime != dueTime.DateTime)
                 {
@@ -172,7 +172,7 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
-                    throw new ArgumentException($"Event with ID {eventId} not found.");
+                    throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
@@ -266,7 +266,7 @@ public class TaskRepository(
         var dispatcherName = await dispatcherTask;
 
         ArgumentNullException.ThrowIfNull(job);
-        if (!job.UcjbClientId.HasValue) throw new ArgumentNullException(nameof(job.UcjbClientId));
+        if (!job.UcjbClientId.HasValue) throw new ArgumentNullException(nameof(job));
 
         // Batch create all events
         var events = eventGroupViewModels.Select(eventGroup => new TucEvent
@@ -512,7 +512,6 @@ public class TaskRepository(
 
             var automaticResponse = false;
             if (jobContactInfo?.ContactJobType != null)
-            {
                 automaticResponse = type switch
                 {
                     (int)EventType.LatePickUp => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.PickupType),
@@ -520,7 +519,6 @@ public class TaskRepository(
                         jobContactInfo.ContactJobType.DeliveryType),
                     _ => false
                 };
-            }
 
             // Set fields for automatic response
             if (automaticResponse)

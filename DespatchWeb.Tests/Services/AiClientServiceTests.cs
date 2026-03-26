@@ -1,4 +1,3 @@
-using System.Text.Json;
 using DespatchWeb.Services;
 
 namespace DespatchWeb.Tests.Services;
@@ -13,7 +12,8 @@ public class AiClientServiceTests
     [Fact]
     public void ParseToolProperties_ValidJson_ReturnsDictionaryWithCorrectKeys()
     {
-        const string json = """{"properties": {"name": {"type": "string"}, "age": {"type": "integer"}}, "required": ["name"]}""";
+        const string json =
+            """{"properties": {"name": {"type": "string"}, "age": {"type": "integer"}}, "required": ["name"]}""";
 
         var result = AiClientService.ParseToolProperties(json);
 
@@ -35,7 +35,8 @@ public class AiClientServiceTests
     [Fact]
     public void ParseToolProperties_NestedProperties_ValuesArePreserved()
     {
-        const string json = """{"properties": {"address": {"type": "object", "properties": {"street": {"type": "string"}}}}}""";
+        const string json =
+            """{"properties": {"address": {"type": "object", "properties": {"street": {"type": "string"}}}}}""";
 
         var result = AiClientService.ParseToolProperties(json);
 

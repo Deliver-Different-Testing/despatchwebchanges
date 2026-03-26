@@ -13,7 +13,7 @@ import type {Dayjs} from 'dayjs';
 import dayjs from 'dayjs';
 
 interface UsePodPhotosOptions {
-    job: IJob | undefined;
+    job?: IJob;
     isRecurringJob: boolean;
 }
 
@@ -75,15 +75,26 @@ export function usePodPhotos({job, isRecurringJob}: UsePodPhotosOptions) {
         staleTime: 60 * 1000,
     });
 
+    // Depend on specific job fields used by processPhotoData, not the whole job object
+    // (job reference changes on every React Query refetch even when data is identical)
+    const completedTimeVal = job?.completedTime;
+    const courierName = job?.courierData?.courierName;
+    const deliveryLat = job?.deliveryAddress?.latitude;
+    const deliveryLng = job?.deliveryAddress?.longitude;
+    const pickupLat = job?.pickupAddress?.latitude;
+    const pickupLng = job?.pickupAddress?.longitude;
+
     const deliveryPhotos = useMemo(() => {
         if (!deliveryQuery.data || !job) return [];
         return processPhotoData(deliveryQuery.data, job, true);
-    }, [deliveryQuery.data, job]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [deliveryQuery.data, completedTimeVal, courierName, deliveryLat, deliveryLng]);
 
     const pickupPhotos = useMemo(() => {
         if (!pickupQuery.data || !job) return [];
         return processPhotoData(pickupQuery.data, job, false);
-    }, [pickupQuery.data, job]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pickupQuery.data, completedTimeVal, courierName, pickupLat, pickupLng]);
 
     const imageOnlyDeliveryPhotos = useMemo(
         () => deliveryPhotos.filter(isImageFile),

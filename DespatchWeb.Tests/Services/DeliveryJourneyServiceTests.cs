@@ -1,7 +1,6 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using Microsoft.EntityFrameworkCore;
 using Moq;
 
 namespace DespatchWeb.Tests.Services;
@@ -60,6 +59,13 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     {
         await using var context = _db.CreateContext();
         context.TucNoteArchives.AddRange(notes);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task SeedNoteHistoriesAsync(params TucNoteHistory[] histories)
+    {
+        await using var context = _db.CreateContext();
+        context.TucNoteHistories.AddRange(histories);
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
     }
 
@@ -222,6 +228,15 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
             NoteTypeId = 1
         });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1,
+            NoteId = 1,
+            EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty,
+            NewNoteText = "Customer called about delivery",
+            EditedBy = 0
+        });
         var service = CreateService();
 
         // Act
@@ -241,22 +256,11 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Arrange
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
         await SeedNotesAsync(
-            new TucNote
-            {
-                NoteId = 1,
-                JobId = 1,
-                NoteText = "First note",
-                CreatedDate = new DateTime(2024, 1, 15, 8, 0, 0),
-                NoteTypeId = 1
-            },
-            new TucNote
-            {
-                NoteId = 2,
-                JobId = 1,
-                NoteText = "Second note",
-                CreatedDate = new DateTime(2024, 1, 15, 10, 0, 0),
-                NoteTypeId = 1
-            });
+            new TucNote { NoteId = 1, JobId = 1, NoteText = "First note", CreatedDate = new DateTime(2024, 1, 15, 8, 0, 0), NoteTypeId = 1 },
+            new TucNote { NoteId = 2, JobId = 1, NoteText = "Second note", CreatedDate = new DateTime(2024, 1, 15, 10, 0, 0), NoteTypeId = 1 });
+        await SeedNoteHistoriesAsync(
+            new TucNoteHistory { NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 8, 0, 0), OldNoteText = "", NewNoteText = "First note", EditedBy = 0 },
+            new TucNoteHistory { NoteHistoryId = 2, NoteId = 2, EditedAtUtc = new DateTime(2024, 1, 15, 10, 0, 0), OldNoteText = "", NewNoteText = "Second note", EditedBy = 0 });
         var service = CreateService();
 
         // Act
@@ -271,56 +275,62 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_ConvertsDatePropertyTimezone()
     {
-        // Arrange — Notes store tenant local time, so SetDateTimeWithTimeZone should
-        // preserve the wall-clock time and only attach the offset label
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — ConvertUtcToTenantTimeZone converts UTC to NZ (+13 in January)
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(13)));
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
         await SeedNotesAsync(new TucNote
         {
             NoteId = 1, JobId = 1, NoteText = "TZ test",
             CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
-            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
             NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "TZ test", EditedBy = 0
         });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — wall-clock time preserved (09:00 stays 09:00), only offset label applied
+        // Assert — 09:00 UTC converted to 22:00 NZ (+13)
         Assert.Single(result);
-        Assert.Equal(9, result[0].Date.Hour);
+        Assert.Equal(22, result[0].Date.Hour);
         Assert.Equal(TimeSpan.FromHours(13), result[0].Date.Offset);
     }
 
     [Fact]
-    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_UsesUpdatedDateForDatePropertyWhenPresent()
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_UsesEditedAtUtcForDate()
     {
-        // Arrange — UpdatedDate should take precedence over CreatedDate
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — Date now comes from TucNoteHistory.EditedAtUtc via ConvertUtcToTenantTimeZone
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
         await SeedNotesAsync(new TucNote
         {
             NoteId = 1, JobId = 1, NoteText = "Updated note",
             CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0),
-            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
             NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Updated note", EditedBy = 0
         });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — should use UpdatedDate (09:00 local preserved), not CreatedDate (02:00)
+        // Assert — date comes from EditedAtUtc (09:00) via mock ConvertUtcToTenantTimeZone
         Assert.Single(result);
         Assert.Equal(9, result[0].Date.Hour);
     }
 
     [Fact]
-    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_TagCreatedDateConvertsTimezone()
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_TagShowsEditedByAndDate()
     {
-        // Arrange — 15:00 local time should stay 15:00 (wall-clock preserved, offset label applied)
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — tag shows "Edited by {name} on {date}" using ConvertUtcToTenantTimeZone result
         await SeedStaffAsync(new TucStaff { UcstId = 1, UcstFirstName = "Alice", UcstLastName = "Smith", CreatedBy = "test", LastModifiedBy = "test" });
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
         await SeedNotesAsync(new TucNote
@@ -329,21 +339,25 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0),
             CreatedBy = 1, NoteTypeId = 1
         });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 15, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Tag TZ test", EditedBy = 1
+        });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — tag should show 01/15/2024 15:00 (same day, wall-clock preserved)
+        // Assert — tag shows "Edited by Alice Smith on 01/15/2024 15:00" (mock returns UTC offset)
         Assert.Single(result);
         Assert.Contains(result[0].Tags, t => t.Contains("Alice Smith") && t.Contains("01/15/2024 15:00"));
     }
 
     [Fact]
-    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_TagUpdatedDateConvertsTimezone()
+    public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_EditedHistoryShowsEditedTitle()
     {
-        // Arrange — note with UpdatedBy staff and UpdatedDate; wall-clock time should be preserved
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — history with OldNoteText shows "Note edited by" title
         await SeedStaffAsync(
             new TucStaff { UcstId = 1, UcstFirstName = "Alice", UcstLastName = "Smith", CreatedBy = "test", LastModifiedBy = "test" },
             new TucStaff { UcstId = 2, UcstFirstName = "Bob", UcstLastName = "Jones", CreatedBy = "test", LastModifiedBy = "test" });
@@ -352,30 +366,38 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         {
             NoteId = 1, JobId = 1, NoteText = "Updated tag TZ test",
             CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0), CreatedBy = 1,
-            UpdatedDate = new DateTime(2024, 1, 15, 15, 0, 0), UpdatedBy = 2,
             NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 15, 0, 0),
+            OldNoteText = "Original text", NewNoteText = "Updated tag TZ test", EditedBy = 2
         });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — Updated tag should show preserved wall-clock date (01/15/2024 15:00)
+        // Assert — title says "edited", tag shows editor name and date, includes previous text
         Assert.Single(result);
+        Assert.Equal("Note edited by Bob Jones", result[0].Title);
         Assert.Contains(result[0].Tags, t => t.Contains("Bob Jones") && t.Contains("01/15/2024 15:00"));
+        Assert.Contains(result[0].Tags, t => t.Contains("Previous: Original text"));
     }
 
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_ReturnsNoteEntries()
     {
-        // Arrange - no live job, so archived notes will be queried
+        // Arrange - no live job, so archived notes will be queried via TucNoteHistories
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
-            NoteId = 1,
-            JobId = 1,
-            NoteText = "Archived note content",
-            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
-            NoteTypeId = 1
+            NoteId = 1, JobId = 1, NoteText = "Archived note content",
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0), NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Archived note content", EditedBy = 0
         });
         var service = CreateService();
 
@@ -392,91 +414,100 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_ConvertsDatePropertyTimezone()
     {
-        // Arrange — Notes store tenant local time, so wall-clock time should be preserved
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — ConvertUtcToTenantTimeZone converts UTC to NZ (+13 in January)
+        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
+            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(13)));
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
             NoteId = 1, JobId = 1, NoteText = "Archived TZ test",
-            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
-            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
-            NoteTypeId = 1
+            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0), NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Archived TZ test", EditedBy = 0
         });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — wall-clock time preserved (09:00 stays 09:00), only offset label applied
+        // Assert — 09:00 UTC converted to 22:00 NZ (+13)
         Assert.Single(result);
-        Assert.Equal(9, result[0].Date.Hour);
+        Assert.Equal(22, result[0].Date.Hour);
         Assert.Equal(TimeSpan.FromHours(13), result[0].Date.Offset);
     }
 
     [Fact]
-    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_UsesUpdatedDateForDatePropertyWhenPresent()
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_UsesEditedAtUtcForDate()
     {
-        // Arrange — UpdatedDate should take precedence over CreatedDate
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — Date comes from TucNoteHistory.EditedAtUtc via ConvertUtcToTenantTimeZone
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
             NoteId = 1, JobId = 1, NoteText = "Updated archived note",
-            CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0),
-            UpdatedDate = new DateTime(2024, 1, 15, 9, 0, 0),
-            NoteTypeId = 1
+            CreatedDate = new DateTime(2024, 1, 15, 2, 0, 0), NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Updated archived note", EditedBy = 0
         });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — should use UpdatedDate (09:00 local preserved), not CreatedDate
+        // Assert — date comes from EditedAtUtc (09:00) via mock ConvertUtcToTenantTimeZone
         Assert.Single(result);
         Assert.Equal(9, result[0].Date.Hour);
     }
 
     [Fact]
-    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_TagDatesConvertTimezone()
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_TagShowsEditedByAndDate()
     {
-        // Arrange — wall-clock times should be preserved (no shifting, only offset label applied)
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        // Arrange — tags now show "Edited by {name} on {date}" from history
+        await SeedStaffAsync(new TucStaff { UcstId = 1, UcstFirstName = "Alice", UcstLastName = "Smith", CreatedBy = "test", LastModifiedBy = "test" });
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
-            NoteId = 1, JobId = 1, NoteText = "Archived tag TZ test",
-            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0),
-            UpdatedDate = new DateTime(2024, 1, 16, 15, 0, 0),
-            NoteTypeId = 1
+            NoteId = 1, JobId = 1, NoteText = "Archived tag test",
+            CreatedDate = new DateTime(2024, 1, 15, 15, 0, 0), NoteTypeId = 1
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 15, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Archived tag test", EditedBy = 1
         });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — tags should show preserved wall-clock dates (same day, not shifted)
+        // Assert — tag shows "Edited by Alice Smith on 01/15/2024 15:00"
         Assert.Single(result);
-        Assert.Contains(result[0].Tags, t => t.Contains("Created on") && t.Contains("01/15/2024 15:00"));
-        Assert.Contains(result[0].Tags, t => t.Contains("Updated on") && t.Contains("01/16/2024 15:00"));
+        Assert.Contains(result[0].Tags, t => t.Contains("Alice Smith") && t.Contains("01/15/2024 15:00"));
     }
 
     [Fact]
-    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_FallsBackToMinDateWhenNoDates()
+    public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_UsesHistoryEditedAtForDate()
     {
-        // Arrange — neither CreatedDate nor UpdatedDate set; uses default UTC timezone.
-        // SQLite applies getdate() defaults on insert, so we clear them via raw SQL
-        // to simulate the null-dates scenario.
+        // Arrange — Date comes from history's EditedAtUtc, not from archive note dates
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
-            NoteId = 1, JobId = 1, NoteText = "No dates note",
-            NoteTypeId = 1
+            NoteId = 1, JobId = 1, NoteText = "No dates note", NoteTypeId = 1
         });
-        await using (var ctx = _db.CreateContext()) await ctx.Database.ExecuteSqlRawAsync("UPDATE TucNoteArchive SET CreatedDate = NULL, UpdatedDate = NULL WHERE NoteId = 1", cancellationToken: TestContext.Current.CancellationToken);
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 6, 15, 12, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "No dates note", EditedBy = 0
+        });
         var service = CreateService();
 
         // Act
         var result = await service.GetDeliveryJourneyForJobAsync(1);
 
-        // Assert — should fall back to DateTime.MinValue with offset applied
+        // Assert — date comes from EditedAtUtc via ConvertUtcToTenantTimeZone mock
         Assert.Single(result);
-        Assert.Equal(DateTime.MinValue, result[0].Date.DateTime);
+        Assert.Equal(12, result[0].Date.Hour);
     }
 
     [Fact]
@@ -563,6 +594,11 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             NoteTypeId = 1,
             CreatedDate = new DateTime(2024, 1, 15, 16, 0, 0)
         });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 16, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Late note", EditedBy = 0
+        });
         var service = CreateService();
 
         // Act
@@ -582,14 +618,15 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Arrange
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         // Don't seed in TucJobs so IsLiveJobAsync returns false (archived job path)
-        // Archived notes have simpler tags that include date without navigation properties
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
-            NoteId = 1,
-            JobId = 1,
-            NoteText = "NZ formatted note",
-            NoteTypeId = 1,
-            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0)
+            NoteId = 1, JobId = 1, NoteText = "NZ formatted note",
+            NoteTypeId = 1, CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0)
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "NZ formatted note", EditedBy = 0
         });
         var service = CreateService();
 
@@ -598,7 +635,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
 
         // Assert
         Assert.Single(result);
-        // NZ format: dd/MM/yyyy HH:mm - archived notes use "Created on {date}"
+        // NZ format: dd/MM/yyyy HH:mm — tag shows "Edited by System on 15/01/2024 09:00"
         Assert.Contains(result[0].Tags, t => t.Contains("15/01/2024"));
     }
 
@@ -608,14 +645,15 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Arrange
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
         // Don't seed in TucJobs so IsLiveJobAsync returns false (archived job path)
-        // Archived notes have simpler tags that include date without navigation properties
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
-            NoteId = 1,
-            JobId = 1,
-            NoteText = "US formatted note",
-            NoteTypeId = 1,
-            CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0)
+            NoteId = 1, JobId = 1, NoteText = "US formatted note",
+            NoteTypeId = 1, CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0)
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, ArchiveNoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "US formatted note", EditedBy = 0
         });
         var service = CreateService();
 
@@ -624,7 +662,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
 
         // Assert
         Assert.Single(result);
-        // US format: MM/dd/yyyy HH:mm - archived notes use "Created on {date}"
+        // US format: MM/dd/yyyy HH:mm — tag shows "Edited by System on 01/15/2024 09:00"
         Assert.Contains(result[0].Tags, t => t.Contains("01/15/2024"));
     }
 
@@ -716,6 +754,11 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             NoteText = "Test note",
             NoteTypeId = 1,
             CreatedDate = new DateTime(2024, 1, 15)
+        });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15),
+            OldNoteText = string.Empty, NewNoteText = "Test note", EditedBy = 0
         });
         var service = CreateService();
 
@@ -1120,6 +1163,11 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
             NoteTypeId = 1,
             CreatedDate = new DateTime(2024, 1, 15, 9, 0, 0)
         });
+        await SeedNoteHistoriesAsync(new TucNoteHistory
+        {
+            NoteHistoryId = 1, NoteId = 1, EditedAtUtc = new DateTime(2024, 1, 15, 9, 0, 0),
+            OldNoteText = string.Empty, NewNoteText = "Flagged for attention", EditedBy = 0
+        });
         var service = CreateService();
 
         // Act
@@ -1183,5 +1231,4 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // ConvertToTitleCase should split camelCase: "CustomNewField" -> "Custom New Field"
         Assert.Equal("Custom New Field Updated", result[0].Title);
     }
-
 }

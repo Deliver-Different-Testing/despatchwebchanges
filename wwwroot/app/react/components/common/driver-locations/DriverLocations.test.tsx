@@ -181,7 +181,7 @@ describe('DriverLocations', () => {
     });
 
     describe('Courier Click', () => {
-        it('calls onCourierClick when courier row is clicked', () => {
+        it('calls onCourierClick with full courier data including courierId when row is clicked', () => {
             const onCourierClick = jest.fn();
             const props = createDefaultProps({ onCourierClick });
             renderWithProviders(<DriverLocations {...props} />);
@@ -192,8 +192,43 @@ describe('DriverLocations', () => {
 
             expect(onCourierClick).toHaveBeenCalledTimes(1);
             expect(onCourierClick).toHaveBeenCalledWith(
-                expect.objectContaining({ courierNumber: '001' })
+                expect.objectContaining({
+                    courierNumber: '001',
+                    courierId: 1,
+                    courierName: 'Test Courier',
+                })
             );
+        });
+
+        it('does not call onCourierClick when courierData is missing', () => {
+            const onCourierClick = jest.fn();
+            const driverLocations: IClearListViewModelWithColumns = {
+                areas: [],
+                columns: [
+                    {
+                        areas: [
+                            createMockArea({
+                                id: 1,
+                                name: 'North',
+                                top: [
+                                    {
+                                        courierNumber: '099',
+                                        courierData: undefined as any,
+                                        destinations: [],
+                                    },
+                                ],
+                                middle: [],
+                                bottom: [],
+                            }),
+                        ],
+                    },
+                ],
+            };
+            const props = createDefaultProps({ driverLocations, onCourierClick });
+            renderWithProviders(<DriverLocations {...props} />);
+
+            fireEvent.click(screen.getByText('099').closest('tr')!);
+            expect(onCourierClick).not.toHaveBeenCalled();
         });
     });
 

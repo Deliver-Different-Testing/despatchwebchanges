@@ -135,6 +135,6 @@ export const nationwideHandlers = [
             return new HttpResponse('Missing required parameters', { status: 400 });
         }
 
-        return HttpResponse.json(mockFlightViewModelDtos);
+        return HttpResponse.json({ flights: mockFlightViewModelDtos });
     }),
 ];

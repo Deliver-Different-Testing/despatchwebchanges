@@ -217,8 +217,9 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             // Start the done click — it will open the text dialog and await
             let donePromise: Promise<void>;
-            act(() => {
+            await act(async () => {
                 donePromise = result.current.handleDoneClick();
+                await Promise.resolve();
             });
 
             // The text dialog should now be open
@@ -257,8 +258,9 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             const {result, mockShowToast, mockUpdatePod} = setup({job});
 
             let donePromise: Promise<void>;
-            act(() => {
+            await act(async () => {
                 donePromise = result.current.handleDoneClick();
+                await Promise.resolve();
             });
 
             // Cancel the text dialog
@@ -287,8 +289,8 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             let donePromise: Promise<void>;
             await act(async () => {
                 donePromise = result.current.handleDoneClick();
-                // Wait a tick for the date dialog promise to resolve
-                await Promise.resolve();
+                // Flush microtasks: date dialog resolves, then openTextDialogAsync calls setTextDialog
+                for (let i = 0; i < 10; i++) await Promise.resolve();
             });
 
             // Date dialog resolved. POD time should have been saved.
@@ -397,8 +399,9 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
             // Start edit — should open text dialog via markJobAsDone
             let editPromise: Promise<void>;
-            act(() => {
+            await act(async () => {
                 editPromise = result.current.handleEditPodName();
+                await Promise.resolve();
             });
 
             // Text dialog opens as part of the guided flow
@@ -443,8 +446,9 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             const {result, mockUpdateField} = setup({job});
 
             let donePromise: Promise<void>;
-            act(() => {
+            await act(async () => {
                 donePromise = result.current.handleDoneClick();
+                await Promise.resolve();
             });
 
             // Submit via text dialog
@@ -465,9 +469,10 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             });
             const {result, mockUpdatePod} = setup({job});
 
-            let donePromise: Promise<void>;
-            act(() => {
+            let donePromise!: Promise<void>;
+            await act(async () => {
                 donePromise = result.current.handleDoneClick();
+                await Promise.resolve();
             });
 
             await act(() => result.current.handleTextDialogCancel());

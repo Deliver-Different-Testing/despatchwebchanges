@@ -55,7 +55,7 @@ import type {ToolbarActionsConfig} from '../app/react/components/common/app-shel
 interface ReactPageModule<TConfig> {
     mount(containerId: string, config: TConfig): void;
     unmount(): void;
-    refresh?(): void;
+    refresh?(): void | Promise<void>;
 }
 
 declare global {

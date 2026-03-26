@@ -103,7 +103,7 @@ public class NoteRepository(
     public async Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
+        if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
 
         var staffId = infoService.GetStaffId();
         var currentTime = clock.TenantNow;
@@ -117,7 +117,7 @@ public class NoteRepository(
     public async Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        if (!viewModel.BulkJobId.HasValue) throw new ArgumentNullException(nameof(viewModel.BulkJobId));
+        if (!viewModel.BulkJobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
 
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText);
 
@@ -136,7 +136,7 @@ public class NoteRepository(
             ArgumentNullException.ThrowIfNull(existingNote);
 
             // Record history before modifying
-            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.BulkNote, staffId, clock.UtcNow,
+            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.BulkNote, staffId,
                 existingNote.NoteText, viewModel.NoteText,
                 existingNote.NoteTypeId, viewModel.NoteTypeId,
                 existingNote.IsImportant, viewModel.IsImportant,
@@ -164,6 +164,13 @@ public class NoteRepository(
             };
 
             await Context.TblBulkJobNotes.AddAsync(newNote, cancellationToken);
+            await Context.SaveChangesAsync(cancellationToken);
+
+            await RecordNoteHistoryAsync(newNote.NoteId, NoteHistorySource.BulkNote, staffId,
+                null, newNote.NoteText,
+                0, newNote.NoteTypeId,
+                false, newNote.IsImportant,
+                cancellationToken);
         }
 
         await Context.SaveChangesAsync(cancellationToken);
@@ -245,11 +252,9 @@ public class NoteRepository(
 
         Dictionary<int, string> noteTypes = [];
         if (noteTypeIds.Count > 0)
-        {
             noteTypes = await Context.TucNoteTypes
                 .Where(nt => noteTypeIds.Contains(nt.NoteTypeId))
                 .ToDictionaryAsync(nt => nt.NoteTypeId, nt => nt.NoteTypeName);
-        }
 
         // Join note type names and convert UTC to tenant timezone
         return history.Select(h => new NoteHistoryViewModel
@@ -316,6 +321,13 @@ public class NoteRepository(
             await Context.TucNoteArchives.AddAsync(archivedNote, cancellationToken);
             await Context.SaveChangesAsync(cancellationToken);
 
+            await RecordNoteHistoryAsync(archivedNote.NoteId, NoteHistorySource.Archive, staffId,
+                null, archivedNote.NoteText,
+                0, archivedNote.NoteTypeId,
+                false, archivedNote.IsImportant,
+                cancellationToken);
+            await Context.SaveChangesAsync(cancellationToken);
+
             // Also update UcjbNotes so the note syncs to the device
             await Context.TucJobArchives
                 .Where(j => j.UcjbId == viewModel.JobId.Value)
@@ -337,7 +349,7 @@ public class NoteRepository(
         }
         else
         {
-            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
+            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
             // Use the actual job ID instead of the effective job ID to avoid FK constraint issues
             // The note should be associated with the specific job being voided, not its parent
             activeNote.JobId = viewModel.JobId.Value;
@@ -346,14 +358,19 @@ public class NoteRepository(
         await Context.TucNotes.AddAsync(activeNote, cancellationToken);
         await Context.SaveChangesAsync(cancellationToken);
 
+        await RecordNoteHistoryAsync(activeNote.NoteId, NoteHistorySource.Note, staffId,
+            null, activeNote.NoteText,
+            0, activeNote.NoteTypeId,
+            false, activeNote.IsImportant,
+            cancellationToken);
+        await Context.SaveChangesAsync(cancellationToken);
+
         // Also update UcjbNotes so the note syncs to the device (only for active jobs, not prebooks)
         if (!isPrebook && viewModel.JobId.HasValue)
-        {
             await Context.TucJobs
                 .Where(j => j.UcjbId == viewModel.JobId.Value)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.UcjbNotes, viewModel.NoteText), cancellationToken);
-        }
     }
 
     private async Task UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
@@ -368,7 +385,7 @@ public class NoteRepository(
             ArgumentNullException.ThrowIfNull(archivedNote);
 
             // Record history before modifying
-            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Archive, staffId, clock.UtcNow,
+            await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Archive, staffId,
                 archivedNote.NoteText, viewModel.NoteText,
                 archivedNote.NoteTypeId, viewModel.NoteTypeId,
                 archivedNote.IsImportant, viewModel.IsImportant,
@@ -394,7 +411,7 @@ public class NoteRepository(
         ArgumentNullException.ThrowIfNull(activeNote);
 
         // Record history before modifying
-        await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Note, staffId, clock.UtcNow,
+        await RecordNoteHistoryAsync(viewModel.NoteId, NoteHistorySource.Note, staffId,
             activeNote.NoteText, viewModel.NoteText,
             activeNote.NoteTypeId, viewModel.NoteTypeId,
             activeNote.IsImportant, viewModel.IsImportant,
@@ -415,7 +432,7 @@ public class NoteRepository(
         }
         else
         {
-            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel.JobId));
+            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
 
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
@@ -425,21 +442,22 @@ public class NoteRepository(
         await Context.SaveChangesAsync(cancellationToken);
     }
 
-    private async Task RecordNoteHistoryAsync(int noteId, NoteHistorySource source, int staffId, DateTime editedAt,
+    private async Task RecordNoteHistoryAsync(int noteId, NoteHistorySource source, int staffId,
         string oldNoteText, string newNoteText,
         int oldNoteTypeId, int newNoteTypeId,
         bool oldIsImportant, bool newIsImportant,
         CancellationToken cancellationToken = default)
     {
+        var now = clock.UtcNow;
         var history = new TucNoteHistory
         {
             NoteId = source == NoteHistorySource.Note ? noteId : null,
             BulkNoteId = source == NoteHistorySource.BulkNote ? noteId : null,
             ArchiveNoteId = source == NoteHistorySource.Archive ? noteId : null,
             EditedBy = staffId,
-            EditedAtUtc = editedAt,
-            OldNoteText = oldNoteText,
-            NewNoteText = newNoteText,
+            EditedAtUtc = now,
+            OldNoteText = oldNoteText ?? string.Empty,
+            NewNoteText = newNoteText ?? string.Empty,
             OldNoteTypeId = oldNoteTypeId,
             NewNoteTypeId = newNoteTypeId,
             OldIsImportant = oldIsImportant,

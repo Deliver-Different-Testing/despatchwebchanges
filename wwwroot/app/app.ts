@@ -106,6 +106,14 @@ app.run(["APP_CONFIG", (appConfig: IAppConfig) => {
     }
 }]);
 
+// Log state transition errors so route resolve failures are visible in the console
+app.run(["$rootScope", ($rootScope: angular.IRootScopeService) => {
+    $rootScope.$on('$stateChangeError',
+        (_event: angular.IAngularEvent, toState: { name: string }, _toParams: unknown, _fromState: unknown, _fromParams: unknown, error: unknown) => {
+            console.error(`[ROUTER] State transition to '${toState.name}' failed:`, error);
+        });
+}]);
+
 // Security Configuration
 app.config(["$httpProvider", ($httpProvider: angular.IHttpProvider) => {
     // Add header to identify AJAX requests (helps backend distinguish from form submissions)

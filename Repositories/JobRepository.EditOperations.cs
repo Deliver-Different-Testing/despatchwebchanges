@@ -288,7 +288,7 @@ public partial class JobRepository
                 break;
             case JobProperty.Weight:
                 if (!double.TryParse(value?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var weight))
-                    throw new ArgumentException($"Invalid weight value: '{value}'");
+                    throw new ArgumentException($"Invalid weight value: '{value}'", nameof(value));
 
                 if (job.Parent != null)
                 {

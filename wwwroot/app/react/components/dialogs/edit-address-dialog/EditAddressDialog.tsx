@@ -605,6 +605,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     <Typography variant="h6" fontWeight={600}>
                         {title}
                     </Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        Search and update the address details
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={onClose}
