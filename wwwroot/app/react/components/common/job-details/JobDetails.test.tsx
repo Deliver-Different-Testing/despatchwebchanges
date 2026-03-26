@@ -70,8 +70,12 @@ jest.mock('../../../utils/dateUtils', () => ({
 jest.mock('./components/WarningBanner', () => ({
     WarningBanner: () => <div data-testid="warning-banner" />,
 }));
+let capturedRelatedJobTabsProps: any = {};
 jest.mock('./components/RelatedJobTabs', () => ({
-    RelatedJobTabs: () => <div data-testid="related-job-tabs" />,
+    RelatedJobTabs: (props: any) => {
+        capturedRelatedJobTabsProps = props;
+        return <div data-testid="related-job-tabs" />;
+    },
 }));
 jest.mock('./components/JobDetailHeader', () => ({
     JobDetailHeader: () => <div data-testid="job-detail-header" />,
@@ -491,6 +495,39 @@ describe('JobDetails', () => {
 
             // isAiEnabled should be called exactly once (lazy init), not on every render
             expect(isAiEnabled).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('related job tab change', () => {
+        it('calls onRelatedJobChange with selected job id when tab changes', () => {
+            const jobs = [
+                createMockJob({id: 100, jobNo: 'J-100'}),
+                createMockJob({id: 200, jobNo: 'J-200'}),
+            ];
+            setupDefaultMocks({sortedRelatedJobs: jobs});
+            const onRelatedJobChange = jest.fn();
+            renderJobDetails({onRelatedJobChange});
+
+            // Simulate tab change to second job
+            act(() => {
+                capturedRelatedJobTabsProps.onTabChange(1);
+            });
+
+            expect(onRelatedJobChange).toHaveBeenCalledWith(200);
+        });
+
+        it('does not call onRelatedJobChange when callback is not provided', () => {
+            const jobs = [
+                createMockJob({id: 100, jobNo: 'J-100'}),
+                createMockJob({id: 200, jobNo: 'J-200'}),
+            ];
+            setupDefaultMocks({sortedRelatedJobs: jobs});
+            renderJobDetails({onRelatedJobChange: undefined});
+
+            // Should not throw
+            act(() => {
+                capturedRelatedJobTabsProps.onTabChange(1);
+            });
         });
     });
 });

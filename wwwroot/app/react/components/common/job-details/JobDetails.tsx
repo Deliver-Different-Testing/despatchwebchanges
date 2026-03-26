@@ -4,7 +4,7 @@
  * Orchestrates data fetching, dialog integrations, and child component rendering.
  */
 
-import React, {useState, useCallback, useMemo, useEffect, useRef, lazy, Suspense} from 'react';
+import React, {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -33,8 +33,6 @@ import {FlightInformation} from './components/FlightInformation';
 import {AgentInformation} from './components/AgentInformation';
 import {JobFieldsSection} from './components/JobFieldsSection';
 import {ToggleProperties} from './components/ToggleProperties';
-const RecurringJobFields = lazy(() => import('./components/RecurringJobFields').then(m => ({default: m.RecurringJobFields})));
-const PodPhotosSection = lazy(() => import('./components/PodPhotosSection').then(m => ({default: m.PodPhotosSection})));
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
@@ -42,11 +40,14 @@ import {NoteManagementDialogServiceInterface} from '../../common/sticky-notes/St
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
 import type {JobNote} from '../../../interfaces';
 
-import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
+import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {DaysOfWeekHelpers} from '../../../../enums/days-of-week.enum';
 import {isAiEnabled} from '../../../../functions/aiSettings';
 import {NoData} from '../no-data/NoData';
+
+const RecurringJobFields = lazy(() => import('./components/RecurringJobFields').then(m => ({default: m.RecurringJobFields})));
+const PodPhotosSection = lazy(() => import('./components/PodPhotosSection').then(m => ({default: m.PodPhotosSection})));
 
 const reactNoteManagementDialogService: NoteManagementDialogServiceInterface = {
     openNoteDialog: async (_event: MouseEvent, model: JobNote | null): Promise<void> => {
@@ -141,7 +142,7 @@ const rootStyles: Record<string, SxProps<Theme>> = {
 };
 
 export function JobDetails({config}: JobDetailsProps) {
-    const {jobId, isRecurringJob, isBulkJob, isUsCustomer, showToast: showToastProp, onJobUpdate, onJobReadChanged} = config;
+    const {jobId, isRecurringJob, isBulkJob, isUsCustomer, showToast: showToastProp, onJobUpdate, onJobReadChanged, onRelatedJobChange} = config;
 
     // Stabilize showToast — may come from AngularJS bridge with unstable identity
     const showToastRef = useRef(showToastProp);
@@ -238,7 +239,11 @@ export function JobDetails({config}: JobDetailsProps) {
 
     const handleTabChange = useCallback((index: number) => {
         setSelectedTabIndex(index);
-    }, []);
+        const selectedJob = sortedRelatedJobs[index];
+        if (selectedJob?.id) {
+            onRelatedJobChange?.(selectedJob.id);
+        }
+    }, [sortedRelatedJobs, onRelatedJobChange]);
 
     const handleToggleAiPanel = useCallback(() => {
         setShowAiPanel(prev => !prev);
@@ -338,6 +343,14 @@ export function JobDetails({config}: JobDetailsProps) {
 
                 {/* Main content area */}
                 <Box sx={rootStyles.contentArea}>
+                    {job.isFlightAssigned && job.assignedFlight && (
+                        <FlightInformation flight={job.assignedFlight} jobId={job.id}/>
+                    )}
+
+                    {job.isAgentAssigned && job.assignedAgent && (
+                        <AgentInformation agent={job.assignedAgent}/>
+                    )}
+
                     <AddressSection
                         job={job}
                         dense={isDense}
@@ -364,14 +377,6 @@ export function JobDetails({config}: JobDetailsProps) {
                         showErrorToast={showErrorToast}
                         showInfoToast={showInfoToast}
                     />
-
-                    {job.isFlightAssigned && job.assignedFlight && (
-                        <FlightInformation flight={job.assignedFlight} jobId={job.id} />
-                    )}
-
-                    {job.isAgentAssigned && job.assignedAgent && (
-                        <AgentInformation agent={job.assignedAgent} />
-                    )}
 
                     <JobFieldsSection
                         job={job}

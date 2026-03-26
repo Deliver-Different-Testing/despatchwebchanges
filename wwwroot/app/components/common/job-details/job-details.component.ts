@@ -28,6 +28,7 @@ class JobDetailBridgeController implements angular.IController {
     isBulkJob: boolean = false;
     onStatusChange?: (args: { $event: number }) => void;
     onJobUpdate?: () => void;
+    onRelatedJobChange?: (args: { $event: number }) => void;
 
     private containerId: string;
     private loadPromise: Promise<void> | null = null;
@@ -189,6 +190,12 @@ class JobDetailBridgeController implements angular.IController {
                 this.$rootScope.$broadcast('jobReadChanged', {jobId, hasBeenRead: isRead});
                 this.$scope.$applyAsync();
             },
+            onRelatedJobChange: (jobId: number) => {
+                if (this.onRelatedJobChange) {
+                    this.onRelatedJobChange({$event: jobId});
+                }
+                this.$scope.$applyAsync();
+            },
         });
     }
 }
@@ -202,7 +209,8 @@ const JobDetailComponent: angular.IComponentOptions = {
         onStatusChange: "&",
         isRecurringJob: "<",
         isBulkJob: "<",
-        onJobUpdate: "&"
+        onJobUpdate: "&",
+        onRelatedJobChange: "&"
     },
     controller: JobDetailBridgeController,
     controllerAs: "ctrl",

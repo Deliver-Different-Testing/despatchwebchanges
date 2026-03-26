@@ -312,10 +312,11 @@ describe('JobSearchController', () => {
     });
 
     describe('refreshData and refreshBulkData (React bridge)', () => {
-        it('pushes search params to React bridge for main list', () => {
+        it('pushes search params and invalidates React Query for main list', () => {
             const ctrl = createController();
             const updateSearchParams = jest.fn();
-            (window as any).ReactJobSearchJobList = {updateSearchParams};
+            const refresh = jest.fn();
+            (window as any).ReactJobSearchJobList = {updateSearchParams, refresh};
 
             ctrl.searchCriteria.clients = [{id: 10, text: 'Client A'}] as any;
             ctrl.searchCriteria.couriers = [{id: 20, text: 'Courier B'}] as any;
@@ -331,12 +332,14 @@ describe('JobSearchController', () => {
                 page: 0,
                 pageSize: 50,
             }));
+            expect(refresh).toHaveBeenCalledWith('main');
         });
 
-        it('pushes search params to React bridge for bulk list', () => {
+        it('pushes search params and invalidates React Query for bulk list', () => {
             const ctrl = createController();
             const updateSearchParams = jest.fn();
-            (window as any).ReactJobSearchJobList = {updateSearchParams};
+            const refresh = jest.fn();
+            (window as any).ReactJobSearchJobList = {updateSearchParams, refresh};
 
             ctrl.refreshBulkData();
 
@@ -344,6 +347,7 @@ describe('JobSearchController', () => {
                 page: 0,
                 pageSize: 50,
             }));
+            expect(refresh).toHaveBeenCalledWith('bulk');
         });
 
         it('is a no-op when ReactJobSearchJobList is not available', () => {
@@ -505,7 +509,7 @@ describe('JobSearchController', () => {
             const dispatchExecutor = createMockDispatchExecutor();
             const toastrService = createMockToastrService();
             const ctrl = createController({dispatchExecutor, toastrService});
-            (window as any).ReactJobSearchJobList = {updateSearchParams: jest.fn()};
+            (window as any).ReactJobSearchJobList = {updateSearchParams: jest.fn(), refresh: jest.fn()};
 
             const job = {id: 1, jobNo: 'J001'} as any;
             const result = await ctrl.handleJobDispatch(job, 100);
@@ -658,24 +662,24 @@ describe('JobSearchController', () => {
     });
 
     describe('onRefreshButtonClicked', () => {
-        it('refreshes main job list for jobList box', async () => {
+        it('invalidates React Query for jobList box', async () => {
             const ctrl = createController();
-            const updateSearchParams = jest.fn();
-            (window as any).ReactJobSearchJobList = {updateSearchParams};
+            const refresh = jest.fn();
+            (window as any).ReactJobSearchJobList = {refresh};
 
             await ctrl.onRefreshButtonClicked('jobList');
 
-            expect(updateSearchParams).toHaveBeenCalledWith('main', expect.any(Object));
+            expect(refresh).toHaveBeenCalledWith('main');
         });
 
-        it('refreshes bulk job list for bulkJobList box', async () => {
+        it('invalidates React Query for bulkJobList box', async () => {
             const ctrl = createController();
-            const updateSearchParams = jest.fn();
-            (window as any).ReactJobSearchJobList = {updateSearchParams};
+            const refresh = jest.fn();
+            (window as any).ReactJobSearchJobList = {refresh};
 
             await ctrl.onRefreshButtonClicked('bulkJobList');
 
-            expect(updateSearchParams).toHaveBeenCalledWith('bulk', expect.any(Object));
+            expect(refresh).toHaveBeenCalledWith('bulk');
         });
 
         it('re-selects current job for jobDetail box', async () => {

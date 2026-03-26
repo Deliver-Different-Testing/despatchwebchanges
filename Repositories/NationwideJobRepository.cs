@@ -158,7 +158,7 @@ public class NationwideJobRepository(
                 // Create all flight records
                 var primaryFlightRecord = await CreateFlightRecordsAsync(
                     job, orderedSegments, webhookIds, timeZoneLookup,
-                    firstFlightDepartureTimeZoneId, lastFlight.ArrivalTime, primaryFlightNumber);
+                    firstFlightDepartureTimeZoneId, primaryFlightNumber);
 
                 Log.Debug("Saving changes for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
                     primaryFlightNumber, requestData.JobId);
@@ -1090,7 +1090,7 @@ public class NationwideJobRepository(
             pickupJob.UcjbNumber, primaryFlightNumber);
 
         var airportProcessingTime = await GetAirportProcessingTimeAsync(departureAirportId);
-        pickupJob.DeliverByTime = primaryFlight.DepartureTime.DateTime.AddMinutes(-airportProcessingTime);
+        pickupJob.DeliverByTime = primaryFlight.DepartureTime.AddMinutes(-airportProcessingTime).DateTime;
         pickupJob.DeliverByTimeZoneId = departureTimeZoneId;
 
         UpdateJobAddressWithAirportInfo(airports, pickupJob, departureAirportId,
@@ -1169,8 +1169,8 @@ public class NationwideJobRepository(
             UcnwJobNumber = job.UcjbNumber,
             UcnwClientId = job.UcjbClientId ?? 0,
             UcnwFlightNo = segment.CarrierFsCode + segment.FlightNumber,
-            UcnwEtd = segment.DepartureTime.UtcDateTime,
-            UcnwEta = overrideEta?.UtcDateTime ?? segment.ArrivalTime.UtcDateTime,
+            UcnwEtd = segment.DepartureTime.DateTime,
+            UcnwEta = overrideEta?.DateTime ?? segment.ArrivalTime.DateTime,
             WebhookAlertId = webhookId,
             GateNumber = legNumber == NationwideJobConstants.PrimaryFlightLegNumber ? segment.DepartureTerminal : null,
             UcnwLegNumber = legNumber,
@@ -1200,16 +1200,14 @@ public class NationwideJobRepository(
         IReadOnlyList<string> webhookIds,
         IReadOnlyDictionary<string, int> timeZoneLookup,
         int? departureTimeZoneId,
-        DateTimeOffset lastFlightArrivalTime,
         string primaryFlightNumber)
     {
         var primarySegment = segments.First();
 
-        // Create primary flight record with ETA set to the last flight's arrival time
+        // Create primary flight record with its own segment arrival time
         var primaryFlightRecord = CreateFlightRecord(
             job, primarySegment, webhookIds[0],
-            NationwideJobConstants.PrimaryFlightLegNumber, timeZoneLookup,
-            lastFlightArrivalTime);
+            NationwideJobConstants.PrimaryFlightLegNumber, timeZoneLookup);
 
         // Override departure timezone for primary flight
         primaryFlightRecord.DepartureAirportTimeZoneId = departureTimeZoneId;

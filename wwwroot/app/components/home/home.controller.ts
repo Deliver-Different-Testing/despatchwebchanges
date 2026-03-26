@@ -11,7 +11,6 @@ import {
     IDispatchMapItem,
     IJob,
     IJobQueryParams,
-    IJobSearchResult,
     ISuggestion,
 } from "../../interfaces/job.interface";
 import {IDriverWorkOverview, IPotentialCouriers, ITruckCourierStatus} from "../../interfaces/courier.interface";
@@ -785,17 +784,23 @@ class HomeController extends BaseController {
 
     async initializeViews(): Promise<void> {
         if (this.views && this.views.length > 0) {
-            this.selectedViews = this.loadViewsFromStorage();
+            const hasSavedState = localStorage.getItem(this.SelectedViewsKey) !== null;
+            const savedViews = this.loadViewsFromStorage();
+            const savedIds = new Set(savedViews.map((v: DfrntPageViewModel) => v.id));
 
-            // Set a selected property on each view
+            // Mark server views as selected based on saved IDs
             this.views = this.views.map((view) => ({
-                ...view, selected: this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id),
+                ...view, selected: savedIds.has(view.id),
             }));
 
-            // If no views are selected, select the first one by default
-            if (this.selectedViews.length === 0) {
+            // Rebuild selectedViews from fresh server view objects (not stale localStorage copies)
+            this.selectedViews = this.views.filter(v => v.selected);
+
+            // Only default to first view on first visit (no saved state).
+            // If user explicitly cleared all views, respect that.
+            if (this.selectedViews.length === 0 && !hasSavedState) {
                 this.views[0].selected = true;
-                this.selectedViews.push(this.views[0]);
+                this.selectedViews = [this.views[0]];
                 this.saveViewsToStorage(this.selectedViews);
             }
         }
@@ -1179,7 +1184,7 @@ class HomeController extends BaseController {
             if (foundCourier) {
                 this.currentCourier = {
                     id: foundCourier.courierId,
-                    text: foundCourier.label || `${foundCourier.label} ${foundCourier.name}`,
+                    text: foundCourier.label || foundCourier.name,
                 };
 
                 // Use courier code (id field) if available, otherwise use text/label
@@ -1787,7 +1792,7 @@ class HomeController extends BaseController {
         });
 
         this.showDriverLocationsNoData = !this.driverLocationsLoading && !hasAreas;
-        this.showDriverLocationsData = (!this.driverLocationsLoading && hasAreas) ?? true;
+        this.showDriverLocationsData = !this.driverLocationsLoading && !!hasAreas;
     }
 
     isDeliveryJob(job: IDispatchJob): boolean {
@@ -2100,15 +2105,23 @@ class HomeController extends BaseController {
                 const savedDateFilter = localStorage.getItem(this.DateFilterKey);
                 if (savedDateFilter) {
                     const parsedDateFilter = JSON.parse(savedDateFilter);
+                    const startDate = dayjs(parsedDateFilter.startDate);
+                    let endDate = dayjs(parsedDateFilter.endDate);
+
+                    // If "all time" is selected (startDate is epoch), always recalculate
+                    // endDate to be 24 hours from now to include future jobs
+                    if (startDate.valueOf() === 0) {
+                        endDate = dayjs().add(24, 'hours');
+                    }
+
                     this.dateFilterData = {
-                        startDate: dayjs(parsedDateFilter.startDate),
-                        endDate: dayjs(parsedDateFilter.endDate),
+                        startDate,
+                        endDate,
                         useTime: parsedDateFilter.useTime ?? false
                     };
                 }
             } catch (error) {
                 console.error('Error loading date filter from storage:', error);
-                // Keep default values if parsing fails
                 this.dateFilterData = setDateFilterDefaults();
             }
         }
@@ -2177,35 +2190,6 @@ class HomeController extends BaseController {
         }
 
         this.applyScope();
-    }
-
-    async handleLoadMoreJobs(page: number, pageSize: number): Promise<IJobSearchResult> {
-        try {
-            if (this.queryParams.order && this.queryParams.order.startsWith("-")) {
-                this.queryParams.order = this.queryParams.order.substring(1);
-                this.queryParams.orderDirection = "desc";
-            } else if (this.queryParams.order) {
-                this.queryParams.orderDirection = "asc";
-            }
-
-            return await this.dispatchJobService.getJobsWithDispatchInfo(
-                {
-                    ...this.queryParams,
-                    startDate: this.dateFilterData.startDate,
-                    endDate: this.dateFilterData.endDate,
-                    useTime: this.dateFilterData.useTime,
-                    page: page,
-                    pageSize: pageSize
-                },
-                ClientInternal ?? false,
-                this.selectedViews,
-                this.selectedClearListId,
-            );
-        } catch (error) {
-            console.error('Error loading more POD jobs:', error);
-            this.toastrService.showErrorToast('Failed to load more POD jobs');
-            throw error;
-        }
     }
 
     async updateJobSearchText(searchText: string): Promise<void> {

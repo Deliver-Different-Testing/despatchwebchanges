@@ -1006,6 +1006,8 @@ class JobSearchController extends BaseController {
                 page: 0,
                 pageSize: 50,
             });
+            // Also invalidate to force refetch even if params haven't changed
+            window.ReactJobSearchJobList.refresh('main');
         }
     }
 
@@ -1023,6 +1025,8 @@ class JobSearchController extends BaseController {
                 page: 0,
                 pageSize: 50,
             });
+            // Also invalidate to force refetch even if params haven't changed
+            window.ReactJobSearchJobList.refresh('bulk');
         }
     }
 
@@ -1230,23 +1234,23 @@ class JobSearchController extends BaseController {
     }
 
     async onRefreshButtonClicked(boxName: string): Promise<void> {
-        console.log('🔄 Refresh clicked for:', boxName);
-        console.log('🔄 Current job ID:', this.currentJobId);
-        console.log('🔄 Is bulk job list?:', this.bulkJobList);
+        console.log('Refresh clicked for:', boxName);
+        console.log('Current job ID:', this.currentJobId);
+        console.log('Is bulk job list?:', this.bulkJobList);
 
         switch (boxName) {
             case JobSearchBoxes.JobList:
-                console.log('🔄 Refreshing JobList');
-                await this.refreshData();
+                console.log('Refreshing JobList');
+                window.ReactJobSearchJobList?.refresh('main');
                 break;
             case JobSearchBoxes.BulkJobList:
-                console.log('🔄 Refreshing BulkJobList');
-                await this.refreshBulkData();
+                console.log('Refreshing BulkJobList');
+                window.ReactJobSearchJobList?.refresh('bulk');
                 break;
             case JobSearchBoxes.JobDetail: {
-                console.log('🔄 Refreshing JobDetail');
+                console.log('Refreshing JobDetail');
                 if (!this.currentJobId) {
-                    console.log('❌ No current job ID');
+                    console.log('No current job ID');
                     return;
                 }
                 // Store the job ID and determine if it's a bulk job
