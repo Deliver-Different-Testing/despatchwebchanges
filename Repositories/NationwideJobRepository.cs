@@ -149,6 +149,12 @@ public class NationwideJobRepository(
                 job.UcjbDispDate = currentTime;
                 job.UcjbDispTime = currentTime;
 
+                // Save TucJob updates separately from TucJobNationwide inserts.
+                // Several tucJob triggers (ChangeAmount, ChangeWeight, Update_GPS) contain
+                // SELECT 1 which produces extra result sets that corrupt EF Core's batch
+                // reader when mixed with INSERT OUTPUT results in the same batch.
+                await Context.SaveChangesAsync(cancellationToken);
+
                 // Create all flight records
                 var primaryFlightRecord = await CreateFlightRecordsAsync(
                     job, orderedSegments, webhookIds, timeZoneLookup,
@@ -157,8 +163,7 @@ public class NationwideJobRepository(
                 Log.Debug("Saving changes for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
                     primaryFlightNumber, requestData.JobId);
 
-                // Save job updates and flight records first (separate from note to avoid
-                // tucJob trigger interference with EF Core's OUTPUT result reading)
+                // Save flight records (TucJobNationwide inserts only, no trigger interference)
                 await Context.SaveChangesAsync(cancellationToken);
 
                 // Create journey record (requires primary flight record ID from first save)
@@ -177,11 +182,11 @@ public class NationwideJobRepository(
                     noteText: $"Flight {primaryFlight.FlightNumber} added to job {requestData.JobId}",
                     isImportant: false,
                     isRecurringJob: false,
-                    noteType: NoteType.FlightUpdate, 
+                    noteType: NoteType.FlightUpdate,
                     saveChanges: false);
 
                 await Context.SaveChangesAsync(cancellationToken);
-                
+
                 await transaction.CommitAsync(cancellationToken);
 
                 Log.Information(
@@ -1142,7 +1147,7 @@ public class NationwideJobRepository(
                 primaryFlightNumber, requestData.JobId);
 
             await SaveNoteAsync(requestData.JobId, requestData.PackageDeliveryNotes, true, false,
-                NoteType.DeliveryNotes);
+                NoteType.DeliveryNotes, saveChanges: false);
         }
     }
 
