@@ -1336,6 +1336,8 @@ class HomeController extends BaseController {
                 this.potentialCouriers = undefined;
 
                 if (job.courierData && job.courierData.courierId) {
+                    const isSameCourier = this.currentCourier?.id === job.courierData.courierId;
+
                     // Set the current courier context first
                     this.currentCourier = {
                         id: job.courierData.courierId,
@@ -1344,8 +1346,10 @@ class HomeController extends BaseController {
 
                     this.currentWorkSelection = ` for Courier ${job.courierData.courier}: ${job.courierData.courierName}`;
 
-                    // Get all jobs for this courier
-                    await this.getCurrentJobs(job.courierData.courierId);
+                    // Only reload the current work list if the courier changed
+                    if (!isSameCourier) {
+                        await this.getCurrentJobs(job.courierData.courierId);
+                    }
 
                     try {
                         this.truckCourierStatus = await this.DispatchData.truckCourierStatus(job.courierData.courierId);

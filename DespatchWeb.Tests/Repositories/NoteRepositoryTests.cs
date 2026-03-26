@@ -798,7 +798,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         Assert.Null(record.ArchiveNoteId);
         Assert.Equal("", record.OldNoteText);
         Assert.Equal("Brand new note", record.NewNoteText);
-        Assert.Equal(0, record.OldNoteTypeId);
+        Assert.Null(record.OldNoteTypeId);
         Assert.Equal(1, record.NewNoteTypeId);
         Assert.False(record.OldIsImportant);
         Assert.False(record.NewIsImportant);

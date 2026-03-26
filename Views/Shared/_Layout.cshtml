@@ -55,6 +55,11 @@
             transition: opacity 0.3s ease-out;
         }
 
+        .app-loader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .loader-content {
             display: flex;
             flex-direction: column;
@@ -159,12 +164,13 @@
     <script src="/dist/@vendorPluginsJs" defer></script>
     <script src="/dist/@appBundleFile" defer></script>
 
+    
     <script>
-        (() => {
+        (function() {
             let resourcesLoaded = false;
             let angularReady = false;
 
-            setTimeout(() => {
+            setTimeout(function() {
                 hideLoader();
             }, 15000);
 
@@ -173,33 +179,30 @@
                 if (loaderElement && !loaderElement.classList.contains('hidden')) {
                     loaderElement.classList.add('hidden');
 
-                    setTimeout(() => {
+                    setTimeout(function() {
                         if (loaderElement.parentNode) {
                             loaderElement.parentNode.removeChild(loaderElement);
                         }
-                    }, 300);
+                    }, 500);
                 }
             }
 
-            window.addEventListener('load', () => {
+            window.addEventListener('load', function() {
                 resourcesLoaded = true;
                 if (angularReady) {
                     hideLoader();
                 }
             });
 
-            // Deferred scripts execute before DOMContentLoaded, so angular is available here
-            document.addEventListener('DOMContentLoaded', () => {
-                window.angular.module('uDispatch').run(['$timeout', $timeout => {
-                    $timeout(() => {
-                        angularReady = true;
-                        if (resourcesLoaded) {
-                            hideLoader();
-                        }
-                    });
-                }]);
-            });
+            window.angular.module('uDispatch').run(['$timeout', $timeout => {
+                $timeout(function() {
+                    angularReady = true;
+                    if (resourcesLoaded) {
+                        hideLoader();
+                    }
+                });
+            }]);
         })();
     </script>
-</body>
+    </body>
 </html>
