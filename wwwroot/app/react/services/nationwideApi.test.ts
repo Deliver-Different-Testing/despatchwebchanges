@@ -182,8 +182,7 @@ describe('NationwideApiService', () => {
         });
 
         it('should call apiClient.get with correct URL and params', async () => {
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -207,8 +206,7 @@ describe('NationwideApiService', () => {
         });
 
         it('should pass airlineId when provided', async () => {
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -227,15 +225,13 @@ describe('NationwideApiService', () => {
         });
 
         it('should default minimumLayoverMinutes to 60 when not provided', async () => {
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
                 departureDate: '2024-03-15T08:00:00+13:00',
                 departureAirportId: 150,
                 arrivalAirportId: 96,
-                // minimumLayoverMinutes not specified
             });
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
@@ -247,8 +243,7 @@ describe('NationwideApiService', () => {
         });
 
         it('should transform DTO to domain model with Dayjs objects', async () => {
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -257,16 +252,16 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result).toHaveLength(1);
-            expect(dayjs.isDayjs(result[0].departureTime)).toBe(true);
-            expect(dayjs.isDayjs(result[0].arrivalTime)).toBe(true);
-            expect(result[0].flightSegments).toHaveLength(1);
-            expect(dayjs.isDayjs(result[0].flightSegments[0].departureTime)).toBe(true);
-            expect(dayjs.isDayjs(result[0].flightSegments[0].arrivalTime)).toBe(true);
+            expect(result.flights).toHaveLength(1);
+            expect(dayjs.isDayjs(result.flights[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result.flights[0].arrivalTime)).toBe(true);
+            expect(result.flights[0].flightSegments).toHaveLength(1);
+            expect(dayjs.isDayjs(result.flights[0].flightSegments[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result.flights[0].flightSegments[0].arrivalTime)).toBe(true);
         });
 
-        it('should return empty array when API returns null', async () => {
-            mockApiClient.get.mockResolvedValueOnce(null);
+        it('should return empty flights with message when API returns no flights', async () => {
+            mockApiClient.get.mockResolvedValueOnce({ flights: [], message: 'No flights found for the selected route and date.' });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -275,11 +270,12 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result).toEqual([]);
+            expect(result.flights).toEqual([]);
+            expect(result.message).toBe('No flights found for the selected route and date.');
         });
 
-        it('should return empty array when API returns empty array', async () => {
-            mockApiClient.get.mockResolvedValueOnce([]);
+        it('should return empty flights when response has null flights array', async () => {
+            mockApiClient.get.mockResolvedValueOnce({ flights: null, message: 'Departure airport not found.' });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -288,7 +284,8 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result).toEqual([]);
+            expect(result.flights).toEqual([]);
+            expect(result.message).toBe('Departure airport not found.');
         });
 
         it('should throw error when API throws', async () => {
@@ -312,12 +309,13 @@ describe('NationwideApiService', () => {
         });
 
         it('should handle multiple flights in response', async () => {
-            const mockFlights = [
-                createMockFlightDto({ flightNumber: 'NZ123', airline: 'NZ' }),
-                createMockFlightDto({ flightNumber: 'QF456', airline: 'QF' }),
-                createMockFlightDto({ flightNumber: 'AA789', airline: 'AA' }),
-            ];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({
+                flights: [
+                    createMockFlightDto({ flightNumber: 'NZ123', airline: 'NZ' }),
+                    createMockFlightDto({ flightNumber: 'QF456', airline: 'QF' }),
+                    createMockFlightDto({ flightNumber: 'AA789', airline: 'AA' }),
+                ],
+            });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -326,10 +324,10 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result).toHaveLength(3);
-            expect(result[0].airline).toBe('NZ');
-            expect(result[1].airline).toBe('QF');
-            expect(result[2].airline).toBe('AA');
+            expect(result.flights).toHaveLength(3);
+            expect(result.flights[0].airline).toBe('NZ');
+            expect(result.flights[1].airline).toBe('QF');
+            expect(result.flights[2].airline).toBe('AA');
         });
 
         it('should handle multi-segment flights', async () => {
@@ -366,7 +364,7 @@ describe('NationwideApiService', () => {
                     },
                 ],
             });
-            mockApiClient.get.mockResolvedValueOnce([multiSegmentFlight]);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [multiSegmentFlight] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -375,20 +373,21 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result).toHaveLength(1);
-            expect(result[0].isMultiSegment).toBe(true);
-            expect(result[0].flightSegments).toHaveLength(2);
-            expect(dayjs.isDayjs(result[0].flightSegments[0].departureTime)).toBe(true);
-            expect(dayjs.isDayjs(result[0].flightSegments[1].departureTime)).toBe(true);
+            expect(result.flights).toHaveLength(1);
+            expect(result.flights[0].isMultiSegment).toBe(true);
+            expect(result.flights[0].flightSegments).toHaveLength(2);
+            expect(dayjs.isDayjs(result.flights[0].flightSegments[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result.flights[0].flightSegments[1].departureTime)).toBe(true);
         });
 
         it('should preserve all flight properties after transformation', async () => {
-            const mockFlight = createMockFlightDto({
-                amount: 250.50,
-                score: 98,
-                duration: '4h 30m',
+            mockApiClient.get.mockResolvedValueOnce({
+                flights: [createMockFlightDto({
+                    amount: 250.50,
+                    score: 98,
+                    duration: '4h 30m',
+                })],
             });
-            mockApiClient.get.mockResolvedValueOnce([mockFlight]);
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -397,12 +396,12 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result[0].amount).toBe(250.50);
-            expect(result[0].score).toBe(98);
-            expect(result[0].duration).toBe('4h 30m');
-            expect(result[0].airline).toBe('NZ');
-            expect(result[0].departureAirport).toBe('AKL');
-            expect(result[0].arrivalAirport).toBe('SYD');
+            expect(result.flights[0].amount).toBe(250.50);
+            expect(result.flights[0].score).toBe(98);
+            expect(result.flights[0].duration).toBe('4h 30m');
+            expect(result.flights[0].airline).toBe('NZ');
+            expect(result.flights[0].departureAirport).toBe('AKL');
+            expect(result.flights[0].arrivalAirport).toBe('SYD');
         });
     });
 
@@ -449,8 +448,7 @@ describe('NationwideApiService', () => {
 
         it('should preserve departure time without converting to local timezone', async () => {
             // This tests that 08:00+13:00 stays as 08:00, not converted to user's local time
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -460,13 +458,12 @@ describe('NationwideApiService', () => {
             });
 
             // The formatted time should be 08:00, not shifted by local timezone
-            expect(result[0].departureTime.format('HH:mm')).toBe('08:00');
+            expect(result.flights[0].departureTime.format('HH:mm')).toBe('08:00');
         });
 
         it('should preserve arrival time without converting to local timezone', async () => {
             // This tests that 11:30+11:00 stays as 11:30
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -475,12 +472,11 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            expect(result[0].arrivalTime.format('HH:mm')).toBe('11:30');
+            expect(result.flights[0].arrivalTime.format('HH:mm')).toBe('11:30');
         });
 
         it('should preserve timezone offset in parsed datetime', async () => {
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -490,14 +486,13 @@ describe('NationwideApiService', () => {
             });
 
             // UTC offset should be preserved (+13:00 = 780 minutes)
-            expect(result[0].departureTime.utcOffset()).toBe(780);
+            expect(result.flights[0].departureTime.utcOffset()).toBe(780);
             // Arrival offset (+11:00 = 660 minutes)
-            expect(result[0].arrivalTime.utcOffset()).toBe(660);
+            expect(result.flights[0].arrivalTime.utcOffset()).toBe(660);
         });
 
         it('should preserve segment times without timezone conversion', async () => {
-            const mockFlights = [createMockFlightDto()];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+            mockApiClient.get.mockResolvedValueOnce({ flights: [createMockFlightDto()] });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -506,7 +501,7 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 96,
             });
 
-            const segment = result[0].flightSegments[0];
+            const segment = result.flights[0].flightSegments[0];
             expect(segment.departureTime.format('HH:mm')).toBe('08:00');
             expect(segment.arrivalTime.format('HH:mm')).toBe('11:30');
             expect(segment.departureTime.utcOffset()).toBe(780); // +13:00
@@ -515,25 +510,26 @@ describe('NationwideApiService', () => {
 
         it('should preserve times for negative timezone offsets', async () => {
             // Flight in PST timezone (UTC-8)
-            const mockFlights = [createMockFlightDto({
-                departureTime: '2024-01-15T10:30:00-08:00',
-                arrivalTime: '2024-01-15T14:00:00-05:00',
-                flightSegments: [{
-                    segmentOrder: 1,
-                    carrierFsCode: 'AA',
-                    flightNumber: '100',
+            mockApiClient.get.mockResolvedValueOnce({
+                flights: [createMockFlightDto({
                     departureTime: '2024-01-15T10:30:00-08:00',
                     arrivalTime: '2024-01-15T14:00:00-05:00',
-                    departureAirportFsCode: 'LAX',
-                    arrivalAirportFsCode: 'JFK',
-                    flightEquipmentIataCode: '777',
-                    elapsedTime: 330,
-                    stopsInSegment: 0,
-                    departureAirportTimeZone: 'America/Los_Angeles',
-                    arrivalAirportTimeZone: 'America/New_York',
-                }],
-            })];
-            mockApiClient.get.mockResolvedValueOnce(mockFlights);
+                    flightSegments: [{
+                        segmentOrder: 1,
+                        carrierFsCode: 'AA',
+                        flightNumber: '100',
+                        departureTime: '2024-01-15T10:30:00-08:00',
+                        arrivalTime: '2024-01-15T14:00:00-05:00',
+                        departureAirportFsCode: 'LAX',
+                        arrivalAirportFsCode: 'JFK',
+                        flightEquipmentIataCode: '777',
+                        elapsedTime: 330,
+                        stopsInSegment: 0,
+                        departureAirportTimeZone: 'America/Los_Angeles',
+                        arrivalAirportTimeZone: 'America/New_York',
+                    }],
+                })],
+            });
 
             const result = await nationwideApi.getScheduledFlightOptions({
                 jobId: 16992,
@@ -542,10 +538,10 @@ describe('NationwideApiService', () => {
                 arrivalAirportId: 2,
             });
 
-            expect(result[0].departureTime.format('HH:mm')).toBe('10:30');
-            expect(result[0].arrivalTime.format('HH:mm')).toBe('14:00');
-            expect(result[0].departureTime.utcOffset()).toBe(-480); // -08:00
-            expect(result[0].arrivalTime.utcOffset()).toBe(-300);   // -05:00
+            expect(result.flights[0].departureTime.format('HH:mm')).toBe('10:30');
+            expect(result.flights[0].arrivalTime.format('HH:mm')).toBe('14:00');
+            expect(result.flights[0].departureTime.utcOffset()).toBe(-480); // -08:00
+            expect(result.flights[0].arrivalTime.utcOffset()).toBe(-300);   // -05:00
         });
 
         it('should preserve cargo processing times with timezone offset', async () => {

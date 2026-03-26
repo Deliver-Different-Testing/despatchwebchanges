@@ -60,22 +60,7 @@ import {
     getTimezoneAbbreviation
 } from '../../utils/dateUtils';
 import {useColumnResize} from './useColumnResize';
-
-// ── Status Color Constants ───────────────────────────────────────────
-
-const JOB_STATUS = {
-    New: 0,
-    Dispatched: 1,
-    Accepted: 2,
-    Rejected: 3,
-    LatePickup: 4,
-    PickedUp: 5,
-    Completed: 6,
-    Warning: 7,
-    LateDelivery: 8,
-    InTransit: 11,
-    Missing: 1001,
-} as const;
+import {JOB_STATUS, getNow, isUrgent, needsDispatch} from './jobListHelpers';
 
 // ── Column Definitions ───────────────────────────────────────────────
 
@@ -174,76 +159,14 @@ function getTimeZoneShort(): string {
     return _cachedTimezoneShort;
 }
 
-// Cached "now" — refreshed at most once per second
-let _cachedNow: dayjs.Dayjs | null = null;
-let _cachedNowTs = 0;
-function getNow(): dayjs.Dayjs {
-    const ts = Date.now();
-    if (!_cachedNow || ts - _cachedNowTs > 1000) {
-        _cachedNow = dayjs();
-        _cachedNowTs = ts;
-    }
-    return _cachedNow;
-}
+// ── Late Detection (flags computed server-side) ─────────────────────
 
-function isOverdue(job: DispatchJob): boolean {
-    const now = getNow();
-    const deliveryTime = dayjs(job.time || job.booked);
-    return deliveryTime.isBefore(now);
-}
-
-function isUrgent(job: DispatchJob): boolean {
-    const now = getNow();
-    const deliveryTime = dayjs(job.time);
-    const minutesUntilDelivery = deliveryTime.diff(now, 'minutes');
-    return minutesUntilDelivery <= 30 && minutesUntilDelivery > 0;
-}
-
-// ── Late Detection ───────────────────────────────────────────────────
-
-function isLatePickupStatus(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.LatePickup;
-}
-
-function isLateDeliveryStatus(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.LateDelivery;
-}
-
-/** Proactive late pickup: job not yet picked up and overdue */
-function isProactivelyLateForPickup(job: DispatchJob): boolean {
-    if (isLatePickupStatus(job)) return false; // Already flagged server-side
-    if (!job.time) return false; // No delivery time (ASAP job) — matches server-side guard
-    const prePickupStatuses = [JOB_STATUS.New, JOB_STATUS.Dispatched, JOB_STATUS.Accepted];
-    if (!prePickupStatuses.includes(job.statusId as any)) return false;
-    if (job.alertLatePickup != null && job.alertLatePickup < 0) return false; // Client disabled late pickup alerts
-    return isOverdue(job);
-}
-
-/** Proactive late delivery: job picked up but delivery overdue */
-function isProactivelyLateForDelivery(job: DispatchJob): boolean {
-    if (isLateDeliveryStatus(job)) return false; // Already flagged server-side
-    if (!job.time) return false; // No delivery time (ASAP job) — matches server-side guard
-    const inTransitStatuses = [JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    if (!inTransitStatuses.includes(job.statusId as any)) return false;
-    if (job.alertLateDelivery != null && job.alertLateDelivery < 0) return false; // Client disabled late delivery alerts
-    return isOverdue(job);
-}
-
-/** Is the job late for pickup (server-set or proactively detected)? */
 function isLateForPickup(job: DispatchJob): boolean {
-    return isLatePickupStatus(job) || isProactivelyLateForPickup(job);
+    return job.statusId === JOB_STATUS.LatePickup || !!job.isProactiveLatePickup;
 }
 
-/** Is the job late for delivery (server-set or proactively detected)? */
 function isLateForDelivery(job: DispatchJob): boolean {
-    return isLateDeliveryStatus(job) || isProactivelyLateForDelivery(job);
-}
-
-function needsDispatch(job: DispatchJob): boolean {
-    if (job.assignedCourier) return false;
-    if (job.statusId === JOB_STATUS.Completed) return false;
-    const activeStatuses = [JOB_STATUS.Dispatched, JOB_STATUS.Accepted, JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    return !activeStatuses.includes(job.statusId as any);
+    return job.statusId === JOB_STATUS.LateDelivery || !!job.isProactiveLateDelivery;
 }
 
 function isChilledJob(job: DispatchJob): boolean {
@@ -327,10 +250,6 @@ function getRowSx(
     // Determine highlight flags
     const isDirect = !!job.direct;
     const isChilled = isChilledJob(job);
-    const latePickup = isLateForPickup(job);
-    const lateDelivery = isLateForDelivery(job);
-    const isWarning = job.statusId === JOB_STATUS.Warning || latePickup || lateDelivery;
-    const isProactiveLate = isProactivelyLateForPickup(job) || isProactivelyLateForDelivery(job);
     const isChildJob = !job.isParentOrSingle && !!job.parentId;
     const isMultiPart = isMultiPartJob(job);
     // Apply highlight in priority order (highest wins for bg/border)
@@ -340,32 +259,6 @@ function getRowSx(
         sx['&:hover'] = {
             bgcolor: '#64b5f6',
             boxShadow: '0 2px 4px rgba(37, 99, 235, 0.15)',
-        };
-    } else if (isWarning && !isProactiveLate) {
-        // Server-confirmed late/warning — solid red
-        sx.bgcolor = '#ffebee';
-        sx.borderLeft = '3px solid #f44336';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            fontWeight: 700,
-            color: '#c62828',
-        };
-        sx['&:hover'] = {
-            bgcolor: '#ffcdd2',
-            boxShadow: '0 1px 3px rgba(244, 67, 54, 0.2)',
-        };
-    } else if (isProactiveLate) {
-        // Proactively detected late — amber/orange to distinguish from server-confirmed
-        sx.bgcolor = '#fff3e0';
-        sx.borderLeft = '3px solid #e65100';
-        sx['& .MuiTableCell-root'] = {
-            ...baseCellSx,
-            fontWeight: 700,
-            color: '#bf360c',
-        };
-        sx['&:hover'] = {
-            bgcolor: '#ffe0b2',
-            boxShadow: '0 1px 3px rgba(230, 81, 0, 0.2)',
         };
     } else if (isRelated) {
         sx.bgcolor = '#e3f2fd';
@@ -378,13 +271,6 @@ function getRowSx(
         sx['&:hover'] = {
             bgcolor: '#bbdefb',
             boxShadow: '0 1px 3px rgba(59, 130, 246, 0.2)',
-        };
-    } else if (isMultiSelected) {
-        sx.bgcolor = '#d1c4e9';
-        sx.borderLeft = '4px solid #651fff';
-        sx['&:hover'] = {
-            bgcolor: '#b39ddb',
-            boxShadow: '0 1px 3px rgba(101, 31, 255, 0.2)',
         };
     } else if (isDirect && isChilled) {
         // Combined direct + chilled = purple
@@ -431,6 +317,16 @@ function getRowSx(
         sx.borderLeft = '3px solid #64748b';
         sx['&:hover'] = {
             bgcolor: '#cbd5e1',
+        };
+    }
+
+    // Multi-select is additive — overlays on top of any category color
+    if (isMultiSelected) {
+        sx.bgcolor = '#d1c4e9';
+        sx.borderLeft = '4px solid #651fff';
+        sx['&:hover'] = {
+            bgcolor: '#b39ddb',
+            boxShadow: '0 1px 3px rgba(101, 31, 255, 0.2)',
         };
     }
 
@@ -538,13 +434,16 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         return () => clearInterval(timer);
     }, []);
 
-    const columns = ALL_COLUMNS.filter((col) => {
+    const columns = useMemo(() => ALL_COLUMNS.filter((col) => {
         if (col.hideForUs && isUsCustomer) return false;
         return !(col.showOnlyJobSearch && !isJobSearchPage);
-    });
+    }), [isUsCustomer, isJobSearchPage]);
 
     const handleSort = useCallback(
-        (column: string) => () => onSortChange(column),
+        (e: React.MouseEvent<HTMLSpanElement>) => {
+            const column = e.currentTarget.dataset.sortColumn;
+            if (column) onSortChange(column);
+        },
         [onSortChange],
     );
 
@@ -564,6 +463,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         estimateSize: () => estimatedRowHeight,
         overscan: 15,
     });
+
+    const virtualItems = virtualizer.getVirtualItems();
 
     if (jobs.length === 0) {
         return (
@@ -611,7 +512,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                     <TableSortLabel
                                         active={sortState.column === col.key}
                                         direction={sortState.column === col.key ? (sortState.direction ?? 'asc') : 'asc'}
-                                        onClick={handleSort(col.key)}
+                                        onClick={handleSort}
+                                        data-sort-column={col.key}
                                         sx={{
                                             fontSize: '0.75rem',
                                             color: 'text.secondary',
@@ -648,10 +550,10 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 </TableHead>
                 <TableBody>
                     {/* Spacer row for virtual scroll offset */}
-                    {virtualizer.getVirtualItems().length > 0 && (
-                        <tr style={{height: virtualizer.getVirtualItems()[0].start}} />
+                    {virtualItems.length > 0 && (
+                        <tr style={{height: virtualItems[0].start}} />
                     )}
-                    {virtualizer.getVirtualItems().map((virtualRow) => {
+                    {virtualItems.map((virtualRow) => {
                         const job = jobs[virtualRow.index];
                         return (
                             <JobRow
@@ -672,8 +574,8 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                         );
                     })}
                     {/* Spacer row for remaining virtual scroll space */}
-                    {virtualizer.getVirtualItems().length > 0 && (
-                        <tr style={{height: virtualizer.getTotalSize() - (virtualizer.getVirtualItems()[virtualizer.getVirtualItems().length - 1].end)}} />
+                    {virtualItems.length > 0 && (
+                        <tr style={{height: virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1].end)}} />
                     )}
                 </TableBody>
             </Table>
@@ -729,7 +631,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
 
     const rowSx = useMemo(
         () => getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected),
-        [job.statusId, job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job.hasBeenRead, job.time, job.booked, job.assignedCourier, job.alertLatePickup, job.alertLateDelivery, job._groupChildren, isSelected, isRelated, densityMode, isMultiSelected],
+        [job.statusId, job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job.hasBeenRead, job.booked, job.assignedCourier?.id, job._groupChildren?.length, isSelected, isRelated, densityMode, isMultiSelected],
     );
 
     return (
@@ -1132,7 +1034,7 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (remain === undefined || remain === null) return <>-</>;
             const lateForPickup = isLateForPickup(job);
             const lateForDelivery = isLateForDelivery(job);
-            const overdue = isOverdue(job);
+            const overdue = remain < 0;
             const lateLabel = lateForPickup ? 'LP' : lateForDelivery ? 'LD' : null;
             return (
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end'}}>

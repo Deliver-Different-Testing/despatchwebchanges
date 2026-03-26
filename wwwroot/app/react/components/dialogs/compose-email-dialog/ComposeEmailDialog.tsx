@@ -5,9 +5,10 @@ import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
+import IconButton from '@mui/material/IconButton';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import {DriverEmail, GroupEmailData} from '../../../interfaces';
 
@@ -143,10 +144,28 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
 
     return (
         <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                <EmailIcon color="primary" />
-                Compose Email
-            </DialogTitle>
+            <Box
+                sx={(theme) => ({
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: 'white',
+                    px: 3,
+                    py: 2.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                })}
+            >
+                <Box sx={{ width: 48, height: 48, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <EmailIcon sx={{ fontSize: 28 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h5" fontWeight={600}>Compose Email</Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Send an email to selected couriers</Typography>
+                </Box>
+                <IconButton onClick={handleClose} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <CloseIcon />
+                </IconButton>
+            </Box>
             <DialogContent>
                 {/* Recipients */}
                 <Box sx={{mb: 2}}>

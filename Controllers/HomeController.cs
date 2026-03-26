@@ -67,7 +67,7 @@ public partial class HomeController(
             }
             else
             {
-                throw new ArgumentException($"Invalid contact ID: {contactId}");
+                throw new ArgumentException($"Invalid contact ID: {contactId}", nameof(contactId));
             }
 
             return View();

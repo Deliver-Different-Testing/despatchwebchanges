@@ -289,20 +289,27 @@ export const AiAssistantDialog: React.FC<AiAssistantDialogProps> = ({
         >
             {/* Header */}
             <Box
-                sx={{
+                sx={(theme) => ({
+                    background: `linear-gradient(135deg, ${theme.palette.info.main} 0%, ${theme.palette.info.dark} 100%)`,
+                    color: 'info.contrastText',
+                    px: 2.5,
+                    py: 1.5,
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1.5,
-                    px: 2.5,
-                    py: 1.5,
-                    bgcolor: 'info.main',
-                    color: 'info.contrastText',
-                }}
+                })}
             >
-                <AssistantIcon sx={{ fontSize: 22 }} />
-                <Typography variant="h6" sx={{ flex: 1, fontSize: '1.05rem', fontWeight: 500 }}>
-                    AI Assistant
-                </Typography>
+                <Box sx={{ width: 40, height: 40, borderRadius: 2, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <AssistantIcon sx={{ fontSize: 22 }} />
+                </Box>
+                <Box sx={{ flex: 1 }}>
+                    <Typography variant="h6" sx={{ fontSize: '1.05rem', fontWeight: 500 }}>
+                        AI Assistant
+                    </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                        AI-powered dispatch assistance
+                    </Typography>
+                </Box>
                 <Chip
                     label="BETA"
                     size="small"

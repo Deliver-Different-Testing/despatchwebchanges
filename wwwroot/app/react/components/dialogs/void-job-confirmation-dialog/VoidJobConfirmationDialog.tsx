@@ -221,6 +221,9 @@ export const VoidJobConfirmationDialog: React.FC<VoidJobConfirmationDialogProps>
                 <Typography variant="h6" fontWeight={600}>
                     Void {job.jobNo}
                 </Typography>
+                <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                    Permanently cancel this job
+                </Typography>
             </Box>
             <IconButton
                 onClick={onClose}

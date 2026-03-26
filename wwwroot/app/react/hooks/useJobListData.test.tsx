@@ -207,6 +207,59 @@ describe('useJobListData', () => {
                 searchText: 'filtered',
             });
         });
+
+        it('should clear selectedClearListId when updated with undefined', async () => {
+            const config = createMockFetchConfig();
+
+            const {result} = renderHook(
+                () => useJobListData(config),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            // Simulate selecting a clear list area
+            act(() => {
+                result.current.updateParams({selectedClearListId: 42});
+            });
+            expect(result.current.params.selectedClearListId).toBe(42);
+
+            // Simulate clearing the filter — must explicitly pass undefined
+            act(() => {
+                result.current.updateParams({selectedClearListId: undefined});
+            });
+            expect(result.current.params.selectedClearListId).toBeUndefined();
+        });
+
+        it('should retain stale selectedClearListId when key is omitted from update', async () => {
+            const config = createMockFetchConfig();
+
+            const {result} = renderHook(
+                () => useJobListData(config),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            // Set a clear list id
+            act(() => {
+                result.current.updateParams({selectedClearListId: 42});
+            });
+            expect(result.current.params.selectedClearListId).toBe(42);
+
+            // Update other params without mentioning selectedClearListId
+            act(() => {
+                result.current.updateParams({searchText: 'hello'});
+            });
+
+            // selectedClearListId should still be present (shallow merge)
+            expect(result.current.params.selectedClearListId).toBe(42);
+            expect(result.current.params.searchText).toBe('hello');
+        });
     });
 
     describe('refresh', () => {
@@ -297,6 +350,52 @@ describe('useJobListData', () => {
             // Should return defaults when error occurs
             expect(result.current.jobs).toEqual([]);
             expect(result.current.totalCount).toBe(0);
+        });
+    });
+
+    describe('keepPreviousData', () => {
+        it('should keep showing previous jobs while refetching with new params', async () => {
+            let resolveSecondFetch: (value: JobSearchResult) => void;
+            const secondFetchPromise = new Promise<JobSearchResult>((res) => {
+                resolveSecondFetch = res;
+            });
+
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce(mockResult)       // first fetch resolves immediately
+                .mockReturnValueOnce(secondFetchPromise); // second fetch hangs until we resolve it
+
+            const config = createMockFetchConfig({fetchFn});
+
+            const {result} = renderHook(
+                () => useJobListData(config),
+                {wrapper: createWrapper()},
+            );
+
+            // Wait for initial data
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+            expect(result.current.jobs).toEqual(mockJobs);
+
+            // Change params (e.g. new view filter) — triggers new query key
+            act(() => {
+                result.current.updateParams({despatchViewIds: [99]});
+            });
+
+            // While second fetch is in-flight, previous data should still be visible
+            expect(result.current.jobs).toEqual(mockJobs);
+            expect(result.current.totalCount).toBe(2);
+
+            // Resolve with new data
+            const newJobs = [{id: 3, jobNo: 'J003'}] as any[];
+            act(() => {
+                resolveSecondFetch!({jobs: newJobs, totalCount: 1, hasMore: false});
+            });
+
+            await waitFor(() => {
+                expect(result.current.jobs).toEqual(newJobs);
+            });
+            expect(result.current.totalCount).toBe(1);
         });
     });
 

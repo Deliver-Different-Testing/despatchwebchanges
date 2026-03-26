@@ -666,6 +666,98 @@ describe('JobListPanel', () => {
             });
         });
 
+        it('switches fetch function when selectedClearListId is set then cleared via updateSearchParams', async () => {
+            const clearListJobs = [createMockDispatchJob({id: 10, jobNo: 'CLEAR-001'})];
+            const allJobs = [createMockDispatchJob({id: 20, jobNo: 'ALL-001'})];
+
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: [createMockDispatchJob({id: 1, jobNo: 'INITIAL'})], totalCount: 1, hasMore: false} as JobSearchResult)  // initial fetch
+                .mockResolvedValueOnce({jobs: clearListJobs, totalCount: 1, hasMore: false} as JobSearchResult) // clear list fetch
+                .mockResolvedValueOnce({jobs: allJobs, totalCount: 1, hasMore: false} as JobSearchResult);       // after clearing
+
+            const queryKeyFn = jest.fn((params: JobListSearchParams) =>
+                params.selectedClearListId
+                    ? ['test', 'clearList', params] as const
+                    : ['test', 'jobs', params] as const
+            );
+
+            const fetchConfig = createMockFetchConfig({fetchFn, queryKeyFn});
+            let updateParamsFn: ((params: Partial<JobListSearchParams>) => void) = () => {};
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({
+                    fetchConfig,
+                    setUpdateSearchParamsCallback: (cb) => { updateParamsFn = cb; },
+                })} />,
+            );
+
+            expect(await screen.findByText('INITIAL')).toBeInTheDocument();
+
+            // Simulate AngularJS selecting a clear list area
+            act(() => {
+                updateParamsFn({selectedClearListId: 42});
+            });
+
+            await waitFor(() => {
+                expect(fetchFn).toHaveBeenCalledWith(
+                    expect.objectContaining({selectedClearListId: 42}),
+                    expect.any(Object),
+                );
+            });
+
+            // Query key should have used the clearList branch
+            expect(queryKeyFn).toHaveBeenCalledWith(
+                expect.objectContaining({selectedClearListId: 42}),
+            );
+
+            // Simulate AngularJS clearing the filter (the bug fix: passing undefined)
+            act(() => {
+                updateParamsFn({selectedClearListId: undefined});
+            });
+
+            await waitFor(() => {
+                expect(fetchFn).toHaveBeenLastCalledWith(
+                    expect.objectContaining({selectedClearListId: undefined}),
+                    expect.any(Object),
+                );
+            });
+
+            // Query key should have switched back to the jobs branch
+            const lastKeyCall = queryKeyFn.mock.calls[queryKeyFn.mock.calls.length - 1][0];
+            expect(lastKeyCall.selectedClearListId).toBeUndefined();
+        });
+
+        it('shows loading indicator while fetching', async () => {
+            let resolveFetch!: (value: JobSearchResult) => void;
+            const fetchFn = jest.fn().mockReturnValue(new Promise<JobSearchResult>(r => { resolveFetch = r; }));
+            const fetchConfig = createMockFetchConfig({fetchFn});
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({fetchConfig})} />,
+            );
+
+            // LinearProgress should be visible while fetching
+            expect(document.querySelector('.MuiLinearProgress-root')).toBeInTheDocument();
+
+            // Resolve the fetch
+            await act(async () => {
+                resolveFetch({jobs: [createMockDispatchJob({id: 1, jobNo: 'LOADED'})], totalCount: 1, hasMore: false});
+            });
+
+            await waitFor(() => {
+                expect(screen.getByText('LOADED')).toBeInTheDocument();
+            });
+
+            // LinearProgress should be gone after fetch completes
+            expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
+        });
+
+        it('does not show loading indicator in pushed-data mode', () => {
+            const {result} = renderAndPushJobs([createMockDispatchJob()]);
+
+            expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
+        });
+
         it('shows empty state and stats from hook data', async () => {
             // Empty result
             const emptyFetchConfig = createMockFetchConfig({

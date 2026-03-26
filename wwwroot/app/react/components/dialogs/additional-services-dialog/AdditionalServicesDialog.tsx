@@ -232,6 +232,9 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                     <Typography variant="h6" fontWeight={600}>
                         Additional Services
                     </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                        Select extra services for this job
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={handleRefresh}

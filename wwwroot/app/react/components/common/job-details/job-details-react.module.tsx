@@ -12,6 +12,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import {JobDetails} from './JobDetails';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
+import {queryClient} from '../../../query/queryClient';
 import {ErrorBoundary} from '../error-boundary';
 import type {MountJobDetailsConfig} from './JobDetails.types';
 
@@ -79,12 +80,17 @@ function renderJobDetails(config: MountJobDetailsConfig): void {
 }
 
 /**
- * Triggers a data refresh by re-rendering with current config
+ * Triggers a data refresh by invalidating cached queries and re-rendering
  */
-export function refreshJobDetails(): void {
+export async function refreshJobDetails(): Promise<void> {
     if (currentConfig && jobDetailsRoot) {
-        console.log('[JobDetailsReact] Refreshing job details');
-        renderJobDetails(currentConfig);
+        console.log('[JobDetailsReact] Refreshing job details, invalidating queries');
+        await Promise.all([
+            queryClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
+            queryClient.invalidateQueries({queryKey: ['jobs', 'photos']}),
+            queryClient.invalidateQueries({queryKey: ['notes']}),
+            queryClient.invalidateQueries({queryKey: ['priceBreakdowns']}),
+        ]);
     }
 }
 

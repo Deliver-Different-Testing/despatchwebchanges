@@ -8,7 +8,7 @@
  */
 
 import {useState, useCallback, useMemo} from 'react';
-import {useQuery, useQueryClient} from '@tanstack/react-query';
+import {useQuery, useQueryClient, keepPreviousData} from '@tanstack/react-query';
 import type {FetchConfig, DispatchJob, JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
 
 export interface UseJobListDataResult {
@@ -39,6 +39,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         queryKey,
         queryFn: ({signal}) => fetchConfig!.fetchFn(params, {signal}),
         staleTime: 15_000,
+        placeholderData: keepPreviousData,
         enabled: !!fetchConfig,
     });
 

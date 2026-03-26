@@ -8,6 +8,7 @@
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
+import LinearProgress from '@mui/material/LinearProgress';
 import dayjs from 'dayjs';
 import type {
     DensityMode,
@@ -26,22 +27,9 @@ import type {CourierData} from '../../interfaces/dispatchJob';
 import {allocateJobs, bulkUpdateReadStatus, restoreJobs} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
+import {JOB_STATUS, getNow, isUrgent, isDelivered, needsDispatch} from './jobListHelpers';
 
 // ── Constants ────────────────────────────────────────────────────────
-
-const JOB_STATUS = {
-    New: 0,
-    Dispatched: 1,
-    Accepted: 2,
-    Rejected: 3,
-    LatePickup: 4,
-    PickedUp: 5,
-    Completed: 6,
-    Warning: 7,
-    LateDelivery: 8,
-    Undeliverable: 10,
-    InTransit: 11,
-} as const;
 
 const DEFAULT_COLUMN_WIDTHS: Record<string, number> = {
     priority: 50,
@@ -63,30 +51,6 @@ const DEFAULT_STORAGE_PREFIX = 'jobListReact';
 
 // ── Filter / Sort Helpers ────────────────────────────────────────────
 
-// Cached "now" timestamp — refreshed at most once per second to avoid
-// creating a new dayjs instance for every job in every helper call.
-let _cachedNow: dayjs.Dayjs | null = null;
-let _cachedNowTs = 0;
-function getNow(): dayjs.Dayjs {
-    const ts = Date.now();
-    if (!_cachedNow || ts - _cachedNowTs > 1000) {
-        _cachedNow = dayjs();
-        _cachedNowTs = ts;
-    }
-    return _cachedNow;
-}
-
-function isUrgent(job: DispatchJob): boolean {
-    const now = getNow();
-    const deliveryTime = dayjs(job.time);
-    const minutesUntilDelivery = deliveryTime.diff(now, 'minutes');
-    return minutesUntilDelivery <= 30 && minutesUntilDelivery > 0;
-}
-
-function isDelivered(job: DispatchJob): boolean {
-    return job.statusId === JOB_STATUS.Completed;
-}
-
 function isActive(job: DispatchJob): boolean {
     if (needsDispatch(job)) return false;
     const activeStatuses = [JOB_STATUS.Dispatched, JOB_STATUS.Accepted, JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
@@ -97,33 +61,8 @@ function isInTransit(job: DispatchJob): boolean {
     return job.statusId === JOB_STATUS.InTransit;
 }
 
-function needsDispatch(job: DispatchJob): boolean {
-    if (job.assignedCourier) return false;
-    if (isDelivered(job)) return false;
-    const activeStatuses = [JOB_STATUS.Dispatched, JOB_STATUS.Accepted, JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    return !activeStatuses.includes(job.statusId as any);
-
-}
-
-function isOverdue(job: DispatchJob): boolean {
-    const now = getNow();
-    const deliveryTime = dayjs(job.time || job.booked);
-    return deliveryTime.isBefore(now);
-}
-
 function isProactivelyLate(job: DispatchJob): boolean {
-    if (!job.time) return false; // No delivery time (ASAP job) — matches server-side guard
-    // Late for pickup: not yet picked up and overdue
-    const prePickupStatuses = [JOB_STATUS.New, JOB_STATUS.Dispatched, JOB_STATUS.Accepted];
-    if (prePickupStatuses.includes(job.statusId as any) && isOverdue(job)) {
-        if (job.alertLatePickup == null || job.alertLatePickup >= 0) return true;
-    }
-    // Late for delivery: picked up but delivery overdue
-    const inTransitStatuses = [JOB_STATUS.PickedUp, JOB_STATUS.InTransit];
-    if (inTransitStatuses.includes(job.statusId as any) && isOverdue(job)) {
-        if (job.alertLateDelivery == null || job.alertLateDelivery >= 0) return true;
-    }
-    return false;
+    return !!job.isProactiveLatePickup || !!job.isProactiveLateDelivery;
 }
 
 function hasIssues(job: DispatchJob): boolean {
@@ -333,6 +272,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(defaultCategory || 'all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
     const [sortState, setSortState] = useState<JobListSort>(() => {
         try {
             const saved = localStorage.getItem(getStorageKey('sortState'));
@@ -443,6 +383,16 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
     }, [loggedInCouriersOnly, getStorageKey]);
 
+    // ── Debounced search (avoids filtering on every keystroke) ────────
+    useEffect(() => {
+        if (!searchQuery) {
+            setDebouncedSearchQuery('');
+            return;
+        }
+        const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 200);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
     // ── Computed: filtered & sorted jobs ─────────────────────────────
     const {filteredJobs, stats} = useMemo(() => {
         let filtered = jobs;
@@ -460,8 +410,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
 
         // Search filter (skip when backend handles it via fetchConfig)
-        if (searchQuery && !fetchConfig) {
-            filtered = filtered.filter((job) => matchesSearch(job, searchQuery));
+        if (debouncedSearchQuery && !fetchConfig) {
+            filtered = filtered.filter((job) => matchesSearch(job, debouncedSearchQuery));
         }
 
         // Sort
@@ -476,7 +426,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
 
         return {filteredJobs: filtered, stats: statsResult};
-    }, [jobs, selectedCategory, searchQuery, sortState, isUsCustomer, fetchConfig]);
+    }, [jobs, selectedCategory, debouncedSearchQuery, sortState, isUsCustomer, fetchConfig]);
 
     // ── Related job highlighting ────────────────────────────────────
     const relatedJobIds = useMemo(() => {
@@ -741,7 +691,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             borderColor: 'divider',
             borderRadius: 1,
             overflow: 'hidden',
+            position: 'relative',
         }}>
+            {fetchConfig && hookData.isFetching && (
+                <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 1 }} />
+            )}
             <JobListStatsHeader stats={stats}/>
             <JobListToolbar
                 selectedCategory={selectedCategory}

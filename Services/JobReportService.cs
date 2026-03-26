@@ -388,11 +388,11 @@ public sealed class JobReportService(
     private static void ValidateUploadedFile(IFormFile file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.FileName))
-            throw new ArgumentException("No file provided.");
+            throw new ArgumentException("No file provided.", nameof(file));
 
         var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (!ValidFileExtensions.Contains(fileExtension))
-            throw new ArgumentException("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.");
+            throw new ArgumentException("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.", nameof(file));
     }
 
     /// <summary>

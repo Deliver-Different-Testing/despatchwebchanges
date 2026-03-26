@@ -452,15 +452,16 @@ describe('JobListTable', () => {
             expect(container.querySelector('[data-testid="ScheduleIcon"]')).not.toBeInTheDocument();
         });
 
-        it('still shows late pickup icon for timed jobs that are overdue', () => {
+        it('still shows late pickup icon for timed jobs flagged as proactively late by backend', () => {
             const lateTimedJob = createMockDispatchJob({
                 id: 1,
                 jobNo: 'TIMED-LATE',
                 statusId: 1, // Dispatched
-                time: dayjs().subtract(1, 'hour'), // delivery time is in the past
+                time: dayjs().subtract(1, 'hour'),
                 booked: dayjs().subtract(2, 'hour'),
                 assignedCourier: {id: 10, text: '10 - Runner'},
                 alertLatePickup: 0,
+                isProactiveLatePickup: true, // backend-computed flag
             });
 
             const {container} = renderWithTheme(<JobListTable {...createDefaultProps({jobs: [lateTimedJob]})}/>);

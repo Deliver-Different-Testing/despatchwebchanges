@@ -76,9 +76,9 @@ public class NationwideJobControllerTests
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var flights = jsonResult.Value as List<FlightViewModel>;
-        Assert.NotNull(flights);
-        Assert.Equal(2, flights.Count);
+        var response = Assert.IsType<FlightSearchResponse>(jsonResult.Value);
+        Assert.Equal(2, response.Flights.Count);
+        Assert.Null(response.Message);
     }
 
     [Fact]
@@ -128,10 +128,9 @@ public class NationwideJobControllerTests
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var flights = jsonResult.Value as List<FlightViewModel>;
-        Assert.NotNull(flights);
-        Assert.Single(flights);
-        Assert.Equal("QF", flights[0].AirlineCode);
+        var response = Assert.IsType<FlightSearchResponse>(jsonResult.Value);
+        Assert.Single(response.Flights);
+        Assert.Equal("QF", response.Flights[0].AirlineCode);
 
         // Verify airline filter was passed
         _flightServiceMock.Verify(x => x.GetFlightsAsync(
@@ -146,7 +145,7 @@ public class NationwideJobControllerTests
     }
 
     [Fact]
-    public async Task GetScheduledFlightOptions_NoFlightsFound_ReturnsEmptyList()
+    public async Task GetScheduledFlightOptions_NoFlightsFound_ReturnsEmptyListWithMessage()
     {
         // Arrange
         var departureDate = DateTimeOffset.Now.AddDays(1);
@@ -178,13 +177,13 @@ public class NationwideJobControllerTests
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var flights = jsonResult.Value as List<FlightViewModel>;
-        Assert.NotNull(flights);
-        Assert.Empty(flights);
+        var response = Assert.IsType<FlightSearchResponse>(jsonResult.Value);
+        Assert.Empty(response.Flights);
+        Assert.NotNull(response.Message);
     }
 
     [Fact]
-    public async Task GetScheduledFlightOptions_NullFlightsFromService_ReturnsEmptyList()
+    public async Task GetScheduledFlightOptions_NullFlightsFromService_ReturnsEmptyListWithMessage()
     {
         // Arrange
         var departureDate = DateTimeOffset.Now.AddDays(1);
@@ -214,13 +213,13 @@ public class NationwideJobControllerTests
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        var flights = jsonResult.Value as List<FlightViewModel>;
-        Assert.NotNull(flights);
-        Assert.Empty(flights);
+        var response = Assert.IsType<FlightSearchResponse>(jsonResult.Value);
+        Assert.Empty(response.Flights);
+        Assert.NotNull(response.Message);
     }
 
     [Fact]
-    public async Task GetScheduledFlightOptions_ServiceThrowsException_Returns500()
+    public async Task GetScheduledFlightOptions_ArgumentException_ReturnsEmptyFlightsWithMessage()
     {
         // Arrange
         var departureDate = DateTimeOffset.Now.AddDays(1);
@@ -236,6 +235,42 @@ public class NationwideJobControllerTests
                 It.IsAny<IReadOnlyList<string>>(),
                 It.IsAny<int>()))
             .ThrowsAsync(new ArgumentException("Departure airport with ID 150 not found in active airports"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.GetScheduledFlightOptions(
+            departureDate,
+            jobId,
+            airlineId: null,
+            departureAirportId: 150,
+            arrivalAirportId: 96);
+
+        // Assert - Now returns JSON with message instead of 500
+        Assert.IsType<JsonResult>(result);
+        var jsonResult = (JsonResult)result;
+        var response = Assert.IsType<FlightSearchResponse>(jsonResult.Value);
+        Assert.Empty(response.Flights);
+        Assert.Contains("Departure airport with ID 150 not found", response.Message);
+    }
+
+    [Fact]
+    public async Task GetScheduledFlightOptions_UnexpectedException_Returns500()
+    {
+        // Arrange
+        var departureDate = DateTimeOffset.Now.AddDays(1);
+        const int jobId = 16992;
+
+        _flightServiceMock.Setup(x => x.GetFlightsAsync(
+                It.IsAny<int>(),
+                It.IsAny<DateTimeOffset?>(),
+                It.IsAny<int?>(),
+                It.IsAny<int?>(),
+                It.IsAny<int?>(),
+                It.IsAny<string>(),
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<int>()))
+            .ThrowsAsync(new InvalidOperationException("Something unexpected went wrong"));
 
         var controller = CreateController();
 
@@ -384,6 +419,99 @@ public class NationwideJobControllerTests
             null,
             60), Times.Once);
     }
+
+    [Fact]
+    public async Task AssignFlightToJob_ValidRequest_ReturnsOk()
+    {
+        // Arrange
+        var request = CreateTestAssignRequest(jobId: 100);
+
+        _repositoryMock.Setup(x => x.AddJobNationwideAsync(
+                request,
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AssignFlightToJob(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        _repositoryMock.Verify(x => x.AddJobNationwideAsync(
+            request,
+            It.IsAny<IReadOnlyList<string>>(),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AssignFlightToJob_JobAlreadyHasFlight_ReturnsConflict()
+    {
+        // Arrange
+        var request = CreateTestAssignRequest(jobId: 100);
+
+        _repositoryMock.Setup(x => x.AddJobNationwideAsync(
+                request,
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Job 100 already has a flight assigned"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AssignFlightToJob(request);
+
+        // Assert
+        Assert.IsType<ConflictObjectResult>(result);
+        var conflictResult = (ConflictObjectResult)result;
+        Assert.Contains("already has a flight assigned", conflictResult.Value?.ToString());
+    }
+
+    [Fact]
+    public async Task AssignFlightToJob_UnexpectedException_Returns500()
+    {
+        // Arrange
+        var request = CreateTestAssignRequest(jobId: 100);
+
+        _repositoryMock.Setup(x => x.AddJobNationwideAsync(
+                request,
+                It.IsAny<IReadOnlyList<string>>(),
+                It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Database error"));
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.AssignFlightToJob(request);
+
+        // Assert
+        Assert.IsType<ObjectResult>(result);
+        var objectResult = (ObjectResult)result;
+        Assert.Equal(500, objectResult.StatusCode);
+    }
+
+    private static AssignFlightToJobRequest CreateTestAssignRequest(int jobId) => new()
+    {
+        JobId = jobId,
+        FromAirportId = 1,
+        ToAirportId = 2,
+        FlightNumber = "NZ123",
+        DepartureDate = DateTimeOffset.Now.AddDays(1),
+        FlightSegments =
+        [
+            new FlightSegmentViewModel
+            {
+                SegmentOrder = 1,
+                CarrierFsCode = "NZ",
+                FlightNumber = "123",
+                DepartureAirportFsCode = "AKL",
+                ArrivalAirportFsCode = "SYD",
+                DepartureTime = DateTimeOffset.Now.AddHours(3),
+                ArrivalTime = DateTimeOffset.Now.AddHours(6)
+            }
+        ]
+    };
 
     private static FlightViewModel CreateTestFlight(string airlineCode, string flightNumber, string departure, string arrival) =>
         new()

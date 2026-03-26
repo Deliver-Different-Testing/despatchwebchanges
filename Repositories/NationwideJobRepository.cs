@@ -13,6 +13,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+
 namespace DespatchWeb.Repositories;
 
 public class NationwideJobRepository(
@@ -36,6 +37,12 @@ public class NationwideJobRepository(
             Log.Error("No flight segments found for JobId: {JobId}", requestData.JobId);
             return;
         }
+
+        var hasExistingFlight = await Context.TucJobNationwides.AnyAsync(
+            n => n.UcnwJobId == requestData.JobId, cancellationToken);
+        if (hasExistingFlight)
+            throw new InvalidOperationException(
+                $"Job {requestData.JobId} already has a flight assigned");
 
         var isUsCustomer = _infoService.IsUsTenant();
 
@@ -70,7 +77,8 @@ public class NationwideJobRepository(
 
                 var timeZoneLookup = await BuildTimeZoneLookupAsync(cancellationToken);
 
-                Log.Information("Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
+                Log.Information(
+                    "Job {JobNumber} retrieved for PrimaryFlight: {PrimaryFlightNumber}, ClientId: {ClientId}",
                     job.UcjbNumber, primaryFlightNumber, job.UcjbClientId);
 
                 var firstFlightDepartureTimeZoneId =
@@ -79,11 +87,13 @@ public class NationwideJobRepository(
 
                 var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
                 if (!departureAirportId.HasValue)
-                    throw new InvalidOperationException("Departure airport ID is required but was not set on the job or request.");
+                    throw new InvalidOperationException(
+                        "Departure airport ID is required but was not set on the job or request.");
 
                 var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
                 if (!arrivalAirportId.HasValue)
-                    throw new InvalidOperationException("Arrival airport ID is required but was not set on the job or request.");
+                    throw new InvalidOperationException(
+                        "Arrival airport ID is required but was not set on the job or request.");
 
                 var airports = await GetAirportAddressInfosAsync(
                     [departureAirportId.Value, arrivalAirportId.Value]);
@@ -118,7 +128,8 @@ public class NationwideJobRepository(
 
                 if (job.ToAirportId != null || requestData.ToAirportId != null)
                 {
-                    var deliveryJob = await FindRelatedAgentJobAsync(job.ParentId, NationwideJobConstants.DeliveryJobSuffix,
+                    var deliveryJob = await FindRelatedAgentJobAsync(job.ParentId,
+                        NationwideJobConstants.DeliveryJobSuffix,
                         isUsCustomer);
 
                     Log.Information("Delivery job lookup result: Found={Found}, DeliveryJobId={DeliveryJobId}",
@@ -143,15 +154,11 @@ public class NationwideJobRepository(
                     job, orderedSegments, webhookIds, timeZoneLookup,
                     firstFlightDepartureTimeZoneId, lastFlight.ArrivalTime, primaryFlightNumber);
 
-                await SaveNoteAsync(requestData.JobId,
-                    $"Flight {primaryFlight.FlightNumber} added to job {requestData.JobId}",
-                    false,
-                    false,
-                    NoteType.FlightUpdate);
-
                 Log.Debug("Saving changes for PrimaryFlight: {PrimaryFlightNumber}, JobId: {JobId}",
                     primaryFlightNumber, requestData.JobId);
 
+                // Save job updates and flight records first (separate from note to avoid
+                // tucJob trigger interference with EF Core's OUTPUT result reading)
                 await Context.SaveChangesAsync(cancellationToken);
 
                 // Create journey record (requires primary flight record ID from first save)
@@ -161,12 +168,20 @@ public class NationwideJobRepository(
                     FlightId = primaryFlightRecord.UcnwId,
                     ChangeType = nameof(DeliveryJourneyChangeType.FlightAssignment),
                     StaffId = _infoService.GetStaffId(),
-                    UpdatedAt = DateTime.UtcNow,
+                    UpdatedAt = _clock.UtcNow,
                     UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
                 };
                 await Context.JobDeliveryJourneys.AddAsync(journeyRecord, cancellationToken);
 
+                await SaveNoteAsync(jobId: requestData.JobId,
+                    noteText: $"Flight {primaryFlight.FlightNumber} added to job {requestData.JobId}",
+                    isImportant: false,
+                    isRecurringJob: false,
+                    noteType: NoteType.FlightUpdate, 
+                    saveChanges: false);
+
                 await Context.SaveChangesAsync(cancellationToken);
+                
                 await transaction.CommitAsync(cancellationToken);
 
                 Log.Information(
@@ -470,7 +485,7 @@ public class NationwideJobRepository(
         // First, verify the job exists
         var jobExists = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
         if (!jobExists)
-            throw new ArgumentException($"Job with ID {jobId} not found");
+            throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
 
         await Context.TucJobs
             .Where(j => j.UcjbId == jobId)

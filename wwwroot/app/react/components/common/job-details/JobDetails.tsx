@@ -46,6 +46,7 @@ import type {MountJobDetailsConfig, IJob} from './JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {DaysOfWeekHelpers} from '../../../../enums/days-of-week.enum';
 import {isAiEnabled} from '../../../../functions/aiSettings';
+import {NoData} from '../no-data/NoData';
 
 const reactNoteManagementDialogService: NoteManagementDialogServiceInterface = {
     openNoteDialog: async (_event: MouseEvent, model: JobNote | null): Promise<void> => {
@@ -140,12 +141,21 @@ const rootStyles: Record<string, SxProps<Theme>> = {
 };
 
 export function JobDetails({config}: JobDetailsProps) {
-    const {jobId, isRecurringJob, isBulkJob, isUsCustomer, showToast, onJobUpdate, onJobReadChanged} = config;
+    const {jobId, isRecurringJob, isBulkJob, isUsCustomer, showToast: showToastProp, onJobUpdate, onJobReadChanged} = config;
+
+    // Stabilize showToast — may come from AngularJS bridge with unstable identity
+    const showToastRef = useRef(showToastProp);
+    useEffect(() => { showToastRef.current = showToastProp; }, [showToastProp]);
+    const showToast = useCallback(
+        (msg: string, type: 'success' | 'error' | 'warning' | 'info') => showToastRef.current(msg, type),
+        []
+    );
 
     // Data hooks
     const {
         sortedRelatedJobs,
         isLoading,
+        isFetching,
         refetch,
     } = useJobDetail({jobId, isRecurringJob, isBulkJob});
 
@@ -186,7 +196,7 @@ export function JobDetails({config}: JobDetailsProps) {
         onJobUpdate?.();
     }, [refetch, onJobUpdate]);
 
-    // Stable toast wrappers for StickyNotes
+    // Stable toast wrappers for StickyNotes (showToast is already ref-stabilized)
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
     const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
@@ -265,9 +275,11 @@ export function JobDetails({config}: JobDetailsProps) {
 
     if (!job) {
         return (
-            <Box sx={rootStyles.emptyState}>
-                <Typography color="text.secondary">Select a job to view details</Typography>
-            </Box>
+            <NoData
+                title="No Job Selected"
+                message="Select a job to view details"
+                icon="work_outline"
+            />
         );
     }
 
@@ -278,7 +290,7 @@ export function JobDetails({config}: JobDetailsProps) {
             {/* Main card */}
             <Paper elevation={0} sx={rootStyles.mainPaperPositioned}>
                 {/* Progress indicator */}
-                {(isLoading || isUpdating) && <LinearProgress sx={rootStyles.progressBar} />}
+                {(isLoading || isFetching || isUpdating) && <LinearProgress sx={rootStyles.progressBar} />}
 
                 <WarningBanner job={job} />
 
@@ -354,7 +366,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     />
 
                     {job.isFlightAssigned && job.assignedFlight && (
-                        <FlightInformation flight={job.assignedFlight} />
+                        <FlightInformation flight={job.assignedFlight} jobId={job.id} />
                     )}
 
                     {job.isAgentAssigned && job.assignedAgent && (
@@ -456,21 +468,23 @@ export function JobDetails({config}: JobDetailsProps) {
                 )}
             </Paper>
 
-            {/* POD Photos */}
-            <Box sx={rootStyles.photosWrapper}>
-                <Suspense fallback={null}>
-                    <PodPhotosSection
-                        deliveryPhotos={deliveryPhotos}
-                        pickupPhotos={pickupPhotos}
-                        imageOnlyDeliveryPhotos={imageOnlyDeliveryPhotos}
-                        imageOnlyPickupPhotos={imageOnlyPickupPhotos}
-                        isLoading={photosLoading}
-                        showToast={showToast}
-                        onUploadPhotos={actions.handlePodUpload}
-                        onSendPod={actions.handleSendPodEmail}
-                    />
-                </Suspense>
-            </Box>
+            {/* POD Photos — only mount when there are photos or still loading */}
+            {(deliveryPhotos.length > 0 || pickupPhotos.length > 0 || photosLoading) && (
+                <Box sx={rootStyles.photosWrapper}>
+                    <Suspense fallback={null}>
+                        <PodPhotosSection
+                            deliveryPhotos={deliveryPhotos}
+                            pickupPhotos={pickupPhotos}
+                            imageOnlyDeliveryPhotos={imageOnlyDeliveryPhotos}
+                            imageOnlyPickupPhotos={imageOnlyPickupPhotos}
+                            isLoading={photosLoading}
+                            showToast={showToast}
+                            onUploadPhotos={actions.handlePodUpload}
+                            onSendPod={actions.handleSendPodEmail}
+                        />
+                    </Suspense>
+                </Box>
+            )}
 
             {/* Text Input Dialog */}
             <TextInputDialog

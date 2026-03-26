@@ -303,6 +303,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     <Typography variant="h6" fontWeight={600}>
                         Edit Dimensions
                     </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                        Update parcel sizes and weights
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={handleCancel}

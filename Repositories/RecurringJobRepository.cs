@@ -162,7 +162,7 @@ public class RecurringJobRepository(
     public async Task SaveRecurringJobNote(TucNoteViewModel note)
     {
         ArgumentNullException.ThrowIfNull(note);
-        if (!note.JobBookingId.HasValue) throw new ArgumentNullException(nameof(note.JobBookingId));
+        if (!note.JobBookingId.HasValue) throw new ArgumentNullException(nameof(note));
 
         if (note.NoteId == 0)
             await CreateNewRecurringJobNote(note.JobBookingId.Value, note.NoteText, note.IsImportant,
@@ -629,7 +629,7 @@ public class RecurringJobRepository(
         if (T.TryParse(value, null, out var result))
             return result;
 
-        throw new ArgumentException($"Invalid value '{value}' for property {property}. Expected type: {typeof(T).Name}.");
+        throw new ArgumentException($"Invalid value '{value}' for property {property}. Expected type: {typeof(T).Name}.", nameof(value));
     }
 
     private static string Truncate(string value, int maxLength) =>

@@ -7,6 +7,7 @@ import {
 } from "../../interfaces/job.interface";
 import {
     AssignFlightToJobRequest,
+    IFlightSearchResponseDto,
     IFlightViewModelDto, IGetAgentOptionsResponse,
     IGetFlightOptionsResponse
 } from "./nationwide.interfaces";
@@ -99,7 +100,7 @@ class NationwideService {
         minimumLayoverMinutes: number = 0,
     ): Promise<IGetFlightOptionsResponse> {
         const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
-        const response = await this.$http.get<IFlightViewModelDto[]>("nationwideJob/GetScheduledFlightOptions", {
+        const response = await this.$http.get<IFlightSearchResponseDto>("nationwideJob/GetScheduledFlightOptions", {
             params: {
                 departureDate: formattedDate,
                 jobId,
@@ -110,11 +111,13 @@ class NationwideService {
             }
         });
 
-        const flights = response.data.map(transformFlightDTO);
+        const data = response.data;
+        const flightDtos = data.flights ?? [];
+        const flights = flightDtos.map(transformFlightDTO);
 
         return {
             flights,
-            message: flights.length === 0 ? "No flights available for the selected criteria" : undefined,
+            message: data.message || (flights.length === 0 ? "No flights available for the selected criteria." : undefined),
             lastDepartureTime: flights.length > 0 ? flights[flights.length - 1].departureTime : undefined
         };
     }

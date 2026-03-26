@@ -662,13 +662,146 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
 
         if (showNoFlightsAvailableMessage) {
             return (
-                <NoData
-                    title="No Flights Available"
-                    message={flightMessage || "No flights available for the specified criteria."}
-                    icon="flight_takeoff"
-                    showAction={false}
-                    isUsCustomer={isUsCustomer}
-                />
+                <Box sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+                    {/* Airline filter chips + airport selectors */}
+                    <Box sx={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        p: 0.5,
+                        borderBottom: `1px solid ${theme.palette.divider}`,
+                    }}>
+                        <AirlineChip
+                            code="ALL"
+                            label="All"
+                            tooltip="Show all airlines"
+                            isAllChip
+                            isSelected={!selectedAirline}
+                            onClick={() => onFilterFlightsByAirline(null)}
+                        />
+                        {activeAirlineOptions?.map((airline) => (
+                            <AirlineChip
+                                key={airline.id}
+                                code={airline.text}
+                                tooltip={airline.fullAirlineName || airline.text}
+                                isSelected={selectedAirline?.id === airline.id}
+                                onClick={() => onFilterFlightsByAirline(airline)}
+                            />
+                        ))}
+
+                        <Box sx={{flex: 1}}/>
+
+                        {/* Departure airport selector */}
+                        <Button
+                            onClick={(e) => setOutboundAnchorEl(e.currentTarget)}
+                            sx={{
+                                height: 24,
+                                borderRadius: '12px',
+                                px: 1,
+                                bgcolor: alpha(theme.palette.text.secondary, 0.1),
+                                color: theme.palette.text.primary,
+                                textTransform: 'none',
+                                '&:hover': {bgcolor: alpha(theme.palette.text.secondary, 0.2)},
+                            }}
+                        >
+                            <FlightTakeoffIcon sx={{fontSize: 14, mr: 0.25}}/>
+                            <Typography sx={{fontSize: 11, fontWeight: 500}}>
+                                {selectedOutboundAirport ? formatAirportCodeForDropdown(selectedOutboundAirport.text) : 'From'}
+                            </Typography>
+                        </Button>
+
+                        <Typography sx={{color: theme.palette.text.secondary, fontSize: 11}}>→</Typography>
+
+                        {/* Arrival airport selector */}
+                        <Button
+                            onClick={(e) => setInboundAnchorEl(e.currentTarget)}
+                            sx={{
+                                height: 24,
+                                borderRadius: '12px',
+                                px: 1,
+                                bgcolor: alpha(theme.palette.text.secondary, 0.1),
+                                color: theme.palette.text.primary,
+                                textTransform: 'none',
+                                '&:hover': {bgcolor: alpha(theme.palette.text.secondary, 0.2)},
+                            }}
+                        >
+                            <FlightLandIcon sx={{fontSize: 14, mr: 0.25}}/>
+                            <Typography sx={{fontSize: 11, fontWeight: 500}}>
+                                {selectedInboundAirport ? formatAirportCodeForDropdown(selectedInboundAirport.text) : 'To'}
+                            </Typography>
+                        </Button>
+                    </Box>
+
+                    {/* Airport menus */}
+                    <Menu
+                        anchorEl={outboundAnchorEl}
+                        open={Boolean(outboundAnchorEl)}
+                        onClose={() => setOutboundAnchorEl(null)}
+                    >
+                        {selectedOutboundAirport && (
+                            <MenuItem onClick={() => {
+                                onOutboundAirportChange(null);
+                                setOutboundAnchorEl(null);
+                            }}>
+                                <ClearIcon sx={{mr: 1, fontSize: 18}}/> Clear selection
+                            </MenuItem>
+                        )}
+                        {outboundAirportOptions?.map((airport) => (
+                            <MenuItem
+                                key={airport.id}
+                                onClick={() => {
+                                    onOutboundAirportChange(airport);
+                                    setOutboundAnchorEl(null);
+                                }}
+                            >
+                                {selectedOutboundAirport?.id === airport.id && (
+                                    <CheckIcon sx={{mr: 1, fontSize: 18, color: theme.palette.primary.main}}/>
+                                )}
+                                {selectedOutboundAirport?.id !== airport.id && <Box sx={{width: 26}}/>}
+                                {airport.text}
+                            </MenuItem>
+                        ))}
+                    </Menu>
+
+                    <Menu
+                        anchorEl={inboundAnchorEl}
+                        open={Boolean(inboundAnchorEl)}
+                        onClose={() => setInboundAnchorEl(null)}
+                    >
+                        {selectedInboundAirport && (
+                            <MenuItem onClick={() => {
+                                onInboundAirportChange(null);
+                                setInboundAnchorEl(null);
+                            }}>
+                                <ClearIcon sx={{mr: 1, fontSize: 18}}/> Clear selection
+                            </MenuItem>
+                        )}
+                        {inboundAirportOptions?.map((airport) => (
+                            <MenuItem
+                                key={airport.id}
+                                onClick={() => {
+                                    onInboundAirportChange(airport);
+                                    setInboundAnchorEl(null);
+                                }}
+                            >
+                                {selectedInboundAirport?.id === airport.id && (
+                                    <CheckIcon sx={{mr: 1, fontSize: 18, color: theme.palette.primary.main}}/>
+                                )}
+                                {selectedInboundAirport?.id !== airport.id && <Box sx={{width: 26}}/>}
+                                {airport.text}
+                            </MenuItem>
+                        ))}
+                    </Menu>
+
+                    <NoData
+                        title="No Flights Available"
+                        message={flightMessage || "No flights available for the specified criteria."}
+                        icon="flight_takeoff"
+                        showAction={false}
+                        isUsCustomer={isUsCustomer}
+                    />
+                </Box>
             );
         }
 
@@ -774,7 +907,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                 {airport.text}
                             </MenuItem>
                         ))}
-                    </Menu>9=
+                    </Menu>
 
                     <Menu
                         anchorEl={inboundAnchorEl}

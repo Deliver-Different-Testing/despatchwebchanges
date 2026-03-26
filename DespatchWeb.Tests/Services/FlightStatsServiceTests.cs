@@ -560,6 +560,100 @@ public class FlightStatsServiceTests
     };
 
     [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task IsFlightRuleActiveAsync_NullOrEmptyWebhookId_ReturnsFalse(string? webhookId)
+    {
+        // Arrange
+        var service = CreateService();
+
+        // Act
+        var result = await service.IsFlightRuleActiveAsync(webhookId);
+
+        // Assert
+        Assert.False(result);
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Never(),
+            ItExpr.IsAny<HttpRequestMessage>(),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task IsFlightRuleActiveAsync_ActiveRule_ReturnsTrue()
+    {
+        // Arrange
+        var response = new CreateAlertResponse
+        {
+            Rule = new Rule { Id = "12345" }
+        };
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.IsFlightRuleActiveAsync("12345");
+
+        // Assert
+        Assert.True(result);
+        _httpHandlerMock.Protected().Verify(
+            "SendAsync",
+            Times.Once(),
+            ItExpr.Is<HttpRequestMessage>(req =>
+                req.RequestUri != null && req.RequestUri.ToString().Contains("json/get/12345")),
+            ItExpr.IsAny<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task IsFlightRuleActiveAsync_ApiReturnsError_ReturnsFalse()
+    {
+        // Arrange
+        var response = new CreateAlertResponse
+        {
+            Error = new ApiError { ErrorId = "NOT_FOUND", ErrorMessage = "Rule not found" }
+        };
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.IsFlightRuleActiveAsync("99999");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task IsFlightRuleActiveAsync_HttpError_ReturnsFalse()
+    {
+        // Arrange
+        SetupHttpError(HttpStatusCode.NotFound);
+        var service = CreateService();
+
+        // Act
+        var result = await service.IsFlightRuleActiveAsync("12345");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task IsFlightRuleActiveAsync_NullRuleId_ReturnsFalse()
+    {
+        // Arrange - response with rule object but null id
+        var response = new CreateAlertResponse
+        {
+            Rule = new Rule { Id = null }
+        };
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.IsFlightRuleActiveAsync("12345");
+
+        // Assert
+        Assert.False(result);
+    }
+
+    [Theory]
     [InlineData("AA1234", "AA", "1234")]
     [InlineData("NZ123", "NZ", "123")]
     [InlineData("BXR1984", "BXR", "1984")]

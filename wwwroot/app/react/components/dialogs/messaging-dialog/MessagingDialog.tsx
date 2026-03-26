@@ -394,6 +394,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
             <>
                 <DialogHeader
                     title="Message Center"
+                    subtitle="Send and receive messages"
                     onClose={onClose}
                 />
                 <DialogContent sx={{ p: 0, display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -475,12 +476,13 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
 
 interface DialogHeaderProps {
     title: string;
+    subtitle?: string;
     showBackButton?: boolean;
     onBack?: () => void;
     onClose: () => void;
 }
 
-function DialogHeader({ title, showBackButton, onBack, onClose }: DialogHeaderProps) {
+function DialogHeader({ title, subtitle, showBackButton, onBack, onClose }: DialogHeaderProps) {
     return (
         <Box
             sx={(theme) => ({
@@ -499,9 +501,16 @@ function DialogHeader({ title, showBackButton, onBack, onClose }: DialogHeaderPr
                 </IconButton>
             )}
             {!showBackButton && <ChatIcon sx={{ mr: 1 }} />}
-            <Typography variant="h6" fontWeight={600} sx={{ flex: 1 }}>
-                {title}
-            </Typography>
+            <Box sx={{ flex: 1 }}>
+                <Typography variant="h6" fontWeight={600}>
+                    {title}
+                </Typography>
+                {subtitle && (
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                        {subtitle}
+                    </Typography>
+                )}
+            </Box>
             <IconButton onClick={onClose} sx={{ color: 'white' }}>
                 <CloseIcon />
             </IconButton>

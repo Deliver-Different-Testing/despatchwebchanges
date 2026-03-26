@@ -163,6 +163,57 @@ public sealed class FlightStatsService(
     }
 
     /// <summary>
+    /// Checks whether a flight alert rule is still active by querying the FlightStats alerts API.
+    /// </summary>
+    /// <param name="webhookId">The ID of the flight rule/webhook to check.</param>
+    /// <returns>True if the rule exists and is active; false otherwise.</returns>
+    public async Task<bool> IsFlightRuleActiveAsync(string webhookId)
+    {
+        if (string.IsNullOrEmpty(webhookId)) return false;
+
+        var query = HttpUtility.ParseQueryString(string.Empty);
+        query["appId"] = _appId;
+        query["appKey"] = _appKey;
+
+        var fullUrl = $"{AlertUrl}/json/get/{webhookId}";
+        var uriBuilder = new UriBuilder(fullUrl)
+        {
+            Query = query.ToString() ?? string.Empty
+        };
+
+        var uri = uriBuilder.Uri;
+        Log.Debug("IsFlightRuleActive Request: {Uri}", uri);
+
+        try
+        {
+            var response = await httpClient.GetAsync(uri);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Warning("Flight rule {WebhookId} check returned {StatusCode}", webhookId, response.StatusCode);
+                return false;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var alertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content, CaseInsensitiveJsonOptions);
+
+            if (alertResponse?.Error?.ErrorId == null) return alertResponse?.Rule?.Id != null;
+            Log.Warning("Flight rule {WebhookId} returned error: {Error}", webhookId, alertResponse.Error.ErrorMessage);
+            return false;
+        }
+        catch (HttpRequestException ex)
+        {
+            Log.Error(ex, "HTTP error checking flight rule {WebhookId}", webhookId);
+            return false;
+        }
+        catch (JsonException ex)
+        {
+            Log.Error(ex, "JSON error deserializing flight rule status for {WebhookId}", webhookId);
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Searches for available flights between airports using the FlightStats connections API.
     /// Filters by active airlines and maps results to view models with segment details.
     /// </summary>
@@ -196,9 +247,9 @@ public sealed class FlightStatsService(
         var arrivalAirport = airports.FirstOrDefault(x => x.AirportId == arrivalAirportId);
 
         if (departureAirport is null)
-            throw new ArgumentException($"Departure airport with ID {departureAirportId} not found in active airports");
+            throw new ArgumentException($"Departure airport with ID {departureAirportId} not found in active airports", nameof(departureAirportId));
         if (arrivalAirport is null)
-            throw new ArgumentException($"Arrival airport with ID {arrivalAirportId} not found in active airports");
+            throw new ArgumentException($"Arrival airport with ID {arrivalAirportId} not found in active airports", nameof(arrivalAirportId));
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
         Log.Information("Found {Count} active airline codes: [{Codes}]",
@@ -225,7 +276,7 @@ public sealed class FlightStatsService(
         {
             var selectedAirline = await repository.GetAirlineCodeByIdAsync(airlineId.Value);
             if (string.IsNullOrEmpty(selectedAirline))
-                throw new ArgumentException($"Airline with ID {airlineId} not found");
+                throw new ArgumentException($"Airline with ID {airlineId} not found", nameof(airlineId));
 
             Log.Debug("Filtering FlightWebhooks by specific airline: {Carrier}", selectedAirline);
             query["includeAirlines"] = selectedAirline;
@@ -464,7 +515,7 @@ public sealed class FlightStatsService(
     {
         // Parse the datetime string
         if (!DateTime.TryParse(flightDateTime, out var localDateTime))
-            throw new ArgumentException($"Invalid datetime format: {flightDateTime}");
+            throw new ArgumentException($"Invalid datetime format: {flightDateTime}", nameof(flightDateTime));
 
         // Get the timezone for the airport
         TimeZoneInfo airportTimeZone;
@@ -475,7 +526,7 @@ public sealed class FlightStatsService(
         }
         catch (TimeZoneNotFoundException)
         {
-            throw new ArgumentException($"Invalid timezone: {airport.TimeZoneRegionName} for airport {airport.Iata}");
+            throw new ArgumentException($"Invalid timezone: {airport.TimeZoneRegionName} for airport {airport.Iata}", nameof(airport));
         }
 
         // Create DateTimeOffset with the airport's timezone offset

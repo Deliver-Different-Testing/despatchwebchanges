@@ -148,7 +148,7 @@ public class MessageRepository(
 
         // Validate that exactly one recipient is specified
         if ((request.SendToStaffId.HasValue ? 1 : 0) + (request.SendToCourierId.HasValue ? 1 : 0) != 1)
-            throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)");
+            throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)", nameof(request));
 
         ArgumentException.ThrowIfNullOrEmpty(request.Message);
 
@@ -198,7 +198,7 @@ public class MessageRepository(
             foreach (var courierId in request.SendToCourierIds)
             {
                 if (!courierDataMap.TryGetValue(courierId, out var courierData))
-                    throw new ArgumentException($"Courier {courierId} not found or inactive");
+                    throw new ArgumentException($"Courier {courierId} not found or inactive", nameof(request));
 
                 var message = new TucManualMessage
                 {
@@ -219,7 +219,7 @@ public class MessageRepository(
                 {
                     if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
                         string.IsNullOrWhiteSpace(courierData.UccrMobile))
-                        throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS");
+                        throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS", nameof(courierData));
 
                     var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
                         ? courierData.PersonalMobile
@@ -309,7 +309,7 @@ public class MessageRepository(
                 .SetProperty(r => r.IsActive, false));
 
         if (rowsAffected == 0)
-            throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.");
+            throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.", nameof(responseId));
     }
 
     public async Task<IReadOnlyList<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
@@ -388,7 +388,7 @@ public class MessageRepository(
         {
             if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
                 string.IsNullOrWhiteSpace(courierData.UccrMobile))
-                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS");
+                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS", nameof(courierData));
 
             var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
                 ? courierData.PersonalMobile
@@ -416,7 +416,7 @@ public class MessageRepository(
             1 => MessageDeliveryType.App,
             2 => MessageDeliveryType.Sms,
             3 => isLoggedInToday ? MessageDeliveryType.App : MessageDeliveryType.Sms,
-            _ => throw new ArgumentException($"Invalid message type: {messageType}")
+            _ => throw new ArgumentException($"Invalid message type: {messageType}", nameof(messageType))
         };
 
     private static string NormalizeMobileNumber(string phoneNumber, bool isUsTenant)

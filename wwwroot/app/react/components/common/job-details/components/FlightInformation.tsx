@@ -2,13 +2,16 @@
  * FlightInformation - Flight segments with connection times
  */
 
-import React from 'react';
+import React, {useState, useCallback} from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import FlightIcon from '@mui/icons-material/Flight';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
 import FlightLandIcon from '@mui/icons-material/FlightLand';
+import CellTowerIcon from '@mui/icons-material/CellTower';
 import type {IAssignedFlight, IFlightSegment} from '../JobDetails.types';
 import type {Dayjs} from 'dayjs';
 import {
@@ -17,9 +20,11 @@ import {
     sectionToolbarTitleSx,
     sectionToolbarIconSx,
 } from '../JobDetails.styles';
+import nationwideApi from '../../../../services/nationwideApi';
 
 interface FlightInformationProps {
     flight: IAssignedFlight;
+    jobId: number;
 }
 
 function getConnectionTime(first: IFlightSegment, second: IFlightSegment): string {
@@ -65,8 +70,20 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
     );
 }
 
-export const FlightInformation = React.memo(({flight}: FlightInformationProps) => {
+export const FlightInformation = React.memo(({flight, jobId}: FlightInformationProps) => {
     const segments = flight?.flightSegments;
+    const [webhookStatus, setWebhookStatus] = useState<'idle' | 'loading' | 'active' | 'inactive'>('idle');
+
+    const checkWebhookStatus = useCallback(async () => {
+        setWebhookStatus('loading');
+        try {
+            const result = await nationwideApi.getFlightWebhookStatus(jobId);
+            setWebhookStatus(result.active ? 'active' : 'inactive');
+        } catch {
+            setWebhookStatus('inactive');
+        }
+    }, [jobId]);
+
     if (!segments?.length) return null;
 
     return (
@@ -76,6 +93,28 @@ export const FlightInformation = React.memo(({flight}: FlightInformationProps) =
                 <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
                     Flight Information
                 </Typography>
+                <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 1}}>
+                    {webhookStatus === 'active' && (
+                        <Typography variant="caption" sx={{color: 'success.main', fontWeight: 600}}>
+                            Webhooks Active
+                        </Typography>
+                    )}
+                    {webhookStatus === 'inactive' && (
+                        <Typography variant="caption" sx={{color: 'error.main', fontWeight: 600}}>
+                            Webhooks Inactive
+                        </Typography>
+                    )}
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={webhookStatus === 'loading' ? <CircularProgress size={14} /> : <CellTowerIcon sx={{fontSize: 16}} />}
+                        onClick={checkWebhookStatus}
+                        disabled={webhookStatus === 'loading'}
+                        sx={{fontSize: '0.6875rem', py: 0.25, px: 1, minWidth: 0}}
+                    >
+                        {webhookStatus === 'loading' ? 'Checking...' : 'Check Webhooks'}
+                    </Button>
+                </Box>
             </Box>
             {segments.map((segment, index) => (
                 <React.Fragment key={index}>

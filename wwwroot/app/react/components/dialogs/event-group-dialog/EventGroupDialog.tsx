@@ -169,6 +169,9 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                         <Typography variant="h6" fontWeight={600}>
                             Task Groups Management
                         </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                            Manage task group assignments for jobs
+                        </Typography>
                     </Box>
                     <IconButton
                         onClick={onClose}

@@ -657,6 +657,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         const int bulkJobId = 100;
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
@@ -765,12 +766,13 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task SaveBulkNoteAsync_WithNewNote_DoesNotRecordHistory()
+    public async Task SaveBulkNoteAsync_WithNewNote_RecordsCreationHistory()
     {
         // Arrange
         const int bulkJobId = 100;
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
@@ -786,10 +788,22 @@ public class NoteRepositoryTests : IAsyncDisposable
         // Act
         await repository.SaveBulkNoteAsync(viewModel, TestContext.Current.CancellationToken);
 
-        // Assert - no history for new notes
+        // Assert - history is created for new notes with OldNoteText = empty string
         var history =
             await _context.TucNoteHistories.ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
-        Assert.Empty(history);
+        Assert.Single(history);
+        var record = history[0];
+        Assert.Null(record.NoteId);
+        Assert.NotNull(record.BulkNoteId);
+        Assert.Null(record.ArchiveNoteId);
+        Assert.Equal("", record.OldNoteText);
+        Assert.Equal("Brand new note", record.NewNoteText);
+        Assert.Equal(0, record.OldNoteTypeId);
+        Assert.Equal(1, record.NewNoteTypeId);
+        Assert.False(record.OldIsImportant);
+        Assert.False(record.NewIsImportant);
+        Assert.Equal(1, record.EditedBy);
+        Assert.Equal(_clock.UtcNow, record.EditedAtUtc);
     }
 
     [Fact]
@@ -799,6 +813,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         const int bulkJobId = 100;
         _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
         _context.TblBulkJobs.Add(CreateBulkJob(bulkJobId, "BULK001"));
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var repository = CreateRepository();
@@ -1128,5 +1143,4 @@ public class NoteRepositoryTests : IAsyncDisposable
         OldIsImportant = oldIsImportant,
         NewIsImportant = newIsImportant
     };
-
 }

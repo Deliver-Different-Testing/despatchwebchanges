@@ -1,6 +1,6 @@
 /** @jest-environment jest-environment-jsdom */
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, within} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import {MapDialog} from './MapDialog';
@@ -121,7 +121,8 @@ describe('MapDialog', () => {
                 <MapDialog open onClose={onClose} delivery={createMockDelivery()} />,
             );
 
-            const closeButton = screen.getByText('close').closest('button')!;
+            const dialog = screen.getByRole('dialog');
+            const closeButton = within(dialog).getAllByRole('button')[0];
             fireEvent.click(closeButton);
 
             expect(onClose).toHaveBeenCalled();

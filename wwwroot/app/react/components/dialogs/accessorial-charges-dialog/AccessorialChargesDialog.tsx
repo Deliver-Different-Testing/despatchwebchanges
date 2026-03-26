@@ -801,6 +801,9 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     <Typography variant="h6" fontWeight={600}>
                         Accessorial Charges
                     </Typography>
+                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                        Manage additional charges for this job
+                    </Typography>
                 </Box>
                 <IconButton
                     onClick={handleRefresh}

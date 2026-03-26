@@ -134,6 +134,16 @@ export interface GetFlightOptionsParams {
     minimumLayoverMinutes?: number;
 }
 
+interface FlightSearchResponseDto {
+    flights: FlightViewModelDto[];
+    message?: string;
+}
+
+export interface FlightSearchResult {
+    flights: FlightViewModel[];
+    message?: string;
+}
+
 /**
  * Nationwide API Service Class
  * Handles all nationwide job-related API operations.
@@ -170,11 +180,21 @@ export class NationwideApiService {
     }
 
     /**
+     * Check if flight webhooks are active for a job
+     */
+    async getFlightWebhookStatus(jobId: number): Promise<{ active: boolean }> {
+        return apiClient.get<{ active: boolean }>(
+            'nationwideJob/GetFlightWebhookStatus',
+            { jobId }
+        );
+    }
+
+    /**
      * Get scheduled flight options for a job
      */
-    async getScheduledFlightOptions(params: GetFlightOptionsParams): Promise<FlightViewModel[]> {
+    async getScheduledFlightOptions(params: GetFlightOptionsParams): Promise<FlightSearchResult> {
         try {
-            const flights = await apiClient.get<FlightViewModelDto[]>(
+            const response = await apiClient.get<FlightSearchResponseDto>(
                 'nationwideJob/GetScheduledFlightOptions',
                 {
                     departureDate: params.departureDate,
@@ -186,12 +206,12 @@ export class NationwideApiService {
                 }
             );
 
-            if (!flights || flights.length === 0) {
-                return [];
-            }
+            const flightDtos = response.flights ?? [];
 
-            // Transform DTOs to domain models with Dayjs objects
-            return flights.map((dto) => this.transformFlightDto(dto));
+            return {
+                flights: flightDtos.map((dto) => this.transformFlightDto(dto)),
+                message: response.message,
+            };
         } catch (error) {
             console.error('Error fetching scheduled flight options:', error);
             throw error;

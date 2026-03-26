@@ -15,7 +15,7 @@ import type {IJob, IJobGroup} from '../JobDetails.types';
 import {useMemo} from 'react';
 
 interface UseJobDetailOptions {
-    jobId: number;
+    jobId?: number;
     isRecurringJob: boolean;
     isBulkJob: boolean;
     enabled?: boolean;
@@ -26,6 +26,7 @@ interface UseJobDetailResult {
     job: IJob | undefined;
     sortedRelatedJobs: IJob[];
     isLoading: boolean;
+    isFetching: boolean;
     isError: boolean;
     error: unknown;
     refetch: () => Promise<unknown>;
@@ -47,20 +48,20 @@ export function useJobDetail({
     const isUs = isUsCustomer();
 
     const jobQuery = useQuery({
-        queryKey: queryKeys.jobs.detail(jobId, jobType),
+        queryKey: queryKeys.jobs.detail(jobId ?? 0, jobType),
         queryFn: async ({signal}) => {
             const options = {signal};
             let dto;
             if (isBulkJob) {
-                dto = await getBulkJobDetail(jobId, options);
+                dto = await getBulkJobDetail(jobId!, options);
             } else if (isRecurringJob) {
-                dto = await getRecurringJobDetail(jobId, options);
+                dto = await getRecurringJobDetail(jobId!, options);
             } else {
-                dto = await getJobDetail(jobId, options);
+                dto = await getJobDetail(jobId!, options);
             }
             return transformJobGroupDTO(dto, isUs);
         },
-        enabled: enabled && jobId > 0,
+        enabled: enabled && !!jobId && jobId > 0,
         staleTime: 10 * 1000,
     });
 
@@ -78,6 +79,7 @@ export function useJobDetail({
         job: jobQuery.data?.job,
         sortedRelatedJobs,
         isLoading: jobQuery.isLoading,
+        isFetching: jobQuery.isFetching,
         isError: jobQuery.isError,
         error: jobQuery.error,
         refetch: () => jobQuery.refetch(),

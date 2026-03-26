@@ -108,6 +108,7 @@ public static partial class JobMappings
             PickupTime = null,
             DeliveryTime = null,
             AlertLatePickup = j.UcjbClient != null ? j.UcjbClient.AlertLatePickUp : null,
+            AlertLateDelivery = j.UcjbClient != null ? j.UcjbClient.AlertLateDelivery : null,
 
             Lp = j.UcjbLatePick,
             Ld = j.UcjbLateDel,

@@ -97,8 +97,8 @@ describe('MessagingDialog', () => {
         expect(screen.getByText('Message Center')).toBeInTheDocument();
         expect(screen.getByText('Conversations')).toBeInTheDocument();
 
-        // Close button
-        const header = screen.getByText('Message Center').closest('div')!;
+        // Close button — find within the dialog's gradient header (parent of the title)
+        const header = screen.getByText('Message Center').closest('div')!.parentElement!;
         await user.click(within(header).getByRole('button'));
         expect(onClose).toHaveBeenCalled();
     });

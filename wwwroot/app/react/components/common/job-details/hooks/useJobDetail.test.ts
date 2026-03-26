@@ -188,6 +188,27 @@ describe('useJobDetail', () => {
         );
 
         expect(result.current.isLoading).toBe(true);
+        expect(result.current.isFetching).toBe(true);
         expect(result.current.jobGroup).toBeUndefined();
+    });
+
+    it('exposes isFetching as false after data loads', async () => {
+        const mockGroup = createMockJobGroup();
+        mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
+        mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
+
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+        const {result} = renderHook(
+            () => useJobDetail({jobId: 1, isRecurringJob: false, isBulkJob: false}),
+            {wrapper},
+        );
+
+        // Initially fetching
+        expect(result.current.isFetching).toBe(true);
+
+        // After load completes, isFetching should be false
+        await waitFor(() => expect(result.current.isFetching).toBe(false));
+        expect(result.current.isLoading).toBe(false);
+        expect(result.current.job).toBeDefined();
     });
 });

@@ -3,7 +3,7 @@
  * Matches AngularJS .metrics-grid layout with 1px gap separators.
  */
 
-import React, {useCallback} from 'react';
+import React, {useCallback, useRef, useEffect} from 'react';
 import Box from '@mui/material/Box';
 import type {SxProps, Theme} from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
@@ -60,7 +60,10 @@ export const MetricsGrid = React.memo(({
         && job.internalStatusId !== JobInternalStatusEnum.NewJobs
         && job.internalStatusId !== JobInternalStatusEnum.Reprice;
 
-    // Stable click handlers — avoid inline arrow functions to preserve MetricCard memo
+    // Use jobRef so callbacks don't recreate when job fields change
+    const jobRef = useRef(job);
+    useEffect(() => { jobRef.current = job; }, [job]);
+
     const handleCreatedClick = useCallback(() => {
         showToast('Created Date is not editable', 'info');
     }, [showToast]);
@@ -70,28 +73,34 @@ export const MetricsGrid = React.memo(({
     }, [showToast]);
 
     const handleReadyClick = useCallback(() => {
-        onEditDateAndTime(JobProperty.BookedTime, 'Booked Date', job.booked, job.pickUpTimeZone);
-    }, [onEditDateAndTime, job.booked, job.pickUpTimeZone]);
+        const j = jobRef.current;
+        onEditDateAndTime(JobProperty.BookedTime, 'Booked Date', j.booked, j.pickUpTimeZone);
+    }, [onEditDateAndTime]);
 
     const handlePuArrivalClick = useCallback(() => {
-        onEditDateAndTime(JobProperty.PickupArrivalTime, 'Pickup Arrival Time', job.pickupArrivalTime, job.pickUpTimeZone);
-    }, [onEditDateAndTime, job.pickupArrivalTime, job.pickUpTimeZone]);
+        const j = jobRef.current;
+        onEditDateAndTime(JobProperty.PickupArrivalTime, 'Pickup Arrival Time', j.pickupArrivalTime, j.pickUpTimeZone);
+    }, [onEditDateAndTime]);
 
     const handlePuTimeClick = useCallback(() => {
-        onEditDateAndTime(JobProperty.PuTime, 'Pick Up Time', job.puTime, job.pickUpTimeZone);
-    }, [onEditDateAndTime, job.puTime, job.pickUpTimeZone]);
+        const j = jobRef.current;
+        onEditDateAndTime(JobProperty.PuTime, 'Pick Up Time', j.puTime, j.pickUpTimeZone);
+    }, [onEditDateAndTime]);
 
     const handleDeliverByClick = useCallback(() => {
-        onEditDateAndTime(JobProperty.DeliverBy, 'Deliver By', job.deliverByTime, job.deliveryTimeZone);
-    }, [onEditDateAndTime, job.deliverByTime, job.deliveryTimeZone]);
+        const j = jobRef.current;
+        onEditDateAndTime(JobProperty.DeliverBy, 'Deliver By', j.deliverByTime, j.deliveryTimeZone);
+    }, [onEditDateAndTime]);
 
     const handleDelArrivalClick = useCallback(() => {
-        onEditDateAndTime(JobProperty.DeliveryArrivalTime, 'Delivery Arrival Time', job.deliveryArrivalTime, job.deliveryTimeZone);
-    }, [onEditDateAndTime, job.deliveryArrivalTime, job.deliveryTimeZone]);
+        const j = jobRef.current;
+        onEditDateAndTime(JobProperty.DeliveryArrivalTime, 'Delivery Arrival Time', j.deliveryArrivalTime, j.deliveryTimeZone);
+    }, [onEditDateAndTime]);
 
     const handleFollowUpClick = useCallback(() => {
-        onEditDateAndTime(JobProperty.FollowupTime, 'Follow Up Time', job.followupTime, job.deliveryTimeZone);
-    }, [onEditDateAndTime, job.followupTime, job.deliveryTimeZone]);
+        const j = jobRef.current;
+        onEditDateAndTime(JobProperty.FollowupTime, 'Follow Up Time', j.followupTime, j.deliveryTimeZone);
+    }, [onEditDateAndTime]);
 
     return (
         <>

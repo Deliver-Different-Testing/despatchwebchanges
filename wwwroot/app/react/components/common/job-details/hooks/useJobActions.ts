@@ -339,52 +339,72 @@ export function useJobActions({
 
     /**
      * Guided "mark as done" flow — replicates the AngularJS markJobAsDone behaviour.
-     * Prompts for any missing POD fields (time → name), offers file upload, then completes.
+     * Prompts for any missing POD fields, offers file upload, then completes.
+     * @param startWith - which field to prompt for first ('time' = default, 'name' = POD Name first)
      */
-    const markJobAsDone = useCallback(async () => {
+    const markJobAsDone = useCallback(async (startWith: 'time' | 'name' = 'time') => {
         const j = jobRef.current;
         if (!j) return;
 
-        // Step 1: Collect POD time if missing
-        let podTime = j._completedTimeLongStr;
-        if (!j.completedTime) {
-            await ensureDateTimeDialog();
-            const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
-                title: 'POD Time',
-                fieldName: JobProperty.CompletedTime,
-                dateTime: j.completedTime,
-                defaultTimeZone: (j.deliveryTimeZone as any)?.text,
-            });
-            if (!result?.value) {
-                showToast('A POD time needs to be provided to close this job.', 'warning');
-                return;
+        const collectPodTime = async (): Promise<string | null> => {
+            let podTime = j._completedTimeLongStr;
+            if (!j.completedTime) {
+                await ensureDateTimeDialog();
+                const result = await window.ReactEditDateTimeDialog?.showEditDateAndTimeDialog({
+                    title: 'POD Time',
+                    fieldName: JobProperty.CompletedTime,
+                    dateTime: j.completedTime,
+                    defaultTimeZone: (j.deliveryTimeZone as any)?.text,
+                });
+                if (!result?.value) {
+                    showToast('A POD time needs to be provided to close this job.', 'warning');
+                    return null;
+                }
+                await updateField({job: j, field: JobProperty.CompletedTime, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
+                podTime = formatDateForApi(result.value, (j.deliveryTimeZone as any)?.text);
+                await refreshAndNotify();
             }
-            await updateField({job: j, field: JobProperty.CompletedTime, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
-            podTime = formatDateForApi(result.value, (j.deliveryTimeZone as any)?.text);
-            await refreshAndNotify();
+            return podTime ?? null;
+        };
+
+        const collectPodName = async (): Promise<string | null> => {
+            let podName = j.podName;
+            if (!podName) {
+                const name = await openTextDialogAsync('POD Name', 'POD Name...', JobProperty.PodName, '', 'Complete Job');
+                if (!name) {
+                    showToast('A POD name needs to be provided to close this job.', 'warning');
+                    return null;
+                }
+                podName = name;
+                await updateField({job: j, field: JobProperty.PodName, value: podName, isRecurring: j.preBook});
+                await refreshAndNotify();
+            }
+            return podName;
+        };
+
+        let podTime: string | null | undefined;
+        let podName: string | null | undefined;
+
+        if (startWith === 'name') {
+            podName = await collectPodName();
+            if (podName === null) return;
+            podTime = await collectPodTime();
+            if (podTime === null) return;
+        } else {
+            podTime = await collectPodTime();
+            if (podTime === null) return;
+            podName = await collectPodName();
+            if (podName === null) return;
         }
 
-        // Step 2: Collect POD name if missing
-        let podName = j.podName;
-        if (!podName) {
-            const name = await openTextDialogAsync('POD Name', 'POD Name...', JobProperty.PodName, '', 'Complete Job');
-            if (!name) {
-                showToast('A POD name needs to be provided to close this job.', 'warning');
-                return;
-            }
-            podName = name;
-            await updateField({job: j, field: JobProperty.PodName, value: podName, isRecurring: j.preBook});
-            await refreshAndNotify();
-        }
-
-        // Step 3: POD file upload (optional — user can skip)
+        // POD file upload (optional — user can skip)
         try {
             (window as any).ReactJobFileUploadDialog?.open?.(j.id, 'POD');
         } catch {
             // Upload dialog not available or user cancelled — continue
         }
 
-        // Step 4: Mark as done
+        // Mark as done
         await updatePod({
             jobId: j.id,
             jobStatus: '6',
@@ -398,7 +418,7 @@ export function useJobActions({
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;
         if (!j) return;
-        // Uncompleting: toggle done off
+        // Uncompleted: toggle done off
         if (j.done) {
             await updateField({job: j, field: JobProperty.Delivered, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
@@ -476,7 +496,7 @@ export function useJobActions({
             openTextDialog('Edit POD Name', 'POD Name...', JobProperty.PodName, j.podName);
             return;
         }
-        await markJobAsDone();
+        await markJobAsDone('name');
     }, [openTextDialog, markJobAsDone]);
 
     const handleEditCompletedTime = useCallback(async () => {
@@ -486,7 +506,7 @@ export function useJobActions({
             await editDateAndTime(JobProperty.CompletedTime, 'POD Time', j.completedTime, j.deliveryTimeZone);
             return;
         }
-        await markJobAsDone();
+        await markJobAsDone('time');
     }, [editDateAndTime, markJobAsDone]);
 
     const handlePricingClick = useCallback(async () => {

@@ -90,7 +90,7 @@ describe('nationwideApi integration', () => {
             server.use(
                 http.get('*/nationwideJob/GetScheduledFlightOptions', ({ request }) => {
                     capturedUrl = request.url;
-                    return HttpResponse.json(mockFlightViewModelDtos);
+                    return HttpResponse.json({ flights: mockFlightViewModelDtos });
                 })
             );
 
@@ -101,7 +101,7 @@ describe('nationwideApi integration', () => {
 
             expect(capturedUrl).toContain('jobId=100');
             expect(capturedUrl).toContain('departureDate=2024-01-20');
-            expect(result).toHaveLength(2);
+            expect(result.flights).toHaveLength(2);
         });
 
         it('passes optional filter parameters', async () => {
@@ -110,7 +110,7 @@ describe('nationwideApi integration', () => {
             server.use(
                 http.get('*/nationwideJob/GetScheduledFlightOptions', ({ request }) => {
                     capturedUrl = request.url;
-                    return HttpResponse.json(mockFlightViewModelDtos);
+                    return HttpResponse.json({ flights: mockFlightViewModelDtos });
                 })
             );
 
@@ -135,7 +135,7 @@ describe('nationwideApi integration', () => {
             server.use(
                 http.get('*/nationwideJob/GetScheduledFlightOptions', ({ request }) => {
                     capturedUrl = request.url;
-                    return HttpResponse.json([]);
+                    return HttpResponse.json({ flights: [] });
                 })
             );
 
@@ -153,8 +153,8 @@ describe('nationwideApi integration', () => {
                 departureDate: '2024-01-20',
             });
 
-            expect(dayjs.isDayjs(result[0].departureTime)).toBe(true);
-            expect(dayjs.isDayjs(result[0].arrivalTime)).toBe(true);
+            expect(dayjs.isDayjs(result.flights[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result.flights[0].arrivalTime)).toBe(true);
         });
 
         it('transforms nested segment dates to Dayjs', async () => {
@@ -163,15 +163,15 @@ describe('nationwideApi integration', () => {
                 departureDate: '2024-01-20',
             });
 
-            expect(result[0].flightSegments).toHaveLength(1);
-            expect(dayjs.isDayjs(result[0].flightSegments[0].departureTime)).toBe(true);
-            expect(dayjs.isDayjs(result[0].flightSegments[0].arrivalTime)).toBe(true);
+            expect(result.flights[0].flightSegments).toHaveLength(1);
+            expect(dayjs.isDayjs(result.flights[0].flightSegments[0].departureTime)).toBe(true);
+            expect(dayjs.isDayjs(result.flights[0].flightSegments[0].arrivalTime)).toBe(true);
         });
 
-        it('returns empty array when no flights found', async () => {
+        it('returns empty flights with message when no flights found', async () => {
             server.use(
                 http.get('*/nationwideJob/GetScheduledFlightOptions', () => {
-                    return HttpResponse.json([]);
+                    return HttpResponse.json({ flights: [], message: 'No flights found for the selected route and date.' });
                 })
             );
 
@@ -180,7 +180,8 @@ describe('nationwideApi integration', () => {
                 departureDate: '2024-01-20',
             });
 
-            expect(result).toHaveLength(0);
+            expect(result.flights).toHaveLength(0);
+            expect(result.message).toBe('No flights found for the selected route and date.');
         });
 
         it('re-throws errors on server error', async () => {
