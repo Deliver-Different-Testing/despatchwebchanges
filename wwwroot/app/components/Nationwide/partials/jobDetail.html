@@ -4,6 +4,7 @@
             angular-id="ctrl.currentJob.angularId"
             app-page="ctrl.nationwidePageId"
             on-status-change="ctrl.handleStatusChange($event)"
-            on-job-update="ctrl.getJobList()">
+            on-job-update="ctrl.getJobList()"
+            on-related-job-change="ctrl.onRelatedJobChange($event)">
     </job-detail-widget>
 </div>

@@ -1,5 +1,4 @@
-﻿@using System.IO
-@using System.Text.Json
+﻿@using System.Text.Json
 @{
     Dictionary<string, string> manifest;
     try
@@ -77,7 +76,7 @@
             font-size: 14px;
             font-weight: 500;
             color: rgba(0, 0, 0, 0.6);
-            letter-spacing: 0.1px;
+            letter-spacing: 0;
         }
 
         .linear-progress {
@@ -101,9 +100,18 @@
         }
 
         @@keyframes indeterminate {
-            0%   { left: -40%; width: 40%; }
-            60%  { left: 100%; width: 40%; }
-            100% { left: 100%; width: 40%; }
+            0% {
+                left: -40%;
+                width: 40%;
+            }
+            60% {
+                left: 100%;
+                width: 40%;
+            }
+            100% {
+                left: 100%;
+                width: 40%;
+            }
         }
     </style>
 
@@ -114,95 +122,96 @@
     </script>
 
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.2.5/angular-material.min.css">
-    <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css" />
+    <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css"/>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" />
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"/>
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&display=swap" rel="stylesheet">
 
     @if (!string.IsNullOrEmpty(vendorCoreCss))
     {
-        <link rel="stylesheet" href="/dist/@vendorCoreCss" />
+        <link rel="stylesheet" href="/dist/@vendorCoreCss"/>
     }
     @if (!string.IsNullOrEmpty(vendorPluginsCss))
     {
-        <link rel="stylesheet" href="/dist/@vendorPluginsCss" />
+        <link rel="stylesheet" href="/dist/@vendorPluginsCss"/>
     }
-    <link rel="stylesheet" href="/dist/@appStylesFile" />
+    <link rel="stylesheet" href="/dist/@appStylesFile"/>
 </head>
 
 <body ng-app="uDispatch">
-    <!-- Full Screen Loader -->
-    <div class="app-loader" id="appLoader">
-        <div class="loader-content">
-            <span class="material-symbols-outlined loader-icon">local_shipping</span>
-            <div class="linear-progress">
-                <div class="linear-progress-bar"></div>
-            </div>
-            <div class="loading-text">Loading...</div>
+<!-- Full Screen Loader -->
+<div class="app-loader" id="appLoader">
+    <div class="loader-content">
+        <span class="material-symbols-outlined loader-icon">local_shipping</span>
+        <div class="linear-progress">
+            <div class="linear-progress-bar"></div>
         </div>
+        <div class="loading-text">Loading...</div>
     </div>
+</div>
 
-    @RenderBody()
+@RenderBody()
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
-            integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
-            crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
-            integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
-            crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js"
+        integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
+        integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js" defer></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js" defer></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js" defer></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js" defer></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js" defer></script>
-    <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js" defer></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core-legacy.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
 
-    <script src="/dist/@vendorCoreJs" defer></script>
-    <script src="/dist/@vendorPluginsJs" defer></script>
-    <script src="/dist/@appBundleFile" defer></script>
+<script src="/dist/@vendorCoreJs"></script>
+<script src="/dist/@vendorPluginsJs"></script>
+<script src="/dist/@appBundleFile"></script>
 
-    
-    <script>
-        (function() {
-            let resourcesLoaded = false;
-            let angularReady = false;
 
-            setTimeout(function() {
-                hideLoader();
-            }, 15000);
+<script>
+    (function () {
+        var resourcesLoaded = false;
+        var angularReady = false;
 
-            function hideLoader() {
-                const loaderElement = document.getElementById('appLoader');
-                if (loaderElement && !loaderElement.classList.contains('hidden')) {
-                    loaderElement.classList.add('hidden');
+        setTimeout(function () {
+            hideLoader();
+        }, 15000);
 
-                    setTimeout(function() {
-                        if (loaderElement.parentNode) {
-                            loaderElement.parentNode.removeChild(loaderElement);
-                        }
-                    }, 500);
-                }
+        function hideLoader() {
+            var loaderElement = document.getElementById('appLoader');
+            if (loaderElement && !loaderElement.classList.contains('hidden')) {
+                loaderElement.classList.add('hidden');
+
+                setTimeout(function () {
+                    if (loaderElement.parentNode) {
+                        loaderElement.parentNode.removeChild(loaderElement);
+                    }
+                }, 500);
             }
+        }
 
-            window.addEventListener('load', function() {
-                resourcesLoaded = true;
-                if (angularReady) {
+        window.addEventListener('load', function () {
+            resourcesLoaded = true;
+            if (angularReady) {
+                hideLoader();
+            }
+        });
+
+        window.angular.module('uDispatch').run(['$timeout', function ($timeout) {
+            $timeout(function () {
+                angularReady = true;
+                if (resourcesLoaded) {
                     hideLoader();
                 }
             });
-
-            window.angular.module('uDispatch').run(['$timeout', $timeout => {
-                $timeout(function() {
-                    angularReady = true;
-                    if (resourcesLoaded) {
-                        hideLoader();
-                    }
-                });
-            }]);
-        })();
-    </script>
-    </body>
+        }]);
+    })();
+</script>
+</body>
 </html>

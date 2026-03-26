@@ -36,6 +36,7 @@ export interface MountJobDetailsConfig {
     onJobUpdate?: () => void;
     onStatusChange?: (statusId: number) => void;
     onJobReadChanged?: (jobId: number, isRead: boolean) => void;
+    onRelatedJobChange?: (jobId: number) => void;
 }
 
 /** Field visibility map stored in localStorage */

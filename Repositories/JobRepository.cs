@@ -3744,7 +3744,7 @@ public partial class JobRepository(
                     j.UcjbSpeedNavigation.GroupingId ==
                     (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
                     && j.TucJobNationwides.Count != 0
-                        ? j.TucJobNationwides.FirstOrDefault().UcnwEta.Value
+                        ? j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).First().UcnwEta.Value
                         : j
                             .UcjbDate.Date.Add(j.UcjbTime.Value.TimeOfDay)
                             .AddMinutes(j.UcjbSpeedNavigation.Minutes ?? 180),
@@ -3794,13 +3794,16 @@ public partial class JobRepository(
                 FlightInfo =
                     j.UcjbSpeedNavigation.GroupingId ==
                     (isUsCustomer ? (int)SpeedGrouping.Flight : (int)UrgentSpeedGrouping.Flight)
-                        ? j
-                            .TucJobNationwides.Select(n => new AssignedFlight
-                            {
-                                FlightNumber = n.UcnwFlightNo,
-                                ExpectedArrival = n.UcnwEta,
-                                ExpectedDeparture = n.UcnwEtd
-                            })
+                        ? j.TucJobNationwides
+                            .OrderBy(n => n.UcnwLegNumber).Take(1)
+                            .SelectMany(
+                                first => j.TucJobNationwides.OrderByDescending(n => n.UcnwLegNumber).Take(1),
+                                (first, last) => new AssignedFlight
+                                {
+                                    FlightNumber = first.UcnwFlightNo,
+                                    ExpectedArrival = last.UcnwEta,
+                                    ExpectedDeparture = first.UcnwEtd
+                                })
                             .FirstOrDefault()
                         : null
             })

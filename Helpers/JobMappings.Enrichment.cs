@@ -25,10 +25,7 @@ public static partial class JobMappings
         // Only flight info needs batch loading for child jobs that inherit from parents
         await using var flightContext = await contextFactory.CreateDbContextAsync();
         await BatchLoadFlightInfoAsync(flightContext, jobs);
-
-        // Apply timezone conversion to flight times for root jobs (loaded inline)
-        ApplyFlightTimezonesToInlineLoadedJobs(jobs);
-
+        
         // Calculate distance for flight jobs (moved from expression to enrichment)
         CalculateFlightDistances(jobs);
 
@@ -50,9 +47,6 @@ public static partial class JobMappings
         // Only flight info needs batch loading for child jobs that inherit from parents
         await using var flightContext = await contextFactory.CreateDbContextAsync();
         await BatchLoadFlightInfoAsync(flightContext, jobs);
-
-        // Apply timezone conversion to flight times for root jobs (loaded inline)
-        ApplyFlightTimezonesToInlineLoadedJobs(jobs);
 
         // Calculate distance for flight jobs (moved from expression to enrichment)
         CalculateFlightDistances(jobs);
@@ -79,36 +73,6 @@ public static partial class JobMappings
                     job.DeliveryLongitude.Value
                 );
             }
-        }
-    }
-
-    /// <summary>
-    /// Applies timezone conversion to flight times for jobs that had flight info loaded inline.
-    /// BatchLoadFlightInfoAsync handles timezone conversion for batch-loaded jobs.
-    /// </summary>
-    private static void ApplyFlightTimezonesToInlineLoadedJobs(List<JobViewModel> jobs)
-    {
-        // Only process jobs that already have flight data (loaded inline) and weren't batch processed
-        var inlineLoadedFlightJobs = jobs
-            .Where(j => j.IsFlightAssigned && j.AssignedFlight?.FlightSegments?.Count > 0 && j.ParentId == null)
-            .ToList();
-
-        foreach (var flight in inlineLoadedFlightJobs.Select(job => job.AssignedFlight!))
-        {
-            // Convert segment times
-            foreach (var segment in flight.FlightSegments)
-            {
-                segment.DepartureTime =
-                    ConvertUtcToTimeZone(segment.DepartureTime.UtcDateTime, segment.DepartureAirportTimeZone);
-                segment.ArrivalTime =
-                    ConvertUtcToTimeZone(segment.ArrivalTime.UtcDateTime, segment.ArrivalAirportTimeZone);
-            }
-
-            // Update top-level times from converted segments
-            var firstSegment = flight.FlightSegments[0];
-            var lastSegment = flight.FlightSegments[^1];
-            flight.ExpectedDeparture = firstSegment.DepartureTime;
-            flight.ExpectedArrival = lastSegment.ArrivalTime;
         }
     }
 
@@ -181,8 +145,10 @@ public static partial class JobMappings
                     FlightNumber = !string.IsNullOrEmpty(segment.UcnwFlightNo) && segment.UcnwFlightNo.Length > 2
                         ? segment.UcnwFlightNo[2..]
                         : "????",
-                    DepartureTime = ConvertUtcToTimeZone(segment.UcnwEtd, segmentDepartureTimeZone),
-                    ArrivalTime = ConvertUtcToTimeZone(segment.UcnwEta, segmentArrivalTimeZone),
+                    DepartureTime = TimeZoneHelper.SetDateTimeWithTimeZone(
+                        segment.UcnwEtd ?? throw new NullReferenceException(), segmentDepartureTimeZone),
+                    ArrivalTime = TimeZoneHelper.SetDateTimeWithTimeZone(
+                        segment.UcnwEta ?? throw new NullReferenceException(), segmentArrivalTimeZone),
                     DepartureAirportFsCode = segment.DepartureAirportFsCode,
                     DepartureAirportName = segment.DepartureAirportName,
                     DepartureAirportCity = segment.DepartureAirportCity,
@@ -198,7 +164,8 @@ public static partial class JobMappings
                     ArrivalAirportTimeZoneId = segment.ArrivalAirportTimeZoneId ?? 0,
                     ArrivalTerminal = segment.ArrivalTerminal,
                     ElapsedTime = segment.UcnwEta.HasValue && segment.UcnwEtd.HasValue
-                        ? (int)(segment.UcnwEta.Value - segment.UcnwEtd.Value).TotalMinutes
+                        ? (int)(TimeZoneHelper.SetDateTimeWithTimeZone(segment.UcnwEta.Value, segmentArrivalTimeZone)
+                            - TimeZoneHelper.SetDateTimeWithTimeZone(segment.UcnwEtd.Value, segmentDepartureTimeZone)).TotalMinutes
                         : 0,
                     AircraftName = segment.AircraftName,
                     AirlineName = segment.UcnwAirlineName

@@ -455,6 +455,36 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     // Row height estimate based on density mode
     const estimatedRowHeight = densityMode === 'ultra-dense' ? 28 : densityMode === 'dense' ? 34 : 44;
 
+    // Track newly-appeared job IDs so we can highlight them briefly
+    const prevJobIdsRef = useRef<Set<number> | null>(null);
+    const [newJobIds, setNewJobIds] = useState<Set<number>>(new Set());
+
+    useEffect(() => {
+        const currentIds = new Set(jobs.map(j => j.id));
+        const prevIds = prevJobIdsRef.current;
+
+        if (prevIds !== null && prevIds.size > 0) {
+            const appeared = new Set<number>();
+            for (const id of currentIds) {
+                if (!prevIds.has(id)) appeared.add(id);
+            }
+            if (appeared.size > 0) {
+                setNewJobIds(appeared);
+                const timer = setTimeout(() => setNewJobIds(new Set()), 2000);
+                return () => clearTimeout(timer);
+            }
+        }
+
+        prevJobIdsRef.current = currentIds;
+    }, [jobs]);
+
+    // Also update ref when newJobIds clears (so next refresh has correct baseline)
+    useEffect(() => {
+        if (newJobIds.size === 0) {
+            prevJobIdsRef.current = new Set(jobs.map(j => j.id));
+        }
+    }, [newJobIds, jobs]);
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const virtualizer = useVirtualizer({
@@ -562,6 +592,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 isSelected={selectedJobId === job.id}
                                 isRelated={relatedJobIds.has(job.id)}
                                 isMultiSelected={multiSelectedIds.has(job.id)}
+                                isNew={newJobIds.has(job.id)}
                                 columns={columns}
                                 densityMode={densityMode}
                                 isUsCustomer={isUsCustomer}
@@ -590,6 +621,7 @@ interface JobRowProps {
     isSelected: boolean;
     isRelated: boolean;
     isMultiSelected: boolean;
+    isNew: boolean;
     columns: ColumnDef[];
     densityMode: DensityMode;
     isUsCustomer?: boolean;
@@ -605,6 +637,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     isSelected,
     isRelated,
     isMultiSelected,
+    isNew,
     columns,
     densityMode,
     isUsCustomer,
@@ -630,8 +663,18 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
     const isUltraDense = densityMode === 'ultra-dense';
 
     const rowSx = useMemo(
-        () => getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected),
-        [job.statusId, job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job.hasBeenRead, job.booked, job.assignedCourier?.id, job._groupChildren?.length, isSelected, isRelated, densityMode, isMultiSelected],
+        () => {
+            const sx = getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected);
+            if (isNew) {
+                sx['@keyframes newJobHighlight'] = {
+                    '0%': {backgroundColor: '#bbf7d0'},
+                    '100%': {backgroundColor: 'transparent'},
+                };
+                sx.animation = 'newJobHighlight 2s ease-out';
+            }
+            return sx;
+        },
+        [job.statusId, job.direct, job.vehicle?.text, job.isParentOrSingle, job.parentId, job.hasBeenRead, job.booked, job.assignedCourier?.id, job._groupChildren?.length, isSelected, isRelated, densityMode, isMultiSelected, isNew],
     );
 
     return (

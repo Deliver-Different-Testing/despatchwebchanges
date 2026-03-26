@@ -733,7 +733,7 @@ class NationwideControl extends BaseController {
         try {
             const savedIntervalString = localStorage.getItem(this.refreshDurationIntervalKey);
             if (savedIntervalString) {
-                const refreshId = parseInt(savedIntervalString, 10) ?? 0;
+                const refreshId = parseInt(savedIntervalString, 10) || 0;
                 this.selectedRefreshInterval = this.refreshIntervalOptions?.find(x => x.id == refreshId);
 
                 if (this.selectedRefreshInterval && this.selectedRefreshInterval.id > 0) {
@@ -808,15 +808,23 @@ class NationwideControl extends BaseController {
 
     initializeViews(): void {
         if (this.views && this.views.length > 0) {
-            this.selectedViews = this.loadViewsFromStorage();
+            const hasSavedState = localStorage.getItem(this.SelectedViewsKey) !== null;
+            const savedViews = this.loadViewsFromStorage();
+            const savedIds = new Set(savedViews.map((v: DfrntPageViewModel) => v.id));
 
+            // Mark server views as selected based on saved IDs
             this.views = this.views.map(view => ({
-                ...view, selected: this.selectedViews.some((v: DfrntPageViewModel) => v.id === view.id)
+                ...view, selected: savedIds.has(view.id)
             }));
 
-            if (this.selectedViews.length === 0) {
+            // Rebuild selectedViews from fresh server view objects (not stale localStorage copies)
+            this.selectedViews = this.views.filter(v => v.selected);
+
+            // Only default to first view on first visit (no saved state).
+            // If user explicitly cleared all views, respect that.
+            if (this.selectedViews.length === 0 && !hasSavedState) {
                 this.views[0].selected = true;
-                this.selectedViews.push(this.views[0]);
+                this.selectedViews = [this.views[0]];
                 this.saveViewsToStorage(this.selectedViews);
             }
         }
@@ -915,6 +923,7 @@ class NationwideControl extends BaseController {
         try {
             await this.nationwideService.restoreJob(job.id);
             await this.getData();
+            window.ReactJobDetails?.refresh?.();
         } catch (error) {
             console.error('Error restoring job:', error);
         }
@@ -996,6 +1005,23 @@ class NationwideControl extends BaseController {
         } finally {
             this.isSelectingJob = false;
             this.applyScope();
+        }
+    }
+
+    async onRelatedJobChange(jobId: number): Promise<void> {
+        try {
+            const job = await this.DispatchData.getDispatchJobDetail(jobId);
+            if (!job) return;
+
+            // Only update the flight/agent widget — don't replace currentJob or
+            // refresh tasks/map/job-lists, as the job detail tabs handle their
+            // own display and the rest of the page should stay on the parent job.
+            this.isDeliveryJobType = this.isDeliveryJob(job);
+            await this.handleJobSelectionRelatedData(job);
+            this.updateUIState(job);
+            this.applyScope();
+        } catch (error) {
+            console.error("Error in onRelatedJobChange:", error);
         }
     }
 
@@ -1324,7 +1350,7 @@ class NationwideControl extends BaseController {
             this.applyScope();
 
             // Always refresh both NEW and POD lists when assigning a flight
-            // Flight jobs can appear in either list depending on status, so refresh both to avoid stale data
+            //  jobs can appear in either list depending on status, so refresh both to avoid stale data
             const listsToRefresh = new Set([JobDataType.NEW, JobDataType.POD]);
 
             const requestData: AssignFlightToJobRequest = {
@@ -1482,6 +1508,7 @@ class NationwideControl extends BaseController {
                     page: this.jobFilters.page ?? 0,
                     pageSize: this.jobFilters.pageSize ?? 50,
                 });
+                window.ReactNationwideJobList.refresh('newJobs');
             }
             if (requestedTypes.includes(JobDataType.POD)) {
                 window.ReactNationwideJobList.updateSearchParams('podJobs', {
@@ -1496,6 +1523,7 @@ class NationwideControl extends BaseController {
                     page: this.jobPodFilters.page ?? 0,
                     pageSize: this.jobPodFilters.pageSize ?? 50,
                 });
+                window.ReactNationwideJobList.refresh('podJobs');
             }
             if (requestedTypes.includes(JobDataType.REPRICE)) {
                 window.ReactNationwideJobList.updateSearchParams('repriceJobs', {
@@ -1510,11 +1538,10 @@ class NationwideControl extends BaseController {
                     page: this.jobRepriceFilters.page ?? 0,
                     pageSize: this.jobRepriceFilters.pageSize ?? 50,
                 });
+                window.ReactNationwideJobList.refresh('repriceJobs');
             }
         }
 
-        // Still load tasks in background
-        await this.loadTasks();
         this.applyScope();
     }
 
@@ -1821,8 +1848,6 @@ class NationwideControl extends BaseController {
                 this.showNoAgentJobSelectedMessage = true;
             } else if (activeJob.assignedAgent) {
                 this.showJobHasAssignedAgentMessage = true;
-            } else if (!this.isDeliveryJob(activeJob)) {
-                this.showNotDeliveryJobMessage = true;
             } else if (!this.agentsLoading && (!this.agentOptions || this.agentOptions.length === 0)) {
                 this.showNoAgentsAvailableMessage = true;
             } else if (!this.agentsLoading && this.agentOptions && this.agentOptions.length > 0) {
@@ -1842,7 +1867,6 @@ class NationwideControl extends BaseController {
         // Agent section flags
         this.showNoAgentJobSelectedMessage = false;
         this.showJobHasAssignedAgentMessage = false;
-        this.showNotDeliveryJobMessage = false;
         this.showNoAgentsAvailableMessage = false;
         this.showAgentList = false;
     }
@@ -1853,13 +1877,21 @@ class NationwideControl extends BaseController {
                 await this.loadTasks();
                 break;
             case NationwideBoxes.NewJobs:
-                await this.getJobList(JobDataType.NEW);
+                window.ReactNationwideJobList?.refresh('newJobs');
                 break;
             case NationwideBoxes.RepriceJobs:
-                await this.getJobList(JobDataType.REPRICE);
+                window.ReactNationwideJobList?.refresh('repriceJobs');
                 break;
             case NationwideBoxes.PodJobs:
-                await this.getJobList(JobDataType.POD);
+                window.ReactNationwideJobList?.refresh('podJobs');
+                break;
+            case NationwideBoxes.Map:
+                this.refreshMap();
+                break;
+            case NationwideBoxes.FlightAgents:
+                if (this.currentJob) {
+                    await this.handleJobSelectionRelatedData(this.currentJob);
+                }
                 break;
             case NationwideBoxes.JobDetail: {
                 if (!this.currentJob?.id) return;
