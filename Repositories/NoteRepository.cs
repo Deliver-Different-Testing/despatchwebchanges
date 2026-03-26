@@ -458,8 +458,8 @@ public class NoteRepository(
             EditedAtUtc = now,
             OldNoteText = oldNoteText ?? string.Empty,
             NewNoteText = newNoteText ?? string.Empty,
-            OldNoteTypeId = oldNoteTypeId,
-            NewNoteTypeId = newNoteTypeId,
+            OldNoteTypeId = oldNoteTypeId > 0 ? oldNoteTypeId : null,
+            NewNoteTypeId = newNoteTypeId > 0 ? newNoteTypeId : null,
             OldIsImportant = oldIsImportant,
             NewIsImportant = newIsImportant
         };

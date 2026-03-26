@@ -188,6 +188,11 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
             mapInstanceRef.current = map;
 
+            // Ensure map resizes to correct dimensions after dialog transition
+            requestAnimationFrame(() => {
+                map.getViewPort().resize();
+            });
+
             // Add initial marker if coordinates exist
             if (latitude && longitude) {
                 addMarker(latitude, longitude);
@@ -556,8 +561,6 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         setStateAbbreviation(abbreviation);
         setAddressLine6(abbreviation);
     };
-
-    if (!open) return null;
 
     return (
         <Dialog
