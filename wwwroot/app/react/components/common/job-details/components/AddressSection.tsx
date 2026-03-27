@@ -116,6 +116,7 @@ function ContactCard({
                          value,
                          onClick,
                          locked,
+                         dense,
                          children,
                      }: {
     icon: React.ComponentType<SvgIconProps>;
@@ -123,10 +124,11 @@ function ContactCard({
     value?: string;
     onClick?: () => void;
     locked?: boolean;
+    dense?: boolean;
     children?: React.ReactNode;
 }) {
     const card = (
-        <Box sx={contactCardSx}>
+        <Box sx={dense ? {...contactCardSx as object, p: 0.5} : contactCardSx}>
             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}>
                 <IconComp sx={{fontSize: 14, color: 'text.secondary'}}/>
                 <Typography variant="caption" color="text.secondary" sx={contactLabelSx}>
@@ -170,6 +172,7 @@ function AddressBlock({
                           onEditContact,
                           onEditPhone,
                           locked,
+                          dense,
                       }: AddressBlockProps) {
     const isPu = variant === 'pickup';
 
@@ -195,9 +198,9 @@ function AddressBlock({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 1,
-                    px: 1.5,
-                    height: 40,
-                    minHeight: 40,
+                    px: dense ? 1 : 1.5,
+                    height: dense ? 32 : 40,
+                    minHeight: dense ? 32 : 40,
                     background: toolbarBg,
                     color: 'common.white',
                 }}
@@ -214,7 +217,10 @@ function AddressBlock({
                 disabled={locked}
                 sx={{width: '100%', display: 'block', textAlign: 'left'}}
             >
-                <Box sx={addressDisplaySx}>
+                <Box sx={dense ? {
+                    ...addressDisplaySx as object,
+                    mx: 1, mt: 0.75, mb: 0.5, p: 0.75,
+                } : addressDisplaySx}>
                     <Typography variant="body2" sx={{fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.6}}>
                         {address?.fullAddress || '\u2014'}
                     </Typography>
@@ -222,13 +228,14 @@ function AddressBlock({
             </ButtonBase>
 
             {/* Contact cards */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 1, px: 1.5, pb: 1.5}}>
+            <Box sx={{display: 'flex', flexDirection: 'column', gap: dense ? 0.5 : 1, px: dense ? 1 : 1.5, pb: dense ? 1 : 1.5}}>
                 <ContactCard
                     icon={PersonIcon}
                     label="Contact"
                     value={contactName}
                     onClick={onEditContact}
                     locked={locked}
+                    dense={dense}
                 />
                 {contactPhone != null && (
                     <ContactCard
@@ -237,6 +244,7 @@ function AddressBlock({
                         value={contactPhone}
                         onClick={onEditPhone}
                         locked={locked}
+                        dense={dense}
                     >
                         {phoneSource && (
                             <Chip label={phoneSource} size="small" variant="outlined"

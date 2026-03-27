@@ -31,7 +31,13 @@ import {
     getPodReportUrl,
     getPodSpreadsheetUrl,
     autocompleteSearch,
+    getAttachedFiles,
+    uploadJobFile,
+    uploadJobDeliveryPhotoOrSignature,
+    deleteJobFile,
+    deleteJobDeliveryPhotoOrSignature,
 } from '../jobDetailApi';
+import { mockAttachedFiles } from '../../__testUtils__/msw/handlers';
 
 const mockJobDetail = {
     jobId: 123,
@@ -692,6 +698,203 @@ describe('jobDetailApi integration', () => {
 
         it('handles different job IDs', () => {
             expect(getPodSpreadsheetUrl(999)).toBe('/job/PodSpreadsheet?jobId=999');
+        });
+    });
+
+    // ── File Upload Operations ────────────────────────────────────────
+
+    describe('getAttachedFiles', () => {
+        it('fetches attached files with correct jobId parameter', async () => {
+            let capturedUrl = '';
+            server.use(
+                http.get('*/job/getAttachedFiles', ({ request }) => {
+                    capturedUrl = request.url;
+                    return HttpResponse.json(mockAttachedFiles);
+                })
+            );
+
+            const result = await getAttachedFiles(123);
+
+            expect(capturedUrl).toContain('jobId=123');
+            expect(result).toHaveLength(2);
+            expect(result[0]).toMatchObject({ fileName: 'invoice_2026.pdf', isPOD: false });
+            expect(result[1]).toMatchObject({ fileName: 'delivery_photo.jpg', isPOD: true });
+        });
+
+        it('returns empty array when no files attached', async () => {
+            server.use(
+                http.get('*/job/getAttachedFiles', () => {
+                    return HttpResponse.json([]);
+                })
+            );
+
+            const result = await getAttachedFiles(123);
+            expect(result).toHaveLength(0);
+        });
+
+        it('handles server error', async () => {
+            server.use(
+                http.get('*/job/getAttachedFiles', () => {
+                    return new HttpResponse('Server error', { status: 500 });
+                })
+            );
+
+            await expect(getAttachedFiles(123)).rejects.toMatchObject({ status: 500 });
+        });
+    });
+
+    describe('uploadJobFile', () => {
+        it('uploads a file with correct form data fields', async () => {
+            let capturedJobId = '';
+            let capturedIsPOD = '';
+            let capturedContentType = '';
+            let capturedHasFile = false;
+
+            server.use(
+                http.post('*/job/uploadFile', async ({ request }) => {
+                    const formData = await request.formData();
+                    capturedJobId = formData.get('jobId') as string;
+                    capturedIsPOD = formData.get('isPOD') as string;
+                    capturedContentType = formData.get('contentType') as string;
+                    capturedHasFile = formData.has('file');
+                    return HttpResponse.json({ message: 'File uploaded successfully' });
+                })
+            );
+
+            const file = new File(['test content'], 'report.pdf', { type: 'application/pdf' });
+            await uploadJobFile(123, file);
+
+            expect(capturedJobId).toBe('123');
+            expect(capturedIsPOD).toBe('false');
+            expect(capturedHasFile).toBe(true);
+            expect(capturedContentType).toBe('application/pdf');
+        });
+
+        it('resolves successfully on upload', async () => {
+            const file = new File(['test'], 'small.pdf', { type: 'application/pdf' });
+
+            await expect(uploadJobFile(123, file)).resolves.toBeUndefined();
+        });
+
+        it('handles upload error', async () => {
+            server.use(
+                http.post('*/job/uploadFile', () => {
+                    return new HttpResponse('Upload failed', { status: 500 });
+                })
+            );
+
+            const file = new File(['test'], 'report.pdf', { type: 'application/pdf' });
+            await expect(uploadJobFile(123, file)).rejects.toBeDefined();
+        });
+    });
+
+    describe('uploadJobDeliveryPhotoOrSignature', () => {
+        it('uploads a POD photo with description', async () => {
+            let capturedJobId = '';
+            let capturedIsPOD = '';
+            let capturedDescription = '';
+            let capturedHasFile = false;
+
+            server.use(
+                http.post('*/job/uploadJobDeliveryPhotoOrSignature', async ({ request }) => {
+                    const formData = await request.formData();
+                    capturedJobId = formData.get('jobId') as string;
+                    capturedIsPOD = formData.get('isPOD') as string;
+                    capturedDescription = formData.get('podDescription') as string;
+                    capturedHasFile = formData.has('file');
+                    return HttpResponse.json({ success: true });
+                })
+            );
+
+            const file = new File(['image data'], 'front_door.jpg', { type: 'image/jpeg' });
+            await uploadJobDeliveryPhotoOrSignature(123, file, 'Left at front door');
+
+            expect(capturedJobId).toBe('123');
+            expect(capturedIsPOD).toBe('true');
+            expect(capturedDescription).toBe('Left at front door');
+            expect(capturedHasFile).toBe(true);
+        });
+
+        it('uploads without description when not provided', async () => {
+            let capturedDescription: FormDataEntryValue | null = null;
+
+            server.use(
+                http.post('*/job/uploadJobDeliveryPhotoOrSignature', async ({ request }) => {
+                    const formData = await request.formData();
+                    capturedDescription = formData.get('podDescription');
+                    return HttpResponse.json({ success: true });
+                })
+            );
+
+            const file = new File(['image data'], 'photo.jpg', { type: 'image/jpeg' });
+            await uploadJobDeliveryPhotoOrSignature(123, file);
+
+            expect(capturedDescription).toBeNull();
+        });
+
+        it('handles upload error', async () => {
+            server.use(
+                http.post('*/job/uploadJobDeliveryPhotoOrSignature', () => {
+                    return new HttpResponse('Upload failed', { status: 500 });
+                })
+            );
+
+            const file = new File(['data'], 'photo.jpg', { type: 'image/jpeg' });
+            await expect(uploadJobDeliveryPhotoOrSignature(123, file)).rejects.toBeDefined();
+        });
+    });
+
+    describe('deleteJobFile', () => {
+        it('sends delete request with correct jobId and key parameters', async () => {
+            let capturedUrl = '';
+            server.use(
+                http.delete('*/job/DeleteFile', ({ request }) => {
+                    capturedUrl = request.url;
+                    return HttpResponse.json({ message: 'File deleted successfully' });
+                })
+            );
+
+            await deleteJobFile(123, 'jobs/123/invoice.pdf');
+
+            expect(capturedUrl).toContain('jobId=123');
+            expect(capturedUrl).toContain('key=jobs');
+        });
+
+        it('handles delete error', async () => {
+            server.use(
+                http.delete('*/job/DeleteFile', () => {
+                    return HttpResponse.json('Failed to delete file', { status: 400 });
+                })
+            );
+
+            await expect(deleteJobFile(123, 'bad-key')).rejects.toMatchObject({ status: 400 });
+        });
+    });
+
+    describe('deleteJobDeliveryPhotoOrSignature', () => {
+        it('sends delete request with correct jobId and key parameters', async () => {
+            let capturedUrl = '';
+            server.use(
+                http.delete('*/job/DeleteJobDeliveryPhotoOrSignature', ({ request }) => {
+                    capturedUrl = request.url;
+                    return HttpResponse.json({ success: true });
+                })
+            );
+
+            await deleteJobDeliveryPhotoOrSignature(123, 'pods/123/photo.jpg');
+
+            expect(capturedUrl).toContain('jobId=123');
+            expect(capturedUrl).toContain('key=pods');
+        });
+
+        it('handles delete error', async () => {
+            server.use(
+                http.delete('*/job/DeleteJobDeliveryPhotoOrSignature', () => {
+                    return new HttpResponse('Server error', { status: 500 });
+                })
+            );
+
+            await expect(deleteJobDeliveryPhotoOrSignature(123, 'key')).rejects.toMatchObject({ status: 500 });
         });
     });
 

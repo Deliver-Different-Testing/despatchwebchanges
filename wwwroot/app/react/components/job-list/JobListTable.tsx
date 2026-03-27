@@ -44,6 +44,7 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import LinkIcon from '@mui/icons-material/Link';
 
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import type {CourierSuggestion} from '../../interfaces/afterhours';
@@ -60,7 +61,7 @@ import {
     getTimezoneAbbreviation
 } from '../../utils/dateUtils';
 import {useColumnResize} from './useColumnResize';
-import {JOB_STATUS, getNow, isUrgent, needsDispatch} from './jobListHelpers';
+import {JOB_STATUS, isUrgent, needsDispatch} from './jobListHelpers';
 
 // ── Column Definitions ───────────────────────────────────────────────
 
@@ -150,6 +151,7 @@ function hasAssignedCourier(job: DispatchJob): boolean {
 
 // Timezone abbreviation — computed once per render
 let _cachedTimezoneShort: string | null = null;
+
 function getTimeZoneShort(): string {
     if (_cachedTimezoneShort === null) {
         const tz = getTenantTimezone();
@@ -180,13 +182,20 @@ function isMultiPartJob(job: DispatchJob): boolean {
 }
 
 function getFlightIcon(job: DispatchJob): React.ReactNode {
-    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+    if (!job.jobNo) return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small"
+                                                                      sx={{color: 'info.main'}}/></Tooltip>;
     const lastChar = job.jobNo.toString().slice(-1);
     switch (lastChar) {
-        case '1': return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
-        case '2': return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
-        case '3': return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
-        default: return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '1':
+            return <Tooltip title="Flight Pickup"><FlightTakeoffIcon fontSize="small"
+                                                                     sx={{color: 'info.main'}}/></Tooltip>;
+        case '2':
+            return <Tooltip title="Flight Job"><LocalAirportIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
+        case '3':
+            return <Tooltip title="Flight Delivery"><FlightLandIcon fontSize="small"
+                                                                    sx={{color: 'info.main'}}/></Tooltip>;
+        default:
+            return <Tooltip title="Unknown"><QuestionMarkIcon fontSize="small" sx={{color: 'info.main'}}/></Tooltip>;
     }
 }
 
@@ -254,23 +263,25 @@ function getRowSx(
     const isMultiPart = isMultiPartJob(job);
     // Apply highlight in priority order (highest wins for bg/border)
     if (isSelected) {
-        sx.bgcolor = '#90caf9';
-        sx.borderLeft = '4px solid #1e40af';
-        sx['&:hover'] = {
-            bgcolor: '#64b5f6',
-            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.15)',
-        };
-    } else if (isRelated) {
-        sx.bgcolor = '#e3f2fd';
-        sx.borderLeft = '3px solid #3b82f6';
+        sx.bgcolor = '#e9f2ff';
+        sx.boxShadow = 'inset 3px 0 0 0 #0c66e4';
+        sx.borderLeft = 'none';
         sx['& .MuiTableCell-root'] = {
             ...baseCellSx,
-            fontWeight: 700,
-            color: '#1e40af',
+            fontWeight: 600,
         };
         sx['&:hover'] = {
-            bgcolor: '#bbdefb',
-            boxShadow: '0 1px 3px rgba(59, 130, 246, 0.2)',
+            bgcolor: '#cce0ff',
+        };
+    } else if (isRelated) {
+        sx.bgcolor = '#f1f2f4';
+        sx.borderLeft = 'none';
+        sx['& .MuiTableCell-root'] = {
+            ...baseCellSx,
+            color: '#656d76',
+        };
+        sx['&:hover'] = {
+            bgcolor: '#e4e6e9',
         };
     } else if (isDirect && isChilled) {
         // Combined direct + chilled = purple
@@ -355,7 +366,8 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
         return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
     }
     if (isLateForDelivery(job)) {
-        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;
+        return <Tooltip title="Late Delivery"><LocalShippingIcon fontSize="small"
+                                                                 sx={{color: 'error.main'}}/></Tooltip>;
     }
     if (isUrgent(job)) {
         return <Box sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'error.main', mx: 'auto'}}/>;
@@ -371,17 +383,22 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
 
 function getStatusChipColor(job: DispatchJob): 'default' | 'success' | 'warning' | 'error' | 'info' | 'primary' {
     switch (job.statusId) {
-        case JOB_STATUS.Completed: return 'success';
+        case JOB_STATUS.Completed:
+            return 'success';
         case JOB_STATUS.Warning:
         case JOB_STATUS.LatePickup:
-        case JOB_STATUS.LateDelivery: return 'warning';
+        case JOB_STATUS.LateDelivery:
+            return 'warning';
         case JOB_STATUS.Rejected:
-        case JOB_STATUS.Missing: return 'error';
+        case JOB_STATUS.Missing:
+            return 'error';
         case JOB_STATUS.Dispatched:
         case JOB_STATUS.Accepted:
         case JOB_STATUS.PickedUp:
-        case JOB_STATUS.InTransit: return 'info';
-        default: return 'default';
+        case JOB_STATUS.InTransit:
+            return 'info';
+        default:
+            return 'default';
     }
 }
 
@@ -407,30 +424,32 @@ interface JobListTableProps {
 }
 
 export const JobListTable: React.FC<JobListTableProps> = ({
-    jobs,
-    selectedJobId,
-    relatedJobIds,
-    multiSelectedIds,
-    onJobClick,
-    onContextMenu,
-    onJobDispatch,
-    sortState,
-    onSortChange,
-    densityMode,
-    columnWidths,
-    onColumnWidthsChange,
-    isUsCustomer,
-    appPage,
-    isJobSearchPage,
-    loggedInCouriersOnly,
-}) => {
+                                                              jobs,
+                                                              selectedJobId,
+                                                              relatedJobIds,
+                                                              multiSelectedIds,
+                                                              onJobClick,
+                                                              onContextMenu,
+                                                              onJobDispatch,
+                                                              sortState,
+                                                              onSortChange,
+                                                              densityMode,
+                                                              columnWidths,
+                                                              onColumnWidthsChange,
+                                                              isUsCustomer,
+                                                              appPage,
+                                                              isJobSearchPage,
+                                                              loggedInCouriersOnly,
+                                                          }) => {
     // Tick every 60s to keep time-dependent late/overdue checks current.
     // Stored as a ref to avoid re-rendering every row — only rows with
     // time-sensitive status (late/urgent) will pick up changes via the
     // parent's useMemo recomputation on the next data refresh.
     const tickRef = useRef(0);
     useEffect(() => {
-        const timer = setInterval(() => { tickRef.current++; }, 60_000);
+        const timer = setInterval(() => {
+            tickRef.current++;
+        }, 60_000);
         return () => clearInterval(timer);
     }, []);
 
@@ -581,7 +600,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 <TableBody>
                     {/* Spacer row for virtual scroll offset */}
                     {virtualItems.length > 0 && (
-                        <tr style={{height: virtualItems[0].start}} />
+                        <tr style={{height: virtualItems[0].start}}/>
                     )}
                     {virtualItems.map((virtualRow) => {
                         const job = jobs[virtualRow.index];
@@ -606,7 +625,7 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                     })}
                     {/* Spacer row for remaining virtual scroll space */}
                     {virtualItems.length > 0 && (
-                        <tr style={{height: virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1].end)}} />
+                        <tr style={{height: virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1].end)}}/>
                     )}
                 </TableBody>
             </Table>
@@ -633,20 +652,20 @@ interface JobRowProps {
 }
 
 const JobRow: React.FC<JobRowProps> = React.memo(({
-    job,
-    isSelected,
-    isRelated,
-    isMultiSelected,
-    isNew,
-    columns,
-    densityMode,
-    isUsCustomer,
-    appPage,
-    onClick,
-    onContextMenu,
-    onJobDispatch,
-    loggedInCouriersOnly,
-}) => {
+                                                      job,
+                                                      isSelected,
+                                                      isRelated,
+                                                      isMultiSelected,
+                                                      isNew,
+                                                      columns,
+                                                      densityMode,
+                                                      isUsCustomer,
+                                                      appPage,
+                                                      onClick,
+                                                      onContextMenu,
+                                                      onJobDispatch,
+                                                      loggedInCouriersOnly,
+                                                  }) => {
     const handleClick = useCallback(
         (e: React.MouseEvent) => onClick(job, e),
         [job, onClick],
@@ -685,13 +704,27 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             onContextMenu={handleContextMenu}
             sx={rowSx}
         >
-            {columns.map((col) => (
+            {columns.map((col, colIndex) => (
                 <TableCell
                     key={col.key}
                     align={col.align || 'left'}
                     sx={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
                 >
-                    <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense} isUsCustomer={isUsCustomer} appPage={appPage} onJobDispatch={onJobDispatch} loggedInCouriersOnly={loggedInCouriersOnly}/>
+                    {isRelated && !isSelected && colIndex === 0 ? (
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5}}>
+                            <Tooltip title="Related job" arrow>
+                                <LinkIcon sx={{fontSize: 16, color: '#7986cb', flexShrink: 0}}/>
+                            </Tooltip>
+                            <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense}
+                                                 isUsCustomer={isUsCustomer} appPage={appPage}
+                                                 onJobDispatch={onJobDispatch}
+                                                 loggedInCouriersOnly={loggedInCouriersOnly}/>
+                        </Box>
+                    ) : (
+                        <MemoizedCellContent col={col.key} job={job} isUltraDense={isUltraDense}
+                                             isUsCustomer={isUsCustomer} appPage={appPage} onJobDispatch={onJobDispatch}
+                                             loggedInCouriersOnly={loggedInCouriersOnly}/>
+                    )}
                 </TableCell>
             ))}
         </TableRow>
@@ -715,7 +748,13 @@ interface CourierCellProps {
     loggedInCouriersOnly?: boolean;
 }
 
-const CourierCell: React.FC<CourierCellProps> = React.memo(({job, isUsCustomer, onDispatch, allowDispatch, loggedInCouriersOnly}) => {
+const CourierCell: React.FC<CourierCellProps> = React.memo(({
+                                                                job,
+                                                                isUsCustomer,
+                                                                onDispatch,
+                                                                allowDispatch,
+                                                                loggedInCouriersOnly
+                                                            }) => {
     const [showSearch, setShowSearch] = useState(false);
     const [searchText, setSearchText] = useState('');
     const [options, setOptions] = useState<CourierOption[]>([]);
@@ -859,7 +898,8 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({job, isUsCustomer, 
                         {getCourierName(job)}
                     </Typography>
                     {getCourierCode(job) && (
-                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}}
+                                    noWrap>
                             {getCourierCode(job)}
                         </Typography>
                     )}
@@ -902,8 +942,10 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({job, isUsCustomer, 
                     <li {...props} key={option.id}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
                             {option.isAiSuggestion
-                                ? <Tooltip title="AI Suggested"><AutoAwesomeIcon sx={{fontSize: 16, color: 'warning.main', flexShrink: 0}}/></Tooltip>
-                                : <Tooltip title="Search Result"><PersonSearchIcon sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/></Tooltip>
+                                ? <Tooltip title="AI Suggested"><AutoAwesomeIcon
+                                    sx={{fontSize: 16, color: 'warning.main', flexShrink: 0}}/></Tooltip>
+                                : <Tooltip title="Search Result"><PersonSearchIcon
+                                    sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/></Tooltip>
                             }
                             <Typography variant="body2" noWrap sx={{fontSize: '0.8125rem'}}>
                                 {option.text}
@@ -975,15 +1017,23 @@ CourierCell.displayName = 'CourierCell';
 
 // ── Cell Content ─────────────────────────────────────────────────────
 
-const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolean; isUsCustomer?: boolean; appPage?: number; onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void; loggedInCouriersOnly?: boolean}> = React.memo(({
-    col,
-    job,
-    isUltraDense,
-    isUsCustomer,
-    appPage,
-    onJobDispatch,
-    loggedInCouriersOnly,
-}) => {
+const CellContent: React.FC<{
+    col: string;
+    job: DispatchJob;
+    isUltraDense: boolean;
+    isUsCustomer?: boolean;
+    appPage?: number;
+    onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
+    loggedInCouriersOnly?: boolean
+}> = React.memo(({
+                     col,
+                     job,
+                     isUltraDense,
+                     isUsCustomer,
+                     appPage,
+                     onJobDispatch,
+                     loggedInCouriersOnly,
+                 }) => {
     switch (col) {
         case 'priority':
             return <>{getPriorityIndicator(job)}</>;
@@ -992,22 +1042,29 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
         case 'time':
             return <>{formatJobTime(job.booked)}</>;
         case 'speed':
-            return <>{isUltraDense ? (job.speed?.charAt(0) || '') : (job.speed || '')}</>;
+            return <>{(job.speed || '')}</>;
         case 'isArchived':
             return <>{job.isArchived ? 'Yes' : 'No'}</>;
         case 'vehicle':
-            return <>{isUltraDense ? (job.vehicle?.text?.charAt(0) || '') : (job.vehicle?.text || '')}</>;
+            return <>{(job.vehicle?.text || '')}</>;
         case 'jobNo':
             return (
                 <>
-                    <Typography variant="body2" sx={{fontWeight: 'inherit', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center'}}>
+                    <Typography variant="body2" sx={{
+                        fontWeight: 'inherit',
+                        fontSize: 'inherit',
+                        display: 'inline-flex',
+                        alignItems: 'center'
+                    }}>
                         {job.jobNo}
                         {job.direct && (
-                            <Tooltip title="Direct"><BoltIcon sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/></Tooltip>
+                            <Tooltip title="Direct"><BoltIcon
+                                sx={{fontSize: 14, ml: 0.5, color: 'warning.main'}}/></Tooltip>
                         )}
                     </Typography>
                     {isUsCustomer && job.clientName && (
-                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                        <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}}
+                                    noWrap>
                             {job.clientName}
                         </Typography>
                     )}
@@ -1019,9 +1076,11 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>{getPickupAddressUs(job)}</Typography>
+                        <Typography variant="body2" sx={{fontSize: 'inherit'}}
+                                    noWrap>{getPickupAddressUs(job)}</Typography>
                         {getPickupCityState(job) && (
-                            <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                            <Typography variant="caption"
+                                        sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
                                 {getPickupCityState(job)}
                             </Typography>
                         )}
@@ -1033,9 +1092,11 @@ const CellContent: React.FC<{col: string; job: DispatchJob; isUltraDense: boolea
             if (isUsCustomer) {
                 return (
                     <>
-                        <Typography variant="body2" sx={{fontSize: 'inherit'}} noWrap>{getDeliveryAddressUs(job)}</Typography>
+                        <Typography variant="body2" sx={{fontSize: 'inherit'}}
+                                    noWrap>{getDeliveryAddressUs(job)}</Typography>
                         {getDeliveryCityState(job) && (
-                            <Typography variant="caption" sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
+                            <Typography variant="caption"
+                                        sx={{display: 'block', color: 'text.secondary', lineHeight: 1.2}} noWrap>
                                 {getDeliveryCityState(job)}
                             </Typography>
                         )}

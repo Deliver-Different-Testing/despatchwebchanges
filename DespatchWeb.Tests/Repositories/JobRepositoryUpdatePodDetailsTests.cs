@@ -286,7 +286,7 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
                 UcjbComplTime = null,
                 UcjbVoid = false,
                 UcjbSpeed = 1,
-                ParentId = null
+                ParentId = parentId // self-referencing, matches SplitJobService behavior
             });
             ctx.TucJobs.Add(new TucJob
             {
@@ -345,7 +345,7 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
                 UcjbStatus = 5,
                 UcjbVoid = false,
                 UcjbSpeed = 1,
-                ParentId = null
+                ParentId = parentId // self-referencing, matches SplitJobService behavior
             });
             ctx.TucJobs.Add(new TucJob
             {

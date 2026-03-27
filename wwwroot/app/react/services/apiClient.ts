@@ -21,6 +21,12 @@ export interface RequestOptions {
     timeout?: number;
 }
 
+/** Options for file upload requests */
+export interface UploadOptions extends RequestOptions {
+    /** Progress callback — receives percent complete (0–100) */
+    onProgress?: (percent: number) => void;
+}
+
 /** Extract error message from various response formats */
 function extractErrorMessage(error: AxiosError): string {
     const data = error.response?.data;
@@ -141,6 +147,28 @@ class ApiClient {
         return response.data;
     }
 
+    async uploadFormData<T>(
+        url: string,
+        formData: FormData,
+        options?: UploadOptions
+    ): Promise<T> {
+        const config: AxiosRequestConfig = {
+            params: options?.params,
+            signal: options?.signal,
+            timeout: options?.timeout,
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress(event) {
+                if (event.total && options?.onProgress) {
+                    options.onProgress(Math.round((100 * event.loaded) / event.total));
+                }
+            },
+        };
+        const response = await this.instance.post<T>(url, formData, config);
+        return response.data;
+    }
+
     async postForBlob(
         url: string,
         data?: unknown,
@@ -172,6 +200,8 @@ export const apiClient = {
         getInstance().delete<T>(url, options),
     postFormData: <T>(url: string, formData: FormData, options?: RequestOptions) =>
         getInstance().postFormData<T>(url, formData, options),
+    uploadFormData: <T>(url: string, formData: FormData, options?: UploadOptions) =>
+        getInstance().uploadFormData<T>(url, formData, options),
     postForBlob: (url: string, data?: unknown, options?: RequestOptions) =>
         getInstance().postForBlob(url, data, options),
 };

@@ -13,9 +13,14 @@ import {StickyNotes} from './StickyNotes';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
+import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
 
 // Mock the notesApi module
 jest.mock('../../../services/notesApi');
+jest.mock('../../dialogs/note-management-dialog/note-management-dialog-react.module', () => ({
+    openNoteManagementDialog: jest.fn(),
+}));
+const mockedOpenNoteManagementDialog = openNoteManagementDialog as jest.MockedFunction<typeof openNoteManagementDialog>;
 const mockedNotesApi = notesApi as jest.Mocked<typeof notesApi>;
 
 const theme = createTheme();
@@ -76,14 +81,9 @@ const createMockNoteTypes = (): NoteType[] => [
     {id: 3, text: 'Consignment', isPublic: true},
 ];
 
-const createMockDialogService = () => ({
-    openNoteDialog: jest.fn().mockResolvedValue(undefined),
-});
-
 const createDefaultProps = (overrides?: Partial<StickyNotesProps>): StickyNotesProps => {
     return {
         jobId: 123,
-        noteManagementDialogService: createMockDialogService(),
         showSuccessToast: jest.fn(),
         showErrorToast: jest.fn(),
         showInfoToast: jest.fn(),
@@ -98,6 +98,7 @@ describe('StickyNotes', () => {
         mockedNotesApi.getBulkJobNotes.mockResolvedValue(createMockNotes());
         mockedNotesApi.getNoteTypes.mockResolvedValue(createMockNoteTypes());
         mockedNotesApi.deleteNote.mockResolvedValue(undefined);
+        mockedOpenNoteManagementDialog.mockResolvedValue(true);
     });
 
     describe('Rendering', () => {
@@ -262,12 +263,42 @@ describe('StickyNotes', () => {
             fireEvent.click(addButton!);
 
             // Dialog should be opened
-            expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
+            expect(mockedOpenNoteManagementDialog).toHaveBeenCalled();
 
             // Notes should be reloaded after dialog closes
             await waitFor(() => {
                 expect(mockedNotesApi.getJobNotes).toHaveBeenCalled();
             });
+        });
+
+        it('displays newly created note after dialog saves and refetch completes', async () => {
+            // Start with no notes
+            mockedNotesApi.getJobNotes.mockResolvedValue([]);
+            const props = createDefaultProps();
+            renderWithProviders(<StickyNotes {...props} />);
+
+            expect(await screen.findByText('No Notes')).toBeInTheDocument();
+
+            // After dialog resolves, return one new note on refetch
+            const newNote: JobNote = {
+                noteId: 99,
+                noteTypeId: 1,
+                noteTypeName: 'Internal',
+                jobId: 123,
+                noteText: 'Brand new note',
+                isImportant: false,
+                _createdDateStr: 'Mar 27, 2026 2:00 PM',
+            };
+            mockedNotesApi.getJobNotes.mockResolvedValue([newNote]);
+
+            const addIcon = screen.getByText('note_add');
+            fireEvent.click(addIcon.closest('button')!);
+
+            expect(mockedOpenNoteManagementDialog).toHaveBeenCalled();
+
+            // The new note should appear after refetch
+            expect(await screen.findByText('Brand new note')).toBeInTheDocument();
+            expect(screen.queryByText('No Notes')).not.toBeInTheDocument();
         });
     });
 
@@ -284,7 +315,7 @@ describe('StickyNotes', () => {
             fireEvent.click(screen.getByText('This is an internal note'));
 
             // Dialog should be opened
-            expect(props.noteManagementDialogService.openNoteDialog).toHaveBeenCalled();
+            expect(mockedOpenNoteManagementDialog).toHaveBeenCalled();
 
             // Notes should be reloaded after dialog closes
             await waitFor(() => {
@@ -304,10 +335,10 @@ describe('StickyNotes', () => {
 
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
-            // Find delete buttons by icon text
+            // Find delete actions by icon text — they are span[role="button"]
             const deleteIcons = screen.getAllByText('delete');
-            const deleteButton = deleteIcons[0].closest('button');
-            fireEvent.click(deleteButton!);
+            const deleteAction = deleteIcons[0].closest('button');
+            fireEvent.click(deleteAction!);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).toHaveBeenCalledWith(1);
@@ -331,8 +362,8 @@ describe('StickyNotes', () => {
             expect(await screen.findByText('This is an internal note')).toBeInTheDocument();
 
             const deleteIcons = screen.getAllByText('delete');
-            const deleteButton = deleteIcons[0].closest('button');
-            fireEvent.click(deleteButton!);
+            const deleteAction = deleteIcons[0].closest('button');
+            fireEvent.click(deleteAction!);
 
             expect(confirmSpy).toHaveBeenCalled();
             expect(mockedNotesApi.deleteNote).not.toHaveBeenCalled();

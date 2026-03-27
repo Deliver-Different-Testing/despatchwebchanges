@@ -15,16 +15,25 @@ function renderWithTheme(ui: React.ReactElement) {
 }
 
 describe('TotalDistance', () => {
-    it('renders nothing when not visible or distance is 0', () => {
-        const {container: c1} = renderWithTheme(
+    it('hides content when not visible', () => {
+        renderWithTheme(
             <TotalDistance distance={12.5} isUsCustomer={false} visible={false} />
         );
-        expect(c1.firstChild).toBeNull();
+        expect(screen.queryByText('12.5 km')).not.toBeInTheDocument();
+    });
 
-        const {container: c2} = renderWithTheme(
+    it('hides content when distance is 0', () => {
+        renderWithTheme(
             <TotalDistance distance={0} isUsCustomer={false} visible={true} />
         );
-        expect(c2.firstChild).toBeNull();
+        expect(screen.queryByText('km')).not.toBeInTheDocument();
+    });
+
+    it('shows content when visible with distance', () => {
+        renderWithTheme(
+            <TotalDistance distance={12.5} isUsCustomer={false} visible={true} />
+        );
+        expect(screen.getByText('12.5 km')).toBeInTheDocument();
     });
 
     it('shows distance in km for non-US customers', () => {

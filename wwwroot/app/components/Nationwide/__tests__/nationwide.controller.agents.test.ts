@@ -1,6 +1,6 @@
 /** @jest-environment jest-environment-jsdom */
 import './nationwide.controller.test-setup';
-import {ControllerClass, createController, makeDeliveryJob, makeFlightJob, setupWindowMocks} from './nationwide.controller.test-helpers';
+import {ControllerClass, createController, makeDeliveryJob, setupWindowMocks} from './nationwide.controller.test-helpers';
 
 setupWindowMocks();
 

@@ -21,6 +21,8 @@ import {queryKeys} from '../../../query/queryClient';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
+import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
+import {cardContainerSx, sectionToolbarSx, sectionToolbarTitleSx} from '../../common/job-details/JobDetails.styles';
 
 /**
  * Get note type color based on type name and importance
@@ -47,7 +49,6 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     isRecurringJob = false,
     showErrorToast,
     showSuccessToast,
-    noteManagementDialogService,
 }) => {
     const queryClient = useQueryClient();
     const [selectedCategory, setSelectedCategory] = useState('all');
@@ -109,10 +110,15 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         return 'No notes found. Click "Add Note" to add a new note';
     };
 
-    const getCategoryNoteCount = (categoryId?: number): number => {
-        if (categoryId === undefined) return notes.length;
-        return notes.filter(note => note.noteTypeId === categoryId).length;
-    };
+    const categoryNoteCounts = useMemo(() => {
+        const counts = new Map<number, number>();
+        for (const note of notes) {
+            if (note.noteTypeId != null) {
+                counts.set(note.noteTypeId, (counts.get(note.noteTypeId) ?? 0) + 1);
+            }
+        }
+        return counts;
+    }, [notes]);
 
     const handleFilterByCategory = (category: string | NoteType): void => {
         if (typeof category === 'string') {
@@ -135,7 +141,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         };
 
         try {
-            await noteManagementDialogService.openNoteDialog(event.nativeEvent, emptyNote);
+            await openNoteManagementDialog(emptyNote);
             invalidateNotes();
         } catch (error) {
             // Dialog was canceled
@@ -146,7 +152,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
     const handleEditNote = async (event: React.MouseEvent<HTMLElement>, note: JobNote): Promise<void> => {
         try {
-            await noteManagementDialogService.openNoteDialog(event.nativeEvent, note);
+            await openNoteManagementDialog(note);
             invalidateNotes();
         } catch (error) {
             // Dialog was canceled
@@ -176,24 +182,14 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     };
 
     return (
-        <Box className="sticky-notes" sx={{display: 'flex', flexDirection: 'column', height: '100%'}}>
+        <Box sx={cardContainerSx}>
             {/* Header Toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 2,
-                    py: 1,
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    minHeight: 48,
-                }}
-            >
-                <span className="material-symbols-outlined" style={{marginRight: 8}}>note</span>
-                <Typography variant="subtitle1" sx={{fontWeight: 500, flex: 1}}>
+            <Box sx={sectionToolbarSx}>
+                <span className="material-symbols-outlined" style={{fontSize: 18, color: 'rgba(0,0,0,0.6)'}}>note</span>
+                <Typography sx={{...sectionToolbarTitleSx as object, flex: 1}}>
                     Notes
                     {isFilterActive && (
-                        <Typography component="span" variant="body2" sx={{ml: 1, opacity: 0.9}}>
+                        <Typography component="span" variant="caption" color="text.secondary" sx={{ml: 0.5, fontWeight: 400}}>
                             - {getCategoryName()}
                         </Typography>
                     )}
@@ -206,14 +202,14 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             size="small"
                             onClick={(e) => setMenuAnchorEl(e.currentTarget)}
                             disabled={categoriesLoading}
-                            sx={{color: 'white'}}
+                            sx={{color: 'text.secondary'}}
                         >
                             {categoriesLoading ? (
                                 <Box sx={{width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
                                     <LinearProgress sx={{width: 18}} />
                                 </Box>
                             ) : (
-                                <span className="material-symbols-outlined">
+                                <span className="material-symbols-outlined" style={{fontSize: 18}}>
                                     {isFilterActive ? 'filter_alt' : 'category'}
                                 </span>
                             )}
@@ -242,7 +238,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             </ListItemIcon>
                             <ListItemText>All Categories</ListItemText>
                             <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                ({getCategoryNoteCount()})
+                                ({notes.length})
                             </Typography>
                         </MenuItem>,
                         <Divider key="divider" />,
@@ -257,7 +253,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                                 </ListItemIcon>
                                 <ListItemText>{category.text}</ListItemText>
                                 <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                    ({getCategoryNoteCount(category.id)})
+                                    ({categoryNoteCounts.get(category.id!) ?? 0})
                                 </Typography>
                             </MenuItem>
                         )),
@@ -266,8 +262,8 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
                 {/* Add Note Button */}
                 <Tooltip title="Add Note">
-                    <IconButton size="small" onClick={handleAddNote} sx={{color: 'white'}}>
-                        <span className="material-symbols-outlined">note_add</span>
+                    <IconButton size="small" onClick={handleAddNote} sx={{color: 'text.secondary'}}>
+                        <span className="material-symbols-outlined" style={{fontSize: 18}}>note_add</span>
                     </IconButton>
                 </Tooltip>
             </Box>

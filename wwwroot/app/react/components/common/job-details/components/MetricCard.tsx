@@ -8,7 +8,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import ButtonBase from '@mui/material/ButtonBase';
 import type {SxProps, Theme} from '@mui/material/styles';
-import {metricLabelSx, metricValueSx} from '../JobDetails.styles';
+import {metricLabelSx, metricValueSx, getMetricLabelSx, getMetricValueSx} from '../JobDetails.styles';
 
 export type MetricCategory = 'pricing' | 'time' | 'pod' | 'info';
 
@@ -20,6 +20,7 @@ interface MetricCardProps {
     highlight?: boolean;
     category?: MetricCategory;
     filled?: boolean;
+    dense?: boolean;
 }
 
 const categoryAccentMap: Record<MetricCategory, string> = {
@@ -61,7 +62,8 @@ export const MetricCard = React.memo(({
                                           disabled,
                                           highlight,
                                           category = 'info',
-                                          filled
+                                          filled,
+                                          dense,
                                       }: MetricCardProps) => {
     const isClickable = onClick && !disabled;
     const accentColor = categoryAccentMap[category];
@@ -85,20 +87,23 @@ export const MetricCard = React.memo(({
         },
     } : {};
 
+    const densePaddingSx = dense ? {py: 0.5, px: 0.75} : {};
+
     const content = (
         <Box sx={{
             ...(isClickable ? clickableCardSx : cardSx) as object,
             ...highlightSx,
             ...filledIndicatorSx,
+            ...densePaddingSx,
         }}>
-            <Typography className="MetricCard-label" variant="overline" color="text.secondary" sx={metricLabelSx}>
+            <Typography className="MetricCard-label" variant="overline" color="text.secondary" sx={dense ? getMetricLabelSx(true) : metricLabelSx}>
                 {label}
             </Typography>
             <Typography
                 className="MetricCard-value"
                 variant="body2"
                 sx={{
-                    ...metricValueSx as object,
+                    ...(dense ? getMetricValueSx(true) : metricValueSx) as object,
                     color: hasValue ? 'text.primary' : 'text.disabled',
                     fontWeight: hasValue ? 700 : 400,
                     wordBreak: 'break-word',

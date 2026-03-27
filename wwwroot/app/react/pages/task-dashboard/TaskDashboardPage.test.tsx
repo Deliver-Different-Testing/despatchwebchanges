@@ -18,6 +18,15 @@ import {TaskDashboardPageProps} from './TaskDashboardPage.interfaces';
 import {Task} from '../../interfaces';
 import {tasksApi} from '../../services/tasksApi';
 
+// Mock JobDetails to avoid AngularJS dependency chain
+jest.mock('../../components/common/job-details/JobDetails', () => ({
+    JobDetails: ({config}: { config: { jobId?: number } }) => (
+        <div data-testid="job-details" data-job-id={config.jobId ?? ''}>
+            JobDetails Mock
+        </div>
+    ),
+}));
+
 // Mock the tasksApi
 jest.mock('../../services/tasksApi', () => ({
     tasksApi: {
@@ -147,7 +156,6 @@ const mockEventTypes = [
 const createDefaultProps = (overrides?: Partial<TaskDashboardPageProps>): TaskDashboardPageProps => ({
     showToast: jest.fn(),
     isUsCustomer: true,
-    onTaskSelect: jest.fn(),
     setRefreshCallback: jest.fn(),
     ...overrides,
 });
@@ -188,10 +196,10 @@ describe('TaskDashboardPage', () => {
         expect(screen.getAllByText('Staff').length).toBeGreaterThan(0);
         expect(screen.getAllByText('Task Type').length).toBeGreaterThan(0);
 
-        // Delivery journey panel
-        expect(screen.getByText(/Delivery Journey/)).toBeInTheDocument();
+        // Job Details panel (rendered directly in React, no AngularJS bridge)
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
 
-        // Two-column layout: tasks panel + delivery journey
+        // Two-column layout: tasks panel + job details
         expect(screen.getByText(/Tasks \(/)).toBeInTheDocument();
 
         // Task count in list header
@@ -260,8 +268,8 @@ describe('TaskDashboardPage', () => {
             'calendar'
         );
 
-        // Delivery Journey still visible in two-column layout
-        expect(screen.getByText(/Delivery Journey/)).toBeInTheDocument();
+        // Job Details still visible in two-column layout
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 
     // ── Load view preference from localStorage ──────────────────────
@@ -320,18 +328,17 @@ describe('TaskDashboardPage', () => {
     });
 
     // ── Task Selection (single render) ──────────────────────────────
-    it('calls onTaskSelect and updates delivery journey on task click', async () => {
+    it('updates Job Details header with job ID on task click', async () => {
         const user = userEvent.setup();
         const props = createDefaultProps();
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
-        expect(screen.getByText(/Delivery Journey$/)).toBeInTheDocument();
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
 
         await user.click(screen.getByText('Overdue follow up call'));
 
-        expect(props.onTaskSelect).toHaveBeenCalled();
-        expect(await screen.findByText(/Delivery Journey for Job JOB-100/)).toBeInTheDocument();
+        expect(await screen.findByText(/Job Details - Job #100/)).toBeInTheDocument();
     });
 
     // ── Error Handling ──────────────────────────────────────────────
@@ -342,5 +349,51 @@ describe('TaskDashboardPage', () => {
         renderWithProviders(<TaskDashboardPage {...props} />);
 
         expect(await screen.findByRole('button', {name: /List/i})).toBeInTheDocument();
+    });
+
+    // ── Job Details card header consistency ──────────────────────────
+    it('renders Job Details header with same style as other card headers on the page', async () => {
+        const props = createDefaultProps();
+        const {container} = renderWithProviders(<TaskDashboardPage {...props} />);
+
+        await screen.findByText('Overdue follow up call');
+
+        // Collect all toolbar elements on the page
+        const toolbars = container.querySelectorAll('[class*="MuiToolbar-dense"]');
+        expect(toolbars.length).toBeGreaterThanOrEqual(2); // Tasks header + Job Details header
+
+        // Find the Job Details toolbar and the Tasks toolbar
+        const jobDetailsToolbar = Array.from(toolbars).find(tb =>
+            tb.textContent?.includes('Job Details')
+        );
+        const tasksToolbar = Array.from(toolbars).find(tb =>
+            tb.textContent?.includes('Tasks (')
+        );
+
+        expect(jobDetailsToolbar).toBeInTheDocument();
+        expect(tasksToolbar).toBeInTheDocument();
+
+        // Both should use the same MUI variant class (dense toolbar)
+        const jobDetailsClasses = jobDetailsToolbar!.className;
+        const tasksClasses = tasksToolbar!.className;
+        expect(jobDetailsClasses).toContain('MuiToolbar-dense');
+        expect(tasksClasses).toContain('MuiToolbar-dense');
+    });
+
+    // ── No onTaskSelect prop (bridge removed) ───────────────────────
+    it('does not pass selection state through AngularJS bridge', async () => {
+        // TaskDashboardPageProps no longer includes onTaskSelect.
+        // Selection is managed locally in React and passed directly to JobDetails.
+        const props = createDefaultProps();
+        expect(props).not.toHaveProperty('onTaskSelect');
+
+        renderWithProviders(<TaskDashboardPage {...props} />);
+        await screen.findByText('Overdue follow up call');
+
+        // Job Details panel is present (rendered directly, not via AngularJS)
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
+
+        // No "Delivery Journey" panel (replaced by Job Details)
+        expect(screen.queryByText('Delivery Journey')).not.toBeInTheDocument();
     });
 });

@@ -129,4 +129,27 @@ describe('MetricsGrid', () => {
         const button = pricingLabel.closest('button');
         expect(button).toBeNull();
     });
+
+    describe('dense mode', () => {
+        it('renders all 12 metric cards and click handlers work in dense mode', () => {
+            const onPricingClick = jest.fn();
+            renderWithTheme(<MetricsGrid {...createDefaultProps({dense: true, onPricingClick})} />);
+            expect(screen.getByText('Pricing')).toBeInTheDocument();
+            expect(screen.getByText('Created')).toBeInTheDocument();
+            expect(screen.getByText('Ready')).toBeInTheDocument();
+            expect(screen.getByText('PU Arrival')).toBeInTheDocument();
+            expect(screen.getByText('PU Time')).toBeInTheDocument();
+            expect(screen.getByText('Deliver By')).toBeInTheDocument();
+            expect(screen.getByText('Dispatched')).toBeInTheDocument();
+            expect(screen.getByText('Del Arrival')).toBeInTheDocument();
+            expect(screen.getByText('POD Name')).toBeInTheDocument();
+            expect(screen.getByText('POD Time')).toBeInTheDocument();
+            expect(screen.getByText('Follow Up')).toBeInTheDocument();
+            expect(screen.getByText('Client Name')).toBeInTheDocument();
+
+            const pricingButton = screen.getByText('Pricing').closest('button');
+            if (pricingButton) fireEvent.click(pricingButton);
+            expect(onPricingClick).toHaveBeenCalledTimes(1);
+        });
+    });
 });

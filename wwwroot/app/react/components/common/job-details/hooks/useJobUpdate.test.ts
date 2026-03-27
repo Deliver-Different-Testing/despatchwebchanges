@@ -338,6 +338,97 @@ describe('useJobUpdate', () => {
         });
     });
 
+    describe('job list cache invalidation', () => {
+        const listPrefixes = [['dispatch'], ['jobSearch'], ['nationwide']];
+
+        it('invalidates job list caches after a successful field update', async () => {
+            mockUpdateJobDetail.mockResolvedValueOnce(undefined);
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.updateField({job: createMockJob(), field: 'speedId', value: 2, isRecurring: false});
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+
+        it('invalidates job list caches after a successful address update', async () => {
+            mockUpdateDeliveryAddress.mockResolvedValueOnce(undefined);
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.updateAddress({job: createMockJob(), address: {} as any, isDelivery: true});
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+
+        it('invalidates job list caches after a successful dispatch', async () => {
+            mockAllocateJob.mockResolvedValueOnce(undefined);
+            mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.dispatchJob({job: createMockJob(), courierId: 1});
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+
+        it('does NOT invalidate job list caches for POD updates', async () => {
+            mockUpdatePodDetails.mockResolvedValueOnce(undefined);
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.updatePod({jobId: 1} as any);
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+
+        it('does NOT invalidate job list caches for read status toggles', async () => {
+            mockUpdateJobReadStatus.mockResolvedValueOnce(undefined);
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.toggleReadStatus({jobId: 1, hasBeenRead: true});
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+
+        it('does NOT invalidate job list caches when field update fails', async () => {
+            mockUpdateJobDetail.mockRejectedValueOnce(new Error('fail'));
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                try {
+                    await result.current.updateField({job: createMockJob(), field: 'speedId', value: 2, isRecurring: false});
+                } catch { /* expected */ }
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+    });
+
     describe('isUpdating', () => {
         it('reflects pending state during a mutation', async () => {
             let resolveUpdate: () => void;

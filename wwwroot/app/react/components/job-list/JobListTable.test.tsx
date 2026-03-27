@@ -473,6 +473,58 @@ describe('JobListTable', () => {
         });
     });
 
+    // ── Selection & Related Row Highlighting ──────────────────────
+    describe('Selection & Related Row Highlighting', () => {
+        const selectionJobs = [
+            createMockDispatchJob({id: 1, jobNo: 'SEL-001'}),
+            createMockDispatchJob({id: 2, jobNo: 'REL-002'}),
+            createMockDispatchJob({id: 3, jobNo: 'OTHER-003'}),
+        ];
+
+        it('selected row does not show link icon even when in relatedJobIds', () => {
+            renderWithTheme(<JobListTable {...createDefaultProps({
+                jobs: selectionJobs,
+                selectedJobId: 1,
+                relatedJobIds: new Set([1, 2]),
+            })}/>);
+
+            const selectedRow = screen.getByText('SEL-001').closest('tr')!;
+            expect(selectedRow.querySelector('[data-testid="LinkIcon"]')).not.toBeInTheDocument();
+        });
+
+        it('related (non-selected) row shows link icon in first cell', () => {
+            renderWithTheme(<JobListTable {...createDefaultProps({
+                jobs: selectionJobs,
+                selectedJobId: 1,
+                relatedJobIds: new Set([1, 2]),
+            })}/>);
+
+            const relatedRow = screen.getByText('REL-002').closest('tr')!;
+            expect(relatedRow.querySelector('[data-testid="LinkIcon"]')).toBeInTheDocument();
+        });
+
+        it('non-selected, non-related rows do not show link icon', () => {
+            renderWithTheme(<JobListTable {...createDefaultProps({
+                jobs: selectionJobs,
+                selectedJobId: 1,
+                relatedJobIds: new Set([1, 2]),
+            })}/>);
+
+            const otherRow = screen.getByText('OTHER-003').closest('tr')!;
+            expect(otherRow.querySelector('[data-testid="LinkIcon"]')).not.toBeInTheDocument();
+        });
+
+        it('no link icons appear when there are no related jobs', () => {
+            const {container} = renderWithTheme(<JobListTable {...createDefaultProps({
+                jobs: selectionJobs,
+                selectedJobId: 1,
+                relatedJobIds: new Set<number>(),
+            })}/>);
+
+            expect(container.querySelectorAll('[data-testid="LinkIcon"]')).toHaveLength(0);
+        });
+    });
+
     // ── Column Resize ───────────────────────────────────────────────
     describe('Column Resize', () => {
         it('does not trigger sort on resize handle mousedown', () => {

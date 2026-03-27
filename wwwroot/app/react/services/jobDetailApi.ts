@@ -16,6 +16,7 @@ import type {
 } from '../../interfaces/job.interface';
 import type {Is3PhotoInfo} from '../../interfaces/aws.interfaces';
 import type {UpdatePodDetailsRequest} from '../../interfaces/requests.interfaces';
+import type {JobFile} from '../components/dialogs/job-file-upload-dialog/types';
 import {formatDateForApi} from '../utils/dateUtils';
 import type {Dayjs} from 'dayjs';
 import dayjs from 'dayjs';
@@ -219,4 +220,54 @@ export function getPodSpreadsheetUrl(jobId: number): string {
 
 export function autocompleteSearch(searchTerm: string, url: string): Promise<ISuggestion[]> {
     return apiClient.get<ISuggestion[]>(url, {searchTerm});
+}
+
+// ── File Upload Operations ──────────────────────────────────────────
+
+export function getAttachedFiles(jobId: number): Promise<JobFile[]> {
+    return apiClient.get<JobFile[]>('/job/getAttachedFiles', {jobId});
+}
+
+export async function uploadJobFile(
+    jobId: number,
+    file: File,
+    onProgress?: (percent: number) => void,
+): Promise<void> {
+    const formData = new FormData();
+    formData.append('jobId', jobId.toString());
+    formData.append('file', file);
+    formData.append('isPOD', 'false');
+    if (file.type) {
+        formData.append('contentType', file.type);
+    }
+
+    await apiClient.uploadFormData('/job/uploadFile', formData, {onProgress});
+}
+
+export async function uploadJobDeliveryPhotoOrSignature(
+    jobId: number,
+    file: File,
+    podDescription?: string,
+    onProgress?: (percent: number) => void,
+): Promise<void> {
+    const formData = new FormData();
+    formData.append('jobId', jobId.toString());
+    formData.append('file', file);
+    formData.append('isPOD', 'true');
+    if (file.type) {
+        formData.append('contentType', file.type);
+    }
+    if (podDescription) {
+        formData.append('podDescription', podDescription);
+    }
+
+    await apiClient.uploadFormData('/job/uploadJobDeliveryPhotoOrSignature', formData, {onProgress});
+}
+
+export function deleteJobFile(jobId: number, s3Key: string): Promise<void> {
+    return apiClient.delete('/job/DeleteFile', {params: {jobId, key: s3Key}});
+}
+
+export function deleteJobDeliveryPhotoOrSignature(jobId: number, s3Key: string): Promise<void> {
+    return apiClient.delete('/job/DeleteJobDeliveryPhotoOrSignature', {params: {jobId, key: s3Key}});
 }

@@ -13,6 +13,15 @@ import {RecurringJobsPage} from './RecurringJobsPage';
 import {RecurringJobsPageProps, PrebookListModel, PaginatedRecurringJobsResponse} from '../../interfaces';
 import dayjs from 'dayjs';
 
+// Mock JobDetails to avoid AngularJS dependency chain
+jest.mock('../../components/common/job-details/JobDetails', () => ({
+    JobDetails: ({config}: { config: { jobId?: number; isRecurringJob: boolean } }) => (
+        <div data-testid="job-details" data-job-id={config.jobId ?? ''} data-is-recurring={String(config.isRecurringJob)}>
+            JobDetails Mock
+        </div>
+    ),
+}));
+
 // Mock the hooks
 jest.mock('../../hooks/useRecurringJobsApi', () => ({
     useRecurringJobsList: jest.fn(),
@@ -99,7 +108,6 @@ const createDefaultProps = (overrides?: Partial<RecurringJobsPageProps>): Recurr
     showToast: jest.fn(),
     isUsCustomer: false,
     onAddStop: jest.fn(),
-    onJobSelect: jest.fn(),
     setRefreshCallback: jest.fn(),
     ...overrides,
 });
@@ -205,9 +213,8 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText('Loading recurring jobs...')).toBeInTheDocument();
     });
 
-    // ── Job list + selection + filter clear (single render) ─────────
-    it('displays jobs, selects on click, and clears selection on filter switch', () => {
-        const onJobSelect = jest.fn();
+    // ── Job list + selection + Job Details panel ──────────────────────
+    it('displays jobs, shows Job Details panel, and updates header on click', () => {
         const jobs = [createMockJob(1, 'ABC Corp'), createMockJob(2, 'XYZ Inc')];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
@@ -216,19 +223,18 @@ describe('RecurringJobsPage', () => {
             refetch: jest.fn(),
         } as any);
 
-        renderWithProviders(createDefaultProps({onJobSelect}));
+        renderWithProviders(createDefaultProps());
 
         // Jobs displayed
         expect(screen.getByText('ABC Corp')).toBeInTheDocument();
         expect(screen.getByText('XYZ Inc')).toBeInTheDocument();
 
-        // Select job
-        fireEvent.click(screen.getByText('ABC Corp').closest('tr')!);
-        expect(onJobSelect).toHaveBeenCalledWith(1);
+        // Job Details panel rendered directly in React (no AngularJS bridge)
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
 
-        // Switch to Inactive → clears selection
-        fireEvent.click(screen.getByText('Inactive'));
-        expect(onJobSelect).toHaveBeenCalledWith(null);
+        // Select job → header updates with job ID
+        fireEvent.click(screen.getByText('ABC Corp').closest('tr')!);
+        expect(screen.getByText(/Job Details - Job #1/)).toBeInTheDocument();
     });
 
     // ── Void job: open dialog + close with No (single render) ───────
@@ -377,5 +383,75 @@ describe('RecurringJobsPage', () => {
 
         fireEvent.click(screen.getByText('Add Pickup Stop'));
         expect(onAddStop).toHaveBeenCalledWith(jobs[0], true);
+    });
+
+    // ── Two-column layout with Job Details ───────────────────────────
+    it('renders in a two-column layout with Job Details in the right panel', () => {
+        const jobs = [createMockJob(1)];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        renderWithProviders(createDefaultProps());
+
+        // Left panel: Filters + Recurring Jobs table
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+        expect(screen.getByText(/Recurring Jobs/)).toBeInTheDocument();
+
+        // Right panel: Job Details (rendered directly in React, no AngularJS bridge)
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
+    });
+
+    // ── Job Details card header consistency ──────────────────────────
+    it('renders Job Details header with same style as other card headers on the page', () => {
+        const jobs = [createMockJob(1)];
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse(jobs),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        const {container} = renderWithProviders(createDefaultProps());
+
+        // Collect all dense toolbar elements
+        const toolbars = container.querySelectorAll('[class*="MuiToolbar-dense"]');
+        expect(toolbars.length).toBeGreaterThanOrEqual(3); // Filters + Recurring Jobs + Job Details
+
+        const jobDetailsToolbar = Array.from(toolbars).find(tb =>
+            tb.textContent?.includes('Job Details')
+        );
+        const filtersToolbar = Array.from(toolbars).find(tb =>
+            tb.textContent?.includes('Filters')
+        );
+
+        expect(jobDetailsToolbar).toBeInTheDocument();
+        expect(filtersToolbar).toBeInTheDocument();
+
+        // Both should use the same dense toolbar variant
+        expect(jobDetailsToolbar!.className).toContain('MuiToolbar-dense');
+        expect(filtersToolbar!.className).toContain('MuiToolbar-dense');
+    });
+
+    // ── No onJobSelect prop (bridge removed) ────────────────────────
+    it('does not pass selection state through AngularJS bridge', () => {
+        mockUseRecurringJobsList.mockReturnValue({
+            data: createMockResponse([createMockJob(1)]),
+            isLoading: false,
+            error: null,
+            refetch: jest.fn(),
+        } as any);
+
+        // RecurringJobsPageProps no longer includes onJobSelect
+        const props = createDefaultProps();
+        expect(props).not.toHaveProperty('onJobSelect');
+
+        renderWithProviders(props);
+
+        // Job Details is present (rendered directly, not via AngularJS bridge)
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 });

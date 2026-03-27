@@ -9,7 +9,6 @@ import "angular-resizable/angular-resizable.min.css";
 import "angular-material-data-table/dist/md-data-table.css";
 
 // Third-party Angular plugins
-import "ng-file-upload";
 import "angular-ui-sortable/dist/sortable";
 import "angular-resizable/angular-resizable.min";
 import "angular-material-data-table";
@@ -38,7 +37,6 @@ const app = angular.module("uDispatch", [
     "ngSanitize",
     "ngMaterial",
     "md.data.table",
-    "ngFileUpload"
 ]);
 
 // Register React HereMap component

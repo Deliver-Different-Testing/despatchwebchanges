@@ -20,7 +20,6 @@ const homeModule = angular.module('uDispatch.home', [
     'md.data.table',
     'ui.sortable',
     'angularResizable',
-    'ngFileUpload'
 ]);
 
 // Register components

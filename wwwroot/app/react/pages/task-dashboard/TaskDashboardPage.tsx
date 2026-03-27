@@ -27,7 +27,6 @@ import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import InfoIcon from '@mui/icons-material/Info';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 import SearchIcon from '@mui/icons-material/Search';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -45,9 +44,9 @@ import {
 import {TaskFiltersRequest} from '../../interfaces';
 import {TaskItem} from '../../components/common/task-item/TaskItem';
 import {TaskCalendarView} from '../../components/common/task-calendar-view/TaskCalendarView';
-import {TaskHistory} from '../../components/common/task-history/TaskHistory';
+import {JobDetails} from '../../components/common/job-details/JobDetails';
+import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
 import {formatDateForApi} from '../../utils/dateUtils';
-import DensityMode from '../../../enums/densityMode';
 import {
     useActiveStaff,
     useEventTypes,
@@ -138,7 +137,6 @@ const fadeInUpKeyframes = `
 export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                                                         showToast,
                                                                         isUsCustomer,
-                                                                        onTaskSelect,
                                                                         setRefreshCallback,
                                                                     }) => {
     const theme = useTheme();
@@ -381,8 +379,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Handle task selection
     const selectTaskForHistory = useCallback((task: ExtendedTask) => {
         setSelectedTask(task);
-        onTaskSelect(task);
-    }, [onTaskSelect]);
+    }, []);
 
     // Handle task completion
     const handleTaskCompletion = useCallback(async () => {
@@ -411,8 +408,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
     // Toast helpers
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
-    const showInfoToast = useCallback((msg: string) => showToast(msg, 'info'), [showToast]);
-
+    
     // Create a tasks service interface for child components
     const tasksServiceForComponents = useMemo(() => ({
         markTaskAsClosed: async (eventId: number, closed: boolean) => {
@@ -769,7 +765,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     </Card>
                 </Box>
 
-                {/* Right Panel: Delivery Journey */}
+                {/* Right Panel: Job Details */}
                 <Box sx={{flex: 9, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
                     <Card variant="outlined"
                           sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
@@ -784,23 +780,20 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                                 flexShrink: 0,
                             }}
                         >
-                            <RocketLaunchIcon sx={{mr: 1}}/>
+                            <InfoIcon sx={{mr: 1}}/>
                             <Typography variant="subtitle1">
-                                Delivery Journey {selectedTask ? `for Job ${selectedTask.jobNumber}` : ''}
+                                Job Details{selectedTask ? ` - Job #${selectedTask.jobId}` : ''}
                             </Typography>
                         </Toolbar>
                         <Box sx={{flex: 1, overflow: 'auto'}}>
-                            <TaskHistory
-                                jobId={selectedTask?.jobId}
+                            <JobDetails
                                 config={{
-                                    showSummaryStats: true,
-                                    densityMode: DensityMode.Normal,
-                                }}
-                                dispatchService={dispatchServiceForComponents}
-                                showSuccessToast={showSuccessToast}
-                                showErrorToast={showErrorToast}
-                                showInfoToast={showInfoToast}
-                                isUsCustomer={isUsCustomer}
+                                    jobId: selectedTask?.jobId,
+                                    isRecurringJob: false,
+                                    isBulkJob: false,
+                                    isUsCustomer,
+                                    showToast,
+                                } satisfies MountJobDetailsConfig}
                             />
                         </Box>
                     </Card>

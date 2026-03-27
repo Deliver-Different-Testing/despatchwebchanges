@@ -956,10 +956,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - pickup job's DeliverByTime should be departure wall-clock time minus processing time (60 mins)
-        // departureTime (UTC) converted to Pacific/Auckland (UTC+12 in June) then minus 60 mins
+        // Assert - pickup job's DeliverByTime should be departure time minus processing time (60 mins)
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
-        var expectedDeliverByTime = TimeZoneInfo.ConvertTime(departureTime, TimeZoneInfo.FindSystemTimeZoneById("Pacific/Auckland")).DateTime.AddMinutes(-60);
+        var expectedDeliverByTime = departureTime.AddMinutes(-60).DateTime;
         Assert.Equal(expectedDeliverByTime, updatedPickupJob?.DeliverByTime);
     }
 
@@ -1001,16 +1000,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert
-        // packageReadyTime and packageDeliverByTime are converted to arrival timezone (Australia/Sydney, UTC+10 in June)
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedReadyWallClock = TimeZoneInfo.ConvertTime(packageReadyTime, sydneyTz).DateTime;
-        var expectedDeliverByWallClock = TimeZoneInfo.ConvertTime(packageDeliverByTime, sydneyTz).DateTime;
-
+        // Assert - packageReadyTime and packageDeliverByTime are stored as-is via .DateTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        Assert.Equal(expectedReadyWallClock.Date, updatedDeliveryJob?.UcjbDate);
-        Assert.Equal(expectedReadyWallClock, updatedDeliveryJob?.UcjbTime);
-        Assert.Equal(expectedDeliverByWallClock, updatedDeliveryJob?.DeliverByTime);
+        Assert.Equal(packageReadyTime.Date, updatedDeliveryJob?.UcjbDate);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
+        Assert.Equal(packageDeliverByTime.DateTime, updatedDeliveryJob?.DeliverByTime);
     }
 
     [Fact]
@@ -1232,11 +1226,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - flight job's DeliverByTime should be set to arrival time converted to arrival timezone
-        // arrivalTime (UTC) converted to Australia/Sydney (UTC+10 in June) via ToWallClockDateTime
+        // Assert - flight job's DeliverByTime should be set to arrival time via .DateTime
         var updatedFlightJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        var expectedDeliverBy = TimeZoneInfo.ConvertTime(arrivalTime, TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney")).DateTime;
-        Assert.Equal(expectedDeliverBy, updatedFlightJob?.DeliverByTime);
+        Assert.Equal(arrivalTime.DateTime, updatedFlightJob?.DeliverByTime);
     }
 
     [Fact]
@@ -1369,16 +1361,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             var unchangedOtherJob = await _context.TucJobs.FindAsync([104], TestContext.Current.CancellationToken);
 
             // Delivery job should have its date set to after the arrival time (arrival + 60 min processing)
-            // converted to arrival timezone (Australia/Sydney, UTC+10 in June)
             var expectedReadyTime = arrivalTime.AddMinutes(60);
-            var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-            var expectedWallClock = TimeZoneInfo.ConvertTime(expectedReadyTime, sydneyTz).DateTime;
-            Assert.Equal(expectedWallClock.Date, updatedDeliveryJob?.UcjbDate);
-            Assert.Equal(expectedWallClock, updatedDeliveryJob?.UcjbTime);
+            Assert.Equal(expectedReadyTime.Date, updatedDeliveryJob?.UcjbDate);
+            Assert.Equal(expectedReadyTime.DateTime, updatedDeliveryJob?.UcjbTime);
 
             // Other job (suffix '4') should NOT have its time updated - it stays at the default
-            // It will have the default DateTime value set by CreateAgentJobWithGrouping
-            Assert.NotEqual(expectedWallClock, unchangedOtherJob?.UcjbTime);
+            Assert.NotEqual(expectedReadyTime.DateTime, unchangedOtherJob?.UcjbTime);
         }
     }
 
@@ -1520,15 +1508,13 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - delivery job's start time should be arrival time + processing time, converted to arrival timezone
+        // Assert - delivery job's start time should be arrival time + processing time
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(expectedStartTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock.Date, updatedDeliveryJob.UcjbDate);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(expectedStartTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(expectedStartTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1567,14 +1553,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - delivery job's start time should use the provided PackageReadyTime, converted to arrival timezone
+        // Assert - delivery job's start time should use the provided PackageReadyTime via .DateTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(customPackageReadyTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock.Date, updatedDeliveryJob.UcjbDate);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(customPackageReadyTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(customPackageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1612,15 +1596,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - delivery job's start time should be arrival + 90 minutes, converted to arrival timezone
-        // The arrival timezone comes from the flight segment (Australia/Sydney), not the airport DB record
+        // Assert - delivery job's start time should be arrival + 90 minutes
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(customProcessingTime);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(expectedStartTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(expectedStartTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1672,14 +1653,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - should use default 60 minutes when airport has no processing time, converted to arrival timezone
+        // Assert - should use default 60 minutes when airport has no processing time
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(60); // Default processing time
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(expectedStartTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(expectedStartTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1728,11 +1707,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             // SQLite constraint issue in tests
         }
 
-        // Assert - Final mile job start should be based on LAST segment arrival + processing time, converted to arrival timezone
+        // Assert - Final mile job start should be based on LAST segment arrival + processing time
         await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime2.AddMinutes(45); // Last leg arrival + SYD processing time
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(expectedStartTime, sydneyTz).DateTime;
 
         // Note: Due to SQLite constraint, the delivery job update may not persist,
         // but we verify the entity was tracked with correct values
@@ -1740,7 +1717,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             .FirstOrDefault(e => e.Entity.UcjbId == 102)?.Entity;
 
         if (trackedDeliveryJob != null)
-            Assert.Equal(expectedWallClock, trackedDeliveryJob.UcjbTime);
+            Assert.Equal(expectedStartTime.DateTime, trackedDeliveryJob.UcjbTime);
     }
 
     [Fact]
@@ -1785,21 +1762,17 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Job '3' should have its start time updated, not job '2'
-        // Times are converted to arrival timezone (Australia/Sydney, UTC+10 in June)
         var updatedJob3 = await _context.TucJobs.FindAsync([103], TestContext.Current.CancellationToken);
         var expectedStartTime = arrivalTime.AddMinutes(airportProcessingTime);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(expectedStartTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedJob3);
-        Assert.Equal(expectedWallClock.Date, updatedJob3.UcjbDate);
-        Assert.Equal(expectedWallClock, updatedJob3.UcjbTime);
+        Assert.Equal(expectedStartTime.Date, updatedJob3.UcjbDate);
+        Assert.Equal(expectedStartTime.DateTime, updatedJob3.UcjbTime);
 
         // Job '2' should NOT have its start time modified to the delivery time
         var updatedJob2 = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
         Assert.NotNull(updatedJob2);
-        // Job '2' time should remain unchanged (not set to arrival + processing time)
-        Assert.NotEqual(expectedWallClock, updatedJob2.UcjbTime);
+        Assert.NotEqual(expectedStartTime.DateTime, updatedJob2.UcjbTime);
     }
 
     /// <summary>
@@ -1842,10 +1815,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - pickup job's DeliverByTime should be departure wall-clock time - processing time
+        // Assert - pickup job's DeliverByTime should be departure time - processing time
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
-        var nzTz = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Auckland");
-        var expectedDeliverByTime = TimeZoneInfo.ConvertTime(departureTime, nzTz).DateTime.AddMinutes(-departureAirportProcessingTime);
+        var expectedDeliverByTime = departureTime.AddMinutes(-departureAirportProcessingTime).DateTime;
 
         Assert.NotNull(updatedPickupJob);
         Assert.Equal(expectedDeliverByTime, updatedPickupJob.DeliverByTime);
@@ -1884,11 +1856,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - pickup job's DeliverByTime should be departure wall-clock time - 90 minutes
-        // The departure timezone comes from the flight segment (Pacific/Auckland), not the airport DB record
+        // Assert - pickup job's DeliverByTime should be departure time - 90 minutes
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
-        var nzTz = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Auckland");
-        var expectedDeliverByTime = TimeZoneInfo.ConvertTime(departureTime, nzTz).DateTime.AddMinutes(-customProcessingTime);
+        var expectedDeliverByTime = departureTime.AddMinutes(-customProcessingTime).DateTime;
 
         Assert.NotNull(updatedPickupJob);
         Assert.Equal(expectedDeliverByTime, updatedPickupJob.DeliverByTime);
@@ -2021,17 +1991,14 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var updatedPickupJob = await _context.TucJobs.FindAsync([101], TestContext.Current.CancellationToken);
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
 
-        // Pickup: departure wall-clock time - processing time (Pacific/Auckland, UTC+12 in June)
-        var nzTz = TimeZoneInfo.FindSystemTimeZoneById("Pacific/Auckland");
-        var expectedPickupDeliverBy = TimeZoneInfo.ConvertTime(departureTime, nzTz).DateTime.AddMinutes(-departureProcessingTime);
+        // Pickup: departure time - processing time
+        var expectedPickupDeliverBy = departureTime.AddMinutes(-departureProcessingTime).DateTime;
         Assert.NotNull(updatedPickupJob);
         Assert.Equal(expectedPickupDeliverBy, updatedPickupJob.DeliverByTime);
 
-        // Delivery: explicitly set PackageDeliverByTime, converted to arrival timezone (Australia/Sydney, UTC+10 in June)
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedDeliveryDeliverBy = TimeZoneInfo.ConvertTime(packageDeliverByTime, sydneyTz).DateTime;
+        // Delivery: explicitly set PackageDeliverByTime via .DateTime
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedDeliveryDeliverBy, updatedDeliveryJob.DeliverByTime);
+        Assert.Equal(packageDeliverByTime.DateTime, updatedDeliveryJob.DeliverByTime);
     }
 
     /// <summary>
@@ -2836,14 +2803,12 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Act
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
-        // Assert - Delivery job's time SHOULD be updated to packageReadyTime, converted to arrival timezone
+        // Assert - Delivery job's time SHOULD be updated to packageReadyTime via .DateTime
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(packageReadyTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock.Date, updatedDeliveryJob.UcjbDate);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(packageReadyTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     /// <summary>
@@ -2935,14 +2900,11 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job SHOULD be updated because request.ToAirportId is set
-        // packageReadyTime converted to arrival timezone (Australia/Sydney, UTC+10 in June)
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(packageReadyTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock.Date, updatedDeliveryJob.UcjbDate);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(packageReadyTime.Date, updatedDeliveryJob.UcjbDate);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     /// <summary>
@@ -2986,13 +2948,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         await repository.AddJobNationwideAsync(request, webhookIds, TestContext.Current.CancellationToken);
 
         // Assert - Delivery job SHOULD be updated for NZ tenant with NationwideAgent grouping
-        // packageReadyTime converted to arrival timezone (Australia/Sydney, UTC+10 in June)
         var updatedDeliveryJob = await _context.TucJobs.FindAsync([102], TestContext.Current.CancellationToken);
-        var sydneyTz = TimeZoneInfo.FindSystemTimeZoneById("Australia/Sydney");
-        var expectedWallClock = TimeZoneInfo.ConvertTime(packageReadyTime, sydneyTz).DateTime;
 
         Assert.NotNull(updatedDeliveryJob);
-        Assert.Equal(expectedWallClock, updatedDeliveryJob.UcjbTime);
+        Assert.Equal(packageReadyTime.DateTime, updatedDeliveryJob.UcjbTime);
     }
 
     /// <summary>

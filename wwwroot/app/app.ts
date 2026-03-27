@@ -14,12 +14,10 @@ import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dia
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
-import JobFileUploadController from "./components/dialogs/job-file-upload-dialog/job-file-upload.controller";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
 import ThemeConfig from "./materialTheme";
 import {bytesFilter, replaceFilter, timezoneShortFilter} from "./filters";
-import {StickyNotesReactComponent} from "./react/components/common/sticky-notes/sticky-notes-react.module";
 import EditParcelDimensionsDialogService
     from "./components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog.service";
 import AutoCompleteDialogService from "./components/dialogs/auto-complete-dialog/auto-complete-dialog.service";
@@ -209,7 +207,6 @@ app.filter('minutesToTime', () => minutesToTimeFilter);
 
 // Components
 app.component("jobDetailWidget", JobDetailComponent);
-app.component("stickyNoteReact", StickyNotesReactComponent);
 app.component("taskItemReact", TaskItemReactComponent);
 app.component("driverLocationsReact", DriverLocationsReactComponent);
 app.component("noDataReact", NoDataReactComponent);
@@ -220,7 +217,6 @@ app.directive("reactAppShell", reactAppShellDirective);
 
 // Dialogs
 app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
-app.controller("jobFileUploadController", JobFileUploadController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 
 // Services

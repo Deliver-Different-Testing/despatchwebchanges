@@ -12,6 +12,14 @@ import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
+import Collapse from '@mui/material/Collapse';
+import IconButton from '@mui/material/IconButton';
+import List from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemText from '@mui/material/ListItemText';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type {SxProps, Theme} from '@mui/material/styles';
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
@@ -36,9 +44,6 @@ import {ToggleProperties} from './components/ToggleProperties';
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
-import {NoteManagementDialogServiceInterface} from '../../common/sticky-notes/StickyNotes.interfaces';
-import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
-import type {JobNote} from '../../../interfaces';
 
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
@@ -49,11 +54,24 @@ import {NoData} from '../no-data/NoData';
 const RecurringJobFields = lazy(() => import('./components/RecurringJobFields').then(m => ({default: m.RecurringJobFields})));
 const PodPhotosSection = lazy(() => import('./components/PodPhotosSection').then(m => ({default: m.PodPhotosSection})));
 
-const reactNoteManagementDialogService: NoteManagementDialogServiceInterface = {
-    openNoteDialog: async (_event: MouseEvent, model: JobNote | null): Promise<void> => {
-        await openNoteManagementDialog(model);
-    }
-};
+/** Inline edit-mode toggle row for card-level visibility */
+function CardVisibilityToggle({label, fieldKey, isVisible, onToggle}: {
+    label: string; fieldKey: string; isVisible: boolean; onToggle: (key: string) => void;
+}) {
+    return (
+        <List dense disablePadding sx={{borderTop: 1, borderColor: 'divider'}}>
+            <ListItem dense disablePadding secondaryAction={
+                <IconButton edge="end" size="small" onClick={() => onToggle(fieldKey)}>
+                    {isVisible ? <VisibilityIcon sx={{fontSize: 18}}/> : <VisibilityOffIcon sx={{fontSize: 18}}/>}
+                </IconButton>
+            }>
+                <ListItemButton dense onClick={() => onToggle(fieldKey)}>
+                    <ListItemText primary={label} slotProps={{primary: {variant: 'body2', fontSize: '0.8125rem', color: isVisible ? 'text.primary' : 'text.disabled'}}}/>
+                </ListItemButton>
+            </ListItem>
+        </List>
+    );
+}
 
 interface JobDetailsProps {
     config: MountJobDetailsConfig;
@@ -86,6 +104,12 @@ const rootStyles: Record<string, SxProps<Theme>> = {
         flexDirection: 'column',
         gap: 2,
         p: 2,
+    },
+    contentAreaDense: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+        p: 1.5,
     },
     aiContainer: {
         mx: 1.5,
@@ -308,6 +332,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
                 <JobDetailHeader
                     job={job}
+                    dense={isDense}
                     viewDensityLabel={viewDensityLabel}
                     isEditMode={isEditMode}
                     aiEnabled={aiEnabled}
@@ -320,6 +345,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     onPodReport={actions.handlePodReport}
                     onPodSpreadsheet={actions.handlePodSpreadsheet}
                     onSendPodEmail={actions.handleSendPodEmail}
+                    onLockToggle={actions.handleLockToggle}
                 />
 
                 {/* AI Summary Panel Container */}
@@ -331,6 +357,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 <Box sx={rootStyles.metricsWrapper}>
                     <MetricsGrid
                         job={job}
+                        dense={isDense}
                         showToast={showToast}
                         onEditDateAndTime={actions.editDateAndTime}
                         onEditPodName={actions.handleEditPodName}
@@ -342,7 +369,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 </Box>
 
                 {/* Main content area */}
-                <Box sx={rootStyles.contentArea}>
+                <Box sx={isDense ? rootStyles.contentAreaDense : rootStyles.contentArea}>
                     {job.isFlightAssigned && job.assignedFlight && (
                         <FlightInformation flight={job.assignedFlight} jobId={job.id}/>
                     )}
@@ -362,25 +389,35 @@ export function JobDetails({config}: JobDetailsProps) {
                         onEditToContactPhone={actions.handleEditToContactPhone}
                     />
 
+                    {isEditMode && (
+                        <CardVisibilityToggle label="Total Distance" fieldKey="totalMiles"
+                            isVisible={isFieldVisible('totalMiles')} onToggle={toggleField}/>
+                    )}
                     <TotalDistance
                         distance={job.distance}
                         isUsCustomer={isUsCustomer}
                         visible={isFieldVisible('totalMiles')}
                     />
 
-                    <StickyNotes
-                        jobId={job.id}
-                        bulkJobId={job.isBulkJob ? job.id : undefined}
-                        isRecurringJob={isRecurringJob}
-                        noteManagementDialogService={reactNoteManagementDialogService}
-                        showSuccessToast={showSuccessToast}
-                        showErrorToast={showErrorToast}
-                        showInfoToast={showInfoToast}
-                    />
+                    {isEditMode && (
+                        <CardVisibilityToggle label="Notes" fieldKey="notes"
+                            isVisible={isFieldVisible('notes')} onToggle={toggleField}/>
+                    )}
+                    <Collapse in={isFieldVisible('notes')} unmountOnExit>
+                        <StickyNotes
+                            jobId={job.id}
+                            bulkJobId={job.isBulkJob ? job.id : undefined}
+                            isRecurringJob={isRecurringJob}
+                            showSuccessToast={showSuccessToast}
+                            showErrorToast={showErrorToast}
+                            showInfoToast={showInfoToast}
+                        />
+                    </Collapse>
 
                     <JobFieldsSection
                         job={job}
                         dense={isDense}
+                        isUsCustomer={isUsCustomer}
                         isEditMode={isEditMode}
                         isFieldVisible={isFieldVisible}
                         onToggleField={toggleField}

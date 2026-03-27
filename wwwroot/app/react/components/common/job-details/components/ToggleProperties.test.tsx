@@ -56,11 +56,22 @@ describe('ToggleProperties', () => {
         expect(screen.getByText('Active')).toBeInTheDocument();
     });
 
-    it('renders nothing when checkboxes are not visible', () => {
-        const {container} = renderWithTheme(
+    it('hides content when checkboxes are not visible', () => {
+        renderWithTheme(
             <ToggleProperties {...createDefaultProps({isFieldVisible: () => false})} />
         );
-        expect(container.firstChild).toBeNull();
+        expect(screen.queryByText('Truck')).not.toBeInTheDocument();
+        expect(screen.queryByText('Direct')).not.toBeInTheDocument();
+    });
+
+    it('hides truck options when truckOptions is not visible', () => {
+        const job = createMockJob({truck: true});
+        const isFieldVisible = (key: string) => key !== 'truckOptions';
+        renderWithTheme(
+            <ToggleProperties {...createDefaultProps({job, isFieldVisible})} />
+        );
+        expect(screen.queryByText('Truck Options')).not.toBeInTheDocument();
+        expect(screen.queryByText('Tail Lift PU')).not.toBeInTheDocument();
     });
 
     it('calls onToggleProperty when a checkbox is clicked', () => {
@@ -119,5 +130,43 @@ describe('ToggleProperties', () => {
         );
 
         expect(screen.getByText('Properties')).toBeInTheDocument();
+    });
+
+    describe('dense mode', () => {
+        it('renders all checkboxes and click handlers work in dense mode', () => {
+            const onToggleProperty = jest.fn();
+            const onVoidClick = jest.fn();
+            renderWithTheme(
+                <ToggleProperties {...createDefaultProps({dense: true, onToggleProperty, onVoidClick})} />
+            );
+            expect(screen.getByText('Truck')).toBeInTheDocument();
+            expect(screen.getByText('Direct')).toBeInTheDocument();
+            expect(screen.getByText('Van')).toBeInTheDocument();
+            expect(screen.getByText('Reprice')).toBeInTheDocument();
+            expect(screen.getByText('Done')).toBeInTheDocument();
+            expect(screen.getByText('Void')).toBeInTheDocument();
+
+            fireEvent.click(screen.getByText('Truck'));
+            expect(onToggleProperty).toHaveBeenCalled();
+            fireEvent.click(screen.getByText('Void'));
+            expect(onVoidClick).toHaveBeenCalledTimes(1);
+        });
+
+        it('shows truck options in dense mode when truck is checked', () => {
+            const job = createMockJob({truck: true});
+            renderWithTheme(
+                <ToggleProperties {...createDefaultProps({dense: true, job})} />
+            );
+            expect(screen.getByText('Truck Options')).toBeInTheDocument();
+            expect(screen.getByText('Tail Lift PU')).toBeInTheDocument();
+            expect(screen.getByText('Residential')).toBeInTheDocument();
+        });
+
+        it('hides content when checkboxes not visible in dense mode', () => {
+            renderWithTheme(
+                <ToggleProperties {...createDefaultProps({dense: true, isFieldVisible: () => false})} />
+            );
+            expect(screen.queryByText('Truck')).not.toBeInTheDocument();
+        });
     });
 });
