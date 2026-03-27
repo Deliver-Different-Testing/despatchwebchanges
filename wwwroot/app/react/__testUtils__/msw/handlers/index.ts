@@ -22,6 +22,7 @@ import { driverManagementHandlers } from './driverManagementHandlers';
 import { overviewHandlers } from './overviewHandlers';
 import { additionalServicesHandlers } from './additionalServicesHandlers';
 import { jobSearchHandlers } from './jobSearchHandlers';
+import { fileUploadHandlers } from './fileUploadHandlers';
 
 export const handlers = [
     ...messagingHandlers,
@@ -42,6 +43,7 @@ export const handlers = [
     ...overviewHandlers,
     ...additionalServicesHandlers,
     ...jobSearchHandlers,
+    ...fileUploadHandlers,
 ];
 
 // Re-export individual handler arrays for selective use
@@ -63,6 +65,7 @@ export { driverManagementHandlers } from './driverManagementHandlers';
 export { overviewHandlers } from './overviewHandlers';
 export { additionalServicesHandlers } from './additionalServicesHandlers';
 export { jobSearchHandlers } from './jobSearchHandlers';
+export { fileUploadHandlers } from './fileUploadHandlers';
 
 // Re-export mock data for test assertions
 export { mockRecentConversations, mockChatMessages, mockQuickResponses, mockContactOptions } from './messagingHandlers';
@@ -82,3 +85,4 @@ export { mockFleetOptions, mockCourierSearchResults, mockCourierDetails, mockTod
 export { mockOverviewStats, mockOverviewRegions, mockOverviewSpeeds, mockOverviewJobsResponse, mockOverviewParentJobs, mockOpenJobDtos, mockMapConfig } from './overviewHandlers';
 export { mockAdditionalServices, mockPaginatedServices, mockPpdExclusiveAmount } from './additionalServicesHandlers';
 export { mockDispatchJobDto, mockJobSearchResultDto, mockEmptySearchResult } from './jobSearchHandlers';
+export { mockAttachedFiles, mockDeliveryPhotos } from './fileUploadHandlers';

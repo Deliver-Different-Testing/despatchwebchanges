@@ -94,4 +94,34 @@ describe('AddressSection', () => {
         const callLinks = screen.getAllByLabelText(/Call/);
         expect(callLinks.length).toBeGreaterThan(0);
     });
+
+    describe('dense mode', () => {
+        it('renders all address information in dense mode', () => {
+            renderWithTheme(<AddressSection {...createDefaultProps({dense: true})} />);
+            expect(screen.getByText('Pickup')).toBeInTheDocument();
+            expect(screen.getByText('Delivery')).toBeInTheDocument();
+            expect(screen.getByText('123 Test St, Testville TST 1234')).toBeInTheDocument();
+            expect(screen.getByText('456 Delivery Rd, Deliverytown DLV 5678')).toBeInTheDocument();
+            expect(screen.getByText('John Sender')).toBeInTheDocument();
+            expect(screen.getByText('Bob Smith')).toBeInTheDocument();
+        });
+
+        it('click handlers still work in dense mode', () => {
+            const onEditPickupAddress = jest.fn();
+            const onEditFromContact = jest.fn();
+            renderWithTheme(
+                <AddressSection {...createDefaultProps({dense: true, onEditPickupAddress, onEditFromContact})} />
+            );
+            fireEvent.click(screen.getByText('123 Test St, Testville TST 1234'));
+            expect(onEditPickupAddress).toHaveBeenCalledTimes(1);
+            fireEvent.click(screen.getByText('John Sender'));
+            expect(onEditFromContact).toHaveBeenCalledTimes(1);
+        });
+
+        it('renders call links in dense mode', () => {
+            renderWithTheme(<AddressSection {...createDefaultProps({dense: true})} />);
+            const callLinks = screen.getAllByLabelText(/Call/);
+            expect(callLinks.length).toBeGreaterThan(0);
+        });
+    });
 });

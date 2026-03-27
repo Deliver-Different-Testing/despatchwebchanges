@@ -101,3 +101,35 @@ export const metricValueSx: SxProps<Theme> = {
     lineHeight: 1.2,
     color: 'text.primary',
 };
+
+/* ── Dense-aware helpers ─────────────────────────────────────────── */
+
+export const getSectionToolbarSx = (dense: boolean): SxProps<Theme> => ({
+    ...sectionToolbarSx as object,
+    height: dense ? 32 : 40,
+    minHeight: dense ? 32 : 40,
+    px: dense ? 1.5 : 2,
+});
+
+export const getMetricLabelSx = (dense: boolean): SxProps<Theme> => ({
+    ...metricLabelSx as object,
+    mb: dense ? 0.25 : 0.75,
+    fontSize: dense ? '0.625rem' : '0.6875rem',
+});
+
+export const getMetricValueSx = (dense: boolean): SxProps<Theme> => ({
+    ...metricValueSx as object,
+    fontSize: dense ? '0.8125rem' : '0.875rem',
+});
+
+export const getListItemTextSlotProps = (dense: boolean) => ({
+    primary: {
+        ...listItemTextSlotProps.primary,
+        fontSize: dense ? '0.625rem' : '0.6875rem',
+        sx: {mb: dense ? 0 : 0.25},
+    },
+    secondary: {
+        ...listItemTextSlotProps.secondary,
+        fontSize: dense ? '0.8125rem' : '0.875rem',
+    },
+});

@@ -16,9 +16,11 @@ import Chip from '@mui/material/Chip';
 import type {SxProps, Theme} from '@mui/material/styles';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import DensityMediumIcon from '@mui/icons-material/DensityMedium';
-import TuneIcon from '@mui/icons-material/Tune';
+import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import CheckIcon from '@mui/icons-material/Check';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
@@ -28,6 +30,7 @@ import type {IJob} from '../JobDetails.types';
 
 interface JobDetailHeaderProps {
     job: IJob;
+    dense?: boolean;
     viewDensityLabel: string;
     isEditMode: boolean;
     aiEnabled: boolean;
@@ -40,6 +43,7 @@ interface JobDetailHeaderProps {
     onPodReport: () => void;
     onPodSpreadsheet: () => void;
     onSendPodEmail: () => void;
+    onLockToggle: () => void;
 }
 
 function getStatusColor(job: IJob): 'primary' | 'success' | 'error' | 'warning' | 'default' {
@@ -85,6 +89,7 @@ const ICON_SIZE = 18;
 
 export function JobDetailHeader({
                                     job,
+                                    dense,
                                     viewDensityLabel,
                                     isEditMode,
                                     aiEnabled,
@@ -97,22 +102,34 @@ export function JobDetailHeader({
                                     onPodReport,
                                     onPodSpreadsheet,
                                     onSendPodEmail,
+                                    onLockToggle,
                                 }: JobDetailHeaderProps) {
     const [podMenuAnchor, setPodMenuAnchor] = useState<HTMLElement | null>(null);
     const isDense = viewDensityLabel === 'Dense';
 
+    const toolbarSx = dense ? {
+        ...styles.toolbar as object,
+        height: 40,
+        px: 1.5,
+    } : styles.toolbar;
+
+    const jobNoSx = dense ? {
+        ...styles.jobNo as object,
+        fontSize: '1rem',
+    } : styles.jobNo;
+
     return (
-        <Box sx={styles.toolbar}>
+        <Box sx={toolbarSx}>
             {/* Job identity */}
             <Box sx={styles.jobIdentity}>
-                <Typography sx={styles.jobNo}>
+                <Typography sx={jobNoSx}>
                     {job.jobNo}
                 </Typography>
             </Box>
 
             {/* Actions */}
             <Box sx={styles.actions}>
-                {/* Status Chip */}
+                {/* Status Chip + Lock */}
                 {!job.preBook && (
                     <Chip
                         label={job.statusName}
@@ -124,6 +141,18 @@ export function JobDetailHeader({
                         sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
                     />
                 )}
+                <Tooltip title={job.locked ? 'Unlock Job' : 'Lock Job'}>
+                    <IconButton
+                        size="small"
+                        color={job.locked ? 'warning' : 'default'}
+                        onClick={onLockToggle}
+                    >
+                        {job.locked
+                            ? <LockIcon sx={{fontSize: ICON_SIZE}}/>
+                            : <LockOpenIcon sx={{fontSize: ICON_SIZE}}/>
+                        }
+                    </IconButton>
+                </Tooltip>
 
                 {/* AI Summary Panel Toggle */}
                 {aiEnabled && (
@@ -149,7 +178,7 @@ export function JobDetailHeader({
                 </Tooltip>
 
                 {/* Edit Mode Toggle */}
-                <Tooltip title={isEditMode ? 'Done editing' : 'Customize fields'}>
+                <Tooltip title={isEditMode ? 'Done editing' : 'Show/Hide fields'}>
                     <IconButton
                         size="small"
                         color={isEditMode ? 'primary' : 'default'}
@@ -157,7 +186,7 @@ export function JobDetailHeader({
                     >
                         {isEditMode
                             ? <CheckIcon sx={{fontSize: ICON_SIZE}}/>
-                            : <TuneIcon sx={{fontSize: ICON_SIZE}}/>
+                            : <DashboardCustomizeIcon sx={{fontSize: ICON_SIZE}}/>
                         }
                     </IconButton>
                 </Tooltip>

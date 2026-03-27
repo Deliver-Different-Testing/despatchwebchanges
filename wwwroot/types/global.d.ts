@@ -201,6 +201,10 @@ declare global {
         ReactSendPodDialog?: {
             open: (jobData: SendPodJobData) => Promise<boolean>;
         };
+        ReactJobFileUploadDialog?: {
+            open: (jobId: number, uploadType?: string) => Promise<void>;
+            setToastService: (service: ToastService) => void;
+        };
         ReactPodPhotoViewer?: {
             open: (photos: PodPhoto[], initialPhotoIndex?: number, timeZone?: string, onClose?: () => void) => void;
             close: () => void;

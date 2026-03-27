@@ -15,6 +15,7 @@ import JobInternalStatusEnum from '../../../../../enums/job-internal-status.enum
 
 interface MetricsGridProps {
     job: IJob;
+    dense?: boolean;
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     onEditDateAndTime: (field: string, title: string, dateTime?: unknown, timezone?: unknown) => void;
     onEditPodName: () => void;
@@ -42,6 +43,7 @@ function getTzStr(timezone?: { text?: string }): string {
 
 export const MetricsGrid = React.memo(({
                                            job,
+                                           dense,
                                            showToast,
                                            onEditDateAndTime,
                                            onEditPodName,
@@ -117,6 +119,7 @@ export const MetricsGrid = React.memo(({
                     highlight
                     category="pricing"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="Created"
@@ -124,6 +127,7 @@ export const MetricsGrid = React.memo(({
                     onClick={handleCreatedClick}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="Ready"
@@ -132,6 +136,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="PU Arrival"
@@ -140,6 +145,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="PU Time"
@@ -148,6 +154,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="Deliver By"
@@ -156,6 +163,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="time"
                     filled
+                    dense={dense}
                 />
             </Box>
 
@@ -167,6 +175,7 @@ export const MetricsGrid = React.memo(({
                     onClick={handleDispatchedClick}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="Del Arrival"
@@ -175,6 +184,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="POD Name"
@@ -183,6 +193,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="pod"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="POD Time"
@@ -191,6 +202,7 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="pod"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="Follow Up"
@@ -199,6 +211,7 @@ export const MetricsGrid = React.memo(({
                     disabled={!canEditFollowUp}
                     category="time"
                     filled
+                    dense={dense}
                 />
                 <MetricCard
                     label="Client Name"
@@ -207,12 +220,13 @@ export const MetricsGrid = React.memo(({
                     disabled={isLocked}
                     category="info"
                     filled
+                    dense={dense}
                 />
             </Box>
 
             {/* Internal Status - only editable on nationwide jobs */}
             {job.hasNationwide && job.internalStatusId != null && (
-                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 0.75, borderTop: 1, borderColor: 'divider'}}>
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: dense ? 0.25 : 0.75, borderTop: 1, borderColor: 'divider'}}>
                     <Chip
                         label={`Internal: ${getInternalStatusLabel(job.internalStatusId)}`}
                         size="small"

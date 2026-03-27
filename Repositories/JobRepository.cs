@@ -460,10 +460,7 @@ public partial class JobRepository(
         if (jobIds.Count == 0)
             return;
 
-        foreach (var jobId in jobIds)
-        {
-            await Context.Procedures.uspReDespatchJobAsync(jobId);
-        }
+        foreach (var jobId in jobIds) await Context.Procedures.uspReDespatchJobAsync(jobId);
     }
 
     /// <summary>
@@ -552,18 +549,17 @@ public partial class JobRepository(
             var hasUncompletedSiblings = await Context.TucJobs
                 .AnyAsync(j => j.ParentId == parentId &&
                                j.UcjbId != data.JobId &&
+                               j.UcjbId != parentId &&
                                j.UcjbJobDone == false &&
                                j.UcjbVoid == false);
 
             if (!hasUncompletedSiblings)
-            {
                 await UpdateParentJobCompletionDetailsAsync(
                     parentId.Value,
                     data.JobStatus,
                     data.PodName,
                     completionTime,
                     isArchived);
-            }
         }
 
         await Context.SaveChangesAsync();

@@ -9,6 +9,7 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
+import Collapse from '@mui/material/Collapse';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -112,58 +113,56 @@ export const ToggleProperties = React.memo(({
         );
     }
 
-    if (!isFieldVisible('checkboxes')) return null;
-
     const locked = !!job.locked;
 
     return (
-        <Box sx={{...cardContainerSx as object, bgcolor: 'grey.50', px: 2, py: 1.5}}>
-            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, justifyContent: 'center'}}>
-                <PropertyCheckbox
-                    label="Truck" checked={!!job.truck} dense={dense}
-                    onChange={() => onToggleProperty(JobProperty.Truck, !!job.truck)}
-                    disabled={locked}
-                />
-                <PropertyCheckbox
-                    label="Direct" checked={!!job.direct} dense={dense}
-                    onChange={() => onToggleProperty(JobProperty.Direct, !!job.direct)}
-                    disabled={locked}
-                />
-                <PropertyCheckbox
-                    label="Van" checked={job.van} dense={dense}
-                    onChange={() => onToggleProperty(JobProperty.Van, job.van)}
-                    disabled={locked}
-                />
-                <PropertyCheckbox
-                    label="Reprice" checked={!!job.reprice} dense={dense}
-                    onChange={() => onToggleProperty(JobProperty.Reprice, !!job.reprice)}
-                    disabled={locked}
-                />
-                {!isRecurringJob && (
+        <Collapse in={isFieldVisible('checkboxes')} unmountOnExit>
+            <Box sx={{...cardContainerSx as object, bgcolor: 'grey.50', px: dense ? 1.5 : 2, py: dense ? 0.75 : 1.5}}>
+                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: dense ? 0.25 : 0.5, justifyContent: 'center'}}>
                     <PropertyCheckbox
-                        label="Done" checked={!!job.done} dense={dense}
-                        onChange={() => onDoneClick?.()}
+                        label="Truck" checked={!!job.truck} dense={dense}
+                        onChange={() => onToggleProperty(JobProperty.Truck, !!job.truck)}
                         disabled={locked}
                     />
-                )}
-                {!isRecurringJob && (
                     <PropertyCheckbox
-                        label="Void" checked={!!job.void} dense={dense}
-                        onChange={onVoidClick}
+                        label="Direct" checked={!!job.direct} dense={dense}
+                        onChange={() => onToggleProperty(JobProperty.Direct, !!job.direct)}
                         disabled={locked}
                     />
-                )}
-                {isRecurringJob && (
                     <PropertyCheckbox
-                        label="Active" checked={!!job.active} dense={dense}
-                        onChange={onActiveClick}
+                        label="Van" checked={job.van} dense={dense}
+                        onChange={() => onToggleProperty(JobProperty.Van, job.van)}
+                        disabled={locked}
                     />
-                )}
-            </Box>
+                    <PropertyCheckbox
+                        label="Reprice" checked={!!job.reprice} dense={dense}
+                        onChange={() => onToggleProperty(JobProperty.Reprice, !!job.reprice)}
+                        disabled={locked}
+                    />
+                    {!isRecurringJob && (
+                        <PropertyCheckbox
+                            label="Done" checked={!!job.done} dense={dense}
+                            onChange={() => onDoneClick?.()}
+                            disabled={locked}
+                        />
+                    )}
+                    {!isRecurringJob && (
+                        <PropertyCheckbox
+                            label="Void" checked={!!job.void} dense={dense}
+                            onChange={onVoidClick}
+                            disabled={locked}
+                        />
+                    )}
+                    {isRecurringJob && (
+                        <PropertyCheckbox
+                            label="Active" checked={!!job.active} dense={dense}
+                            onChange={onActiveClick}
+                        />
+                    )}
+                </Box>
 
-            {/* Truck Options */}
-            {isFieldVisible('truckOptions') && job.truck && (
-                <>
+                {/* Truck Options */}
+                <Collapse in={isFieldVisible('truckOptions') && !!job.truck} unmountOnExit>
                     <Divider sx={{my: 0.5}}/>
                     <Typography variant="caption" color="text.secondary"
                                 sx={{mb: 0.5, display: 'block', fontWeight: 500}}>
@@ -194,8 +193,8 @@ export const ToggleProperties = React.memo(({
                             sx={{ml: 0, mr: 2}}
                         />
                     </Box>
-                </>
-            )}
-        </Box>
+                </Collapse>
+            </Box>
+        </Collapse>
     );
 });

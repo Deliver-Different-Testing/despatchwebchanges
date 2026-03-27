@@ -31,6 +31,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onPodReport: jest.fn(),
         onPodSpreadsheet: jest.fn(),
         onSendPodEmail: jest.fn(),
+        onLockToggle: jest.fn(),
         ...overrides,
     };
 }
@@ -61,13 +62,19 @@ describe('JobDetailHeader', () => {
         renderWithTheme(<JobDetailHeader {...createDefaultProps({onToggleDensity, onToggleEditMode})} />);
         fireEvent.click(screen.getByLabelText('Compact view'));
         expect(onToggleDensity).toHaveBeenCalledTimes(1);
-        fireEvent.click(screen.getByLabelText('Customize fields'));
+        fireEvent.click(screen.getByLabelText('Show/Hide fields'));
         expect(onToggleEditMode).toHaveBeenCalledTimes(1);
     });
 
-    it('shows "Done editing" tooltip in edit mode', () => {
+    it('shows DashboardCustomize icon when not in edit mode', () => {
+        renderWithTheme(<JobDetailHeader {...createDefaultProps({isEditMode: false})} />);
+        expect(screen.getByTestId('DashboardCustomizeIcon')).toBeInTheDocument();
+    });
+
+    it('shows Check icon and "Done editing" tooltip in edit mode', () => {
         renderWithTheme(<JobDetailHeader {...createDefaultProps({isEditMode: true})} />);
         expect(screen.getByLabelText('Done editing')).toBeInTheDocument();
+        expect(screen.getByTestId('CheckIcon')).toBeInTheDocument();
     });
 
     it('shows reset button only in edit mode', () => {
@@ -125,6 +132,72 @@ describe('JobDetailHeader', () => {
         fireEvent.click(screen.getByLabelText('POD Report'));
         fireEvent.click(screen.getByText('Download as PDF'));
         expect(onPodReport).toHaveBeenCalledTimes(1);
+    });
+
+    describe('dense mode', () => {
+        it('renders job number and status in dense mode', () => {
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense'})} />);
+            expect(screen.getByText('J-1001')).toBeInTheDocument();
+            expect(screen.getByText('Dispatched')).toBeInTheDocument();
+        });
+
+        it('toolbar buttons still work in dense mode', () => {
+            const onToggleDensity = jest.fn();
+            const onToggleEditMode = jest.fn();
+            renderWithTheme(
+                <JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense', onToggleDensity, onToggleEditMode})} />
+            );
+            fireEvent.click(screen.getByLabelText('Normal view'));
+            expect(onToggleDensity).toHaveBeenCalledTimes(1);
+            fireEvent.click(screen.getByLabelText('Show/Hide fields'));
+            expect(onToggleEditMode).toHaveBeenCalledTimes(1);
+        });
+
+        it('POD menu still works in dense mode', () => {
+            const onPodReport = jest.fn();
+            const job = createMockJob({done: true, preBook: false});
+            renderWithTheme(
+                <JobDetailHeader {...createDefaultProps({dense: true, viewDensityLabel: 'Dense', job, onPodReport})} />
+            );
+            expect(screen.getByLabelText('POD Report')).toBeInTheDocument();
+            fireEvent.click(screen.getByLabelText('POD Report'));
+            fireEvent.click(screen.getByText('Download as PDF'));
+            expect(onPodReport).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('lock/unlock button', () => {
+        it('shows "Lock Job" tooltip and unlocked icon when job is not locked', () => {
+            const job = createMockJob({locked: false});
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+            expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+        });
+
+        it('shows "Unlock Job" tooltip and locked icon when job is locked', () => {
+            const job = createMockJob({locked: true});
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+            expect(screen.getByLabelText('Unlock Job')).toBeInTheDocument();
+        });
+
+        it('calls onLockToggle when lock button is clicked', () => {
+            const onLockToggle = jest.fn();
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({onLockToggle})} />);
+            fireEvent.click(screen.getByLabelText('Lock Job'));
+            expect(onLockToggle).toHaveBeenCalledTimes(1);
+        });
+
+        it('applies warning color when job is locked', () => {
+            const job = createMockJob({locked: true});
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+            const button = screen.getByLabelText('Unlock Job');
+            expect(button).toHaveClass('MuiIconButton-colorWarning');
+        });
+
+        it('is always visible regardless of preBook status', () => {
+            const job = createMockJob({preBook: true});
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+            expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+        });
     });
 
     it('applies correct status color variants', () => {

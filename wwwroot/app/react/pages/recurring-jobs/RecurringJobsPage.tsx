@@ -18,8 +18,11 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
+import {JobDetails} from '../../components/common/job-details/JobDetails';
+import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 import {
     PrebookListModel,
@@ -43,7 +46,6 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                                                                         showToast,
                                                                         isUsCustomer = false,
                                                                         onAddStop,
-                                                                        onJobSelect,
                                                                         setRefreshCallback,
                                                                     }) => {
     // Query state
@@ -91,10 +93,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             page: 1,
         }));
         setSelectedJobId(null);
-        if (onJobSelect) {
-            onJobSelect(null);
-        }
-    }, [onJobSelect]);
+    }, []);
 
     const handleFiltersChange = useCallback((filters: RecurringJobsFilters) => {
         setQuery((prev) => ({
@@ -142,10 +141,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
 
     const handleRowClick = useCallback((job: PrebookListModel) => {
         setSelectedJobId(job.id);
-        if (onJobSelect) {
-            onJobSelect(job.id);
-        }
-    }, [onJobSelect]);
+    }, []);
 
     const handleDeleteClick = useCallback((job: PrebookListModel) => {
         setJobToVoid(job);
@@ -162,9 +158,6 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             setVoidDialogOpen(false);
             setJobToVoid(null);
             setSelectedJobId(null);
-            if (onJobSelect) {
-                onJobSelect(null);
-            }
             await refetch();
         } catch (error) {
             console.error('Error inactivating recurring job:', error);
@@ -172,7 +165,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         } finally {
             setIsVoiding(false);
         }
-    }, [jobToVoid, refetch, showToast, onJobSelect]);
+    }, [jobToVoid, refetch, showToast]);
 
     const handleVoidCancel = useCallback(() => {
         setVoidDialogOpen(false);
@@ -206,90 +199,130 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
 
     return (
         <Box sx={{
-            height: '100%', display: 'flex', flexDirection: 'column', gap: 2,
+            height: '100%', display: 'flex', gap: 2,
             p: 2,
             bgcolor: 'background.default',
         }}>
-            {/* Filters Card */}
-            <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
-                <Toolbar
-                    variant="dense"
-                    sx={{
-                        bgcolor: 'background.paper',
-                        color: 'text.primary',
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        minHeight: 44,
-                    }}
-                >
-                    <TuneIcon sx={{mr: 1}} />
-                    <Typography variant="subtitle1">Filters</Typography>
-                </Toolbar>
-                <RecurringJobsToolbar
-                    searchText={query.searchText || ''}
-                    isActive={query.active}
-                    isLoading={isLoading}
-                    isExporting={isExporting}
-                    filters={{
-                        speedId: query.speedId,
-                        time: query.time,
-                        courierId: query.courierId,
-                        daysOfWeek: query.daysOfWeek,
-                    }}
-                    onSearchChange={handleSearchChange}
-                    onActiveFilterChange={handleActiveFilterChange}
-                    onFiltersChange={handleFiltersChange}
-                    onRefresh={handleRefresh}
-                    onExport={handleExport}
-                />
-            </Card>
-
-            {/* Recurring Jobs Table Card */}
-            <Card
-                variant="outlined"
-                sx={{
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    overflow: 'hidden',
-                    minHeight: 0,
-                }}
-            >
-                <Toolbar
-                    variant="dense"
-                    sx={{
-                        bgcolor: 'background.paper',
-                        color: 'text.primary',
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        minHeight: 44,
-                        flexShrink: 0,
-                    }}
-                >
-                    <EventRepeatIcon sx={{mr: 1}} />
-                    <Typography variant="subtitle1">
-                        Recurring Jobs {data?.total ? `(${data.total})` : ''}
-                    </Typography>
-                </Toolbar>
-                <Box sx={{flex: 1, overflow: 'hidden'}}>
-                    <RecurringJobsTable
-                        jobs={data?.items || []}
+            {/* Left Panel: Filters + Table (~55%) */}
+            <Box sx={{flex: 55, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, minWidth: 0}}>
+                {/* Filters Card */}
+                <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
+                    <Toolbar
+                        variant="dense"
+                        sx={{
+                            bgcolor: 'background.paper',
+                            color: 'text.primary',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            minHeight: 44,
+                        }}
+                    >
+                        <TuneIcon sx={{mr: 1}} />
+                        <Typography variant="subtitle1">Filters</Typography>
+                    </Toolbar>
+                    <RecurringJobsToolbar
+                        searchText={query.searchText || ''}
+                        isActive={query.active}
                         isLoading={isLoading}
-                        totalCount={data?.total || 0}
-                        page={query.page}
-                        pageSize={query.limit}
-                        sort={sort}
-                        selectedJobId={selectedJobId}
-                        isUsCustomer={isUsCustomer}
-                        onPageChange={handlePageChange}
-                        onPageSizeChange={handlePageSizeChange}
-                        onSortChange={handleSortChange}
-                        onRowClick={handleRowClick}
-                        onDeleteClick={handleDeleteClick}
-                        onContextMenu={handleContextMenu}
+                        isExporting={isExporting}
+                        filters={{
+                            speedId: query.speedId,
+                            time: query.time,
+                            courierId: query.courierId,
+                            daysOfWeek: query.daysOfWeek,
+                        }}
+                        onSearchChange={handleSearchChange}
+                        onActiveFilterChange={handleActiveFilterChange}
+                        onFiltersChange={handleFiltersChange}
+                        onRefresh={handleRefresh}
+                        onExport={handleExport}
                     />
-                </Box>
-            </Card>
+                </Card>
+
+                {/* Recurring Jobs Table Card */}
+                <Card
+                    variant="outlined"
+                    sx={{
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        minHeight: 0,
+                    }}
+                >
+                    <Toolbar
+                        variant="dense"
+                        sx={{
+                            bgcolor: 'background.paper',
+                            color: 'text.primary',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            minHeight: 44,
+                            flexShrink: 0,
+                        }}
+                    >
+                        <EventRepeatIcon sx={{mr: 1}} />
+                        <Typography variant="subtitle1">
+                            Recurring Jobs {data?.total ? `(${data.total})` : ''}
+                        </Typography>
+                    </Toolbar>
+                    <Box sx={{flex: 1, overflow: 'hidden'}}>
+                        <RecurringJobsTable
+                            jobs={data?.items || []}
+                            isLoading={isLoading}
+                            totalCount={data?.total || 0}
+                            page={query.page}
+                            pageSize={query.limit}
+                            sort={sort}
+                            selectedJobId={selectedJobId}
+                            isUsCustomer={isUsCustomer}
+                            onPageChange={handlePageChange}
+                            onPageSizeChange={handlePageSizeChange}
+                            onSortChange={handleSortChange}
+                            onRowClick={handleRowClick}
+                            onDeleteClick={handleDeleteClick}
+                            onContextMenu={handleContextMenu}
+                        />
+                    </Box>
+                </Card>
+            </Box>
+
+            {/* Right Panel: Job Details (~45%) */}
+            <Box sx={{flex: 45, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
+                <Card
+                    variant="outlined"
+                    sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+                >
+                    <Toolbar
+                        variant="dense"
+                        sx={{
+                            bgcolor: 'background.paper',
+                            color: 'text.primary',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            minHeight: 44,
+                            flexShrink: 0,
+                        }}
+                    >
+                        <InfoIcon sx={{mr: 1}} />
+                        <Typography variant="subtitle1">
+                            Job Details{selectedJobId ? ` - Job #${selectedJobId}` : ''}
+                        </Typography>
+                    </Toolbar>
+                    <Box sx={{flex: 1, overflow: 'auto'}}>
+                        <JobDetails
+                            config={{
+                                jobId: selectedJobId ?? undefined,
+                                isRecurringJob: true,
+                                isBulkJob: false,
+                                isUsCustomer,
+                                showToast,
+                                onJobUpdate: handleRefresh,
+                            } satisfies MountJobDetailsConfig}
+                        />
+                    </Box>
+                </Card>
+            </Box>
 
             {/* Context Menu */}
             <RecurringJobsContextMenu

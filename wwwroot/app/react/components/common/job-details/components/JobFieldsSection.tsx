@@ -16,6 +16,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
 import List from '@mui/material/List';
+import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import type {SvgIconProps} from '@mui/material/SvgIcon';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -37,11 +38,13 @@ import {
     sectionToolbarTitleSx,
     sectionToolbarIconSx,
     sectionBorderSx,
+    getSectionToolbarSx,
 } from '../JobDetails.styles';
 
 interface JobFieldsSectionProps {
     job: IJob;
     dense: boolean;
+    isUsCustomer: boolean;
     isEditMode: boolean;
     isFieldVisible: (key: string) => boolean;
     onToggleField: (key: string) => void;
@@ -73,6 +76,7 @@ function SectionToolbar({
                             sectionKey,
                             isVisible,
                             onToggleVisibility,
+                            dense,
                         }: {
     title: string;
     icon: React.ComponentType<SvgIconProps>;
@@ -80,13 +84,14 @@ function SectionToolbar({
     sectionKey?: string;
     isVisible?: boolean;
     onToggleVisibility?: (key: string) => void;
+    dense?: boolean;
 }) {
     const handleClick = React.useCallback(() => {
         if (sectionKey && onToggleVisibility) onToggleVisibility(sectionKey);
     }, [sectionKey, onToggleVisibility]);
 
     return (
-        <Box sx={sectionToolbarSx}>
+        <Box sx={dense ? getSectionToolbarSx(true) : sectionToolbarSx}>
             <IconComponent sx={sectionToolbarIconSx}/>
             <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
                 {title}
@@ -104,6 +109,7 @@ function SectionToolbar({
 export const JobFieldsSection = React.memo(({
                                                 job,
                                                 dense,
+                                                isUsCustomer,
                                                 isEditMode,
                                                 isFieldVisible,
                                                 onToggleField,
@@ -134,15 +140,19 @@ export const JobFieldsSection = React.memo(({
         : '';
 
     return (
-        <Box sx={cardContainerSx}>
-            <Box sx={{display: 'flex', gap: 0, flexDirection: {xs: 'column', md: 'row'}}}>
-                {/* Left Column - 60% */}
-                <Box sx={{flex: '0 0 60%', minWidth: 0}}>
+        <Box sx={{display: 'flex', gap: 2, flexDirection: {xs: 'column', md: 'row'}}}>
+            {/* Left Column - 60% */}
+            <Box sx={{...cardContainerSx as object, flex: 3, minWidth: 0}}>
                     {/* Package Details + Additional Info - side by side */}
                     <Box sx={{display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, ...sectionBorderSx as object}}>
                         {/* Package Details */}
                         <Box sx={{flex: 1, minWidth: 0}}>
-                            <SectionToolbar title="Package Details" icon={Inventory2Icon}/>
+                            <SectionToolbar title="Package Details" icon={Inventory2Icon} dense={dense}
+                                isEditMode={isEditMode} sectionKey="packageDetails"
+                                isVisible={isFieldVisible('packageDetails')}
+                                onToggleVisibility={onToggleField}
+                            />
+                            <Collapse in={isFieldVisible('packageDetails')} unmountOnExit>
                             <List dense disablePadding>
                                 <EditableField
                                     icon="straighten" label="Dimensions"
@@ -161,7 +171,7 @@ export const JobFieldsSection = React.memo(({
                                 />
                                 <EditableField
                                     icon="scale" label="Weight"
-                                    value={job.weight != null ? `${job.weight} kg` : undefined}
+                                    value={job.weight != null ? `${job.weight} ${isUsCustomer ? 'lbs' : 'kg'}` : undefined}
                                     onClick={onEditWeight} disabled={locked}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('weight')}
@@ -181,6 +191,7 @@ export const JobFieldsSection = React.memo(({
                                     onToggleVisibility={onToggleField} fieldKey="dimensions"
                                 />
                             </List>
+                            </Collapse>
                         </Box>
 
                         <Divider orientation="vertical" flexItem sx={{display: {xs: 'none', sm: 'block'}}}/>
@@ -188,7 +199,12 @@ export const JobFieldsSection = React.memo(({
 
                         {/* Additional Info */}
                         <Box sx={{flex: 1, minWidth: 0}}>
-                            <SectionToolbar title="Additional Info" icon={DescriptionIcon}/>
+                            <SectionToolbar title="Additional Info" icon={DescriptionIcon} dense={dense}
+                                isEditMode={isEditMode} sectionKey="additionalInfo"
+                                isVisible={isFieldVisible('additionalInfo')}
+                                onToggleVisibility={onToggleField}
+                            />
+                            <Collapse in={isFieldVisible('additionalInfo')} unmountOnExit>
                             <List dense disablePadding>
                                 <EditableField
                                     icon="warning" label="DG Class"
@@ -213,17 +229,21 @@ export const JobFieldsSection = React.memo(({
                                     onToggleVisibility={onToggleField} fieldKey="leaveParcel"
                                 />
                             </List>
+                            </Collapse>
                         </Box>
                     </Box>
 
                     {/* Delivery Details */}
+                    {(isEditMode || isFieldVisible('deliveryDetails')) && (
                     <Box sx={sectionBorderSx}>
                         <SectionToolbar
                             title="Delivery Details" icon={LocalShippingIcon}
                             isEditMode={isEditMode} sectionKey="deliveryDetails"
                             isVisible={isFieldVisible('deliveryDetails')}
                             onToggleVisibility={onToggleField}
+                            dense={dense}
                         />
+                        <Collapse in={isFieldVisible('deliveryDetails')} unmountOnExit>
                         <List dense disablePadding>
                             <EditableField
                                 icon="person" label="Dispatcher" value={job.dispatcherName}
@@ -251,11 +271,19 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="scheduleName"
                             />
                         </List>
+                        </Collapse>
                     </Box>
+                    )}
 
                     {/* Tracking */}
+                    {(isEditMode || isFieldVisible('trackingSection')) && (
                     <Box sx={sectionBorderSx}>
-                        <SectionToolbar title="Tracking" icon={TrackChangesIcon}/>
+                        <SectionToolbar title="Tracking" icon={TrackChangesIcon} dense={dense}
+                            isEditMode={isEditMode} sectionKey="trackingSection"
+                            isVisible={isFieldVisible('trackingSection')}
+                            onToggleVisibility={onToggleField}
+                        />
+                        <Collapse in={isFieldVisible('trackingSection')} unmountOnExit>
                         <List dense disablePadding>
                             <EditableField
                                 icon="notifications" label="Method" value={getTrackingMethodText(job.trackingMethod)}
@@ -279,22 +307,24 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="email"
                             />
                         </List>
+                        </Collapse>
                     </Box>
-                </Box>
+                    )}
+            </Box>
 
-                {/* Vertical divider between columns */}
-                <Divider orientation="vertical" flexItem sx={{display: {xs: 'none', md: 'block'}}}/>
-
-                {/* Right Column - 40% */}
-                <Box sx={{flex: '0 0 40%', minWidth: 0, bgcolor: 'grey.50'}}>
+            {/* Right Column - 40% */}
+            <Box sx={{...cardContainerSx as object, flex: 2, minWidth: 0, bgcolor: 'grey.50'}}>
                     {/* Booked By */}
+                    {(isEditMode || isFieldVisible('bookedBy')) && (
                     <Box>
                         <SectionToolbar
                             title="Booked By" icon={PersonOutlineIcon}
                             isEditMode={isEditMode} sectionKey="bookedBy"
                             isVisible={isFieldVisible('bookedBy')}
                             onToggleVisibility={onToggleField}
+                            dense={dense}
                         />
+                        <Collapse in={isFieldVisible('bookedBy')} unmountOnExit>
                         <List dense disablePadding>
                             <EditableField
                                 icon="account_circle" label="Logged In" value={job.loggedInContactName}
@@ -322,18 +352,23 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="fromContactNumber"
                             />
                         </List>
+                        </Collapse>
                     </Box>
+                    )}
 
                     <Divider/>
 
                     {/* Job Details */}
+                    {(isEditMode || isFieldVisible('jobDetails')) && (
                     <Box>
                         <SectionToolbar
                             title="Job Details" icon={WorkOutlineIcon}
                             isEditMode={isEditMode} sectionKey="jobDetails"
                             isVisible={isFieldVisible('jobDetails')}
                             onToggleVisibility={onToggleField}
+                            dense={dense}
                         />
+                        <Collapse in={isFieldVisible('jobDetails')} unmountOnExit>
                         <List dense disablePadding>
                             <EditableField
                                 icon="label" label="Job Name" value={job.customJobName}
@@ -396,13 +431,15 @@ export const JobFieldsSection = React.memo(({
                                 onToggleVisibility={onToggleField} fieldKey="conNote"
                             />
                         </List>
+                        </Collapse>
                     </Box>
+                    )}
 
                     <Divider/>
 
                     {/* Client */}
                     <Box>
-                        <SectionToolbar title="Client" icon={BusinessIcon}/>
+                        <SectionToolbar title="Client" icon={BusinessIcon} dense={dense}/>
                         <List dense disablePadding>
                             <EditableField
                                 icon="business" label="Client" value={job.clientName}
@@ -420,7 +457,6 @@ export const JobFieldsSection = React.memo(({
                             )}
                         </List>
                     </Box>
-                </Box>
             </Box>
         </Box>
     );

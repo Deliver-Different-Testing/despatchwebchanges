@@ -40,6 +40,7 @@ type EntryPointName =
     | 'selectDialogReact'
     | 'editParcelDimensionsDialogReact'
     | 'simplePriceEditDialogReact'
+    | 'jobFileUploadDialogReact'
     | 'overviewReact'
     | 'jobListReact'
     | 'currentWorkJobListReact'
@@ -91,6 +92,7 @@ const entryPoints: EntryPoints = {
     selectDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/select-dialog/select-dialog-react.module.tsx"),
     editParcelDimensionsDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/edit-parcel-dimensions-dialog/edit-parcel-dimensions-dialog-react.module.tsx"),
     simplePriceEditDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/simple-price-edit-dialog/simple-price-edit-dialog-react.module.tsx"),
+    jobFileUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/job-file-upload-dialog/job-file-upload-dialog-react.module.tsx"),
     overviewReact: path.join(rootDir, "wwwroot/app/react/pages/overview/overview-react.module.tsx"),
     jobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-list-react.module.tsx"),
     currentWorkJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/current-work-job-list-react.module.tsx"),

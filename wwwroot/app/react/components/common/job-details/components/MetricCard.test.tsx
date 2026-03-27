@@ -49,4 +49,24 @@ describe('MetricCard', () => {
         renderWithTheme(<MetricCard label="Follow Up" value="-" />);
         expect(screen.getByText('-')).toBeInTheDocument();
     });
+
+    describe('dense mode', () => {
+        it('renders label and value in dense mode', () => {
+            renderWithTheme(<MetricCard label="Pricing" value="$45.50" dense />);
+            expect(screen.getByText('Pricing')).toBeInTheDocument();
+            expect(screen.getByText('$45.50')).toBeInTheDocument();
+        });
+
+        it('remains clickable in dense mode', () => {
+            const onClick = jest.fn();
+            renderWithTheme(<MetricCard label="Ready" value="09:00" onClick={onClick} dense />);
+            fireEvent.click(screen.getByRole('button'));
+            expect(onClick).toHaveBeenCalledTimes(1);
+        });
+
+        it('renders em dash for empty value in dense mode', () => {
+            renderWithTheme(<MetricCard label="POD Name" value="" dense />);
+            expect(screen.getByText('\u2014')).toBeInTheDocument();
+        });
+    });
 });

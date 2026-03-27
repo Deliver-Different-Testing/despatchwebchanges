@@ -45,6 +45,13 @@ export function useJobUpdate(
         await queryClient.invalidateQueries({queryKey: ['jobs', 'detail', jobId]});
     };
 
+    /** Invalidate all job list caches so updated fields appear in the list */
+    const invalidateJobLists = () => {
+        queryClient.invalidateQueries({queryKey: ['dispatch']});
+        queryClient.invalidateQueries({queryKey: ['jobSearch']});
+        queryClient.invalidateQueries({queryKey: ['nationwide']});
+    };
+
     const updateFieldMutation = useMutation({
         mutationFn: async ({job, field, value, isRecurring, timezone}: UpdateFieldParams) => {
             if (job.isBulkJob) {
@@ -56,6 +63,7 @@ export function useJobUpdate(
         onSuccess: async (_data, {job}) => {
             showToast(`${job.jobNo} updated`, 'success');
             await invalidateJob(job.id);
+            invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to update job. Please try again.', 'error');
@@ -73,6 +81,7 @@ export function useJobUpdate(
         onSuccess: async (_data, {job}) => {
             showToast(`${job.jobNo} updated`, 'success');
             await invalidateJob(job.id);
+            invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to update address. Please try again.', 'error');
@@ -128,6 +137,7 @@ export function useJobUpdate(
                 showToast('Job dispatched successfully', 'success');
             }
             await invalidateJob(job.id);
+            invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to dispatch job.', 'error');

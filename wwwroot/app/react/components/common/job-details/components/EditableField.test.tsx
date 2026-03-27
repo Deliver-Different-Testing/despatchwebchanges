@@ -46,11 +46,30 @@ describe('EditableField', () => {
         expect(screen.getByText('Standard')).toBeInTheDocument();
     });
 
-    it('renders nothing when not visible and not in edit mode', () => {
-        const {container} = renderWithTheme(
+    it('hides content when not visible, regardless of onClick', () => {
+        const {unmount} = renderWithTheme(
             <EditableField label="Speed" value="Standard" isVisible={false} />
         );
-        expect(container.firstChild).toBeNull();
+        expect(screen.queryByText('Standard')).not.toBeInTheDocument();
+        unmount();
+
+        renderWithTheme(
+            <EditableField label="Speed" value="Standard" onClick={jest.fn()} isVisible={false} />
+        );
+        expect(screen.queryByText('Standard')).not.toBeInTheDocument();
+    });
+
+    it('shows content when visible, regardless of onClick', () => {
+        const {unmount} = renderWithTheme(
+            <EditableField label="Speed" value="Standard" isVisible={true} />
+        );
+        expect(screen.getByText('Standard')).toBeInTheDocument();
+        unmount();
+
+        renderWithTheme(
+            <EditableField label="Speed" value="Standard" onClick={jest.fn()} isVisible={true} />
+        );
+        expect(screen.getByText('Standard')).toBeInTheDocument();
     });
 
     it('renders visibility toggle in edit mode', () => {
@@ -86,5 +105,39 @@ describe('EditableField', () => {
     it('renders numeric values as strings', () => {
         renderWithTheme(<EditableField label="Weight" value={12.5} />);
         expect(screen.getByText('12.5')).toBeInTheDocument();
+    });
+
+    describe('dense mode', () => {
+        it('hides icons when dense, including clickable fields', () => {
+            const {container, unmount} = renderWithTheme(
+                <EditableField label="Speed" value="Standard" icon="speed" dense />
+            );
+            expect(container.querySelector('.MuiListItemIcon-root')).toBeNull();
+            unmount();
+
+            const {container: c2} = renderWithTheme(
+                <EditableField label="Speed" value="Standard" icon="speed" dense onClick={jest.fn()} />
+            );
+            expect(c2.querySelector('.MuiListItemIcon-root')).toBeNull();
+        });
+
+        it('shows icons when dense is false', () => {
+            const {container} = renderWithTheme(
+                <EditableField label="Speed" value="Standard" icon="speed" dense={false} />
+            );
+            expect(container.querySelector('.MuiListItemIcon-root')).not.toBeNull();
+        });
+
+        it('renders label and value but hides field when not visible', () => {
+            const {unmount} = renderWithTheme(<EditableField label="Weight" value="5 kg" dense />);
+            expect(screen.getByText('Weight')).toBeInTheDocument();
+            expect(screen.getByText('5 kg')).toBeInTheDocument();
+            unmount();
+
+            renderWithTheme(
+                <EditableField label="Speed" value="Standard" isVisible={false} dense />
+            );
+            expect(screen.queryByText('Standard')).not.toBeInTheDocument();
+        });
     });
 });

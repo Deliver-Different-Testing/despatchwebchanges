@@ -77,6 +77,42 @@ public class NoteRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task SaveNoteAsync_NewNoteOnChildJob_IsReturnedByGetNotesByJobIdAsync()
+    {
+        // Arrange — child job 500 with ParentId = 100
+        const int parentJobId = 100;
+        const int childJobId = 500;
+        _context.TucNoteTypes.Add(CreateNoteType(1, "Internal Note"));
+        _context.TucJobs.Add(CreateJob(parentJobId, "PARENT001"));
+        _context.TucJobs.Add(new TucJob
+        {
+            UcjbId = childJobId,
+            UcjbNumber = "CHILD001",
+            ParentId = parentJobId
+        });
+        _context.TucStaffs.Add(CreateStaff(1, "Test", "User"));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+        var viewModel = new TucNoteViewModel
+        {
+            NoteId = 0,
+            JobId = childJobId,
+            NoteText = "Note on child job",
+            NoteTypeId = 1,
+            IsImportant = false
+        };
+
+        // Act — create a note on the child job, then read notes for the child job
+        await repository.SaveNoteAsync(viewModel, TestContext.Current.CancellationToken);
+        var notes = await repository.GetNotesByJobIdAsync(childJobId);
+
+        // Assert — the note should be returned
+        Assert.Single(notes);
+        Assert.Equal("Note on child job", notes[0].NoteText);
+    }
+
+    [Fact]
     public async Task AddNewTucNoteTypeAsync_CreatesNewNoteType()
     {
         // Arrange

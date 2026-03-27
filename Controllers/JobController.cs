@@ -348,6 +348,19 @@ public class JobController(
         bool isPod = true,
         string podDescription = null)
     {
+        if (Debugger.IsAttached)
+            return Json(new
+            {
+                success = true,
+                fileName = file.FileName,
+                s3Key = $"pods/{jobId}/{file.FileName}_{DateTimeOffset.UtcNow.Ticks}",
+                contentType = file.ContentType,
+                size = file.Length,
+                uploadDate = DateTimeOffset.UtcNow.ToString("o"),
+                isPOD = true,
+                podDescription
+            });
+
         try
         {
             var result = await jobPhotoService.UploadJobPhotoOrSignatureAsync(
@@ -378,6 +391,8 @@ public class JobController(
     [HttpDelete]
     public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
     {
+        if (Debugger.IsAttached) return Json(new { success = true, message = "File deleted successfully" });
+
         try
         {
             var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
@@ -396,6 +411,15 @@ public class JobController(
 
     public async Task<IActionResult> GetJobDeliveryPhotosAndSignature(int jobId, int year, int month)
     {
+        if (Debugger.IsAttached)
+        {
+            return Json(new[]
+            {
+                new { fileName = "delivery_front_door.jpg", s3Key = $"pods/{jobId}/delivery_front_door.jpg", contentType = "image/jpeg", size = 2_097_152L, uploadDate = DateTimeOffset.UtcNow.AddDays(-1).ToString("o"), podDescription = "Left at front door" },
+                new { fileName = "signature_smith.png", s3Key = $"pods/{jobId}/signature_smith.png", contentType = "image/png", size = 51_200L, uploadDate = DateTimeOffset.UtcNow.AddHours(-2).ToString("o"), podDescription = "Signed by J. Smith" },
+            });
+        }
+
         try
         {
             var allPodPhotos = await jobPhotoService.GetDeliveryPhotosAsync(jobId, year, month);
@@ -1581,6 +1605,16 @@ public class JobController(
 
     public async Task<IActionResult> GetAttachedFiles(int jobId)
     {
+        if (Debugger.IsAttached)
+        {
+            return Ok(new[]
+            {
+                new { fileName = "invoice_2026.pdf", s3Key = $"jobs/{jobId}/invoice_2026.pdf", contentType = "application/pdf", size = 245_760L, lastModified = DateTimeOffset.UtcNow.AddDays(-2), isPOD = false },
+                new { fileName = "packing_slip.pdf", s3Key = $"jobs/{jobId}/packing_slip.pdf", contentType = "application/pdf", size = 102_400L, lastModified = DateTimeOffset.UtcNow.AddDays(-3), isPOD = false },
+                new { fileName = "label_photo.jpg", s3Key = $"jobs/{jobId}/label_photo.jpg", contentType = "image/jpeg", size = 1_048_576L, lastModified = DateTimeOffset.UtcNow.AddDays(-4), isPOD = false },
+            });
+        }
+
         try
         {
             var s3Files = await jobPhotoService.GetAttachedFilesAsync(jobId);
@@ -1598,6 +1632,20 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UploadFile([FromForm] FileUploadRequest request)
     {
+        if (Debugger.IsAttached)
+        {
+            if (request?.File == null) return BadRequest("No file uploaded");
+            return Ok(new
+            {
+                message = "File uploaded successfully",
+                fileName = request.File.FileName,
+                s3Key = $"jobs/{request.JobId}/{request.File.FileName}_{DateTimeOffset.UtcNow.Ticks}",
+                size = request.File.Length,
+                contentType = request.File.ContentType,
+                uploadDate = DateTimeOffset.UtcNow.ToString("o")
+            });
+        }
+
         try
         {
             if (request?.File == null) return BadRequest("No file uploaded");
@@ -1626,6 +1674,14 @@ public class JobController(
 
     public async Task<IActionResult> DownloadFile(string key)
     {
+        if (Debugger.IsAttached)
+        {
+            // Return a 1x1 transparent PNG as placeholder
+            var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            var fileName = key.Contains('/') ? key[(key.LastIndexOf('/') + 1)..] : key;
+            return File(png, "image/png", fileName);
+        }
+
         try
         {
             var result = await jobPhotoService.DownloadFileAsync(key);
@@ -1647,6 +1703,8 @@ public class JobController(
 
     public async Task<IActionResult> DeleteFile(string key)
     {
+        if (Debugger.IsAttached) return Ok(new { message = "File deleted successfully" });
+
         try
         {
             var success = await jobPhotoService.DeleteFileAsync(key);

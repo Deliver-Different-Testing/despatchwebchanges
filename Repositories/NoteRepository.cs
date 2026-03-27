@@ -350,9 +350,10 @@ public class NoteRepository(
         else
         {
             if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
-            // Use the actual job ID instead of the effective job ID to avoid FK constraint issues
-            // The note should be associated with the specific job being voided, not its parent
-            activeNote.JobId = viewModel.JobId.Value;
+            // Use the effective job ID (parent if exists) so the note is found by
+            // GetActiveNotesByJobIdAsync which also resolves to the parent.
+            var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
+            activeNote.JobId = effectiveJobId;
         }
 
         await Context.TucNotes.AddAsync(activeNote, cancellationToken);

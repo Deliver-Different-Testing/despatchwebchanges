@@ -10,6 +10,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import IconButton from '@mui/material/IconButton';
+import Collapse from '@mui/material/Collapse';
 import type {SxProps, Theme} from '@mui/material/styles';
 import type {SvgIconProps} from '@mui/material/SvgIcon';
 import PersonIcon from '@mui/icons-material/Person';
@@ -46,6 +47,7 @@ import {
     listItemTextSlotProps,
     listItemIconSx,
     listItemIconInnerSx,
+    getListItemTextSlotProps,
 } from '../JobDetails.styles';
 
 const iconMap: Record<string, React.ComponentType<SvgIconProps>> = {
@@ -96,8 +98,8 @@ interface EditableFieldProps {
     endAdornment?: React.ReactNode;
 }
 
-const getDensePy = (dense?: boolean) => (dense ? 0.25 : 0.5);
-const getDenseMinHeight = (dense?: boolean) => (dense ? 36 : 44);
+const getDensePy = (dense?: boolean) => (dense ? 0.125 : 0.5);
+const getDenseMinHeight = (dense?: boolean) => (dense ? 30 : 44);
 
 export const EditableField = React.memo(({
                                              icon,
@@ -115,11 +117,13 @@ export const EditableField = React.memo(({
     const IconComponent = icon ? iconMap[icon] : undefined;
     const displayValue = value != null && value !== '' ? String(value) : '\u2014';
 
-    const iconElement = IconComponent ? (
+    const iconElement = !dense && IconComponent ? (
         <ListItemIcon sx={listItemIconSx}>
             <IconComponent sx={listItemIconInnerSx}/>
         </ListItemIcon>
     ) : undefined;
+
+    const slotProps = dense ? getListItemTextSlotProps(true) : listItemTextSlotProps;
 
     const handleToggle = React.useCallback(() => {
         if (onToggleVisibility && fieldKey) {
@@ -161,47 +165,49 @@ export const EditableField = React.memo(({
         );
     }
 
-    if (!isVisible) return null;
-
     const isClickable = onClick && !disabled;
 
     // Normal mode with click handler
     if (isClickable) {
         return (
-            <ListItemButton dense onClick={onClick} sx={{
-                py: getDensePy(dense),
-                minHeight: getDenseMinHeight(dense),
-                borderLeft: '2px solid transparent',
-                transition: (theme: Theme) => `all ${theme.transitions.duration.shortest}ms ease`,
-                '&:hover': {
-                    borderLeftColor: 'primary.main',
-                    bgcolor: 'action.hover',
-                    '& .MuiListItemIcon-root .MuiSvgIcon-root': {
-                        color: 'primary.main',
+            <Collapse in={isVisible} unmountOnExit>
+                <ListItemButton dense onClick={onClick} sx={{
+                    py: getDensePy(dense),
+                    minHeight: getDenseMinHeight(dense),
+                    borderLeft: '2px solid transparent',
+                    transition: (theme: Theme) => `all ${theme.transitions.duration.shortest}ms ease`,
+                    '&:hover': {
+                        borderLeftColor: 'primary.main',
+                        bgcolor: 'action.hover',
+                        '& .MuiListItemIcon-root .MuiSvgIcon-root': {
+                            color: 'primary.main',
+                        },
                     },
-                },
-            }}>
-                {iconElement}
-                <ListItemText
-                    primary={label}
-                    secondary={displayValue}
-                    slotProps={listItemTextSlotProps}
-                />
-                {endAdornment}
-            </ListItemButton>
+                }}>
+                    {iconElement}
+                    <ListItemText
+                        primary={label}
+                        secondary={displayValue}
+                        slotProps={slotProps}
+                    />
+                    {endAdornment}
+                </ListItemButton>
+            </Collapse>
         );
     }
 
     // Non-clickable display
     return (
-        <ListItem dense sx={{py: getDensePy(dense), minHeight: getDenseMinHeight(dense)}}>
-            {iconElement}
-            <ListItemText
-                primary={label}
-                secondary={displayValue}
-                slotProps={listItemTextSlotProps}
-            />
-            {endAdornment}
-        </ListItem>
+        <Collapse in={isVisible} unmountOnExit>
+            <ListItem dense sx={{py: getDensePy(dense), minHeight: getDenseMinHeight(dense)}}>
+                {iconElement}
+                <ListItemText
+                    primary={label}
+                    secondary={displayValue}
+                    slotProps={slotProps}
+                />
+                {endAdornment}
+            </ListItem>
+        </Collapse>
     );
 });

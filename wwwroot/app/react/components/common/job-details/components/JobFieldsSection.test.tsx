@@ -19,6 +19,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
     return {
         job: createMockJob(),
         dense: false,
+        isUsCustomer: false,
         isEditMode: false,
         isFieldVisible: () => true,
         onToggleField: jest.fn(),
@@ -160,6 +161,56 @@ describe('JobFieldsSection', () => {
         });
     });
 
+    describe('Section-level show/hide', () => {
+        it.each([
+            {sectionKey: 'deliveryDetails', title: 'Delivery Details', contentText: 'Dispatcher A'},
+            {sectionKey: 'bookedBy', title: 'Booked By', contentText: 'Jane Admin'},
+            {sectionKey: 'jobDetails', title: 'Job Details', contentText: 'REF-A-001'},
+            {sectionKey: 'trackingSection', title: 'Tracking', contentText: null},
+        ])('hides $title when not visible, shows toolbar in edit mode', ({sectionKey, title, contentText}) => {
+            const isFieldVisible = (key: string) => key !== sectionKey;
+
+            // Hidden when not in edit mode
+            const {unmount} = renderWithTheme(
+                <JobFieldsSection {...createDefaultProps({isFieldVisible})} />
+            );
+            expect(screen.queryByText(title)).not.toBeInTheDocument();
+            if (contentText) expect(screen.queryByText(contentText)).not.toBeInTheDocument();
+            unmount();
+
+            // Toolbar visible in edit mode, content still hidden
+            renderWithTheme(
+                <JobFieldsSection {...createDefaultProps({isEditMode: true, isFieldVisible})} />
+            );
+            expect(screen.getByText(title)).toBeInTheDocument();
+            if (contentText) expect(screen.queryByText(contentText)).not.toBeInTheDocument();
+        });
+
+        it('hides Package Details and Additional Info content when not visible', () => {
+            const isFieldVisible = (key: string) => key !== 'packageDetails' && key !== 'additionalInfo';
+            renderWithTheme(
+                <JobFieldsSection {...createDefaultProps({isFieldVisible})} />
+            );
+            // Toolbars still visible (no outer conditional on these sections)
+            expect(screen.getByText('Package Details')).toBeInTheDocument();
+            expect(screen.getByText('Additional Info')).toBeInTheDocument();
+            // But content is collapsed
+            expect(screen.queryByText('Barcode')).not.toBeInTheDocument();
+            expect(screen.queryByText('Leave Parcel')).not.toBeInTheDocument();
+        });
+
+        it('calls onToggleField when section visibility toggle is clicked in edit mode', () => {
+            const onToggleField = jest.fn();
+            renderWithTheme(
+                <JobFieldsSection {...createDefaultProps({isEditMode: true, onToggleField})} />
+            );
+            const visibilityIcons = screen.getAllByTestId('VisibilityIcon');
+            expect(visibilityIcons.length).toBeGreaterThan(0);
+            fireEvent.click(visibilityIcons[0]);
+            expect(onToggleField).toHaveBeenCalled();
+        });
+    });
+
     describe('Locked state', () => {
         it('disables click handlers when job is locked', () => {
             const onSpeedClick = jest.fn();
@@ -168,6 +219,42 @@ describe('JobFieldsSection', () => {
                 <JobFieldsSection {...createDefaultProps({job, onSpeedClick})} />
             );
             expect(screen.getByText('Standard')).toBeInTheDocument();
+        });
+    });
+
+    describe('dense mode', () => {
+        it('renders all sections, field values, and click handlers work in dense mode', () => {
+            const onSpeedClick = jest.fn();
+            const onCourierClick = jest.fn();
+            renderWithTheme(
+                <JobFieldsSection {...createDefaultProps({dense: true, onSpeedClick, onCourierClick})} />
+            );
+            // Section titles
+            expect(screen.getByText('Package Details')).toBeInTheDocument();
+            expect(screen.getByText('Additional Info')).toBeInTheDocument();
+            expect(screen.getByText('Delivery Details')).toBeInTheDocument();
+            expect(screen.getByText('Tracking')).toBeInTheDocument();
+            expect(screen.getByText('Booked By')).toBeInTheDocument();
+            expect(screen.getByText('Job Details')).toBeInTheDocument();
+
+            // Field values
+            expect(screen.getByText('Standard')).toBeInTheDocument();
+            expect(screen.getByText('REF-A-001')).toBeInTheDocument();
+            expect(screen.getByText('Test Courier')).toBeInTheDocument();
+
+            // Click handlers
+            fireEvent.click(screen.getByText('Standard'));
+            expect(onSpeedClick).toHaveBeenCalledTimes(1);
+            fireEvent.click(screen.getByText('Test Courier'));
+            expect(onCourierClick).toHaveBeenCalledTimes(1);
+        });
+
+        it('field visibility still works in dense mode', () => {
+            const isFieldVisible = (key: string) => key !== 'speedName';
+            renderWithTheme(
+                <JobFieldsSection {...createDefaultProps({dense: true, isFieldVisible})} />
+            );
+            expect(screen.queryByText('Standard')).not.toBeInTheDocument();
         });
     });
 
@@ -183,6 +270,27 @@ describe('JobFieldsSection', () => {
             const job = createMockJob({dgClass: 3});
             renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
             expect(screen.getByText('Class 3')).toBeInTheDocument();
+        });
+    });
+
+    describe('Weight unit display', () => {
+        it('displays weight in kg for non-US customers', () => {
+            const job = createMockJob({weight: 25});
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job, isUsCustomer: false})} />);
+            expect(screen.getByText('25 kg')).toBeInTheDocument();
+        });
+
+        it('displays weight in lbs for US customers', () => {
+            const job = createMockJob({weight: 25});
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job, isUsCustomer: true})} />);
+            expect(screen.getByText('25 lbs')).toBeInTheDocument();
+        });
+
+        it('does not display weight unit when weight is null', () => {
+            const job = createMockJob({weight: null as any});
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job, isUsCustomer: true})} />);
+            expect(screen.queryByText(/lbs/)).toBeNull();
+            expect(screen.queryByText(/kg/)).toBeNull();
         });
     });
 });
