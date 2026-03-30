@@ -2650,4 +2650,165 @@ public class CourierRepository(
     }
 
     #endregion
+
+    public async Task<ClearListDebugViewModel> GetClearListDebugAsync(int courierId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+        var tenantNow = clock.TenantNow;
+
+        var courier = await context.TucCouriers
+            .Where(c => c.UccrId == courierId)
+            .Select(c => new
+            {
+                c.UccrId,
+                c.Code,
+                Name = c.UccrName + " " + c.UccrSurname,
+                c.UccrChannelId,
+                FleetName = c.CourierFleet != null ? c.CourierFleet.UccfName : null,
+                c.Active,
+                GpsPolygonId = c.CourierGps != null ? c.CourierGps.PolygonId : null,
+                GpsLatitude = c.CourierGps != null ? c.CourierGps.Latitude : null,
+                GpsLongitude = c.CourierGps != null ? c.CourierGps.Longitude : null,
+                GpsCreated = c.CourierGps != null ? (DateTime?)c.CourierGps.Created : null,
+                LoginTime = c.CourierLogInOut != null ? (DateTime?)c.CourierLogInOut.LogInTime : null,
+                LogoutTime = c.CourierLogInOut != null ? (DateTime?)c.CourierLogInOut.LogOutTime : null,
+                AssignedAreaId = c.TblClearListAreaOrder != null
+                    ? (int?)c.TblClearListAreaOrder.ClearListAreaId
+                    : null,
+                AssignedAreaName = c.TblClearListAreaOrder != null
+                    ? c.TblClearListAreaOrder.ClearListArea.Name
+                    : null,
+                AssignedStatus = c.TblClearListAreaOrder != null
+                    ? (int?)c.TblClearListAreaOrder.Status
+                    : null,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (courier == null) return null;
+
+        // Get polygon name and suburbs
+        string polygonName = null;
+        List<string> polygonSuburbs = [];
+        if (courier.GpsPolygonId.HasValue)
+        {
+            polygonName = await context.TblPolygons
+                .Where(p => p.PolygonId == courier.GpsPolygonId.Value)
+                .Select(p => p.Name)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            polygonSuburbs = await context.TblPolygonSuburbs
+                .Where(ps => ps.PolygonId == courier.GpsPolygonId.Value)
+                .Select(ps => ps.Suburb.UcsuName)
+                .ToListAsync(cancellationToken);
+        }
+
+        // Find which clear list areas this polygon maps to
+        var polygonAreaMappings = courier.GpsPolygonId.HasValue
+            ? await context.TblClearListAreaPolygons
+                .Where(cap => cap.PolygonId == courier.GpsPolygonId.Value)
+                .Select(cap => new PolygonAreaMapping
+                {
+                    ClearListAreaId = cap.ClearListAreaId,
+                    ClearListAreaName = cap.ClearListArea.Name,
+                    AreaChannelId = cap.ClearListArea.ChannelId,
+                    ChannelMatches = cap.ClearListArea.ChannelId == courier.UccrChannelId
+                })
+                .ToListAsync(cancellationToken)
+            : [];
+
+        var gpsAge = courier.GpsCreated.HasValue
+            ? (tenantNow - courier.GpsCreated.Value).TotalMinutes
+            : (double?)null;
+
+        var isLoggedIn = courier.LoginTime.HasValue
+                         && courier.LoginTime.Value.Date >= tenantNow.Date
+                         && courier.LogoutTime == null;
+
+        var statusLabel = courier.AssignedStatus switch
+        {
+            1 => "Top (Green)",
+            3 => "Middle (Purple)",
+            5 => "Bottom (Blue)",
+            _ => courier.AssignedStatus?.ToString() ?? "Not assigned"
+        };
+
+        // Build explanation
+        var matchingAreas = polygonAreaMappings.Where(m => m.ChannelMatches).ToList();
+        var explanation = BuildDebugExplanation(courier.Code, courier.GpsPolygonId, polygonName,
+            polygonSuburbs, polygonAreaMappings, matchingAreas, courier.UccrChannelId, gpsAge,
+            courier.AssignedAreaName);
+
+        return new ClearListDebugViewModel
+        {
+            CourierId = courier.UccrId,
+            CourierCode = courier.Code,
+            CourierName = courier.Name,
+            ChannelId = courier.UccrChannelId,
+            FleetName = courier.FleetName,
+            GpsPolygonId = courier.GpsPolygonId,
+            GpsPolygonName = polygonName,
+            GpsPolygonSuburbs = polygonSuburbs,
+            GpsLatitude = courier.GpsLatitude,
+            GpsLongitude = courier.GpsLongitude,
+            GpsTimestamp = courier.GpsCreated,
+            GpsAgeMinutes = gpsAge.HasValue ? Math.Round(gpsAge.Value, 1) : null,
+            AssignedClearListAreaId = courier.AssignedAreaId,
+            AssignedClearListAreaName = courier.AssignedAreaName,
+            AssignedStatus = courier.AssignedStatus,
+            AssignedStatusLabel = statusLabel,
+            PolygonAreaMappings = polygonAreaMappings,
+            IsLoggedIn = isLoggedIn,
+            LoginTime = courier.LoginTime,
+            Explanation = explanation
+        };
+    }
+
+    private static string BuildDebugExplanation(
+        string code, int? gpsPolygonId, string polygonName,
+        List<string> suburbs, List<PolygonAreaMapping> allMappings,
+        List<PolygonAreaMapping> matchingAreas, int? channelId,
+        double? gpsAge, string assignedAreaName)
+    {
+        var lines = new List<string>();
+
+        if (gpsPolygonId == null)
+        {
+            lines.Add($"Driver {code} has NO GPS polygon — they won't appear in any clear list area.");
+            return string.Join(" ", lines);
+        }
+
+        var suburbList = suburbs.Count > 0 ? string.Join(", ", suburbs) : polygonName ?? "unknown";
+        lines.Add($"Driver {code}'s GPS places them in polygon {gpsPolygonId} ({suburbList}).");
+
+        if (gpsAge.HasValue && gpsAge.Value > 3)
+            lines.Add($"WARNING: GPS is {gpsAge:F0} minutes old — location may be stale.");
+
+        if (allMappings.Count == 0)
+        {
+            lines.Add("This polygon is NOT mapped to any clear list area — driver won't appear on the board.");
+        }
+        else
+        {
+            var areaNames = allMappings.Select(m => $"{m.ClearListAreaName} (ch:{m.AreaChannelId})");
+            lines.Add($"This polygon is mapped to: {string.Join(", ", areaNames)}.");
+
+            if (matchingAreas.Count == 0)
+            {
+                lines.Add(
+                    $"NONE of those areas match the driver's channel ({channelId}) — driver won't appear.");
+            }
+            else
+            {
+                var matched = string.Join(", ", matchingAreas.Select(m => m.ClearListAreaName));
+                lines.Add($"Channel match found — driver appears in: {matched}.");
+            }
+        }
+
+        if (assignedAreaName != null)
+            lines.Add(
+                $"Admin assigned this driver to \"{assignedAreaName}\" via TblClearListAreaOrder (this controls the row position, not which area column they appear in).");
+
+        return string.Join(" ", lines);
+    }
 }

@@ -21,6 +21,9 @@ import type {IJob} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import {cardContainerSx} from '../JobDetails.styles';
 
+const toggleSx = {...cardContainerSx as object, bgcolor: 'grey.50', px: 2, py: 1.5};
+const toggleDenseSx = {...cardContainerSx as object, bgcolor: 'grey.50', px: 1.5, py: 0.75};
+
 interface TogglePropertiesProps {
     job: IJob;
     isRecurringJob: boolean;
@@ -117,7 +120,7 @@ export const ToggleProperties = React.memo(({
 
     return (
         <Collapse in={isFieldVisible('checkboxes')} unmountOnExit>
-            <Box sx={{...cardContainerSx as object, bgcolor: 'grey.50', px: dense ? 1.5 : 2, py: dense ? 0.75 : 1.5}}>
+            <Box sx={dense ? toggleDenseSx : toggleSx}>
                 <Box sx={{display: 'flex', flexWrap: 'wrap', gap: dense ? 0.25 : 0.5, justifyContent: 'center'}}>
                     <PropertyCheckbox
                         label="Truck" checked={!!job.truck} dense={dense}

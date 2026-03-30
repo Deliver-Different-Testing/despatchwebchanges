@@ -24,6 +24,8 @@ import {notesApi} from '../../../services/notesApi';
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
 import {cardContainerSx, sectionToolbarSx, sectionToolbarTitleSx} from '../../common/job-details/JobDetails.styles';
 
+const stickyNoteTitleSx = {...sectionToolbarTitleSx as object, flex: 1};
+
 /**
  * Get note type color based on type name and importance
  */
@@ -87,11 +89,11 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
     const isFilterActive = selectedCategory !== 'all';
 
-    const invalidateNotes = useCallback(() => {
+    const invalidateNotes = useCallback(async () => {
         if (bulkJobId) {
-            queryClient.invalidateQueries({queryKey: queryKeys.notes.bulkJob(bulkJobId)});
+            await queryClient.invalidateQueries({queryKey: queryKeys.notes.bulkJob(bulkJobId)});
         } else if (jobId) {
-            queryClient.invalidateQueries({queryKey: queryKeys.notes.job(jobId, isRecurringJob)});
+            await queryClient.invalidateQueries({queryKey: queryKeys.notes.job(jobId, isRecurringJob)});
         }
     }, [queryClient, jobId, bulkJobId, isRecurringJob]);
 
@@ -129,7 +131,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         setMenuAnchorEl(null);
     };
 
-    const handleAddNote = async (event: React.MouseEvent<HTMLElement>): Promise<void> => {
+    const handleAddNote = async (_event: React.MouseEvent<HTMLElement>): Promise<void> => {
         const emptyNote: JobNote = {
             noteId: 0,
             noteTypeId: 0,
@@ -142,7 +144,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
         try {
             await openNoteManagementDialog(emptyNote);
-            invalidateNotes();
+            await invalidateNotes();
         } catch (error) {
             // Dialog was canceled
             if (!error) return;
@@ -150,10 +152,11 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
         }
     };
 
-    const handleEditNote = async (event: React.MouseEvent<HTMLElement>, note: JobNote): Promise<void> => {
+    const handleEditNote = async (_event: React.MouseEvent<HTMLElement>,
+                                  note: JobNote): Promise<void> => {
         try {
             await openNoteManagementDialog(note);
-            invalidateNotes();
+            await invalidateNotes();
         } catch (error) {
             // Dialog was canceled
             if (!error) return;
@@ -169,7 +172,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
         try {
             await notesApi.deleteNote(note.noteId ?? 0);
-            invalidateNotes();
+            await invalidateNotes();
             showSuccessToast?.('Note deleted successfully');
         } catch (error) {
             console.error('Error deleting note:', error);
@@ -186,7 +189,7 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
             {/* Header Toolbar */}
             <Box sx={sectionToolbarSx}>
                 <span className="material-symbols-outlined" style={{fontSize: 18, color: 'rgba(0,0,0,0.6)'}}>note</span>
-                <Typography sx={{...sectionToolbarTitleSx as object, flex: 1}}>
+                <Typography sx={stickyNoteTitleSx}>
                     Notes
                     {isFilterActive && (
                         <Typography component="span" variant="caption" color="text.secondary" sx={{ml: 0.5, fontWeight: 400}}>

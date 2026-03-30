@@ -19,6 +19,11 @@ export class DispatchCourierMarkerManager {
     private autoZoomEnabled: boolean = true;
     private largeViewEnabled: boolean = false;
 
+    // Store bound handlers for cleanup
+    private readonly handleTap: (evt: any) => void;
+    private readonly handlePointerEnter: (evt: any) => void;
+    private readonly handlePointerLeave: () => void;
+
     constructor(map: any, ui?: any) {
         this.map = map;
         this.ui = ui;
@@ -28,8 +33,8 @@ export class DispatchCourierMarkerManager {
         // Create tooltip element (Google Maps InfoWindow style)
         this.createTooltipElement();
 
-        // Add tap listener for marker clicks
-        this.markerGroup.addEventListener('tap', (evt: any) => {
+        // Bind handlers for later removal
+        this.handleTap = (evt: any) => {
             const marker = evt.target;
             if (marker && marker.getData) {
                 const courier = marker.getData();
@@ -37,10 +42,9 @@ export class DispatchCourierMarkerManager {
                     this.centerOnCourier(courier);
                 }
             }
-        });
+        };
 
-        // Add hover listeners for tooltips
-        this.markerGroup.addEventListener('pointerenter', (evt: any) => {
+        this.handlePointerEnter = (evt: any) => {
             const marker = evt.target;
             if (marker && marker.getData && !this.largeViewEnabled) {
                 const courier = marker.getData();
@@ -48,11 +52,16 @@ export class DispatchCourierMarkerManager {
                     this.showTooltip(marker, courier);
                 }
             }
-        }, true);
+        };
 
-        this.markerGroup.addEventListener('pointerleave', () => {
+        this.handlePointerLeave = () => {
             this.hideTooltip();
-        }, true);
+        };
+
+        // Add event listeners
+        this.markerGroup.addEventListener('tap', this.handleTap);
+        this.markerGroup.addEventListener('pointerenter', this.handlePointerEnter, true);
+        this.markerGroup.addEventListener('pointerleave', this.handlePointerLeave, true);
     }
 
     /**
@@ -435,6 +444,11 @@ export class DispatchCourierMarkerManager {
     dispose(): void {
         this.hideTooltip();
         this.clearMarkers();
+        if (this.markerGroup) {
+            this.markerGroup.removeEventListener('tap', this.handleTap);
+            this.markerGroup.removeEventListener('pointerenter', this.handlePointerEnter, true);
+            this.markerGroup.removeEventListener('pointerleave', this.handlePointerLeave, true);
+        }
         if (this.map && this.markerGroup) {
             this.map.removeObject(this.markerGroup);
         }

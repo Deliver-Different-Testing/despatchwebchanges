@@ -146,14 +146,14 @@ describe('DriverLocations', () => {
             const props = createDefaultProps({ activeAreaId: undefined });
             renderWithProviders(<DriverLocations {...props} />);
 
-            expect(screen.queryByRole('button', { name: /clear/i })).not.toBeInTheDocument();
+            expect(screen.queryByRole('button', { name: /clear driver location filter/i })).not.toBeInTheDocument();
         });
 
         it('shows clear button when an area is active', () => {
             const props = createDefaultProps({ activeAreaId: 1 });
             renderWithProviders(<DriverLocations {...props} />);
 
-            expect(screen.getByRole('button', { name: /clear/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /clear driver location filter/i })).toBeInTheDocument();
         });
 
         it('calls onClearFilter when clear button is clicked', () => {
@@ -161,7 +161,7 @@ describe('DriverLocations', () => {
             const props = createDefaultProps({ activeAreaId: 1, onClearFilter });
             renderWithProviders(<DriverLocations {...props} />);
 
-            fireEvent.click(screen.getByRole('button', { name: /clear/i }));
+            fireEvent.click(screen.getByRole('button', { name: /clear driver location filter/i }));
             expect(onClearFilter).toHaveBeenCalledTimes(1);
         });
     });

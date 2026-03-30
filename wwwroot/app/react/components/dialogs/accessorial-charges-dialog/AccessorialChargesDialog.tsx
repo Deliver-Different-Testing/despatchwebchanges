@@ -7,6 +7,7 @@
  */
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {formatCurrencyOrDash as formatCurrency} from '../../../utils/currencyUtils';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
@@ -103,10 +104,6 @@ function calculateAmount(
     return amount;
 }
 
-function formatCurrency(amount?: number): string {
-    if (amount == null) return '\u2014';
-    return `$${amount.toFixed(2)}`;
-}
 
 function formatChargeType(chargeType: string): string {
     switch (chargeType) {

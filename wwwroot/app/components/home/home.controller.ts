@@ -1184,13 +1184,13 @@ class HomeController extends BaseController {
             if (foundCourier) {
                 this.currentCourier = {
                     id: foundCourier.courierId,
-                    text: foundCourier.label || foundCourier.name,
+                    text: foundCourier.name,
                 };
 
-                // Use courier code (id field) if available, otherwise use text/label
+                // Use courier code (id field) if available, otherwise fall back to name
                 const courierDisplay = (foundCourier.id && foundCourier.id !== 'undefined' && foundCourier.id.trim() !== '')
                     ? `${foundCourier.id}: ${foundCourier.name}`
-                    : (foundCourier.text || foundCourier.label);
+                    : foundCourier.name;
                 this.currentWorkSelection = ` for Courier ${courierDisplay}`;
                 await this.getCurrentJobs(foundCourier.courierId);
 
@@ -1236,6 +1236,7 @@ class HomeController extends BaseController {
                 this.mapJobList = this.getUndispatchedMapItems(result.jobs);
             } else {
                 console.debug(`No jobs found for courier ${courierId}`);
+                this.mapJobList = [];
             }
 
         } catch (error) {

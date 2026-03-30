@@ -13,6 +13,7 @@ import Tooltip from '@mui/material/Tooltip';
 import ClearIcon from '@mui/icons-material/Clear';
 import { NoData } from '../no-data/NoData';
 import { driverLocationColors } from '../../../theme/designTokens';
+import { ClearListDebugButton } from './ClearListDebugDialog';
 import type {
     DriverLocationsProps,
     IAreaClearList,
@@ -111,23 +112,28 @@ const DriverRow = React.memo(function DriverRow({
             >
                 {section.courierNumber}
             </Box>
-            <Box component="td" sx={{ flex: 1 }}>
-                {section.destinations?.map((destination, idx) => (
-                    <Box
-                        key={destination.id || idx}
-                        sx={{
-                            padding: '2px 4px',
-                            display: 'inline-block',
-                            backgroundColor: C.destination.bg,
-                            border: `1px solid ${C.destination.border}`,
-                            margin: '2px 0 2px 4px',
-                            borderRadius: 1,
-                            fontSize: '0.75rem',
-                        }}
-                    >
-                        {destination.label}
-                    </Box>
-                ))}
+            <Box component="td" sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+                <Box sx={{ flex: 1 }}>
+                    {section.destinations?.map((destination, idx) => (
+                        <Box
+                            key={destination.id || idx}
+                            sx={{
+                                padding: '2px 4px',
+                                display: 'inline-block',
+                                backgroundColor: C.destination.bg,
+                                border: `1px solid ${C.destination.border}`,
+                                margin: '2px 0 2px 4px',
+                                borderRadius: 1,
+                                fontSize: '0.75rem',
+                            }}
+                        >
+                            {destination.label}
+                        </Box>
+                    ))}
+                </Box>
+                {section.courierData?.courierId && (
+                    <ClearListDebugButton courierId={section.courierData.courierId} />
+                )}
             </Box>
         </Box>
     );

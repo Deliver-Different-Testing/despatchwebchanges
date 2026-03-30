@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import {alpha} from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -69,12 +70,9 @@ function formatCoordinates(lat: number | undefined, lng: number | undefined): st
     return `${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lng).toFixed(4)}° ${lngDir}`;
 }
 
-function formatCurrency(value: number | undefined): string {
+function formatCurrencyOrEmpty(value: number | undefined): string {
     if (value === undefined) return '';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(value);
+    return formatCurrency(value);
 }
 
 export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, isLoading, onClose}) => {
@@ -203,7 +201,7 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                         {/* Rate */}
                                         <InfoField
                                             label="Rate"
-                                            value={formatCurrency(agent.agentRate)}
+                                            value={formatCurrencyOrEmpty(agent.agentRate)}
                                             valueColor="success.main"
                                             valueFontWeight={600}
                                         />

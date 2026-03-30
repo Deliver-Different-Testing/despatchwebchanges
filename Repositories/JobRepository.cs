@@ -1674,7 +1674,7 @@ public partial class JobRepository(
     public async Task UpdatePackagesForJobAsync(int jobId,
         IReadOnlyList<ParcelDimensions> parcels)
     {
-        if (parcels == null || parcels.Count == 0) return;
+        parcels ??= [];
 
         try
         {
@@ -1716,6 +1716,18 @@ public partial class JobRepository(
                     existingParcelsToUpdate.Add(parcel);
                 }
             }
+
+            // Delete items that were removed by the user (must run before adding new items)
+            var incomingItemIds = parcels
+                .Where(p => p.ItemId.HasValue)
+                .Select(p => p.ItemId!.Value)
+                .ToList();
+
+            await Context.TucJobItems
+                .Where(i => i.JobId == effectiveJobId &&
+                            (childJobId == null || i.ChildJobId == childJobId) &&
+                            !incomingItemIds.Contains(i.ItemId))
+                .ExecuteDeleteAsync();
 
             // Add new parcels
             if (newParcels.Count > 0)
@@ -1768,7 +1780,7 @@ public partial class JobRepository(
     public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
         IReadOnlyList<ParcelDimensions> parcels)
     {
-        if (parcels == null || parcels.Count == 0) return;
+        parcels ??= [];
 
         try
         {
@@ -1810,6 +1822,18 @@ public partial class JobRepository(
                     existingParcelsToUpdate.Add(parcel);
                 }
             }
+
+            // Delete items that were removed by the user (must run before adding new items)
+            var incomingItemIds = parcels
+                .Where(p => p.ItemId.HasValue)
+                .Select(p => p.ItemId!.Value)
+                .ToList();
+
+            await Context.TblBulkJobItems
+                .Where(i => i.JobId == effectiveJobId &&
+                            (childJobId == null || i.ChildJobId == childJobId) &&
+                            !incomingItemIds.Contains(i.ItemId))
+                .ExecuteDeleteAsync();
 
             // Add new parcels
             if (newParcels.Count > 0)

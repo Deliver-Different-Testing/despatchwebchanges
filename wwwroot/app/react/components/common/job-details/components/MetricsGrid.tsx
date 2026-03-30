@@ -4,6 +4,7 @@
  */
 
 import React, {useCallback, useRef, useEffect} from 'react';
+import {formatCurrency} from '../../../../utils/currencyUtils';
 import Box from '@mui/material/Box';
 import type {SxProps, Theme} from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
@@ -35,6 +36,8 @@ const gridSx: SxProps<Theme> = {
     gap: '1px',
     bgcolor: 'divider',
 };
+
+const gridWithBorderSx: SxProps<Theme> = {...gridSx as object, borderTop: 1, borderColor: 'divider'};
 
 function getTzStr(timezone?: { text?: string }): string {
     if (timezone?.text) return getTimezoneAbbreviation(timezone.text);
@@ -110,10 +113,7 @@ export const MetricsGrid = React.memo(({
             <Box sx={gridSx}>
                 <MetricCard
                     label="Pricing"
-                    value={job.charge != null ? job.charge.toLocaleString(undefined, {
-                        style: 'currency',
-                        currency: (window as any).CurrencyCode || 'USD'
-                    }) : ''}
+                    value={job.charge != null ? formatCurrency(job.charge) : ''}
                     onClick={onPricingClick}
                     disabled={isLocked}
                     highlight
@@ -168,7 +168,7 @@ export const MetricsGrid = React.memo(({
             </Box>
 
             {/* Row 2: DISPATCHED, DEL ARRIVAL, POD NAME, POD TIME, FOLLOW UP, CLIENT NAME */}
-            <Box sx={{...gridSx as object, borderTop: 1, borderColor: 'divider'}}>
+            <Box sx={gridWithBorderSx}>
                 <MetricCard
                     label="Dispatched"
                     value={job.dispatchTime ? `${job._dispatchTimeStr} ${defaultTz}` : '-'}

@@ -96,6 +96,8 @@ const contactCardSx: SxProps<Theme> = {
     },
 };
 
+const contactCardDenseSx: SxProps<Theme> = {...contactCardSx as object, p: 0.5};
+
 const contactLabelSx: SxProps<Theme> = {
     fontSize: '0.6875rem',
     fontWeight: 600,
@@ -128,7 +130,7 @@ function ContactCard({
     children?: React.ReactNode;
 }) {
     const card = (
-        <Box sx={dense ? {...contactCardSx as object, p: 0.5} : contactCardSx}>
+        <Box sx={dense ? contactCardDenseSx : contactCardSx}>
             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}>
                 <IconComp sx={{fontSize: 14, color: 'text.secondary'}}/>
                 <Typography variant="caption" color="text.secondary" sx={contactLabelSx}>

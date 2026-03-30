@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import {formatCurrency} from '../../../../utils/currencyUtils';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
@@ -102,7 +103,7 @@ export const AgentInformation = React.memo(function AgentInformation({agent}: Ag
                             <Chip
                                 size="small"
                                 icon={<StarRateIcon />}
-                                label={`$${agent.agentRate.toFixed(2)}`}
+                                label={formatCurrency(agent.agentRate)}
                                 variant="outlined"
                             />
                         )}

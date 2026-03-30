@@ -5,7 +5,7 @@
  * Supports multiple density modes for different viewing preferences.
  */
 
-import React, {useState, useMemo, useEffect, useCallback, useRef} from 'react';
+import React, {useState, useMemo, useEffect, useCallback} from 'react';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
@@ -30,6 +30,7 @@ import {
     DeliveryHistoryConfig,
 } from './TaskHistory.interfaces';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import {useDeliveryJourney} from '../../../hooks/useTasksApi';
 
 dayjs.extend(relativeTime);
 
@@ -71,10 +72,11 @@ function getStatusColor(theme: Theme, status: string): { main: string; light: st
     return statusColors[status as keyof typeof statusColors] || statusColors.waiting;
 }
 
+const POLLING_INTERVAL_MS = 120_000; // 2 minutes
+
 export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                             jobId,
                                                             config: propConfig,
-                                                            dispatchService,
                                                             showErrorToast,
                                                             showInfoToast,
                                                             showSuccessToast,
@@ -83,8 +85,6 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
     const theme = useTheme();
     const config = useMemo(() => ({...defaultConfig, ...propConfig}), [propConfig]);
 
-    const [deliveryEvents, setDeliveryEvents] = useState<DeliveryJourney[]>([]);
-    const [loading, setLoading] = useState(false);
     const [densityMode, setDensityMode] = useState<DensityMode>(config.densityMode || DensityMode.Normal);
     const [shouldAnimate, setShouldAnimate] = useState(false);
 
@@ -93,29 +93,18 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         return getTimezoneAbbreviation(ianaTimeZone);
     }, []);
 
-    const loadDeliveryJourney = useCallback(async (): Promise<void> => {
-        if (!jobId) {
-            setDeliveryEvents([]);
-            return;
-        }
+    // Use React Query for data fetching with automatic 2-minute polling (client-swr-dedup)
+    const {data: deliveryEvents = [], isLoading: loading, error: fetchError, refetch} = useDeliveryJourney(jobId, {
+        refetchInterval: POLLING_INTERVAL_MS,
+    });
 
-        setLoading(true);
-        try {
-            const journey = await dispatchService.getDeliveryJourney(jobId);
-            setDeliveryEvents(journey);
-        } catch (error) {
-            console.error('Error loading delivery journey:', error);
-            showErrorToast?.('Failed to load delivery journey');
-            setDeliveryEvents([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [jobId, dispatchService, showErrorToast]);
-
-    // Load delivery journey on mount and when jobId changes
+    // Show error toast on fetch failure
     useEffect(() => {
-        loadDeliveryJourney();
-    }, [loadDeliveryJourney]);
+        if (fetchError) {
+            console.error('Error loading delivery journey:', fetchError);
+            showErrorToast?.('Failed to load delivery journey');
+        }
+    }, [fetchError, showErrorToast]);
 
     // Start animation timer on mount
     useEffect(() => {
@@ -123,21 +112,6 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
             setShouldAnimate(true);
         }, 100);
         return () => clearTimeout(timer);
-    }, []);
-
-    // Setup refresh interval (2 minute polling) - use ref to avoid interval recreation
-    const jobIdRef = useRef(jobId);
-    jobIdRef.current = jobId;
-    const loadDeliveryJourneyRef = useRef(loadDeliveryJourney);
-    loadDeliveryJourneyRef.current = loadDeliveryJourney;
-
-    useEffect(() => {
-        const interval = setInterval(async () => {
-            if (jobIdRef.current) {
-                await loadDeliveryJourneyRef.current();
-            }
-        }, 120000);
-        return () => clearInterval(interval);
     }, []);
 
     const cycleDensityMode = (): void => {
@@ -174,14 +148,14 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         }
     };
 
-    const handleRefresh = async (): Promise<void> => {
+    const handleRefresh = useCallback(async (): Promise<void> => {
         showInfoToast?.('Refreshing delivery journey...');
         setShouldAnimate(false);
 
-        await loadDeliveryJourney();
+        await refetch();
         setShouldAnimate(true);
         showSuccessToast?.('Delivery journey updated');
-    };
+    }, [refetch, showInfoToast, showSuccessToast]);
 
     const handleEventClick = (event: React.MouseEvent, deliveryEvent: DeliveryJourney): void => {
         event.preventDefault();

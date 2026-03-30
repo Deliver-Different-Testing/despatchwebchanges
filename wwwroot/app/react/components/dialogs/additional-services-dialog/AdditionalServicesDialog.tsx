@@ -30,10 +30,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ExtensionIcon from '@mui/icons-material/Extension';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { AdditionalService, AdditionalServicesDialogProps } from './types';
-
-function formatCurrency(amount: number): string {
-    return `$${amount.toFixed(2)}`;
-}
+import {formatCurrency} from '../../../utils/currencyUtils';
 
 export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> = ({
     open,
