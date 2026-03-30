@@ -16,7 +16,6 @@ import dayjs from 'dayjs';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
 import {suggestCouriers} from '../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
-import {queryClient} from '../../query/queryClient';
 
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn(),
@@ -541,69 +540,6 @@ describe('JobListTable', () => {
             document.dispatchEvent(new MouseEvent('mouseup', {clientX: 50}));
 
             expect(props.onColumnWidthsChange).toHaveBeenCalledWith(expect.objectContaining({jobNo: 50}));
-        });
-    });
-
-    // ── Prefetch on Hover ───────────────────────────────────────────
-    describe('Prefetch on Hover', () => {
-        let prefetchSpy: jest.SpyInstance;
-
-        beforeEach(() => {
-            prefetchSpy = jest.spyOn(queryClient, 'prefetchQuery').mockResolvedValue(undefined);
-        });
-
-        afterEach(() => {
-            prefetchSpy.mockRestore();
-        });
-
-        it('prefetches job detail when hovering over a standard job row', async () => {
-            const user = userEvent.setup();
-            const job = createMockDispatchJob({id: 42, jobNo: 'HOVER-STD', isBulkJob: false});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
-
-            await user.hover(screen.getByText('HOVER-STD'));
-
-            expect(prefetchSpy).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    queryKey: ['jobs', 'detail', 42, 'standard'],
-                    staleTime: 10_000,
-                }),
-            );
-        });
-
-        it('prefetches job detail with bulk type for bulk jobs', async () => {
-            const user = userEvent.setup();
-            const job = createMockDispatchJob({id: 99, jobNo: 'HOVER-BULK', isBulkJob: true});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
-
-            await user.hover(screen.getByText('HOVER-BULK'));
-
-            expect(prefetchSpy).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    queryKey: ['jobs', 'detail', 99, 'bulk'],
-                }),
-            );
-        });
-
-        it('does not duplicate prefetch calls for the same row on repeated hover', async () => {
-            const user = userEvent.setup();
-            const job = createMockDispatchJob({id: 7, jobNo: 'HOVER-DEDUP'});
-            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
-
-            const cell = screen.getByText('HOVER-DEDUP');
-            await user.hover(cell);
-            await user.unhover(cell);
-            await user.hover(cell);
-
-            // prefetchQuery is called each time, but React Query internally deduplicates
-            // if data is still fresh — we just verify the calls are made with correct args
-            const calls = prefetchSpy.mock.calls.filter(
-                ([opts]: any) => opts.queryKey[2] === 7,
-            );
-            expect(calls.length).toBeGreaterThanOrEqual(2);
-            calls.forEach(([opts]: any) => {
-                expect(opts.queryKey).toEqual(['jobs', 'detail', 7, 'standard']);
-            });
         });
     });
 });

@@ -445,7 +445,7 @@ class HomeController extends BaseController {
             distance: 5,
             disabled: false, // Will be updated when layout changes
 
-            start: (e: JQueryEventObject, ui: any) => {
+            start: (e: any, ui: any) => {
                 // Prevent drag on default layout
                 if (this.isDefaultLayout()) {
                     return false;
@@ -468,15 +468,15 @@ class HomeController extends BaseController {
                 });
             },
 
-            over: (e: JQueryEventObject, _: any) => {
+            over: (e: any, _: any) => {
                 angular.element(e.target).addClass('ui-sortable-active');
             },
 
-            out: (e: JQueryEventObject, _: any) => {
+            out: (e: any, _: any) => {
                 angular.element(e.target).removeClass('ui-sortable-active');
             },
 
-            stop: (_: JQueryEventObject, ui: any) => {
+            stop: (_: any, ui: any) => {
                 angular.element(this.$document[0]).off('mousemove.sortable');
                 angular.element('#draggingItems').css('display', 'none');
                 ui.item.removeClass('dragging');
