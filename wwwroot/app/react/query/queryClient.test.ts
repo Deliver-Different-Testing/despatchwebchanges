@@ -1,59 +1,141 @@
+/** @jest-environment jest-environment-jsdom */
 /**
  * QueryClient and queryKeys Tests
  */
 
-import {queryClient, queryKeys} from './queryClient';
+import {QueryClient} from '@tanstack/react-query';
+import type {queryClient as QueryClientType} from './queryClient';
+
+// We need jest.isolateModules to re-import queryClient.ts with different
+// window.ReactQueryClient states, since the module is evaluated once on import.
 
 describe('queryClient', () => {
-    describe('Default Options', () => {
-        it('is a QueryClient instance', () => {
-            expect(queryClient).toBeDefined();
-            expect(typeof queryClient.getQueryCache).toBe('function');
+    const originalReactQueryClient = window.ReactQueryClient;
+
+    afterEach(() => {
+        // Restore original state
+        window.ReactQueryClient = originalReactQueryClient;
+    });
+
+    describe('Shared Instance (window.ReactQueryClient present)', () => {
+        it('returns the window.ReactQueryClient instance instead of creating a new one', () => {
+            const sharedClient = new QueryClient();
+            window.ReactQueryClient = sharedClient;
+
+            let importedClient: typeof QueryClientType;
+            jest.isolateModules(() => {
+                importedClient = require('./queryClient').queryClient;
+            });
+
+            expect(importedClient!).toBe(sharedClient);
         });
 
-        it('has default options configured', () => {
-            const options = queryClient.getDefaultOptions();
-            expect(options).toBeDefined();
-        });
+        it('applies default options to the shared instance', () => {
+            const sharedClient = new QueryClient();
+            window.ReactQueryClient = sharedClient;
 
-        it('has query defaults', () => {
-            const options = queryClient.getDefaultOptions();
-            expect(options.queries).toBeDefined();
-        });
+            jest.isolateModules(() => {
+                require('./queryClient');
+            });
 
-        it('has mutation defaults', () => {
-            const options = queryClient.getDefaultOptions();
-            expect(options.mutations).toBeDefined();
-        });
-
-        it('has refetchOnWindowFocus disabled by default', () => {
-            const options = queryClient.getDefaultOptions();
+            const options = sharedClient.getDefaultOptions();
             expect(options.queries?.refetchOnWindowFocus).toBe(false);
-        });
-
-        it('has retry set to 1 for queries', () => {
-            const options = queryClient.getDefaultOptions();
             expect(options.queries?.retry).toBe(1);
-        });
-
-        it('has staleTime set to 30 seconds', () => {
-            const options = queryClient.getDefaultOptions();
-            expect(options.queries?.staleTime).toBe(30 * 1000);
-        });
-
-        it('has gcTime set to 5 minutes', () => {
-            const options = queryClient.getDefaultOptions();
+            expect(options.queries?.staleTime).toBe(30_000);
             expect(options.queries?.gcTime).toBe(5 * 60 * 1000);
+            expect(options.mutations?.retry).toBe(0);
+        });
+    });
+
+    describe('Fallback (window.ReactQueryClient absent)', () => {
+        it('creates a new QueryClient when window.ReactQueryClient is undefined', () => {
+            window.ReactQueryClient = undefined;
+
+            let importedClient: typeof QueryClientType;
+            jest.isolateModules(() => {
+                importedClient = require('./queryClient').queryClient;
+            });
+
+            expect(importedClient!).toBeDefined();
+            expect(typeof importedClient!.getQueryCache).toBe('function');
         });
 
-        it('has retry set to 0 for mutations', () => {
-            const options = queryClient.getDefaultOptions();
+        it('applies default options to the fallback instance', () => {
+            window.ReactQueryClient = undefined;
+
+            let importedClient: typeof QueryClientType;
+            jest.isolateModules(() => {
+                importedClient = require('./queryClient').queryClient;
+            });
+
+            const options = importedClient!.getDefaultOptions();
+            expect(options.queries?.refetchOnWindowFocus).toBe(false);
+            expect(options.queries?.retry).toBe(1);
+            expect(options.queries?.staleTime).toBe(30_000);
+            expect(options.queries?.gcTime).toBe(5 * 60 * 1000);
             expect(options.mutations?.retry).toBe(0);
+        });
+    });
+
+    describe('Cross-bundle cache sharing (regression test)', () => {
+        it('two independent imports resolve to the same QueryClient when window.ReactQueryClient is set', () => {
+            const sharedClient = new QueryClient();
+            window.ReactQueryClient = sharedClient;
+
+            let clientA: typeof QueryClientType;
+            let clientB: typeof QueryClientType;
+
+            // Simulate two separate bundle imports by isolating each
+            jest.isolateModules(() => {
+                clientA = require('./queryClient').queryClient;
+            });
+            jest.isolateModules(() => {
+                clientB = require('./queryClient').queryClient;
+            });
+
+            expect(clientA!).toBe(clientB!);
+            expect(clientA!).toBe(sharedClient);
+        });
+
+        it('invalidating queries on one reference is visible to the other', () => {
+            window.ReactQueryClient = new QueryClient();
+
+            let clientA: typeof QueryClientType;
+            let clientB: typeof QueryClientType;
+
+            jest.isolateModules(() => {
+                clientA = require('./queryClient').queryClient;
+            });
+            jest.isolateModules(() => {
+                clientB = require('./queryClient').queryClient;
+            });
+
+            // Set data via clientA
+            clientA!.setQueryData(['jobs', 'detail', 42, 'standard'], {id: 42, status: 'New'});
+
+            // Read it back via clientB — proves shared cache
+            const data = clientB!.getQueryData(['jobs', 'detail', 42, 'standard']);
+            expect(data).toEqual({id: 42, status: 'New'});
+
+            // Invalidate via clientB
+            clientB!.removeQueries({queryKey: ['jobs', 'detail', 42]});
+
+            // Verify it's gone via clientA
+            const removed = clientA!.getQueryData(['jobs', 'detail', 42, 'standard']);
+            expect(removed).toBeUndefined();
         });
     });
 });
 
 describe('queryKeys', () => {
+    // Import once for key factory tests (no window dependency)
+    let queryKeys: typeof import('./queryClient')['queryKeys'];
+    beforeAll(() => {
+        jest.isolateModules(() => {
+            queryKeys = require('./queryClient').queryKeys;
+        });
+    });
+
     describe('couriers', () => {
         it('has all key', () => {
             expect(queryKeys.couriers.all).toEqual(['couriers']);
@@ -231,14 +313,12 @@ describe('queryKeys', () => {
     describe('Key Immutability', () => {
         it('returns readonly arrays', () => {
             const key = queryKeys.couriers.all;
-            // TypeScript will catch attempts to modify, but we can verify the structure
             expect(Array.isArray(key)).toBe(true);
         });
 
         it('search function returns new array each call', () => {
             const key1 = queryKeys.couriers.search('test');
             const key2 = queryKeys.couriers.search('test');
-            // Arrays should be equal in value but different references
             expect(key1).toEqual(key2);
         });
     });

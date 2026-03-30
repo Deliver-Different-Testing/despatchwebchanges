@@ -443,6 +443,23 @@ describe('JobListContextMenu', () => {
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
+        it('Re-Dispatch invalidates job detail cache so detail panel refreshes', async () => {
+            const {queryClient: qc} = await import('../../query/queryClient');
+            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const user = userEvent.setup();
+            const props = createDefaultProps({
+                job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
+            });
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Re-Dispatch'));
+
+            await waitFor(() => {
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs']});
+            });
+            invalidateSpy.mockRestore();
+        });
+
         it('Restore calls restoreJobs with jobId array and refreshes', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps();
@@ -803,6 +820,39 @@ describe('JobListContextMenu', () => {
                 );
             });
             expect(props.onRefresh).toHaveBeenCalled();
+        });
+
+        it('Void Job invalidates job list cache so list refreshes after void', async () => {
+            const {queryClient: qc} = await import('../../query/queryClient');
+            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Void Job'));
+
+            await waitFor(() => {
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs']});
+            });
+            invalidateSpy.mockRestore();
+        });
+
+        it('Void Job does not refresh or invalidate when dialog is cancelled', async () => {
+            (window as any).ReactVoidJobConfirmationDialog = {open: jest.fn().mockResolvedValue(null)};
+            const {queryClient: qc} = await import('../../query/queryClient');
+            const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Void Job'));
+
+            await waitFor(() => {
+                expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalled();
+            });
+            expect(props.onRefresh).not.toHaveBeenCalled();
+            expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: ['jobs']});
+            invalidateSpy.mockRestore();
         });
 
         it('Swap PODs calls window.ReactSwapPodsDialog.open and refreshes on success', async () => {

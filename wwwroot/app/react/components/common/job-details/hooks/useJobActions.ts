@@ -55,6 +55,7 @@ interface UseJobActionsOptions {
     updatePod: (data: UpdatePodDetailsRequest) => Promise<unknown>;
     dispatchJob: (args: {job: IJob; courierId: number}) => Promise<unknown>;
     refreshAndNotify: () => Promise<void>;
+    invalidateJobLists: () => Promise<void[]>;
     onStatusChange?: (statusId: number) => void;
 }
 
@@ -68,6 +69,7 @@ export function useJobActions({
     updatePod,
     dispatchJob,
     refreshAndNotify,
+    invalidateJobLists,
     onStatusChange,
 }: UseJobActionsOptions) {
     const {
@@ -80,6 +82,7 @@ export function useJobActions({
         ensureSimplePriceEditDialog,
         ensureParcelDimensionsDialog,
         ensureSendPodDialog,
+        ensureJobFileUploadDialog,
     } = useDialogLoader();
 
     // Stable ref for job so callbacks don't recreate on every job change
@@ -323,12 +326,15 @@ export function useJobActions({
                 isBulkJob: j.isBulkJob,
                 isArchived: j.isArchived,
             });
-            if (result) await refreshAndNotify();
+            if (result) {
+                await refreshAndNotify();
+                await invalidateJobLists();
+            }
         } else {
             await updateField({job: j, field: JobProperty.Void, value: false, isRecurring: j.preBook});
             await refreshAndNotify();
         }
-    }, [ensureVoidDialog, updateField, refreshAndNotify]);
+    }, [ensureVoidDialog, updateField, refreshAndNotify, invalidateJobLists]);
 
     const handleActiveClick = useCallback(async () => {
         const j = jobRef.current;
@@ -397,9 +403,10 @@ export function useJobActions({
             if (podName === null) return;
         }
 
-        // POD file upload (optional — user can skip)
+        // POD file upload (optional — user can skip by closing the dialog)
         try {
-            (window as any).ReactJobFileUploadDialog?.open?.(j.id, 'POD');
+            await ensureJobFileUploadDialog();
+            await window.ReactJobFileUploadDialog?.open?.(j.id, 'POD');
         } catch {
             // Upload dialog not available or user cancelled — continue
         }
@@ -413,7 +420,7 @@ export function useJobActions({
         });
         showToast(`${j.jobNo} Completed`, 'success');
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, showToast]);
+    }, [ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, showToast]);
 
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;

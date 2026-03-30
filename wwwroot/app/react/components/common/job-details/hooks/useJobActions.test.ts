@@ -22,6 +22,7 @@ jest.mock('./useDialogLoader', () => ({
         ensureSimplePriceEditDialog: jest.fn().mockResolvedValue(undefined),
         ensureParcelDimensionsDialog: jest.fn().mockResolvedValue(undefined),
         ensureSendPodDialog: jest.fn().mockResolvedValue(undefined),
+        ensureJobFileUploadDialog: jest.fn().mockResolvedValue(undefined),
     }),
 }));
 
@@ -80,6 +81,7 @@ function setup(opts: SetupOptions = {}) {
     const mockUpdatePod = jest.fn().mockResolvedValue(undefined);
     const mockDispatchJob = jest.fn().mockResolvedValue(undefined);
     const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
+    const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
 
     const {result} = renderHook(() =>
         useJobActions({
@@ -92,6 +94,7 @@ function setup(opts: SetupOptions = {}) {
             updatePod: mockUpdatePod,
             dispatchJob: mockDispatchJob,
             refreshAndNotify: mockRefreshAndNotify,
+            invalidateJobLists: mockInvalidateJobLists,
         }),
     );
 
@@ -101,6 +104,7 @@ function setup(opts: SetupOptions = {}) {
         mockUpdateField,
         mockUpdatePod,
         mockRefreshAndNotify,
+        mockInvalidateJobLists,
     };
 }
 
@@ -264,7 +268,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
             });
 
             // Cancel the text dialog
-            await act(() => result.current.handleTextDialogCancel());
+            act(() => result.current.handleTextDialogCancel());
             await act(() => donePromise!);
 
             expect(mockShowToast).toHaveBeenCalledWith(
@@ -332,6 +336,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                     updatePod: mockUpdatePod,
                     dispatchJob: jest.fn().mockResolvedValue(undefined),
                     refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+                    invalidateJobLists: jest.fn().mockResolvedValue([]),
                 }),
             );
 
@@ -475,7 +480,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 await Promise.resolve();
             });
 
-            await act(() => result.current.handleTextDialogCancel());
+            act(() => result.current.handleTextDialogCancel());
             await act(() => donePromise!);
 
             expect(mockUpdatePod).not.toHaveBeenCalled();
@@ -508,7 +513,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
 
     describe('file upload step (step 3)', () => {
         it('attempts to open file upload dialog when available', async () => {
-            const openMock = jest.fn();
+            const openMock = jest.fn().mockResolvedValue(undefined);
             (window as any).ReactJobFileUploadDialog = {open: openMock};
 
             const job = createMockJob({
@@ -538,5 +543,100 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                 expect.objectContaining({jobStatus: '6'}),
             );
         });
+    });
+});
+
+// ── Void Job Tests ──────────────────────────────────────────────────
+
+describe('useJobActions — handleVoidClick', () => {
+    afterEach(() => {
+        delete (window as any).ReactVoidJobConfirmationDialog;
+        jest.restoreAllMocks();
+    });
+
+    it('calls refreshAndNotify and invalidateJobLists after successful void', async () => {
+        (window as any).ReactVoidJobConfirmationDialog = {
+            open: jest.fn().mockResolvedValue({success: true, voidedCount: 1}),
+        };
+
+        const {result, mockRefreshAndNotify, mockInvalidateJobLists} = setup({
+            job: createMockJob({void: false}),
+        });
+
+        await act(async () => {
+            await result.current.handleVoidClick();
+        });
+
+        expect((window as any).ReactVoidJobConfirmationDialog.open).toHaveBeenCalledWith({
+            id: 1001,
+            jobNo: 'J-1001',
+            isBulkJob: false,
+            isArchived: undefined,
+        });
+        expect(mockRefreshAndNotify).toHaveBeenCalled();
+        expect(mockInvalidateJobLists).toHaveBeenCalled();
+    });
+
+    it('does not refresh or invalidate when void dialog is cancelled', async () => {
+        (window as any).ReactVoidJobConfirmationDialog = {
+            open: jest.fn().mockResolvedValue(null),
+        };
+
+        const {result, mockRefreshAndNotify, mockInvalidateJobLists} = setup({
+            job: createMockJob({void: false}),
+        });
+
+        await act(async () => {
+            await result.current.handleVoidClick();
+        });
+
+        expect(mockRefreshAndNotify).not.toHaveBeenCalled();
+        expect(mockInvalidateJobLists).not.toHaveBeenCalled();
+    });
+
+    it('un-voids via updateField when job is already voided', async () => {
+        const {result, mockUpdateField, mockRefreshAndNotify} = setup({
+            job: createMockJob({void: true, preBook: false}),
+        });
+
+        await act(async () => {
+            await result.current.handleVoidClick();
+        });
+
+        expect(mockUpdateField).toHaveBeenCalledWith(
+            expect.objectContaining({field: 'Void', value: false}),
+        );
+        expect(mockRefreshAndNotify).toHaveBeenCalled();
+    });
+
+    it('does nothing when job is undefined', async () => {
+        (window as any).ReactVoidJobConfirmationDialog = {
+            open: jest.fn(),
+        };
+
+        const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
+        const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
+        const {result} = renderHook(() =>
+            useJobActions({
+                job: undefined,
+                isRecurringJob: false,
+                isUsCustomer: false,
+                showToast: jest.fn(),
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                updatePod: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                refreshAndNotify: mockRefreshAndNotify,
+                invalidateJobLists: mockInvalidateJobLists,
+            }),
+        );
+
+        await act(async () => {
+            await result.current.handleVoidClick();
+        });
+
+        expect((window as any).ReactVoidJobConfirmationDialog.open).not.toHaveBeenCalled();
+        expect(mockRefreshAndNotify).not.toHaveBeenCalled();
+        expect(mockInvalidateJobLists).not.toHaveBeenCalled();
     });
 });

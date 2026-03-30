@@ -37,7 +37,7 @@ export interface EditDateTimeDialogProps {
     showTime?: boolean;
     isUSCustomer?: boolean;
     onClose: () => void;
-    onSubmit: (result: EditDateTimeDialogResult) => void;
+    onSubmit: (result: EditDateTimeDialogResult) => void | Promise<void>;
     showToast: ShowToastFn;
 }
 

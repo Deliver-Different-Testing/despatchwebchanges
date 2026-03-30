@@ -25,13 +25,19 @@ window.useQuery = useQuery;
 window.useMutation = useMutation;
 window.useQueryClient = useQueryClient;
 
-// Create and expose a shared QueryClient instance
+// Create and expose a shared QueryClient instance.
+// Full default options are applied by queryClient.ts via setDefaultOptions()
+// when React modules load. Keep minimal defaults here as a baseline.
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
             refetchOnWindowFocus: false,
             retry: 1,
-            staleTime: 30000,
+            staleTime: 30 * 1000,
+            gcTime: 5 * 60 * 1000,
+        },
+        mutations: {
+            retry: 0,
         },
     },
 });

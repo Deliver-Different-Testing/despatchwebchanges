@@ -207,7 +207,7 @@ export function JobDetails({config}: JobDetailsProps) {
     const aiContainerRef = useRef<HTMLDivElement>(null);
 
     // Update mutations
-    const {updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating} = useJobUpdate(showToast);
+    const {updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists} = useJobUpdate(showToast);
 
     // Photos
     const {deliveryPhotos, pickupPhotos, imageOnlyDeliveryPhotos, imageOnlyPickupPhotos, isLoading: photosLoading} = usePodPhotos({
@@ -237,6 +237,7 @@ export function JobDetails({config}: JobDetailsProps) {
         updatePod,
         dispatchJob,
         refreshAndNotify,
+        invalidateJobLists,
         onStatusChange: config.onStatusChange,
     });
 

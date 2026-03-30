@@ -653,6 +653,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             await allocateJobs(courierId, ids);
             showToast(`${ids.length} job(s) dispatched to ${courierName}`, 'success');
             multiSelect.clear();
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
                 hookDataRef.current.refresh();
             } else if (onRefresh) {
@@ -694,7 +695,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         try {
             await allocateJobs(courierId, [job.id]);
             showToast(`Dispatched to ${courierName}`, 'success');
-            // Refresh data
+            // Refresh data — invalidate job detail so the detail panel updates too
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
                 hookDataRef.current.refresh();
             } else if (onRefresh) {

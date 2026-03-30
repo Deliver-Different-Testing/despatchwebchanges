@@ -33,14 +33,28 @@ const defaultQueryOptions = {
 };
 
 /**
- * Singleton QueryClient instance
+ * Shared QueryClient singleton
  *
- * Use this instance throughout the application to ensure
- * consistent caching and state management.
+ * Uses the instance created by vendor-react (window.ReactQueryClient) so that
+ * all React module bundles (job list, job detail, dialogs, etc.) share the
+ * same query cache. This enables cross-component cache invalidation — e.g.,
+ * updating a job in the detail panel automatically refreshes the job list.
+ *
+ * Falls back to creating a new instance for unit tests or if vendor-react
+ * hasn't loaded yet.
  */
-export const queryClient = new QueryClient({
-    defaultOptions: defaultQueryOptions,
-});
+function getSharedQueryClient(): QueryClient {
+    const win = typeof window !== 'undefined' ? window : undefined;
+    if (win?.ReactQueryClient) {
+        // Apply our full default options to the shared instance
+        win.ReactQueryClient.setDefaultOptions(defaultQueryOptions);
+        return win.ReactQueryClient;
+    }
+    // Fallback for tests or standalone usage
+    return new QueryClient({defaultOptions: defaultQueryOptions});
+}
+
+export const queryClient = getSharedQueryClient();
 
 /**
  * Query key factory for type-safe and consistent query keys

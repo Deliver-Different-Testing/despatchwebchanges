@@ -90,19 +90,32 @@ describe('EditDateTimeDialog', () => {
 
     // ── Timezone Display ────────────────────────────────────────────
     describe('Timezone Display', () => {
-        it('displays timezone section only for US customers', () => {
-            const {unmount} = renderWithProviders(createDefaultProps({isUSCustomer: true}));
-            expect(screen.getByText('Your timezone')).toBeInTheDocument();
+        it('displays job timezone with human-readable name for US customers', () => {
+            renderWithProviders(createDefaultProps({
+                isUSCustomer: true,
+                defaultTimeZone: 'America/New_York',
+            }));
             expect(screen.getByText('Job timezone')).toBeInTheDocument();
-            unmount();
+            // Should show human-readable name like "Eastern Daylight Time" without abbreviation or IANA ID
+            const tzText = screen.getByText(/Eastern .+ Time/);
+            expect(tzText).toBeInTheDocument();
+            expect(tzText.textContent).not.toContain('America');
+            expect(tzText.textContent).not.toMatch(/\(.*\)/);
+        });
 
-            renderWithProviders(createDefaultProps({isUSCustomer: false}));
+        it('does not display browser timezone', () => {
+            renderWithProviders(createDefaultProps({isUSCustomer: true}));
             expect(screen.queryByText('Your timezone')).not.toBeInTheDocument();
+        });
+
+        it('hides timezone section for non-US customers', () => {
+            renderWithProviders(createDefaultProps({isUSCustomer: false}));
+            expect(screen.queryByText('Job timezone')).not.toBeInTheDocument();
         });
 
         it('defaults to hiding timezone section', () => {
             renderWithProviders(createDefaultProps());
-            expect(screen.queryByText('Your timezone')).not.toBeInTheDocument();
+            expect(screen.queryByText('Job timezone')).not.toBeInTheDocument();
         });
     });
 

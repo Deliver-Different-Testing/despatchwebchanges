@@ -20,6 +20,7 @@ public class AddStopJobServiceTests
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
     private TucJob _createdStopJob = new();
+    private TucJobBooking _createdStopBooking = new();
 
     private AddStopJobService CreateService() => new(
         _jobQueryRepositoryMock.Object,
@@ -410,6 +411,257 @@ public class AddStopJobServiceTests
         async Task<int> Act() => await service.AddStopInsertJobAsync(request);
     }
 
+    [Fact]
+    public async Task AddStopInsertJobAsync_SpFailure_ThrowsInvalidOperationException()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+
+        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
+            .ReturnsAsync(parentJob);
+        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
+        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(1);
+        _jobCommandRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateMinimalTucJobResponse { Success = false, Message = "SP error" });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Failed to create stop job", ex.Message);
+        return;
+
+        async Task<int> Act() => await service.AddStopInsertJobAsync(request);
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_SpReturnsNullJobId_ThrowsInvalidOperationException()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+
+        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
+            .ReturnsAsync(parentJob);
+        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
+            .ReturnsAsync(false);
+        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(1);
+        _jobCommandRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
+                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CreateMinimalTucJobResponse { Success = true, JobId = null });
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
+        Assert.Contains("Failed to create stop job", ex.Message);
+        return;
+
+        async Task<int> Act() => await service.AddStopInsertJobAsync(request);
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_SetsConstantFieldsOnCreatedJob()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        await service.AddStopInsertJobAsync(request);
+
+        Assert.False(_createdStopJob.DisplayInDespatch);
+        Assert.Equal(152, _createdStopJob.UcjbTo);
+        Assert.Equal(13, _createdStopJob.JobRelationshipTypeId);
+        Assert.Equal(0m, _createdStopJob.CourierFuel);
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_CopiesWeightFromExtras()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.Weight = 7.5;
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        await service.AddStopInsertJobAsync(request);
+
+        Assert.Equal(7.5, _createdStopJob.UcjbWeight);
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_ZeroQuantity_DoesNotCreatePackages()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.Quantity = 0;
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        await service.AddStopInsertJobAsync(request);
+
+        _jobCommandRepositoryMock.Verify(x => x.AddPackagesToJobAsync(
+            It.IsAny<int>(), It.IsAny<List<TucJobItem>>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_ShipmentDetailsFallback_UsesDeliveryAddress()
+    {
+        var service = CreateService();
+        var request = new AddStopRequest
+        {
+            JobId = 1,
+            PickUpAddress = new EditAddressDialogViewModel(),
+            DeliveryAddress = new EditAddressDialogViewModel
+            {
+                ShipmentDetails = new ShipmentDetails
+                {
+                    Weight = 3.0,
+                    Quantity = 2,
+                    ContactName = "Delivery Contact",
+                    ContactMobile = "0299999999"
+                }
+            }
+        };
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+
+        var result = await service.AddStopInsertJobAsync(request);
+
+        Assert.Equal(999, result);
+        Assert.Equal(3.0, _createdStopJob.UcjbWeight);
+    }
+
+    [Fact]
+    public async Task AddStopInsertJobAsync_CalculatesRawAmountFromRepository()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentJob = CreateParentJob();
+
+        SetupSuccessfulMocks(request, parentJob, 999);
+        _jobQueryRepositoryMock.Setup(x => x.GetNationwideServiceRawPriceAsync(
+                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
+                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<float?>(),
+                It.IsAny<int?>(), It.IsAny<int?>()))
+            .ReturnsAsync(42m);
+
+        await service.AddStopInsertJobAsync(request);
+
+        Assert.Equal(42m, _createdStopJob.RawAmount);
+    }
+
+    [Fact]
+    public async Task AddStopInsertRecurringJobAsync_WithJobNotes_CreatesNoteWithJobBookingId()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.JobNotes = "Booking note";
+        var parentBooking = CreateParentBookingJob();
+
+        SetupRecurringSuccessfulMocks(request, parentBooking, 888);
+
+        await service.AddStopInsertRecurringJobAsync(request);
+
+        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucNote>(n =>
+            n.JobBookingId == parentBooking.UcbkId &&
+            n.NoteText == "Booking note" &&
+            n.NoteTypeId == (int)NoteType.InternalNote)), Times.Once);
+    }
+
+    [Fact]
+    public async Task AddStopInsertRecurringJobAsync_WithoutJobNotes_DoesNotCreateNote()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.JobNotes = null;
+        var parentBooking = CreateParentBookingJob();
+
+        SetupRecurringSuccessfulMocks(request, parentBooking, 888);
+
+        await service.AddStopInsertRecurringJobAsync(request);
+
+        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.IsAny<TucNote>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddStopInsertRecurringJobAsync_SetsConstantFields()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentBooking = CreateParentBookingJob();
+
+        SetupRecurringSuccessfulMocks(request, parentBooking, 888);
+
+        await service.AddStopInsertRecurringJobAsync(request);
+
+        Assert.True(_createdStopBooking.UcbkAttention);
+        Assert.True(_createdStopBooking.RatedManually);
+        Assert.Equal(20m, _createdStopBooking.UcbkAmount);
+        Assert.Equal(10m, _createdStopBooking.CourierPayment);
+        Assert.Equal(0m, _createdStopBooking.FuelSurchargeAmount);
+        Assert.Equal(0m, _createdStopBooking.CourierFuel);
+        Assert.Equal(152, _createdStopBooking.UcbkTo);
+        Assert.Equal(13, _createdStopBooking.JobRelationshipTypeId);
+    }
+
+    [Fact]
+    public async Task AddStopInsertRecurringJobAsync_SetsParentIdFromBooking()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentBooking = CreateParentBookingJob();
+
+        SetupRecurringSuccessfulMocks(request, parentBooking, 888);
+
+        await service.AddStopInsertRecurringJobAsync(request);
+
+        Assert.Equal(parentBooking.UcbkId, _createdStopBooking.ParentId);
+    }
+
+    [Fact]
+    public async Task AddStopInsertRecurringJobAsync_WithExistingParentId_UsesExistingParentId()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        var parentBooking = CreateParentBookingJob();
+        parentBooking.ParentId = 600;
+
+        SetupRecurringSuccessfulMocks(request, parentBooking, 888);
+
+        await service.AddStopInsertRecurringJobAsync(request);
+
+        Assert.Equal(600, _createdStopBooking.ParentId);
+    }
+
+    [Fact]
+    public async Task AddStopInsertRecurringJobAsync_ContactAndQuantityFallback()
+    {
+        var service = CreateService();
+        var request = CreateValidRequest();
+        request.PickUpAddress.ShipmentDetails.ContactName = null;
+        request.PickUpAddress.ShipmentDetails.ContactMobile = null;
+        request.PickUpAddress.ShipmentDetails.Quantity = null;
+        var parentBooking = CreateParentBookingJob();
+        parentBooking.PickupFromContact = "Parent Contact";
+        parentBooking.PickupFromPhone = "111";
+        parentBooking.DeliverToContact = "Parent Deliver";
+        parentBooking.DeliverToPhone = "222";
+        parentBooking.Quantity = 5;
+
+        SetupRecurringSuccessfulMocks(request, parentBooking, 888);
+
+        await service.AddStopInsertRecurringJobAsync(request);
+
+        Assert.Equal("Parent Contact", _createdStopBooking.PickupFromContact);
+        Assert.Equal("111", _createdStopBooking.PickupFromPhone);
+        Assert.Equal("Parent Deliver", _createdStopBooking.DeliverToContact);
+        Assert.Equal("222", _createdStopBooking.DeliverToPhone);
+        Assert.Equal((short)5, _createdStopBooking.Quantity);
+    }
+
     private static AddStopRequest CreateValidRequest() => new()
     {
         JobId = 1,
@@ -500,7 +752,11 @@ public class AddStopJobServiceTests
             .Returns(1);
 
         _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucJobBooking>()))
-            .Callback<TucJobBooking>(j => j.UcbkId = newJobId)
+            .Callback<TucJobBooking>(j =>
+            {
+                j.UcbkId = newJobId;
+                _createdStopBooking = j;
+            })
             .Returns(Task.CompletedTask);
         _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucNote>()))
             .Returns(Task.CompletedTask);

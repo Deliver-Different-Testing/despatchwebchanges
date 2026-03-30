@@ -384,7 +384,7 @@ describe('useJobUpdate', () => {
             }
         });
 
-        it('does NOT invalidate job list caches for POD updates', async () => {
+        it('invalidates job list caches after a successful POD update', async () => {
             mockUpdatePodDetails.mockResolvedValueOnce(undefined);
             const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
@@ -394,7 +394,7 @@ describe('useJobUpdate', () => {
             });
 
             for (const prefix of listPrefixes) {
-                expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: prefix});
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: prefix});
             }
         });
 
@@ -412,6 +412,31 @@ describe('useJobUpdate', () => {
             }
         });
 
+        it('invalidates job detail cache after a successful dispatch', async () => {
+            mockAllocateJob.mockResolvedValueOnce(undefined);
+            mockGetCourierById.mockResolvedValueOnce({id: 'C1', name: 'Courier'});
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.dispatchJob({job: createMockJob(), courierId: 1});
+            });
+
+            expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs', 'detail', 1]});
+        });
+
+        it('invalidates job detail cache after a successful POD update', async () => {
+            mockUpdatePodDetails.mockResolvedValueOnce(undefined);
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.updatePod({jobId: 42} as any);
+            });
+
+            expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs', 'detail', 42]});
+        });
+
         it('does NOT invalidate job list caches when field update fails', async () => {
             mockUpdateJobDetail.mockRejectedValueOnce(new Error('fail'));
             const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
@@ -425,6 +450,23 @@ describe('useJobUpdate', () => {
 
             for (const prefix of listPrefixes) {
                 expect(invalidateSpy).not.toHaveBeenCalledWith({queryKey: prefix});
+            }
+        });
+    });
+
+    describe('invalidateJobLists', () => {
+        const listPrefixes = [['dispatch'], ['jobSearch'], ['nationwide']];
+
+        it('is exposed and invalidates all job list caches when called directly', async () => {
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+
+            await act(async () => {
+                await result.current.invalidateJobLists();
+            });
+
+            for (const prefix of listPrefixes) {
+                expect(invalidateSpy).toHaveBeenCalledWith({queryKey: prefix});
             }
         });
     });

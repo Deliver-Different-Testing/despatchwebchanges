@@ -19,7 +19,6 @@ import TextField from '@mui/material/TextField';
 import TodayIcon from '@mui/icons-material/Today';
 import CloseIcon from '@mui/icons-material/Close';
 import PublicIcon from '@mui/icons-material/Public';
-import WorkIcon from '@mui/icons-material/Work';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -29,22 +28,20 @@ import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 
 import { EditDateTimeDialogProps, EditDateTimeDialogResult } from './types';
-import { getIanaTimezone } from '../../../utils/dateUtils';
+import { getIanaTimezone, getTimezoneName } from '../../../utils/dateUtils';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 /**
- * Format timezone for display (e.g., "Pacific/Auckland" -> "Pacific/Auckland (NZDT)")
+ * Format timezone for display (e.g., "America/New_York" -> "Eastern Daylight Time")
  */
 function formatTimezoneDisplay(tz: string | { text?: string } | undefined | null): string {
     // Handle timezone objects (e.g. {text: "Pacific/Auckland"}) that may be passed via `as any`
     const tzStr = typeof tz === 'string' ? tz : tz?.text ?? '';
     if (!tzStr) return '';
     try {
-        const now = dayjs().tz(tzStr);
-        const abbr = now.format('z');
-        return `${tzStr.replace(/_/g, ' ')} (${abbr})`;
+        return getTimezoneName(tzStr);
     } catch {
         return tzStr.replace(/_/g, ' ');
     }
@@ -71,7 +68,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         ? defaultTimeZone
         : (defaultTimeZone as unknown as { text?: string })?.text ?? undefined;
     const [selectedTimeZone] = useState(resolvedTz || getIanaTimezone());
-    const browserTimeZone = dayjs.tz.guess();
+
 
     // Initialize dateTime when dialog opens or initialDateTime changes
     useEffect(() => {
@@ -309,31 +306,8 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                     borderColor: 'grey.200',
                                 }}
                             >
-                                {/* Browser Timezone */}
-                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                    <PublicIcon
-                                        sx={{
-                                            fontSize: 24,
-                                            color: 'primary.main',
-                                            mr: 1.5,
-                                        }}
-                                    />
-                                    <Box>
-                                        <Typography
-                                            variant="body2"
-                                            sx={{ color: 'text.secondary', fontWeight: 500 }}
-                                        >
-                                            Your timezone
-                                        </Typography>
-                                        <Typography variant="body1">
-                                            {formatTimezoneDisplay(browserTimeZone)}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-
-                                {/* Job Timezone */}
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                    <WorkIcon
+                                    <PublicIcon
                                         sx={{
                                             fontSize: 24,
                                             color: 'primary.main',
