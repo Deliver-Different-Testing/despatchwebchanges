@@ -891,9 +891,11 @@ class HomeController extends BaseController {
                 this.mapZoom = 7; // Closer zoom for a single view
             }
         } else {
-            // For multiple views, center on continental US
-            this.mapCenter = this.APP_CONFIG.US_Coordinates_Center;
-            this.mapZoom = 4; // Zoom level to show most of the continental US
+            // For multiple views, center on the tenant's country
+            this.mapCenter = this.APP_CONFIG.US_Customer
+                ? this.APP_CONFIG.US_Coordinates_Center
+                : this.APP_CONFIG.NZ_Coordinates_Center;
+            this.mapZoom = 4;
         }
 
         this.initialViewSet = true;

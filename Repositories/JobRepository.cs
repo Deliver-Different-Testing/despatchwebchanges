@@ -1695,7 +1695,7 @@ public partial class JobRepository(
 
             foreach (var parcel in parcels)
             {
-                if (parcel.ItemId == null)
+                if (parcel.ItemId is null or <= 0)
                 {
                     var newItem = new TucJobItem
                     {
@@ -1720,7 +1720,7 @@ public partial class JobRepository(
 
             // Delete items that were removed by the user (must run before adding new items)
             var incomingItemIds = parcels
-                .Where(p => p.ItemId.HasValue)
+                .Where(p => p.ItemId is > 0)
                 .Select(p => p.ItemId!.Value)
                 .ToList();
 
@@ -1809,7 +1809,7 @@ public partial class JobRepository(
 
             foreach (var parcel in parcels)
             {
-                if (parcel.ItemId == null)
+                if (parcel.ItemId is null or <= 0)
                 {
                     var newItem = new TblBulkJobItem
                     {
@@ -1833,7 +1833,7 @@ public partial class JobRepository(
 
             // Delete items that were removed by the user (must run before adding new items)
             var incomingItemIds = parcels
-                .Where(p => p.ItemId.HasValue)
+                .Where(p => p.ItemId is > 0)
                 .Select(p => p.ItemId!.Value)
                 .ToList();
 
@@ -3848,12 +3848,13 @@ public partial class JobRepository(
     {
         try
         {
-            await MarkJobAsReadAsync(jobId);
+            // Fire-and-forget: mark as read concurrently (doesn't affect the read result)
+            _ = MarkJobAsReadAsync(jobId);
 
-            var isLiveJob = await Context.IsLiveJobAsync(jobId);
-
-            if (isLiveJob)
-                return await GetLiveJobByIdAsync(jobId);
+            // Try live first — eliminates the separate IsLiveJobAsync round-trip
+            var result = await GetLiveJobByIdAsync(jobId);
+            if (result != null)
+                return result;
 
             return await GetArchivedJobByIdAsync(jobId);
         }
@@ -4729,19 +4730,26 @@ public partial class JobRepository(
     }
 
 
-
     private async Task MarkJobAsReadAsync(int jobId)
     {
-        var staffId = _infoService.GetStaffId();
-        var currentTenantTime = _clock.TenantNow;
+        try
+        {
+            var staffId = _infoService.GetStaffId();
+            var currentTenantTime = _clock.TenantNow;
 
-        // Single query: insert only if a job exists in TucJobs and no tracker exists yet
-        await Context.Database.ExecuteSqlInterpolatedAsync($"""
+            // Uses a separate context since this runs concurrently with the read queries
+            await using var markReadContext = await _contextFactory.CreateDbContextAsync();
+            await markReadContext.Database.ExecuteSqlInterpolatedAsync($"""
                                                                         INSERT INTO tucJobReadTracker (JobId, HasBeenRead, ReadByStaffId, ReadTimestamp)
                                                                         SELECT {jobId}, 1, {staffId}, {currentTenantTime}
                                                                         WHERE EXISTS (SELECT 1 FROM tucJob WHERE ucjbId = {jobId})
                                                                           AND NOT EXISTS (SELECT 1 FROM tucJobReadTracker WHERE JobId = {jobId})
-                                                            """);
+                                                                        """);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Failed to mark job {JobId} as read", jobId);
+        }
     }
 
     private async Task<JobGroupViewModel> GetLiveJobByIdAsync(int jobId)
@@ -4752,7 +4760,8 @@ public partial class JobRepository(
             .TagWith("GetLiveJob - Family Root Lookup")
             .FirstOrDefaultAsync();
 
-        ArgumentNullException.ThrowIfNull(mainJobInfo);
+        if (mainJobInfo == null)
+            return null; // Not a live job — caller will try archived
 
         var familyRootId = mainJobInfo.FamilyRootId;
         var isUsTenant = _infoService.IsUsTenant();

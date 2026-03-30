@@ -126,6 +126,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+    const [dialogFullyOpen, setDialogFullyOpen] = useState(false);
 
     // Map state
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -144,7 +145,7 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
     // Initialize map when API key is available
     useEffect(() => {
-        if (!open || !hereMapsApiKey || !mapContainerRef.current) return;
+        if (!dialogFullyOpen || !hereMapsApiKey || !mapContainerRef.current) return;
         if (mapInstanceRef.current) return; // Already initialized
 
         // Check if HERE Maps SDK is loaded
@@ -188,10 +189,8 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
             mapInstanceRef.current = map;
 
-            // Ensure map resizes to correct dimensions after dialog transition
-            requestAnimationFrame(() => {
-                map.getViewPort().resize();
-            });
+            // Dialog transition is already complete so container has final dimensions
+            map.getViewPort().resize();
 
             // Add initial marker if coordinates exist
             if (latitude && longitude) {
@@ -220,16 +219,19 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             console.error('[EditAddressDialog] Error initializing HERE Maps:', error);
             showToast('Error loading map. Please try again.', 'error');
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- map init only on open/apiKey; lat/lng/addMarker change during drag
-    }, [open, hereMapsApiKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- map init only after dialog transition/apiKey; lat/lng/addMarker change during drag
+    }, [dialogFullyOpen, hereMapsApiKey]);
 
     // Cleanup map on dialog close
     useEffect(() => {
-        if (!open && mapInstanceRef.current) {
-            mapInstanceRef.current.dispose();
-            mapInstanceRef.current = null;
-            platformRef.current = null;
-            markerRef.current = null;
+        if (!open) {
+            if (mapInstanceRef.current) {
+                mapInstanceRef.current.dispose();
+                mapInstanceRef.current = null;
+                platformRef.current = null;
+                markerRef.current = null;
+            }
+            setDialogFullyOpen(false);
         }
     }, [open]);
 
@@ -576,6 +578,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         overflow: 'hidden',
                         maxWidth: 800,
                     },
+                },
+                transition: {
+                    onEntered: () => setDialogFullyOpen(true),
                 },
             }}
         >

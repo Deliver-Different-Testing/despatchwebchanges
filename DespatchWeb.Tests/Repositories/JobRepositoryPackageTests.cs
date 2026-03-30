@@ -14,11 +14,11 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryPackageTests : IAsyncDisposable
 {
-    private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<IClearListEnvelopeService> _clearListEnvelopeServiceMock = new();
+    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
     private readonly Mock<ICreateJobService> _createJobServiceMock = new();
+    private readonly SqliteTestDatabase _db = new();
+    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
 
     public JobRepositoryPackageTests()
     {
@@ -71,14 +71,16 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         // Assert — only parcel 2 remains
         await using var verify = CreateContext();
-        var remaining = await verify.TucJobItems.Where(i => i.JobId == 1).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var remaining = await verify.TucJobItems.Where(i => i.JobId == 1)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
         Assert.Equal(2, remaining[0].ItemId);
         Assert.Equal("Parcel B updated", remaining[0].Notes);
 
-        
+
         // UcjbQty should reflect the new count
-        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 1, cancellationToken: TestContext.Current.CancellationToken);
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 1,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal((short)1, job.UcjbQty);
     }
 
@@ -115,7 +117,8 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         Assert.Equal(1, remaining[0].ItemId);
         Assert.Equal("Brand New", remaining[1].Notes);
 
-        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 2, cancellationToken: TestContext.Current.CancellationToken);
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 2,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal((short)2, job.UcjbQty);
     }
 
@@ -138,10 +141,12 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         // Assert — all parcels deleted, qty = 0
         await using var verify = CreateContext();
-        var remaining = await verify.TucJobItems.Where(i => i.JobId == 3).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var remaining = await verify.TucJobItems.Where(i => i.JobId == 3)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(remaining);
 
-        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 3, cancellationToken: TestContext.Current.CancellationToken);
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 3,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal((short)0, job.UcjbQty);
     }
 
@@ -161,10 +166,12 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         // Assert — parcel deleted, qty = 0
         await using var verify = CreateContext();
-        var remaining = await verify.TucJobItems.Where(i => i.JobId == 4).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var remaining = await verify.TucJobItems.Where(i => i.JobId == 4)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(remaining);
 
-        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 4, cancellationToken: TestContext.Current.CancellationToken);
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 4,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal((short)0, job.UcjbQty);
     }
 
@@ -205,9 +212,9 @@ public class JobRepositoryPackageTests : IAsyncDisposable
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(3, allItems.Count);
-        Assert.Equal(1, allItems[0].ItemId);   // parent item
-        Assert.Equal(2, allItems[1].ItemId);   // stop A kept
-        Assert.Equal(4, allItems[2].ItemId);   // stop B untouched
+        Assert.Equal(1, allItems[0].ItemId); // parent item
+        Assert.Equal(2, allItems[1].ItemId); // stop A kept
+        Assert.Equal(4, allItems[2].ItemId); // stop B untouched
     }
 
     [Fact]
@@ -234,11 +241,54 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         // Assert — both still exist
         await using var verify = CreateContext();
-        var remaining = await verify.TucJobItems.Where(i => i.JobId == 5).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var remaining = await verify.TucJobItems.Where(i => i.JobId == 5)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, remaining.Count);
 
-        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 5, cancellationToken: TestContext.Current.CancellationToken);
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 5,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal((short)2, job.UcjbQty);
+    }
+
+    [Fact]
+    public async Task UpdatePackagesForJobAsync_ItemIdZero_TreatedAsNewParcel()
+    {
+        // Arrange — job with 2 existing parcels
+        await using var ctx = CreateContext();
+        ctx.TucJobs.Add(CreateJob(6, "JOB006"));
+        ctx.TucJobItems.AddRange(
+            new TucJobItem { JobId = 6, ItemId = 1, Notes = "Existing A" },
+            new TucJobItem { JobId = 6, ItemId = 2, Notes = "Existing B" }
+        );
+        await ctx.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repo = CreateRepository();
+
+        // Act — send both existing parcels plus one with ItemId=0 (should be treated as new)
+        var parcels = new List<ParcelDimensions>
+        {
+            new() { ItemId = 1, ItemName = "Existing A", Length = 1, Height = 1, Depth = 1 },
+            new() { ItemId = 2, ItemName = "Existing B", Length = 2, Height = 2, Depth = 2 },
+            new() { ItemId = 0, ItemName = "Zero ID parcel", Length = 5, Height = 5, Depth = 5 }
+        };
+        await repo.UpdatePackagesForJobAsync(6, parcels);
+
+        // Assert — all 3 items exist: 2 original + 1 new (ItemId=0 treated as new, gets ItemId=3)
+        await using var verify = CreateContext();
+        var remaining = await verify.TucJobItems
+            .Where(i => i.JobId == 6)
+            .OrderBy(i => i.ItemId)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(3, remaining.Count);
+        Assert.Equal(1, remaining[0].ItemId);
+        Assert.Equal(2, remaining[1].ItemId);
+        Assert.Equal(3, remaining[2].ItemId);
+        Assert.Equal("Zero ID parcel", remaining[2].Notes);
+
+        var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 6,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal((short)3, job.UcjbQty);
     }
 
     // ── UpdatePackagesForBulkJobAsync ───────────────────────────────
@@ -267,7 +317,8 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         // Assert — only parcel 1 remains
         await using var verify = CreateContext();
-        var remaining = await verify.TblBulkJobItems.Where(i => i.JobId == 1).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var remaining = await verify.TblBulkJobItems.Where(i => i.JobId == 1)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
         Assert.Equal(1, remaining[0].ItemId);
     }
@@ -291,7 +342,8 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         // Assert
         await using var verify = CreateContext();
-        var remaining = await verify.TblBulkJobItems.Where(i => i.JobId == 2).ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
+        var remaining = await verify.TblBulkJobItems.Where(i => i.JobId == 2)
+            .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Empty(remaining);
     }
 
