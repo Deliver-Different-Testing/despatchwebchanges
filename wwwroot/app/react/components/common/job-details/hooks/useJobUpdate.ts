@@ -3,7 +3,6 @@
  */
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
-import {queryKeys} from '../../../../query/queryClient';
 import {
     updateJobDetail,
     updateBulkJobDetail,
@@ -47,9 +46,11 @@ export function useJobUpdate(
 
     /** Invalidate all job list caches so updated fields appear in the list */
     const invalidateJobLists = () => {
-        queryClient.invalidateQueries({queryKey: ['dispatch']});
-        queryClient.invalidateQueries({queryKey: ['jobSearch']});
-        queryClient.invalidateQueries({queryKey: ['nationwide']});
+        return Promise.all([
+            queryClient.invalidateQueries({queryKey: ['dispatch']}),
+            queryClient.invalidateQueries({queryKey: ['jobSearch']}),
+            queryClient.invalidateQueries({queryKey: ['nationwide']}),
+        ]);
     };
 
     const updateFieldMutation = useMutation({
@@ -63,7 +64,7 @@ export function useJobUpdate(
         onSuccess: async (_data, {job}) => {
             showToast(`${job.jobNo} updated`, 'success');
             await invalidateJob(job.id);
-            invalidateJobLists();
+            await invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to update job. Please try again.', 'error');
@@ -81,7 +82,7 @@ export function useJobUpdate(
         onSuccess: async (_data, {job}) => {
             showToast(`${job.jobNo} updated`, 'success');
             await invalidateJob(job.id);
-            invalidateJobLists();
+            await invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to update address. Please try again.', 'error');
@@ -92,6 +93,7 @@ export function useJobUpdate(
         mutationFn: (data: UpdatePodDetailsRequest) => updatePodDetails(data),
         onSuccess: async (_data, variables) => {
            await invalidateJob(variables.jobId);
+           await invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to update POD details.', 'error');
@@ -137,7 +139,7 @@ export function useJobUpdate(
                 showToast('Job dispatched successfully', 'success');
             }
             await invalidateJob(job.id);
-            invalidateJobLists();
+            await invalidateJobLists();
         },
         onError: () => {
             showToast('Failed to dispatch job.', 'error');
@@ -155,5 +157,6 @@ export function useJobUpdate(
             || updatePodMutation.isPending
             || dispatchJobMutation.isPending,
         invalidateJob,
+        invalidateJobLists,
     };
 }
