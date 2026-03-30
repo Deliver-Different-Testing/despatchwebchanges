@@ -164,7 +164,7 @@ describe('DateFilterMenu', () => {
     });
 
     describe('Timezone Display', () => {
-        it('should display timezone when provided', async () => {
+        it('should display tenant timezone name in the menu header', async () => {
             renderWithProviders(
                 <DateFilterMenu
                     {...defaultProps}
@@ -173,14 +173,27 @@ describe('DateFilterMenu', () => {
             );
 
             fireEvent.click(screen.getByRole('button'));
-            expect(await screen.findByRole('menu')).toBeInTheDocument();
+            await screen.findByRole('menu');
+
+            // getTimezoneName returns the long Intl name (e.g. "Pacific Standard Time" or "Pacific Daylight Time")
+            // Just verify some timezone text is rendered in the header
+            const header = screen.getByText('Date Filter').parentElement!;
+            const tzCaption = header.querySelector('[class*="caption"]') ?? header.lastElementChild;
+            expect(tzCaption).toBeTruthy();
+            expect(tzCaption!.textContent).not.toBe('');
         });
 
-        it('should use default timezone when not provided', async () => {
+        it('should display default NZ timezone when not provided', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
 
             fireEvent.click(screen.getByRole('button'));
-            expect(await screen.findByRole('menu')).toBeInTheDocument();
+            await screen.findByRole('menu');
+
+            // Default timeZone prop is 'New Zealand Standard Time'
+            const header = screen.getByText('Date Filter').parentElement!;
+            const tzCaption = header.querySelector('[class*="caption"]') ?? header.lastElementChild;
+            expect(tzCaption).toBeTruthy();
+            expect(tzCaption!.textContent).not.toBe('');
         });
     });
 

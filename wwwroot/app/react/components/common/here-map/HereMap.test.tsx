@@ -18,7 +18,7 @@ import type {
     IHereMapChildJob,
     IHereMapJob,
 } from './HereMap.types';
-import {DEFAULT_MAP_CONFIG, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES} from './HereMap.types';
+import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, NZ_MAP_CENTER, US_MAP_CENTER, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES} from './HereMap.types';
 import {createCurvedPath, getAllVisiblePoints,} from './hereMapUtils';
 
 const theme = createTheme();
@@ -296,6 +296,44 @@ describe('DEFAULT_MAP_CONFIG', () => {
             lat: 39.8097343,
             lng: -98.5556199,
         });
+    });
+});
+
+describe('Map center constants', () => {
+    it('US_MAP_CENTER points to central US', () => {
+        expect(US_MAP_CENTER).toEqual({lat: 39.8097343, lng: -98.5556199});
+    });
+
+    it('NZ_MAP_CENTER points to New Zealand', () => {
+        expect(NZ_MAP_CENTER).toEqual({lat: -41.2865, lng: 174.7762});
+    });
+});
+
+describe('getDefaultMapCenter', () => {
+    const originalServerConfig = (window as any).serverConfig;
+
+    afterEach(() => {
+        (window as any).serverConfig = originalServerConfig;
+    });
+
+    it('returns US center for US customers', () => {
+        (window as any).serverConfig = {isUSCustomer: true};
+        expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);
+    });
+
+    it('returns NZ center for non-US customers', () => {
+        (window as any).serverConfig = {isUSCustomer: false};
+        expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
+    });
+
+    it('returns NZ center when isUSCustomer is undefined', () => {
+        (window as any).serverConfig = {};
+        expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
+    });
+
+    it('returns NZ center when serverConfig is undefined', () => {
+        (window as any).serverConfig = undefined;
+        expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
     });
 });
 

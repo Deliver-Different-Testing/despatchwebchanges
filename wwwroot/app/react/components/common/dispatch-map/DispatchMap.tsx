@@ -13,6 +13,7 @@ import type { DispatchMapProps } from './DispatchMap.types';
 import { COURIER_REFRESH_INTERVAL_MS } from './DispatchMap.types';
 import { useHereMap } from './useHereMap';
 import { useMapPreferences } from './useMapPreferences';
+import { getDefaultMapCenter } from '../here-map/HereMap.types';
 import { JobMarkerManager } from './JobMarkerManager';
 import { DispatchCourierMarkerManager } from './DispatchCourierMarkerManager';
 import { MapControlButtons } from './MapControlButtons';
@@ -96,7 +97,7 @@ export function DispatchMap({
             const bounds = getMapBounds();
             if (!bounds) {
                 // Use default bounds based on map center
-                const center = mapCenter || { lat: 39.8097343, lng: -98.5556199 };
+                const center = mapCenter || getDefaultMapCenter();
                 const offset = 0.5;
                 return getAvailableCourierLocations(
                     center.lng - offset,

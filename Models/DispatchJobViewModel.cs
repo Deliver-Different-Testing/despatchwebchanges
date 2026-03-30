@@ -67,10 +67,6 @@ public class DispatchJobViewModel
     public int? Lp { get; set; }
     public int? Ld { get; set; }
 
-    // Proactive late detection (computed server-side after query materialization)
-    public bool IsProactiveLatePickup { get; set; }
-    public bool IsProactiveLateDelivery { get; set; }
-
     // Job flags
     public bool? Locked { get; set; }
     public bool? Done { get; set; }

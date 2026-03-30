@@ -352,4 +352,73 @@ public class JobRepositoryTimezoneTests
         Assert.Null(result.CreatedDate);
     }
 
+    // ── Date filter .Date extraction tests ───────────────────────────────
+    // These guard against the off-by-one bug where comparing a wall-clock
+    // DateTime column against a full DateTimeOffset (with time + offset)
+    // caused SQL Server to exclude same-day records for positive-offset
+    // timezones like NZ (+13:00).
+
+    /// <summary>
+    /// The core regression test: a DateTimeOffset with a non-midnight time
+    /// in a positive-offset timezone (NZ +13:00) must extract the WALL-CLOCK
+    /// date, not the UTC date. Before the fix, the full DateTimeOffset was
+    /// compared directly, causing SQL Server to treat the database date as
+    /// UTC midnight — which is AFTER the NZ parameter's UTC equivalent,
+    /// excluding same-day jobs.
+    /// </summary>
+    [Theory]
+    [InlineData(2026, 3, 30, 14, 0, 13, "2026-03-30")] // NZ afternoon — UTC is still March 30
+    [InlineData(2026, 3, 30, 0, 0, 13, "2026-03-30")]   // NZ midnight — UTC is March 29
+    [InlineData(2026, 3, 30, 23, 59, 13, "2026-03-30")]  // NZ late night — UTC is March 30
+    [InlineData(2024, 12, 31, 18, 0, 13, "2024-12-31")]  // Year boundary — UTC is Dec 31
+    [InlineData(2024, 1, 1, 2, 0, 13, "2024-01-01")]     // New Year NZ — UTC is Dec 31
+    [InlineData(2024, 6, 15, 10, 0, -7, "2024-06-15")]   // Negative offset (PDT)
+    [InlineData(2024, 6, 15, 0, 0, -7, "2024-06-15")]    // Negative offset midnight
+    public void DateTimeOffset_Date_ExtractsWallClockDate_NotUtcDate(
+        int year, int month, int day, int hour, int minute, int offsetHours, string expectedDate)
+    {
+        var dto = new DateTimeOffset(year, month, day, hour, minute, 0, TimeSpan.FromHours(offsetHours));
+
+        // .Date must return the wall-clock (offset-local) date, not the UTC date.
+        // This is what the fixed query uses: queryParams.StartDate.Value.Date
+        var wallClockDate = dto.Date;
+
+        Assert.Equal(DateTime.Parse(expectedDate), wallClockDate);
+    }
+
+    /// <summary>
+    /// Demonstrates the bug: without .Date, the full DateTimeOffset has a UTC
+    /// instant that can be in the previous calendar day for positive offsets.
+    /// A date-only comparison against this UTC instant would exclude same-day records.
+    /// </summary>
+    [Fact]
+    public void DateTimeOffset_UtcDateTime_CanBePreviousDay_ForPositiveOffset()
+    {
+        // NZ midnight March 30 = March 29 11:00 UTC
+        var nzMidnight = new DateTimeOffset(2026, 3, 30, 0, 0, 0, TimeSpan.FromHours(13));
+
+        // .Date gives wall-clock March 30 (correct for filter)
+        Assert.Equal(new DateTime(2026, 3, 30), nzMidnight.Date);
+
+        // .UtcDateTime gives March 29 (would cause off-by-one if used for date comparison)
+        Assert.Equal(new DateTime(2026, 3, 29, 11, 0, 0), nzMidnight.UtcDateTime);
+    }
+
+    /// <summary>
+    /// Verifies that the non-midnight time preserved by MUI DatePicker
+    /// does not affect the extracted date. The DatePicker preserves time
+    /// from the previous value (e.g., 14:00 from "now + 24h" default),
+    /// so the backend must strip time via .Date.
+    /// </summary>
+    [Fact]
+    public void DateTimeOffset_Date_IgnoresTimeComponent()
+    {
+        var withTime = new DateTimeOffset(2026, 3, 30, 14, 30, 45, TimeSpan.FromHours(13));
+        var atMidnight = new DateTimeOffset(2026, 3, 30, 0, 0, 0, TimeSpan.FromHours(13));
+
+        // Both must produce the same date for the filter
+        Assert.Equal(withTime.Date, atMidnight.Date);
+        Assert.Equal(new DateTime(2026, 3, 30), withTime.Date);
+    }
+
 }

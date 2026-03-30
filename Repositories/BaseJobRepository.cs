@@ -104,10 +104,10 @@ public partial class BaseJobRepository(
             {
                 case AppPage.Dispatch:
                     if (queryParams.DateCutoff.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value);
+                        query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
 
                     if (queryParams.StartDate.HasValue)
-                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value);
+                        query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
 
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
@@ -193,8 +193,6 @@ public partial class BaseJobRepository(
                 job.AngularId = Guid.NewGuid();
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
-
-            JobMappings.ComputeProactiveLateFlags(allJobs, now);
 
             var mapItems = page == AppPage.Dispatch
                 ? allJobs.Select(j => new DispatchMapItem
