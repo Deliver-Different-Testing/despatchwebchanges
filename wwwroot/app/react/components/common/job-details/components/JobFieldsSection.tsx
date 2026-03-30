@@ -41,6 +41,10 @@ import {
     getSectionToolbarSx,
 } from '../JobDetails.styles';
 
+const leftColumnSx = {...cardContainerSx as object, flex: 3, minWidth: 0};
+const rightColumnSx = {...cardContainerSx as object, flex: 2, minWidth: 0, bgcolor: 'grey.50'};
+const packageRowSx = {display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, ...sectionBorderSx as object};
+
 interface JobFieldsSectionProps {
     job: IJob;
     dense: boolean;
@@ -142,9 +146,9 @@ export const JobFieldsSection = React.memo(({
     return (
         <Box sx={{display: 'flex', gap: 2, flexDirection: {xs: 'column', md: 'row'}}}>
             {/* Left Column - 60% */}
-            <Box sx={{...cardContainerSx as object, flex: 3, minWidth: 0}}>
+            <Box sx={leftColumnSx}>
                     {/* Package Details + Additional Info - side by side */}
-                    <Box sx={{display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, ...sectionBorderSx as object}}>
+                    <Box sx={packageRowSx}>
                         {/* Package Details */}
                         <Box sx={{flex: 1, minWidth: 0}}>
                             <SectionToolbar title="Package Details" icon={Inventory2Icon} dense={dense}
@@ -313,7 +317,7 @@ export const JobFieldsSection = React.memo(({
             </Box>
 
             {/* Right Column - 40% */}
-            <Box sx={{...cardContainerSx as object, flex: 2, minWidth: 0, bgcolor: 'grey.50'}}>
+            <Box sx={rightColumnSx}>
                     {/* Booked By */}
                     {(isEditMode || isFieldVisible('bookedBy')) && (
                     <Box>

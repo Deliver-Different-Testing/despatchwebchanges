@@ -6,6 +6,7 @@
  */
 
 import React, {useEffect, useMemo, useState} from 'react';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -63,12 +64,6 @@ export interface PriceBreakdownDialogProps {
     onDeleteItem: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
 }
 
-const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-    }).format(value);
-};
 
 const calculateMargin = (revenue: number, cost: number): number => {
     if (revenue <= 0) return 0;

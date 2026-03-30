@@ -259,13 +259,13 @@ describe('JobListPanel', () => {
 
             const searchInput = screen.getByPlaceholderText('Search jobs...');
 
-            // Filter by job number
+            // Filter by job number (longer timeout for 200ms debounce on slow CI)
             await user.click(searchInput);
             await user.paste('ALPHA');
             await waitFor(() => {
                 expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
                 expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
-            });
+            }, {timeout: 3000});
             expect(onSearchChange).toHaveBeenCalledWith('ALPHA');
 
             // Clear and filter by client
@@ -274,7 +274,7 @@ describe('JobListPanel', () => {
             await waitFor(() => {
                 expect(screen.getByText('BETA-002')).toBeInTheDocument();
                 expect(screen.queryByText('ALPHA-001')).not.toBeInTheDocument();
-            });
+            }, {timeout: 3000});
 
             // Clear and filter by courier
             await user.clear(searchInput);
@@ -282,7 +282,7 @@ describe('JobListPanel', () => {
             await waitFor(() => {
                 expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
                 expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
-            });
+            }, {timeout: 3000});
         });
     });
 

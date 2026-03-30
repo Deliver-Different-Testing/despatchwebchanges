@@ -60,6 +60,7 @@ public interface ICourierRepository
 
     Task<IReadOnlyList<DriverWorkOverviewViewModel>> GetDriverWorkOverviewAsync();
     Task ResetClearListAreaOrderAsync(int courierId);
+    Task<ClearListDebugViewModel> GetClearListDebugAsync(int courierId, CancellationToken cancellationToken = default);
 
     /* Driver Management Dashboard - Export (no pagination) */
     Task<IReadOnlyList<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(TodayActiveDriversFilterRequest request);

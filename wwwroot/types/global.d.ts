@@ -66,6 +66,7 @@ declare global {
         ContactID?: number;
         ClientInternal?: boolean;
         TimeZone?: string;
+        CurrencyCode?: string;
         serverConfig?: {
             isProduction: boolean;
             isUSCustomer: boolean;

@@ -75,11 +75,12 @@ export function useEventTypes(options?: {enabled?: boolean}) {
  * @param options
  * @returns Query result with delivery journey events
  */
-export function useDeliveryJourney(jobId?: number, options?: {enabled?: boolean}) {
+export function useDeliveryJourney(jobId?: number, options?: {enabled?: boolean; refetchInterval?: number | false}) {
     return useQuery<DeliveryJourney[], Error>({
         queryKey: queryKeys.tasks.deliveryJourney(jobId || 0),
         queryFn: ({signal}) => tasksApi.getDeliveryJourney(jobId!, {signal}),
         enabled: (options?.enabled ?? true) && !!jobId && jobId > 0,
+        refetchInterval: options?.refetchInterval,
     });
 }
 

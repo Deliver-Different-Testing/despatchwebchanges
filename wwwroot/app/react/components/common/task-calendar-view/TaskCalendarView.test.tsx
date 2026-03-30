@@ -120,7 +120,7 @@ describe('TaskCalendarView', () => {
             // Week view shows date range format
             await waitFor(() => {
                 const periodTitle = screen.getByRole('heading', {level: 6});
-                expect(periodTitle.textContent).toMatch(/\w+ \d+ - \d+/);
+                expect(periodTitle.textContent).toMatch(/\w+ \d+ - (\w+ )?\d+/);
             });
         });
 

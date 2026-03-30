@@ -27,6 +27,7 @@ interface PalletSectionProps {
 }
 
 const cellSx = {py: 0.5, px: 1, fontSize: '0.8125rem'} as const;
+const cellBoldSx = {...cellSx, fontWeight: 600} as const;
 const headerCellSx = {...cellSx, fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary'} as const;
 
 export const PalletSection = React.memo(function PalletSection({pallets, isUsCustomer}: PalletSectionProps) {
@@ -91,10 +92,10 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                     ))}
                     {/* Summary footer */}
                     <TableRow sx={{bgcolor: 'grey.50'}}>
-                        <TableCell sx={{...cellSx, fontWeight: 600}}>Total</TableCell>
-                        <TableCell sx={{...cellSx, fontWeight: 600}} align="right">{totalItems}</TableCell>
-                        <TableCell sx={{...cellSx, fontWeight: 600}} align="right">{totalWeight.toFixed(1)}</TableCell>
-                        <TableCell sx={{...cellSx, fontWeight: 600}} colSpan={4}>
+                        <TableCell sx={cellBoldSx}>Total</TableCell>
+                        <TableCell sx={cellBoldSx} align="right">{totalItems}</TableCell>
+                        <TableCell sx={cellBoldSx} align="right">{totalWeight.toFixed(1)}</TableCell>
+                        <TableCell sx={cellBoldSx} colSpan={4}>
                             Volume: {totalVolume.toFixed(1)} {volUnit}
                         </TableCell>
                     </TableRow>

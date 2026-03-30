@@ -26,6 +26,9 @@ import {
     sectionToolbarIconSx,
 } from '../JobDetails.styles';
 
+const cardContainerLoadingSx = {...cardContainerSx as object, p: 1.5};
+const cardContainerPickupSx = {...cardContainerSx as object, mt: 1};
+
 interface PodPhotosSectionProps {
     deliveryPhotos: PodPhoto[];
     pickupPhotos: PodPhoto[];
@@ -231,7 +234,7 @@ export function PodPhotosSection({
 }: PodPhotosSectionProps) {
     if (isLoading) {
         return (
-            <Box sx={{...cardContainerSx as object, p: 1.5}}>
+            <Box sx={cardContainerLoadingSx}>
                 <Skeleton variant="rectangular" height={140} sx={{borderRadius: 1, mb: 1}} />
                 <Box sx={{display: 'flex', gap: 0.5}}>
                     <Skeleton variant="rectangular" width={52} height={52} sx={{borderRadius: 1}} />
@@ -284,7 +287,7 @@ export function PodPhotosSection({
 
             {/* Pickup Photos */}
             {pickupPhotos.length > 0 && (
-                <Box sx={{...cardContainerSx as object, mt: 1}}>
+                <Box sx={cardContainerPickupSx}>
                     <Box sx={sectionToolbarSx}>
                         <PhotoCameraIcon sx={sectionToolbarIconSx} />
                         <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>

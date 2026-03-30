@@ -5,11 +5,12 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor, fireEvent} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
+import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import {TaskHistory} from './TaskHistory';
 import {DeliveryJourney, DensityMode, TaskHistoryProps} from './TaskHistory.interfaces';
@@ -21,15 +22,35 @@ jest.mock('../../../utils/dateUtils', () => ({
     getTimezoneAbbreviation: jest.fn(() => '(EST)'),
 }));
 
+// Mock tasksApi (used by useDeliveryJourney hook)
+const mockGetDeliveryJourney = jest.fn();
+jest.mock('../../../services/tasksApi', () => ({
+    tasksApi: {
+        getDeliveryJourney: (...args: unknown[]) => mockGetDeliveryJourney(...args),
+    },
+}));
+
 const theme = createTheme();
 
+function createTestQueryClient() {
+    return new QueryClient({
+        defaultOptions: {
+            queries: {retry: false, gcTime: 0, staleTime: 0},
+            mutations: {retry: false},
+        },
+    });
+}
+
 const renderWithProviders = (ui: React.ReactElement) => {
+    const queryClient = createTestQueryClient();
     return render(
-        <ThemeProvider theme={theme}>
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                {ui}
-            </LocalizationProvider>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+            <ThemeProvider theme={theme}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    {ui}
+                </LocalizationProvider>
+            </ThemeProvider>
+        </QueryClientProvider>
     );
 };
 
@@ -85,19 +106,11 @@ const createMockDeliveryEvents = (): DeliveryJourney[] => [
     },
 ];
 
-const createMockServices = () => ({
-    dispatchService: {
-        getDeliveryJourney: jest.fn().mockResolvedValue(createMockDeliveryEvents()),
-    },
-});
-
 const createDefaultProps = (overrides?: Partial<TaskHistoryProps>): TaskHistoryProps => {
-    const services = createMockServices();
     return {
         jobId: 123,
         config: {},
         onDeliveryEventClick: jest.fn(),
-        dispatchService: services.dispatchService,
         showSuccessToast: jest.fn(),
         showErrorToast: jest.fn(),
         showInfoToast: jest.fn(),
@@ -109,10 +122,12 @@ const createDefaultProps = (overrides?: Partial<TaskHistoryProps>): TaskHistoryP
 describe('TaskHistory', () => {
     beforeEach(() => {
         jest.useFakeTimers();
+        mockGetDeliveryJourney.mockResolvedValue(createMockDeliveryEvents());
     });
 
     afterEach(() => {
         jest.useRealTimers();
+        mockGetDeliveryJourney.mockReset();
     });
 
     describe('Rendering', () => {
@@ -164,11 +179,8 @@ describe('TaskHistory', () => {
         });
 
         it('renders empty state when no events', async () => {
-            const services = createMockServices();
-            services.dispatchService.getDeliveryJourney.mockResolvedValue([]);
-            const props = createDefaultProps({
-                dispatchService: services.dispatchService,
-            });
+            mockGetDeliveryJourney.mockResolvedValue([]);
+            const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
 
             expect(await screen.findByText('No Journey Events')).toBeInTheDocument();
@@ -216,7 +228,7 @@ describe('TaskHistory', () => {
             expect(props.showInfoToast).toHaveBeenCalledWith('Refreshing delivery journey...');
         });
 
-        it('calls dispatchService.getDeliveryJourney on refresh', async () => {
+        it('calls tasksApi.getDeliveryJourney on refresh', async () => {
             const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
@@ -224,7 +236,7 @@ describe('TaskHistory', () => {
             expect(await screen.findByText('Order Received')).toBeInTheDocument();
 
             // Clear the mock to track new calls
-            (props.dispatchService.getDeliveryJourney as jest.Mock).mockClear();
+            mockGetDeliveryJourney.mockClear();
 
             // Find and click the refresh button
             const buttons = screen.getAllByRole('button');
@@ -235,7 +247,7 @@ describe('TaskHistory', () => {
             jest.advanceTimersByTime(300);
 
             await waitFor(() => {
-                expect(props.dispatchService.getDeliveryJourney).toHaveBeenCalledWith(123);
+                expect(mockGetDeliveryJourney).toHaveBeenCalled();
             });
         });
     });
@@ -281,31 +293,42 @@ describe('TaskHistory', () => {
             renderWithProviders(<TaskHistory {...props} />);
 
             await waitFor(() => {
-                expect(props.dispatchService.getDeliveryJourney).toHaveBeenCalledWith(123);
+                expect(mockGetDeliveryJourney).toHaveBeenCalledWith(123, expect.objectContaining({signal: expect.any(AbortSignal)}));
             });
         });
 
         it('reloads delivery journey when jobId changes', async () => {
             const props = createDefaultProps();
-            const {rerender} = renderWithProviders(<TaskHistory {...props} />);
-
-            await waitFor(() => {
-                expect(props.dispatchService.getDeliveryJourney).toHaveBeenCalledWith(123);
-            });
-
-            (props.dispatchService.getDeliveryJourney as jest.Mock).mockClear();
-
-            // Change jobId
-            rerender(
-                <ThemeProvider theme={theme}>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <TaskHistory {...props} jobId={456} />
-                    </LocalizationProvider>
-                </ThemeProvider>
+            const queryClient = createTestQueryClient();
+            const {rerender} = render(
+                <QueryClientProvider client={queryClient}>
+                    <ThemeProvider theme={theme}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <TaskHistory {...props} />
+                        </LocalizationProvider>
+                    </ThemeProvider>
+                </QueryClientProvider>
             );
 
             await waitFor(() => {
-                expect(props.dispatchService.getDeliveryJourney).toHaveBeenCalledWith(456);
+                expect(mockGetDeliveryJourney).toHaveBeenCalledWith(123, expect.objectContaining({signal: expect.any(AbortSignal)}));
+            });
+
+            mockGetDeliveryJourney.mockClear();
+
+            // Change jobId
+            rerender(
+                <QueryClientProvider client={queryClient}>
+                    <ThemeProvider theme={theme}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <TaskHistory {...props} jobId={456} />
+                        </LocalizationProvider>
+                    </ThemeProvider>
+                </QueryClientProvider>
+            );
+
+            await waitFor(() => {
+                expect(mockGetDeliveryJourney).toHaveBeenCalledWith(456, expect.objectContaining({signal: expect.any(AbortSignal)}));
             });
         });
     });

@@ -17,6 +17,7 @@ import { JobMarkerManager } from './JobMarkerManager';
 import { DispatchCourierMarkerManager } from './DispatchCourierMarkerManager';
 import { MapControlButtons } from './MapControlButtons';
 import { getAvailableCourierLocations, getClearListEnvelope } from '../../../services/courierApi';
+import { queryKeys } from '../../../query/queryClient';
 import styles from './DispatchMap.module.css';
 
 declare const H: any;
@@ -180,39 +181,28 @@ export function DispatchMap({
         };
     }, [map, showAvailableCouriers, refetchCouriers]);
 
-    // Fetch and apply envelope when clearListId changes
+    // Fetch envelope when clearListId changes (async-defer-await)
+    const { data: envelope } = useQuery({
+        queryKey: queryKeys.dispatch.clearListEnvelope(clearListId!),
+        queryFn: ({ signal }) => getClearListEnvelope(clearListId!, { signal }),
+        enabled: !!clearListId && isReady,
+    });
+
+    // Apply envelope bounds to map when data arrives
     useEffect(() => {
-        if (!clearListId || !isReady) return;
+        if (!envelope || !mapInstanceRef.current) return;
 
-        const currentMap = mapInstanceRef.current;
-        if (!currentMap) return;
+        const bounds = new H.geo.Rect(
+            envelope.maximumLatitude,
+            envelope.minimumLongitude,
+            envelope.minimumLatitude,
+            envelope.maximumLongitude
+        );
 
-        getClearListEnvelope(clearListId)
-            .then((envelope) => {
-                // Re-check map is still available (component might have unmounted)
-                if (!mapInstanceRef.current) return;
-
-                // Create bounds rectangle (top, left, bottom, right)
-                const bounds = new H.geo.Rect(
-                    envelope.maximumLatitude,
-                    envelope.minimumLongitude,
-                    envelope.minimumLatitude,
-                    envelope.maximumLongitude
-                );
-
-                // Fit map to the envelope bounds
-                mapInstanceRef.current.getViewModel().setLookAtData({
-                    bounds: bounds,
-                });
-
-                // Notify parent component
-                onEnvelopeUpdate?.(envelope);
-            })
-            .catch((error) => {
-                console.error('Failed to fetch clearlist envelope:', error);
-            });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onEnvelopeUpdate is a callback prop; only re-fetch when clearListId/isReady change
-    }, [clearListId, isReady]);
+        mapInstanceRef.current.getViewModel().setLookAtData({ bounds });
+        onEnvelopeUpdate?.(envelope);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- onEnvelopeUpdate is a callback prop; only apply when envelope data changes
+    }, [envelope]);
 
     // Update marker click callback when it changes
     useEffect(() => {

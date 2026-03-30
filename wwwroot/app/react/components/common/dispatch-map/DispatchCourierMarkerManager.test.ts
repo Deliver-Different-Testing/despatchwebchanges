@@ -30,6 +30,7 @@ const createMockMarkerGroup = () => ({
     removeAll: jest.fn(),
     removeObjects: jest.fn(),
     addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
     getBoundingBox: jest.fn(() => ({
         getTop: () => 41,
         getBottom: () => 40,

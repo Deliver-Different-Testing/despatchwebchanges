@@ -550,6 +550,36 @@ export interface IDestination {
     label: string;
 }
 
+export interface IClearListDebugViewModel {
+    courierId: number;
+    courierCode: string;
+    courierName: string;
+    channelId: number | null;
+    fleetName: string | null;
+    gpsPolygonId: number | null;
+    gpsPolygonName: string | null;
+    gpsPolygonSuburbs: string[];
+    gpsLatitude: number | null;
+    gpsLongitude: number | null;
+    gpsTimestamp: string | null;
+    gpsAgeMinutes: number | null;
+    assignedClearListAreaId: number | null;
+    assignedClearListAreaName: string | null;
+    assignedStatus: number | null;
+    assignedStatusLabel: string;
+    polygonAreaMappings: IPolygonAreaMapping[];
+    isLoggedIn: boolean;
+    loginTime: string | null;
+    explanation: string;
+}
+
+export interface IPolygonAreaMapping {
+    clearListAreaId: number;
+    clearListAreaName: string;
+    areaChannelId: number | null;
+    channelMatches: boolean;
+}
+
 export interface IAgent {
     agentId: number;
     agentName: string;

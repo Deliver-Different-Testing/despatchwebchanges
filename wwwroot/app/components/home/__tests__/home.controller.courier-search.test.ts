@@ -116,7 +116,7 @@ describe('selectCourier', () => {
     it('sets loading state and switches to SelectedDriver mode', async () => {
         const ctrl = setup();
         ctrl.DispatchData.getCourierById.mockResolvedValue({
-            courierId: 42, name: 'Alice', label: 'A42', id: 'DR42',
+            courierId: 42, name: 'Alice', id: 'DR42',
         });
 
         await ctrl.selectCourier({courierId: 42} as any);
@@ -138,31 +138,32 @@ describe('selectCourier', () => {
     it('sets currentCourier, currentWorkSelection, and calls getCurrentJobs', async () => {
         const ctrl = setup();
         ctrl.DispatchData.getCourierById.mockResolvedValue({
-            courierId: 42, name: 'Alice', label: 'A42', id: 'DR42', text: 'Alice',
-        });
-
-        await ctrl.selectCourier({courierId: 42} as any);
-
-        expect(ctrl.currentCourier).toEqual({id: 42, text: 'A42'});
-        expect(ctrl.currentWorkSelection).toContain('Alice');
-        expect(ctrl.getCurrentJobs).toHaveBeenCalledWith(42);
-    });
-
-    it('falls back to name when label is missing', async () => {
-        const ctrl = setup();
-        ctrl.DispatchData.getCourierById.mockResolvedValue({
-            courierId: 42, name: 'Alice', label: '', id: 'DR42',
+            courierId: 42, name: 'Alice', id: 'DR42',
         });
 
         await ctrl.selectCourier({courierId: 42} as any);
 
         expect(ctrl.currentCourier).toEqual({id: 42, text: 'Alice'});
+        expect(ctrl.currentWorkSelection).toBe(' for Courier DR42: Alice');
+        expect(ctrl.getCurrentJobs).toHaveBeenCalledWith(42);
+    });
+
+    it('falls back to name when id is missing', async () => {
+        const ctrl = setup();
+        ctrl.DispatchData.getCourierById.mockResolvedValue({
+            courierId: 42, name: 'Alice', id: '',
+        });
+
+        await ctrl.selectCourier({courierId: 42} as any);
+
+        expect(ctrl.currentCourier).toEqual({id: 42, text: 'Alice'});
+        expect(ctrl.currentWorkSelection).toBe(' for Courier Alice');
     });
 
     it('fetches truck courier status for found courier', async () => {
         const ctrl = setup();
         ctrl.DispatchData.getCourierById.mockResolvedValue({
-            courierId: 42, name: 'Alice', label: 'A42', id: 'DR42',
+            courierId: 42, name: 'Alice', id: 'DR42',
         });
 
         await ctrl.selectCourier({courierId: 42} as any);

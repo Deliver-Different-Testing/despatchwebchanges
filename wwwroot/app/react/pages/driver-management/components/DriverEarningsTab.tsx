@@ -13,6 +13,7 @@ import {CourierDailyEarnings, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {DataTable, DataTableColumn, FilterToolbar, SearchField, SortState, StatCard, toolbarIconButtonSx} from './shared';
 import type {ShowToastFn} from '../../../services/toastService';
+import {formatCurrency} from '../../../utils/currencyUtils';
 
 interface DriverEarningsTabProps {
     showToast: ShowToastFn;
@@ -22,8 +23,8 @@ const columns: DataTableColumn<CourierDailyEarnings>[] = [
     {key: 'name', label: 'Name', sortable: true, render: (row) => row.name},
     {key: 'hoursLogged', label: 'Hours Logged', sortable: true, width: '120px', render: (row) => `${row.hoursLogged.toFixed(1)}h`},
     {key: 'deliveries', label: 'Deliveries', sortable: true, width: '110px', render: (row) => row.deliveries},
-    {key: 'earnings', label: 'Earnings', sortable: true, width: '110px', render: (row) => `$${row.earnings.toFixed(2)}`},
-    {key: 'hourlyRate', label: 'Hourly Rate', sortable: true, width: '110px', render: (row) => `$${row.hourlyRate.toFixed(2)}/h`},
+    {key: 'earnings', label: 'Earnings', sortable: true, width: '110px', render: (row) => formatCurrency(row.earnings)},
+    {key: 'hourlyRate', label: 'Hourly Rate', sortable: true, width: '110px', render: (row) => `${formatCurrency(row.hourlyRate)}/h`},
 ];
 
 export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast}) => {
@@ -58,8 +59,8 @@ export const DriverEarningsTab: React.FC<DriverEarningsTabProps> = ({showToast})
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
             {/* Stats */}
             <Box sx={{display: 'flex', gap: 2, flexWrap: 'wrap'}}>
-                <StatCard value={`$${stats.totalEarningsToday.toFixed(2)}`} label="Total Earnings Today" color="success.main" icon={<MoneyIcon />} />
-                <StatCard value={`$${stats.averageHourlyRate.toFixed(2)}`} label="Average Hourly Rate" color="warning.main" icon={<TrendingUpIcon />} />
+                <StatCard value={formatCurrency(stats.totalEarningsToday)} label="Total Earnings Today" color="success.main" icon={<MoneyIcon />} />
+                <StatCard value={formatCurrency(stats.averageHourlyRate)} label="Average Hourly Rate" color="warning.main" icon={<TrendingUpIcon />} />
                 <StatCard value={stats.totalActiveDrivers} label="Active Drivers" color="info.main" icon={<PeopleAltIcon />} />
                 <StatCard value={stats.totalDeliveriesToday} label="Total Deliveries" color="primary.main" icon={<LocalShippingIcon />} />
             </Box>

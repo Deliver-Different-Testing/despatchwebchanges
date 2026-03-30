@@ -151,6 +151,7 @@ export const queryKeys = {
         all: ['dispatch'] as const,
         jobs: (params: JobListSearchParams) => ['dispatch', 'jobs', params] as const,
         clearList: (params: JobListSearchParams) => ['dispatch', 'clearList', params] as const,
+        clearListEnvelope: (clearListId: number) => ['dispatch', 'clearListEnvelope', clearListId] as const,
     },
     nationwide: {
         all: ['nationwide'] as const,

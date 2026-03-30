@@ -7,11 +7,13 @@
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
+import {QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {TaskHistory} from './TaskHistory';
-import {DeliveryJourney, DeliveryHistoryConfig, DispatchServiceInterface} from './TaskHistory.interfaces';
+import {DeliveryJourney, DeliveryHistoryConfig} from './TaskHistory.interfaces';
 import {getTheme} from '../../../theme/muiTheme';
+import {queryClient} from '../../../query/queryClient';
 import {toastService} from '../../../services/toastService';
 import angular from 'angular';
 
@@ -19,7 +21,7 @@ import angular from 'angular';
  * AngularJS Component Controller for React TaskHistory
  */
 class TaskHistoryReactController implements angular.IController {
-    static $inject = ['$element', 'DispatchData', 'APP_CONFIG'];
+    static $inject = ['$element', 'APP_CONFIG'];
 
     private root: Root | null = null;
 
@@ -30,7 +32,6 @@ class TaskHistoryReactController implements angular.IController {
 
     constructor(
         private $element: JQLite,
-        private dispatchService: DispatchServiceInterface,
         private appConfig: {US_Customer: boolean}
     ) {}
 
@@ -61,19 +62,20 @@ class TaskHistoryReactController implements angular.IController {
             : undefined;
 
         this.root.render(
-            <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
-                <TaskHistory
-                    jobId={this.jobId}
-                    config={this.config}
-                    onDeliveryEventClick={handleDeliveryEventClick}
-                    dispatchService={this.dispatchService}
-                    showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
-                    showErrorToast={(msg) => toastService.showErrorToast(msg)}
-                    showInfoToast={(msg) => toastService.showInfoToast(msg)}
-                    isUsCustomer={this.appConfig.US_Customer}
-                />
-            </ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+                <ThemeProvider theme={currentTheme}>
+                    <CssBaseline />
+                    <TaskHistory
+                        jobId={this.jobId}
+                        config={this.config}
+                        onDeliveryEventClick={handleDeliveryEventClick}
+                        showSuccessToast={(msg) => toastService.showSuccessToast(msg)}
+                        showErrorToast={(msg) => toastService.showErrorToast(msg)}
+                        showInfoToast={(msg) => toastService.showInfoToast(msg)}
+                        isUsCustomer={this.appConfig.US_Customer}
+                    />
+                </ThemeProvider>
+            </QueryClientProvider>
         );
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using Newtonsoft.Json;
 
 namespace DespatchWeb.Models;
 
@@ -6,7 +7,9 @@ public sealed class ActiveCouriersViewModel
 {
     public int CourierId { get; init; }
 
-    [JsonPropertyName("id")] public string Code { get; init; }
+    [JsonProperty("id")]
+    [JsonPropertyName("id")]
+    public string Code { get; init; }
 
     public string Name { get; init; }
 

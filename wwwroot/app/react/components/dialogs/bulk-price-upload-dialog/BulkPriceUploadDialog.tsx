@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
@@ -254,15 +255,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
         return totalNewAmount - totalOldAmount;
     }, [totalNewAmount, totalOldAmount]);
 
-    const formatCurrency = (amount: number): string => {
-        return `$${amount.toFixed(2)}`;
-    };
-
     const formatChange = (amount: number): string => {
-        if (amount >= 0) {
-            return `+$${amount.toFixed(2)}`;
-        }
-        return `-$${Math.abs(amount).toFixed(2)}`;
+        const formatted = formatCurrency(Math.abs(amount));
+        return amount >= 0 ? `+${formatted}` : `-${formatted}`;
     };
 
     // Render methods

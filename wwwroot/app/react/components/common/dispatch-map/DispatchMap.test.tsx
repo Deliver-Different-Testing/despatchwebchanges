@@ -219,7 +219,7 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
         renderWithProviders(<DispatchMap {...props} />);
 
         await waitFor(() => {
-            expect(courierApi.getClearListEnvelope).toHaveBeenCalledWith(123);
+            expect(courierApi.getClearListEnvelope).toHaveBeenCalledWith(123, expect.objectContaining({signal: expect.any(AbortSignal)}));
         });
     });
 
@@ -260,8 +260,6 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
     });
 
     it('handles getClearListEnvelope error gracefully', async () => {
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
         const mockMap = {
             getViewModel: jest.fn(() => ({
                 setLookAtData: jest.fn(),
@@ -281,14 +279,18 @@ describe('DispatchMap Clearlist Envelope Feature', () => {
 
         (courierApi.getClearListEnvelope as jest.Mock).mockRejectedValue(new Error('API Error'));
 
-        const props = createDefaultProps({clearListId: 123});
+        const onEnvelopeUpdate = jest.fn();
+        const props = createDefaultProps({clearListId: 123, onEnvelopeUpdate});
         renderWithProviders(<DispatchMap {...props} />);
 
+        // React Query handles the error — verify the map wasn't updated and onEnvelopeUpdate wasn't called
         await waitFor(() => {
-            expect(consoleSpy).toHaveBeenCalled();
+            expect(courierApi.getClearListEnvelope).toHaveBeenCalled();
         });
 
-        consoleSpy.mockRestore();
+        // The map should NOT have setLookAtData called on error
+        expect(mockMap.getViewModel().setLookAtData).not.toHaveBeenCalled();
+        expect(onEnvelopeUpdate).not.toHaveBeenCalled();
     });
 
     it('calls onEnvelopeUpdate when envelope is fetched successfully', async () => {

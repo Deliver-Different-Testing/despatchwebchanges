@@ -38,7 +38,8 @@ export interface TaskHistoryProps {
     jobId?: number;
     config?: DeliveryHistoryConfig;
     onDeliveryEventClick?: (deliveryEvent: DeliveryJourney) => void;
-    dispatchService: DispatchServiceInterface;
+    /** @deprecated Use without dispatchService — component now uses React Query internally */
+    dispatchService?: DispatchServiceInterface;
     showSuccessToast?: (message: string) => void;
     showErrorToast?: (message: string) => void;
     showInfoToast?: (message: string) => void;

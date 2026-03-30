@@ -401,6 +401,21 @@ public class CourierController(
         }
     }
 
+    public async Task<IActionResult> ClearListDebug(int courierId)
+    {
+        try
+        {
+            var result = await courierRepository.GetClearListDebugAsync(courierId);
+            if (result == null) return NotFound();
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting clear list debug for courier {CourierId}", courierId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     public async Task<IActionResult> GetDriverWorkOverview()
     {
         try
