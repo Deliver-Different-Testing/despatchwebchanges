@@ -30,6 +30,16 @@ const mockH = {
             right,
         })),
     },
+    map: {
+        Group: jest.fn().mockImplementation(() => ({
+            addObject: jest.fn(),
+            removeAll: jest.fn(),
+            removeObject: jest.fn(),
+            getObjects: jest.fn(() => []),
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+        })),
+    },
 };
 (global as any).H = mockH;
 
@@ -469,7 +479,11 @@ describe('DispatchMap Courier Data', () => {
 
 describe('DispatchMap Map Ready Callback', () => {
     it('calls onMapReady with map, platform and ui when provided', async () => {
-        const mockMap = {};
+        const mockMapElement = document.createElement('div');
+        const mockMap = {
+            addObject: jest.fn(),
+            getElement: jest.fn(() => mockMapElement),
+        };
         const mockPlatform = {};
         const mockUI = {};
 
@@ -495,6 +509,100 @@ describe('DispatchMap Map Ready Callback', () => {
 
         // The component internally handles onMapReady
         expect(useHereMapMock).toHaveBeenCalled();
+    });
+});
+
+describe('DispatchMap Default Map Center', () => {
+    const originalServerConfig = (window as any).serverConfig;
+
+    beforeEach(() => {
+        (courierApi.getAvailableCourierLocations as jest.Mock).mockReset().mockResolvedValue([]);
+    });
+
+    afterEach(() => {
+        (window as any).serverConfig = originalServerConfig;
+    });
+
+    it('uses NZ center for courier fallback bounds when non-US customer', async () => {
+        (window as any).serverConfig = {isUSCustomer: false};
+
+        const mockMap = {
+            addObject: jest.fn(),
+            getViewModel: jest.fn(() => ({
+                getLookAtData: jest.fn(() => ({
+                    bounds: null,
+                })),
+            })),
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+        };
+
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: mockMap,
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps({showAvailableCouriers: true});
+        renderWithProviders(<DispatchMap {...props} />);
+
+        await waitFor(() => {
+            expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
+        });
+
+        const call = (courierApi.getAvailableCourierLocations as jest.Mock).mock.calls[0];
+        const [minLng, minLat, maxLng, maxLat] = call;
+        // NZ center is ~174.7762 lng, ~-41.2865 lat — bounds should be around that
+        expect(minLat).toBeCloseTo(-41.7865, 1);
+        expect(maxLat).toBeCloseTo(-40.7865, 1);
+        expect(minLng).toBeCloseTo(174.2762, 1);
+        expect(maxLng).toBeCloseTo(175.2762, 1);
+    });
+
+    it('uses US center for courier fallback bounds when US customer', async () => {
+        (window as any).serverConfig = {isUSCustomer: true};
+
+        const mockMap = {
+            addObject: jest.fn(),
+            getViewModel: jest.fn(() => ({
+                getLookAtData: jest.fn(() => ({
+                    bounds: null,
+                })),
+            })),
+            addEventListener: jest.fn(),
+            removeEventListener: jest.fn(),
+        };
+
+        const useHereMapMock = require('./useHereMap').useHereMap as jest.Mock;
+        useHereMapMock.mockReturnValue({
+            mapContainerRef: {current: document.createElement('div')},
+            map: mockMap,
+            platform: {},
+            ui: {},
+            isLoading: false,
+            isReady: true,
+            error: null,
+        });
+
+        const props = createDefaultProps({showAvailableCouriers: true});
+        renderWithProviders(<DispatchMap {...props} />);
+
+        await waitFor(() => {
+            expect(courierApi.getAvailableCourierLocations).toHaveBeenCalled();
+        });
+
+        const call = (courierApi.getAvailableCourierLocations as jest.Mock).mock.calls[0];
+        const [minLng, minLat, maxLng, maxLat] = call;
+        // US center is ~-98.5556 lng, ~39.8097 lat — bounds should be around that
+        expect(minLat).toBeCloseTo(39.31, 1);
+        expect(maxLat).toBeCloseTo(40.31, 1);
+        expect(minLng).toBeCloseTo(-99.06, 1);
+        expect(maxLng).toBeCloseTo(-98.06, 1);
     });
 });
 

@@ -9,6 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '../../../query';
 import { getHereMapsKey } from '../../../services/configApi';
 import { DEFAULT_MAP_ZOOM } from './DispatchMap.types';
+import { getDefaultMapCenter } from '../here-map/HereMap.types';
 
 declare const H: any;
 
@@ -66,7 +67,7 @@ export function useHereMap({
 
                 if (!isMounted || !mapContainerRef.current) return;
 
-                const defaultCenter = center || { lat: 39.8097343, lng: -98.5556199 };
+                const defaultCenter = center || getDefaultMapCenter();
                 const engineType = H.Map.EngineType['HARP'];
 
                 // Initialize the default map layers with HARP engine

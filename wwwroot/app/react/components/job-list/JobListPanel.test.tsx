@@ -59,6 +59,7 @@ jest.mock('../../utils/dateUtils', () => ({
     getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),
     getTenantTimezone: jest.fn(() => 'New Zealand Standard Time'),
     getTimezoneAbbreviation: jest.fn(() => 'NZST'),
+    isUsCustomer: jest.fn(() => false),
 }));
 
 jest.mock('../../services/jobListApi', () => ({
@@ -79,6 +80,7 @@ jest.mock('../../services/jobListApi', () => ({
 }));
 
 import {allocateJobs} from '../../services/jobListApi';
+import {queryClient} from '../../query/queryClient';
 const mockedAllocateJobs = allocateJobs as jest.Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────
@@ -158,6 +160,23 @@ describe('JobListPanel', () => {
         localStorage.clear();
         (window as any).ContactID = 42;
         mockedAllocateJobs.mockResolvedValue(undefined);
+    });
+
+    describe('Prefetch on Mount', () => {
+        it('prefetches note types when the panel mounts', () => {
+            const prefetchSpy = jest.spyOn(queryClient, 'prefetchQuery').mockResolvedValue(undefined);
+
+            renderWithProviders(<JobListPanel {...createDefaultProps()}/>);
+
+            expect(prefetchSpy).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    queryKey: ['notes', 'types'],
+                    staleTime: Infinity,
+                }),
+            );
+
+            prefetchSpy.mockRestore();
+        });
     });
 
     describe('Rendering and AngularJS Bridge', () => {
@@ -804,7 +823,7 @@ describe('JobListPanel', () => {
         });
 
         it('does not show loading indicator in pushed-data mode', () => {
-            const {result} = renderAndPushJobs([createMockDispatchJob()]);
+            renderAndPushJobs([createMockDispatchJob()]);
 
             expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
         });

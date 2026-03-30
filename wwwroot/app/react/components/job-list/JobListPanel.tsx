@@ -28,6 +28,8 @@ import {allocateJobs, bulkUpdateReadStatus, restoreJobs} from '../../services/jo
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
+import {queryClient, queryKeys} from '../../query/queryClient';
+import {getNoteTypes} from '../../services/notesApi';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -61,15 +63,10 @@ function isInTransit(job: DispatchJob): boolean {
     return job.statusId === JOB_STATUS.InTransit;
 }
 
-function isProactivelyLate(job: DispatchJob): boolean {
-    return !!job.isProactiveLatePickup || !!job.isProactiveLateDelivery;
-}
-
 function hasIssues(job: DispatchJob): boolean {
-    if ([JOB_STATUS.Rejected, JOB_STATUS.LatePickup, JOB_STATUS.Warning, JOB_STATUS.LateDelivery, JOB_STATUS.Undeliverable].includes(
+    return [JOB_STATUS.Rejected, JOB_STATUS.LatePickup, JOB_STATUS.Warning, JOB_STATUS.LateDelivery, JOB_STATUS.Undeliverable].includes(
         job.statusId as any,
-    )) return true;
-    return isProactivelyLate(job);
+    );
 }
 
 function matchesCategory(job: DispatchJob, category: JobCategory): boolean {
@@ -256,6 +253,15 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const contactId = window.ContactID ?? 0;
         return `${storagePrefix}_${suffix}_${contactId}`;
     }, [storagePrefix]);
+
+    // ── Prefetch note types (cached forever, removes waterfall from job detail) ──
+    useEffect(() => {
+        void queryClient.prefetchQuery({
+            queryKey: queryKeys.notes.types,
+            queryFn: ({signal}) => getNoteTypes({signal}),
+            staleTime: Infinity,
+        });
+    }, []);
 
     // ── React Query data fetching (when fetchConfig is provided) ─────
     const hookData = useJobListData(fetchConfig);

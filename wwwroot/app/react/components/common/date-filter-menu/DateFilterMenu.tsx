@@ -27,6 +27,7 @@ import {DatePicker} from '@mui/x-date-pickers/DatePicker';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
 import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, {Dayjs} from 'dayjs';
+import {getIanaTimezone, getTimezoneName} from '../../../utils/dateUtils';
 
 // Types
 export interface DateFilterData {
@@ -51,32 +52,6 @@ export interface DateFilterMenuProps {
 }
 
 // Helper functions
-function getIanaTimezone(windowsTimeZone: string): string {
-    // Simple mapping - in production this would use a more complete mapping
-    const tzMap: Record<string, string> = {
-        'New Zealand Standard Time': 'Pacific/Auckland',
-        'Pacific Standard Time': 'America/Los_Angeles',
-        'Eastern Standard Time': 'America/New_York',
-        'Central Standard Time': 'America/Chicago',
-        'Mountain Standard Time': 'America/Denver',
-    };
-    return tzMap[windowsTimeZone] || 'Pacific/Auckland';
-}
-
-function getLongTimeZoneString(ianaTimeZone: string): string {
-    try {
-        const formatter = new Intl.DateTimeFormat('en', {
-            timeZone: ianaTimeZone,
-            timeZoneName: 'long',
-        });
-        const parts = formatter.formatToParts(new Date());
-        const tzPart = parts.find(p => p.type === 'timeZoneName');
-        return tzPart?.value || ianaTimeZone;
-    } catch {
-        return ianaTimeZone;
-    }
-}
-
 function getMinsSelectionOptions(
     startSeconds: number = 300,
     intervalSeconds: number = 300,
@@ -128,7 +103,7 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
     const open = Boolean(anchorEl);
 
     const ianaTimeZone = getIanaTimezone(timeZone);
-    const timeZoneLong = getLongTimeZoneString(ianaTimeZone);
+    const timeZoneLong = getTimezoneName(timeZone);
 
     const storageKey = `dateRangeOption-${appPage}`;
 

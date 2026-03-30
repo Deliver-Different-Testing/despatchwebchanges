@@ -1706,6 +1706,7 @@ public partial class JobRepository(
                         Depth = parcel.Depth ?? 0,
                         Notes = parcel.ItemName,
                         Barcode = parcel.Barcode,
+                        Items = 1,
                         ItemId = nextItemId++ // Increment for each new item
                     };
 
@@ -1723,6 +1724,13 @@ public partial class JobRepository(
                 .Select(p => p.ItemId!.Value)
                 .ToList();
 
+            Log.Information(
+                "UpdatePackages for Job {JobId} (effective {EffectiveJobId}, child {ChildJobId}): " +
+                "{Total} parcels ({New} new, {Existing} existing). Incoming ItemIds: [{ItemIds}]",
+                jobId, effectiveJobId, childJobId,
+                parcels.Count, newParcels.Count, existingParcelsToUpdate.Count,
+                string.Join(", ", incomingItemIds));
+
             await Context.TucJobItems
                 .Where(i => i.JobId == effectiveJobId &&
                             (childJobId == null || i.ChildJobId == childJobId) &&
@@ -1739,7 +1747,7 @@ public partial class JobRepository(
             // Update existing items using ExecuteUpdateAsync
             foreach (var parcel in existingParcelsToUpdate)
             {
-                if (!parcel.ItemId.HasValue) throw new ArgumentNullException(nameof(parcel));
+                if (!parcel.ItemId.HasValue) throw new InvalidOperationException("Existing parcel must have an ItemId");
 
                 await Context.TucJobItems
                     .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
@@ -1845,7 +1853,7 @@ public partial class JobRepository(
             // Update existing items using ExecuteUpdateAsync
             foreach (var parcel in existingParcelsToUpdate)
             {
-                if (!parcel.ItemId.HasValue) throw new ArgumentNullException(nameof(parcel));
+                if (!parcel.ItemId.HasValue) throw new InvalidOperationException("Existing parcel must have an ItemId");
 
                 await Context.TblBulkJobItems
                     .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
@@ -1873,9 +1881,11 @@ public partial class JobRepository(
     public async Task AddPackagesToJobAsync(int effectiveJobId,
         List<TucJobItem> items)
     {
-        var existingCount = await GetJobItemCount(effectiveJobId);
+        var maxItemId = await Context.TucJobItems
+            .Where(i => i.JobId == effectiveJobId)
+            .MaxAsync(i => (int?)i.ItemId) ?? 0;
 
-        for (var i = 0; i < items.Count; i++) items[i].ItemId = existingCount + i + 1;
+        for (var i = 0; i < items.Count; i++) items[i].ItemId = maxItemId + i + 1;
 
         await Context.TucJobItems.AddRangeAsync(items);
         await Context.SaveChangesAsync();
@@ -2730,8 +2740,6 @@ public partial class JobRepository(
                 job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
             }
 
-            JobMappings.ComputeProactiveLateFlags(allJobs, now);
-
             return new JobSearchResult
             {
                 Jobs = allJobs,
@@ -3133,8 +3141,6 @@ public partial class JobRepository(
             job.AngularId = Guid.NewGuid();
             job.Remain = CalculateRemainTime(job, now, economySpeedId, ecoDeliveryTime);
         }
-
-        JobMappings.ComputeProactiveLateFlags(jobs, now);
 
         return new JobSearchResult
         {
@@ -4722,8 +4728,7 @@ public partial class JobRepository(
         return char.IsLetter(jobNumber.Last());
     }
 
-    private async Task<int> GetJobItemCount(int effectiveJobId) =>
-        await Context.TucJobItems.Where(i => i.JobId == effectiveJobId).CountAsync();
+
 
     private async Task MarkJobAsReadAsync(int jobId)
     {

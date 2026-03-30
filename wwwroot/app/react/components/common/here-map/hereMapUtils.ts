@@ -15,7 +15,7 @@ import type {
     MapInstance,
     Point,
 } from './HereMap.types';
-import {DEFAULT_MAP_CONFIG, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES,} from './HereMap.types';
+import {DEFAULT_MAP_CONFIG, getDefaultMapCenter, MAP_CONSTANTS, MARKER_ICONS, SVG_TEMPLATES,} from './HereMap.types';
 
 declare const H: any;
 
@@ -51,7 +51,7 @@ export function createMap(
     }
 
     const engineType = H.Map.EngineType['HARP'];
-    const mapConfig: HereMapConfig = {...DEFAULT_MAP_CONFIG, ...config};
+    const mapConfig: HereMapConfig = {...DEFAULT_MAP_CONFIG, center: getDefaultMapCenter(), ...config};
 
     // Initialize the default map layers
     const defaultLayers = platform.createDefaultLayers({engineType});

@@ -90,9 +90,16 @@ export const MAP_CONSTANTS = {
     BOUNDING_BOX_EXPAND_FACTOR: 0.25,
 } as const;
 
+export const US_MAP_CENTER = {lat: 39.8097343, lng: -98.5556199};
+export const NZ_MAP_CENTER = {lat: -41.2865, lng: 174.7762};
+
+export function getDefaultMapCenter(): { lat: number; lng: number } {
+    return window.serverConfig?.isUSCustomer ? US_MAP_CENTER : NZ_MAP_CENTER;
+}
+
 export const DEFAULT_MAP_CONFIG: HereMapConfig = {
     zoom: 5,
-    center: {lat: 39.8097343, lng: -98.5556199},
+    center: US_MAP_CENTER,
 };
 
 export const MARKER_ICONS = {

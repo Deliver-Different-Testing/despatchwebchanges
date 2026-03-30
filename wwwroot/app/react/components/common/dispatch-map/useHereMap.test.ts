@@ -11,6 +11,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useHereMap } from './useHereMap';
 import { DEFAULT_MAP_ZOOM } from './DispatchMap.types';
+import { US_MAP_CENTER, NZ_MAP_CENTER } from '../here-map/HereMap.types';
 import * as configApi from '../../../services/configApi';
 
 // Mock the config API
@@ -388,6 +389,31 @@ describe('useHereMap', () => {
 
         it('expects H.Map.EngineType.HARP to be available', () => {
             expect((mockH.Map as any).EngineType.HARP).toBeDefined();
+        });
+    });
+
+    describe('Default Map Center', () => {
+        const originalServerConfig = (window as any).serverConfig;
+
+        afterEach(() => {
+            (window as any).serverConfig = originalServerConfig;
+        });
+
+        it('imports US and NZ center constants', () => {
+            expect(US_MAP_CENTER.lat).toBeCloseTo(39.81, 0);
+            expect(NZ_MAP_CENTER.lat).toBeCloseTo(-41.29, 0);
+        });
+
+        it('uses getDefaultMapCenter which returns NZ for non-US customer', () => {
+            (window as any).serverConfig = {isUSCustomer: false};
+            const { getDefaultMapCenter } = require('../here-map/HereMap.types');
+            expect(getDefaultMapCenter()).toEqual(NZ_MAP_CENTER);
+        });
+
+        it('uses getDefaultMapCenter which returns US for US customer', () => {
+            (window as any).serverConfig = {isUSCustomer: true};
+            const { getDefaultMapCenter } = require('../here-map/HereMap.types');
+            expect(getDefaultMapCenter()).toEqual(US_MAP_CENTER);
         });
     });
 });

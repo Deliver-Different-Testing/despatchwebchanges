@@ -53,36 +53,4 @@ public static partial class JobMappings
     }
 
     #endregion
-
-    /// <summary>
-    /// Computes proactive late pickup/delivery flags on materialized dispatch jobs.
-    /// Must be called after EF query materialization since it requires the current time.
-    /// </summary>
-    public static void ComputeProactiveLateFlags(IList<DispatchJobViewModel> jobs, DateTime currentTenantTime)
-    {
-        foreach (var job in jobs)
-        {
-            // No time means ASAP job — skip (matches frontend guard)
-            if (!job.Time.HasValue || !job.Booked.HasValue) continue;
-
-            var isOverdue = job.Booked.Value < currentTenantTime;
-            if (!isOverdue) continue;
-
-            switch (job.StatusId)
-            {
-                // Proactive late pickup: pre-pickup status, not already flagged, client hasn't disabled alerts
-                case (int)JobStatus.New or (int)JobStatus.Dispatched or (int)JobStatus.Accepted
-                    when job.StatusId != (int)JobStatus.LatePickup
-                         && job.AlertLatePickup is null or >= 0:
-                    job.IsProactiveLatePickup = true;
-                    break;
-                // Proactive late delivery: in-transit status, not already flagged, client hasn't disabled alerts
-                case (int)JobStatus.PickedUp or (int)JobStatus.InTransit
-                    when job.StatusId != (int)JobStatus.LateDelivery
-                         && job.AlertLateDelivery is null or >= 0:
-                    job.IsProactiveLateDelivery = true;
-                    break;
-            }
-        }
-    }
 }

@@ -134,9 +134,6 @@ export interface DispatchJob {
     alertLatePickup?: number;
     deliveryTime?: number;
     alertLateDelivery?: number;
-    isProactiveLatePickup?: boolean;
-    isProactiveLateDelivery?: boolean;
-
     // Late call fields
     lp?: number;
     ld?: number;
