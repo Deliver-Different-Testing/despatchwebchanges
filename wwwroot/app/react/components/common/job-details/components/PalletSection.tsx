@@ -71,7 +71,7 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
                 <TableBody>
                     {pallets.map((pallet, index) => (
                         <TableRow
-                            key={pallet.id || index}
+                            key={`${pallet.itemId}-${index}`}
                             hover
                         >
                             <TableCell sx={cellSx}>{pallet.itemId || '\u2014'}</TableCell>

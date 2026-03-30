@@ -24,7 +24,7 @@ import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
-import {allocateJobs, bulkUpdateReadStatus, restoreJobs} from '../../services/jobListApi';
+import {allocateJobs, bulkUpdateReadStatus, restoreJobs, updateJobReadStatus} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
@@ -494,9 +494,15 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 // Plain click → set detail panel selection
                 setSelectedJobId(job.id);
                 if (onJobSelect) onJobSelect(job);
+                if (!job.hasBeenRead) {
+                    updateJobReadStatus(job.id, true).then(() => {
+                        if (fetchConfig) hookDataRef.current.refresh();
+                        else if (onRefresh) onRefresh();
+                    });
+                }
             }
         },
-        [onJobSelect, multiSelect],
+        [onJobSelect, multiSelect, fetchConfig, onRefresh],
     );
 
     const handleContextMenu = useCallback(

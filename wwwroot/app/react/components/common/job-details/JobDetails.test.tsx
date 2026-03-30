@@ -101,8 +101,12 @@ jest.mock('./components/JobFieldsSection', () => ({
 jest.mock('./components/ToggleProperties', () => ({
     ToggleProperties: () => <div data-testid="toggle-properties" />,
 }));
+let capturedPalletSectionProps: any = {};
 jest.mock('./components/PalletSection', () => ({
-    PalletSection: () => <div data-testid="pallet-section" />,
+    PalletSection: (props: any) => {
+        capturedPalletSectionProps = props;
+        return <div data-testid="pallet-section" data-pallet-count={props.pallets?.length ?? 0} />;
+    },
 }));
 jest.mock('./components/TextInputDialog', () => ({
     TextInputDialog: () => <div data-testid="text-input-dialog" />,
@@ -445,6 +449,56 @@ describe('JobDetails', () => {
             renderJobDetails();
 
             expect(screen.queryByTestId('pallet-section')).not.toBeInTheDocument();
+        });
+
+        it('passes only the current job pallets when switching between jobs', () => {
+            const jobA = createMockJob({
+                id: 100,
+                jobNo: 'J-100',
+                palletInfo: [
+                    {id: 100, itemId: 1, quantity: 2, weight: 25, length: 120, depth: 80, height: 100, notes: 'A1'} as any,
+                    {id: 100, itemId: 2, quantity: 3, weight: 10, length: 60, depth: 40, height: 30, notes: 'A2'} as any,
+                    {id: 100, itemId: 3, quantity: 1, weight: 5, length: 30, depth: 20, height: 10, notes: 'A3'} as any,
+                ],
+            });
+            setupDefaultMocks({job: jobA, sortedRelatedJobs: [jobA]});
+            const {rerender} = renderJobDetails({jobId: 100});
+
+            const sectionA = screen.getByTestId('pallet-section');
+            expect(sectionA).toBeInTheDocument();
+            expect(sectionA.getAttribute('data-pallet-count')).toBe('3');
+            expect(capturedPalletSectionProps.pallets).toHaveLength(3);
+
+            // Switch to a different job with fewer pallets
+            const jobB = createMockJob({
+                id: 200,
+                jobNo: 'J-200',
+                palletInfo: [
+                    {id: 200, itemId: 10, quantity: 5, weight: 50, length: 100, depth: 80, height: 120, notes: 'B1'} as any,
+                ],
+            });
+            setupDefaultMocks({job: jobB, sortedRelatedJobs: [jobB]});
+
+            const {JobDetails} = require('./JobDetails');
+            rerender(
+                <QueryClientProvider client={createQueryClient()}>
+                    <ThemeProvider theme={theme}>
+                        <JobDetails config={{
+                            jobId: 200,
+                            isRecurringJob: false,
+                            isBulkJob: false,
+                            isUsCustomer: false,
+                            showToast: jest.fn(),
+                        }} />
+                    </ThemeProvider>
+                </QueryClientProvider>,
+            );
+
+            const sectionB = screen.getByTestId('pallet-section');
+            expect(sectionB).toBeInTheDocument();
+            expect(sectionB.getAttribute('data-pallet-count')).toBe('1');
+            expect(capturedPalletSectionProps.pallets).toHaveLength(1);
+            expect(capturedPalletSectionProps.pallets[0].notes).toBe('B1');
         });
     });
 

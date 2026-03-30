@@ -68,4 +68,52 @@ describe('PalletSection', () => {
         expect(screen.getByText('PU')).toBeInTheDocument();
         expect(screen.getByText('DO')).toBeInTheDocument();
     });
+
+    it('renders correct number of rows when pallets change', () => {
+        const palletsA = [
+            createMockPallet({itemId: 1, quantity: 2, notes: 'Pallet A1'}),
+            createMockPallet({itemId: 2, quantity: 3, notes: 'Pallet A2'}),
+            createMockPallet({itemId: 3, quantity: 1, notes: 'Pallet A3'}),
+        ];
+
+        const {rerender} = renderWithTheme(<PalletSection pallets={palletsA} isUsCustomer={false} />);
+
+        // 3 data rows + 1 header row + 1 summary row = 5 total
+        const tableBody = document.querySelector('tbody')!;
+        expect(tableBody.querySelectorAll('tr')).toHaveLength(4); // 3 data + 1 summary
+
+        // Switch to a different set of pallets (fewer)
+        const palletsB = [
+            createMockPallet({itemId: 10, quantity: 5, notes: 'Pallet B1'}),
+        ];
+
+        rerender(
+            <ThemeProvider theme={theme}>
+                <PalletSection pallets={palletsB} isUsCustomer={false} />
+            </ThemeProvider>,
+        );
+
+        // Should now show only 1 data row + 1 summary row
+        expect(tableBody.querySelectorAll('tr')).toHaveLength(2);
+        expect(screen.getByText('Pallet B1')).toBeInTheDocument();
+        expect(screen.queryByText('Pallet A1')).not.toBeInTheDocument();
+        expect(screen.queryByText('Pallet A2')).not.toBeInTheDocument();
+        expect(screen.queryByText('Pallet A3')).not.toBeInTheDocument();
+    });
+
+    it('renders unique keys for pallets with same id but different itemId', () => {
+        // Simulates multi-stop pallets where id (JobId) is the same for all
+        const pallets = [
+            createMockPallet({id: 100, itemId: 1, notes: 'First'}),
+            createMockPallet({id: 100, itemId: 2, notes: 'Second'}),
+            createMockPallet({id: 100, itemId: 3, notes: 'Third'}),
+        ];
+
+        renderWithTheme(<PalletSection pallets={pallets} isUsCustomer={false} />);
+
+        expect(screen.getByText('First')).toBeInTheDocument();
+        expect(screen.getByText('Second')).toBeInTheDocument();
+        expect(screen.getByText('Third')).toBeInTheDocument();
+        expect(screen.getByText('(3)')).toBeInTheDocument();
+    });
 });
