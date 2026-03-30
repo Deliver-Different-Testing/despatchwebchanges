@@ -4,16 +4,16 @@
  * Custom React hooks for managing messaging state and operations.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { messagingApi } from '../../../services/messagingApi';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
     ChatMessage,
-    RecentConversation,
-    QuickResponse,
+    DEFAULT_QUICK_RESPONSES,
     MessageContactOption,
     OtherMessagePartyType,
-    DEFAULT_QUICK_RESPONSES,
-} from './types';
+    QuickResponse,
+    RecentConversation
+} from "../components/dialogs/messaging-dialog/types";
+import messagingApi from "../services/messagingApi";
 
 /**
  * Hook for managing the conversation list

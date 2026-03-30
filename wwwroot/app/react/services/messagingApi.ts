@@ -15,7 +15,7 @@ import {
     SaveQuickResponseRequest,
     SendMessageRequest,
     SendMultipleMessageRequest,
-} from '../components/dialogs/messaging-dialog';
+} from '../components/dialogs/messaging-dialog/types';
 
 /**
  * Messaging API Service Class

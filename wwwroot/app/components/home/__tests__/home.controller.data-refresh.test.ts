@@ -9,7 +9,7 @@
 
 import './home.controller.test-setup';
 import {
-    ControllerClass, createController, makeJob,
+    ControllerClass, createController, makeJob, makeUnassignedJob,
     setupWindowMocks, CurrentWorkLists,
 } from './home.controller.test-helpers';
 
@@ -569,5 +569,91 @@ describe('updateJobSearchText', () => {
         const ctrl = setup();
         await ctrl.updateJobSearchText('');
         expect(ctrl.queryParams.searchText).toBe('');
+    });
+});
+
+// =====================================================================
+// onJobsLoaded callback (map population on initial load)
+// =====================================================================
+
+describe('onJobsLoaded callback logic', () => {
+    /**
+     * Tests the onJobsLoaded callback logic from doMountReactJobList.
+     * We extract and invoke the same logic the callback uses:
+     * filter to statusId===0, map via mapToDispatchMapItem, set mapJobListFull.
+     */
+    function setup(overrides = {}) {
+        const ctrl = createController(overrides);
+        // Use real mapToDispatchMapItem so we test the full pipeline
+        ctrl.mapToDispatchMapItem = ControllerClass.prototype.mapToDispatchMapItem;
+        return ctrl;
+    }
+
+    /** Simulates the onJobsLoaded callback from doMountReactJobList */
+    function invokeOnJobsLoaded(ctrl: any, jobs: any[]) {
+        if (!ctrl.currentJob) {
+            ctrl.mapJobList = jobs
+                .filter((j: any) => j.statusId === 0)
+                .map((j: any) => ctrl.mapToDispatchMapItem(j));
+            ctrl.mapJobListFull = [...ctrl.mapJobList];
+            ctrl.applyScope();
+        }
+    }
+
+    it('populates mapJobList with undispatched jobs when no job is selected', () => {
+        const ctrl = setup({currentJob: undefined});
+        const jobs = [
+            makeUnassignedJob(1),                          // statusId: 0
+            {...makeJob(2, 10), statusId: 1},              // dispatched
+            makeUnassignedJob(3),                          // statusId: 0
+            {...makeJob(4, 20), statusId: 6},              // delivered
+        ];
+
+        invokeOnJobsLoaded(ctrl, jobs);
+
+        expect(ctrl.mapJobList).toHaveLength(2);
+        expect(ctrl.mapJobList).toEqual([
+            expect.objectContaining({jobId: 1, statusId: 0}),
+            expect.objectContaining({jobId: 3, statusId: 0}),
+        ]);
+    });
+
+    it('also populates mapJobListFull as a copy', () => {
+        const ctrl = setup({currentJob: undefined});
+        const jobs = [makeUnassignedJob(1)];
+
+        invokeOnJobsLoaded(ctrl, jobs);
+
+        expect(ctrl.mapJobListFull).toEqual(ctrl.mapJobList);
+        expect(ctrl.mapJobListFull).not.toBe(ctrl.mapJobList); // separate array
+    });
+
+    it('calls applyScope when no job is selected', () => {
+        const ctrl = setup({currentJob: undefined});
+        invokeOnJobsLoaded(ctrl, [makeUnassignedJob(1)]);
+        expect(ctrl.applyScope).toHaveBeenCalled();
+    });
+
+    it('does NOT populate mapJobList when a job is selected', () => {
+        const ctrl = setup({currentJob: makeJob(99, 1)});
+        const originalMapJobList = ctrl.mapJobList;
+
+        invokeOnJobsLoaded(ctrl, [makeUnassignedJob(1), makeUnassignedJob(2)]);
+
+        expect(ctrl.mapJobList).toBe(originalMapJobList);
+        expect(ctrl.applyScope).not.toHaveBeenCalled();
+    });
+
+    it('sets empty mapJobList when all jobs are dispatched', () => {
+        const ctrl = setup({currentJob: undefined});
+        const jobs = [
+            {...makeJob(1, 10), statusId: 1},
+            {...makeJob(2, 20), statusId: 6},
+        ];
+
+        invokeOnJobsLoaded(ctrl, jobs);
+
+        expect(ctrl.mapJobList).toEqual([]);
+        expect(ctrl.mapJobListFull).toEqual([]);
     });
 });

@@ -2423,6 +2423,16 @@ class HomeController extends BaseController {
             onAddStop: async (job: DispatchJob) => {
                 await this.jobAddStopService.addNewStop(job as IDispatchJob);
             },
+            onJobsLoaded: (jobs: DispatchJob[]) => {
+                // Populate map with all undispatched jobs when no job is selected
+                if (!this.currentJob) {
+                    this.mapJobList = (jobs as IDispatchJob[])
+                        .filter(j => j.statusId === 0)
+                        .map(j => this.mapToDispatchMapItem(j));
+                    this.mapJobListFull = [...this.mapJobList];
+                    this.applyScope();
+                }
+            },
         });
 
         this.reactJobListMounted = true;

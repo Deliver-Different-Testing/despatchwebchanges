@@ -86,6 +86,7 @@ function renderJobList(config: MountJobListConfig): void {
                         onBackendFilter={config.onBackendFilter}
                         onLoadMoreJobs={config.onLoadMoreJobs}
                         onAddStop={config.onAddStop}
+                        onJobsLoaded={config.onJobsLoaded}
                         defaultCategory={config.defaultCategory}
                         storagePrefix={config.storagePrefix}
                         fetchConfig={config.fetchConfig}

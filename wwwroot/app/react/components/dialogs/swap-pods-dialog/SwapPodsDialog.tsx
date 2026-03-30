@@ -107,9 +107,9 @@ export function SwapPodsDialog({
         setError(null);
     };
 
-    const handleKeyDown = (e: React.KeyboardEvent): void => {
+    const handleKeyDown: (e: React.KeyboardEvent) => Promise<void> = async (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && phase === 'input' && !loading) {
-            handleValidate();
+            await handleValidate();
         }
     };
 

@@ -752,6 +752,57 @@ describe('JobListPanel', () => {
             expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
         });
 
+        it('calls onJobsLoaded when jobs arrive in fetchConfig mode', async () => {
+            const onJobsLoaded = jest.fn();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'MAP-001', statusId: 0}),
+                createMockDispatchJob({id: 2, jobNo: 'MAP-002', statusId: 1}),
+            ];
+            const fetchConfig = createMockFetchConfig({
+                fetchFn: jest.fn().mockResolvedValue({
+                    jobs,
+                    totalCount: 2,
+                    hasMore: false,
+                } as JobSearchResult),
+            });
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({fetchConfig, onJobsLoaded})} />,
+            );
+
+            await waitFor(() => {
+                expect(onJobsLoaded).toHaveBeenCalledWith(jobs);
+            });
+        });
+
+        it('does not call onJobsLoaded when jobs array is empty', async () => {
+            const onJobsLoaded = jest.fn();
+            const fetchConfig = createMockFetchConfig({
+                fetchFn: jest.fn().mockResolvedValue({
+                    jobs: [],
+                    totalCount: 0,
+                    hasMore: false,
+                } as JobSearchResult),
+            });
+
+            renderWithProviders(
+                <JobListPanel {...createDefaultProps({fetchConfig, onJobsLoaded})} />,
+            );
+
+            await screen.findByText('No jobs to display');
+            expect(onJobsLoaded).not.toHaveBeenCalled();
+        });
+
+        it('does not call onJobsLoaded in pushed-data mode', () => {
+            const onJobsLoaded = jest.fn();
+            renderAndPushJobs(
+                [createMockDispatchJob({id: 1, jobNo: 'PUSHED-001'})],
+                {onJobsLoaded},
+            );
+
+            expect(onJobsLoaded).not.toHaveBeenCalled();
+        });
+
         it('does not show loading indicator in pushed-data mode', () => {
             const {result} = renderAndPushJobs([createMockDispatchJob()]);
 

@@ -11,6 +11,7 @@ import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
 import dayjs from 'dayjs';
 import type {
+    CourierData,
     DensityMode,
     DispatchJob,
     JobCategory,
@@ -23,11 +24,10 @@ import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
-import type {CourierData} from '../../interfaces/dispatchJob';
 import {allocateJobs, bulkUpdateReadStatus, restoreJobs} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
-import {JOB_STATUS, getNow, isUrgent, isDelivered, needsDispatch} from './jobListHelpers';
+import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -243,6 +243,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               onCategoryChange,
                                                               onBackendFilter,
                                                               onAddStop,
+                                                              onJobsLoaded,
                                                               defaultCategory,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
@@ -268,6 +269,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     // Use hook data when available, otherwise fall back to pushed data
     const jobs = fetchConfig ? hookData.jobs : pushedJobs;
     const totalCount = fetchConfig ? hookData.totalCount : pushedTotalCount;
+
+    // ── Notify parent when jobs are loaded (for map sync) ────────────
+    useEffect(() => {
+        if (onJobsLoaded && fetchConfig && jobs.length > 0) {
+            onJobsLoaded(jobs);
+        }
+    }, [jobs, onJobsLoaded, fetchConfig]);
+
     // ── UI State ─────────────────────────────────────────────────────
     const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<JobCategory>(defaultCategory || 'all');

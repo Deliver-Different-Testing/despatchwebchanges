@@ -4,9 +4,9 @@
  * Manages AI assistant conversation state, streaming, and abort control.
  */
 
-import { useState, useCallback, useRef } from 'react';
-import { AiMessage } from './types';
-import { streamChat, AiChatMessage } from '../../../services/aiAssistantApi';
+import {useCallback, useRef, useState} from 'react';
+import {AiMessage} from "../components/dialogs/ai-assistant-dialog";
+import {AiChatMessage, streamChat} from "../services/aiAssistantApi";
 
 /** Must match AiInputGuard.cs constants */
 const MAX_MESSAGE_LENGTH = 2000;

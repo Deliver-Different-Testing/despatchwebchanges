@@ -71,7 +71,7 @@ export { fileUploadHandlers } from './fileUploadHandlers';
 export { mockRecentConversations, mockChatMessages, mockQuickResponses, mockContactOptions } from './messagingHandlers';
 export { mockLocationResults, mockLookupResponse } from './addressHandlers';
 export { mockRelatedJobs, mockClientSuggestions, mockVehicleSizes } from './jobHandlers';
-export { mockCourierSuggestions, mockCourierLocations, mockClearListEnvelope, mockTimeZoneOptions } from './courierHandlers';
+export { mockCourierSuggestions, mockCourierLocations, mockClearListEnvelope, mockClearListDebug, mockTimeZoneOptions } from './courierHandlers';
 export { mockTaskApiResponses, mockStaffSuggestions, mockEventTypeSuggestions, mockDeliveryJourneyDtos } from './taskHandlers';
 export { mockJobNoteDtos, mockNoteTypes } from './noteHandlers';
 export { mockDispatchJobDetail } from './eventHandlers';

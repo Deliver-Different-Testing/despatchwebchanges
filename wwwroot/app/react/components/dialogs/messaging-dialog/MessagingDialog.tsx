@@ -5,7 +5,7 @@
  * Features real-time messaging, conversation list, quick responses, and multi-recipient support.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {accentPalette, sharedColors} from '../../../theme/muiTheme';
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
@@ -44,34 +44,32 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import {
-    MessagingDialogProps,
     ChatMessage,
-    RecentConversation,
     MessageContactOption,
-    QuickResponse,
-    OtherMessagePartyType,
     MessageDeliveryType,
+    MessagingDialogProps,
+    OtherMessagePartyType,
+    QuickResponse,
+    RecentConversation,
     SendMessageRequest,
     SendMultipleMessageRequest,
 } from './types';
+import {messagingApi} from '../../../services/messagingApi';
+import {dayjs, parseDateFromApi} from '../../../utils/dateUtils';
 import {
+    useAutoRefresh,
+    useContactSearch,
     useConversations,
     useMessages,
-    useQuickResponses,
-    useContactSearch,
-    useAutoRefresh,
-} from './useMessaging';
-import { messagingApi } from '../../../services/messagingApi';
-import { dayjs, parseDateFromApi } from '../../../utils/dateUtils';
+    useQuickResponses
+} from "../../../hooks/useMessaging";
 
 export const MessagingDialog: React.FC<MessagingDialogProps> = ({
-    open,
-    onClose,
-    showToast,
-    currentStaffId,
-    currentStaffName,
-    timeZone,
-}) => {
+                                                                    open,
+                                                                    onClose,
+                                                                    showToast,
+                                                                    currentStaffId,
+                                                                }) => {
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     const [selectedConversation, setSelectedConversation] = useState<RecentConversation | null>(null);
@@ -149,7 +147,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
     // Scroll to bottom when messages change
     useEffect(() => {
         if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            messagesEndRef.current.scrollIntoView({behavior: 'smooth'});
         }
     }, [messages]);
 
@@ -169,7 +167,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         if (conversation.unreadCount > 0) {
             try {
                 await messagingApi.markMessagesAsRead(conversation.otherPartyId, conversation.otherPartyType);
-                updateConversation(conversation.otherPartyId, conversation.otherPartyType, { unreadCount: 0 });
+                updateConversation(conversation.otherPartyId, conversation.otherPartyType, {unreadCount: 0});
             } catch (err) {
                 console.error('Failed to mark messages as read:', err);
             }
@@ -323,7 +321,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
 
         const index = selectedContacts.findIndex(
             c => c.recordId === normalizedContact.recordId &&
-                 c.otherMessagePartyType === normalizedContact.otherMessagePartyType
+                c.otherMessagePartyType === normalizedContact.otherMessagePartyType
         );
 
         if (index > -1) {
@@ -337,7 +335,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
         const normalizedContact = normalizeContact(contact);
         return selectedContacts.some(
             c => c.recordId === normalizedContact.recordId &&
-                 c.otherMessagePartyType === normalizedContact.otherMessagePartyType
+                c.otherMessagePartyType === normalizedContact.otherMessagePartyType
         );
     };
 
@@ -377,7 +375,10 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                         isSending={isSending}
                         onSearch={search}
                         onClearSearch={clearSearch}
-                        onToggleMultiSelect={() => { setIsMultiSelectMode(!isMultiSelectMode); setSelectedContacts([]); }}
+                        onToggleMultiSelect={() => {
+                            setIsMultiSelectMode(!isMultiSelectMode);
+                            setSelectedContacts([]);
+                        }}
                         onToggleContactSelection={handleToggleContactSelection}
                         onStartConversation={handleStartConversationWith}
                         onClearSelectedContacts={() => setSelectedContacts([])}
@@ -397,14 +398,14 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                     subtitle="Send and receive messages"
                     onClose={onClose}
                 />
-                <DialogContent sx={{ p: 0, display: 'flex', flex: 1, overflow: 'hidden' }}>
+                <DialogContent sx={{p: 0, display: 'flex', flex: 1, overflow: 'hidden'}}>
                     {conversationsError ? (
                         <ErrorState
                             message={conversationsError}
                             onRetry={() => loadConversations()}
                         />
                     ) : (
-                        <Box sx={{ display: 'flex', flex: 1, minHeight: 0 }}>
+                        <Box sx={{display: 'flex', flex: 1, minHeight: 0}}>
                             {/* Conversations Panel */}
                             <ConversationsPanel
                                 conversations={conversations}
@@ -482,7 +483,7 @@ interface DialogHeaderProps {
     onClose: () => void;
 }
 
-function DialogHeader({ title, subtitle, showBackButton, onBack, onClose }: DialogHeaderProps) {
+function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: DialogHeaderProps) {
     return (
         <Box
             sx={(theme) => ({
@@ -496,23 +497,23 @@ function DialogHeader({ title, subtitle, showBackButton, onBack, onClose }: Dial
             })}
         >
             {showBackButton && (
-                <IconButton onClick={onBack} sx={{ color: 'white' }}>
-                    <ArrowBackIcon />
+                <IconButton onClick={onBack} sx={{color: 'white'}}>
+                    <ArrowBackIcon/>
                 </IconButton>
             )}
-            {!showBackButton && <ChatIcon sx={{ mr: 1 }} />}
-            <Box sx={{ flex: 1 }}>
+            {!showBackButton && <ChatIcon sx={{mr: 1}}/>}
+            <Box sx={{flex: 1}}>
                 <Typography variant="h6" fontWeight={600}>
                     {title}
                 </Typography>
                 {subtitle && (
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
                         {subtitle}
                     </Typography>
                 )}
             </Box>
-            <IconButton onClick={onClose} sx={{ color: 'white' }}>
-                <CloseIcon />
+            <IconButton onClick={onClose} sx={{color: 'white'}}>
+                <CloseIcon/>
             </IconButton>
         </Box>
     );
@@ -529,14 +530,14 @@ interface ConversationsPanelProps {
 }
 
 function ConversationsPanel({
-    conversations,
-    selectedConversation,
-    isLoading,
-    totalUnreadCount,
-    onSelectConversation,
-    onRefresh,
-    onNewChat,
-}: ConversationsPanelProps) {
+                                conversations,
+                                selectedConversation,
+                                isLoading,
+                                totalUnreadCount,
+                                onSelectConversation,
+                                onRefresh,
+                                onNewChat,
+                            }: ConversationsPanelProps) {
     return (
         <Box
             sx={{
@@ -567,27 +568,27 @@ function ConversationsPanel({
                     <Badge
                         badgeContent={totalUnreadCount}
                         color="error"
-                        sx={{ ml: 0.5 }}
+                        sx={{ml: 0.5}}
                     />
                 )}
-                <Box sx={{ flex: 1 }} />
+                <Box sx={{flex: 1}}/>
                 <IconButton size="small" onClick={onRefresh} disabled={isLoading}>
-                    <RefreshIcon sx={{ animation: isLoading ? 'spin 1s linear infinite' : 'none' }} />
+                    <RefreshIcon sx={{animation: isLoading ? 'spin 1s linear infinite' : 'none'}}/>
                 </IconButton>
                 <IconButton size="small" color="primary" onClick={onNewChat}>
-                    <AddCommentIcon />
+                    <AddCommentIcon/>
                 </IconButton>
             </Box>
 
             {/* Loading indicator */}
             {isLoading && conversations.length === 0 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                    <CircularProgress size={32} />
+                <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+                    <CircularProgress size={32}/>
                 </Box>
             )}
 
             {/* Conversations List */}
-            <List sx={{ flex: 1, overflow: 'auto', p: 0 }}>
+            <List sx={{flex: 1, overflow: 'auto', p: 0}}>
                 {conversations.map((conv) => (
                     <ListItem
                         key={`${conv.otherPartyId}-${conv.otherPartyType}`}
@@ -596,18 +597,18 @@ function ConversationsPanel({
                             cursor: 'pointer',
                             borderLeft: '3px solid',
                             borderLeftColor: selectedConversation?.otherPartyId === conv.otherPartyId &&
-                                selectedConversation?.otherPartyType === conv.otherPartyType
+                            selectedConversation?.otherPartyType === conv.otherPartyType
                                 ? 'primary.main' : 'transparent',
                             bgcolor: selectedConversation?.otherPartyId === conv.otherPartyId &&
-                                selectedConversation?.otherPartyType === conv.otherPartyType
+                            selectedConversation?.otherPartyType === conv.otherPartyType
                                 ? 'action.selected' : 'transparent',
-                            '&:hover': { bgcolor: 'action.hover' },
+                            '&:hover': {bgcolor: 'action.hover'},
                         }}
                     >
                         <ListItemAvatar>
                             <Badge
                                 overlap="circular"
-                                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
                                 badgeContent={
                                     <Box
                                         sx={{
@@ -620,15 +621,15 @@ function ConversationsPanel({
                                     />
                                 }
                             >
-                                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                                <Avatar sx={{bgcolor: 'primary.main'}}>
                                     {conv.otherPartyInitials || generateInitials(conv.otherPartyName)}
                                 </Avatar>
                             </Badge>
                         </ListItemAvatar>
                         <ListItemText
                             primary={
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                                    <Typography variant="body2" fontWeight={500} noWrap sx={{ maxWidth: 140 }}>
+                                <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline'}}>
+                                    <Typography variant="body2" fontWeight={500} noWrap sx={{maxWidth: 140}}>
                                         {conv.otherPartyName}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
@@ -637,12 +638,12 @@ function ConversationsPanel({
                                 </Box>
                             }
                             secondary={
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                     <Typography
                                         variant="caption"
                                         color="text.secondary"
                                         noWrap
-                                        sx={{ flex: 1 }}
+                                        sx={{flex: 1}}
                                     >
                                         {conv.lastMessage ? (
                                             <>
@@ -659,7 +660,7 @@ function ConversationsPanel({
                                             label={conv.unreadCount > 99 ? '99+' : conv.unreadCount}
                                             size="small"
                                             color="error"
-                                            sx={{ height: 18, fontSize: 11 }}
+                                            sx={{height: 18, fontSize: 11}}
                                         />
                                     )}
                                 </Box>
@@ -672,12 +673,12 @@ function ConversationsPanel({
             {/* Empty State */}
             {!isLoading && conversations.length === 0 && (
                 <EmptyState
-                    icon={<ChatBubbleOutlineIcon sx={{ fontSize: 48 }} />}
+                    icon={<ChatBubbleOutlineIcon sx={{fontSize: 48}}/>}
                     message="No conversations yet"
                     action={
                         <Button
                             variant="contained"
-                            startIcon={<AddCommentIcon />}
+                            startIcon={<AddCommentIcon/>}
                             onClick={onNewChat}
                         >
                             Start Conversation
@@ -709,27 +710,33 @@ interface ChatPanelProps {
 }
 
 function ChatPanel({
-    selectedConversation,
-    messages,
-    isMessagesLoading,
-    newMessage,
-    messageDeliveryType,
-    isSending,
-    showQuickResponses,
-    quickResponses,
-    onMessageChange,
-    onDeliveryTypeChange,
-    onSendMessage,
-    onKeyPress,
-    onRefreshMessages,
-    onToggleQuickResponses,
-    onSelectQuickResponse,
-    messagesEndRef,
-}: ChatPanelProps) {
+                       selectedConversation,
+                       messages,
+                       isMessagesLoading,
+                       newMessage,
+                       messageDeliveryType,
+                       isSending,
+                       showQuickResponses,
+                       quickResponses,
+                       onMessageChange,
+                       onDeliveryTypeChange,
+                       onSendMessage,
+                       onKeyPress,
+                       onRefreshMessages,
+                       onToggleQuickResponses,
+                       onSelectQuickResponse,
+                       messagesEndRef,
+                   }: ChatPanelProps) {
     if (!selectedConversation) {
         return (
-            <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <ChatIcon sx={{ fontSize: 64, color: 'action.disabled', mb: 2 }} />
+            <Box sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <ChatIcon sx={{fontSize: 64, color: 'action.disabled', mb: 2}}/>
                 <Typography color="text.secondary">
                     Select a conversation or start a new one
                 </Typography>
@@ -738,7 +745,7 @@ function ChatPanel({
     }
 
     return (
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
             {/* Chat Header */}
             <Box
                 sx={{
@@ -750,20 +757,20 @@ function ChatPanel({
                     borderColor: 'divider',
                 }}
             >
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                <Avatar sx={{bgcolor: 'primary.main'}}>
                     {selectedConversation.otherPartyInitials}
                 </Avatar>
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{flex: 1}}>
                     <Typography variant="body1" fontWeight={500}>
                         {selectedConversation.otherPartyName}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'capitalize'}}>
                         {selectedConversation.otherPartyType === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
                         {' · '}{selectedConversation.otherPartyStatus}
                     </Typography>
                 </Box>
                 <IconButton size="small" onClick={onRefreshMessages} disabled={isMessagesLoading}>
-                    <RefreshIcon sx={{ animation: isMessagesLoading ? 'spin 1s linear infinite' : 'none' }} />
+                    <RefreshIcon sx={{animation: isMessagesLoading ? 'spin 1s linear infinite' : 'none'}}/>
                 </IconButton>
             </Box>
 
@@ -779,12 +786,12 @@ function ChatPanel({
                 }}
             >
                 {isMessagesLoading && messages.length === 0 ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
-                        <CircularProgress size={32} />
+                    <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+                        <CircularProgress size={32}/>
                     </Box>
                 ) : messages.length === 0 ? (
                     <EmptyState
-                        icon={<ChatBubbleOutlineIcon sx={{ fontSize: 48 }} />}
+                        icon={<ChatBubbleOutlineIcon sx={{fontSize: 48}}/>}
                         message="Start the conversation"
                     />
                 ) : (
@@ -814,11 +821,11 @@ function ChatPanel({
                                             {formatDateSeparator(msg.messageTime)}
                                         </Typography>
                                     )}
-                                    <MessageBubble message={msg} />
+                                    <MessageBubble message={msg}/>
                                 </React.Fragment>
                             );
                         })}
-                        <div ref={messagesEndRef} />
+                        <div ref={messagesEndRef}/>
                     </>
                 )}
             </Box>
@@ -833,15 +840,16 @@ function ChatPanel({
                         p: 1.5,
                     }}
                 >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                        <Typography variant="caption" fontWeight={500} color="text.secondary" sx={{ textTransform: 'uppercase' }}>
+                    <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1}}>
+                        <Typography variant="caption" fontWeight={500} color="text.secondary"
+                                    sx={{textTransform: 'uppercase'}}>
                             Quick Responses
                         </Typography>
                         <IconButton size="small" onClick={onToggleQuickResponses}>
-                            <CloseIcon fontSize="small" />
+                            <CloseIcon fontSize="small"/>
                         </IconButton>
                     </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1}}>
                         {quickResponses.map((response) => (
                             <Chip
                                 key={response.id}
@@ -875,7 +883,7 @@ function ChatPanel({
                 }}
             >
                 <IconButton onClick={onToggleQuickResponses}>
-                    <QuickReplyIcon />
+                    <QuickReplyIcon/>
                 </IconButton>
                 <TextField
                     fullWidth
@@ -893,11 +901,11 @@ function ChatPanel({
                     }}
                 />
                 {selectedConversation.otherPartyType === OtherMessagePartyType.Courier && (
-                    <FormControl size="small" sx={{ minWidth: 80 }}>
+                    <FormControl size="small" sx={{minWidth: 80}}>
                         <Select
                             value={messageDeliveryType}
                             onChange={(e) => onDeliveryTypeChange(e.target.value as MessageDeliveryType)}
-                            sx={{ borderRadius: 2, fontSize: 12 }}
+                            sx={{borderRadius: 2, fontSize: 12}}
                         >
                             <MenuItem value={MessageDeliveryType.App}>App</MenuItem>
                             <MenuItem value={MessageDeliveryType.Sms}>SMS</MenuItem>
@@ -912,11 +920,11 @@ function ChatPanel({
                     sx={{
                         bgcolor: 'primary.main',
                         color: 'white',
-                        '&:hover': { bgcolor: 'primary.dark' },
-                        '&:disabled': { bgcolor: 'action.disabledBackground' },
+                        '&:hover': {bgcolor: 'primary.dark'},
+                        '&:disabled': {bgcolor: 'action.disabledBackground'},
                     }}
                 >
-                    {isSending ? <CircularProgress size={24} color="inherit" /> : <SendIcon />}
+                    {isSending ? <CircularProgress size={24} color="inherit"/> : <SendIcon/>}
                 </IconButton>
             </Box>
         </Box>
@@ -927,7 +935,7 @@ interface MessageBubbleProps {
     message: ChatMessage;
 }
 
-function MessageBubble({ message }: MessageBubbleProps) {
+function MessageBubble({message}: MessageBubbleProps) {
     const isSent = message.isSender;
 
     return (
@@ -950,21 +958,21 @@ function MessageBubble({ message }: MessageBubbleProps) {
                     borderColor: 'divider',
                 }}
             >
-                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
                     {message.message}
                 </Typography>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'flex-end' }}>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'flex-end'}}>
                     <Typography
                         variant="caption"
-                        sx={{ opacity: isSent ? 0.8 : 0.6 }}
+                        sx={{opacity: isSent ? 0.8 : 0.6}}
                     >
                         {formatMessageTime(message.messageTime)}
                     </Typography>
                     {isSent && message.read && (
-                        <DoneAllIcon sx={{ fontSize: 14, opacity: 0.8 }} />
+                        <DoneAllIcon sx={{fontSize: 14, opacity: 0.8}}/>
                     )}
                     {isSent && !message.read && message.sent && (
-                        <DoneIcon sx={{ fontSize: 14, opacity: 0.8 }} />
+                        <DoneIcon sx={{fontSize: 14, opacity: 0.8}}/>
                     )}
                 </Box>
             </Box>
@@ -993,26 +1001,26 @@ interface NewChatViewProps {
 }
 
 function NewChatView({
-    searchTerm,
-    searchResults,
-    isSearching,
-    recentConversations,
-    isMultiSelectMode,
-    selectedContacts,
-    newMessage,
-    isSending,
-    onSearch,
-    onClearSearch,
-    onToggleMultiSelect,
-    onToggleContactSelection,
-    onStartConversation,
-    onClearSelectedContacts,
-    onMessageChange,
-    onSendMultiMessage,
-    isContactSelected,
-}: NewChatViewProps) {
+                         searchTerm,
+                         searchResults,
+                         isSearching,
+                         recentConversations,
+                         isMultiSelectMode,
+                         selectedContacts,
+                         newMessage,
+                         isSending,
+                         onSearch,
+                         onClearSearch,
+                         onToggleMultiSelect,
+                         onToggleContactSelection,
+                         onStartConversation,
+                         onClearSelectedContacts,
+                         onMessageChange,
+                         onSendMultiMessage,
+                         isContactSelected,
+                     }: NewChatViewProps) {
     return (
-        <DialogContent sx={{ p: 0, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <DialogContent sx={{p: 0, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden'}}>
             {/* Multi-select Header */}
             {isMultiSelectMode && (
                 <Box
@@ -1029,7 +1037,7 @@ function NewChatView({
                     <Typography fontWeight={500} color="primary.main">
                         {selectedContacts.length} selected
                     </Typography>
-                    <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Box sx={{display: 'flex', gap: 1}}>
                         <Button
                             size="small"
                             onClick={onClearSelectedContacts}
@@ -1070,13 +1078,13 @@ function NewChatView({
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon color="action" />
+                                    <SearchIcon color="action"/>
                                 </InputAdornment>
                             ),
                             endAdornment: searchTerm && (
                                 <InputAdornment position="end">
                                     <IconButton size="small" onClick={onClearSearch}>
-                                        <CloseIcon fontSize="small" />
+                                        <CloseIcon fontSize="small"/>
                                     </IconButton>
                                 </InputAdornment>
                             ),
@@ -1093,7 +1101,7 @@ function NewChatView({
                     variant={isMultiSelectMode ? 'contained' : 'outlined'}
                     size="small"
                     onClick={onToggleMultiSelect}
-                    startIcon={isMultiSelectMode ? <CheckBoxIcon /> : <CheckBoxOutlineBlankIcon />}
+                    startIcon={isMultiSelectMode ? <CheckBoxIcon/> : <CheckBoxOutlineBlankIcon/>}
                 >
                     Multi
                 </Button>
@@ -1101,22 +1109,22 @@ function NewChatView({
 
             {/* Loading */}
             {isSearching && (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 3 }}>
-                    <CircularProgress size={24} />
+                <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 3}}>
+                    <CircularProgress size={24}/>
                     <Typography color="text.secondary">Searching...</Typography>
                 </Box>
             )}
 
             {/* Results */}
-            <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <Box sx={{flex: 1, overflow: 'auto'}}>
                 {/* Recent Conversations */}
                 {!searchTerm && recentConversations.length > 0 && (
-                    <Box sx={{ py: 2 }}>
+                    <Box sx={{py: 2}}>
                         <Typography
                             variant="caption"
                             fontWeight={600}
                             color="text.secondary"
-                            sx={{ px: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                            sx={{px: 2, textTransform: 'uppercase', letterSpacing: 0.5}}
                         >
                             Recent
                         </Typography>
@@ -1140,12 +1148,12 @@ function NewChatView({
 
                 {/* Search Results */}
                 {searchTerm && searchResults.length > 0 && (
-                    <Box sx={{ py: 2 }}>
+                    <Box sx={{py: 2}}>
                         <Typography
                             variant="caption"
                             fontWeight={600}
                             color="text.secondary"
-                            sx={{ px: 2, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                            sx={{px: 2, textTransform: 'uppercase', letterSpacing: 0.5}}
                         >
                             Results ({searchResults.length})
                         </Typography>
@@ -1171,7 +1179,7 @@ function NewChatView({
                 {/* No Results */}
                 {searchTerm && !isSearching && searchResults.length === 0 && (
                     <EmptyState
-                        icon={<SearchOffIcon sx={{ fontSize: 48 }} />}
+                        icon={<SearchOffIcon sx={{fontSize: 48}}/>}
                         message={`No results for "${searchTerm}"`}
                     />
                 )}
@@ -1179,15 +1187,15 @@ function NewChatView({
                 {/* Empty State */}
                 {!searchTerm && recentConversations.length === 0 && (
                     <EmptyState
-                        icon={<PersonSearchIcon sx={{ fontSize: 48 }} />}
+                        icon={<PersonSearchIcon sx={{fontSize: 48}}/>}
                         message="Search to start a conversation"
                     />
                 )}
 
                 {/* Multi-select Compose */}
                 {isMultiSelectMode && selectedContacts.length > 0 && (
-                    <Box sx={{ m: 2, p: 2, bgcolor: 'grey.100', borderRadius: 2 }}>
-                        <Typography fontWeight={500} sx={{ mb: 1.5 }}>
+                    <Box sx={{m: 2, p: 2, bgcolor: 'grey.100', borderRadius: 2}}>
+                        <Typography fontWeight={500} sx={{mb: 1.5}}>
                             Send to {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}
                         </Typography>
                         <TextField
@@ -1197,12 +1205,12 @@ function NewChatView({
                             placeholder="Type your message..."
                             value={newMessage}
                             onChange={(e) => onMessageChange(e.target.value)}
-                            sx={{ mb: 1.5 }}
+                            sx={{mb: 1.5}}
                         />
-                        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
                             <Button
                                 variant="contained"
-                                startIcon={isSending ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+                                startIcon={isSending ? <CircularProgress size={16} color="inherit"/> : <SendIcon/>}
                                 onClick={onSendMultiMessage}
                                 disabled={!newMessage.trim() || isSending}
                             >
@@ -1226,13 +1234,13 @@ interface ContactListItemProps {
 }
 
 function ContactListItem({
-    contact,
-    isMultiSelectMode,
-    isSelected,
-    onSelect,
-    onToggleSelection,
-    highlightTerm,
-}: ContactListItemProps) {
+                             contact,
+                             isMultiSelectMode,
+                             isSelected,
+                             onSelect,
+                             onToggleSelection,
+                             highlightTerm,
+                         }: ContactListItemProps) {
     const name = 'otherPartyName' in contact ? contact.otherPartyName : contact.name;
     const initials = 'otherPartyInitials' in contact ? contact.otherPartyInitials : generateInitials(name);
     const type = 'otherPartyType' in contact ? contact.otherPartyType : contact.otherMessagePartyType;
@@ -1244,7 +1252,7 @@ function ContactListItem({
             sx={{
                 cursor: 'pointer',
                 bgcolor: isSelected ? 'action.selected' : 'transparent',
-                '&:hover': { bgcolor: 'action.hover' },
+                '&:hover': {bgcolor: 'action.hover'},
             }}
         >
             {isMultiSelectMode && (
@@ -1252,18 +1260,18 @@ function ContactListItem({
                     checked={isSelected}
                     onChange={onToggleSelection}
                     onClick={(e) => e.stopPropagation()}
-                    sx={{ mr: 1 }}
+                    sx={{mr: 1}}
                 />
             )}
             <ListItemAvatar>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
+                <Avatar sx={{bgcolor: 'primary.main'}}>
                     {initials}
                 </Avatar>
             </ListItemAvatar>
             <ListItemText
                 primary={
                     highlightTerm ? (
-                        <span dangerouslySetInnerHTML={{ __html: highlightSearchTerm(name, highlightTerm) }} />
+                        <span dangerouslySetInnerHTML={{__html: highlightSearchTerm(name, highlightTerm)}}/>
                     ) : name
                 }
                 secondary={type === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
@@ -1288,7 +1296,7 @@ interface EmptyStateProps {
     action?: React.ReactNode;
 }
 
-function EmptyState({ icon, message, action }: EmptyStateProps) {
+function EmptyState({icon, message, action}: EmptyStateProps) {
     return (
         <Box
             sx={{
@@ -1300,8 +1308,8 @@ function EmptyState({ icon, message, action }: EmptyStateProps) {
                 color: 'text.secondary',
             }}
         >
-            <Box sx={{ color: 'action.disabled', mb: 2 }}>{icon}</Box>
-            <Typography color="text.secondary" sx={{ mb: action ? 2 : 0 }}>
+            <Box sx={{color: 'action.disabled', mb: 2}}>{icon}</Box>
+            <Typography color="text.secondary" sx={{mb: action ? 2 : 0}}>
                 {message}
             </Typography>
             {action}
@@ -1314,7 +1322,7 @@ interface ErrorStateProps {
     onRetry: () => void;
 }
 
-function ErrorState({ message, onRetry }: ErrorStateProps) {
+function ErrorState({message, onRetry}: ErrorStateProps) {
     return (
         <Box
             sx={{
@@ -1326,14 +1334,14 @@ function ErrorState({ message, onRetry }: ErrorStateProps) {
                 p: 5,
             }}
         >
-            <ErrorOutlineIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
+            <ErrorOutlineIcon sx={{fontSize: 64, color: 'error.main', mb: 2}}/>
             <Typography variant="h6" gutterBottom>
                 Unable to load messages
             </Typography>
-            <Typography color="text.secondary" sx={{ mb: 3 }}>
+            <Typography color="text.secondary" sx={{mb: 3}}>
                 {message}
             </Typography>
-            <Button variant="contained" startIcon={<RefreshIcon />} onClick={onRetry}>
+            <Button variant="contained" startIcon={<RefreshIcon/>} onClick={onRetry}>
                 Retry
             </Button>
         </Box>

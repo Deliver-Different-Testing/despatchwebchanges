@@ -6,6 +6,7 @@
 
 import { http, HttpResponse } from 'msw';
 import type { CourierSuggestion, TimeZoneOption } from '../../../interfaces';
+import type { IClearListDebugViewModel } from '../../../../interfaces/job.interface';
 
 // Mock data
 export const mockCourierSuggestions: CourierSuggestion[] = [
@@ -53,6 +54,32 @@ export const mockTimeZoneOptions: TimeZoneOption[] = [
     { id: 3, text: 'Pacific Standard Time', timeZoneIana: 'America/Los_Angeles' },
 ];
 
+export const mockClearListDebug: IClearListDebugViewModel = {
+    courierId: 42,
+    courierCode: 'C042',
+    courierName: 'Test Driver',
+    channelId: 10,
+    fleetName: 'Fleet Alpha',
+    gpsPolygonId: 5,
+    gpsPolygonName: 'Zone A',
+    gpsPolygonSuburbs: ['Suburb1', 'Suburb2'],
+    gpsLatitude: -33.8688,
+    gpsLongitude: 151.2093,
+    gpsTimestamp: '2026-03-30T10:00:00Z',
+    gpsAgeMinutes: 1,
+    assignedClearListAreaId: 1,
+    assignedClearListAreaName: 'North Area',
+    assignedStatus: 1,
+    assignedStatusLabel: 'Active',
+    polygonAreaMappings: [
+        { clearListAreaId: 1, clearListAreaName: 'North Area', areaChannelId: 10, channelMatches: true },
+        { clearListAreaId: 2, clearListAreaName: 'South Area', areaChannelId: 20, channelMatches: false },
+    ],
+    isLoggedIn: true,
+    loginTime: '2026-03-30T08:00:00Z',
+    explanation: 'Driver is in Zone A, assigned to North Area.',
+};
+
 export const courierHandlers = [
     // Search active couriers
     http.get('*/courier/AllActiveSearch', ({ request }) => {
@@ -95,6 +122,18 @@ export const courierHandlers = [
         }
 
         return HttpResponse.json(mockClearListEnvelope);
+    }),
+
+    // Get clear list debug info
+    http.get('*/courier/ClearListDebug', ({ request }) => {
+        const url = new URL(request.url);
+        const courierId = url.searchParams.get('courierId');
+
+        if (!courierId) {
+            return new HttpResponse('Missing courierId parameter', { status: 400 });
+        }
+
+        return HttpResponse.json({ ...mockClearListDebug, courierId: Number(courierId) });
     }),
 
     // Get timezone options
