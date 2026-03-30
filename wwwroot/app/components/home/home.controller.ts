@@ -1309,23 +1309,25 @@ class HomeController extends BaseController {
             this.currentWorkViewMode = CurrentWorkLists.SelectedDriver;
         }
 
-        await this.markJobReadStatus(job.id, true);
-
-        // Load tasks in the background without blocking job selection
-        this.loadSupportsInBackground(undefined, job.id);
-
-        // Create a new reference to trigger change detection
+        // Set jobId and trigger digest IMMEDIATELY — before any async work
+        // so the React job detail component receives the binding and starts fetching
         this.currentJob = angular.copy(job);
         this.currentJobId = job.id;
+        this.currentSelection = ` for Job ${job.jobNo}`;
+        console.debug('currentSelection:', this.currentSelection);
 
         // Sync selection to React job list
         if (window.ReactJobList) {
             window.ReactJobList.selectJob(job.id);
         }
 
-        // Set the currentSelection to job-specific information
-        this.currentSelection = ` for Job ${job.jobNo}`;
-        console.debug('currentSelection:', this.currentSelection);
+        this.applyScope();
+
+        // Fire-and-forget: mark read status without blocking job detail loading
+        await this.markJobReadStatus(job.id, true);
+
+        // Load tasks in the background without blocking job selection
+        this.loadSupportsInBackground(undefined, job.id);
 
         try {
             if (!job.courier && !job.assignedCourier) {

@@ -993,6 +993,9 @@ class NationwideControl extends BaseController {
             this.updateUIState(job);
             this.updateCurrentSelection(job.jobNo);
 
+            // Propagate binding to React job detail immediately, before async work
+            this.applyScope();
+
             await this.handleJobSelectionRelatedData(job);
 
             this.loadTasksInBackground(undefined, job.id);

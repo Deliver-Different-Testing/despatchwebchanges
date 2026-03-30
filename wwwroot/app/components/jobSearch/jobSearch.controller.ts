@@ -1082,8 +1082,9 @@ class JobSearchController extends BaseController {
             console.log("select Job  " + jobId);
 
             this.isBulkJob = false;
-            this.currentJob = await this.DispatchData.getDispatchJobDetail(jobId);
             this.currentJobId = jobId;
+            this.applyScope(); // Propagate binding to React job detail immediately
+            this.currentJob = await this.DispatchData.getDispatchJobDetail(jobId);
             this.currentSelection = " for Job " + this.currentJob?.jobNo;
 
             // Update the map with just this job
@@ -1115,8 +1116,9 @@ class JobSearchController extends BaseController {
             console.log("select Job  " + bulkJobId);
 
             this.isBulkJob = true;
-            this.currentJob = await this.jobSearchService.getDispatchBulkJobDetail(bulkJobId);
             this.currentJobId = bulkJobId;
+            this.applyScope(); // Propagate binding to React job detail immediately
+            this.currentJob = await this.jobSearchService.getDispatchBulkJobDetail(bulkJobId);
             this.currentSelection = " for Bulk Job " + this.currentJob?.jobNo;
 
             // Update the map with just this job

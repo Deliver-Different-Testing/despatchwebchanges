@@ -303,6 +303,57 @@ describe('JobListPanel', () => {
                 expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
             }, {timeout: 3000});
         });
+
+        it('filters by address fields', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({
+                    id: 1, jobNo: 'ADDR-001',
+                    pickupAddress: {addressLine5: 'Wellington Central'} as any,
+                }),
+                createMockDispatchJob({
+                    id: 2, jobNo: 'ADDR-002',
+                    deliveryAddress: {addressLine5: 'Christchurch'} as any,
+                }),
+            ];
+            renderAndPushJobs(jobs);
+
+            const searchInput = screen.getByPlaceholderText('Search jobs...');
+            await user.click(searchInput);
+            await user.paste('wellington');
+            await waitFor(() => {
+                expect(screen.getByText('ADDR-001')).toBeInTheDocument();
+                expect(screen.queryByText('ADDR-002')).not.toBeInTheDocument();
+            }, {timeout: 3000});
+        });
+
+        it('handles null/undefined fields without errors', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({
+                    id: 1, jobNo: 'NULL-001',
+                    client: undefined as any,
+                    assignedCourier: undefined,
+                    pickupAddress: undefined as any,
+                    deliveryAddress: undefined as any,
+                    speed: undefined as any,
+                }),
+            ];
+            renderAndPushJobs(jobs);
+
+            const searchInput = screen.getByPlaceholderText('Search jobs...');
+            await user.click(searchInput);
+            await user.paste('anything');
+            await waitFor(() => {
+                expect(screen.queryByText('NULL-001')).not.toBeInTheDocument();
+            }, {timeout: 3000});
+
+            // Clear search — job should reappear
+            await user.clear(searchInput);
+            await waitFor(() => {
+                expect(screen.getByText('NULL-001')).toBeInTheDocument();
+            }, {timeout: 3000});
+        });
     });
 
     describe('Stats, Footer, and Job Selection', () => {
@@ -411,6 +462,38 @@ describe('JobListPanel', () => {
             await user.click(header);
             saved = JSON.parse(localStorage.getItem(`${storagePrefix}_sortState_42`)!);
             expect(saved).toEqual({column: 'jobNo', direction: 'desc'});
+        });
+
+        it('sorts jobs correctly by job number column', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'C-003'}),
+                createMockDispatchJob({id: 2, jobNo: 'A-001'}),
+                createMockDispatchJob({id: 3, jobNo: 'B-002'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            // Click Job No header to sort asc
+            await user.click(screen.getByText('Job No'));
+
+            const rows = screen.getAllByText(/^[A-C]-00\d$/);
+            expect(rows.map(el => el.textContent)).toEqual(['A-001', 'B-002', 'C-003']);
+        });
+
+        it('sorts jobs correctly by delivery address column', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'J1', deliveryAddress: {addressLine5: 'Zebra Town'} as any}),
+                createMockDispatchJob({id: 2, jobNo: 'J2', deliveryAddress: {addressLine5: 'Alpha City'} as any}),
+                createMockDispatchJob({id: 3, jobNo: 'J3', deliveryAddress: {addressLine5: 'Middle Park'} as any}),
+            ];
+            renderAndPushJobs(jobs);
+
+            // Click Delivery header to sort asc
+            await user.click(screen.getByText('Delivery'));
+
+            const rows = screen.getAllByText(/^(Alpha City|Middle Park|Zebra Town)$/);
+            expect(rows.map(el => el.textContent)).toEqual(['Alpha City', 'Middle Park', 'Zebra Town']);
         });
     });
 

@@ -215,6 +215,15 @@ function formatJobTime(booked: dayjs.Dayjs | undefined): string {
 
 // ── Styles ───────────────────────────────────────────────────────────
 
+// Pre-defined keyframes so MUI/emotion doesn't re-hash on every render
+const newJobAnimationSx = {
+    '@keyframes newJobHighlight': {
+        '0%': {backgroundColor: '#bbf7d0'},
+        '100%': {backgroundColor: 'transparent'},
+    },
+    animation: 'newJobHighlight 2s ease-out',
+} as const;
+
 const headerCellSx: SxProps<Theme> = {
     fontWeight: 600,
     fontSize: '0.75rem',
@@ -474,13 +483,16 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     // Row height estimate based on density mode
     const estimatedRowHeight = densityMode === 'ultra-dense' ? 28 : densityMode === 'dense' ? 34 : 44;
 
-    // Track newly-appeared job IDs so we can highlight them briefly
+    // Track newly-appeared job IDs so we can highlight them briefly.
+    // Use a ref for previous IDs and only setState when new jobs actually appear.
     const prevJobIdsRef = useRef<Set<number> | null>(null);
     const [newJobIds, setNewJobIds] = useState<Set<number>>(new Set());
+    const emptySet = useMemo(() => new Set<number>(), []);
 
     useEffect(() => {
-        const currentIds = new Set(jobs.map(j => j.id));
         const prevIds = prevJobIdsRef.current;
+        // Build current ID set
+        const currentIds = new Set(jobs.map(j => j.id));
 
         if (prevIds !== null && prevIds.size > 0) {
             const appeared = new Set<number>();
@@ -489,17 +501,18 @@ export const JobListTable: React.FC<JobListTableProps> = ({
             }
             if (appeared.size > 0) {
                 setNewJobIds(appeared);
-                const timer = setTimeout(() => setNewJobIds(new Set()), 2000);
+                const timer = setTimeout(() => setNewJobIds(emptySet), 2000);
+                prevJobIdsRef.current = currentIds;
                 return () => clearTimeout(timer);
             }
         }
 
         prevJobIdsRef.current = currentIds;
-    }, [jobs]);
+    }, [jobs, emptySet]);
 
     // Also update ref when newJobIds clears (so next refresh has correct baseline)
     useEffect(() => {
-        if (newJobIds.size === 0) {
+        if (newJobIds.size === 0 && prevJobIdsRef.current === null) {
             prevJobIdsRef.current = new Set(jobs.map(j => j.id));
         }
     }, [newJobIds, jobs]);
@@ -685,11 +698,7 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
         () => {
             const sx = getRowSx(job, isSelected, isRelated, densityMode, isMultiSelected);
             if (isNew) {
-                sx['@keyframes newJobHighlight'] = {
-                    '0%': {backgroundColor: '#bbf7d0'},
-                    '100%': {backgroundColor: 'transparent'},
-                };
-                sx.animation = 'newJobHighlight 2s ease-out';
+                Object.assign(sx, newJobAnimationSx);
             }
             return sx;
         },

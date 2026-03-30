@@ -82,44 +82,44 @@ function matchesCategory(job: DispatchJob, category: JobCategory): boolean {
     }
 }
 
-function matchesSearch(job: DispatchJob, query: string): boolean {
-    if (!query || query.trim() === '') return true;
-    const q = query.toLowerCase().trim();
+// Hoisted helpers to avoid closure allocation per matchesSearch call
+function safeIncludes(value: unknown, q: string): boolean {
+    if (value === null || value === undefined) return false;
+    return String(value).toLowerCase().includes(q);
+}
 
-    const safeIncludes = (value: unknown): boolean => {
-        if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(q);
-    };
-
-    const searchAddress = (address?: AddressViewModel): boolean => {
-        if (!address) return false;
-        return (
-            safeIncludes(address.addressLine1) ||
-            safeIncludes(address.addressLine2) ||
-            safeIncludes(address.addressLine3) ||
-            safeIncludes(address.addressLine4) ||
-            safeIncludes(address.addressLine5) ||
-            safeIncludes(address.addressLine6) ||
-            safeIncludes(address.addressLine7) ||
-            safeIncludes(address.addressLine8) ||
-            safeIncludes(address.fullAddress)
-        );
-    };
-
+function searchAddress(address: AddressViewModel | undefined, q: string): boolean {
+    if (!address) return false;
     return (
-        safeIncludes(job.jobNo) ||
-        safeIncludes(job.client) ||
-        safeIncludes(job.statusName) ||
-        safeIncludes(job.assignedCourier?.text) ||
-        safeIncludes(job.pickupContact) ||
-        safeIncludes(job.deliveryContact) ||
-        searchAddress(job.pickupAddress) ||
-        searchAddress(job.deliveryAddress) ||
-        safeIncludes(job.speed) ||
-        safeIncludes(job.notify) ||
-        safeIncludes(job.conNote) ||
-        safeIncludes(job.assignedAgent?.agentName) ||
-        safeIncludes(job.assignedFlight?.flightNumber)
+        safeIncludes(address.addressLine1, q) ||
+        safeIncludes(address.addressLine2, q) ||
+        safeIncludes(address.addressLine3, q) ||
+        safeIncludes(address.addressLine4, q) ||
+        safeIncludes(address.addressLine5, q) ||
+        safeIncludes(address.addressLine6, q) ||
+        safeIncludes(address.addressLine7, q) ||
+        safeIncludes(address.addressLine8, q) ||
+        safeIncludes(address.fullAddress, q)
+    );
+}
+
+function matchesSearch(job: DispatchJob, query: string): boolean {
+    if (!query) return true;
+    // query is already lowercased and trimmed by the caller
+    return (
+        safeIncludes(job.jobNo, query) ||
+        safeIncludes(job.client, query) ||
+        safeIncludes(job.statusName, query) ||
+        safeIncludes(job.assignedCourier?.text, query) ||
+        safeIncludes(job.pickupContact, query) ||
+        safeIncludes(job.deliveryContact, query) ||
+        searchAddress(job.pickupAddress, query) ||
+        searchAddress(job.deliveryAddress, query) ||
+        safeIncludes(job.speed, query) ||
+        safeIncludes(job.notify, query) ||
+        safeIncludes(job.conNote, query) ||
+        safeIncludes(job.assignedAgent?.agentName, query) ||
+        safeIncludes(job.assignedFlight?.flightNumber, query)
     );
 }
 
@@ -211,9 +211,16 @@ function sortJobs(jobs: DispatchJob[], sortState: JobListSort, isUsCustomer?: bo
         });
     }
 
+    // Pre-compute sort values once (O(n)) instead of recomputing in every comparison (O(n log n))
+    const col = sortState.column!;
+    const sortCache = new Map<number, string | number>();
+    for (const job of sorted) {
+        sortCache.set(job.id, getSortValue(job, col, isUsCustomer));
+    }
+
     return sorted.sort((a, b) => {
-        const aValue = getSortValue(a, sortState.column!, isUsCustomer);
-        const bValue = getSortValue(b, sortState.column!, isUsCustomer);
+        const aValue = sortCache.get(a.id)!;
+        const bValue = sortCache.get(b.id)!;
 
         let comparison: number;
         if (typeof aValue === 'string' && typeof bValue === 'string') {

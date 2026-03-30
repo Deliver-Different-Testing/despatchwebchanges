@@ -2,7 +2,7 @@
  * Hook for fetching job detail data via React Query
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {keepPreviousData, useQuery} from '@tanstack/react-query';
 import {queryKeys} from '../../../../query/queryClient';
 import {
     getJobDetail,
@@ -63,6 +63,7 @@ export function useJobDetail({
         },
         enabled: enabled && !!jobId && jobId > 0,
         staleTime: 10 * 1000,
+        placeholderData: keepPreviousData,
     });
 
     const sortedRelatedJobs = useMemo(() => {
