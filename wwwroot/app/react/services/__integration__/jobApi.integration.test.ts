@@ -352,7 +352,7 @@ describe('jobApi integration', () => {
 
             const result = await jobApi.searchActiveClients('Acme');
 
-            expect(capturedUrl).toContain('searchText=Acme');
+            expect(capturedUrl).toContain('searchTerm=Acme');
             expect(result).toHaveLength(2);
             expect(result[0]).toMatchObject({ id: 10, text: 'Acme Corp' });
         });

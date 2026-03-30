@@ -200,10 +200,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
 
             if (updated.length === 0) {
                 setSelectedParcelIndex(0);
-                return [initializeParcel()];
-            }
-
-            if (index <= selectedParcelIndex) {
+            } else if (index <= selectedParcelIndex) {
                 setSelectedParcelIndex(Math.max(0, selectedParcelIndex - 1));
             }
 

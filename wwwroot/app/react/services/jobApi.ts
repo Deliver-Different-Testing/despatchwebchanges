@@ -48,7 +48,7 @@ export async function quickCreateJob(job: CreateJobRequest): Promise<number> {
  * Search for active clients
  */
 export async function searchActiveClients(searchText: string, options?: RequestOptions): Promise<Suggestion[]> {
-    return apiClient.get<Suggestion[]>('home/ActiveClients', {searchText}, options);
+    return apiClient.get<Suggestion[]>('home/ActiveClients', {searchTerm: searchText}, options);
 }
 
 /**

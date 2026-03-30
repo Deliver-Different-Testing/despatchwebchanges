@@ -2,8 +2,6 @@
  * Shared types for the React Job Details component
  */
 
-import type {Dayjs} from 'dayjs';
-
 // Re-export core types from the AngularJS interfaces for React usage
 // These are the same interfaces - React components consume the transformed IJob/IJobGroup
 export type {

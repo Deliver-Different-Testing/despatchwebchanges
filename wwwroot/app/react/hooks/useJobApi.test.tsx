@@ -6,14 +6,15 @@
 import React from 'react';
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
-import {useRelatedJobs} from './useJobApi';
+import {useRelatedJobs, useClientSearch} from './useJobApi';
 import {jobApi} from '../services/jobApi';
-import {RelatedJobDto} from '../interfaces';
+import {RelatedJobDto, Suggestion} from '../interfaces';
 
 // Mock the jobApi
 jest.mock('../services/jobApi', () => ({
     jobApi: {
         getRelatedJobsMultiSelectList: jest.fn(),
+        searchActiveClients: jest.fn(),
     },
 }));
 
@@ -174,6 +175,76 @@ describe('useRelatedJobs', () => {
 
         await waitFor(() => {
             expect(mockJobApi.getRelatedJobsMultiSelectList).toHaveBeenCalledWith(100, true, false, expect.anything());
+        });
+    });
+});
+
+describe('useClientSearch', () => {
+    const mockClients: Suggestion[] = [
+        {id: 1, text: 'ACM Acme Corp'},
+        {id: 2, text: 'ACM Acme Industries'},
+    ];
+
+    it('should fetch clients when search text is 3+ characters', async () => {
+        mockJobApi.searchActiveClients.mockResolvedValueOnce(mockClients);
+
+        const {result} = renderHook(() => useClientSearch('Acme'), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(mockJobApi.searchActiveClients).toHaveBeenCalledWith('Acme', expect.anything());
+        expect(result.current.data).toEqual(mockClients);
+    });
+
+    it('should not fetch when search text is less than 3 characters', async () => {
+        const {result} = renderHook(() => useClientSearch('Ab'), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(result.current.fetchStatus).toBe('idle');
+        });
+
+        expect(mockJobApi.searchActiveClients).not.toHaveBeenCalled();
+    });
+
+    it('should not fetch when search text is empty', async () => {
+        renderHook(() => useClientSearch(''), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(mockJobApi.searchActiveClients).not.toHaveBeenCalled();
+        });
+    });
+
+    it('should not fetch when enabled is false', async () => {
+        renderHook(() => useClientSearch('Acme', {enabled: false}), {wrapper: createWrapper()});
+
+        await waitFor(() => {
+            expect(mockJobApi.searchActiveClients).not.toHaveBeenCalled();
+        });
+    });
+
+    it('should refetch when search text changes', async () => {
+        mockJobApi.searchActiveClients.mockResolvedValue(mockClients);
+
+        const {result, rerender} = renderHook(
+            ({searchText}) => useClientSearch(searchText),
+            {
+                wrapper: createWrapper(),
+                initialProps: {searchText: 'Acme'},
+            }
+        );
+
+        await waitFor(() => {
+            expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(mockJobApi.searchActiveClients).toHaveBeenCalledWith('Acme', expect.anything());
+
+        rerender({searchText: 'Beta'});
+
+        await waitFor(() => {
+            expect(mockJobApi.searchActiveClients).toHaveBeenCalledWith('Beta', expect.anything());
         });
     });
 });

@@ -9,8 +9,9 @@ namespace DespatchWeb.Tests.Repositories;
 
 /// <summary>
 /// Tests for UpdatePackagesForJobAsync and UpdatePackagesForBulkJobAsync.
-/// Verifies that parcels can be added, updated, and deleted (regression test for
-/// the bug where deleting parcels did not persist).
+/// Both methods use a "delete all, re-insert" strategy: all existing items
+/// for the scope are removed, then the incoming parcels are inserted with
+/// fresh sequential ItemIds. This eliminates itemId round-trip bugs.
 /// </summary>
 public class JobRepositoryPackageTests : IAsyncDisposable
 {
@@ -48,7 +49,7 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     // ── UpdatePackagesForJobAsync ────────────────────────────────────
 
     [Fact]
-    public async Task UpdatePackagesForJobAsync_DeletesRemovedParcels()
+    public async Task UpdatePackagesForJobAsync_ReplacesWithSubmittedParcels()
     {
         // Arrange — job with 3 existing parcels
         await using var ctx = CreateContext();
@@ -62,21 +63,20 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act — submit only parcel 2, removing parcels 1 and 3
+        // Act — submit only one parcel (the other two are effectively removed)
         var parcels = new List<ParcelDimensions>
         {
-            new() { ItemId = 2, ItemName = "Parcel B updated", Length = 10, Height = 5, Depth = 5 }
+            new() { ItemName = "Parcel B updated", Length = 10, Height = 5, Depth = 5 }
         };
         await repo.UpdatePackagesForJobAsync(1, parcels);
 
-        // Assert — only parcel 2 remains
+        // Assert — only the submitted parcel remains with a new sequential ItemId
         await using var verify = CreateContext();
         var remaining = await verify.TucJobItems.Where(i => i.JobId == 1)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
-        Assert.Equal(2, remaining[0].ItemId);
         Assert.Equal("Parcel B updated", remaining[0].Notes);
-
+        Assert.Equal(10, remaining[0].Length);
 
         // UcjbQty should reflect the new count
         var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 1,
@@ -98,15 +98,15 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act — keep parcel 1, remove parcel 2, add a new one
+        // Act — submit one existing parcel and one new one (replaces all)
         var parcels = new List<ParcelDimensions>
         {
-            new() { ItemId = 1, ItemName = "Keep", Length = 1, Height = 1, Depth = 1 },
-            new() { ItemId = null, ItemName = "Brand New", Length = 20, Height = 20, Depth = 20 }
+            new() { ItemName = "Keep", Length = 1, Height = 1, Depth = 1 },
+            new() { ItemName = "Brand New", Length = 20, Height = 20, Depth = 20 }
         };
         await repo.UpdatePackagesForJobAsync(2, parcels);
 
-        // Assert — 2 items remain: the kept one and the new one
+        // Assert — 2 items with sequential ItemIds, order preserved
         await using var verify = CreateContext();
         var remaining = await verify.TucJobItems
             .Where(i => i.JobId == 2)
@@ -114,8 +114,9 @@ public class JobRepositoryPackageTests : IAsyncDisposable
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(2, remaining.Count);
-        Assert.Equal(1, remaining[0].ItemId);
+        Assert.Equal("Keep", remaining[0].Notes);
         Assert.Equal("Brand New", remaining[1].Notes);
+        Assert.Equal(remaining[0].ItemId + 1, remaining[1].ItemId);
 
         var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 2,
             cancellationToken: TestContext.Current.CancellationToken);
@@ -179,7 +180,6 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     public async Task UpdatePackagesForJobAsync_StopJob_OnlyDeletesOwnItems()
     {
         // Arrange — parent job 10 with two stop jobs (11A, 12B)
-        // Stop jobs have job numbers ending in a letter
         await using var ctx = CreateContext();
         ctx.TucJobs.Add(CreateJob(10, "JOB010"));
         ctx.TucJobs.Add(CreateJobWithParent(11, "JOB010A", 10));
@@ -197,14 +197,14 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act — update stop A (job 11), keeping only item 2
+        // Act — update stop A (job 11), submitting only one parcel
         var parcels = new List<ParcelDimensions>
         {
-            new() { ItemId = 2, ItemName = "Stop A - keep", Length = 1, Height = 1, Depth = 1 }
+            new() { ItemName = "Stop A - keep", Length = 1, Height = 1, Depth = 1 }
         };
         await repo.UpdatePackagesForJobAsync(11, parcels);
 
-        // Assert — stop A's removed item (3) is gone, but parent item (1) and stop B item (4) are untouched
+        // Assert — stop A's old items are replaced, parent (1) and stop B (4) are untouched
         await using var verify = CreateContext();
         var allItems = await verify.TucJobItems
             .Where(i => i.JobId == 10)
@@ -212,13 +212,16 @@ public class JobRepositoryPackageTests : IAsyncDisposable
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(3, allItems.Count);
-        Assert.Equal(1, allItems[0].ItemId); // parent item
-        Assert.Equal(2, allItems[1].ItemId); // stop A kept
-        Assert.Equal(4, allItems[2].ItemId); // stop B untouched
+        Assert.Equal(1, allItems[0].ItemId);  // parent item untouched
+        Assert.Equal(4, allItems[1].ItemId);  // stop B untouched
+        // Stop A re-inserted with new ItemId (5, since max across job was 4)
+        Assert.Equal(5, allItems[2].ItemId);
+        Assert.Equal("Stop A - keep", allItems[2].Notes);
+        Assert.Equal(11, allItems[2].ChildJobId);
     }
 
     [Fact]
-    public async Task UpdatePackagesForJobAsync_NoChanges_PreservesAllParcels()
+    public async Task UpdatePackagesForJobAsync_PreservesDataWhenResubmitted()
     {
         // Arrange
         await using var ctx = CreateContext();
@@ -231,19 +234,25 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act — submit both parcels unchanged
+        // Act — submit both parcels (content preserved, ItemIds re-assigned)
         var parcels = new List<ParcelDimensions>
         {
-            new() { ItemId = 1, ItemName = "A", Length = 10, Height = 5, Depth = 5 },
-            new() { ItemId = 2, ItemName = "B", Length = 20, Height = 10, Depth = 10 }
+            new() { ItemName = "A", Length = 10, Height = 5, Depth = 5 },
+            new() { ItemName = "B", Length = 20, Height = 10, Depth = 10 }
         };
         await repo.UpdatePackagesForJobAsync(5, parcels);
 
-        // Assert — both still exist
+        // Assert — both still exist with correct data
         await using var verify = CreateContext();
-        var remaining = await verify.TucJobItems.Where(i => i.JobId == 5)
+        var remaining = await verify.TucJobItems
+            .Where(i => i.JobId == 5)
+            .OrderBy(i => i.ItemId)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(2, remaining.Count);
+        Assert.Equal("A", remaining[0].Notes);
+        Assert.Equal(10, remaining[0].Length);
+        Assert.Equal("B", remaining[1].Notes);
+        Assert.Equal(20, remaining[1].Length);
 
         var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 5,
             cancellationToken: TestContext.Current.CancellationToken);
@@ -251,7 +260,7 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task UpdatePackagesForJobAsync_ItemIdZero_TreatedAsNewParcel()
+    public async Task UpdatePackagesForJobAsync_ThreeParcelsSubmitted_AllInserted()
     {
         // Arrange — job with 2 existing parcels
         await using var ctx = CreateContext();
@@ -264,16 +273,16 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act — send both existing parcels plus one with ItemId=0 (should be treated as new)
+        // Act — submit 3 parcels (all treated as fresh inserts)
         var parcels = new List<ParcelDimensions>
         {
-            new() { ItemId = 1, ItemName = "Existing A", Length = 1, Height = 1, Depth = 1 },
-            new() { ItemId = 2, ItemName = "Existing B", Length = 2, Height = 2, Depth = 2 },
-            new() { ItemId = 0, ItemName = "Zero ID parcel", Length = 5, Height = 5, Depth = 5 }
+            new() { ItemName = "Existing A", Length = 1, Height = 1, Depth = 1 },
+            new() { ItemName = "Existing B", Length = 2, Height = 2, Depth = 2 },
+            new() { ItemName = "New parcel", Length = 5, Height = 5, Depth = 5 }
         };
         await repo.UpdatePackagesForJobAsync(6, parcels);
 
-        // Assert — all 3 items exist: 2 original + 1 new (ItemId=0 treated as new, gets ItemId=3)
+        // Assert — all 3 items exist with sequential ItemIds
         await using var verify = CreateContext();
         var remaining = await verify.TucJobItems
             .Where(i => i.JobId == 6)
@@ -281,10 +290,12 @@ public class JobRepositoryPackageTests : IAsyncDisposable
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(3, remaining.Count);
-        Assert.Equal(1, remaining[0].ItemId);
-        Assert.Equal(2, remaining[1].ItemId);
-        Assert.Equal(3, remaining[2].ItemId);
-        Assert.Equal("Zero ID parcel", remaining[2].Notes);
+        Assert.Equal("Existing A", remaining[0].Notes);
+        Assert.Equal("Existing B", remaining[1].Notes);
+        Assert.Equal("New parcel", remaining[2].Notes);
+        // Sequential IDs
+        Assert.Equal(remaining[0].ItemId + 1, remaining[1].ItemId);
+        Assert.Equal(remaining[1].ItemId + 1, remaining[2].ItemId);
 
         var job = await verify.TucJobs.FirstAsync(j => j.UcjbId == 6,
             cancellationToken: TestContext.Current.CancellationToken);
@@ -294,7 +305,7 @@ public class JobRepositoryPackageTests : IAsyncDisposable
     // ── UpdatePackagesForBulkJobAsync ───────────────────────────────
 
     [Fact]
-    public async Task UpdatePackagesForBulkJobAsync_DeletesRemovedParcels()
+    public async Task UpdatePackagesForBulkJobAsync_ReplacesWithSubmittedParcels()
     {
         // Arrange — bulk job with 3 parcels
         await using var ctx = CreateContext();
@@ -308,19 +319,19 @@ public class JobRepositoryPackageTests : IAsyncDisposable
 
         var repo = CreateRepository();
 
-        // Act — keep only parcel 1
+        // Act — submit only one parcel
         var parcels = new List<ParcelDimensions>
         {
-            new() { ItemId = 1, ItemName = "A", Length = 1, Height = 1, Depth = 1 }
+            new() { ItemName = "A", Length = 1, Height = 1, Depth = 1 }
         };
         await repo.UpdatePackagesForBulkJobAsync(1, parcels);
 
-        // Assert — only parcel 1 remains
+        // Assert — only the submitted parcel remains
         await using var verify = CreateContext();
         var remaining = await verify.TblBulkJobItems.Where(i => i.JobId == 1)
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
-        Assert.Equal(1, remaining[0].ItemId);
+        Assert.Equal("A", remaining[0].Notes);
     }
 
     [Fact]

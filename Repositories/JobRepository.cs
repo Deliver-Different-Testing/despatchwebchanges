@@ -1681,95 +1681,63 @@ public partial class JobRepository(
             var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
             var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
 
-            // Process existing and new parcels separately
-            var newParcels = new List<TucJobItem>();
-            var existingParcelsToUpdate = new List<ParcelDimensions>();
+            Log.Information(
+                "UpdatePackages for Job {JobId} (effective {EffectiveJobId}, child {ChildJobId}): {Count} parcels",
+                jobId, effectiveJobId, childJobId, parcels.Count);
 
-            // Get the maximum existing ItemId for this job
-            var maxItemId = await Context.TucJobItems
-                .Where(i => i.JobId == effectiveJobId)
-                .MaxAsync(i => (int?)i.ItemId) ?? 0;
-
-            // Get next ItemId for new parcels
-            var nextItemId = maxItemId + 1;
-
-            foreach (var parcel in parcels)
+            var strategy = Context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                if (parcel.ItemId is null or <= 0)
+                await using var transaction = await Context.Database.BeginTransactionAsync();
+
+                // Delete all existing items for this scope
+                await Context.TucJobItems
+                    .Where(i => i.JobId == effectiveJobId &&
+                                (childJobId == null || i.ChildJobId == childJobId))
+                    .ExecuteDeleteAsync();
+
+                // Re-insert all parcels with sequential ItemIds
+                if (parcels.Count > 0)
                 {
-                    var newItem = new TucJobItem
+                    // Get max ItemId across ALL items for this job (not just this scope)
+                    // to avoid collisions with sibling stop jobs
+                    var maxItemId = await Context.TucJobItems
+                        .Where(i => i.JobId == effectiveJobId)
+                        .MaxAsync(i => (int?)i.ItemId) ?? 0;
+
+                    var nextItemId = maxItemId + 1;
+
+                    var newItems = parcels.Select(p => new TucJobItem
                     {
                         JobId = effectiveJobId,
                         ChildJobId = childJobId,
-                        Height = parcel.Height ?? 0,
-                        Length = parcel.Length ?? 0,
-                        Depth = parcel.Depth ?? 0,
-                        Notes = parcel.ItemName,
-                        Barcode = parcel.Barcode,
+                        Height = p.Height ?? 0,
+                        Length = p.Length ?? 0,
+                        Depth = p.Depth ?? 0,
+                        Notes = p.ItemName,
+                        Barcode = p.Barcode,
                         Items = 1,
-                        ItemId = nextItemId++ // Increment for each new item
-                    };
+                        ItemId = nextItemId++
+                    }).ToList();
 
-                    newParcels.Add(newItem);
+                    await Context.TucJobItems.AddRangeAsync(newItems);
+                    await Context.SaveChangesAsync();
                 }
-                else
-                {
-                    existingParcelsToUpdate.Add(parcel);
-                }
-            }
 
-            // Delete items that were removed by the user (must run before adding new items)
-            var incomingItemIds = parcels
-                .Where(p => p.ItemId is > 0)
-                .Select(p => p.ItemId!.Value)
-                .ToList();
+                // Update UcjbQty with total parcel count so it syncs to device
+                // For stop jobs, only count items belonging to this specific stop (not sibling stops)
+                var totalItemCount = await Context.TucJobItems
+                    .Where(i => i.JobId == effectiveJobId &&
+                                (childJobId == null || i.ChildJobId == childJobId))
+                    .CountAsync();
 
-            Log.Information(
-                "UpdatePackages for Job {JobId} (effective {EffectiveJobId}, child {ChildJobId}): " +
-                "{Total} parcels ({New} new, {Existing} existing). Incoming ItemIds: [{ItemIds}]",
-                jobId, effectiveJobId, childJobId,
-                parcels.Count, newParcels.Count, existingParcelsToUpdate.Count,
-                string.Join(", ", incomingItemIds));
-
-            await Context.TucJobItems
-                .Where(i => i.JobId == effectiveJobId &&
-                            (childJobId == null || i.ChildJobId == childJobId) &&
-                            !incomingItemIds.Contains(i.ItemId))
-                .ExecuteDeleteAsync();
-
-            // Add new parcels
-            if (newParcels.Count > 0)
-            {
-                await Context.TucJobItems.AddRangeAsync(newParcels);
-                await Context.SaveChangesAsync();
-            }
-
-            // Update existing items using ExecuteUpdateAsync
-            foreach (var parcel in existingParcelsToUpdate)
-            {
-                if (!parcel.ItemId.HasValue) throw new InvalidOperationException("Existing parcel must have an ItemId");
-
-                await Context.TucJobItems
-                    .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
+                await Context.TucJobs
+                    .Where(j => j.UcjbId == jobId)
                     .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(i => i.Height, parcel.Height ?? 0)
-                        .SetProperty(i => i.Length, parcel.Length ?? 0)
-                        .SetProperty(i => i.Depth, parcel.Depth ?? 0)
-                        .SetProperty(i => i.Barcode, parcel.Barcode)
-                        .SetProperty(i => i.Notes, parcel.ItemName));
-            }
+                        .SetProperty(j => j.UcjbQty, (short)totalItemCount));
 
-            // Update UcjbQty with total parcel count so it syncs to device
-            // For stop jobs, only count items belonging to this specific stop (not sibling stops)
-            var totalItemCount = await Context.TucJobItems
-                .Where(i => i.JobId == effectiveJobId &&
-                            (childJobId == null || i.ChildJobId == childJobId))
-                .CountAsync();
-
-            await Context.TucJobs
-                .Where(j => j.UcjbId == jobId)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                await transaction.CommitAsync();
+            });
         }
         catch (Exception e)
         {
@@ -1795,81 +1763,52 @@ public partial class JobRepository(
             var effectiveJobId = await Context.GetEffectiveBulkJobIdAsync(bulkJobId);
             int? childJobId = effectiveJobId != bulkJobId ? bulkJobId : null;
 
-            // Process existing and new parcels separately
-            var newParcels = new List<TblBulkJobItem>();
-            var existingParcelsToUpdate = new List<ParcelDimensions>();
-
-            // Get the maximum existing ItemId for this job
-            var maxItemId = await Context.TblBulkJobItems
-                .Where(i => i.JobId == effectiveJobId)
-                .MaxAsync(i => (int?)i.ItemId) ?? 0;
-
-            // Get next ItemId for new parcels
-            var nextItemId = maxItemId + 1;
-
-            foreach (var parcel in parcels)
+            var strategy = Context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                if (parcel.ItemId is null or <= 0)
+                await using var transaction = await Context.Database.BeginTransactionAsync();
+
+                // Delete all existing items for this scope
+                await Context.TblBulkJobItems
+                    .Where(i => i.JobId == effectiveJobId &&
+                                (childJobId == null || i.ChildJobId == childJobId))
+                    .ExecuteDeleteAsync();
+
+                // Re-insert all parcels with sequential ItemIds
+                if (parcels.Count > 0)
                 {
-                    var newItem = new TblBulkJobItem
+                    // Get max ItemId across ALL items for this job (not just this scope)
+                    // to avoid collisions with sibling stop jobs
+                    var maxItemId = await Context.TblBulkJobItems
+                        .Where(i => i.JobId == effectiveJobId)
+                        .MaxAsync(i => (int?)i.ItemId) ?? 0;
+
+                    var nextItemId = maxItemId + 1;
+
+                    var newItems = parcels.Select(p => new TblBulkJobItem
                     {
                         JobId = effectiveJobId,
                         ChildJobId = childJobId,
-                        Height = parcel.Height ?? 0,
-                        Length = parcel.Length ?? 0,
-                        Depth = parcel.Depth ?? 0,
-                        Notes = parcel.ItemName,
-                        Barcode = parcel.Barcode,
-                        ItemId = nextItemId++ // Increment for each new item
-                    };
+                        Height = p.Height ?? 0,
+                        Length = p.Length ?? 0,
+                        Depth = p.Depth ?? 0,
+                        Notes = p.ItemName,
+                        Barcode = p.Barcode,
+                        ItemId = nextItemId++
+                    }).ToList();
 
-                    newParcels.Add(newItem);
+                    await Context.TblBulkJobItems.AddRangeAsync(newItems);
+                    await Context.SaveChangesAsync();
                 }
-                else
-                {
-                    existingParcelsToUpdate.Add(parcel);
-                }
-            }
 
-            // Delete items that were removed by the user (must run before adding new items)
-            var incomingItemIds = parcels
-                .Where(p => p.ItemId is > 0)
-                .Select(p => p.ItemId!.Value)
-                .ToList();
-
-            await Context.TblBulkJobItems
-                .Where(i => i.JobId == effectiveJobId &&
-                            (childJobId == null || i.ChildJobId == childJobId) &&
-                            !incomingItemIds.Contains(i.ItemId))
-                .ExecuteDeleteAsync();
-
-            // Add new parcels
-            if (newParcels.Count > 0)
-            {
-                await Context.TblBulkJobItems.AddRangeAsync(newParcels);
-                await Context.SaveChangesAsync();
-            }
-
-            // Update existing items using ExecuteUpdateAsync
-            foreach (var parcel in existingParcelsToUpdate)
-            {
-                if (!parcel.ItemId.HasValue) throw new InvalidOperationException("Existing parcel must have an ItemId");
-
-                await Context.TblBulkJobItems
-                    .Where(i => i.ItemId == parcel.ItemId.Value && i.JobId == effectiveJobId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(i => i.Height, parcel.Height ?? 0)
-                        .SetProperty(i => i.Length, parcel.Length ?? 0)
-                        .SetProperty(i => i.Depth, parcel.Depth ?? 0)
-                        .SetProperty(i => i.Barcode, parcel.Barcode)
-                        .SetProperty(i => i.Notes, parcel.ItemName));
-            }
+                await transaction.CommitAsync();
+            });
         }
         catch (Exception e)
         {
             Log.Error(e, "{Message}",
                 ErrorMessageStringFormatter.FormatForLogging(e, nameof(BaseJobRepository),
-                    nameof(UpdatePackagesForJobAsync)));
+                    nameof(UpdatePackagesForBulkJobAsync)));
             throw;
         }
     }

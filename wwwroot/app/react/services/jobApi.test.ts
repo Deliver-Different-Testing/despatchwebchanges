@@ -194,7 +194,7 @@ describe('jobApi', () => {
 
             const result = await searchActiveClients('Acme');
 
-            expect(mockApiClient.get).toHaveBeenCalledWith('home/ActiveClients', {searchText: 'Acme'}, undefined);
+            expect(mockApiClient.get).toHaveBeenCalledWith('home/ActiveClients', {searchTerm: 'Acme'}, undefined);
             expect(result).toEqual(mockClients);
         });
 
