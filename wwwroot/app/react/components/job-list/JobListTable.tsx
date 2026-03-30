@@ -11,7 +11,7 @@
  * - @mui/icons-material for all icons (no font Icon component)
  */
 
-import React, {useCallback, useEffect, useRef, useState, useMemo} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useVirtualizer} from '@tanstack/react-virtual';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -47,15 +47,11 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import LinkIcon from '@mui/icons-material/Link';
 
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
+import {AppPage} from '../../interfaces/dispatchJob';
 import type {CourierSuggestion} from '../../interfaces/afterhours';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
 import {suggestCouriers} from '../../services/aiAssistantApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
-import {AppPage} from '../../interfaces/dispatchJob';
-import {queryClient, queryKeys} from '../../query/queryClient';
-import {getJobDetail, getBulkJobDetail} from '../../services/jobDetailApi';
-import {transformJobGroupDTO} from '../../../functions/dtoMappings';
-import {isUsCustomer as getIsUsCustomer} from '../../utils/dateUtils';
 import dayjs from 'dayjs';
 import {
     formatMins,
@@ -65,7 +61,7 @@ import {
     getTimezoneAbbreviation
 } from '../../utils/dateUtils';
 import {useColumnResize} from './useColumnResize';
-import {JOB_STATUS, isUrgent, needsDispatch} from './jobListHelpers';
+import {isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
 
 // ── Column Definitions ───────────────────────────────────────────────
 
@@ -406,25 +402,6 @@ function getStatusChipColor(job: DispatchJob): 'default' | 'success' | 'warning'
     }
 }
 
-// ── Prefetch ─────────────────────────────────────────────────────────
-
-async function prefetchJobDetail(job: DispatchJob): Promise<void> {
-    const jobType = job.isBulkJob ? 'bulk' as const : 'standard' as const;
-    const isUs = getIsUsCustomer();
-
-    await queryClient.prefetchQuery({
-        queryKey: queryKeys.jobs.detail(job.id, jobType),
-        queryFn: async ({signal}) => {
-            const options = {signal};
-            const dto = job.isBulkJob
-                ? await getBulkJobDetail(job.id, options)
-                : await getJobDetail(job.id, options);
-            return transformJobGroupDTO(dto, isUs);
-        },
-        staleTime: 10_000,
-    });
-}
-
 // ── Component ────────────────────────────────────────────────────────
 
 interface JobListTableProps {
@@ -488,10 +465,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
         },
         [onSortChange],
     );
-
-    const handleRowMouseEnter = useCallback(async (job: DispatchJob) => {
-        await prefetchJobDetail(job);
-    }, []);
 
     const tableRef = useRef<HTMLDivElement>(null);
     const {handleResizeStart} = useColumnResize({columnWidths, onColumnWidthsChange, tableRef});
@@ -645,7 +618,6 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                 appPage={appPage}
                                 onClick={onJobClick}
                                 onContextMenu={onContextMenu}
-                                onMouseEnter={handleRowMouseEnter}
                                 onJobDispatch={onJobDispatch}
                                 loggedInCouriersOnly={loggedInCouriersOnly}
                             />
@@ -675,7 +647,6 @@ interface JobRowProps {
     appPage?: number;
     onClick: (job: DispatchJob, event: React.MouseEvent) => void;
     onContextMenu: (job: DispatchJob, event: React.MouseEvent) => void;
-    onMouseEnter: (job: DispatchJob) => void;
     onJobDispatch?: (job: DispatchJob, courierId: number, courierName: string) => void;
     loggedInCouriersOnly?: boolean;
 }
@@ -692,7 +663,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
                                                       appPage,
                                                       onClick,
                                                       onContextMenu,
-                                                      onMouseEnter,
                                                       onJobDispatch,
                                                       loggedInCouriersOnly,
                                                   }) => {
@@ -707,10 +677,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             onContextMenu(job, e);
         },
         [job, onContextMenu],
-    );
-    const handleMouseEnter = useCallback(
-        () => onMouseEnter(job),
-        [job, onMouseEnter],
     );
 
     const isUltraDense = densityMode === 'ultra-dense';
@@ -736,7 +702,6 @@ const JobRow: React.FC<JobRowProps> = React.memo(({
             selected={isSelected}
             onClick={handleClick}
             onContextMenu={handleContextMenu}
-            onMouseEnter={handleMouseEnter}
             sx={rowSx}
         >
             {columns.map((col, colIndex) => (
