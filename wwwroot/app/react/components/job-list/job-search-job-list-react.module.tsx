@@ -57,6 +57,7 @@ function renderInstance(instance: JobListInstance): void {
                         onBackendFilter={instance.config.onBackendFilter}
                         onLoadMoreJobs={instance.config.onLoadMoreJobs}
                         onAddStop={instance.config.onAddStop}
+                        onJobsLoaded={instance.config.onJobsLoaded}
                         defaultCategory={instance.config.defaultCategory}
                         storagePrefix={instance.config.storagePrefix}
                         fetchConfig={instance.config.fetchConfig}

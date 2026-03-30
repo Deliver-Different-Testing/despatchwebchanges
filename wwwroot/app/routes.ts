@@ -1,7 +1,7 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
-import {openJobDetail} from './react/services/navigationService';
+import {openJobDetail, openJobInSearch} from './react/services/navigationService';
 
 class RouterConfig {
     constructor(
@@ -144,7 +144,13 @@ class RouterConfig {
 
     private configureJobSearchState(): this {
         this.$stateProvider.state("jobSearch", {
-            url: "/jobSearch",
+            url: "/jobSearch?jobId",
+            params: {
+                jobId: {
+                    value: null,
+                    squash: true
+                }
+            },
             resolve: {
                 manifest: ['$http', async ($http: angular.IHttpService) => {
                     try {
@@ -315,7 +321,7 @@ class RouterConfig {
                     window.ReactOverview!.mount('react-overview', {
                         showToast,
                         isUsCustomer: appConfig.US_Customer,
-                        onOpenJobDetail: (jobId: number) => openJobDetail(jobId),
+                        onOpenJobDetail: (jobId: number) => openJobInSearch(jobId),
                     });
 
                     $scope.$on('$destroy', () => {
