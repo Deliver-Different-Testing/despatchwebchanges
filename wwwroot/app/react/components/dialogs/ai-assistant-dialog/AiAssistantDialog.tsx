@@ -5,7 +5,7 @@
  * Supports streaming responses and suggested prompts.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Dialog from '@mui/material/Dialog';
@@ -22,8 +22,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import ClearIcon from '@mui/icons-material/DeleteSweep';
 import SendIcon from '@mui/icons-material/Send';
 import StopIcon from '@mui/icons-material/Stop';
-import { AiAssistantDialogProps, AiMessage, SUGGESTED_PROMPTS } from './types';
-import { useAiAssistant } from './useAiAssistant';
+import {AiAssistantDialogProps, AiMessage, SUGGESTED_PROMPTS} from './types';
+import {useAiAssistant} from "../../../hooks/useAiAssistant";
 
 /** Must match AiInputGuard.cs constants */
 const MAX_MESSAGE_LENGTH = 2000;

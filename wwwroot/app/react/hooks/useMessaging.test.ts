@@ -4,21 +4,26 @@
  */
 
 import {act, renderHook, waitFor} from '@testing-library/react';
-import {messagingApi} from '../../../services/messagingApi';
 import {useAutoRefresh, useContactSearch, useConversations, useMessages, useQuickResponses,} from './useMessaging';
-import {DEFAULT_QUICK_RESPONSES, OtherMessagePartyType} from './types';
+import messagingApi from "../services/messagingApi";
+import {DEFAULT_QUICK_RESPONSES, OtherMessagePartyType} from "../components/dialogs/messaging-dialog/types";
 
 // Mock the messagingApi
-jest.mock('../../../services/messagingApi', () => ({
-    messagingApi: {
+jest.mock('../services/messagingApi', () => {
+    const methods = {
         getRecentList: jest.fn(),
         getMessages: jest.fn(),
         getQuickResponses: jest.fn(),
         addQuickResponse: jest.fn(),
         deleteQuickResponse: jest.fn(),
         getMessageContactOptions: jest.fn(),
-    },
-}));
+    };
+    return {
+        __esModule: true,
+        default: methods,
+        messagingApi: methods,
+    };
+});
 
 const mockMessagingApi = messagingApi as jest.Mocked<typeof messagingApi>;
 

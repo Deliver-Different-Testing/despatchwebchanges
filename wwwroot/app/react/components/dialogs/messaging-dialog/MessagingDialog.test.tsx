@@ -14,8 +14,8 @@ import {messagingApi} from '../../../services/messagingApi';
 import {suppressConsoleError} from '../../../__testUtils__';
 import {ChatMessage, MessageDeliveryType, OtherMessagePartyType, QuickResponse, RecentConversation} from './types';
 
-jest.mock('../../../services/messagingApi', () => ({
-    messagingApi: {
+jest.mock('../../../services/messagingApi', () => {
+    const methods = {
         getRecentList: jest.fn(),
         getMessages: jest.fn(),
         sendMessage: jest.fn(),
@@ -25,8 +25,13 @@ jest.mock('../../../services/messagingApi', () => ({
         addQuickResponse: jest.fn(),
         deleteQuickResponse: jest.fn(),
         getMessageContactOptions: jest.fn(),
-    },
-}));
+    };
+    return {
+        __esModule: true,
+        default: methods,
+        messagingApi: methods,
+    };
+});
 
 const mockApi = messagingApi as jest.Mocked<typeof messagingApi>;
 const theme = createTheme();

@@ -272,6 +272,8 @@ export interface MountJobListConfig {
     onBackendFilter?: (column: string, direction: string) => void;
     onLoadMoreJobs?: (page: number, pageSize: number) => Promise<{ jobs: DispatchJob[]; totalCount: number; hasMore: boolean }>;
     onAddStop?: (job: DispatchJob) => void;
+    /** Called when jobs are fetched/updated (fetchConfig mode) — used to sync map markers */
+    onJobsLoaded?: (jobs: DispatchJob[]) => void;
     defaultCategory?: JobCategory;
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
@@ -293,6 +295,8 @@ export interface JobListPanelProps {
     onBackendFilter?: (column: string, direction: string) => void;
     onLoadMoreJobs?: (page: number, pageSize: number) => Promise<{ jobs: DispatchJob[]; totalCount: number; hasMore: boolean }>;
     onAddStop?: (job: DispatchJob) => void;
+    /** Called when jobs are fetched/updated (fetchConfig mode) — used to sync map markers */
+    onJobsLoaded?: (jobs: DispatchJob[]) => void;
     defaultCategory?: JobCategory;
     /** Prefix for localStorage keys — prevents collisions between multiple instances */
     storagePrefix?: string;
