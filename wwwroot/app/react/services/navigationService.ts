@@ -28,3 +28,12 @@ export function openJobDetail(jobId: number | string, stateName = 'home'): void 
     const url = `#!/${base.replace(/^\//, '')}?jobId=${jobId}`;
     window.open(url, '_blank');
 }
+
+/**
+ * Opens the job search page in a new tab, deep-linked to the given job.
+ */
+export function openJobInSearch(jobId: number): void {
+    if (!jobId) return;
+    const url = `#!/jobSearch?jobId=${jobId}`;
+    window.open(url, '_blank');
+}

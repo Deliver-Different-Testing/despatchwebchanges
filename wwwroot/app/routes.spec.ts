@@ -229,7 +229,7 @@ describe('RouterConfig', () => {
 
         it('should configure jobSearch state', () => {
             const state = registeredStates.get('jobSearch');
-            expect(state.url).toBe('/jobSearch');
+            expect(state.url).toBe('/jobSearch?jobId');
             expect(state.component).toBe('jobSearchComponent');
         });
 
