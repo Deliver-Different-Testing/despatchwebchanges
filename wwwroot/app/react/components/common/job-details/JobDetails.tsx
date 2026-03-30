@@ -240,14 +240,13 @@ export function JobDetails({config}: JobDetailsProps) {
         onStatusChange: config.onStatusChange,
     });
 
-    // Reset tab index when jobId changes
+    // Reset tab index when jobId or data changes
     useEffect(() => {
         if (jobId && sortedRelatedJobs.length > 0) {
             const idx = sortedRelatedJobs.findIndex(j => j.id === jobId);
             setSelectedTabIndex(idx >= 0 ? idx : 0);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [jobId, sortedRelatedJobs.length]);
+    }, [jobId, sortedRelatedJobs]);
 
     // AI panel render effect
     useEffect(() => {
@@ -476,6 +475,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
                     {job.palletInfo && job.palletInfo.length > 0 && (
                         <PalletSection
+                            key={job.id}
                             pallets={job.palletInfo}
                             isUsCustomer={isUsCustomer}
                         />

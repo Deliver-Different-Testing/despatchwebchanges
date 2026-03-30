@@ -79,9 +79,10 @@ jest.mock('../../services/jobListApi', () => ({
     restoreNationwideJob: jest.fn().mockResolvedValue(undefined),
 }));
 
-import {allocateJobs} from '../../services/jobListApi';
+import {allocateJobs, updateJobReadStatus} from '../../services/jobListApi';
 import {queryClient} from '../../query/queryClient';
 const mockedAllocateJobs = allocateJobs as jest.Mock;
+const mockedUpdateJobReadStatus = updateJobReadStatus as jest.Mock;
 
 // ── Mock Data Factory ────────────────────────────────────────────────
 
@@ -952,6 +953,50 @@ describe('JobListPanel', () => {
                 const statsArea = totalLabel.closest('div')!.parentElement!;
                 expect(within(statsArea).getByText('3')).toBeInTheDocument();
             });
+        });
+    });
+
+    describe('Mark as Read on Click', () => {
+        beforeEach(() => {
+            mockedUpdateJobReadStatus.mockClear();
+        });
+
+        it('calls updateJobReadStatus when clicking an unread job', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 10, jobNo: 'UNREAD1', hasBeenRead: false}),
+            ];
+            renderAndPushJobs(jobs);
+
+            await user.click(screen.getByText('UNREAD1'));
+
+            expect(mockedUpdateJobReadStatus).toHaveBeenCalledWith(10, true);
+        });
+
+        it('does not call updateJobReadStatus when clicking an already-read job', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 20, jobNo: 'READ1', hasBeenRead: true}),
+            ];
+            renderAndPushJobs(jobs);
+
+            await user.click(screen.getByText('READ1'));
+
+            expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
+        });
+
+        it('does not call updateJobReadStatus on modifier-click (multi-select)', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 30, jobNo: 'UNREAD2', hasBeenRead: false}),
+            ];
+            renderAndPushJobs(jobs);
+
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('UNREAD2'));
+            await user.keyboard('{/Control}');
+
+            expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
         });
     });
 });
