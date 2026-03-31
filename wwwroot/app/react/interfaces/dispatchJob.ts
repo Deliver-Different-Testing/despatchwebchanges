@@ -235,8 +235,11 @@ export interface JobListSearchParams {
     wild?: string;
     job?: string;
     jobId?: number;
+    bulkJobId?: number;
     sortColumn?: string;
     sortDirection?: string;
+    /** When true, the list is disabled and shows no results */
+    disabled?: boolean;
     // Dispatch specific
     isInternal?: boolean;
     despatchViewIds?: (string | number)[];

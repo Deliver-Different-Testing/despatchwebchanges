@@ -58,22 +58,27 @@ describe('SearchCriteriaPanel', () => {
     it('renders all section labels, inputs, buttons, and DateRangePicker', () => {
         renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
 
-        // Section labels
+        // Section labels (visible without expanding Advanced)
         expect(screen.getByText('Date Range')).toBeInTheDocument();
         expect(screen.getByText('Clients')).toBeInTheDocument();
         expect(screen.getByText('Couriers')).toBeInTheDocument();
         expect(screen.getByText('Speeds')).toBeInTheDocument();
-        expect(screen.getByText('Job ID')).toBeInTheDocument();
         expect(screen.getByText('Job Number')).toBeInTheDocument();
         expect(screen.getByText('General Search')).toBeInTheDocument();
+
+        // Advanced toggle button present
+        expect(screen.getByRole('button', {name: /Advanced/})).toBeInTheDocument();
 
         // DateRangePicker
         expect(screen.getByTestId('date-range-picker')).toBeInTheDocument();
 
-        // Text inputs
-        expect(screen.getByPlaceholderText('Enter job ID')).toBeInTheDocument();
+        // Text inputs (visible without expanding)
         expect(screen.getByPlaceholderText('Enter job number')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('Address, name, reference...')).toBeInTheDocument();
+
+        // Advanced fields hidden by default
+        expect(screen.queryByPlaceholderText('Enter job ID')).not.toBeVisible();
+        expect(screen.queryByPlaceholderText('Enter bulk job ID')).not.toBeVisible();
 
         // Action buttons
         expect(screen.getByRole('button', {name: 'Search'})).toBeInTheDocument();
@@ -85,18 +90,30 @@ describe('SearchCriteriaPanel', () => {
         expect(getClientReportButton()).toBeDisabled();
     });
 
-    // ── Text Input Handlers: type and clear all 3 fields (single render) ─
+    // ── Text Input Handlers: type and clear all fields (single render) ─
     it('calls onCriteriaChange for all text inputs on type and clear', async () => {
         const props = createDefaultProps();
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
+        // Expand Advanced section to access Job ID and Bulk Job ID
+        await user.click(screen.getByRole('button', {name: /Advanced/}));
+
         // Job ID
         const jobIdInput = screen.getByPlaceholderText('Enter job ID');
         await user.type(jobIdInput, '123');
-        expect(props.onCriteriaChange).toHaveBeenLastCalledWith('jobId', 123);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', 123);
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(jobIdInput);
         expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', undefined);
+
+        // Bulk Job ID
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        const bulkJobIdInput = screen.getByPlaceholderText('Enter bulk job ID');
+        await user.type(bulkJobIdInput, '456');
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('bulkJobId', 456);
+        (props.onCriteriaChange as jest.Mock).mockClear();
+        await user.clear(bulkJobIdInput);
+        expect(props.onCriteriaChange).toHaveBeenCalledWith('bulkJobId', undefined);
 
         // Job Number
         (props.onCriteriaChange as jest.Mock).mockClear();
@@ -117,25 +134,33 @@ describe('SearchCriteriaPanel', () => {
         expect(props.onCriteriaChange).toHaveBeenCalledWith('wild', undefined);
     });
 
-    // ── Enter Key triggers search in all 3 fields (single render) ───
+    // ── Enter Key triggers search in all fields (single render) ───
     it('Enter key triggers onSearch in all text inputs', async () => {
         const props = createDefaultProps();
         renderWithTheme(<SearchCriteriaPanel {...props} />);
+
+        // Expand Advanced to access Job ID and Bulk Job ID
+        await user.click(screen.getByRole('button', {name: /Advanced/}));
 
         // Job ID
         await user.click(screen.getByPlaceholderText('Enter job ID'));
         await user.keyboard('{Enter}');
         expect(props.onSearch).toHaveBeenCalledTimes(1);
 
+        // Bulk Job ID
+        await user.click(screen.getByPlaceholderText('Enter bulk job ID'));
+        await user.keyboard('{Enter}');
+        expect(props.onSearch).toHaveBeenCalledTimes(2);
+
         // Job Number
         await user.click(screen.getByPlaceholderText('Enter job number'));
         await user.keyboard('{Enter}');
-        expect(props.onSearch).toHaveBeenCalledTimes(2);
+        expect(props.onSearch).toHaveBeenCalledTimes(3);
 
         // General Search
         await user.click(screen.getByPlaceholderText('Address, name, reference...'));
         await user.keyboard('{Enter}');
-        expect(props.onSearch).toHaveBeenCalledTimes(3);
+        expect(props.onSearch).toHaveBeenCalledTimes(4);
     });
 
     // ── Action Buttons: Search, Download, Upload (single render) ────
@@ -144,6 +169,9 @@ describe('SearchCriteriaPanel', () => {
         renderWithTheme(<SearchCriteriaPanel {...props} />);
 
         await user.click(screen.getByRole('button', {name: 'Search'}));
+        // Search flushes local dates to AngularJS before triggering search
+        expect(props.onFromDateChange).toHaveBeenCalledTimes(1);
+        expect(props.onToDateChange).toHaveBeenCalledTimes(1);
         expect(props.onSearch).toHaveBeenCalledTimes(1);
 
         await user.click(screen.getByRole('button', {name: 'Download'}));
@@ -210,5 +238,53 @@ describe('SearchCriteriaPanel', () => {
             jest.advanceTimersByTime(300);
         });
         expect(props.onSpeedSearch).toHaveBeenCalledWith('s');
+    });
+
+    // ── Advanced section: collapsed by default, toggles open/closed ─
+    it('shows Job ID and Bulk Job ID fields when Advanced is expanded', async () => {
+        renderWithTheme(<SearchCriteriaPanel {...createDefaultProps()} />);
+
+        // Collapsed by default — fields not visible
+        expect(screen.queryByPlaceholderText('Enter job ID')).not.toBeVisible();
+        expect(screen.queryByPlaceholderText('Enter bulk job ID')).not.toBeVisible();
+
+        // Click Advanced to expand
+        await user.click(screen.getByRole('button', {name: /Advanced/}));
+
+        // Fields now visible
+        expect(screen.getByPlaceholderText('Enter job ID')).toBeVisible();
+        expect(screen.getByPlaceholderText('Enter bulk job ID')).toBeVisible();
+        expect(screen.getByText('Job ID')).toBeVisible();
+        expect(screen.getByText('Bulk Job ID')).toBeVisible();
+    });
+
+    // ── Mutual exclusivity: Job ID and Bulk Job ID disable each other ─
+    it('disables Bulk Job ID when Job ID has a value and vice versa', async () => {
+        const props = createDefaultProps();
+        renderWithTheme(<SearchCriteriaPanel {...props} />);
+
+        // Expand Advanced
+        await user.click(screen.getByRole('button', {name: /Advanced/}));
+
+        const jobIdInput = screen.getByPlaceholderText('Enter job ID') as HTMLInputElement;
+        const bulkJobIdInput = screen.getByPlaceholderText('Enter bulk job ID') as HTMLInputElement;
+
+        // Both enabled initially
+        expect(jobIdInput).toBeEnabled();
+        expect(bulkJobIdInput).toBeEnabled();
+
+        // Type in Job ID — Bulk Job ID becomes disabled
+        await user.type(jobIdInput, '5');
+        expect(bulkJobIdInput).toBeDisabled();
+        expect(jobIdInput).toBeEnabled();
+
+        // Clear Job ID — both enabled again
+        await user.clear(jobIdInput);
+        expect(bulkJobIdInput).toBeEnabled();
+
+        // Type in Bulk Job ID — Job ID becomes disabled
+        await user.type(bulkJobIdInput, '99');
+        expect(jobIdInput).toBeDisabled();
+        expect(bulkJobIdInput).toBeEnabled();
     });
 });

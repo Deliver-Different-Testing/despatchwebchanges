@@ -327,6 +327,7 @@ class JobSearchController extends BaseController {
                     speedIds: this.getSpeedIds(),
                     job: this.searchCriteria.job,
                     wild: this.searchCriteria.wild,
+                    bulkJobId: this.searchCriteria.bulkJobId,
                 },
             },
             onJobSelect: async (job) => {
@@ -994,6 +995,17 @@ class JobSearchController extends BaseController {
     }
 
     async refreshAllData() {
+        // When searching by a specific ID, only load that list and clear the other
+        if (this.searchCriteria.jobId) {
+            window.ReactJobSearchJobList?.updateSearchParams('bulk', {disabled: true});
+            await this.refreshData();
+            return;
+        }
+        if (this.searchCriteria.bulkJobId) {
+            window.ReactJobSearchJobList?.updateSearchParams('main', {disabled: true});
+            await this.refreshBulkData();
+            return;
+        }
         await Promise.all([this.refreshData(), this.refreshBulkData()]);
     }
 
@@ -1001,6 +1013,7 @@ class JobSearchController extends BaseController {
         // Push updated search params to React — React Query handles the fetch
         if (window.ReactJobSearchJobList) {
             window.ReactJobSearchJobList.updateSearchParams('main', {
+                disabled: false,
                 startDate: this.searchCriteria.from_date,
                 endDate: this.searchCriteria.to_date,
                 courierIds: this.getCourierIds(),
@@ -1023,6 +1036,7 @@ class JobSearchController extends BaseController {
         // Push updated search params to React — React Query handles the fetch
         if (window.ReactJobSearchJobList) {
             window.ReactJobSearchJobList.updateSearchParams('bulk', {
+                disabled: false,
                 startDate: this.searchCriteria.from_date,
                 endDate: this.searchCriteria.to_date,
                 courierIds: this.getCourierIds(),
@@ -1030,6 +1044,7 @@ class JobSearchController extends BaseController {
                 speedIds: this.getSpeedIds(),
                 job: this.searchCriteria.job,
                 wild: this.searchCriteria.wild,
+                bulkJobId: this.searchCriteria.bulkJobId,
                 page: 0,
                 pageSize: 50,
             });

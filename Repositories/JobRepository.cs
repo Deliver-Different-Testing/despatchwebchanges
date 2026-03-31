@@ -2303,7 +2303,7 @@ public partial class JobRepository(
         CancellationToken cancellationToken = default)
     {
         var isUsCustomer = _infoService.IsUsTenant();
-        var jobSearch = (data.Job ?? string.Empty).ToLower();
+        var jobSearch = (data.Job ?? string.Empty).Trim().ToLower();
         var wildSearch = (data.Wild ?? string.Empty).ToLower();
 
         // Build the base query
@@ -2321,53 +2321,56 @@ public partial class JobRepository(
             join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
             where
-                j.BookDate.Date >= data.FromDate.Date
-                && j.BookDate.Date <= data.ToDate.Date
-                && (!data.ClientSet || data.ClientIds.Contains(j.ClientId))
-                && (!data.CourierSet || (j.CourierId.HasValue && data.CourierIds.Contains(j.CourierId.Value)))
-                && (!data.SpeedSet || data.SpeedIds.Contains(j.Speed))
-                && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
-                && (
-                    !data.WildSet
-                    || EF.Functions.Like(
-                        (j.FromAddress ?? string.Empty)
-                        + " "
-                        + (j.Contact ?? string.Empty)
-                        + " "
-                        + (j.FromSuburb ?? string.Empty)
-                        + " "
-                        + (j.ToAddress ?? string.Empty)
-                        + " "
-                        + (j.DeliverToContact ?? string.Empty)
-                        + " "
-                        + (j.ToSuburb ?? string.Empty)
-                        + " "
-                        + (j.ClientRefa ?? string.Empty)
-                        + " "
-                        + (j.ClientRefb ?? string.Empty)
-                        + " "
-                        + (j.OurRef ?? string.Empty)
-                        + " "
-                        + j.JobNumber.ToLower()
-                        + " "
-                        + j.Barcode.ToLower()
-                        + " "
-                        + (j.PickupFromContact ?? string.Empty)
-                        + " "
-                        + (j.PickupFromPhone ?? string.Empty)
-                        + " "
-                        + (j.DeliverToPhone ?? string.Empty)
-                        + " "
-                        + (j.ProofOfDeliveryEmail ?? string.Empty)
-                        + " "
-                        + (j.ProofOfDeliveryMobile ?? string.Empty)
-                        + " "
-                        + (j.TrackingEmail ?? string.Empty)
-                        + " "
-                        + (j.TrackingMobile ?? string.Empty),
-                        wildSearch
-                    )
-                )
+                // When searching by specific bulk job ID, ignore all other filters
+                data.BulkJobIdSet
+                    ? j.BulkJobId == data.BulkJobId
+                    : j.BookDate.Date >= data.FromDate.Date
+                      && j.BookDate.Date <= data.ToDate.Date
+                      && (!data.ClientSet || data.ClientIds.Contains(j.ClientId))
+                      && (!data.CourierSet || (j.CourierId.HasValue && data.CourierIds.Contains(j.CourierId.Value)))
+                      && (!data.SpeedSet || data.SpeedIds.Contains(j.Speed))
+                      && (!data.JobSet || EF.Functions.Like(j.JobNumber.ToLower(), $"%{jobSearch}%"))
+                      && (
+                          !data.WildSet
+                          || EF.Functions.Like(
+                              (j.FromAddress ?? string.Empty)
+                              + " "
+                              + (j.Contact ?? string.Empty)
+                              + " "
+                              + (j.FromSuburb ?? string.Empty)
+                              + " "
+                              + (j.ToAddress ?? string.Empty)
+                              + " "
+                              + (j.DeliverToContact ?? string.Empty)
+                              + " "
+                              + (j.ToSuburb ?? string.Empty)
+                              + " "
+                              + (j.ClientRefa ?? string.Empty)
+                              + " "
+                              + (j.ClientRefb ?? string.Empty)
+                              + " "
+                              + (j.OurRef ?? string.Empty)
+                              + " "
+                              + j.JobNumber.ToLower()
+                              + " "
+                              + j.Barcode.ToLower()
+                              + " "
+                              + (j.PickupFromContact ?? string.Empty)
+                              + " "
+                              + (j.PickupFromPhone ?? string.Empty)
+                              + " "
+                              + (j.DeliverToPhone ?? string.Empty)
+                              + " "
+                              + (j.ProofOfDeliveryEmail ?? string.Empty)
+                              + " "
+                              + (j.ProofOfDeliveryMobile ?? string.Empty)
+                              + " "
+                              + (j.TrackingEmail ?? string.Empty)
+                              + " "
+                              + (j.TrackingMobile ?? string.Empty),
+                              wildSearch
+                          )
+                      )
             orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
             select new DispatchJobViewModel
             {
@@ -2501,38 +2504,51 @@ public partial class JobRepository(
             var page = data.Page ?? 0;
             var pageSize = data.PageSize ?? 50;
 
-            var jobSearch = $"%{data.Job ?? string.Empty}%";
+            var jobSearch = $"%{(data.Job ?? string.Empty).Trim()}%";
             var wildSearch = $"%{data.Wild ?? string.Empty}%";
 
             await using var liveJobsContext = await _contextFactory.CreateDbContextAsync(cancellationToken);
             await using var archivedJobsContext = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-            var liveJobsQuery = liveJobsContext.TucJobs
-                .Where(j =>
-                    j.UcjbDate.Date >= fromDate
-                    && j.UcjbDate.Date <= toDate
-                    && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
-                    && (!data.CourierSet ||
-                        (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
-                    && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
-                    && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                    && (!data.JobIdSet || j.UcjbId == data.JobId)
-                );
+            IQueryable<TucJob> liveJobsQuery;
+            IQueryable<TucJobArchive> archivedJobsQuery;
 
-            var archivedJobsQuery = archivedJobsContext.TucJobArchives
-                .Where(j =>
-                    j.UcjbDate.HasValue
-                    && j.UcjbDate.Value.Date >= fromDate
-                    && j.UcjbDate.Value.Date <= toDate
-                    && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
-                    && (!data.CourierSet ||
-                        (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
-                    && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
-                    && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                    && (!data.JobIdSet || j.UcjbId == data.JobId)
-                );
+            if (data.JobIdSet)
+            {
+                // When searching by specific job ID, ignore all other filters
+                liveJobsQuery = liveJobsContext.TucJobs
+                    .Where(j => j.UcjbId == data.JobId);
 
-            if (data.WildSet)
+                archivedJobsQuery = archivedJobsContext.TucJobArchives
+                    .Where(j => j.UcjbId == data.JobId);
+            }
+            else
+            {
+                liveJobsQuery = liveJobsContext.TucJobs
+                    .Where(j =>
+                        j.UcjbDate.Date >= fromDate
+                        && j.UcjbDate.Date <= toDate
+                        && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
+                        && (!data.CourierSet ||
+                            (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
+                        && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
+                        && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                    );
+
+                archivedJobsQuery = archivedJobsContext.TucJobArchives
+                    .Where(j =>
+                        j.UcjbDate.HasValue
+                        && j.UcjbDate.Value.Date >= fromDate
+                        && j.UcjbDate.Value.Date <= toDate
+                        && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
+                        && (!data.CourierSet ||
+                            (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
+                        && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
+                        && (!data.JobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                    );
+            }
+
+            if (!data.JobIdSet && data.WildSet)
             {
                 liveJobsQuery = liveJobsQuery.Where(j =>
                     j.TucJobNationwides.Any(nw => EF.Functions.Like(
@@ -2723,7 +2739,7 @@ public partial class JobRepository(
         var fromDateOnly = fromDate.Date;
         var toDateOnly = toDate.Date;
 
-        var jobSearch = $"%{job}%";
+        var jobSearch = $"%{job?.Trim()}%";
         var wildSearch = $"%{wild}%";
 
         var clientSet = clientIds is { Count: > 0 };
@@ -2741,33 +2757,45 @@ public partial class JobRepository(
         liveJobsContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
         archivedJobsContext.Database.SetCommandTimeout(TimeSpan.FromMinutes(5));
 
-        // Build live jobs query with SAME filters as PodSearchAsync
-        var liveJobsQuery = liveJobsContext.TucJobs
-            .Where(j =>
-                j.UcjbDate.Date >= fromDateOnly
-                && j.UcjbDate.Date <= toDateOnly
-                && (!clientSet || (j.UcjbClientId.HasValue && clientIds.Contains(j.UcjbClientId.Value)))
-                && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
-                && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
-                && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                && (!jobIdSet || j.UcjbId == jobId)
-            );
+        // Build live and archived queries with SAME filters as PodSearchAsync
+        IQueryable<TucJob> liveJobsQuery;
+        IQueryable<TucJobArchive> archivedJobsQuery;
 
-        // Build archived jobs query with SAME filters as PodSearchAsync
-        var archivedJobsQuery = archivedJobsContext.TucJobArchives
-            .Where(j =>
-                j.UcjbDate.HasValue
-                && j.UcjbDate.Value.Date >= fromDateOnly
-                && j.UcjbDate.Value.Date <= toDateOnly
-                && (!clientSet || (j.UcjbClientId.HasValue && clientIds.Contains(j.UcjbClientId.Value)))
-                && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
-                && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
-                && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
-                && (!jobIdSet || j.UcjbId == jobId)
-            );
+        if (jobIdSet)
+        {
+            // When searching by specific job ID, ignore all other filters
+            liveJobsQuery = liveJobsContext.TucJobs
+                .Where(j => j.UcjbId == jobId);
+
+            archivedJobsQuery = archivedJobsContext.TucJobArchives
+                .Where(j => j.UcjbId == jobId);
+        }
+        else
+        {
+            liveJobsQuery = liveJobsContext.TucJobs
+                .Where(j =>
+                    j.UcjbDate.Date >= fromDateOnly
+                    && j.UcjbDate.Date <= toDateOnly
+                    && (!clientSet || (j.UcjbClientId.HasValue && clientIds.Contains(j.UcjbClientId.Value)))
+                    && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
+                    && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
+                    && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                );
+
+            archivedJobsQuery = archivedJobsContext.TucJobArchives
+                .Where(j =>
+                    j.UcjbDate.HasValue
+                    && j.UcjbDate.Value.Date >= fromDateOnly
+                    && j.UcjbDate.Value.Date <= toDateOnly
+                    && (!clientSet || (j.UcjbClientId.HasValue && clientIds.Contains(j.UcjbClientId.Value)))
+                    && (!courierSet || (j.UcjbCourierId.HasValue && courierIds.Contains(j.UcjbCourierId.Value)))
+                    && (!speedSet || (j.UcjbSpeed.HasValue && speedIds.Contains(j.UcjbSpeed.Value)))
+                    && (!jobSet || EF.Functions.Like(j.UcjbNumber, jobSearch))
+                );
+        }
 
         // Apply SAME wildcard search as PodSearchAsync
-        if (wildSet)
+        if (!jobIdSet && wildSet)
         {
             liveJobsQuery = liveJobsQuery.Where(j =>
                 j.TucJobNationwides.Any(nw => EF.Functions.Like(
@@ -4884,7 +4912,7 @@ public partial class JobRepository(
                 .SetProperty(j => j.FdcourierId, (int?)null)
                 .SetProperty(j => j.UcjbDispDate, tenantTime)
                 .SetProperty(j => j.UcjbDispTime, tenantTime)
-                .SetProperty(j => j.UcjbStatus, j => j.UcjbStatus < 1 ? (int)JobStatus.Dispatched : j.UcjbStatus)
+                .SetProperty(j => j.UcjbStatus, (int)JobStatus.Dispatched)
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
     }

@@ -9,7 +9,7 @@
 import {apiClient, RequestOptions} from './apiClient';
 import {transformDispatchJobDTO} from '../../functions/dtoMappings';
 import {formatDateForApiWithTzs} from '../utils/dateUtils';
-import type {IDispatchJobDto, IJobSearchResultDto} from '../../interfaces/job.interface';
+import type {IJobSearchResultDto} from '../../interfaces/job.interface';
 import type {JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -63,6 +63,7 @@ export async function fetchBulkJobs(
         speedIds: params.speedIds,
         job: params.job,
         wild: params.wild,
+        bulkJobId: params.bulkJobId,
         page: params.page ?? 0,
         pageSize: params.pageSize ?? 50,
         fromDate: formatDate(params.startDate),

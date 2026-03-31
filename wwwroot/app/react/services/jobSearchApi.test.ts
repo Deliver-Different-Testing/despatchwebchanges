@@ -153,7 +153,7 @@ describe('jobSearchApi', () => {
     // ── fetchBulkJobs ────────────────────────────────────────────────
 
     describe('fetchBulkJobs', () => {
-        it('should call GET /Job/BulkSearch with correct params', async () => {
+        it('should call GET /Job/BulkSearch with correct params including bulkJobId', async () => {
             mockApiClient.get.mockResolvedValueOnce(createMockDto());
 
             await fetchBulkJobs(createBaseParams({
@@ -162,6 +162,7 @@ describe('jobSearchApi', () => {
                 speedIds: [200],
                 job: 'BULK-001',
                 wild: 'search',
+                bulkJobId: 99,
             }));
 
             expect(mockApiClient.get).toHaveBeenCalledWith(
@@ -172,11 +173,23 @@ describe('jobSearchApi', () => {
                     speedIds: [200],
                     job: 'BULK-001',
                     wild: 'search',
+                    bulkJobId: 99,
                     page: 0,
                     pageSize: 50,
                 }),
                 undefined,
             );
+        });
+
+        it('should omit bulkJobId when not provided', async () => {
+            mockApiClient.get.mockResolvedValueOnce(createMockDto());
+
+            await fetchBulkJobs(createBaseParams({
+                courierIds: [5],
+            }));
+
+            const calledParams = mockApiClient.get.mock.calls[0]![1]!;
+            expect(calledParams.bulkJobId).toBeUndefined();
         });
 
         it('should transform results', async () => {

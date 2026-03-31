@@ -24,6 +24,8 @@ import type {SxProps, Theme} from '@mui/material/styles';
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 
+import {useQueryClient} from '@tanstack/react-query';
+import {queryKeys} from '../../../query/queryClient';
 import {useJobDetail} from './hooks/useJobDetail';
 import {useJobUpdate} from './hooks/useJobUpdate';
 import {useFieldVisibility} from './hooks/useFieldVisibility';
@@ -221,6 +223,14 @@ export function JobDetails({config}: JobDetailsProps) {
         onJobUpdate?.();
     }, [refetch, onJobUpdate]);
 
+    // Invalidate photo queries so newly uploaded POD photos are fetched
+    const rqClient = useQueryClient();
+    const invalidatePhotos = useCallback(async () => {
+        if (!jobId) return;
+        await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'delivery')});
+        await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'pickup')});
+    }, [rqClient, jobId]);
+
     // Stable toast wrappers for StickyNotes (showToast is already ref-stabilized)
     const showSuccessToast = useCallback((msg: string) => showToast(msg, 'success'), [showToast]);
     const showErrorToast = useCallback((msg: string) => showToast(msg, 'error'), [showToast]);
@@ -238,6 +248,7 @@ export function JobDetails({config}: JobDetailsProps) {
         dispatchJob,
         refreshAndNotify,
         invalidateJobLists,
+        invalidatePhotos,
         onStatusChange: config.onStatusChange,
     });
 

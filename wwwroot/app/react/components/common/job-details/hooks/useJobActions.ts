@@ -56,6 +56,7 @@ interface UseJobActionsOptions {
     dispatchJob: (args: {job: IJob; courierId: number}) => Promise<unknown>;
     refreshAndNotify: () => Promise<void>;
     invalidateJobLists: () => Promise<void[]>;
+    invalidatePhotos: () => Promise<void>;
     onStatusChange?: (statusId: number) => void;
 }
 
@@ -70,6 +71,7 @@ export function useJobActions({
     dispatchJob,
     refreshAndNotify,
     invalidateJobLists,
+    invalidatePhotos,
     onStatusChange,
 }: UseJobActionsOptions) {
     const {
@@ -420,7 +422,8 @@ export function useJobActions({
         });
         showToast(`${j.jobNo} Completed`, 'success');
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, showToast]);
+        await invalidatePhotos();
+    }, [ensureDateTimeDialog, ensureJobFileUploadDialog, openTextDialogAsync, updateField, updatePod, refreshAndNotify, invalidatePhotos, showToast]);
 
     const handleDoneClick = useCallback(async () => {
         const j = jobRef.current;

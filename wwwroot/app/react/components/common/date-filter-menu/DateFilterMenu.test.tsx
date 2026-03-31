@@ -83,6 +83,22 @@ describe('DateFilterMenu', () => {
             });
         });
 
+        it('date pickers should use accessible field DOM structure for keyboard input', async () => {
+            renderWithProviders(<DateFilterMenu {...defaultProps} />);
+            fireEvent.click(screen.getByRole('button'));
+
+            const customDatesLabel = await screen.findByText('Custom Dates');
+            fireEvent.click(customDatesLabel.closest('label')!);
+
+            await waitFor(() => {
+                const datePickers = screen.getAllByTestId('mock-date-picker');
+                expect(datePickers).toHaveLength(2);
+                datePickers.forEach(picker => {
+                    expect(picker).toHaveAttribute('data-accessible-field', 'true');
+                });
+            });
+        });
+
         it('should show duration dropdown when Time Range is selected', async () => {
             renderWithProviders(<DateFilterMenu {...defaultProps} />);
             fireEvent.click(screen.getByRole('button'));

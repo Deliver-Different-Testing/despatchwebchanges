@@ -529,13 +529,13 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task AssignCourierToJobAsync_DoesNotDowngradeStatus()
+    public async Task AssignCourierToJobAsync_AlwaysSetsStatusToDispatched()
     {
-        // Arrange - job already has status > 0
+        // Arrange - job has a non-Dispatched status (e.g. After Hours or any other pre-dispatch status)
         await using (var context = CreateContext())
         {
             var seedJob = CreateJob(100, "JOB001");
-            seedJob.UcjbStatus = (int)JobStatus.Dispatched; // Status > 0
+            seedJob.UcjbStatus = 99; // Arbitrary non-zero status (e.g. "After Hours")
             context.TucJobs.Add(seedJob);
             await context.SaveChangesAsync(TestContext.Current.CancellationToken);
         }
@@ -545,16 +545,16 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
         // Act
         await repository.AssignCourierToJobAsync([100], courierId: 5);
 
-        // Assert
+        // Assert - status is always set to Dispatched regardless of prior value
         await using var verifyContext = CreateContext();
         var verifiedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        Assert.Equal((int)JobStatus.Dispatched, verifiedJob!.UcjbStatus); // Should keep existing status
+        Assert.Equal((int)JobStatus.Dispatched, verifiedJob!.UcjbStatus);
     }
 
     [Fact]
-    public async Task AssignCourierToJobAsync_SetsStatusToDispatchedWhenBelow1()
+    public async Task AssignCourierToJobAsync_SetsStatusToDispatchedFromNew()
     {
-        // Arrange - job has status < 1 (not yet dispatched)
+        // Arrange - job has status New (0)
         await using (var context = CreateContext())
         {
             var seedJob = CreateJob(100, "JOB001");

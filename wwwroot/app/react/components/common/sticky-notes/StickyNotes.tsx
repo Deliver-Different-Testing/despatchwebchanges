@@ -356,6 +356,13 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             {note.noteText}
                         </Typography>
 
+                        {/* Created By */}
+                        {note.createdByName && (
+                            <Typography variant="caption" sx={{display: 'block', mt: 1, color: 'rgba(0,0,0,0.5)', fontStyle: 'italic'}}>
+                                - {note.createdByName}
+                            </Typography>
+                        )}
+
                         {/* Delete Action */}
                         <Box
                             className="note-actions"
