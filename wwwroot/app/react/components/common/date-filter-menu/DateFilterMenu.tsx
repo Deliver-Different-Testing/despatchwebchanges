@@ -444,13 +444,11 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                     value={startDate}
                                     onChange={(newValue) => newValue && setStartDate(newValue)}
                                     format="DD/MM/YYYY"
-                                    enableAccessibleFieldDOMStructure={false}
                                     slotProps={{
-                                        textField: {
-                                            size: 'small',
-                                            fullWidth: true,
+                                        field: {
                                             onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
                                         },
+                                        textField: {size: 'small', fullWidth: true},
                                     }}
                                 />
                                 <DatePicker
@@ -458,13 +456,11 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                                     value={endDate}
                                     onChange={(newValue) => newValue && setEndDate(newValue)}
                                     format="DD/MM/YYYY"
-                                    enableAccessibleFieldDOMStructure={false}
                                     slotProps={{
-                                        textField: {
-                                            size: 'small',
-                                            fullWidth: true,
+                                        field: {
                                             onKeyDown: (e: React.KeyboardEvent) => e.stopPropagation(),
                                         },
+                                        textField: {size: 'small', fullWidth: true},
                                     }}
                                 />
                             </Box>

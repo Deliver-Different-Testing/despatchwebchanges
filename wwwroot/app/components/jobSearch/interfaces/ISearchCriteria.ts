@@ -13,6 +13,7 @@ interface ISearchCriteria {
     wild?: string;
     job?: string;
     jobId?: number;
+    bulkJobId?: number;
 }
 
 export default ISearchCriteria;

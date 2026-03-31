@@ -85,17 +85,26 @@ export const DateTimePicker = forwardRef<HTMLInputElement, any>(
 
 // Mock DatePicker - includes grid cells for tests that interact with calendar
 export const DatePicker = forwardRef<HTMLInputElement, any>(
-    ({label, value, onChange, disabled, open, onOpen, onClose, enableAccessibleFieldDOMStructure: _eafds, ...props}, ref) => {
+    ({label, value, onChange, onAccept, disabled, open, onOpen, onClose, enableAccessibleFieldDOMStructure, shouldRespectLeadingZeros, slotProps, format: _format, ...props}, ref) => {
         const [isOpen, setIsOpen] = React.useState(open ?? false);
 
+        const fieldOnBlur = slotProps?.field?.onBlur;
+
         const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-            onChange?.(createMockDayjs(e.target.value));
+            const mockValue = createMockDayjs(e.target.value);
+            onChange?.(mockValue);
+        };
+
+        const handleBlur = () => {
+            fieldOnBlur?.();
         };
 
         const handleDayClick = (day: number) => {
             const currentValue = value?.format?.('YYYY-MM') ?? new Date().toISOString().slice(0, 7);
             const newDate = `${currentValue}-${String(day).padStart(2, '0')}`;
-            onChange?.(createMockDayjs(newDate));
+            const mockValue = createMockDayjs(newDate);
+            onChange?.(mockValue);
+            onAccept?.(mockValue);
             setIsOpen(false);
             onClose?.();
         };
@@ -119,13 +128,17 @@ export const DatePicker = forwardRef<HTMLInputElement, any>(
             }, day)
         );
 
-        return React.createElement('div', {'data-testid': 'mock-date-picker'},
+        return React.createElement('div', {
+                'data-testid': 'mock-date-picker',
+                'data-accessible-field': enableAccessibleFieldDOMStructure !== false ? 'true' : 'false',
+            },
             React.createElement('label', null, label),
             React.createElement('input', {
                 ref,
                 type: 'text',
                 value: formattedValue,
                 onChange: handleChange,
+                onBlur: handleBlur,
                 onClick: handleOpen,
                 disabled,
                 'aria-label': label,

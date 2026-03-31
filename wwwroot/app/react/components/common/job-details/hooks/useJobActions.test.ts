@@ -82,6 +82,7 @@ function setup(opts: SetupOptions = {}) {
     const mockDispatchJob = jest.fn().mockResolvedValue(undefined);
     const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
     const mockInvalidateJobLists = jest.fn().mockResolvedValue([]);
+    const mockInvalidatePhotos = jest.fn().mockResolvedValue(undefined);
 
     const {result} = renderHook(() =>
         useJobActions({
@@ -95,6 +96,7 @@ function setup(opts: SetupOptions = {}) {
             dispatchJob: mockDispatchJob,
             refreshAndNotify: mockRefreshAndNotify,
             invalidateJobLists: mockInvalidateJobLists,
+            invalidatePhotos: mockInvalidatePhotos,
         }),
     );
 
@@ -105,6 +107,7 @@ function setup(opts: SetupOptions = {}) {
         mockUpdatePod,
         mockRefreshAndNotify,
         mockInvalidateJobLists,
+        mockInvalidatePhotos,
     };
 }
 
@@ -337,6 +340,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                     dispatchJob: jest.fn().mockResolvedValue(undefined),
                     refreshAndNotify: jest.fn().mockResolvedValue(undefined),
                     invalidateJobLists: jest.fn().mockResolvedValue([]),
+                    invalidatePhotos: jest.fn().mockResolvedValue(undefined),
                 }),
             );
 
@@ -628,6 +632,7 @@ describe('useJobActions — handleVoidClick', () => {
                 dispatchJob: jest.fn().mockResolvedValue(undefined),
                 refreshAndNotify: mockRefreshAndNotify,
                 invalidateJobLists: mockInvalidateJobLists,
+                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
             }),
         );
 

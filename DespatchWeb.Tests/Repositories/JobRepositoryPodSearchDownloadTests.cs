@@ -245,6 +245,71 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         Assert.All(result, j => Assert.Contains("ABC", j.JobNumber));
     }
 
+    [Theory]
+    [InlineData(" ABC ")]
+    [InlineData("ABC ")]
+    [InlineData(" ABC")]
+    [InlineData("  ABC  ")]
+    public async Task PodSearchDownloadAsync_JobNumberSearch_TrimsWhitespace(string searchTerm)
+    {
+        // Arrange - Regression test: pasted job numbers often contain leading/trailing spaces
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "ABC-001", new DateTime(2024, 1, 15)),
+                CreateLiveJob(2, "XYZ-001", new DateTime(2024, 1, 15))
+            );
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search with whitespace around job number
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: searchTerm,
+            wild: null,
+            clientIds: []
+        );
+
+        // Assert - Should find the job despite whitespace in search term
+        Assert.Single(result);
+        Assert.Equal("ABC-001", result[0].JobNumber);
+    }
+
+    [Fact]
+    public async Task PodSearchDownloadAsync_JobNumberSearch_WhitespaceOnlyTreatedAsNoFilter()
+    {
+        // Arrange - A search term of just spaces should behave like no filter
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.AddRange(
+                CreateLiveJob(1, "ABC-001", new DateTime(2024, 1, 15)),
+                CreateLiveJob(2, "XYZ-001", new DateTime(2024, 1, 15))
+            );
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act - Search with whitespace-only job number
+        var result = await repository.PodSearchDownloadAsync(
+            fromDate: new DateTime(2024, 1, 1),
+            toDate: new DateTime(2024, 1, 31),
+            courierIds: [],
+            speedIds: [],
+            job: "   ",
+            wild: null,
+            clientIds: []
+        );
+
+        // Assert - Whitespace-only is treated as empty by JobSet check, returns all jobs
+        Assert.Equal(2, result.Count);
+    }
+
     [Fact]
     public async Task PodSearchDownloadAsync_ParentChildJobs_ReturnsAllJobsToMatchSearchBehavior()
     {

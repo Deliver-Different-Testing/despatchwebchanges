@@ -53,6 +53,7 @@ const createMockNotes = (): JobNote[] => [
         jobId: 123,
         noteText: 'This is an internal note',
         isImportant: false,
+        createdByName: 'John Smith',
         _createdDateStr: 'Jan 15, 2025 9:00 AM',
     },
     {
@@ -62,6 +63,7 @@ const createMockNotes = (): JobNote[] => [
         jobId: 123,
         noteText: 'This is a client note',
         isImportant: false,
+        createdByName: 'Jane Doe',
         _createdDateStr: 'Jan 15, 2025 10:00 AM',
     },
     {
@@ -129,6 +131,25 @@ describe('StickyNotes', () => {
             // Add note button exists
             const addIcon = screen.getByText('note_add');
             expect(addIcon).toBeInTheDocument();
+
+            // Created by names shown when present
+            expect(screen.getByText('- John Smith')).toBeInTheDocument();
+            expect(screen.getByText('- Jane Doe')).toBeInTheDocument();
+        });
+
+        it('does not render created by when createdByName is absent', async () => {
+            mockedNotesApi.getJobNotes.mockResolvedValue([{
+                noteId: 10,
+                noteTypeId: 1,
+                noteTypeName: 'Internal',
+                jobId: 123,
+                noteText: 'Note without author',
+                isImportant: false,
+            }]);
+            renderWithProviders(<StickyNotes {...createDefaultProps()} />);
+
+            expect(await screen.findByText('Note without author')).toBeInTheDocument();
+            expect(screen.queryByText(/^-\s/)).not.toBeInTheDocument();
         });
 
         it('renders empty state when no notes', async () => {

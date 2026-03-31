@@ -4,9 +4,14 @@
  * React replacement for the entire pickDate.html AngularJS template.
  * Composes DateRangePicker, ChipsAutocomplete inputs, text search fields,
  * and action buttons into a single panel.
+ *
+ * Date values are held locally and only flushed to AngularJS when the
+ * user triggers a search (button click or Enter key).  This prevents
+ * the AngularJS digest cycle from re-rendering the React tree and
+ * resetting the MUI DatePicker field mid-typing.
  */
 
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import type {SxProps, Theme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -14,9 +19,11 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
+import Collapse from '@mui/material/Collapse';
 import DownloadIcon from '@mui/icons-material/Download';
 import DescriptionIcon from '@mui/icons-material/Description';
 import UploadIcon from '@mui/icons-material/Upload';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import {Dayjs} from 'dayjs';
 import {DateRangePicker} from '../date-range-picker/DateRangePicker';
 import {ChipsAutocomplete} from './ChipsAutocomplete';
@@ -66,15 +73,32 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     onCourierSearch,
     onSpeedSearch,
 }) => {
+    // Local date state — only flushed to AngularJS on search
+    const [localFromDate, setLocalFromDate] = useState<Dayjs>(fromDate);
+    const [localToDate, setLocalToDate] = useState<Dayjs>(toDate);
+
+    // Sync from parent when preset range buttons change the dates
+    useEffect(() => { setLocalFromDate(fromDate); }, [fromDate]);
+    useEffect(() => { setLocalToDate(toDate); }, [toDate]);
+
     // Local state for chips and text inputs
     const [clients, setClients] = useState<ISuggestion[]>([]);
     const [couriers, setCouriers] = useState<ISuggestion[]>([]);
     const [speeds, setSpeeds] = useState<ISuggestion[]>([]);
     const [jobId, setJobId] = useState('');
+    const [bulkJobId, setBulkJobId] = useState('');
     const [jobNumber, setJobNumber] = useState('');
     const [generalSearch, setGeneralSearch] = useState('');
+    const [advancedOpen, setAdvancedOpen] = useState(false);
 
-    const isClientReportEnabled = clients.length > 0 && !!fromDate && !!toDate;
+    const isClientReportEnabled = clients.length > 0 && !!localFromDate && !!localToDate;
+
+    // Flush local dates to AngularJS and trigger search
+    const flushAndSearch = useCallback(() => {
+        if (localFromDate?.isValid()) onFromDateChange(localFromDate);
+        if (localToDate?.isValid()) onToDateChange(localToDate);
+        onSearch();
+    }, [localFromDate, localToDate, onFromDateChange, onToDateChange, onSearch]);
 
     // Chip change handlers — update local state + sync to AngularJS
     const handleClientsChange = useCallback((items: ISuggestion[]) => {
@@ -99,6 +123,12 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
         onCriteriaChange('jobId', value ? Number(value) : undefined);
     }, [onCriteriaChange]);
 
+    const handleBulkJobIdChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setBulkJobId(value);
+        onCriteriaChange('bulkJobId', value ? Number(value) : undefined);
+    }, [onCriteriaChange]);
+
     const handleJobNumberChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setJobNumber(value);
@@ -114,9 +144,9 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
     // Enter key triggers search
     const handleKeyUp = useCallback((e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
-            onSearch();
+            flushAndSearch();
         }
-    }, [onSearch]);
+    }, [flushAndSearch]);
 
     return (
         <Box sx={{
@@ -133,11 +163,11 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 <Typography sx={groupLabelSx}>Date Range</Typography>
                 <DateRangePicker
                     dateSearchRange={dateSearchRange}
-                    fromDate={fromDate}
-                    toDate={toDate}
+                    fromDate={localFromDate}
+                    toDate={localToDate}
                     onSearchRangeChange={onSearchRangeChange}
-                    onFromDateChange={onFromDateChange}
-                    onToDateChange={onToDateChange}
+                    onFromDateChange={setLocalFromDate}
+                    onToDateChange={setLocalToDate}
                 />
             </Box>
 
@@ -177,32 +207,6 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                     minInputLength={1}
                     onSearch={onSpeedSearch}
                     onChange={handleSpeedsChange}
-                />
-            </Box>
-
-            {/* Job ID */}
-            <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75, minWidth: 0}}>
-                <Typography sx={groupLabelSx}>Job ID</Typography>
-                <TextField
-                    type="number"
-                    size="small"
-                    placeholder="Enter job ID"
-                    value={jobId}
-                    onChange={handleJobIdChange}
-                    onKeyUp={handleKeyUp}
-                    sx={{
-                        '& .MuiOutlinedInput-root': {
-                            height: 34,
-                            fontSize: '0.8125rem',
-                            bgcolor: 'background.paper',
-                            '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'divider',
-                            },
-                            '&:hover .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'text.disabled',
-                            },
-                        },
-                    }}
                 />
             </Box>
 
@@ -256,6 +260,86 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 />
             </Box>
 
+            {/* Advanced Options */}
+            <Box>
+                <Button
+                    size="small"
+                    onClick={() => setAdvancedOpen(prev => !prev)}
+                    endIcon={
+                        <ExpandMoreIcon
+                            sx={{
+                                transform: advancedOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s',
+                            }}
+                        />
+                    }
+                    sx={{
+                        textTransform: 'none',
+                        fontSize: '0.75rem',
+                        color: 'text.secondary',
+                        p: 0,
+                        minWidth: 0,
+                        '&:hover': {bgcolor: 'transparent'},
+                    }}
+                >
+                    Advanced
+                </Button>
+                <Collapse in={advancedOpen}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1.5, mt: 1}}>
+                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75}}>
+                            <Typography sx={groupLabelSx}>Job ID</Typography>
+                            <TextField
+                                type="number"
+                                size="small"
+                                placeholder="Enter job ID"
+                                value={jobId}
+                                disabled={!!bulkJobId}
+                                onChange={handleJobIdChange}
+                                onKeyUp={handleKeyUp}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        height: 34,
+                                        fontSize: '0.8125rem',
+                                        bgcolor: 'background.paper',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'divider',
+                                        },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'text.disabled',
+                                        },
+                                    },
+                                }}
+                            />
+                        </Box>
+                        <Box sx={{display: 'flex', flexDirection: 'column', gap: 0.75}}>
+                            <Typography sx={groupLabelSx}>Bulk Job ID</Typography>
+                            <TextField
+                                type="number"
+                                size="small"
+                                placeholder="Enter bulk job ID"
+                                value={bulkJobId}
+                                disabled={!!jobId}
+                                onChange={handleBulkJobIdChange}
+                                onKeyUp={handleKeyUp}
+                                sx={{
+                                    '& .MuiOutlinedInput-root': {
+                                        height: 34,
+                                        fontSize: '0.8125rem',
+                                        bgcolor: 'background.paper',
+                                        '& .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'divider',
+                                        },
+                                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                                            borderColor: 'text.disabled',
+                                        },
+                                    },
+                                }}
+                            />
+                        </Box>
+                    </Box>
+                </Collapse>
+            </Box>
+
             {/* Actions */}
             <Box sx={{
                 display: 'flex',
@@ -270,7 +354,7 @@ export const SearchCriteriaPanel: React.FC<SearchCriteriaPanelProps> = ({
                 <Button
                     variant="contained"
                     color="primary"
-                    onClick={onSearch}
+                    onClick={flushAndSearch}
                     sx={{
                         flex: '1 1 auto',
                         minWidth: 100,

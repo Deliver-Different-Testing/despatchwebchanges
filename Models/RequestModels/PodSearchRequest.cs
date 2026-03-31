@@ -7,6 +7,7 @@ public sealed class PodSearchRequest
     public List<int> SpeedIds { get; init; }
     public string Wild { get; init; }
     public int? JobId { get; init; }
+    public int? BulkJobId { get; init; }
     public string Job { get; init; }
     public DateTimeOffset FromDate { get; init; }
     public DateTimeOffset ToDate { get; init; }
@@ -20,5 +21,6 @@ public sealed class PodSearchRequest
     public bool SpeedSet => SpeedIds != null && SpeedIds.Count != 0;
     public bool WildSet => !string.IsNullOrWhiteSpace(Wild);
     public bool JobIdSet => JobId.HasValue;
+    public bool BulkJobIdSet => BulkJobId.HasValue;
     public bool JobSet => !string.IsNullOrWhiteSpace(Job);
 }

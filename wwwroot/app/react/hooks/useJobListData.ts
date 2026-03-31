@@ -23,12 +23,26 @@ export interface UseJobListDataResult {
     updateParams: (params: Partial<JobListSearchParams>) => void;
 }
 
+const emptyResult: UseJobListDataResult = {
+    jobs: [],
+    totalCount: 0,
+    isLoading: false,
+    isFetching: false,
+    hasMore: false,
+    params: {} as JobListSearchParams,
+    refresh: () => {},
+    updateSort: () => {},
+    updateParams: () => {},
+};
+
 export function useJobListData(fetchConfig: FetchConfig | null | undefined): UseJobListDataResult {
     const queryClient = useQueryClient();
 
     const [params, setParams] = useState<JobListSearchParams>(
         () => fetchConfig?.initialParams ?? {} as JobListSearchParams,
     );
+
+    const isDisabled = !!params.disabled;
 
     const queryKey = useMemo(
         () => fetchConfig?.queryKeyFn(params) ?? ['job-list', 'disabled'],
@@ -40,7 +54,7 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
         queryFn: ({signal}) => fetchConfig!.fetchFn(params, {signal}),
         staleTime: 15_000,
         placeholderData: keepPreviousData,
-        enabled: !!fetchConfig,
+        enabled: !!fetchConfig && !isDisabled,
     });
 
     const refresh = useCallback(() => {
@@ -61,6 +75,11 @@ export function useJobListData(fetchConfig: FetchConfig | null | undefined): Use
     const updateParams = useCallback((newParams: Partial<JobListSearchParams>) => {
         setParams(prev => ({...prev, ...newParams}));
     }, []);
+
+    // When disabled, return empty results immediately — ignores any cached query data
+    if (isDisabled) {
+        return {...emptyResult, params, updateParams};
+    }
 
     return {
         jobs: data?.jobs ?? [],
