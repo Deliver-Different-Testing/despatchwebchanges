@@ -19,13 +19,19 @@ import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import InputAdornment from '@mui/material/InputAdornment';
+import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import CloseIcon from '@mui/icons-material/Close';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import AddIcon from '@mui/icons-material/Add';
 import AddBoxIcon from '@mui/icons-material/AddBox';
 import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
 import InfoIcon from '@mui/icons-material/Info';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 import {apiClient} from '../../../services/apiClient';
 import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions,} from './types';
@@ -88,6 +94,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const [isParentJob, setIsParentJob] = useState(false);
     const [bulkAddCount, setBulkAddCount] = useState(1);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+    const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
 
     const dimensionsString = isUsCustomer ? 'inches' : 'cm';
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
@@ -216,11 +223,16 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
 
     const handleCancel = useCallback(() => {
         if (isFormDirty) {
-            const confirmed = window.confirm('You have unsaved changes. Are you sure you want to discard them?');
-            if (!confirmed) return;
+            setDiscardDialogOpen(true);
+            return;
         }
         onClose();
     }, [isFormDirty, onClose]);
+
+    const handleDiscardConfirm = useCallback(() => {
+        setDiscardDialogOpen(false);
+        onClose();
+    }, [onClose]);
 
     const handleSubmit = useCallback(async () => {
         const errors = validateCurrentParcel(parcels, selectedParcelIndex);
@@ -266,7 +278,13 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const isValid = Object.keys(validationErrors).length === 0;
 
     return (
-        <Dialog open={open} onClose={handleCancel} fullWidth maxWidth="md">
+        <Dialog
+            open={open}
+            onClose={handleCancel}
+            fullWidth
+            maxWidth="md"
+            slotProps={{ paper: { sx: { maxHeight: '90vh', display: 'flex', flexDirection: 'column' } } }}
+        >
             {/* Header */}
             <Box
                 sx={(theme) => ({
@@ -352,7 +370,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
 
             {/* Main content */}
             {hasParcels && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'auto' }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' }}>
                     {/* Current parcel header */}
                     <Card
                         sx={(theme) => ({
@@ -368,8 +386,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         })}
                     >
                         <Inventory2OutlinedIcon sx={{ color: 'primary.main', mr: 1.5 }} />
-                        <Typography variant="subtitle1" sx={{ flex: 1 }}>
+                        <Typography variant="subtitle1" sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                             Add Additional Items
+                            <Chip label={`${parcels.length} ${parcels.length === 1 ? 'item' : 'items'}`} size="small" color="primary" />
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Tooltip title="Number of Additional Parcels To Add">
@@ -489,10 +508,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         <Box
                             sx={{
                                 display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                overflowX: 'auto',
-                                minHeight: 90,
+                                alignItems: 'flex-start',
+                                flexWrap: 'wrap',
+                                gap: 0.5,
                                 py: 2,
                                 px: 1,
                             }}
@@ -583,15 +601,17 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                     </Box>
 
                                     {/* Connector */}
-                                    <Box
-                                        sx={(theme) => ({
-                                            height: 2,
-                                            width: 40,
-                                            bgcolor: theme.palette.grey[400],
-                                            mx: 0.5,
-                                            mt: -2,
-                                        })}
-                                    />
+                                    {index < parcels.length - 1 && (
+                                        <Box
+                                            sx={(theme) => ({
+                                                height: 2,
+                                                width: 24,
+                                                bgcolor: theme.palette.grey[400],
+                                                alignSelf: 'center',
+                                                mt: -2,
+                                            })}
+                                        />
+                                    )}
                                 </React.Fragment>
                             ))}
                         </Box>
@@ -618,6 +638,68 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     )}
                 </Box>
             )}
+            {/* Discard Changes Confirmation Dialog */}
+            <Dialog
+                open={discardDialogOpen}
+                onClose={() => setDiscardDialogOpen(false)}
+                maxWidth="xs"
+                fullWidth
+                aria-labelledby="discard-dialog-title"
+                aria-describedby="discard-dialog-description"
+            >
+                <Box
+                    sx={(theme) => ({
+                        background: `linear-gradient(135deg, ${theme.palette.warning.main} 0%, ${theme.palette.warning.dark} 100%)`,
+                        color: 'white',
+                        px: 3,
+                        py: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                    })}
+                >
+                    <Box
+                        sx={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 1.5,
+                            bgcolor: 'rgba(255,255,255,0.15)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <WarningAmberIcon sx={{ fontSize: 24 }} />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                        <Typography id="discard-dialog-title" variant="h6" fontWeight={600}>
+                            Discard unsaved changes
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
+                            Changes will be permanently lost
+                        </Typography>
+                    </Box>
+                    <IconButton
+                        onClick={() => setDiscardDialogOpen(false)}
+                        sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+                <DialogContent>
+                    <DialogContentText id="discard-dialog-description" sx={{ mt: 1 }}>
+                        Your changes to parcel dimensions haven't been saved and will be lost.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
+                    <Button autoFocus onClick={() => setDiscardDialogOpen(false)}>
+                        Keep editing
+                    </Button>
+                    <Button onClick={handleDiscardConfirm} color="error">
+                        Discard
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </Dialog>
     );
 };

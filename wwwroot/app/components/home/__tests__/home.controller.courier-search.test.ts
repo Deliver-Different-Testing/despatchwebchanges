@@ -280,6 +280,16 @@ describe('onExactCourierMatchSearch', () => {
         expect(ctrl.DispatchData.truckCourierStatus).toHaveBeenCalledWith(42);
     });
 
+    it('calls getCurrentJobs regardless of selected views (no view dependency)', async () => {
+        const match = {id: 42, text: 'Alice'};
+        const ctrl = setup({selectedViews: [], _selectedViews: []});
+        ctrl.DispatchData.getExactCourierMatch.mockResolvedValue(match);
+
+        await ctrl.onExactCourierMatchSearch('A42');
+
+        expect(ctrl.getCurrentJobs).toHaveBeenCalledWith(42);
+    });
+
     it('shows warning toast when no match found', async () => {
         const ctrl = setup();
         ctrl.DispatchData.getExactCourierMatch.mockResolvedValue(null);

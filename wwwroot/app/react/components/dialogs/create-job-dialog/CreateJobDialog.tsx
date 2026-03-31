@@ -232,7 +232,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 addressLine5: line5,
                 addressLine6: line6,
                 addressLine7: line7,
-                addressLine8: '',
+                addressLine8: addr.countryName || '',
                 latitude: location.position.lat,
                 longitude: location.position.lng,
                 fullAddress: addr.label || location.title || '',

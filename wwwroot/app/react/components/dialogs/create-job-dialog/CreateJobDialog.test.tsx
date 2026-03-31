@@ -8,24 +8,39 @@ import {fireEvent, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {CreateJobDialog, CreateJobDialogProps} from './CreateJobDialog';
 import {createProps, renderWithAllProviders} from '../../../__testUtils__';
+import {addressApi} from '../../../services/addressApi';
+import {jobApi} from '../../../services/jobApi';
+import type {HereMapsLookupResponse} from '../../../interfaces';
 
-// Mock the hooks to avoid React Query dependencies
-jest.mock('../../../hooks', () => ({
-    useClientSearch: jest.fn(() => ({data: [], isFetching: false})),
-    useCourierSearch: jest.fn(() => ({data: [], isFetching: false})),
-    useAddressSearch: jest.fn(() => ({data: [], isFetching: false})),
-    useVehicleSizes: jest.fn(() => ({
-        data: [
-            {id: 1, text: 'Car'},
-            {id: 2, text: 'Van'},
-        ],
-    })),
-    useSpeedList: jest.fn(() => ({
-        data: [
-            {id: 1, text: 'Standard'},
-            {id: 2, text: 'Express'},
-        ],
-    })),
+// Mock the hooks - must match the import paths used by the component
+const mockUseClientSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
+const mockUseVehicleSizes = jest.fn(() => ({
+    data: [
+        {id: 1, text: 'Car'},
+        {id: 2, text: 'Van'},
+    ],
+}));
+const mockUseCourierSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
+const mockUseAddressSearch = jest.fn(() => ({data: [] as any[], isFetching: false}));
+const mockUseSpeedList = jest.fn(() => ({
+    data: [
+        {id: 1, text: 'Standard'},
+        {id: 2, text: 'Express'},
+    ],
+}));
+
+jest.mock('../../../hooks/useJobApi', () => ({
+    useClientSearch: (...args: any[]) => mockUseClientSearch(...(args as [])),
+    useVehicleSizes: (...args: any[]) => mockUseVehicleSizes(...(args as [])),
+}));
+jest.mock('../../../hooks/useCourierApi', () => ({
+    useCourierSearch: (...args: any[]) => mockUseCourierSearch(...(args as [])),
+}));
+jest.mock('../../../hooks/useAddressApi', () => ({
+    useAddressSearch: (...args: any[]) => mockUseAddressSearch(...(args as [])),
+}));
+jest.mock('../../../hooks/useRecurringJobsApi', () => ({
+    useSpeedList: (...args: any[]) => mockUseSpeedList(...(args as [])),
 }));
 
 // Mock the API services (for submit flow)
@@ -232,6 +247,98 @@ describe('CreateJobDialog', () => {
             expect(screen.getByLabelText(/job notes/i)).toHaveAttribute('maxlength', '150');
             expect(screen.getByLabelText(/pickup notes/i)).toHaveAttribute('maxlength', '150');
             expect(screen.getByLabelText(/delivery notes/i)).toHaveAttribute('maxlength', '150');
+        });
+    });
+
+    describe('Submit Flow', () => {
+        const mockLookupResponse: HereMapsLookupResponse = {
+            id: 'here:af:street:abc123',
+            title: '123 Main Street',
+            resultType: 'houseNumber',
+            address: {
+                label: '123 Main Street, New York, NY 10001, United States',
+                city: 'New York',
+                stateCode: 'NY',
+                state: 'New York',
+                postalCode: '10001',
+                countryCode: 'USA',
+                countryName: 'United States',
+                street: 'Main Street',
+                houseNumber: '123',
+            },
+            position: {lat: 40.7128, lng: -74.006},
+        };
+
+        const mockAddressOption = {
+            id: 'here:af:street:abc123',
+            title: '123 Main Street',
+            resultType: 'houseNumber',
+            address: mockLookupResponse.address,
+            position: {lat: 40.7128, lng: -74.006},
+            access: [{lat: 40.7128, lng: -74.006}],
+        };
+
+        /**
+         * Helper to select an option in an MUI Autocomplete by typing and picking from the dropdown.
+         * MUI renders the listbox in a portal that gets aria-hidden inside dialogs,
+         * so we query with `hidden: true`.
+         */
+        async function selectAutocomplete(
+            user: ReturnType<typeof userEvent.setup>,
+            input: HTMLElement,
+            typeText: string,
+        ) {
+            await user.click(input);
+            if (typeText) {
+                fireEvent.change(input, {target: {value: typeText}});
+            }
+            // Use keyboard to select first option
+            fireEvent.keyDown(input, {key: 'ArrowDown'});
+            fireEvent.keyDown(input, {key: 'Enter'});
+        }
+
+        it('populates addressLine8 with countryName from HERE Maps response on submit', async () => {
+            const user = userEvent.setup();
+            const onSubmit = jest.fn();
+            const showToast = jest.fn();
+
+            // Configure mocks to return selectable options
+            mockUseClientSearch.mockReturnValue({
+                data: [{id: 1, text: 'Test Client'}],
+                isFetching: false,
+            });
+            mockUseAddressSearch.mockReturnValue({
+                data: [mockAddressOption],
+                isFetching: false,
+            });
+
+            (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue(999);
+
+            const props = createMockProps({onSubmit, showToast, isUsTenant: true});
+            renderWithAllProviders(<CreateJobDialog {...props} />);
+
+            // Fill all required fields
+            await selectAutocomplete(user, screen.getByLabelText(/client/i), 'Test');
+            fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
+            await selectAutocomplete(user, screen.getByLabelText(/from address/i), '123');
+            await selectAutocomplete(user, screen.getByLabelText(/to address/i), '123');
+            fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
+            fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
+            fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
+            await selectAutocomplete(user, screen.getByLabelText(/vehicle/i), 'Car');
+            await selectAutocomplete(user, screen.getByLabelText(/speed/i), 'Sta');
+
+            // Submit
+            await user.click(screen.getByRole('button', {name: /create job/i}));
+
+            await waitFor(() => {
+                expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1);
+            }, {timeout: 3000});
+
+            const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
+            expect(submittedJob.pickUpAddress.addressLine8).toBe('United States');
+            expect(submittedJob.deliveryAddress.addressLine8).toBe('United States');
         });
     });
 });
