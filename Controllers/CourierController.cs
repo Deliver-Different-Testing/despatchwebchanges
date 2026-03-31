@@ -406,7 +406,6 @@ public class CourierController(
         try
         {
             var result = await courierRepository.GetClearListDebugAsync(courierId);
-            if (result == null) return NotFound();
             return Json(result);
         }
         catch (Exception ex)

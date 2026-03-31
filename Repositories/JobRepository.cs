@@ -3080,9 +3080,6 @@ public partial class JobRepository(
                         && j.UcjbDate >= start
                         && j.UcjbDate <= end);
 
-        // Fetch economy settings in parallel with the main query
-        var economyTask = GetEconomySpeedAndDeliveryTimeAsync();
-
         // Single query to get both jobs and map items data
         var jobs = await query
             .Select(JobMappings.JobDispatchMapping(isUsCustomer))
@@ -3101,7 +3098,7 @@ public partial class JobRepository(
         }).ToList();
 
         // Calculate remaining time for each job
-        var (economySpeedId, ecoDeliveryTime) = await economyTask;
+        var (economySpeedId, ecoDeliveryTime) = await GetEconomySpeedAndDeliveryTimeAsync();
         var now = _clock.TenantNow;
         foreach (var job in jobs)
         {
