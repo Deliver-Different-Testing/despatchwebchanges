@@ -6,7 +6,7 @@
  * a visual timeline for navigating between parcels, and saving via API.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -27,12 +27,8 @@ import AddBoxIcon from '@mui/icons-material/AddBox';
 import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
 import InfoIcon from '@mui/icons-material/Info';
 
-import { apiClient } from '../../../services/apiClient';
-import {
-    EditParcelDimensionsDialogProps,
-    EditParcelDimensionsDialogResult,
-    ParcelDimensions,
-} from './types';
+import {apiClient} from '../../../services/apiClient';
+import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions,} from './types';
 
 const MAX_DIMENSION = 999.9;
 const MAX_NAME_LENGTH = 50;
@@ -373,7 +369,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     >
                         <Inventory2OutlinedIcon sx={{ color: 'primary.main', mr: 1.5 }} />
                         <Typography variant="subtitle1" sx={{ flex: 1 }}>
-                            {currentParcel?.itemName || `Parcel ${selectedParcelIndex + 1}`}
+                            Add Additional Items
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                             <Tooltip title="Number of Additional Parcels To Add">
@@ -387,14 +383,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                     sx={{ width: 70 }}
                                 />
                             </Tooltip>
-                            <Tooltip title="Add Multiple Parcels">
+                            <Tooltip title="Add Parcels">
                                 <IconButton color="primary" onClick={addBulkParcels}>
                                     <AddBoxIcon />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Add Single Parcel">
-                                <IconButton color="primary" onClick={addNewParcel}>
-                                    <AddIcon />
                                 </IconButton>
                             </Tooltip>
                         </Box>
@@ -487,7 +478,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                             <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                                 <ViewTimelineIcon sx={{ fontSize: 20 }} />
-                                Parcel Timeline
+                                Parcel Items
                             </Typography>
                             <Typography variant="caption" color="text.secondary">
                                 Total: {parcels.length} {parcels.length === 1 ? 'parcel' : 'parcels'}
@@ -603,45 +594,6 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                     />
                                 </React.Fragment>
                             ))}
-
-                            {/* Add button */}
-                            <Box
-                                onClick={addNewParcel}
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    alignItems: 'center',
-                                    cursor: 'pointer',
-                                    px: 1.5,
-                                    minWidth: 80,
-                                    transition: 'transform 0.15s',
-                                    '&:hover': { transform: 'translateY(-2px)' },
-                                }}
-                            >
-                                <Box
-                                    sx={(theme) => ({
-                                        width: 40,
-                                        height: 40,
-                                        borderRadius: '50%',
-                                        border: '2px dashed',
-                                        borderColor: theme.palette.grey[400],
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        color: theme.palette.grey[700],
-                                        transition: 'all 0.2s',
-                                        '&:hover': {
-                                            borderColor: theme.palette.primary.main,
-                                            bgcolor: theme.palette.primary.main + '0D',
-                                        },
-                                    })}
-                                >
-                                    <AddIcon />
-                                </Box>
-                                <Typography variant="caption" sx={{ mt: 1, textAlign: 'center' }}>
-                                    Add Single
-                                </Typography>
-                            </Box>
                         </Box>
                     </Card>
                 </Box>

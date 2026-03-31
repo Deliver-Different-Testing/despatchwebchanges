@@ -1,4 +1,4 @@
-import {IJob, IParcelDimensions} from "../../../interfaces/job.interface";
+import {IJob} from "../../../interfaces/job.interface";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
 import angular from 'angular';
 
