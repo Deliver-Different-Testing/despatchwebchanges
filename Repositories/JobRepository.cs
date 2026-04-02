@@ -2865,7 +2865,7 @@ public partial class JobRepository(
         }
 
         // Cap each source to prevent unbounded export result sets
-        const int maxExportRowsPerSource = 5000;
+        const int maxExportRowsPerSource = 50000;
 
         // Execute both queries in parallel with direct mapping to JobDownloadModel
         var liveJobsTask = liveJobsQuery
