@@ -41,6 +41,12 @@ export function useHereMap({
     const [isReady, setIsReady] = useState(false);
     const [error, setError] = useState<Error | null>(null);
 
+    // Use refs for callbacks and initial values to keep init effect stable
+    const onMapReadyRef = useRef(onMapReady);
+    onMapReadyRef.current = onMapReady;
+    const centerRef = useRef(center);
+    centerRef.current = center;
+
     // Fetch API key
     const { data: apiKey, isLoading: isLoadingKey } = useQuery({
         queryKey: queryKeys.hereMaps.apiKey,
@@ -56,7 +62,6 @@ export function useHereMap({
         }
 
         let isMounted = true;
-        let handleResize: (() => void) | null = null;
 
         const initMap = async () => {
             try {
@@ -67,7 +72,7 @@ export function useHereMap({
 
                 if (!isMounted || !mapContainerRef.current) return;
 
-                const defaultCenter = center || getDefaultMapCenter();
+                const defaultCenter = centerRef.current || getDefaultMapCenter();
                 const engineType = H.Map.EngineType['HARP'];
 
                 // Initialize the default map layers with HARP engine
@@ -98,17 +103,13 @@ export function useHereMap({
                 const zoomControl = new H.ui.ZoomControl({ fractionalZoom: false });
                 ui.addControl('zoom', zoomControl, H.ui.LayoutAlignment.RIGHT_TOP);
 
-                // Handle resize
-                handleResize = () => map.getViewPort().resize();
-                window.addEventListener('resize', handleResize, { passive: true });
-
                 platformRef.current = platform;
                 mapRef.current = map;
                 uiRef.current = ui;
                 setIsReady(true);
 
-                if (onMapReady) {
-                    onMapReady(map, platform, ui);
+                if (onMapReadyRef.current) {
+                    onMapReadyRef.current(map, platform, ui);
                 }
             } catch (err) {
                 if (isMounted) {
@@ -123,11 +124,36 @@ export function useHereMap({
 
         return () => {
             isMounted = false;
-            if (handleResize) {
-                window.removeEventListener('resize', handleResize);
-            }
         };
-    }, [apiKey, center, zoom, onMapReady]);
+    }, [apiKey]); // eslint-disable-line react-hooks/exhaustive-deps -- center/zoom have their own effects; onMapReady uses ref
+
+    // Handle window resize
+    useEffect(() => {
+        if (!mapRef.current) return;
+
+        const handleResize = () => mapRef.current?.getViewPort().resize();
+        window.addEventListener('resize', handleResize, { passive: true });
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [isReady]);
+
+    // Dispose map on unmount
+    useEffect(() => {
+        return () => {
+            if (mapRef.current) {
+                try {
+                    mapRef.current.dispose();
+                } catch {
+                    // Ignore disposal errors during cleanup
+                }
+                mapRef.current = null;
+            }
+            platformRef.current = null;
+            uiRef.current = null;
+        };
+    }, []);
 
     // Update center when prop changes
     useEffect(() => {

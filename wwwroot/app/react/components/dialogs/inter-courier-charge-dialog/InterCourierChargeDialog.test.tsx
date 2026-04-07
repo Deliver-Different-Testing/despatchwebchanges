@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {fireEvent, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {InterCourierChargeDialog, InterCourierChargeDialogProps} from './InterCourierChargeDialog';
 import {createProps, renderWithTheme, suppressConsoleError} from '../../../__testUtils__';
@@ -56,6 +56,11 @@ async function fillAutocomplete(user: ReturnType<typeof userEvent.setup>, label:
     await user.clear(input);
     await user.type(input, searchText);
 
+    // Flush the 300ms debounce timer so the search fires
+    await act(async () => {
+        jest.advanceTimersByTime(350);
+    });
+
     const option = await screen.findByText(optionText);
     await user.click(option);
 }
@@ -81,10 +86,15 @@ async function fillForm(user: ReturnType<typeof userEvent.setup>) {
 
 describe('InterCourierChargeDialog', () => {
     beforeEach(() => {
+        jest.useFakeTimers();
         jest.clearAllMocks();
         mockSearchActiveCouriers.mockResolvedValue([]);
         mockSearchActiveClients.mockResolvedValue([]);
         mockCreateInterCourierCharge.mockResolvedValue(undefined);
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
     });
 
     describe('Rendering', () => {
@@ -133,7 +143,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Courier Search', () => {
         it('searches couriers after typing at least 2 characters with debounce', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
@@ -141,31 +151,34 @@ describe('InterCourierChargeDialog', () => {
             await user.click(input);
             await user.type(input, 'Co');
 
-            await waitFor(() => {
-                expect(mockSearchActiveCouriers).toHaveBeenCalledWith('Co', expect.objectContaining({signal: expect.any(AbortSignal)}));
+            await act(async () => {
+                jest.advanceTimersByTime(350);
             });
 
+            expect(mockSearchActiveCouriers).toHaveBeenCalledWith('Co', expect.objectContaining({signal: expect.any(AbortSignal)}));
             expect(await screen.findByText('Courier Alpha')).toBeInTheDocument();
             expect(screen.getByText('Courier Beta')).toBeInTheDocument();
         });
 
         it('does not search couriers with fewer than 2 characters', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const input = screen.getByLabelText(/from courier/i);
             await user.click(input);
             await user.type(input, 'C');
 
-            await waitFor(() => {
-                expect(mockSearchActiveCouriers).not.toHaveBeenCalled();
-            }, {timeout: 500});
+            await act(async () => {
+                jest.advanceTimersByTime(350);
+            });
+
+            expect(mockSearchActiveCouriers).not.toHaveBeenCalled();
         });
     });
 
     describe('Client Search', () => {
         it('searches clients after typing at least 2 characters', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockSearchActiveClients.mockResolvedValue(clientSuggestions);
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
@@ -173,17 +186,18 @@ describe('InterCourierChargeDialog', () => {
             await user.click(input);
             await user.type(input, 'Cl');
 
-            await waitFor(() => {
-                expect(mockSearchActiveClients).toHaveBeenCalledWith('Cl', expect.objectContaining({signal: expect.any(AbortSignal)}));
+            await act(async () => {
+                jest.advanceTimersByTime(350);
             });
 
+            expect(mockSearchActiveClients).toHaveBeenCalledWith('Cl', expect.objectContaining({signal: expect.any(AbortSignal)}));
             expect(await screen.findByText('Client One')).toBeInTheDocument();
         });
     });
 
     describe('Zones and Amount Calculation', () => {
         it('auto-calculates amount as zones * 7 when zones is changed', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
@@ -195,7 +209,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('sets amount to 0 when zones is cleared', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const zonesInput = screen.getByLabelText(/zones/i);
@@ -210,7 +224,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('allows manual editing of the amount field', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
@@ -223,7 +237,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Validation', () => {
         it('shows warning toast and does not submit when form is incomplete', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({showToast})} />);
 
@@ -234,7 +248,7 @@ describe('InterCourierChargeDialog', () => {
         });
 
         it('shows required error messages on fields after submit attempt', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
@@ -247,7 +261,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Successful Submission', () => {
         it('submits form data and shows success toast', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const onClose = jest.fn();
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
@@ -274,7 +288,7 @@ describe('InterCourierChargeDialog', () => {
     describe('Failed Submission', () => {
         it('shows error toast and does not close on API failure', async () => {
             const errorSpy = suppressConsoleError();
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const onClose = jest.fn();
             const showToast = jest.fn();
             mockCreateInterCourierCharge.mockRejectedValueOnce(new Error('Server error'));
@@ -295,7 +309,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('State Reset', () => {
         it('resets all fields when dialog is reopened', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
             const props = createMockProps();
             const {rerender} = renderWithTheme(<InterCourierChargeDialog {...props} />);
@@ -318,7 +332,7 @@ describe('InterCourierChargeDialog', () => {
 
     describe('Submit Guard', () => {
         it('disables Cancel and Add Charge buttons while submitting', async () => {
-            const user = userEvent.setup();
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             let resolveSubmit: () => void;
             mockCreateInterCourierCharge.mockImplementation(() =>
                 new Promise<void>(resolve => { resolveSubmit = resolve; })

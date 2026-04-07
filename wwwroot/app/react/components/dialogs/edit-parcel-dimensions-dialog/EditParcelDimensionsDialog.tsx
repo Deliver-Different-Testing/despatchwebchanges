@@ -29,6 +29,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import AddIcon from '@mui/icons-material/Add';
 import AddBoxIcon from '@mui/icons-material/AddBox';
+import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
 import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
 import InfoIcon from '@mui/icons-material/Info';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
@@ -193,6 +194,34 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setValidationErrors({});
         showToast(`Added ${count} ${count === 1 ? 'parcel' : 'parcels'}`, 'success');
     }, [bulkAddCount, showToast]);
+
+    const removeBulkParcels = useCallback(() => {
+        if (!bulkAddCount || bulkAddCount < 1) {
+            showToast('Please enter a valid number of parcels to remove', 'warning');
+            return;
+        }
+
+        const count = Math.floor(bulkAddCount);
+
+        if (count >= parcels.length) {
+            showToast(
+                `Cannot remove ${count} ${count === 1 ? 'parcel' : 'parcels'} — only ${parcels.length} ${parcels.length === 1 ? 'exists' : 'exist'}. You must keep at least one parcel.`,
+                'warning',
+            );
+            return;
+        }
+
+        setParcels(prev => {
+            const updated = prev.slice(0, prev.length - count);
+            const newIndex = Math.min(selectedParcelIndex, updated.length - 1);
+            setSelectedParcelIndex(Math.max(0, newIndex));
+            return updated;
+        });
+        setIsFormDirty(true);
+        setBulkAddCount(1);
+        setValidationErrors({});
+        showToast(`Removed ${count} ${count === 1 ? 'parcel' : 'parcels'} from the end`, 'success');
+    }, [bulkAddCount, parcels.length, selectedParcelIndex, showToast]);
 
     const deleteParcel = useCallback((index: number, event?: React.MouseEvent) => {
         if (event) event.stopPropagation();
@@ -391,7 +420,12 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                             <Chip label={`${parcels.length} ${parcels.length === 1 ? 'item' : 'items'}`} size="small" color="primary" />
                         </Typography>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Tooltip title="Number of Additional Parcels To Add">
+                            <Tooltip title="Remove Parcels">
+                                <IconButton color="error" onClick={removeBulkParcels}>
+                                    <IndeterminateCheckBoxIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Number of Parcels To Add/Remove">
                                 <TextField
                                     label="Qty"
                                     type="number"

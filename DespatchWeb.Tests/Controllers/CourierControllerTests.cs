@@ -3,7 +3,8 @@ using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
@@ -12,6 +13,17 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class CourierControllerTests
 {
+    private readonly ICourierRepository _courierRepository = Substitute.For<ICourierRepository>();
+    private readonly ITenantInfoService _tenantInfoService = Substitute.For<ITenantInfoService>();
+    private readonly ITaskRepository _taskRepository = Substitute.For<ITaskRepository>();
+    private readonly ICourierReportService _courierReportService = Substitute.For<ICourierReportService>();
+
+    private CourierController CreateController() =>
+        new(
+            _courierRepository,
+            _tenantInfoService,
+            _taskRepository,
+            _courierReportService);
 
     [Fact]
     public async Task AllActiveSearch_MultipleCouriersReturned_ReturnsAllInCorrectOrder()
@@ -25,8 +37,7 @@ public class CourierControllerTests
             new() { Id = 3, Text = "003 (Courier Charlie)" }
         };
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, true))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm, false, true).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -45,20 +56,6 @@ public class CourierControllerTests
         }
     }
 
-    private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<ICourierReportService> _courierReportServiceMock = new();
-
-    private CourierController CreateController()
-    {
-        return new CourierController(
-            _courierRepositoryMock.Object,
-            _tenantInfoServiceMock.Object,
-            _taskRepositoryMock.Object,
-            _courierReportServiceMock.Object);
-    }
-
     [Fact]
     public async Task AllActiveSearch_ValidSearchTerm_ReturnsCouriers()
     {
@@ -70,8 +67,8 @@ public class CourierControllerTests
             new() { Id = 2, Text = "002 (Johnny Smith)" }
         };
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, false))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm)
+            .Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -96,8 +93,7 @@ public class CourierControllerTests
             new() { Id = 1, Text = "001 (DG Courier)" }
         };
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, true, false))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm, true).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -105,7 +101,9 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: true);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, true, false), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .AllActiveCouriersAsync(searchTerm, true);
         Assert.IsType<JsonResult>(result);
     }
 
@@ -119,8 +117,7 @@ public class CourierControllerTests
             new() { Id = 1, Text = "001 (Logged In Courier)" }
         };
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, true))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm, false, true).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -128,7 +125,9 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, false, true), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .AllActiveCouriersAsync(searchTerm, false, true);
         Assert.IsType<JsonResult>(result);
     }
 
@@ -142,8 +141,7 @@ public class CourierControllerTests
             new() { Id = 1, Text = "001 (DG Logged In Courier)" }
         };
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, true, true))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm, true, true).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -151,7 +149,9 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: true, loggedInOnly: true);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, true, true), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .AllActiveCouriersAsync(searchTerm, true, true);
         Assert.IsType<JsonResult>(result);
     }
 
@@ -161,10 +161,8 @@ public class CourierControllerTests
         // Arrange
         const string searchTerm = "test";
         var expectedCouriers = new List<Suggestion>();
-        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, false))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -172,7 +170,8 @@ public class CourierControllerTests
         await controller.AllActiveSearch(searchTerm);
 
         // Assert - Verify default values are false
-        _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, false, false), Times.Once);
+        await _courierRepository
+            .Received(1).AllActiveCouriersAsync(searchTerm);
     }
 
     [Fact]
@@ -180,11 +179,9 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "test";
-        var expectedCouriers = new List<Suggestion>(); // Empty - no logged in couriers
-        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
+        var expectedCouriers = new List<Suggestion>();
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, true))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm, false, true).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -205,7 +202,7 @@ public class CourierControllerTests
         // Arrange
         const string searchTerm = "test";
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, false))
+        _courierRepository.AllActiveCouriersAsync(searchTerm)
             .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
@@ -225,10 +222,8 @@ public class CourierControllerTests
         // Arrange
         const string searchTerm = "";
         var expectedCouriers = new List<Suggestion>();
-        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm, false, false))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -236,7 +231,9 @@ public class CourierControllerTests
         await controller.AllActiveSearch(searchTerm);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm, false, false), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .AllActiveCouriersAsync(searchTerm);
     }
 
     [Fact]
@@ -245,10 +242,8 @@ public class CourierControllerTests
         // Arrange
         string? searchTerm = null;
         var expectedCouriers = new List<Suggestion>();
-        if (expectedCouriers == null) throw new ArgumentNullException(nameof(expectedCouriers));
 
-        _courierRepositoryMock.Setup(x => x.AllActiveCouriersAsync(searchTerm!, false, false))
-            .ReturnsAsync(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm!).Returns(expectedCouriers);
 
         var controller = CreateController();
 
@@ -256,7 +251,9 @@ public class CourierControllerTests
         await controller.AllActiveSearch(searchTerm!);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.AllActiveCouriersAsync(searchTerm!, false, false), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .AllActiveCouriersAsync(searchTerm!);
     }
 
     [Fact]
@@ -266,8 +263,7 @@ public class CourierControllerTests
         var despatchViewIds = new List<int> { 1, 2 };
         var expectedResult = new ClearListViewModel();
 
-        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(despatchViewIds, null, null))
-            .ReturnsAsync(expectedResult);
+        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -275,8 +271,9 @@ public class CourierControllerTests
         var result = await controller.Index(despatchViewIds);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetClearListsAsync(despatchViewIds, null, null), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>());
         Assert.IsType<JsonResult>(result);
     }
 
@@ -289,8 +286,7 @@ public class CourierControllerTests
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var expectedResult = new ClearListViewModel();
 
-        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(despatchViewIds, startDate, endDate))
-            .ReturnsAsync(expectedResult);
+        _courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -298,8 +294,10 @@ public class CourierControllerTests
         var result = await controller.Index(despatchViewIds, startDate, endDate);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetClearListsAsync(despatchViewIds, startDate, endDate), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetClearListsAsync(despatchViewIds, startDate, endDate, Arg.Any<CancellationToken>());
+
         Assert.IsType<JsonResult>(result);
     }
 
@@ -308,10 +306,8 @@ public class CourierControllerTests
     {
         // Arrange
         var expectedResult = new ClearListViewModel();
-        var defaultIds = new List<int> { 49 };
 
-        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(defaultIds, null, null))
-            .ReturnsAsync(expectedResult);
+        _courierRepository.GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), null, null, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -319,8 +315,9 @@ public class CourierControllerTests
         var result = await controller.Index(null!);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetClearListsAsync(defaultIds, null, null), Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), null, null, Arg.Any<CancellationToken>());
         Assert.IsType<JsonResult>(result);
     }
 
@@ -330,8 +327,7 @@ public class CourierControllerTests
         // Arrange
         var despatchViewIds = new List<int> { 1 };
 
-        _courierRepositoryMock.Setup(x => x.GetClearListsAsync(despatchViewIds, null, null))
-            .ThrowsAsync(new Exception("Database error"));
+        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -351,9 +347,8 @@ public class CourierControllerTests
         var csvBytes = "Code,Name\nC001,John"u8.ToArray();
         const string fileName = "today-active-drivers-2026-02-18-1430.csv";
 
-        _courierReportServiceMock
-            .Setup(x => x.GenerateTodayActiveDriversCsvAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
-            .ReturnsAsync((csvBytes, fileName));
+        _courierReportService
+            .GenerateTodayActiveDriversCsvAsync(Arg.Any<TodayActiveDriversFilterRequest>()).Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -372,8 +367,8 @@ public class CourierControllerTests
     public async Task ExportTodayActiveDriversCsv_ServiceThrows_Returns500()
     {
         // Arrange
-        _courierReportServiceMock
-            .Setup(x => x.GenerateTodayActiveDriversCsvAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
+        _courierReportService
+            .GenerateTodayActiveDriversCsvAsync(Arg.Any<TodayActiveDriversFilterRequest>())
             .ThrowsAsync(new Exception("Export failed"));
 
         var controller = CreateController();
@@ -394,8 +389,7 @@ public class CourierControllerTests
         var csvBytes = "Code,Name\nC001,John"u8.ToArray();
         const string fileName = "driver-compliance-2026-02-18-1430.csv";
 
-        _courierReportServiceMock.Setup(x => x.GenerateComplianceCsvAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync((csvBytes, fileName));
+        _courierReportService.GenerateComplianceCsvAsync(Arg.Any<CourierComplianceFilterRequest>()).Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -413,7 +407,7 @@ public class CourierControllerTests
     public async Task ExportComplianceCsv_ServiceThrows_Returns500()
     {
         // Arrange
-        _courierReportServiceMock.Setup(x => x.GenerateComplianceCsvAsync(It.IsAny<CourierComplianceFilterRequest>()))
+        _courierReportService.GenerateComplianceCsvAsync(Arg.Any<CourierComplianceFilterRequest>())
             .ThrowsAsync(new Exception("Export failed"));
 
         var controller = CreateController();
@@ -433,9 +427,8 @@ public class CourierControllerTests
         var csvBytes = "Driver Name,Driver Code\nJohn,C001"u8.ToArray();
         var fileName = "after-hours-schedule-2026-02-18-1430.csv";
 
-        _courierReportServiceMock
-            .Setup(x => x.GenerateAfterHoursScheduleCsvAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
-            .ReturnsAsync((csvBytes, fileName));
+        _courierReportService
+            .GenerateAfterHoursScheduleCsvAsync(Arg.Any<CourierAfterHoursFilterRequest>()).Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -453,8 +446,8 @@ public class CourierControllerTests
     public async Task ExportAfterHoursScheduleCsv_ServiceThrows_Returns500()
     {
         // Arrange
-        _courierReportServiceMock
-            .Setup(x => x.GenerateAfterHoursScheduleCsvAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
+        _courierReportService
+            .GenerateAfterHoursScheduleCsvAsync(Arg.Any<CourierAfterHoursFilterRequest>())
             .ThrowsAsync(new Exception("Export failed"));
 
         var controller = CreateController();
@@ -474,8 +467,7 @@ public class CourierControllerTests
         var csvBytes = "Code,Name,Email\nC001,John,john@test.com"u8.ToArray();
         const string fileName = "driver-emails-2026-02-18-1430.csv";
 
-        _courierReportServiceMock.Setup(x => x.GenerateDriverEmailsCsvAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync((csvBytes, fileName));
+        _courierReportService.GenerateDriverEmailsCsvAsync(Arg.Any<PaginatedRequest>()).Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -493,7 +485,7 @@ public class CourierControllerTests
     public async Task ExportDriverEmailsCsv_ServiceThrows_Returns500()
     {
         // Arrange
-        _courierReportServiceMock.Setup(x => x.GenerateDriverEmailsCsvAsync(It.IsAny<PaginatedRequest>()))
+        _courierReportService.GenerateDriverEmailsCsvAsync(Arg.Any<PaginatedRequest>())
             .ThrowsAsync(new Exception("Export failed"));
 
         var controller = CreateController();
@@ -513,8 +505,7 @@ public class CourierControllerTests
         var csvBytes = "Name,Earnings\nJohn,250.75"u8.ToArray();
         const string fileName = "driver-earnings-2026-02-18-1430.csv";
 
-        _courierReportServiceMock.Setup(x => x.GenerateDriverEarningsCsvAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync((csvBytes, fileName));
+        _courierReportService.GenerateDriverEarningsCsvAsync(Arg.Any<PaginatedRequest>()).Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -532,7 +523,7 @@ public class CourierControllerTests
     public async Task ExportDriverEarningsCsv_ServiceThrows_Returns500()
     {
         // Arrange
-        _courierReportServiceMock.Setup(x => x.GenerateDriverEarningsCsvAsync(It.IsAny<PaginatedRequest>()))
+        _courierReportService.GenerateDriverEarningsCsvAsync(Arg.Any<PaginatedRequest>())
             .ThrowsAsync(new Exception("Export failed"));
 
         var controller = CreateController();
@@ -552,8 +543,7 @@ public class CourierControllerTests
         var request = new TodayActiveDriversFilterRequest { SearchTerm = "test", Status = "active" };
         var csvBytes = Array.Empty<byte>();
 
-        _courierReportServiceMock.Setup(x => x.GenerateTodayActiveDriversCsvAsync(request))
-            .ReturnsAsync((csvBytes, "test.csv"));
+        _courierReportService.GenerateTodayActiveDriversCsvAsync(request).Returns((csvBytes, "test.csv"));
 
         var controller = CreateController();
 
@@ -561,7 +551,8 @@ public class CourierControllerTests
         await controller.ExportTodayActiveDriversCsv(request);
 
         // Assert
-        _courierReportServiceMock.Verify(x => x.GenerateTodayActiveDriversCsvAsync(request), Times.Once);
+        await _courierReportService
+            .Received(1).GenerateTodayActiveDriversCsvAsync(request);
     }
 
     [Fact]
@@ -578,8 +569,7 @@ public class CourierControllerTests
             Total = 1, Page = 1, Pages = 1
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(request))
-            .ReturnsAsync(expectedResponse);
+        _courierRepository.GetCourierEmailsAsync(request).Returns(expectedResponse);
 
         var controller = CreateController();
 
@@ -611,7 +601,7 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10 };
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(request))
+        _courierRepository.GetCourierEmailsAsync(request)
             .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
@@ -629,8 +619,7 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "code" };
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new PaginatedResponse<CourierEmailViewModel>());
+        _courierRepository.GetCourierEmailsAsync(Arg.Any<PaginatedRequest>()).Returns(new PaginatedResponse<CourierEmailViewModel>());
 
         var controller = CreateController();
 
@@ -638,9 +627,9 @@ public class CourierControllerTests
         await controller.GetAllCourierEmails(request);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetCourierEmailsAsync(It.Is<PaginatedRequest>(r => r.OrderBy == "code")),
-            Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetCourierEmailsAsync(Arg.Is<PaginatedRequest>(r => r.OrderBy == "code"));
     }
 
     [Fact]
@@ -648,8 +637,7 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "name", SortDescending = true };
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new PaginatedResponse<CourierEmailViewModel>());
+        _courierRepository.GetCourierEmailsAsync(Arg.Any<PaginatedRequest>()).Returns(new PaginatedResponse<CourierEmailViewModel>());
 
         var controller = CreateController();
 
@@ -657,9 +645,9 @@ public class CourierControllerTests
         await controller.GetAllCourierEmails(request);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetCourierEmailsAsync(It.Is<PaginatedRequest>(r => r.SortDescending == true)),
-            Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetCourierEmailsAsync(Arg.Is<PaginatedRequest>(r => r.SortDescending == true));
     }
 
     [Fact]
@@ -678,8 +666,7 @@ public class CourierControllerTests
             TotalActiveDrivers = 1, TotalDeliveriesToday = 5
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(request))
-            .ReturnsAsync(expectedResponse);
+        _courierRepository.GetCourierDailyEarningsAsync(request).Returns(expectedResponse);
 
         var controller = CreateController();
 
@@ -711,7 +698,7 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10 };
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(request))
+        _courierRepository.GetCourierDailyEarningsAsync(request)
             .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
@@ -729,8 +716,7 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "earnings" };
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new CourierDailyEarningsPaginatedResponse());
+        _courierRepository.GetCourierDailyEarningsAsync(Arg.Any<PaginatedRequest>()).Returns(new CourierDailyEarningsPaginatedResponse());
 
         var controller = CreateController();
 
@@ -738,9 +724,9 @@ public class CourierControllerTests
         await controller.GetCourierDailyEarnings(request);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetCourierDailyEarningsAsync(It.Is<PaginatedRequest>(r => r.OrderBy == "earnings")),
-            Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r.OrderBy == "earnings"));
     }
 
     [Fact]
@@ -748,8 +734,7 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "hourlyrate", SortDescending = true };
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(new CourierDailyEarningsPaginatedResponse());
+        _courierRepository.GetCourierDailyEarningsAsync(Arg.Any<PaginatedRequest>()).Returns(new CourierDailyEarningsPaginatedResponse());
 
         var controller = CreateController();
 
@@ -757,9 +742,9 @@ public class CourierControllerTests
         await controller.GetCourierDailyEarnings(request);
 
         // Assert
-        _courierRepositoryMock.Verify(
-            x => x.GetCourierDailyEarningsAsync(It.Is<PaginatedRequest>(r => r.SortDescending == true)),
-            Times.Once);
+        await _courierRepository
+            .Received(1)
+            .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r.SortDescending == true));
     }
 
 }

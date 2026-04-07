@@ -119,3 +119,55 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
         });
     });
 });
+
+describe('EditParcelDimensionsDialog remove parcels', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    it('removes parcels from the end when clicking the remove button', async () => {
+        const user = userEvent.setup();
+        const threeParcels = [mockParcel({itemName: 'A'}), mockParcel({itemName: 'B'}), mockParcel({itemName: 'C'})];
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={threeParcels} />);
+
+        const chip = document.querySelector('.MuiChip-root .MuiChip-label')!;
+        expect(chip.textContent).toBe('3 items');
+
+        await user.click(screen.getByRole('button', {name: /remove parcels/i}));
+
+        const updatedChip = document.querySelector('.MuiChip-root .MuiChip-label')!;
+        expect(updatedChip.textContent).toBe('2 items');
+        expect(defaultProps.showToast).toHaveBeenCalledWith('Removed 1 parcel from the end', 'success');
+    });
+
+    it('shows warning when trying to remove more parcels than exist minus one', async () => {
+        const user = userEvent.setup();
+        const twoParcels = [mockParcel({itemName: 'A'}), mockParcel({itemName: 'B'})];
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={twoParcels} />);
+
+        const qtyInput = screen.getByLabelText('Qty');
+        await user.clear(qtyInput);
+        await user.type(qtyInput, '5');
+
+        await user.click(screen.getByRole('button', {name: /remove parcels/i}));
+
+        expect(defaultProps.showToast).toHaveBeenCalledWith(
+            expect.stringContaining('Cannot remove'),
+            'warning',
+        );
+        const chip = document.querySelector('.MuiChip-root .MuiChip-label')!;
+        expect(chip.textContent).toBe('2 items');
+    });
+
+    it('shows warning when trying to remove all parcels (must keep at least one)', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
+
+        await user.click(screen.getByRole('button', {name: /remove parcels/i}));
+
+        expect(defaultProps.showToast).toHaveBeenCalledWith(
+            expect.stringContaining('Cannot remove 1 parcel'),
+            'warning',
+        );
+    });
+});

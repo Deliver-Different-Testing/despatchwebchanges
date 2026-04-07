@@ -11,7 +11,6 @@ declare const H: any;
 
 export class DispatchCourierMarkerManager {
     private readonly map: any;
-    private ui: any;
     private readonly markerGroup: any;
     private courierMarkers: Map<number, CourierMarkerData> = new Map();
     private iconCache: Map<string, any> = new Map();
@@ -24,9 +23,8 @@ export class DispatchCourierMarkerManager {
     private readonly handlePointerEnter: (evt: any) => void;
     private readonly handlePointerLeave: () => void;
 
-    constructor(map: any, ui?: any) {
+    constructor(map: any, _?: any) {
         this.map = map;
-        this.ui = ui;
         this.markerGroup = new H.map.Group();
         this.map.addObject(this.markerGroup);
 
@@ -341,9 +339,6 @@ export class DispatchCourierMarkerManager {
 
     /**
      * Show tooltip on hover
-     */
-    /**
-     * Show tooltip on hover (Google Maps InfoWindow style)
      */
     private showTooltip(marker: any, courier: IAvailableCourierPosition): void {
         if (!this.tooltipElement) return;

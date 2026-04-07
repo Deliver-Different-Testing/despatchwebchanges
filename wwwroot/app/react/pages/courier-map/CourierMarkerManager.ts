@@ -10,26 +10,25 @@
  *   - Slate pill: no jobs (idle/available)
  */
 
-import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
-import type { CourierMarker } from './CourierMapPage.types';
+import type {IAvailableCourierPosition} from '../../../interfaces/courier.interface';
+import type {CourierMarker, DriverStatus} from './CourierMapPage.types';
 import {
+    DRIVER_FOCUS_ZOOM,
+    getDriverStatus,
     ICON_CACHE_LIMIT,
+    MARKER_COLORS,
     MARKER_LABEL_MAX_LENGTH,
     POSITION_THRESHOLD,
-    DRIVER_FOCUS_ZOOM,
-    MARKER_COLORS,
-    getDriverStatus,
 } from './CourierMapPage.types';
-import type { DriverStatus } from './CourierMapPage.types';
 
 declare const H: any;
 
 export class CourierMarkerManager {
-    private map: any;
-    private markerGroup: any;
+    private readonly map: any;
+    private readonly markerGroup: any;
     private courierMarkers: Map<number, CourierMarker> = new Map();
     private iconCache: Map<string, any> = new Map();
-    private isUsCustomer: boolean;
+    private readonly isUsCustomer: boolean;
 
     constructor(map: any, isUsCustomer: boolean) {
         this.map = map;
@@ -228,9 +227,7 @@ export class CourierMarkerManager {
         const label = this.getMarkerLabel(driver);
         const status = getDriverStatus(driver);
         const icon = this.getOrCreateIcon(label, status);
-        const marker = new H.map.Marker(point, { icon, data: driver });
-
-        return marker;
+        return new H.map.Marker(point, {icon, data: driver});
     }
 
     /**

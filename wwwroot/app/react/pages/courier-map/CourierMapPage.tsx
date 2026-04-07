@@ -6,6 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import Box from '@mui/material/Box';
 import { useQuery } from '@tanstack/react-query';
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 import type { CourierMapPageProps } from './CourierMapPage.types';
@@ -20,7 +21,6 @@ import { DriversPanel } from './components/DriversPanel';
 import { MapControls } from './components/MapControls';
 import { queryKeys } from '../../query';
 import { getAvailableCourierLocations } from '../../services/courierApi';
-import styles from './CourierMapPage.module.css';
 
 interface CourierMapPageInternalProps extends CourierMapPageProps {
     apiKey: string | null;
@@ -124,10 +124,10 @@ export function CourierMapPage({
     }, []);
 
     return (
-        <div className={styles.courierMapContainer}>
-            <div className={styles.mapWrapper}>
+        <Box sx={{ position: 'relative', width: '100%', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+            <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
                 {/* Map Container */}
-                <div ref={mapContainerRef} className={styles.mapContainer} />
+                <Box ref={mapContainerRef} sx={{ width: '100%', height: '100%' }} />
 
                 {/* Drivers Panel */}
                 <DriversPanel
@@ -149,8 +149,8 @@ export function CourierMapPage({
                     onRefresh={handleRefresh}
                     isLoading={isLoading}
                 />
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 }
 

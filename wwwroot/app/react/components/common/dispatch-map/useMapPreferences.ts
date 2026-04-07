@@ -5,11 +5,10 @@
  * stored in localStorage.
  */
 
-import { useState, useCallback } from 'react';
-import type { MapControlState } from './DispatchMap.types';
-import { PREFERENCE_KEYS } from './DispatchMap.types';
-
-declare const ContactID: number | undefined;
+import {useCallback, useState} from 'react';
+import type {MapControlState} from './DispatchMap.types';
+import {PREFERENCE_KEYS} from './DispatchMap.types';
+import {ContactID} from "../../../../contants";
 
 /**
  * Get a preference from localStorage
