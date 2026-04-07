@@ -22,6 +22,7 @@ export function createController(overrides: Partial<Ctrl> = {}): Ctrl {
 
     // Properties
     ctrl.currentJob = undefined;
+    ctrl.flightAgentWidgetJob = undefined;
     ctrl.currentSelection = undefined;
     ctrl.jobList = [];
     ctrl.jobListPOD = [];

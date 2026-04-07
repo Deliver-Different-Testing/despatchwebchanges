@@ -348,6 +348,140 @@ describe('onRelatedJobChange integration – flight/agent UI flags', () => {
     });
 });
 
+describe('flightAgentWidgetJob tracking', () => {
+    describe('selectJob sets flightAgentWidgetJob', () => {
+        function setup(overrides = {}) {
+            const ctrl = createController(overrides);
+            ctrl.selectJob = ControllerClass.prototype.selectJob;
+            return ctrl;
+        }
+
+        it('sets flightAgentWidgetJob to the selected job', async () => {
+            const ctrl = setup();
+            const job = makeJob(42);
+            await ctrl.selectJob(job);
+            expect(ctrl.flightAgentWidgetJob).toBe(job);
+        });
+
+        it('updates flightAgentWidgetJob when switching jobs', async () => {
+            const ctrl = setup();
+            const job1 = makeJob(1);
+            const job2 = makeFlightJob(2);
+            await ctrl.selectJob(job1);
+            expect(ctrl.flightAgentWidgetJob).toBe(job1);
+            await ctrl.selectJob(job2);
+            expect(ctrl.flightAgentWidgetJob).toBe(job2);
+        });
+    });
+
+    describe('onRelatedJobChange sets flightAgentWidgetJob', () => {
+        function setup(overrides = {}) {
+            const ctrl = createController(overrides);
+            ctrl.onRelatedJobChange = ControllerClass.prototype.onRelatedJobChange;
+            ctrl.isDeliveryJob = ControllerClass.prototype.isDeliveryJob;
+            return ctrl;
+        }
+
+        it('sets flightAgentWidgetJob to the related job without changing currentJob', async () => {
+            const pickupJob = makeJob(1);
+            const flightJob = makeFlightJob(50);
+            const ctrl = setup({currentJob: pickupJob});
+            ctrl.DispatchData.getDispatchJobDetail.mockResolvedValue(flightJob);
+
+            await ctrl.onRelatedJobChange(50);
+
+            expect(ctrl.currentJob).toBe(pickupJob);
+            expect(ctrl.flightAgentWidgetJob).toBe(flightJob);
+        });
+
+        it('does not set flightAgentWidgetJob when job not found', async () => {
+            const job = makeJob(1);
+            const ctrl = setup({currentJob: job, flightAgentWidgetJob: job});
+            ctrl.DispatchData.getDispatchJobDetail.mockResolvedValue(null);
+
+            await ctrl.onRelatedJobChange(999);
+
+            expect(ctrl.flightAgentWidgetJob).toBe(job);
+        });
+    });
+
+    describe('addFlightToJobReact uses flightAgentWidgetJob', () => {
+        function setup(overrides = {}) {
+            const ctrl = createController(overrides);
+            ctrl.addFlightToJobReact = ControllerClass.prototype.addFlightToJobReact;
+            ctrl.addFlightToJob = jest.fn().mockResolvedValue(undefined);
+            return ctrl;
+        }
+
+        it('uses flightAgentWidgetJob instead of currentJob when set', async () => {
+            const pickupJob = makeJob(1);
+            const flightJob = makeFlightJob(2);
+            const ctrl = setup({currentJob: pickupJob, flightAgentWidgetJob: flightJob});
+            const flight = {flightNumber: 'NZ1'};
+
+            await ctrl.addFlightToJobReact(undefined, flight);
+
+            expect(ctrl.addFlightToJob).toHaveBeenCalledWith(
+                expect.any(MouseEvent), flight, flightJob
+            );
+        });
+
+        it('falls back to currentJob when flightAgentWidgetJob is undefined', async () => {
+            const job = makeFlightJob(1);
+            const ctrl = setup({currentJob: job, flightAgentWidgetJob: undefined});
+            const flight = {flightNumber: 'NZ1'};
+
+            await ctrl.addFlightToJobReact(undefined, flight);
+
+            expect(ctrl.addFlightToJob).toHaveBeenCalledWith(
+                expect.any(MouseEvent), flight, job
+            );
+        });
+
+        it('returns early when both are undefined', async () => {
+            const ctrl = setup({currentJob: undefined, flightAgentWidgetJob: undefined});
+
+            await ctrl.addFlightToJobReact(undefined, {flightNumber: 'NZ1'});
+
+            expect(ctrl.addFlightToJob).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('addAgentToJobReact uses flightAgentWidgetJob', () => {
+        function setup(overrides = {}) {
+            const ctrl = createController(overrides);
+            ctrl.addAgentToJobReact = ControllerClass.prototype.addAgentToJobReact;
+            ctrl.addAgentToJob = jest.fn().mockResolvedValue(undefined);
+            return ctrl;
+        }
+
+        it('uses flightAgentWidgetJob instead of currentJob when set', async () => {
+            const pickupJob = makeJob(1);
+            const deliveryJob = makeDeliveryJob(2);
+            const ctrl = setup({currentJob: pickupJob, flightAgentWidgetJob: deliveryJob});
+            const agent = {agentId: 1, agentName: 'Alice'};
+
+            await ctrl.addAgentToJobReact(undefined, agent);
+
+            expect(ctrl.addAgentToJob).toHaveBeenCalledWith(
+                expect.any(MouseEvent), agent, deliveryJob
+            );
+        });
+
+        it('falls back to currentJob when flightAgentWidgetJob is undefined', async () => {
+            const job = makeDeliveryJob(1);
+            const ctrl = setup({currentJob: job, flightAgentWidgetJob: undefined});
+            const agent = {agentId: 1, agentName: 'Alice'};
+
+            await ctrl.addAgentToJobReact(undefined, agent);
+
+            expect(ctrl.addAgentToJob).toHaveBeenCalledWith(
+                expect.any(MouseEvent), agent, job
+            );
+        });
+    });
+});
+
 describe('handleJobAction', () => {
     function setup(overrides = {}) {
         const ctrl = createController(overrides);
