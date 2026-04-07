@@ -131,6 +131,7 @@ class NationwideControl extends BaseController {
     isUsCustomer: boolean;
     isDataLoading: boolean = false;
     currentJob?: IDispatchJob;
+    flightAgentWidgetJob?: IDispatchJob;
     jobList?: IDispatchJob[] = [];
     jobListPOD?: IDispatchJob[] = [];
     jobListReprice?: IDispatchJob[] = [];
@@ -981,6 +982,7 @@ class NationwideControl extends BaseController {
             this.markJobReadStatus(job.id, true);
 
             this.currentJob = job;
+            this.flightAgentWidgetJob = job;
             this.isDeliveryJobType = this.isDeliveryJob(job);
 
             if (window.ReactNationwideJobList) {
@@ -1019,6 +1021,7 @@ class NationwideControl extends BaseController {
             // Only update the flight/agent widget — don't replace currentJob or
             // refresh tasks/map/job-lists, as the job detail tabs handle their
             // own display and the rest of the page should stay on the parent job.
+            this.flightAgentWidgetJob = job;
             this.isDeliveryJobType = this.isDeliveryJob(job);
             await this.handleJobSelectionRelatedData(job);
             this.updateUIState(job);
@@ -1379,6 +1382,7 @@ class NationwideControl extends BaseController {
 
             // Clear current job and fetch fresh data to ensure flight info is loaded
             this.currentJob = undefined;
+            this.flightAgentWidgetJob = undefined;
             const freshJobData = await this.DispatchData.getDispatchJobDetail(job.id);
             await this.selectJob(freshJobData);
 
@@ -1441,6 +1445,7 @@ class NationwideControl extends BaseController {
 
             // Clear current job and fetch fresh data to ensure agent info is loaded
             this.currentJob = undefined;
+            this.flightAgentWidgetJob = undefined;
             const freshJobData = await this.DispatchData.getDispatchJobDetail(job.id);
             await this.selectJob(freshJobData);
 
@@ -1561,6 +1566,7 @@ class NationwideControl extends BaseController {
         this.jobList = [];
         this.jobListPOD = [];
         this.currentJob = undefined;
+        this.flightAgentWidgetJob = undefined;
 
         try {
             await this.getJobList(JobDataType.ALL);
@@ -1773,6 +1779,7 @@ class NationwideControl extends BaseController {
                     this.currentJob = updatedJob;
                 } else {
                     this.currentJob = undefined;
+                    this.flightAgentWidgetJob = undefined;
                     this.toastrService.showWarningToast("Job list has been refreshed, but the selected job is no longer available on this page");
                 }
             }
@@ -1902,6 +1909,7 @@ class NationwideControl extends BaseController {
                 // Clear job
                 const jobIdToRefresh = this.currentJob?.id;
                 this.currentJob = undefined;
+                this.flightAgentWidgetJob = undefined;
 
                 // Reselect to trigger refresh
                 const job = await this.DispatchData.getDispatchJobDetail(jobIdToRefresh);
@@ -1965,33 +1973,38 @@ class NationwideControl extends BaseController {
     }
 
     async addFlightToJobReact($event: MouseEvent | undefined, flight: IFlightViewModel): Promise<void> {
-        if (!this.currentJob) return;
+        const job = this.flightAgentWidgetJob ?? this.currentJob;
+        if (!job) return;
         const mouseEvent = $event || new MouseEvent('click');
-        await this.addFlightToJob(mouseEvent, flight, this.currentJob);
+        await this.addFlightToJob(mouseEvent, flight, job);
     }
 
     async addAgentToJobReact($event: MouseEvent | undefined, agent: IAgent): Promise<void> {
-        if (!this.currentJob) return;
+        const job = this.flightAgentWidgetJob ?? this.currentJob;
+        if (!job) return;
         const mouseEvent = $event || new MouseEvent('click');
-        await this.addAgentToJob(mouseEvent, agent, this.currentJob);
+        await this.addAgentToJob(mouseEvent, agent, job);
     }
 
     async sendQuoteRequestReact($event: MouseEvent | undefined, agent: IAgent): Promise<void> {
-        if (!this.currentJob) return;
+        const job = this.flightAgentWidgetJob ?? this.currentJob;
+        if (!job) return;
         const mouseEvent = $event || new MouseEvent('click');
-        await this.sendQuoteRequest(mouseEvent, agent, this.currentJob);
+        await this.sendQuoteRequest(mouseEvent, agent, job);
     }
 
     async openAgentSearchDialogReact($event: MouseEvent | undefined): Promise<void> {
-        if (!this.currentJob) return;
+        const job = this.flightAgentWidgetJob ?? this.currentJob;
+        if (!job) return;
         const mouseEvent = $event || new MouseEvent('click');
-        await this.openAgentSearchDialog(mouseEvent, this.currentJob);
+        await this.openAgentSearchDialog(mouseEvent, job);
     }
 
     async openRecoveryAgentDialogReact($event: MouseEvent | undefined): Promise<void> {
-        if (!this.currentJob) return;
+        const job = this.flightAgentWidgetJob ?? this.currentJob;
+        if (!job) return;
         const mouseEvent = $event || new MouseEvent('click');
-        await this.openRecoveryAgentDialog(mouseEvent, this.currentJob);
+        await this.openRecoveryAgentDialog(mouseEvent, job);
     }
 
     formatMinutesToTimeReact(minutes: number): string {
