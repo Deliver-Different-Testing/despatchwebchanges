@@ -2,22 +2,24 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
 public class AddressAutocompleteControllerTests
 {
-    private readonly Mock<IAddressLookupService> _addressLookupMock = new();
+    private readonly IAddressLookupService _addressLookup = Substitute.For<IAddressLookupService>();
 
-    private AddressAutocompleteController CreateController() => new(_addressLookupMock.Object);
+    private AddressAutocompleteController CreateController() => new(_addressLookup);
 
     [Fact]
     public async Task AutocompleteAddressSearch_Success_ReturnsJson()
     {
         var expected = new List<HereMapsLocationResult> { new() };
-        _addressLookupMock.Setup(x => x.AutocompleteAddressSearchAsync("123 Main"))
-            .ReturnsAsync(expected);
+        _addressLookup
+            .AutocompleteAddressSearchAsync("123 Main")
+            .Returns(expected);
 
         var result = await CreateController().AutocompleteAddressSearch("123 Main");
 
@@ -28,11 +30,17 @@ public class AddressAutocompleteControllerTests
     [Fact]
     public async Task AutocompleteAddressSearch_ServiceThrows_Returns500()
     {
-        _addressLookupMock.Setup(x => x.AutocompleteAddressSearchAsync(It.IsAny<string>()))
+        // Arrange
+        _addressLookup
+            .AutocompleteAddressSearchAsync(Arg.Any<string>())
             .ThrowsAsync(new Exception("API error"));
 
-        var result = await CreateController().AutocompleteAddressSearch("test");
+        var controller = CreateController();
 
+        // Act
+        var result = await controller.AutocompleteAddressSearch("test");
+
+        // Assert
         var status = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, status.StatusCode);
     }
@@ -41,8 +49,7 @@ public class AddressAutocompleteControllerTests
     public async Task GetLocationDetailsById_Success_ReturnsJson()
     {
         var expected = new HereMapsLookupResponse();
-        _addressLookupMock.Setup(x => x.GetLocationDetailsByIdAsync("addr-123"))
-            .ReturnsAsync(expected);
+        _addressLookup.GetLocationDetailsByIdAsync("addr-123").Returns(expected);
 
         var result = await CreateController().GetLocationDetailsById("addr-123");
 
@@ -56,18 +63,25 @@ public class AddressAutocompleteControllerTests
     [InlineData("   ")]
     public async Task GetLocationDetailsById_EmptyAddressId_ReturnsBadRequest(string? addressId)
     {
-        var result = await CreateController().GetLocationDetailsById(addressId!);
+        // Arrange
+        var controller = CreateController();
 
+        // Act
+        var result = await controller.GetLocationDetailsById(addressId!);
+
+        // Assert
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("addressId is required.", badRequest.Value);
-        _addressLookupMock.Verify(x => x.GetLocationDetailsByIdAsync(It.IsAny<string>()), Times.Never);
+
+        await _addressLookup
+            .DidNotReceive()
+            .GetLocationDetailsByIdAsync(Arg.Any<string>());
     }
 
     [Fact]
     public async Task GetLocationDetailsById_ServiceThrows_Returns500()
     {
-        _addressLookupMock.Setup(x => x.GetLocationDetailsByIdAsync(It.IsAny<string>()))
-            .ThrowsAsync(new Exception("API error"));
+        _addressLookup.GetLocationDetailsByIdAsync(Arg.Any<string>()).ThrowsAsync(new Exception("API error"));
 
         var result = await CreateController().GetLocationDetailsById("addr-123");
 
@@ -79,8 +93,8 @@ public class AddressAutocompleteControllerTests
     public async Task FetchNearestAddress_Success_ReturnsJson()
     {
         var expected = new List<HereMapsLocationResult> { new() };
-        _addressLookupMock.Setup(x => x.FetchNearestAddressAsync(-36, 174))
-            .ReturnsAsync(expected);
+        _addressLookup.FetchNearestAddressAsync(-36, 174)
+            .Returns(expected);
 
         var result = await CreateController().FetchNearestAddress(-36, 174);
 
@@ -91,7 +105,7 @@ public class AddressAutocompleteControllerTests
     [Fact]
     public async Task FetchNearestAddress_ServiceThrows_Returns500()
     {
-        _addressLookupMock.Setup(x => x.FetchNearestAddressAsync(It.IsAny<double>(), It.IsAny<double>()))
+        _addressLookup.FetchNearestAddressAsync(Arg.Any<double>(), Arg.Any<double>())
             .ThrowsAsync(new Exception("API error"));
 
         var result = await CreateController().FetchNearestAddress(-36, 174);

@@ -5,20 +5,20 @@
  * Displays job markers and courier positions on HERE Maps.
  */
 
-import React, { useRef, useEffect, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, {useCallback, useEffect, useRef} from 'react';
+import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
-import type { DispatchMapProps } from './DispatchMap.types';
-import { COURIER_REFRESH_INTERVAL_MS } from './DispatchMap.types';
-import { useHereMap } from './useHereMap';
-import { useMapPreferences } from './useMapPreferences';
-import { getDefaultMapCenter } from '../here-map/HereMap.types';
-import { JobMarkerManager } from './JobMarkerManager';
-import { DispatchCourierMarkerManager } from './DispatchCourierMarkerManager';
-import { MapControlButtons } from './MapControlButtons';
-import { getAvailableCourierLocations, getClearListEnvelope } from '../../../services/courierApi';
-import { queryKeys } from '../../../query/queryClient';
+import type {DispatchMapProps} from './DispatchMap.types';
+import {COURIER_REFRESH_INTERVAL_MS} from './DispatchMap.types';
+import {useHereMap} from './useHereMap';
+import {useMapPreferences} from './useMapPreferences';
+import {getDefaultMapCenter} from '../here-map/HereMap.types';
+import {JobMarkerManager} from './JobMarkerManager';
+import {DispatchCourierMarkerManager} from './DispatchCourierMarkerManager';
+import {MapControlButtons} from './MapControlButtons';
+import {getAvailableCourierLocations, getClearListEnvelope} from '../../../services/courierApi';
+import {queryKeys} from '../../../query/queryClient';
 import styles from './DispatchMap.module.css';
 
 declare const H: any;
@@ -132,15 +132,17 @@ export function DispatchMap({
             currentJob?.assignedCourier && jobs && jobs.length > 1
         );
 
-        jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs);
+        jobMarkerManagerRef.current.updateMarkers(jobs || [], currentJob, isShowingCourierJobs).then(_ => {
+            if (!jobMarkerManagerRef.current) return;
 
-        // Auto-fit if enabled
-        if (controlState.autoZoomEnabled && jobMarkerManagerRef.current.getMarkerCount() > 0) {
-            const courierGroup = showAvailableCouriers
-                ? courierMarkerManagerRef.current?.getMarkerGroup()
-                : undefined;
-            jobMarkerManagerRef.current.fitMapToMarkers(courierGroup);
-        }
+            // Auto-fit if enabled
+            if (controlState.autoZoomEnabled && jobMarkerManagerRef.current.getMarkerCount() > 0) {
+                const courierGroup = showAvailableCouriers
+                    ? courierMarkerManagerRef.current?.getMarkerGroup()
+                    : undefined;
+                jobMarkerManagerRef.current.fitMapToMarkers(courierGroup);
+            }
+        });
     }, [jobs, currentJob, isReady, controlState.couriersOnlyEnabled, controlState.couriersLargeViewEnabled, controlState.autoZoomEnabled, showAvailableCouriers]);
 
     // Update courier markers when couriers or view mode changes; clear when couriers panel is off

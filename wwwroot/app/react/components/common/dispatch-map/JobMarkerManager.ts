@@ -173,6 +173,8 @@ export class JobMarkerManager {
             this.markerGroup.addObjects(markersToAdd);
         }
 
+        console.log("Markers Added: ", markersAdded);
+
         return markersAdded;
     }
 

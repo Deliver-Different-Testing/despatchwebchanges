@@ -6,12 +6,15 @@
  */
 
 import {renderHook, act} from '@testing-library/react';
-import {useMapPreferences} from './useMapPreferences';
 import {PREFERENCE_KEYS} from './DispatchMap.types';
 
-// Mock ContactID global
+jest.mock('../../../../contants', () => ({
+    ContactID: 12345,
+}));
+
+import {useMapPreferences} from './useMapPreferences';
+
 const mockContactId = 12345;
-(global as any).ContactID = mockContactId;
 
 describe('useMapPreferences', () => {
     let mockLocalStorage: {[key: string]: string};
