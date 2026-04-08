@@ -63,7 +63,10 @@ public static partial class JobMappings
                 ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
                 : null,
             RawBaseAmount = j.RawBaseAmount,
-            CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null
+            CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
+            OurReference = j.UcjbOurRef,
+            Speed = j.UcjbSpeedNavigation != null ? j.UcjbSpeedNavigation.UcjtName : null,
+            Notes = j.UcjbNotes
         };
 
     /// <summary>
@@ -119,7 +122,10 @@ public static partial class JobMappings
                 ? j.LoggedInContact.UcctFirstname + " " + j.LoggedInContact.UcctSurname
                 : null,
             RawBaseAmount = j.RawBaseAmount,
-            CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null
+            CourierCode = j.UcjbCourier != null ? j.UcjbCourier.Code : null,
+            OurReference = j.UcjbOurRef,
+            Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
+            Notes = j.UcjbNotes
         };
 
     #endregion

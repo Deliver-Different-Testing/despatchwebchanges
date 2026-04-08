@@ -1,33 +1,34 @@
-using DespatchWeb.Controllers;
+﻿using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
 public class NoteControllerTests
 {
-    private readonly Mock<INoteRepository> _noteRepositoryMock = new();
-    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
+    private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
 
     private NoteController CreateController() => new(
-        _noteRepositoryMock.Object,
-        _recurringJobRepositoryMock.Object
+        _noteRepositoryMock,
+        _recurringJobRepositoryMock
     );
 
     [Theory]
     [InlineData("Note", NoteHistorySource.Note)]
     [InlineData("BulkNote", NoteHistorySource.BulkNote)]
     [InlineData("Archive", NoteHistorySource.Archive)]
-    public async Task GetNoteHistory_WithValidNoteSource_ParsesEnumAndCallsRepository(string noteSource, NoteHistorySource expectedSource)
+    public async Task GetNoteHistory_WithValidNoteSource_ParsesEnumAndCallsRepository(string noteSource,
+        NoteHistorySource expectedSource)
     {
         // Arrange
         const int noteId = 1;
-        _noteRepositoryMock
-            .Setup(x => x.GetNoteHistoryAsync(noteId, expectedSource))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNoteHistoryAsync(noteId, expectedSource)
+            .Returns([]);
 
         var controller = CreateController();
 
@@ -36,7 +37,7 @@ public class NoteControllerTests
 
         // Assert
         Assert.IsType<JsonResult>(result);
-        _noteRepositoryMock.Verify(x => x.GetNoteHistoryAsync(noteId, expectedSource), Times.Once);
+        await _noteRepositoryMock.Received().GetNoteHistoryAsync(noteId, expectedSource);
     }
 
     [Theory]
@@ -48,9 +49,8 @@ public class NoteControllerTests
     {
         // Arrange
         const int noteId = 1;
-        _noteRepositoryMock
-            .Setup(x => x.GetNoteHistoryAsync(noteId, It.IsAny<NoteHistorySource>()))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNoteHistoryAsync(noteId, Arg.Any<NoteHistorySource>())
+            .Returns([]);
 
         var controller = CreateController();
 
@@ -84,9 +84,8 @@ public class NoteControllerTests
     {
         // Arrange
         const int noteId = 5;
-        _noteRepositoryMock
-            .Setup(x => x.GetNoteHistoryAsync(noteId, NoteHistorySource.Note))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNoteHistoryAsync(noteId, NoteHistorySource.Note)
+            .Returns([]);
 
         var controller = CreateController();
 
@@ -95,7 +94,7 @@ public class NoteControllerTests
 
         // Assert
         Assert.IsType<JsonResult>(result);
-        _noteRepositoryMock.Verify(x => x.GetNoteHistoryAsync(noteId, NoteHistorySource.Note), Times.Once);
+        await _noteRepositoryMock.Received().GetNoteHistoryAsync(noteId, NoteHistorySource.Note);
     }
 
     [Fact]
@@ -108,9 +107,8 @@ public class NoteControllerTests
             new() { NoteHistoryId = 1, NoteId = noteId, NewNoteText = "Edit 1" },
             new() { NoteHistoryId = 2, NoteId = noteId, NewNoteText = "Edit 2" }
         };
-        _noteRepositoryMock
-            .Setup(x => x.GetNoteHistoryAsync(noteId, NoteHistorySource.Note))
-            .ReturnsAsync(expectedHistory);
+        _noteRepositoryMock.GetNoteHistoryAsync(noteId, NoteHistorySource.Note)
+            .Returns(expectedHistory);
 
         var controller = CreateController();
 
@@ -126,8 +124,7 @@ public class NoteControllerTests
     public async Task GetNoteHistory_RepositoryThrows_Returns500()
     {
         // Arrange
-        _noteRepositoryMock
-            .Setup(x => x.GetNoteHistoryAsync(It.IsAny<int>(), It.IsAny<NoteHistorySource>()))
+        _noteRepositoryMock.GetNoteHistoryAsync(Arg.Any<int>(), Arg.Any<NoteHistorySource>())
             .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
@@ -139,5 +136,4 @@ public class NoteControllerTests
         var statusCodeResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
 }

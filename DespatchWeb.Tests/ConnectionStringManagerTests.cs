@@ -112,7 +112,7 @@ public class ConnectionStringManagerTests
     [Fact]
     public async Task GetConnectionStringAsync_FallsBackToDistributedCache_WhenMemoryCacheEmpty()
     {
-        var connectionBytes = System.Text.Encoding.UTF8.GetBytes("Server=distributed;");
+        var connectionBytes = "Server=distributed;"u8.ToArray();
         _distributedCacheMock
             .Setup(x => x.GetAsync("tenant-1", It.IsAny<CancellationToken>()))
             .ReturnsAsync(connectionBytes);

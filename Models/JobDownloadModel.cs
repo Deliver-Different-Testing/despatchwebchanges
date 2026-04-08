@@ -47,4 +47,7 @@ public sealed class JobDownloadModel
     public decimal? RawBaseAmount { get; init; }
     public string CourierCode { get; init; }
     public bool Void { get; init; }
+    public string OurReference { get; init; }
+    public string Speed { get; init; }
+    public string Notes { get; init; }
 }

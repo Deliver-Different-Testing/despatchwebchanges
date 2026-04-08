@@ -1,8 +1,9 @@
-using DespatchWeb.Controllers;
+﻿using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
@@ -11,23 +12,23 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class NationwideJobControllerTests
 {
-    private readonly Mock<INationwideJobRepository> _repositoryMock = new();
-    private readonly Mock<IFlightStatsService> _flightServiceMock = new();
-    private readonly Mock<IClientAccessValidatorService> _clientAccessValidatorMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IFlightRateService> _flightRateServiceMock = new();
-    private readonly Mock<IClientRepository> _clientRepositoryMock = new();
-    private readonly Mock<IAddAgentRecoveryJobService> _recoveryJobServiceMock = new();
+    private readonly INationwideJobRepository _repositoryMock = Substitute.For<INationwideJobRepository>();
+    private readonly IFlightStatsService _flightServiceMock = Substitute.For<IFlightStatsService>();
+    private readonly IClientAccessValidatorService _clientAccessValidatorMock = Substitute.For<IClientAccessValidatorService>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IFlightRateService _flightRateServiceMock = Substitute.For<IFlightRateService>();
+    private readonly IClientRepository _clientRepositoryMock = Substitute.For<IClientRepository>();
+    private readonly IAddAgentRecoveryJobService _recoveryJobServiceMock = Substitute.For<IAddAgentRecoveryJobService>();
 
     private NationwideJobController CreateController() =>
         new(
-            _repositoryMock.Object,
-            _flightServiceMock.Object,
-            _clientAccessValidatorMock.Object,
-            _tenantInfoServiceMock.Object,
-            _flightRateServiceMock.Object,
-            _clientRepositoryMock.Object,
-            _recoveryJobServiceMock.Object);
+            _repositoryMock,
+            _flightServiceMock,
+            _clientAccessValidatorMock,
+            _tenantInfoServiceMock,
+            _flightRateServiceMock,
+            _clientRepositoryMock,
+            _recoveryJobServiceMock);
 
     [Fact]
     public async Task GetScheduledFlightOptions_ValidRequest_ReturnsFlights()
@@ -44,23 +45,19 @@ public class NationwideJobControllerTests
             CreateTestFlight("QF", "456", "AKL", "SYD")
         };
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
+        _flightServiceMock.GetFlightsAsync(
                 jobId,
                 departureDate,
                 null, // no airline filter
                 departureAirportId,
                 arrivalAirportId,
-                "FS",
-                null,
-                60))
-            .ReturnsAsync(expectedFlights);
+                "FS").Returns(expectedFlights);
 
-        _flightRateServiceMock.Setup(x => x.GetCarrierFlightRateByJobIdAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>(),
-                It.IsAny<DateTime>()))
-            .ReturnsAsync(100.00m);
+        _flightRateServiceMock.GetCarrierFlightRateByJobIdAsync(
+                Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Any<bool>(),
+                Arg.Any<DateTime>()).Returns(100.00m);
 
         var controller = CreateController();
 
@@ -96,23 +93,19 @@ public class NationwideJobControllerTests
             CreateTestFlight("QF", "789", "AKL", "SYD")
         };
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
+        _flightServiceMock.GetFlightsAsync(
                 jobId,
                 departureDate,
                 airlineId, // airline filter
                 departureAirportId,
                 arrivalAirportId,
-                "FS",
-                null,
-                60))
-            .ReturnsAsync(expectedFlights);
+                "FS").Returns(expectedFlights);
 
-        _flightRateServiceMock.Setup(x => x.GetCarrierFlightRateByJobIdAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>(),
-                It.IsAny<DateTime>()))
-            .ReturnsAsync(150.00m);
+        _flightRateServiceMock.GetCarrierFlightRateByJobIdAsync(
+                Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Any<bool>(),
+                Arg.Any<DateTime>()).Returns(150.00m);
 
         var controller = CreateController();
 
@@ -133,15 +126,13 @@ public class NationwideJobControllerTests
         Assert.Equal("QF", response.Flights[0].AirlineCode);
 
         // Verify airline filter was passed
-        _flightServiceMock.Verify(x => x.GetFlightsAsync(
+        await _flightServiceMock.Received().GetFlightsAsync(
             jobId,
             departureDate,
             airlineId,
             departureAirportId,
             arrivalAirportId,
-            "FS",
-            null,
-            60), Times.Once);
+            "FS");
     }
 
     [Fact]
@@ -153,16 +144,15 @@ public class NationwideJobControllerTests
         const int departureAirportId = 150;
         const int arrivalAirportId = 96;
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<int>()))
-            .ReturnsAsync([]);
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<int>()).Returns([]);
 
         var controller = CreateController();
 
@@ -189,16 +179,15 @@ public class NationwideJobControllerTests
         var departureDate = DateTimeOffset.Now.AddDays(1);
         const int jobId = 16992;
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<int>()))
-            .ReturnsAsync((List<FlightViewModel>)null!);
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<int>()).Returns((List<FlightViewModel>)null!);
 
         var controller = CreateController();
 
@@ -225,16 +214,15 @@ public class NationwideJobControllerTests
         var departureDate = DateTimeOffset.Now.AddDays(1);
         const int jobId = 16992;
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<int>()))
-            .ThrowsAsync(new ArgumentException("Departure airport with ID 150 not found in active airports"));
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<int>()).ThrowsAsync(new ArgumentException("Departure airport with ID 150 not found in active airports"));
 
         var controller = CreateController();
 
@@ -261,16 +249,15 @@ public class NationwideJobControllerTests
         var departureDate = DateTimeOffset.Now.AddDays(1);
         const int jobId = 16992;
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<int>()))
-            .ThrowsAsync(new InvalidOperationException("Something unexpected went wrong"));
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<int>()).ThrowsAsync(new InvalidOperationException("Something unexpected went wrong"));
 
         var controller = CreateController();
 
@@ -296,16 +283,15 @@ public class NationwideJobControllerTests
         const int jobId = 16992;
         const int minimumLayover = 90;
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                minimumLayover))
-            .ReturnsAsync([]);
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>(),
+                minimumLayover).Returns([]);
 
         var controller = CreateController();
 
@@ -319,7 +305,7 @@ public class NationwideJobControllerTests
             minimumLayoverMinutes: minimumLayover);
 
         // Assert
-        _flightServiceMock.Verify(x => x.GetFlightsAsync(
+        await _flightServiceMock.Received().GetFlightsAsync(
             jobId,
             departureDate,
             null,
@@ -327,7 +313,7 @@ public class NationwideJobControllerTests
             96,
             "FS",
             null,
-            minimumLayover), Times.Once);
+            minimumLayover);
     }
 
     [Fact]
@@ -344,23 +330,21 @@ public class NationwideJobControllerTests
             CreateTestFlight("AA", "3", "AKL", "SYD")
         };
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<int>()))
-            .ReturnsAsync(flights);
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<int>()).Returns(flights);
 
-        _flightRateServiceMock.Setup(x => x.GetCarrierFlightRateByJobIdAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<bool>(),
-                It.IsAny<DateTime>()))
-            .ReturnsAsync(100.00m);
+        _flightRateServiceMock.GetCarrierFlightRateByJobIdAsync(
+                Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Any<bool>(),
+                Arg.Any<DateTime>()).Returns(100.00m);
 
         var controller = CreateController();
 
@@ -373,11 +357,11 @@ public class NationwideJobControllerTests
             arrivalAirportId: 96);
 
         // Assert - Rate service called once per flight
-        _flightRateServiceMock.Verify(x => x.GetCarrierFlightRateByJobIdAsync(
+        await _flightRateServiceMock.Received(3).GetCarrierFlightRateByJobIdAsync(
             jobId,
-            It.IsAny<string>(),
-            It.IsAny<bool>(),
-            It.IsAny<DateTime>()), Times.Exactly(3));
+            Arg.Any<string>(),
+            Arg.Any<bool>(),
+            Arg.Any<DateTime>());
     }
 
     [Fact]
@@ -387,16 +371,15 @@ public class NationwideJobControllerTests
         var departureDate = DateTimeOffset.Now.AddDays(1);
         const int jobId = 16992;
 
-        _flightServiceMock.Setup(x => x.GetFlightsAsync(
-                It.IsAny<int>(),
-                It.IsAny<DateTimeOffset?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<int?>(),
-                It.IsAny<string>(),
-                It.IsAny<IReadOnlyList<string>>(),
-                60)) // Default value
-            .ReturnsAsync([]);
+        _flightServiceMock.GetFlightsAsync(
+                Arg.Any<int>(),
+                Arg.Any<DateTimeOffset?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<int?>(),
+                Arg.Any<string>(),
+                Arg.Any<IReadOnlyList<string>>()) // Default value
+            .Returns([]);
 
         var controller = CreateController();
 
@@ -409,15 +392,13 @@ public class NationwideJobControllerTests
             arrivalAirportId: 96);
 
         // Assert
-        _flightServiceMock.Verify(x => x.GetFlightsAsync(
+        await _flightServiceMock.Received().GetFlightsAsync(
             jobId,
             departureDate,
             null,
             150,
             96,
-            "FS",
-            null,
-            60), Times.Once);
+            "FS");
     }
 
     [Fact]
@@ -426,10 +407,10 @@ public class NationwideJobControllerTests
         // Arrange
         var request = CreateTestAssignRequest(jobId: 100);
 
-        _repositoryMock.Setup(x => x.AddJobNationwideAsync(
+        _repositoryMock.AddJobNationwideAsync(
                 request,
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<CancellationToken>()))
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<CancellationToken>())
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -439,10 +420,10 @@ public class NationwideJobControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _repositoryMock.Verify(x => x.AddJobNationwideAsync(
+        await _repositoryMock.Received().AddJobNationwideAsync(
             request,
-            It.IsAny<IReadOnlyList<string>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+            Arg.Any<IReadOnlyList<string>>(),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -451,11 +432,10 @@ public class NationwideJobControllerTests
         // Arrange
         var request = CreateTestAssignRequest(jobId: 100);
 
-        _repositoryMock.Setup(x => x.AddJobNationwideAsync(
+        _repositoryMock.AddJobNationwideAsync(
                 request,
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Job 100 already has a flight assigned"));
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Job 100 already has a flight assigned"));
 
         var controller = CreateController();
 
@@ -474,11 +454,10 @@ public class NationwideJobControllerTests
         // Arrange
         var request = CreateTestAssignRequest(jobId: 100);
 
-        _repositoryMock.Setup(x => x.AddJobNationwideAsync(
+        _repositoryMock.AddJobNationwideAsync(
                 request,
-                It.IsAny<IReadOnlyList<string>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new Exception("Database error"));
+                Arg.Any<IReadOnlyList<string>>(),
+                Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 

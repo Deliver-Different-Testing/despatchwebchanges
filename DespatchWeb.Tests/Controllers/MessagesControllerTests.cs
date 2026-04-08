@@ -1,10 +1,11 @@
-using DespatchWeb.Controllers;
+﻿using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.MessageModels;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
@@ -14,18 +15,16 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class MessagesControllerTests
 {
+    private readonly IMessageRepository _messageRepositoryMock = Substitute.For<IMessageRepository>();
 
-    private readonly Mock<IMessageRepository> _messageRepositoryMock = new();
-
-    private MessagesController CreateController() => new(_messageRepositoryMock.Object);
+    private MessagesController CreateController() => new(_messageRepositoryMock);
 
     [Fact]
     public async Task GetUnreadMessageCount_Success_ReturnsJsonWithCount()
     {
         // Arrange
         const int expectedCount = 5;
-        _messageRepositoryMock.Setup(x => x.GetUnreadMessageCountAsync())
-            .ReturnsAsync(expectedCount);
+        _messageRepositoryMock.GetUnreadMessageCountAsync().Returns(expectedCount);
 
         var controller = CreateController();
 
@@ -41,8 +40,7 @@ public class MessagesControllerTests
     public async Task GetUnreadMessageCount_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.GetUnreadMessageCountAsync())
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.GetUnreadMessageCountAsync().ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -64,8 +62,8 @@ public class MessagesControllerTests
             new() { OtherPartyName = "Courier 1", UnreadCount = 2, LastMessage = "Hello" },
             new() { OtherPartyName = "Staff 1", UnreadCount = 0, LastMessage = "Hi there" }
         };
-        _messageRepositoryMock.Setup(x => x.GetRecentListAsync())
-            .ReturnsAsync(expectedRecents);
+        _messageRepositoryMock.GetRecentListAsync()
+            .Returns(expectedRecents);
 
         var controller = CreateController();
 
@@ -81,8 +79,7 @@ public class MessagesControllerTests
     public async Task GetRecentList_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.GetRecentListAsync())
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.GetRecentListAsync().ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -105,8 +102,8 @@ public class MessagesControllerTests
             new() { Message = "Hello", MessageId = 1 },
             new() { Message = "Hi", MessageId = 2 }
         };
-        _messageRepositoryMock.Setup(x => x.GetMessagesByCourierIdAsync(courierId, staffId))
-            .ReturnsAsync(expectedMessages);
+        _messageRepositoryMock.GetMessagesByCourierIdAsync(courierId, staffId)
+            .Returns(expectedMessages);
 
         var controller = CreateController();
 
@@ -122,8 +119,7 @@ public class MessagesControllerTests
     public async Task GetMessages_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.GetMessagesByCourierIdAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.GetMessagesByCourierIdAsync(Arg.Any<int>(), Arg.Any<int>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -146,8 +142,8 @@ public class MessagesControllerTests
             new() { Message = "Staff message 1", MessageId = 1 },
             new() { Message = "Staff message 2", MessageId = 2 }
         };
-        _messageRepositoryMock.Setup(x => x.GetMessagesByStaffIdAsync(otherStaffId, currentStaffId))
-            .ReturnsAsync(expectedMessages);
+        _messageRepositoryMock.GetMessagesByStaffIdAsync(otherStaffId, currentStaffId)
+            .Returns(expectedMessages);
 
         var controller = CreateController();
 
@@ -163,8 +159,7 @@ public class MessagesControllerTests
     public async Task GetMessagesByStaff_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.GetMessagesByStaffIdAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.GetMessagesByStaffIdAsync(Arg.Any<int>(), Arg.Any<int>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -186,7 +181,7 @@ public class MessagesControllerTests
             SendToCourierId = 1,
             SendToStaffId = null
         };
-        _messageRepositoryMock.Setup(x => x.SendMessageAsync(request))
+        _messageRepositoryMock.SendMessageAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -196,7 +191,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.SendMessageAsync(request), Times.Once);
+        await _messageRepositoryMock.Received().SendMessageAsync(request);
     }
 
     [Fact]
@@ -209,7 +204,7 @@ public class MessagesControllerTests
             SendToCourierId = null,
             SendToStaffId = 1
         };
-        _messageRepositoryMock.Setup(x => x.SendMessageAsync(request))
+        _messageRepositoryMock.SendMessageAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -219,7 +214,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.SendMessageAsync(request), Times.Once);
+        await _messageRepositoryMock.Received().SendMessageAsync(request);
     }
 
     [Fact]
@@ -241,7 +236,7 @@ public class MessagesControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)", badRequestResult.Value);
-        _messageRepositoryMock.Verify(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>()), Times.Never);
+        await _messageRepositoryMock.Received(0).SendMessageAsync(Arg.Any<SendMessageRequest>());
     }
 
     [Fact]
@@ -263,7 +258,7 @@ public class MessagesControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Must specify exactly one recipient (either SendToCourierId or SendToStaffId)", badRequestResult.Value);
-        _messageRepositoryMock.Verify(x => x.SendMessageAsync(It.IsAny<SendMessageRequest>()), Times.Never);
+        await _messageRepositoryMock.DidNotReceive().SendMessageAsync(Arg.Any<SendMessageRequest>());
     }
 
     [Fact]
@@ -275,8 +270,7 @@ public class MessagesControllerTests
             Message = "Test message",
             SendToCourierId = 1
         };
-        _messageRepositoryMock.Setup(x => x.SendMessageAsync(request))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.SendMessageAsync(request).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -296,7 +290,7 @@ public class MessagesControllerTests
         {
             Message = "Test message"
         };
-        _messageRepositoryMock.Setup(x => x.SendMultipleMessagesAsync(request))
+        _messageRepositoryMock.SendMultipleMessagesAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -306,7 +300,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.SendMultipleMessagesAsync(request), Times.Once);
+        await _messageRepositoryMock.Received().SendMultipleMessagesAsync(request);
     }
 
     [Fact]
@@ -317,7 +311,7 @@ public class MessagesControllerTests
         {
             Message = "Test message"
         };
-        _messageRepositoryMock.Setup(x => x.SendMultipleMessagesAsync(request))
+        _messageRepositoryMock.SendMultipleMessagesAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -327,7 +321,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.SendMultipleMessagesAsync(request), Times.Once);
+        await _messageRepositoryMock.Received().SendMultipleMessagesAsync(request);
     }
 
     [Fact]
@@ -347,7 +341,7 @@ public class MessagesControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Must specify at least one recipient (either SendToCourierIds or SendToStaffIds)", badRequestResult.Value);
-        _messageRepositoryMock.Verify(x => x.SendMultipleMessagesAsync(It.IsAny<SendMultipleMessageRequest>()), Times.Never);
+        await _messageRepositoryMock.DidNotReceive().SendMultipleMessagesAsync(Arg.Any<SendMultipleMessageRequest>());
     }
 
     [Fact]
@@ -358,8 +352,7 @@ public class MessagesControllerTests
         {
             Message = "Test message"
         };
-        _messageRepositoryMock.Setup(x => x.SendMultipleMessagesAsync(request))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.SendMultipleMessagesAsync(request).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -377,7 +370,7 @@ public class MessagesControllerTests
         // Arrange
         const int otherPartyId = 1;
         const OtherMessagePartyType partyType = OtherMessagePartyType.Courier;
-        _messageRepositoryMock.Setup(x => x.MarkMessagesAsReadAsync(otherPartyId, partyType))
+        _messageRepositoryMock.MarkMessagesAsReadAsync(otherPartyId, partyType)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -387,7 +380,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.MarkMessagesAsReadAsync(otherPartyId, partyType), Times.Once);
+        await _messageRepositoryMock.Received().MarkMessagesAsReadAsync(otherPartyId, partyType);
     }
 
     [Fact]
@@ -396,7 +389,7 @@ public class MessagesControllerTests
         // Arrange
         const int otherPartyId = 1;
         const OtherMessagePartyType partyType = OtherMessagePartyType.Staff;
-        _messageRepositoryMock.Setup(x => x.MarkMessagesAsReadAsync(otherPartyId, partyType))
+        _messageRepositoryMock.MarkMessagesAsReadAsync(otherPartyId, partyType)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -406,7 +399,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.MarkMessagesAsReadAsync(otherPartyId, partyType), Times.Once);
+        await _messageRepositoryMock.Received().MarkMessagesAsReadAsync(otherPartyId, partyType);
     }
 
     [Theory]
@@ -424,15 +417,14 @@ public class MessagesControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Invalid otherPartyId", badRequestResult.Value);
-        _messageRepositoryMock.Verify(x => x.MarkMessagesAsReadAsync(It.IsAny<int>(), It.IsAny<OtherMessagePartyType>()), Times.Never);
+        await _messageRepositoryMock.DidNotReceive().MarkMessagesAsReadAsync(Arg.Any<int>(), Arg.Any<OtherMessagePartyType>());
     }
 
     [Fact]
     public async Task MarkMessagesAsRead_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.MarkMessagesAsReadAsync(It.IsAny<int>(), It.IsAny<OtherMessagePartyType>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.MarkMessagesAsReadAsync(Arg.Any<int>(), Arg.Any<OtherMessagePartyType>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -453,8 +445,8 @@ public class MessagesControllerTests
             new() { Id = 1, Text = "On my way" },
             new() { Id = 2, Text = "Running late" }
         };
-        _messageRepositoryMock.Setup(x => x.GetSavedQuickResponsesAsync())
-            .ReturnsAsync(expectedResponses);
+        _messageRepositoryMock.GetSavedQuickResponsesAsync()
+            .Returns(expectedResponses);
 
         var controller = CreateController();
 
@@ -470,8 +462,7 @@ public class MessagesControllerTests
     public async Task GetQuickResponses_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.GetSavedQuickResponsesAsync())
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.GetSavedQuickResponsesAsync().ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -489,8 +480,8 @@ public class MessagesControllerTests
         // Arrange
         var request = new SaveQuickResponseRequest { Message = "New quick response" };
         const int expectedId = 123;
-        _messageRepositoryMock.Setup(x => x.AddNewQuickResponseAsync(request))
-            .ReturnsAsync(expectedId);
+        _messageRepositoryMock.AddNewQuickResponseAsync(request)
+            .Returns(expectedId);
 
         var controller = CreateController();
 
@@ -523,8 +514,7 @@ public class MessagesControllerTests
     {
         // Arrange
         var request = new SaveQuickResponseRequest { Message = "Test" };
-        _messageRepositoryMock.Setup(x => x.AddNewQuickResponseAsync(request))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.AddNewQuickResponseAsync(request).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -541,7 +531,7 @@ public class MessagesControllerTests
     {
         // Arrange
         const int responseId = 1;
-        _messageRepositoryMock.Setup(x => x.DeleteQuickResponseAsync(responseId))
+        _messageRepositoryMock.DeleteQuickResponseAsync(responseId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -551,7 +541,7 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.DeleteQuickResponseAsync(responseId), Times.Once);
+        await _messageRepositoryMock.Received().DeleteQuickResponseAsync(responseId);
     }
 
     [Theory]
@@ -569,15 +559,14 @@ public class MessagesControllerTests
         // Assert
         var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
         Assert.Equal("Invalid otherPartyId", badRequestResult.Value);
-        _messageRepositoryMock.Verify(x => x.DeleteQuickResponseAsync(It.IsAny<int>()), Times.Never);
+        await _messageRepositoryMock.DidNotReceive().DeleteQuickResponseAsync(Arg.Any<int>());
     }
 
     [Fact]
     public async Task DeleteQuickResponse_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.DeleteQuickResponseAsync(It.IsAny<int>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.DeleteQuickResponseAsync(Arg.Any<int>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -599,8 +588,8 @@ public class MessagesControllerTests
             new() { Id = Guid.NewGuid(), RecordId = 1, Name = "John Doe" },
             new() { Id = Guid.NewGuid(), RecordId = 2, Name = "John Smith" }
         };
-        _messageRepositoryMock.Setup(x => x.GetNewMessageContactOptionsAsync(searchTerm))
-            .ReturnsAsync(expectedResults);
+        _messageRepositoryMock.GetNewMessageContactOptionsAsync(searchTerm)
+            .Returns(expectedResults);
 
         var controller = CreateController();
 
@@ -625,15 +614,14 @@ public class MessagesControllerTests
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _messageRepositoryMock.Verify(x => x.GetNewMessageContactOptionsAsync(It.IsAny<string>()), Times.Never);
+        await _messageRepositoryMock.DidNotReceive().GetNewMessageContactOptionsAsync(Arg.Any<string>());
     }
 
     [Fact]
     public async Task GetMessageContactOptions_RepositoryThrows_Returns500()
     {
         // Arrange
-        _messageRepositoryMock.Setup(x => x.GetNewMessageContactOptionsAsync(It.IsAny<string>()))
-            .ThrowsAsync(new Exception("Database error"));
+        _messageRepositoryMock.GetNewMessageContactOptionsAsync(Arg.Any<string>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -644,5 +632,4 @@ public class MessagesControllerTests
         var statusCodeResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(500, statusCodeResult.StatusCode);
     }
-
 }

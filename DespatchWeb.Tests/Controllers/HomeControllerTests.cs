@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -6,16 +6,16 @@ using DespatchWeb.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Controllers;
 
 public class HomeControllerTests : IDisposable
 {
-    private readonly Mock<IClientRepository> _clientRepoMock = new();
-    private readonly Mock<IDfrntViewsRepository> _viewsRepoMock = new();
-    private readonly Mock<ITenantInfoService> _infoServiceMock = new();
-    private readonly Mock<IConnectionStringManager> _connectionStringManagerMock = new();
+    private readonly IClientRepository _clientRepoMock = Substitute.For<IClientRepository>();
+    private readonly IDfrntViewsRepository _viewsRepoMock = Substitute.For<IDfrntViewsRepository>();
+    private readonly ITenantInfoService _infoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IConnectionStringManager _connectionStringManagerMock = Substitute.For<IConnectionStringManager>();
 
     private readonly string? _originalSqlCredentials = Environment.GetEnvironmentVariable("SQLCredentials");
     private readonly string? _originalHubUrl = Environment.GetEnvironmentVariable("HubUrl");
@@ -24,10 +24,10 @@ public class HomeControllerTests : IDisposable
     private HomeController CreateController(ClaimsPrincipal? user = null)
     {
         var controller = new HomeController(
-            _clientRepoMock.Object,
-            _viewsRepoMock.Object,
-            _infoServiceMock.Object,
-            _connectionStringManagerMock.Object);
+            _clientRepoMock,
+            _viewsRepoMock,
+            _infoServiceMock,
+            _connectionStringManagerMock);
 
         controller.ControllerContext = new ControllerContext
         {
@@ -36,7 +36,7 @@ public class HomeControllerTests : IDisposable
                 User = user ?? new ClaimsPrincipal(new ClaimsIdentity())
             }
         };
-        controller.TempData = new TempDataDictionary(controller.HttpContext, Mock.Of<ITempDataProvider>());
+        controller.TempData = new TempDataDictionary(controller.HttpContext, Substitute.For<ITempDataProvider>());
 
         return controller;
     }
@@ -74,8 +74,8 @@ public class HomeControllerTests : IDisposable
             Internal = true,
             StaffID = 5
         };
-        _clientRepoMock.Setup(x => x.ValidateClientAsync(100)).ReturnsAsync(clientDetail);
-        _connectionStringManagerMock.Setup(x => x.SetConnectionStringAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _clientRepoMock.ValidateClientAsync(100).Returns(clientDetail);
+        _connectionStringManagerMock.SetConnectionStringAsync(Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.CompletedTask);
 
         var controller = CreateController(user);
@@ -169,8 +169,8 @@ public class HomeControllerTests : IDisposable
             Internal = false,
             StaffID = null
         };
-        _clientRepoMock.Setup(x => x.ValidateClientAsync(100)).ReturnsAsync(clientDetail);
-        _connectionStringManagerMock.Setup(x => x.SetConnectionStringAsync(It.IsAny<string>(), It.IsAny<string>()))
+        _clientRepoMock.ValidateClientAsync(100).Returns(clientDetail);
+        _connectionStringManagerMock.SetConnectionStringAsync(Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.CompletedTask);
 
         var controller = CreateController(user);
@@ -184,9 +184,9 @@ public class HomeControllerTests : IDisposable
     public async Task GetPageViews_ReturnsJson()
     {
         var expected = new List<DfrntPageViewModel> { new() };
-        _infoServiceMock.Setup(x => x.GetStaffId()).Returns(5);
-        _viewsRepoMock.Setup(x => x.GetViewsByUserAndPageAsync(5, AppPage.Dispatch))
-            .ReturnsAsync(expected);
+        _infoServiceMock.GetStaffId().Returns(5);
+        _viewsRepoMock.GetViewsByUserAndPageAsync(5, AppPage.Dispatch)
+            .Returns(expected);
 
         var controller = CreateController();
 
@@ -200,8 +200,8 @@ public class HomeControllerTests : IDisposable
     public async Task ActiveClients_ReturnsJson()
     {
         var expected = new List<Suggestion> { new() { Id = 1, Text = "Client A" } };
-        _clientRepoMock.Setup(x => x.ActiveClientsAsync("Client"))
-            .ReturnsAsync(expected);
+        _clientRepoMock.ActiveClientsAsync("Client")
+            .Returns(expected);
 
         var controller = CreateController();
 
