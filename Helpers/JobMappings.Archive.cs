@@ -209,7 +209,7 @@ public static partial class JobMappings
         Status = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsCode : null,
         StatusName = j.UcjbStatusNavigation != null ? j.UcjbStatusNavigation.UcjsName : null,
         InternalStatusId = j.InternalStatus,
-        ConNote = j.Connote,
+        ConNote = j.Parent != null ? j.Parent.Connote : j.Connote,
 
         // Checkboxes
         Reprice = j.Reprice,
