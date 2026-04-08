@@ -488,6 +488,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             const isShift = event.shiftKey;
 
             if (isCtrlOrCmd || isShift) {
+                // If starting multi-select from a plain-clicked job, include it
+                if (selectedJobId !== null && multiSelect.selectCount === 0) {
+                    multiSelect.toggle(selectedJobId, {ctrlKey: true, metaKey: false, shiftKey: false} as React.MouseEvent);
+                }
                 // Modifier click → multi-select, don't change detail panel
                 multiSelect.toggle(job.id, event);
             } else {
@@ -502,7 +506,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 }
             }
         },
-        [onJobSelect, multiSelect, fetchConfig, onRefresh],
+        [onJobSelect, multiSelect, fetchConfig, onRefresh, selectedJobId],
     );
 
     const handleContextMenu = useCallback(

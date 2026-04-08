@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -8,7 +8,8 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
@@ -20,56 +21,60 @@ public class JobControllerTests : IDisposable
 {
 
     private readonly HttpClient _httpClient = new();
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<IClientAccessValidatorService> _clientAccessValidatorMock = new();
-    private readonly Mock<IRateJobService> _rateJobServiceMock = new();
-    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly IClientAccessValidatorService _clientAccessValidatorMock = Substitute.For<IClientAccessValidatorService>();
+    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly Mock<IAddStopJobService> _addStopJobServiceMock = new();
-    private readonly Mock<IJobReportService> _jobReportServiceMock = new();
-    private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
-    private readonly Mock<IDispatchJobService> _dispatchJobServiceMock = new();
-    private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
-    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
-    private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
-    private readonly Mock<IPodReportService> _podReportServiceMock = new();
+    private readonly IAddStopJobService _addStopJobServiceMock = Substitute.For<IAddStopJobService>();
+    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
+    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
+    private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
+    private readonly IDeliveryJourneyService _deliveryJourneyServiceMock = Substitute.For<IDeliveryJourneyService>();
+    private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
+    private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
+    private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
 
     public JobControllerTests()
     {
         // By default, allow all pricing operations in tests (internal user behavior)
-        _pricingPermissionServiceMock.Setup(x => x.CanModifyPricesAsync()).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.CanBulkUpdatePricesAsync()).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.CanModifyPriceBreakdownAsync()).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.CanUsePricingModeAsync(It.IsAny<string>())).ReturnsAsync(true);
-        _pricingPermissionServiceMock.Setup(x => x.ValidateJobAccessAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
-        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>())).ReturnsAsync([]);
+        _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(true);
+        _pricingPermissionServiceMock.CanBulkUpdatePricesAsync().Returns(true);
+        _pricingPermissionServiceMock.CanModifyPriceBreakdownAsync().Returns(true);
+        _pricingPermissionServiceMock.CanUsePricingModeAsync(Arg.Any<string>()).Returns(true);
+        _pricingPermissionServiceMock.ValidateJobAccessAsync(Arg.Any<int>()).Returns(Task.CompletedTask);
+        _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>()).Returns([]);
     }
 
-    public void Dispose() => _httpClient.Dispose();
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     private JobController CreateController()
     {
         return new JobController(
-            _jobQueryRepositoryMock.Object,
-            _jobCommandRepositoryMock.Object,
-            _taskRepositoryMock.Object,
-            _clientAccessValidatorMock.Object,
+            _jobQueryRepositoryMock,
+            _jobCommandRepositoryMock,
+            _taskRepositoryMock,
+            _clientAccessValidatorMock,
             _httpClient,
-            _rateJobServiceMock.Object,
-            _recurringJobRepositoryMock.Object,
-            _tenantInfoServiceMock.Object,
+            _rateJobServiceMock,
+            _recurringJobRepositoryMock,
+            _tenantInfoServiceMock,
             _clock,
-            _addStopJobServiceMock.Object,
-            _jobReportServiceMock.Object,
-            _jobPhotoServiceMock.Object,
-            _dispatchJobServiceMock.Object,
-            _deliveryJourneyServiceMock.Object,
-            _pricingPermissionServiceMock.Object,
-            _podReportServiceMock.Object,
-            _splitJobServiceMock.Object);
+            _addStopJobServiceMock,
+            _jobReportServiceMock,
+            _jobPhotoServiceMock,
+            _dispatchJobServiceMock,
+            _deliveryJourneyServiceMock,
+            _pricingPermissionServiceMock,
+            _podReportServiceMock,
+            _splitJobServiceMock);
     }
 
     /// <summary>
@@ -104,10 +109,8 @@ public class JobControllerTests : IDisposable
             TotalCount = 2
         };
 
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.JobListAsync(
-                queryParams, true, false, null, It.IsAny<IReadOnlyList<int>>(), null))
-            .ReturnsAsync(expectedResult);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.JobListAsync(queryParams, true, false, null, Arg.Any<IReadOnlyList<int>>(), null, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -131,12 +134,10 @@ public class JobControllerTests : IDisposable
         const int contactId = 123;
         const string clientIds = "456,789";
 
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _clientAccessValidatorMock.Setup(x => x.ValidateClientAccessAsync(contactId, clientIds))
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds)
             .Returns(Task.CompletedTask);
-        _jobQueryRepositoryMock.Setup(x => x.JobListAsync(
-                It.IsAny<JobQueryParams>(), false, false, clientIds, It.IsAny<IReadOnlyList<int>>(), null))
-            .ReturnsAsync(new JobSearchResult { Jobs = [], TotalCount = 0 });
+        _jobQueryRepositoryMock.JobListAsync(Arg.Any<JobQueryParams>(), false, false, clientIds, Arg.Any<IReadOnlyList<int>>(), null, Arg.Any<CancellationToken>()).Returns(new JobSearchResult { Jobs = [], TotalCount = 0 });
 
         var controller = CreateController();
 
@@ -144,7 +145,7 @@ public class JobControllerTests : IDisposable
         await controller.Index(queryParams, isInternal: false, cid: contactId, clientIds: clientIds, despatchViewIds: []);
 
         // Assert
-        _clientAccessValidatorMock.Verify(x => x.ValidateClientAccessAsync(contactId, clientIds), Times.Once);
+        await _clientAccessValidatorMock.Received().ValidateClientAccessAsync(contactId, clientIds);
     }
 
     [Fact]
@@ -155,9 +156,8 @@ public class JobControllerTests : IDisposable
         const int contactId = 123;
         const string clientIds = "456";
 
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _clientAccessValidatorMock.Setup(x => x.ValidateClientAccessAsync(contactId, clientIds))
-            .ThrowsAsync(new UnauthorizedAccessException("Unauthorized"));
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds).ThrowsAsync(new UnauthorizedAccessException("Unauthorized"));
 
         var controller = CreateController();
 
@@ -176,10 +176,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         var queryParams = new JobQueryParams();
 
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.JobListAsync(
-                It.IsAny<JobQueryParams>(), true, false, null, It.IsAny<IReadOnlyList<int>>(), null))
-            .ThrowsAsync(new Exception("Database error"));
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.JobListAsync(Arg.Any<JobQueryParams>(), true, false, null, Arg.Any<IReadOnlyList<int>>(), null, Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -202,8 +200,7 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, PickupLatitude = -36.8500m, PickupLongitude = 174.7700m }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCoordinatesAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(expectedCoordinates);
+        _jobQueryRepositoryMock.GetJobCoordinatesAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>()).Returns(expectedCoordinates);
 
         var controller = CreateController();
 
@@ -220,8 +217,7 @@ public class JobControllerTests : IDisposable
     public async Task GetAllJobCoordinates_UnauthorizedAccess_Returns401()
     {
         // Arrange
-        _clientAccessValidatorMock.Setup(x => x.ValidateClientAccessAsync(0, "123"))
-            .ThrowsAsync(new UnauthorizedAccessException());
+        _clientAccessValidatorMock.ValidateClientAccessAsync(0, "123").ThrowsAsync(new UnauthorizedAccessException());
 
         var controller = CreateController();
 
@@ -246,11 +242,9 @@ public class JobControllerTests : IDisposable
             TotalCount = 1
         };
 
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.JobListAsync(
-                queryParams, true, false, null, It.IsAny<IReadOnlyList<int>>(), clearListId))
-            .ReturnsAsync(expectedResult);
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.JobListAsync(queryParams, true, false, null, Arg.Any<IReadOnlyList<int>>(), clearListId, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -276,8 +270,8 @@ public class JobControllerTests : IDisposable
             new() { ChargeId = 2, Name = "Fuel Surcharge", Amount = 5.00m }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobPriceBreakdownAsync(jobId, false, false))
-            .ReturnsAsync(expectedBreakdown);
+        _jobQueryRepositoryMock.GetJobPriceBreakdownAsync(jobId, false)
+            .Returns(expectedBreakdown);
 
         var controller = CreateController();
 
@@ -300,8 +294,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobPriceBreakdownAsync(jobId, true, false))
-            .ReturnsAsync([]);
+        _jobQueryRepositoryMock.GetJobPriceBreakdownAsync(jobId, true)
+            .Returns([]);
 
         var controller = CreateController();
 
@@ -309,7 +303,7 @@ public class JobControllerTests : IDisposable
         await controller.GetPricingBreakdown(jobId, isPrebook: true);
 
         // Assert
-        _jobQueryRepositoryMock.Verify(x => x.GetJobPriceBreakdownAsync(jobId, true, false), Times.Once);
+        await _jobQueryRepositoryMock.Received().GetJobPriceBreakdownAsync(jobId, true);
     }
 
     [Fact]
@@ -318,8 +312,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobPriceBreakdownAsync(jobId, false, true))
-            .ReturnsAsync([]);
+        _jobQueryRepositoryMock.GetJobPriceBreakdownAsync(jobId, false, true)
+            .Returns([]);
 
         var controller = CreateController();
 
@@ -327,7 +321,7 @@ public class JobControllerTests : IDisposable
         await controller.GetPricingBreakdown(jobId, isPrebook: false, isArchived: true);
 
         // Assert
-        _jobQueryRepositoryMock.Verify(x => x.GetJobPriceBreakdownAsync(jobId, false, true), Times.Once);
+        await _jobQueryRepositoryMock.Received().GetJobPriceBreakdownAsync(jobId, false, true);
     }
 
     [Fact]
@@ -343,8 +337,8 @@ public class JobControllerTests : IDisposable
         };
         const int expectedChargeId = 99;
 
-        _jobCommandRepositoryMock.Setup(x => x.AddJobPriceBreakdownAsync(breakdown, false))
-            .ReturnsAsync(expectedChargeId);
+        _jobCommandRepositoryMock.AddJobPriceBreakdownAsync(breakdown)
+            .Returns(expectedChargeId);
 
         var controller = CreateController();
 
@@ -368,8 +362,8 @@ public class JobControllerTests : IDisposable
             IsArchived = false
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.AddJobPriceBreakdownAsync(breakdown, false))
-            .ReturnsAsync(1);
+        _jobCommandRepositoryMock.AddJobPriceBreakdownAsync(breakdown)
+            .Returns(1);
 
         var controller = CreateController();
 
@@ -377,8 +371,8 @@ public class JobControllerTests : IDisposable
         await controller.AddPriceComponent(breakdown);
 
         // Assert
-        _taskRepositoryMock.Verify(x => x.AddEventAsync(
-            1, "Manually rated price", (int)EventType.ChangePrice, null, null, null, false), Times.Once);
+        await _taskRepositoryMock.Received().AddEventAsync(
+            1, "Manually rated price", (int)EventType.ChangePrice);
     }
 
     [Fact]
@@ -415,7 +409,7 @@ public class JobControllerTests : IDisposable
             JobId = 1
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobPriceBreakdownAsync(breakdown, false))
+        _jobCommandRepositoryMock.UpdateJobPriceBreakdownAsync(breakdown)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -444,8 +438,8 @@ public class JobControllerTests : IDisposable
         await controller.UpdatePriceComponent(breakdown);
 
         // Assert
-        _taskRepositoryMock.Verify(x => x.AddEventAsync(
-            1, "Manually rated price", (int)EventType.ChangePrice, null, null, null, false), Times.Once);
+        await _taskRepositoryMock.Received().AddEventAsync(
+            1, "Manually rated price", (int)EventType.ChangePrice);
     }
 
     [Fact]
@@ -459,7 +453,7 @@ public class JobControllerTests : IDisposable
             IsArchived = false
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.DeleteJobPriceBreakdownAsync(1, false))
+        _jobCommandRepositoryMock.DeleteJobPriceBreakdownAsync(1)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -488,8 +482,8 @@ public class JobControllerTests : IDisposable
         await controller.DeletePriceComponent(request);
 
         // Assert
-        _taskRepositoryMock.Verify(x => x.AddEventAsync(
-            1, "Manually rated price", (int)EventType.ChangePrice, null, null, null, false), Times.Once);
+        await _taskRepositoryMock.Received().AddEventAsync(
+            1, "Manually rated price", (int)EventType.ChangePrice);
     }
 
     [Fact]
@@ -509,8 +503,8 @@ public class JobControllerTests : IDisposable
         await controller.DeletePriceComponent(request);
 
         // Assert
-        _taskRepositoryMock.Verify(x => x.AddEventAsync(
-            It.IsAny<int>(), It.IsAny<string>(), It.IsAny<int>(), null, null, null, false), Times.Never);
+        await _taskRepositoryMock.DidNotReceive().AddEventAsync(
+            Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int>());
     }
 
     [Fact]
@@ -523,8 +517,7 @@ public class JobControllerTests : IDisposable
             Job = new JobViewModel { Id = jobId, JobNo = "JOB001" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobByIdAsync(jobId))
-            .ReturnsAsync(expectedJob);
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>()).Returns(expectedJob);
 
         var controller = CreateController();
 
@@ -545,8 +538,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 999;
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobByIdAsync(jobId))
-            .ThrowsAsync(new Exception("Job not found"));
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Job not found"));
 
         var controller = CreateController();
 
@@ -570,8 +562,8 @@ public class JobControllerTests : IDisposable
             JobNo = "JOB001"
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetDispatchJobDetailAsync(jobId))
-            .ReturnsAsync(expectedJob);
+        _jobQueryRepositoryMock.GetDispatchJobDetailAsync(jobId)
+            .Returns(expectedJob);
 
         var controller = CreateController();
 
@@ -595,8 +587,8 @@ public class JobControllerTests : IDisposable
             Job = new JobViewModel { Id = bulkJobId, JobNo = "BULK001" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetBulkJobDetailAsync(bulkJobId))
-            .ReturnsAsync(expectedJob);
+        _jobQueryRepositoryMock.GetBulkJobDetailAsync(bulkJobId)
+            .Returns(expectedJob);
 
         var controller = CreateController();
 
@@ -620,8 +612,8 @@ public class JobControllerTests : IDisposable
             Job = new JobViewModel { Id = jobId, JobNo = "REC001" }
         };
 
-        _recurringJobRepositoryMock.Setup(x => x.GetRecurringJobByIdAsync(jobId))
-            .ReturnsAsync(expectedJob);
+        _recurringJobRepositoryMock.GetRecurringJobByIdAsync(jobId)
+            .Returns(expectedJob);
 
         var controller = CreateController();
 
@@ -648,8 +640,8 @@ public class JobControllerTests : IDisposable
             TotalCount = 1
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.CurrentJobListAsync(courierId, startDate, endDate))
-            .ReturnsAsync(expectedResult);
+        _jobQueryRepositoryMock.CurrentJobListAsync(courierId, startDate, endDate)
+            .Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -668,9 +660,9 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         const int jobId = 1;
-        var fileMock = new Mock<IFormFile>();
-        fileMock.Setup(f => f.FileName).Returns("test.png");
-        fileMock.Setup(f => f.Length).Returns(1024);
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.FileName.Returns("test.png");
+        fileMock.Length.Returns(1024);
 
         var uploadResult = new AwsUploadResult
         {
@@ -684,15 +676,15 @@ public class JobControllerTests : IDisposable
             PodDescription = "Test POD"
         };
 
-        _jobPhotoServiceMock.Setup(x => x.UploadJobPhotoOrSignatureAsync(
-                jobId, fileMock.Object, JobPhotoType.Delivery, true, "Test POD"))
-            .ReturnsAsync(uploadResult);
+        _jobPhotoServiceMock.UploadJobPhotoOrSignatureAsync(
+                jobId, fileMock, JobPhotoType.Delivery, true, "Test POD")
+            .Returns(uploadResult);
 
         var controller = CreateController();
 
         // Act
         var result = await controller.UploadJobDeliveryPhotoOrSignature(
-            jobId, fileMock.Object, isPod: true, podDescription: "Test POD");
+            jobId, fileMock, isPod: true, podDescription: "Test POD");
 
         // Assert
         Assert.IsType<JsonResult>(result);
@@ -703,7 +695,7 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         const int jobId = 1;
-        var fileMock = new Mock<IFormFile>();
+        var fileMock = Substitute.For<IFormFile>();
 
         var uploadResult = new AwsUploadResult
         {
@@ -711,14 +703,14 @@ public class JobControllerTests : IDisposable
             ErrorMessage = "File too large"
         };
 
-        _jobPhotoServiceMock.Setup(x => x.UploadJobPhotoOrSignatureAsync(
-                jobId, fileMock.Object, JobPhotoType.Delivery, true, null))
-            .ReturnsAsync(uploadResult);
+        _jobPhotoServiceMock.UploadJobPhotoOrSignatureAsync(
+                jobId, fileMock, JobPhotoType.Delivery)
+            .Returns(uploadResult);
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.UploadJobDeliveryPhotoOrSignature(jobId, fileMock.Object);
+        var result = await controller.UploadJobDeliveryPhotoOrSignature(jobId, fileMock);
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
@@ -731,8 +723,8 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string key = "jobs/1/photo.png";
 
-        _jobPhotoServiceMock.Setup(x => x.DeleteJobPhotoOrSignatureAsync(jobId, key))
-            .ReturnsAsync(true);
+        _jobPhotoServiceMock.DeleteJobPhotoOrSignatureAsync(jobId, key)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -750,8 +742,8 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string key = "invalid-key";
 
-        _jobPhotoServiceMock.Setup(x => x.DeleteJobPhotoOrSignatureAsync(jobId, key))
-            .ReturnsAsync(false);
+        _jobPhotoServiceMock.DeleteJobPhotoOrSignatureAsync(jobId, key)
+            .Returns(false);
 
         var controller = CreateController();
 
@@ -775,8 +767,8 @@ public class JobControllerTests : IDisposable
             new() { FileName = "photo2.png", S3Key = "jobs/1/photo2.png" }
         };
 
-        _jobPhotoServiceMock.Setup(x => x.GetDeliveryPhotosAsync(jobId, year, month))
-            .ReturnsAsync(expectedPhotos);
+        _jobPhotoServiceMock.GetDeliveryPhotosAsync(jobId, year, month)
+            .Returns(expectedPhotos);
 
         var controller = CreateController();
 
@@ -801,8 +793,8 @@ public class JobControllerTests : IDisposable
             new() { FileName = "pickup1.png", S3Key = "jobs/1/pickup1.png" }
         };
 
-        _jobPhotoServiceMock.Setup(x => x.GetPickupPhotosAsync(jobId, year, month))
-            .ReturnsAsync(expectedPhotos);
+        _jobPhotoServiceMock.GetPickupPhotosAsync(jobId, year, month)
+            .Returns(expectedPhotos);
 
         var controller = CreateController();
 
@@ -826,9 +818,9 @@ public class JobControllerTests : IDisposable
             VoidReason = "Test void"
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobParentIdAsync(1))
-            .ReturnsAsync((int?)null);
-        _jobCommandRepositoryMock.Setup(x => x.VoidJobAsync(request))
+        _jobQueryRepositoryMock.GetJobParentIdAsync(1)
+            .Returns((int?)null);
+        _jobCommandRepositoryMock.VoidJobAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -851,13 +843,13 @@ public class JobControllerTests : IDisposable
             SelectedJobIds = [2]
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobParentIdAsync(2))
-            .ReturnsAsync(1); // Has parent
-        _jobCommandRepositoryMock.Setup(x => x.VoidJobAsync(request))
+        _jobQueryRepositoryMock.GetJobParentIdAsync(2)
+            .Returns(1); // Has parent
+        _jobCommandRepositoryMock.VoidJobAsync(request)
             .Returns(Task.CompletedTask);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingAsync(1))
-            .ReturnsAsync(new JobRatingDetailsDto { JobId = 1, IsManuallyRated = false });
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _jobQueryRepositoryMock.GetJobDetailsForRatingAsync(1)
+            .Returns(new JobRatingDetailsDto { JobId = 1, IsManuallyRated = false });
 
         var controller = CreateController();
 
@@ -880,11 +872,11 @@ public class JobControllerTests : IDisposable
             SelectedJobIds = [5]
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.IsJobArchived(5))
-            .ReturnsAsync(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobParentIdAsync(5))
-            .ReturnsAsync(1); // Has parent, parent NOT in selected list
-        _jobCommandRepositoryMock.Setup(x => x.VoidJobAsync(request))
+        _jobQueryRepositoryMock.IsJobArchived(5)
+            .Returns(false);
+        _jobQueryRepositoryMock.GetJobParentIdAsync(5)
+            .Returns(1); // Has parent, parent NOT in selected list
+        _jobCommandRepositoryMock.VoidJobAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -904,8 +896,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         var request = new VoidJobRequest { JobId = 1 };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobParentIdAsync(1))
-            .ThrowsAsync(new Exception("Database error"));
+        _jobQueryRepositoryMock.GetJobParentIdAsync(1).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -929,7 +920,7 @@ public class JobControllerTests : IDisposable
             VoidReason = "Bulk void"
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.VoidBulkJobAsync(request))
+        _jobCommandRepositoryMock.VoidBulkJobAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -947,7 +938,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobCommandRepositoryMock.Setup(x => x.VoidPrebookJobAsync(jobId))
+        _jobCommandRepositoryMock.VoidPrebookJobAsync(jobId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -969,7 +960,7 @@ public class JobControllerTests : IDisposable
             JobIds = [1, 2, 3]
         };
 
-        _dispatchJobServiceMock.Setup(x => x.DispatchJobsToCourierAsync(request.JobIds, request.CourierId))
+        _dispatchJobServiceMock.DispatchJobsToCourierAsync(request.JobIds, request.CourierId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -991,8 +982,7 @@ public class JobControllerTests : IDisposable
             JobIds = [1]
         };
 
-        _dispatchJobServiceMock.Setup(x => x.DispatchJobsToCourierAsync(request.JobIds, request.CourierId))
-            .ThrowsAsync(new Exception("Allocation failed"));
+        _dispatchJobServiceMock.DispatchJobsToCourierAsync(request.JobIds, request.CourierId).ThrowsAsync(new Exception("Allocation failed"));
 
         var controller = CreateController();
 
@@ -1015,9 +1005,9 @@ public class JobControllerTests : IDisposable
             JobIds = [1, 2]
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.ReDispatchSelectedJobsAsync(request.JobIds))
+        _jobCommandRepositoryMock.ReDispatchSelectedJobsAsync(request.JobIds)
             .Returns(Task.CompletedTask);
-        _dispatchJobServiceMock.Setup(x => x.DispatchJobsToCourierAsync(request.JobIds, request.CourierId))
+        _dispatchJobServiceMock.DispatchJobsToCourierAsync(request.JobIds, request.CourierId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -1027,8 +1017,8 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _jobCommandRepositoryMock.Verify(x => x.ReDispatchSelectedJobsAsync(request.JobIds), Times.Once);
-        _dispatchJobServiceMock.Verify(x => x.DispatchJobsToCourierAsync(request.JobIds, request.CourierId), Times.Once);
+        await _jobCommandRepositoryMock.Received().ReDispatchSelectedJobsAsync(request.JobIds);
+        await _dispatchJobServiceMock.Received().DispatchJobsToCourierAsync(request.JobIds, request.CourierId);
     }
 
     [Fact]
@@ -1056,10 +1046,9 @@ public class JobControllerTests : IDisposable
         };
         var staffInfo = new Suggestion { Id = 1, Text = "John Doe" };
 
-        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
-            .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>(), null))
-            .ReturnsAsync((1, 2));
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns(staffInfo);
+        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), ct: Arg.Any<CancellationToken>()).Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1095,14 +1084,9 @@ public class JobControllerTests : IDisposable
         };
         var staffInfo = new Suggestion { Id = 5, Text = "Jane Smith" };
 
-        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
-            .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<AddressViewModel>(),
-                It.IsAny<int?>()))
-            .ReturnsAsync((10, 11));
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns(staffInfo);
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(), Arg.Any<CancellationToken>()).Returns((10, 11));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1111,17 +1095,12 @@ public class JobControllerTests : IDisposable
 
         // Assert - Verify service is called with correct parameters (no suburb ID)
         Assert.IsType<OkResult>(result);
-        _splitJobServiceMock.Verify(x => x.SplitJobAsync(
-            42,
-            "Jane Smith",
-            It.Is<AddressViewModel>(a =>
-                a.AddressLine1 == "456 New Meeting Point" &&
-                a.AddressLine5 == "Wellington" &&
-                a.AddressLine7 == "6011" &&
-                a.Latitude == -41.2865m &&
-                a.Longitude == 174.7762m),
-            null),
-            Times.Once);
+        await _splitJobServiceMock.Received().SplitJobAsync(42, "Jane Smith", Arg.Is<AddressViewModel>(a =>
+            a.AddressLine1 == "456 New Meeting Point" &&
+            a.AddressLine5 == "Wellington" &&
+            a.AddressLine7 == "6011" &&
+            a.Latitude == -41.2865m &&
+            a.Longitude == 174.7762m), ct: Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -1150,10 +1129,9 @@ public class JobControllerTests : IDisposable
         };
         var staffInfo = new Suggestion { Id = 1, Text = "John Doe" };
 
-        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
-            .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>(), 42))
-            .ReturnsAsync((1, 2));
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns(staffInfo);
+        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42, Arg.Any<CancellationToken>()).Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1162,8 +1140,8 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<OkResult>(result);
-        _splitJobServiceMock.Verify(x => x.SplitJobAsync(1, "John Doe", It.IsAny<AddressViewModel>(), 42),
-            Times.Once);
+        await _splitJobServiceMock.Received().SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42,
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -1187,14 +1165,9 @@ public class JobControllerTests : IDisposable
         };
         var staffInfo = new Suggestion { Id = 1, Text = "Test User" };
 
-        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
-            .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<AddressViewModel>(),
-                It.IsAny<int?>()))
-            .ThrowsAsync(new InvalidOperationException("Job not found"));
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns(staffInfo);
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(), Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Job not found"));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1232,16 +1205,15 @@ public class JobControllerTests : IDisposable
         var staffInfo = new Suggestion { Id = 1, Text = "Test User" };
 
         AddressViewModel? capturedAddress = null;
-        _tenantInfoServiceMock.Setup(x => x.GetStaffInfoAsync())
-            .ReturnsAsync(staffInfo);
-        _splitJobServiceMock.Setup(x => x.SplitJobAsync(
-                It.IsAny<int>(),
-                It.IsAny<string>(),
-                It.IsAny<AddressViewModel>(),
-                It.IsAny<int?>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<int, string, AddressViewModel, int?, CancellationToken>((_, _, addr, _, _) => capturedAddress = addr)
-            .ReturnsAsync((1, 2));
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns(staffInfo);
+        _splitJobServiceMock.SplitJobAsync(
+                Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Do<AddressViewModel>(addr => capturedAddress = addr),
+                Arg.Any<int?>(),
+                Arg.Any<CancellationToken>())
+            .Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1270,8 +1242,8 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string expectedMessage = "Job unsplit successfully";
 
-        _jobCommandRepositoryMock.Setup(x => x.UnSplitJobAsync(jobId))
-            .ReturnsAsync(expectedMessage);
+        _jobCommandRepositoryMock.UnSplitJobAsync(jobId)
+            .Returns(expectedMessage);
 
         var controller = CreateController();
 
@@ -1290,7 +1262,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         var request = new RestoreJobsRequest { JobIds = [1, 2, 3] };
 
-        _jobCommandRepositoryMock.Setup(x => x.RestoreJobsAsync(request.JobIds))
+        _jobCommandRepositoryMock.RestoreJobsAsync(request.JobIds)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -1308,7 +1280,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         var jobIds = new List<int> { 1, 2 };
 
-        _jobCommandRepositoryMock.Setup(x => x.RestoreSplitJobsAsync(jobIds))
+        _jobCommandRepositoryMock.RestoreSplitJobsAsync(jobIds)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -1328,7 +1300,7 @@ public class JobControllerTests : IDisposable
         const JobProperty field = JobProperty.ConNote;
         const string value = "Updated";
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobAsync(jobId, field, value))
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, field, value)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -1348,13 +1320,13 @@ public class JobControllerTests : IDisposable
         const JobProperty field = JobProperty.SpeedID;
         const string value = "2";
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobAsync(jobId, field, value))
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, field, value)
             .Returns(Task.CompletedTask);
-        _jobQueryRepositoryMock.Setup(x => x.IsJobArchived(jobId))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingAsync(jobId))
-            .ReturnsAsync(new JobRatingDetailsDto { JobId = jobId, IsManuallyRated = false });
+        _jobQueryRepositoryMock.IsJobArchived(jobId)
+            .Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _jobQueryRepositoryMock.GetJobDetailsForRatingAsync(jobId)
+            .Returns(new JobRatingDetailsDto { JobId = jobId, IsManuallyRated = false });
 
         var controller = CreateController();
 
@@ -1371,8 +1343,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobAsync(jobId, JobProperty.ConNote, "test"))
-            .ThrowsAsync(new Exception("Update failed"));
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, JobProperty.ConNote, "test").ThrowsAsync(new Exception("Update failed"));
 
         var controller = CreateController();
 
@@ -1393,7 +1364,7 @@ public class JobControllerTests : IDisposable
         const JobProperty field = JobProperty.ConNote;
         const string value = "Updated";
 
-        _recurringJobRepositoryMock.Setup(x => x.UpdateRecurringJobAsync(jobId, field, value))
+        _recurringJobRepositoryMock.UpdateRecurringJobAsync(jobId, field, value)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -1413,7 +1384,7 @@ public class JobControllerTests : IDisposable
         const JobProperty field = JobProperty.ConNote;
         const string value = "Bulk updated";
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateBulkJobAsync(bulkJobId, field, value))
+        _jobCommandRepositoryMock.UpdateBulkJobAsync(bulkJobId, field, value)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -1435,13 +1406,13 @@ public class JobControllerTests : IDisposable
             Address = new AddressViewModel { AddressLine1 = "123 Test Street" }
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateDeliveryAddressAsync(request))
+        _jobCommandRepositoryMock.UpdateDeliveryAddressAsync(request)
             .Returns(Task.CompletedTask);
-        _jobQueryRepositoryMock.Setup(x => x.IsJobArchived(1))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingNzAsync(1, false))
-            .ReturnsAsync(new JobRatingDetailsDtoNz());
+        _jobQueryRepositoryMock.IsJobArchived(1)
+            .Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.GetJobDetailsForRatingNzAsync(1, false)
+            .Returns(new JobRatingDetailsDtoNz());
 
         var controller = CreateController();
 
@@ -1462,13 +1433,13 @@ public class JobControllerTests : IDisposable
             Address = new AddressViewModel { AddressLine1 = "456 Pickup Ave" }
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdatePickupAddressAsync(request))
+        _jobCommandRepositoryMock.UpdatePickupAddressAsync(request)
             .Returns(Task.CompletedTask);
-        _jobQueryRepositoryMock.Setup(x => x.IsJobArchived(1))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingNzAsync(1, false))
-            .ReturnsAsync(new JobRatingDetailsDtoNz());
+        _jobQueryRepositoryMock.IsJobArchived(1)
+            .Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.GetJobDetailsForRatingNzAsync(1, false)
+            .Returns(new JobRatingDetailsDtoNz());
 
         var controller = CreateController();
 
@@ -1489,11 +1460,11 @@ public class JobControllerTests : IDisposable
             Address = new AddressViewModel { AddressLine1 = "789 Booking Lane" }
         };
 
-        _recurringJobRepositoryMock.Setup(x => x.UpdateBookingPickupAddressAsync(request))
+        _recurringJobRepositoryMock.UpdateBookingPickupAddressAsync(request)
             .Returns(Task.CompletedTask);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobBookingDetailsForRatingNzAsync(1))
-            .ReturnsAsync(new JobRatingDetailsDtoNz());
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.GetJobBookingDetailsForRatingNzAsync(1)
+            .Returns(new JobRatingDetailsDtoNz());
 
         var controller = CreateController();
 
@@ -1514,11 +1485,11 @@ public class JobControllerTests : IDisposable
             Address = new AddressViewModel { AddressLine1 = "321 Delivery Blvd" }
         };
 
-        _recurringJobRepositoryMock.Setup(x => x.UpdateBookingDeliveryAddressAsync(request))
+        _recurringJobRepositoryMock.UpdateBookingDeliveryAddressAsync(request)
             .Returns(Task.CompletedTask);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobBookingDetailsForRatingNzAsync(1))
-            .ReturnsAsync(new JobRatingDetailsDtoNz());
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.GetJobBookingDetailsForRatingNzAsync(1)
+            .Returns(new JobRatingDetailsDtoNz());
 
         var controller = CreateController();
 
@@ -1540,8 +1511,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 3, Text = "Same Day" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetSpeedsAsync())
-            .ReturnsAsync(expectedSpeeds);
+        _jobQueryRepositoryMock.GetSpeedsAsync()
+            .Returns(expectedSpeeds);
 
         var controller = CreateController();
 
@@ -1564,8 +1535,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "Express" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetSpeedsBySearchTermAsync(searchTerm))
-            .ReturnsAsync(expectedSpeeds);
+        _jobQueryRepositoryMock.GetSpeedsBySearchTermAsync(searchTerm)
+            .Returns(expectedSpeeds);
 
         var controller = CreateController();
 
@@ -1589,8 +1560,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "Jane Doe" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetContactsByClientIdAsync(clientId))
-            .ReturnsAsync(expectedContacts);
+        _jobQueryRepositoryMock.GetContactsByClientIdAsync(clientId)
+            .Returns(expectedContacts);
 
         var controller = CreateController();
 
@@ -1613,8 +1584,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "Back Door" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.LeaveParcelLocationsAsync())
-            .ReturnsAsync(expectedLocations);
+        _jobQueryRepositoryMock.LeaveParcelLocationsAsync()
+            .Returns(expectedLocations);
 
         var controller = CreateController();
 
@@ -1637,8 +1608,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "Refused" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.UndeliverableLocationsAsync())
-            .ReturnsAsync(expectedLocations);
+        _jobQueryRepositoryMock.UndeliverableLocationsAsync()
+            .Returns(expectedLocations);
 
         var controller = CreateController();
 
@@ -1662,8 +1633,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 3, Text = "Delivered" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetStatusListAsync())
-            .ReturnsAsync(expectedStatuses);
+        _jobQueryRepositoryMock.GetStatusListAsync()
+            .Returns(expectedStatuses);
 
         var controller = CreateController();
 
@@ -1686,8 +1657,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "OnHold" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetInternalStatusListAsync())
-            .ReturnsAsync(expectedStatuses);
+        _jobQueryRepositoryMock.GetInternalStatusListAsync()
+            .Returns(expectedStatuses);
 
         var controller = CreateController();
 
@@ -1711,8 +1682,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 3, Text = "Late Call" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.EventTypeListAsync())
-            .ReturnsAsync(expectedEventTypes);
+        _jobQueryRepositoryMock.EventTypeListAsync()
+            .Returns(expectedEventTypes);
 
         var controller = CreateController();
 
@@ -1741,8 +1712,7 @@ public class JobControllerTests : IDisposable
             TotalCount = 1
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchAsync(request))
-            .ReturnsAsync(expectedResult);
+        _jobQueryRepositoryMock.PodSearchAsync(request, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -1771,8 +1741,7 @@ public class JobControllerTests : IDisposable
             TotalCount = 1
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.BulkSearchAsync(request))
-            .ReturnsAsync(expectedResult);
+        _jobQueryRepositoryMock.BulkSearchAsync(request, Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -1801,8 +1770,8 @@ public class JobControllerTests : IDisposable
             FileName = "jobs_report.csv"
         };
 
-        _jobReportServiceMock.Setup(x => x.GenerateJobsReportAsync(request))
-            .ReturnsAsync(reportResult);
+        _jobReportServiceMock.GenerateJobsReportAsync(request)
+            .Returns(reportResult);
 
         var controller = CreateController();
 
@@ -1827,8 +1796,8 @@ public class JobControllerTests : IDisposable
             EndDate = DateTimeOffset.Now
         };
 
-        _jobReportServiceMock.Setup(x => x.GenerateClientJobsReportCsvAsync(request))
-            .ReturnsAsync((new byte[] { 1, 2, 3 }, "client_jobs.csv"));
+        _jobReportServiceMock.GenerateClientJobsReportCsvAsync(request)
+            .Returns((new byte[] { 1, 2, 3 }, "client_jobs.csv"));
 
         var controller = CreateController();
 
@@ -1847,8 +1816,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         var request = new ClientJobsReportRequest();
 
-        _jobReportServiceMock.Setup(x => x.GenerateClientJobsReportCsvAsync(request))
-            .ThrowsAsync(new InvalidOperationException("No jobs found"));
+        _jobReportServiceMock.GenerateClientJobsReportCsvAsync(request).ThrowsAsync(new InvalidOperationException("No jobs found"));
 
         var controller = CreateController();
 
@@ -1874,8 +1842,8 @@ public class JobControllerTests : IDisposable
             Total = 1
         };
 
-        _recurringJobRepositoryMock.Setup(x => x.GetRecurringJobsListAsync(request))
-            .ReturnsAsync(expectedResult);
+        _recurringJobRepositoryMock.GetRecurringJobsListAsync(request)
+            .Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -1895,8 +1863,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         var request = new RecurringJobQueryRequest();
 
-        _jobReportServiceMock.Setup(x => x.GenerateRecurringJobsCsvAsync(request))
-            .ReturnsAsync((new byte[] { 1, 2, 3 }, "recurring_jobs.csv"));
+        _jobReportServiceMock.GenerateRecurringJobsCsvAsync(request)
+            .Returns((new byte[] { 1, 2, 3 }, "recurring_jobs.csv"));
 
         var controller = CreateController();
 
@@ -1913,14 +1881,14 @@ public class JobControllerTests : IDisposable
     public async Task UploadFile_ValidFile_ReturnsSuccess()
     {
         // Arrange
-        var fileMock = new Mock<IFormFile>();
-        fileMock.Setup(f => f.FileName).Returns("document.pdf");
-        fileMock.Setup(f => f.Length).Returns(2048);
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.FileName.Returns("document.pdf");
+        fileMock.Length.Returns(2048);
 
         var request = new FileUploadRequest
         {
             JobId = 1,
-            File = fileMock.Object
+            File = fileMock
         };
 
         var uploadResult = new AwsUploadResult
@@ -1933,8 +1901,8 @@ public class JobControllerTests : IDisposable
             UploadDate = TestDates.Now
         };
 
-        _jobPhotoServiceMock.Setup(x => x.UploadJobAttachmentAsync(1, fileMock.Object))
-            .ReturnsAsync(uploadResult);
+        _jobPhotoServiceMock.UploadJobAttachmentAsync(1, fileMock)
+            .Returns(uploadResult);
 
         var controller = CreateController();
 
@@ -1973,8 +1941,8 @@ public class JobControllerTests : IDisposable
             FileName = "document.pdf"
         };
 
-        _jobPhotoServiceMock.Setup(x => x.DownloadFileAsync(key))
-            .ReturnsAsync(downloadResult);
+        _jobPhotoServiceMock.DownloadFileAsync(key)
+            .Returns(downloadResult);
 
         var controller = CreateController();
 
@@ -1998,8 +1966,8 @@ public class JobControllerTests : IDisposable
             ErrorMessage = "File not found"
         };
 
-        _jobPhotoServiceMock.Setup(x => x.DownloadFileAsync(key))
-            .ReturnsAsync(downloadResult);
+        _jobPhotoServiceMock.DownloadFileAsync(key)
+            .Returns(downloadResult);
 
         var controller = CreateController();
 
@@ -2016,8 +1984,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const string key = "jobs/1/document.pdf";
 
-        _jobPhotoServiceMock.Setup(x => x.DeleteFileAsync(key))
-            .ReturnsAsync(true);
+        _jobPhotoServiceMock.DeleteFileAsync(key)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -2034,8 +2002,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const string key = "invalid/key";
 
-        _jobPhotoServiceMock.Setup(x => x.DeleteFileAsync(key))
-            .ReturnsAsync(false);
+        _jobPhotoServiceMock.DeleteFileAsync(key)
+            .Returns(false);
 
         var controller = CreateController();
 
@@ -2057,8 +2025,8 @@ public class JobControllerTests : IDisposable
             new() { FileName = "doc2.pdf", S3Key = "jobs/1/doc2.pdf" }
         };
 
-        _jobPhotoServiceMock.Setup(x => x.GetAttachedFilesAsync(jobId))
-            .ReturnsAsync(expectedFiles);
+        _jobPhotoServiceMock.GetAttachedFilesAsync(jobId)
+            .Returns(expectedFiles);
 
         var controller = CreateController();
 
@@ -2078,7 +2046,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const string note = "Updated note content";
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobNoteAsync(jobId, note))
+        _jobCommandRepositoryMock.UpdateJobNoteAsync(jobId, note)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2129,8 +2097,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 999;
         const string note = "Test";
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobNoteAsync(jobId, note))
-            .ThrowsAsync(new KeyNotFoundException("Job not found"));
+        _jobCommandRepositoryMock.UpdateJobNoteAsync(jobId, note).ThrowsAsync(new KeyNotFoundException("Job not found"));
 
         var controller = CreateController();
 
@@ -2156,7 +2123,7 @@ public class JobControllerTests : IDisposable
             ]
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdatePackagesForJobAsync(request.JobId, request.Parcels))
+        _jobCommandRepositoryMock.UpdatePackagesForJobAsync(request.JobId, request.Parcels)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2181,7 +2148,7 @@ public class JobControllerTests : IDisposable
             ]
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels))
+        _jobCommandRepositoryMock.UpdatePackagesForBulkJobAsync(request.BulkJobId, request.Parcels)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2199,8 +2166,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobQueryRepositoryMock.Setup(x => x.IsJobParentAsync(jobId))
-            .ReturnsAsync(true);
+        _jobQueryRepositoryMock.IsJobParentAsync(jobId)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -2219,8 +2186,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 2;
 
-        _jobQueryRepositoryMock.Setup(x => x.IsJobParentAsync(jobId))
-            .ReturnsAsync(false);
+        _jobQueryRepositoryMock.IsJobParentAsync(jobId)
+            .Returns(false);
 
         var controller = CreateController();
 
@@ -2239,8 +2206,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int bulkJobId = 1;
 
-        _jobQueryRepositoryMock.Setup(x => x.IsBulkJobParent(bulkJobId))
-            .ReturnsAsync(true);
+        _jobQueryRepositoryMock.IsBulkJobParent(bulkJobId)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -2264,8 +2231,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 3, Text = "JOB003" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetRelatedJobsMultiSelectListAsync(jobId, false, false))
-            .ReturnsAsync(expectedJobs);
+        _jobQueryRepositoryMock.GetRelatedJobsMultiSelectListAsync(jobId, false)
+            .Returns(expectedJobs);
 
         var controller = CreateController();
 
@@ -2289,8 +2256,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "BULK002", IsBulkJob = true }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetRelatedJobsMultiSelectListAsync(jobId, false, true))
-            .ReturnsAsync(expectedJobs);
+        _jobQueryRepositoryMock.GetRelatedJobsMultiSelectListAsync(jobId, false, true)
+            .Returns(expectedJobs);
 
         var controller = CreateController();
 
@@ -2310,7 +2277,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const bool hasBeenRead = true;
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdateJobReadStatusAsync(jobId, hasBeenRead))
+        _jobCommandRepositoryMock.UpdateJobReadStatusAsync(jobId, hasBeenRead)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2332,7 +2299,7 @@ public class JobControllerTests : IDisposable
             ShouldMarkAsRead = true
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.BulkUpdateReadStatusAsync(request))
+        _jobCommandRepositoryMock.BulkUpdateReadStatusAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2355,8 +2322,8 @@ public class JobControllerTests : IDisposable
             EventTypeId = 1
         };
 
-        _taskRepositoryMock.Setup(x => x.AddEventAsync(
-                request.JobId, request.Notes, request.EventTypeId, request.EventDueDate, null, null, false))
+        _taskRepositoryMock.AddEventAsync(
+                request.JobId, request.Notes, request.EventTypeId, request.EventDueDate)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2374,8 +2341,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _taskRepositoryMock.Setup(x => x.AddEventAsync(
-                jobId, It.IsAny<string>(), (int)EventType.RestoreJob, null, 33, null, false))
+        _taskRepositoryMock.AddEventAsync(
+                jobId, Arg.Any<string>(), (int)EventType.RestoreJob, null, 33)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2399,8 +2366,8 @@ public class JobControllerTests : IDisposable
         };
         const int expectedJobId = 123;
 
-        _jobCommandRepositoryMock.Setup(x => x.QuickAddJobAsync(request))
-            .ReturnsAsync(expectedJobId);
+        _jobCommandRepositoryMock.QuickAddJobAsync(request)
+            .Returns(expectedJobId);
 
         var controller = CreateController();
 
@@ -2434,8 +2401,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         var request = new JobCreateViewModel();
 
-        _jobCommandRepositoryMock.Setup(x => x.QuickAddJobAsync(request))
-            .ReturnsAsync(0);
+        _jobCommandRepositoryMock.QuickAddJobAsync(request)
+            .Returns(0);
 
         var controller = CreateController();
 
@@ -2454,7 +2421,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int bulkJobId = 1;
 
-        _jobCommandRepositoryMock.Setup(x => x.ReleaseBulkJobByIdAsync(bulkJobId))
+        _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2472,8 +2439,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int bulkJobId = 1;
 
-        _jobCommandRepositoryMock.Setup(x => x.ReleaseBulkJobByIdAsync(bulkJobId))
-            .ThrowsAsync(new Exception("Release failed"));
+        _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId).ThrowsAsync(new Exception("Release failed"));
 
         var controller = CreateController();
 
@@ -2497,8 +2463,8 @@ public class JobControllerTests : IDisposable
         };
         const int newJobId = 2;
 
-        _addStopJobServiceMock.Setup(x => x.AddStopInsertJobAsync(request))
-            .ReturnsAsync(newJobId);
+        _addStopJobServiceMock.AddStopInsertJobAsync(request)
+            .Returns(newJobId);
 
         var controller = CreateController();
 
@@ -2522,8 +2488,8 @@ public class JobControllerTests : IDisposable
         };
         const int newJobId = 2;
 
-        _addStopJobServiceMock.Setup(x => x.AddStopInsertRecurringJobAsync(request))
-            .ReturnsAsync(newJobId);
+        _addStopJobServiceMock.AddStopInsertRecurringJobAsync(request)
+            .Returns(newJobId);
 
         var controller = CreateController();
 
@@ -2546,8 +2512,8 @@ public class JobControllerTests : IDisposable
             new() { JobId = jobId, Title = "Pickup Completed" }
         };
 
-        _deliveryJourneyServiceMock.Setup(x => x.GetDeliveryJourneyForJobAsync(jobId))
-            .ReturnsAsync(expectedJourney);
+        _deliveryJourneyServiceMock.GetDeliveryJourneyForJobAsync(jobId)
+            .Returns(expectedJourney);
 
         var controller = CreateController();
 
@@ -2572,8 +2538,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, Text = "Pacific Time", TimeZoneIana = "America/Los_Angeles" }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTimeZoneOptions())
-            .ReturnsAsync(expectedTimeZones);
+        _jobQueryRepositoryMock.GetTimeZoneOptions()
+            .Returns(expectedTimeZones);
 
         var controller = CreateController();
 
@@ -2596,7 +2562,7 @@ public class JobControllerTests : IDisposable
             NewPrice = 100.00m
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.SimpleRepriceJobManualAsync(request))
+        _jobCommandRepositoryMock.SimpleRepriceJobManualAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2619,8 +2585,8 @@ public class JobControllerTests : IDisposable
         };
         const decimal expectedRate = 75.00m;
 
-        _jobCommandRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(request))
-            .ReturnsAsync(expectedRate);
+        _jobCommandRepositoryMock.RepriceJobWithBaseAmountAsync(request)
+            .Returns(expectedRate);
 
         var controller = CreateController();
 
@@ -2640,13 +2606,13 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const decimal expectedRate = 85.00m;
 
-        _jobQueryRepositoryMock.Setup(x => x.IsJobArchived(jobId))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingAsync(jobId))
-            .ReturnsAsync(new JobRatingDetailsDto { JobId = jobId });
-        _rateJobServiceMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<JobRatingDetailsDto>()))
-            .ReturnsAsync(expectedRate);
+        _jobQueryRepositoryMock.IsJobArchived(jobId)
+            .Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _jobQueryRepositoryMock.GetJobDetailsForRatingAsync(jobId)
+            .Returns(new JobRatingDetailsDto { JobId = jobId });
+        _rateJobServiceMock.GetJobRateUsAsync(Arg.Any<JobRatingDetailsDto>())
+            .Returns(expectedRate);
 
         var controller = CreateController();
 
@@ -2665,11 +2631,11 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobQueryRepositoryMock.Setup(x => x.IsJobArchived(jobId))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingNzAsync(jobId, false))
-            .ReturnsAsync(new JobRatingDetailsDtoNz());
+        _jobQueryRepositoryMock.IsJobArchived(jobId)
+            .Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _jobQueryRepositoryMock.GetJobDetailsForRatingNzAsync(jobId, false)
+            .Returns(new JobRatingDetailsDtoNz());
 
         var controller = CreateController();
 
@@ -2686,8 +2652,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const string jobNumber = "JOB001";
 
-        _jobQueryRepositoryMock.Setup(x => x.ValidatePodSwapAsync(jobNumber))
-            .ReturnsAsync(true);
+        _jobQueryRepositoryMock.ValidatePodSwapAsync(jobNumber)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -2707,7 +2673,7 @@ public class JobControllerTests : IDisposable
         const string job1 = "JOB001";
         const string job2 = "JOB002";
 
-        _jobCommandRepositoryMock.Setup(x => x.SwapPodAsync(job1, job2))
+        _jobCommandRepositoryMock.SwapPodAsync(job1, job2)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2725,7 +2691,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const string jobIds = "1,2,3";
 
-        _jobCommandRepositoryMock.Setup(x => x.ReSendSelectedJobsAsync(It.IsAny<IReadOnlyList<int>>()))
+        _jobCommandRepositoryMock.ReSendSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>())
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2743,7 +2709,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const string jobIds = "1,2,3";
 
-        _jobCommandRepositoryMock.Setup(x => x.ReAssignSelectedJobsAsync(It.IsAny<IReadOnlyList<int>>()))
+        _jobCommandRepositoryMock.ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>())
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2762,7 +2728,7 @@ public class JobControllerTests : IDisposable
         const int jobId = 1;
         const int courierId = 2;
 
-        _jobCommandRepositoryMock.Setup(x => x.SetFirstJobAsync(jobId, courierId))
+        _jobCommandRepositoryMock.SetFirstJobAsync(jobId, courierId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2780,7 +2746,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int courierId = 1;
 
-        _jobCommandRepositoryMock.Setup(x => x.ReSendAllJobsAsync(courierId))
+        _jobCommandRepositoryMock.ReSendAllJobsAsync(courierId)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2800,8 +2766,8 @@ public class JobControllerTests : IDisposable
         const decimal amount = 100.00m;
         const decimal expectedPpd = 87.00m;
 
-        _jobQueryRepositoryMock.Setup(x => x.PpdExclusiveAmountAsync(clientId, amount))
-            .ReturnsAsync(expectedPpd);
+        _jobQueryRepositoryMock.PpdExclusiveAmountAsync(clientId, amount)
+            .Returns(expectedPpd);
 
         var controller = CreateController();
 
@@ -2821,8 +2787,8 @@ public class JobControllerTests : IDisposable
         const int clientId = 1;
         const int speedId = 2;
 
-        _jobQueryRepositoryMock.Setup(x => x.HasClientItemsAvailableAsync(clientId, speedId))
-            .ReturnsAsync(true);
+        _jobQueryRepositoryMock.HasClientItemsAvailableAsync(clientId, speedId)
+            .Returns(true);
 
         var controller = CreateController();
 
@@ -2848,8 +2814,8 @@ public class JobControllerTests : IDisposable
             Total = 1
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetClientItemsBySpeedAsync(clientId, speedId, jobId))
-            .ReturnsAsync(expectedItems);
+        _jobQueryRepositoryMock.GetClientItemsBySpeedAsync(clientId, speedId, jobId)
+            .Returns(expectedItems);
 
         var controller = CreateController();
 
@@ -2871,7 +2837,7 @@ public class JobControllerTests : IDisposable
             TotalCost = 25.00m
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.AddClientsItemToJobAsync(jobId, itemsModel.ServiceIds, itemsModel.TotalCost))
+        _jobCommandRepositoryMock.AddClientsItemToJobAsync(jobId, itemsModel.ServiceIds, itemsModel.TotalCost)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2894,7 +2860,7 @@ public class JobControllerTests : IDisposable
             PodTime = TestDates.Now.ToString("o")
         };
 
-        _jobCommandRepositoryMock.Setup(x => x.UpdatePodDetailsAsync(request))
+        _jobCommandRepositoryMock.UpdatePodDetailsAsync(request)
             .Returns(Task.CompletedTask);
 
         var controller = CreateController();
@@ -2917,8 +2883,8 @@ public class JobControllerTests : IDisposable
             new() { BulkScanId = 1, ScanDateTime = TestDates.Now }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.ScanList(runDate, scan))
-            .ReturnsAsync(expectedResults);
+        _jobQueryRepositoryMock.ScanList(runDate, scan)
+            .Returns(expectedResults);
 
         var controller = CreateController();
 

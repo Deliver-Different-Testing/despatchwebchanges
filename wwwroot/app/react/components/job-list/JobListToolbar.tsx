@@ -196,12 +196,6 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
         if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
         if (courierAbortRef.current) courierAbortRef.current.abort();
 
-        if (!value.trim()) {
-            setCourierOptions([]);
-            setCourierLoading(false);
-            return;
-        }
-
         setCourierLoading(true);
         courierDebounceRef.current = setTimeout(async () => {
             const controller = new AbortController();

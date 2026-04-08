@@ -999,4 +999,67 @@ describe('JobListPanel', () => {
             expect(mockedUpdateJobReadStatus).not.toHaveBeenCalled();
         });
     });
+
+    describe('Multi-Select', () => {
+        it('includes previously plain-clicked job when Ctrl multi-select begins', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
+                createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            // Plain click first job (no modifier)
+            await user.click(screen.getByText('JOB-A'));
+
+            // Ctrl+click second job to start multi-select
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-B'));
+            await user.keyboard('{/Control}');
+
+            // Both jobs should be in multi-select — toolbar shows "2 jobs selected"
+            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+        });
+
+        it('plain-clicked job plus two Ctrl-clicks yields three selected', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
+                createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            // Plain click JOB-A
+            await user.click(screen.getByText('JOB-A'));
+
+            // Ctrl+click JOB-B and JOB-C
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-B'));
+            await user.click(screen.getByText('JOB-C'));
+            await user.keyboard('{/Control}');
+
+            // JOB-A auto-added + JOB-B + JOB-C → 3 selected
+            expect(screen.getByText('3 jobs selected')).toBeInTheDocument();
+        });
+
+        it('does not auto-add when multi-select already has items', async () => {
+            const user = userEvent.setup();
+            const jobs = [
+                createMockDispatchJob({id: 1, jobNo: 'JOB-A'}),
+                createMockDispatchJob({id: 2, jobNo: 'JOB-B'}),
+                createMockDispatchJob({id: 3, jobNo: 'JOB-C'}),
+            ];
+            renderAndPushJobs(jobs);
+
+            // Ctrl+click two jobs directly (no prior plain click)
+            await user.keyboard('{Control>}');
+            await user.click(screen.getByText('JOB-A'));
+            await user.click(screen.getByText('JOB-B'));
+            await user.keyboard('{/Control}');
+
+            expect(screen.getByText('2 jobs selected')).toBeInTheDocument();
+        });
+    });
 });

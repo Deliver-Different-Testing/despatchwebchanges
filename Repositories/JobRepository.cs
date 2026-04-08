@@ -2944,7 +2944,10 @@ public partial class JobRepository(
             LoggedInContact = j.LoggedInContact,
             RawBaseAmount = j.RawBaseAmount,
             CourierCode = j.CourierCode,
-            Void = j.Void
+            Void = j.Void,
+            OurReference = j.OurReference,
+            Speed = j.Speed,
+            Notes = j.Notes
         }).ToList();
     }
 
@@ -3074,9 +3077,8 @@ public partial class JobRepository(
 
         var query = Context.TucJobs
             .Where(j => j.UcjbCourierId == courierId
-                        && !j.UcjbJobDone && !j.UcjbVoid
+                        && !j.UcjbVoid
                         && j.UcjbStatus != (int)JobStatus.Void
-                        && j.UcjbStatus != (int)JobStatus.Completed
                         && j.UcjbDate >= start
                         && j.UcjbDate <= end);
 

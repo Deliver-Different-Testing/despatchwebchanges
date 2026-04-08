@@ -1,5 +1,5 @@
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
-using DespatchWeb.Models;
 
 namespace DespatchWeb.Helpers;
 
@@ -31,13 +31,9 @@ public static partial class JobMappings
 
     #region Utility Methods
 
-    internal static string FormatDate(DateTime? date)
-    {
-        var dateToUse = date ?? SqlMinDateTime;
-        return dateToUse.ToString("MM/dd/yyyy");
-    }
+    internal static string FormatDate(DateTime? date) => (date ?? SqlMinDateTime).ToString("MM/dd/yyyy");
 
-    internal static string FormatFullName(EntityClasses.TucStaff staff) =>
+    internal static string FormatFullName(TucStaff staff) =>
         staff.UcstFirstName + " " + staff.UcstLastName;
 
     internal static string GetJobTypeDescription(double? jobTypeId)
