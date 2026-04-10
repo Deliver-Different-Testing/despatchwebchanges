@@ -1,18 +1,18 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 public class AiAssistantServiceTests
 {
-    private readonly Mock<IAiClientService> _aiClientMock = new();
+    private readonly IAiClientService _aiClientMock = Substitute.For<IAiClientService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
-    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
-    private readonly Mock<INoteRepository> _noteRepositoryMock = new();
+    private readonly ICourierRepository _courierRepositoryMock = Substitute.For<ICourierRepository>();
+    private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
@@ -20,24 +20,24 @@ public class AiAssistantServiceTests
         Model = "claude-sonnet-4-20250514"
     });
 
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly ITenantInfoService _tenantInfoMock = Substitute.For<ITenantInfoService>();
 
     public AiAssistantServiceTests()
     {
-        _tenantInfoMock.Setup(x => x.GetStaffInfoAsync())
-            .ReturnsAsync(new Suggestion { Id = 1, Text = "Test Operator" });
-        _tenantInfoMock.Setup(x => x.GetTenantTimeZone()).Returns("Pacific/Auckland");
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoMock.GetStaffInfoAsync()
+            .Returns(new Suggestion { Id = 1, Text = "Test Operator" });
+        _tenantInfoMock.GetTenantTimeZone().Returns("Pacific/Auckland");
+        _tenantInfoMock.IsUsTenant().Returns(false);
     }
 
     private AiAssistantService CreateService() => new(
-        _aiClientMock.Object,
-        _jobRepositoryMock.Object,
-        _courierRepositoryMock.Object,
-        _noteRepositoryMock.Object,
-        _taskRepositoryMock.Object,
-        _tenantInfoMock.Object,
+        _aiClientMock,
+        _jobRepositoryMock,
+        _courierRepositoryMock,
+        _noteRepositoryMock,
+        _taskRepositoryMock,
+        _tenantInfoMock,
         _clock,
         _settings);
 
@@ -46,10 +46,10 @@ public class AiAssistantServiceTests
     {
         // Arrange
         var callCount = 0;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
             {
                 callCount++;
                 if (callCount == 1)
@@ -78,8 +78,8 @@ public class AiAssistantServiceTests
                 };
             });
 
-        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync())
-            .ReturnsAsync(new OverviewStatsViewModel());
+        _jobRepositoryMock.GetOverviewStatsAsync()
+            .Returns(new OverviewStatsViewModel());
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Show overview" } };
@@ -97,12 +97,14 @@ public class AiAssistantServiceTests
     {
         // Arrange
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 };
+            });
 
         var service = CreateService();
         var messages = new List<AiMessage>
@@ -124,12 +126,14 @@ public class AiAssistantServiceTests
     {
         // Arrange
         List<AiToolDefinition>? capturedTools = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, _, _, tools, _) =>
-                capturedTools = tools)
-            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedTools = callInfo.ArgAt<List<AiToolDefinition>>(3);
+                return new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 };
+            });
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
@@ -153,10 +157,10 @@ public class AiAssistantServiceTests
     public async Task ChatAsync_SimpleTextResponse_ReturnsMessage()
     {
         // Arrange
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "There are 5 active jobs.",
                 InputTokens = 100,
@@ -179,10 +183,10 @@ public class AiAssistantServiceTests
     public async Task ChatAsync_EmptyTextContent_ReturnsEmptyMessage()
     {
         // Arrange
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = null,
                 InputTokens = 50,
@@ -204,10 +208,10 @@ public class AiAssistantServiceTests
     {
         // Arrange
         var callCount = 0;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
             {
                 callCount++;
                 if (callCount == 1)
@@ -237,8 +241,8 @@ public class AiAssistantServiceTests
                 };
             });
 
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(123))
-            .ReturnsAsync(new JobViewModel { Id = 123 });
+        _jobRepositoryMock.GetSingleJobById(123)
+            .Returns(new JobViewModel { Id = 123 });
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "What is job 123?" } };
@@ -257,10 +261,10 @@ public class AiAssistantServiceTests
     {
         // Arrange
         var callCount = 0;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
             {
                 callCount++;
                 if (callCount == 1)
@@ -289,8 +293,8 @@ public class AiAssistantServiceTests
                 };
             });
 
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999))
-            .ReturnsAsync((JobViewModel?)null);
+        _jobRepositoryMock.GetSingleJobById(999)
+            .Returns((JobViewModel?)null);
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Find job 999" } };
@@ -307,10 +311,10 @@ public class AiAssistantServiceTests
     {
         // Arrange
         var callCount = 0;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(() =>
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
             {
                 callCount++;
                 if (callCount == 1)
@@ -352,12 +356,14 @@ public class AiAssistantServiceTests
     {
         // Arrange
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((system, _, _, _, _) =>
-                capturedSystemPrompt = system)
-            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 };
+            });
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };
@@ -375,15 +381,17 @@ public class AiAssistantServiceTests
     public async Task ChatAsync_UsOperator_SystemPromptShowsUs()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoMock.IsUsTenant().Returns(true);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((system, _, _, _, _) =>
-                capturedSystemPrompt = system)
-            .ReturnsAsync(new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "OK", InputTokens = 10, OutputTokens = 5 };
+            });
 
         var service = CreateService();
         var messages = new List<AiMessage> { new() { Role = "user", Content = "Hi" } };

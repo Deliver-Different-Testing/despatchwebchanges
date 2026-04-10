@@ -3,7 +3,7 @@
  * useJobListData Hook Tests
  *
  * Tests the custom React Query hook that manages job list data fetching,
- * parameter state, sorting, and refresh/invalidation.
+ * parameter state, sorting, refresh/invalidation, and infinite scroll pagination.
  */
 
 import React from 'react';
@@ -77,8 +77,9 @@ describe('useJobListData', () => {
                 expect(result.current.isLoading).toBe(false);
             });
 
+            // useInfiniteQuery passes pageParam as page (overriding params.page)
             expect(config.fetchFn).toHaveBeenCalledWith(
-                config.initialParams,
+                expect.objectContaining({...config.initialParams, page: 0}),
                 expect.objectContaining({signal: expect.any(AbortSignal)}),
             );
             expect(result.current.jobs).toEqual(mockJobs);
@@ -171,7 +172,7 @@ describe('useJobListData', () => {
             (config.fetchFn as jest.Mock).mockClear();
 
             act(() => {
-                result.current.updateParams({searchText: 'hello', page: 2});
+                result.current.updateParams({searchText: 'hello'});
             });
 
             await waitFor(() => {
@@ -180,7 +181,8 @@ describe('useJobListData', () => {
 
             const calledParams = (config.fetchFn as jest.Mock).mock.calls[0][0];
             expect(calledParams.searchText).toBe('hello');
-            expect(calledParams.page).toBe(2);
+            // pageParam overrides page to 0 (start of new infinite query)
+            expect(calledParams.page).toBe(0);
             // Original params should still be present
             expect(calledParams.order).toBe('time');
             expect(calledParams.pageSize).toBe(50);
@@ -322,11 +324,11 @@ describe('useJobListData', () => {
             queryKeyFn.mockClear();
 
             act(() => {
-                result.current.updateParams({page: 5});
+                result.current.updateParams({searchText: 'test'});
             });
 
             expect(queryKeyFn).toHaveBeenCalledWith(
-                expect.objectContaining({page: 5}),
+                expect.objectContaining({searchText: 'test'}),
             );
         });
     });
@@ -353,53 +355,7 @@ describe('useJobListData', () => {
         });
     });
 
-    describe('keepPreviousData', () => {
-        it('should keep showing previous jobs while refetching with new params', async () => {
-            let resolveSecondFetch: (value: JobSearchResult) => void;
-            const secondFetchPromise = new Promise<JobSearchResult>((res) => {
-                resolveSecondFetch = res;
-            });
-
-            const fetchFn = jest.fn()
-                .mockResolvedValueOnce(mockResult)       // first fetch resolves immediately
-                .mockReturnValueOnce(secondFetchPromise); // second fetch hangs until we resolve it
-
-            const config = createMockFetchConfig({fetchFn});
-
-            const {result} = renderHook(
-                () => useJobListData(config),
-                {wrapper: createWrapper()},
-            );
-
-            // Wait for initial data
-            await waitFor(() => {
-                expect(result.current.isLoading).toBe(false);
-            });
-            expect(result.current.jobs).toEqual(mockJobs);
-
-            // Change params (e.g. new view filter) — triggers new query key
-            act(() => {
-                result.current.updateParams({despatchViewIds: [99]});
-            });
-
-            // While second fetch is in-flight, previous data should still be visible
-            expect(result.current.jobs).toEqual(mockJobs);
-            expect(result.current.totalCount).toBe(2);
-
-            // Resolve with new data
-            const newJobs = [{id: 3, jobNo: 'J003'}] as any[];
-            act(() => {
-                resolveSecondFetch!({jobs: newJobs, totalCount: 1, hasMore: false});
-            });
-
-            await waitFor(() => {
-                expect(result.current.jobs).toEqual(newJobs);
-            });
-            expect(result.current.totalCount).toBe(1);
-        });
-    });
-
-    describe('hasMore', () => {
+    describe('hasMore and infinite scroll', () => {
         it('should reflect hasMore from fetch result', async () => {
             const config = createMockFetchConfig({
                 fetchFn: jest.fn().mockResolvedValue({
@@ -420,6 +376,119 @@ describe('useJobListData', () => {
 
             expect(result.current.hasMore).toBe(true);
             expect(result.current.totalCount).toBe(100);
+        });
+
+        it('should accumulate jobs across pages when fetchNextPage is called', async () => {
+            const page0Jobs = [{id: 1, jobNo: 'J001'}, {id: 2, jobNo: 'J002'}] as any[];
+            const page1Jobs = [{id: 3, jobNo: 'J003'}, {id: 4, jobNo: 'J004'}] as any[];
+
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: page0Jobs, totalCount: 4, hasMore: true})
+                .mockResolvedValueOnce({jobs: page1Jobs, totalCount: 4, hasMore: false});
+
+            const config = createMockFetchConfig({fetchFn});
+
+            const {result} = renderHook(
+                () => useJobListData(config),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            expect(result.current.jobs).toEqual(page0Jobs);
+            expect(result.current.hasMore).toBe(true);
+
+            // Fetch next page
+            act(() => {
+                result.current.fetchNextPage();
+            });
+
+            await waitFor(() => {
+                expect(result.current.jobs).toHaveLength(4);
+            });
+
+            expect(result.current.jobs).toEqual([...page0Jobs, ...page1Jobs]);
+            expect(result.current.hasMore).toBe(false);
+            expect(result.current.totalCount).toBe(4);
+
+            // Second call should have page=1
+            expect(fetchFn).toHaveBeenCalledTimes(2);
+            expect(fetchFn.mock.calls[1][0].page).toBe(1);
+        });
+
+        it('should expose isFetchingNextPage while loading more', async () => {
+            let resolvePage1: (value: JobSearchResult) => void;
+            const page1Promise = new Promise<JobSearchResult>((res) => {
+                resolvePage1 = res;
+            });
+
+            const fetchFn = jest.fn()
+                .mockResolvedValueOnce({jobs: mockJobs, totalCount: 4, hasMore: true})
+                .mockReturnValueOnce(page1Promise);
+
+            const config = createMockFetchConfig({fetchFn});
+
+            const {result} = renderHook(
+                () => useJobListData(config),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            expect(result.current.isFetchingNextPage).toBe(false);
+
+            act(() => {
+                result.current.fetchNextPage();
+            });
+
+            await waitFor(() => {
+                expect(result.current.isFetchingNextPage).toBe(true);
+            });
+
+            // Existing jobs should still be visible
+            expect(result.current.jobs).toEqual(mockJobs);
+
+            // Resolve page 1
+            const page1Jobs = [{id: 3, jobNo: 'J003'}] as any[];
+            act(() => {
+                resolvePage1!({jobs: page1Jobs, totalCount: 3, hasMore: false});
+            });
+
+            await waitFor(() => {
+                expect(result.current.isFetchingNextPage).toBe(false);
+            });
+
+            expect(result.current.jobs).toEqual([...mockJobs, ...page1Jobs]);
+        });
+
+        it('should not fetch next page when hasMore is false', async () => {
+            const config = createMockFetchConfig({
+                fetchFn: jest.fn().mockResolvedValue({
+                    jobs: mockJobs,
+                    totalCount: 2,
+                    hasMore: false,
+                }),
+            });
+
+            const {result} = renderHook(
+                () => useJobListData(config),
+                {wrapper: createWrapper()},
+            );
+
+            await waitFor(() => {
+                expect(result.current.isLoading).toBe(false);
+            });
+
+            // fetchNextPage should be a no-op when hasMore is false
+            act(() => {
+                result.current.fetchNextPage();
+            });
+
+            expect(config.fetchFn).toHaveBeenCalledTimes(1); // only initial fetch
         });
     });
 });

@@ -1,10 +1,10 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -14,32 +14,31 @@ namespace DespatchWeb.Tests.Services;
 public class RateJobServiceBulkPriceTests : IDisposable
 {
     private readonly HttpClient _httpClient = new();
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<IJobReportService> _jobReportServiceMock = new();
-    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
+    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
+    private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
     private static readonly int[] Expected = [1, 2, 3];
 
     public RateJobServiceBulkPriceTests()
     {
         // By default, allow all job access in tests (internal user behavior)
-        _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync([]); // Empty list = all jobs accessible
+        _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new List<int>()); // Empty list = all jobs accessible
     }
 
     public void Dispose() => _httpClient.Dispose();
 
     private RateJobService CreateService() => new(
-        _jobQueryRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
+        _jobQueryRepositoryMock,
+        _jobCommandRepositoryMock,
         _httpClient,
-        _tenantInfoServiceMock.Object,
-        _httpContextAccessorMock.Object,
-        _jobReportServiceMock.Object,
-        _pricingPermissionServiceMock.Object
+        _tenantInfoServiceMock,
+        _httpContextAccessorMock,
+        _jobReportServiceMock,
+        _pricingPermissionServiceMock
     );
 
     [Fact]
@@ -47,13 +46,13 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([]);
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "recalculate");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "recalculate");
 
         // Assert
         Assert.NotNull(result);
@@ -68,16 +67,16 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", "id,amount\n999,100");
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 999, Amount = 100m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 999, Amount = 100m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>()); // Empty - job not found
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>()); // Empty - job not found
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
         Assert.Empty(result.Rows);
@@ -95,11 +94,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
             new() { Id = 2, Amount = 300m }
         };
 
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync(parsedData);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns(parsedData);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 150m, IsPrebook = false }
@@ -108,7 +107,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
         Assert.Equal(2, result.Rows.Count);
@@ -117,7 +116,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.Equal(500m, result.TotalNewAmount); // 200 + 300
 
         // Verify UpdateManualPriceAsync was called for gross mode
-        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(parsedData), Times.Once);
+        await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(parsedData);
     }
 
     [Fact]
@@ -125,11 +124,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = null }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, Amount = null }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
             });
@@ -137,7 +136,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
         Assert.Single(result.Rows);
@@ -150,11 +149,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, Amount = 150m, RawBaseAmount = 150m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, Amount = 150m, RawBaseAmount = 150m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -164,18 +163,21 @@ public class RateJobServiceBulkPriceTests : IDisposable
             });
 
         // GetTotalAmountFromBaseAsync calculates total including fuel
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 150m))
-            .ReturnsAsync(175m); // 150 base + 25 fuel = 175 total
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 150m)
+            .Returns(175m); // 150 base + 25 fuel = 175 total
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert
         Assert.Single(result.Rows);
@@ -183,7 +185,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.Equal(175m, result.Rows[0].NewAmount);
 
         // Verify UpdateManualPriceAsync was called with correct values
-        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
 
         Assert.NotNull(capturedModels);
         Assert.Single(capturedModels!);
@@ -198,7 +200,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.Equal(0m, model.CourierBonus); // Preserved from existing
 
         // RepriceJobWithBaseAmountAsync should NOT be called for non-prebook jobs
-        _jobCommandRepositoryMock.Verify(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()), Times.Never);
+        await _jobCommandRepositoryMock.DidNotReceive().RepriceJobWithBaseAmountAsync(Arg.Any<RepriceJobWithBaseAmountModel>());
     }
 
     [Fact]
@@ -206,11 +208,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 150m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, RawBaseAmount = 150m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -220,13 +222,13 @@ public class RateJobServiceBulkPriceTests : IDisposable
             });
 
         // Simulate calculation failure
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 150m))
-            .ThrowsAsync(new Exception("Database error"));
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 150m)
+            .Returns<decimal>(_ => throw new Exception("Database error"));
 
         var service = CreateService();
 
         // Act - should not throw, just log the error and fallback to base amount
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - falls back to base amount (no fuel) when calculation fails
         Assert.Single(result.Rows);
@@ -239,32 +241,32 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - prebook jobs use the old method since TucJobBooking lacks RawBaseAmount field
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "BOOK-001", Amount = 50m, IsPrebook = true }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
-            .ReturnsAsync(120m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
+            .Returns(120m);
 
-        _jobCommandRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()))
-            .ReturnsAsync(120m);
+        _jobCommandRepositoryMock.RepriceJobWithBaseAmountAsync(Arg.Any<RepriceJobWithBaseAmountModel>())
+            .Returns(120m);
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - verify RepriceJobWithBaseAmountAsync was used for prebook
-        _jobCommandRepositoryMock.Verify(x => x.RepriceJobWithBaseAmountAsync(
-            It.Is<RepriceJobWithBaseAmountModel>(m => m.IsPrebook == true && m.BaseAmount == 100m)), Times.Once);
+        await _jobCommandRepositoryMock.Received().RepriceJobWithBaseAmountAsync(
+            Arg.Is<RepriceJobWithBaseAmountModel>(m => m.IsPrebook == true && m.BaseAmount == 100m));
 
         // UpdateManualPriceAsync should NOT be called for prebook-only updates
-        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
 
         Assert.Equal(120m, result.Rows[0].NewAmount);
     }
@@ -274,15 +276,15 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - file contains courier payment data that should be used
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel
             {
                 Id = 1, RawBaseAmount = 100m,
                 CourierPayment = 75m, CourierFuel = 10m, CourierBonus = 5m
             }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -291,18 +293,21 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
-            .ReturnsAsync(115m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
+            .Returns(115m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - courier values from file should override existing values
         Assert.NotNull(capturedModels);
@@ -317,14 +322,14 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - mix of prebook and regular jobs
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, RawBaseAmount = 100m },
                 new JobManualPriceModel { Id = 2, RawBaseAmount = 200m }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -338,20 +343,23 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m)).ReturnsAsync(115m);
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(2, 200m)).ReturnsAsync(230m);
-        _jobCommandRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()))
-            .ReturnsAsync(230m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m).Returns(115m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(2, 200m).Returns(230m);
+        _jobCommandRepositoryMock.RepriceJobWithBaseAmountAsync(Arg.Any<RepriceJobWithBaseAmountModel>())
+            .Returns(230m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert
         Assert.Equal(2, result.Rows.Count);
@@ -362,8 +370,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.Equal(1, capturedModels[0].Id);
 
         // RepriceJobWithBaseAmountAsync should be called for prebook job
-        _jobCommandRepositoryMock.Verify(x => x.RepriceJobWithBaseAmountAsync(
-            It.Is<RepriceJobWithBaseAmountModel>(m => m.JobId == 2 && m.IsPrebook == true)), Times.Once);
+        await _jobCommandRepositoryMock.Received().RepriceJobWithBaseAmountAsync(
+            Arg.Is<RepriceJobWithBaseAmountModel>(m => m.JobId == 2 && m.IsPrebook == true));
     }
 
     [Fact]
@@ -371,11 +379,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - RawBaseAmount is null, should be treated as 0
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = null }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, RawBaseAmount = null }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -384,18 +392,21 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 0m))
-            .ReturnsAsync(0m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 0m)
+            .Returns(0m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert
         Assert.Equal(0m, result.Rows[0].NewAmount);
@@ -409,37 +420,40 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - multiple regular jobs should all be in one UpdateManualPriceAsync call
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, RawBaseAmount = 100m },
                 new JobManualPriceModel { Id = 2, RawBaseAmount = 200m },
                 new JobManualPriceModel { Id = 3, RawBaseAmount = 300m }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 200m, IsPrebook = false },
                 [3] = new() { JobId = 3, JobNo = "JOB-003", Amount = 300m, IsPrebook = false }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m)).ReturnsAsync(115m);
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(2, 200m)).ReturnsAsync(230m);
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(3, 300m)).ReturnsAsync(345m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m).Returns(115m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(2, 200m).Returns(230m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(3, 300m).Returns(345m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - all 3 jobs should be batched in one call
-        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
         Assert.NotNull(capturedModels);
         Assert.Equal(3, capturedModels!.Count);
         Assert.Equivalent(Expected, capturedModels.Select(m => m.Id));
@@ -455,8 +469,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - file has only CourierPayment, other courier fields should come from existing
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel
             {
                 Id = 1, RawBaseAmount = 100m,
                 CourierPayment = 80m, // Only this is provided
@@ -464,8 +478,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 CourierBonus = null
             }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -474,18 +488,21 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
-            .ReturnsAsync(115m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
+            .Returns(115m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - CourierPayment from file, others from existing
         Assert.NotNull(capturedModels);
@@ -500,25 +517,25 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - prebook reprice fails, should still complete without throwing
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "BOOK-001", Amount = 50m, IsPrebook = true }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
-            .ReturnsAsync(120m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
+            .Returns(120m);
 
-        _jobCommandRepositoryMock.Setup(x => x.RepriceJobWithBaseAmountAsync(It.IsAny<RepriceJobWithBaseAmountModel>()))
-            .ThrowsAsync(new Exception("Prebook reprice failed"));
+        _jobCommandRepositoryMock.RepriceJobWithBaseAmountAsync(Arg.Any<RepriceJobWithBaseAmountModel>())
+            .Returns<decimal>(_ => throw new Exception("Prebook reprice failed"));
 
         var service = CreateService();
 
         // Act - should not throw
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - row still returned with the calculated amount from before failure
         Assert.Single(result.Rows);
@@ -530,11 +547,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - verify Ppd is always set to 0 in base mode
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m, Ppd = 50m }]); // File has Ppd
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m, Ppd = 50m }]); // File has Ppd
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new()
                 {
@@ -542,18 +559,21 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
-            .ReturnsAsync(115m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
+            .Returns(115m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert - Ppd should be 0, not from file or existing
         Assert.NotNull(capturedModels);
@@ -565,26 +585,26 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - verify totals are calculated correctly
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, RawBaseAmount = 100m },
                 new JobManualPriceModel { Id = 2, RawBaseAmount = 200m }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 80m, IsPrebook = false },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 150m, IsPrebook = false }
             });
 
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m)).ReturnsAsync(115m);
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(2, 200m)).ReturnsAsync(230m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m).Returns(115m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(2, 200m).Returns(230m);
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert
         Assert.Equal(230m, result.TotalOldAmount); // 80 + 150
@@ -597,28 +617,31 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - when DB function returns same as base, fuel should be 0
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1, RawBaseAmount = 100m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 100m, IsPrebook = false }
             });
 
         // DB function returns same as base (no fuel surcharge for this job)
-        _jobQueryRepositoryMock.Setup(x => x.GetTotalAmountFromBaseAsync(1, 100m))
-            .ReturnsAsync(100m);
+        _jobQueryRepositoryMock.GetTotalAmountFromBaseAsync(1, 100m)
+            .Returns(100m);
 
         IReadOnlyList<JobManualPriceModel>? capturedModels = null;
-        _jobCommandRepositoryMock.Setup(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()))
-            .Callback<IReadOnlyList<JobManualPriceModel>>(models => capturedModels = models)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>())
+            .Returns(callInfo =>
+            {
+                capturedModels = callInfo.Arg<IReadOnlyList<JobManualPriceModel>>();
+                return Task.CompletedTask;
+            });
 
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "base");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "base");
 
         // Assert
         Assert.NotNull(capturedModels);
@@ -638,12 +661,12 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Arrange
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 1 }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 1 }]);
 
         var callCount = 0;
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(() =>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(_ =>
             {
                 callCount++;
                 // First call returns old amount, second call (after recalc) returns new amount
@@ -659,11 +682,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
                 };
             });
 
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         // Set up job details with required fields - zero coordinates bypass HTTP calls
-        _jobQueryRepositoryMock.Setup(x => x.GetJobDetailsForRatingAsync(1))
-            .ReturnsAsync(new JobRatingDetailsDto
+        _jobQueryRepositoryMock.GetJobDetailsForRatingAsync(1)
+            .Returns(new JobRatingDetailsDto
             {
                 JobId = 1,
                 SpeedId = 1,
@@ -677,8 +700,8 @@ public class RateJobServiceBulkPriceTests : IDisposable
             });
 
         // Mock the speed type lookup - non-flight type (GroupingId != 2)
-        _jobQueryRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(1))
-            .ReturnsAsync(new EntityClasses.TucJobType
+        _jobQueryRepositoryMock.GetJobTypeByIdAsync(1)
+            .Returns(new EntityClasses.TucJobType
             {
                 UcjtId = 1,
                 UcjtName = "Same Day",
@@ -686,13 +709,13 @@ public class RateJobServiceBulkPriceTests : IDisposable
             });
 
         // Mock the actual rate job call to succeed
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
             .Returns(Task.CompletedTask);
 
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "recalculate");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "recalculate");
 
         // Assert
         Assert.Single(result.Rows);
@@ -700,7 +723,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.Equal(180m, result.Rows[0].NewAmount);
 
         // Verify the rating method was called
-        _jobCommandRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().RateJobUsAsync(Arg.Any<RateJobUsDto>());
     }
 
     [Fact]
@@ -708,15 +731,15 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m },
                 new JobManualPriceModel { Id = 2, Amount = 200m },
                 new JobManualPriceModel { Id = 3, Amount = 300m }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 100m },
@@ -726,7 +749,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
         Assert.Equal(3, result.TotalJobs);
@@ -739,14 +762,14 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange - same job ID appears twice in file
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m },
                 new JobManualPriceModel { Id = 1, Amount = 200m }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m }
             });
@@ -754,7 +777,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert - processes each row separately
         Assert.Equal(2, result.Rows.Count);
@@ -765,11 +788,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.xlsx", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([new JobManualPriceModel { Id = 42, Amount = 500m }]);
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([new JobManualPriceModel { Id = 42, Amount = 500m }]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [42] = new() { JobId = 42, JobNo = "TEST-042", Amount = 250m, IsPrebook = true }
             });
@@ -777,7 +800,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
         var service = CreateService();
 
         // Act
-        var result = await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        var result = await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
         var row = Assert.Single(result.Rows);
@@ -789,17 +812,20 @@ public class RateJobServiceBulkPriceTests : IDisposable
         Assert.True(row.IsPrebook);
     }
 
-    private static Mock<IFormFile> CreateMockFile(string fileName, string content)
+    private static IFormFile CreateMockFile(string fileName, string content)
     {
-        var fileMock = new Mock<IFormFile>();
+        var fileMock = Substitute.For<IFormFile>();
         var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
 
-        fileMock.Setup(f => f.FileName).Returns(fileName);
-        fileMock.Setup(f => f.Length).Returns(stream.Length);
-        fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
-        fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Callback<Stream, CancellationToken>((s, _) => stream.CopyTo(s))
-            .Returns(Task.CompletedTask);
+        fileMock.FileName.Returns(fileName);
+        fileMock.Length.Returns(stream.Length);
+        fileMock.OpenReadStream().Returns(stream);
+        fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                stream.CopyTo(callInfo.Arg<Stream>());
+                return Task.CompletedTask;
+            });
 
         return fileMock;
     }

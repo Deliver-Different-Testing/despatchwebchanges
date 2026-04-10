@@ -279,6 +279,10 @@ export interface MountJobListConfig {
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */
     fetchConfig?: FetchConfig;
+    /** Hide the "Logged-in only" toggle in the toolbar */
+    hideLoggedInSwitch?: boolean;
+    /** Called when the "Today only" date filter toggle changes (current work list) */
+    onDateFilterModeChange?: (todayOnly: boolean) => void;
 }
 
 // ── React Component Props ────────────────────────────────────────────
@@ -302,6 +306,10 @@ export interface JobListPanelProps {
     storagePrefix?: string;
     /** If provided, React manages its own data fetching via React Query */
     fetchConfig?: FetchConfig;
+    /** Hide the "Logged-in only" toggle in the toolbar */
+    hideLoggedInSwitch?: boolean;
+    /** Called when the "Today only" date filter toggle changes (current work list) */
+    onDateFilterModeChange?: (todayOnly: boolean) => void;
     /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */
     setJobsCallback?: (cb: (jobs: DispatchJob[], totalCount: number) => void) => void;
     /** Called by mount module to allow triggering refresh from AngularJS */

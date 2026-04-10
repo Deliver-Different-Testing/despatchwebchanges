@@ -27,7 +27,7 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     public RecurringJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
     }
 
     public async ValueTask DisposeAsync()

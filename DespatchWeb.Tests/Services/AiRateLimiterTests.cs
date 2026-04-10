@@ -1,14 +1,14 @@
-using DespatchWeb.Models;
+﻿using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 public class AiRateLimiterTests
 {
-    private readonly Mock<IDistributedCache> _cacheMock = new();
+    private readonly IDistributedCache _cacheMock = Substitute.For<IDistributedCache>();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
@@ -16,14 +16,14 @@ public class AiRateLimiterTests
         RateLimitPerTenantPerMinute = 100
     });
 
-    private AiRateLimiter CreateService() => new(_cacheMock.Object, _settings);
+    private AiRateLimiter CreateService() => new(_cacheMock, _settings);
 
     [Fact]
     public async Task TryAcquireAsync_FirstRequest_ReturnsTrue()
     {
         // Arrange - cache returns null (no existing counter)
-        _cacheMock.Setup(x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((byte[]?)null);
+        _cacheMock.GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns((byte[]?)null);
 
         var service = CreateService();
 
@@ -38,10 +38,10 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_UserLimitExceeded_ReturnsFalse()
     {
         // Arrange - user has already made 20 requests this minute
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("20"u8.ToArray());
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((byte[]?)null);
+        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("user:")), Arg.Any<CancellationToken>())
+            .Returns("20"u8.ToArray());
+        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("tenant:")), Arg.Any<CancellationToken>())
+            .Returns((byte[]?)null);
 
         var service = CreateService();
 
@@ -56,10 +56,10 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_TenantLimitExceeded_ReturnsFalse()
     {
         // Arrange - user is under limit, but tenant is at 100
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("1"u8.ToArray());
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("100"u8.ToArray());
+        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("user:")), Arg.Any<CancellationToken>())
+            .Returns("1"u8.ToArray());
+        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("tenant:")), Arg.Any<CancellationToken>())
+            .Returns("100"u8.ToArray());
 
         var service = CreateService();
 
@@ -74,10 +74,10 @@ public class AiRateLimiterTests
     public async Task TryAcquireAsync_BothUnderLimit_ReturnsTrue()
     {
         // Arrange
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("user:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("5"u8.ToArray());
-        _cacheMock.Setup(x => x.GetAsync(It.Is<string>(k => k.Contains("tenant:")), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("50"u8.ToArray());
+        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("user:")), Arg.Any<CancellationToken>())
+            .Returns("5"u8.ToArray());
+        _cacheMock.GetAsync(Arg.Is<string>(k => k.Contains("tenant:")), Arg.Any<CancellationToken>())
+            .Returns("50"u8.ToArray());
 
         var service = CreateService();
 
@@ -97,5 +97,4 @@ public class AiRateLimiterTests
         // Act & Assert - should complete without error (logging only)
         await service.RecordTokenUsageAsync(1, "nz", 100, 50);
     }
-
 }

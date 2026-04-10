@@ -27,7 +27,8 @@ import {
     openInterCourierChargeDialog
 } from "../../react/components/dialogs/inter-courier-charge-dialog/inter-courier-charge-dialog-react.module";
 import {Coordinates} from "../../interfaces/coordinates.interface";
-import {ContactID} from "../../contants";
+import {ContactID, TimeZone} from "../../contants";
+import {getIanaTimezone} from "../../react/utils/dateUtils";
 import {IJobReadChanged} from "../../interfaces/event-interfaces";
 import {JobProperty} from "../../enums/job-property.enum";
 import dayjs from "dayjs";
@@ -1224,12 +1225,30 @@ class HomeController extends BaseController {
             this.currentListLoading = true;
             this.applyScope();
 
-            // Use full-day range — courier's assigned work must not be narrowed by the dispatch time filter
-            const todayRange = setDateFilterDefaults();
+            // Determine date range based on todayOnly toggle
+            let startDate: dayjs.Dayjs;
+            let endDate: dayjs.Dayjs;
+
+            if (this.currentWorkTodayOnly) {
+                // Today only: start of today to end of today in tenant timezone
+                const tz = getIanaTimezone(TimeZone);
+                startDate = dayjs().tz(tz).startOf('day');
+                endDate = dayjs().tz(tz).endOf('day');
+            } else if (this.dateFilterData) {
+                // Use dispatch page's date filter range
+                startDate = this.dateFilterData.startDate;
+                endDate = this.dateFilterData.endDate;
+            } else {
+                // Fallback to defaults
+                const defaultRange = setDateFilterDefaults();
+                startDate = defaultRange.startDate;
+                endDate = defaultRange.endDate;
+            }
+
             const result = await this.DispatchData.getJobsCurrent(
                 courierId,
-                todayRange.startDate,
-                todayRange.endDate
+                startDate,
+                endDate
             );
             this.jobsCurrentList = result.jobs;
 
@@ -2088,10 +2107,17 @@ class HomeController extends BaseController {
         this.dateFilterData = dateFilterData;
 
         this.saveDateFilterToStorage();
-        await Promise.all([
+        const tasks: Promise<void>[] = [
             this.getData(),
-            this.fetchDriverLocations()
-        ]);
+            this.fetchDriverLocations(),
+        ];
+
+        // When using page dates for current work, re-fetch with updated date range
+        if (!this.currentWorkTodayOnly && this.currentCourier) {
+            tasks.push(this.getCurrentJobs(this.currentCourier.id));
+        }
+
+        await Promise.all(tasks);
     }
 
     private saveDateFilterToStorage(): void {
@@ -2454,6 +2480,7 @@ class HomeController extends BaseController {
     // ── React Current Work Job List Integration ─────────────────────
 
     private reactCurrentWorkMounted = false;
+    private currentWorkTodayOnly = true;
 
     /**
      * Mounts the React current work job list once the container element exists in the DOM.
@@ -2529,6 +2556,12 @@ class HomeController extends BaseController {
             },
             onAddStop: async (job: DispatchJob) => {
                 await this.jobAddStopService.addNewStop(job as any);
+            },
+            onDateFilterModeChange: async (todayOnly: boolean) => {
+                this.currentWorkTodayOnly = todayOnly;
+                if (this.currentCourier) {
+                    await this.getCurrentJobs(this.currentCourier.id);
+                }
             },
         });
 

@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using Amazon.S3;
 using DespatchWeb.Interfaces;
 using Microsoft.AspNetCore.DataProtection;
@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Infrastructure;
 
@@ -49,11 +49,11 @@ public class AppStartupTests(AppStartupTests.TestApp factory) : IClassFixture<Ap
 
                 // Stub AWS S3
                 RemoveService<IAmazonS3>(services);
-                services.AddSingleton(Mock.Of<IAmazonS3>());
+                services.AddSingleton(Substitute.For<IAmazonS3>());
 
                 // Stub connection string manager
                 RemoveService<IConnectionStringManager>(services);
-                services.AddSingleton(Mock.Of<IConnectionStringManager>());
+                services.AddSingleton(Substitute.For<IConnectionStringManager>());
 
                 // Use ephemeral data protection (no file system or AWS dependency)
                 services.AddDataProtection().UseEphemeralDataProtectionProvider();

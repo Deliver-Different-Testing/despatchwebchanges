@@ -1,9 +1,9 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -13,9 +13,9 @@ namespace DespatchWeb.Tests.Services;
 public class PricingPermissionServiceTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IClientRepository> _clientRepositoryMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IClientRepository _clientRepositoryMock = Substitute.For<IClientRepository>();
     private static readonly int[] Expected = [100, 101];
 
     public PricingPermissionServiceTests()
@@ -232,9 +232,9 @@ public class PricingPermissionServiceTests : IAsyncDisposable
     private DespatchContext CreateContext() => _db.CreateContext();
 
     private PricingPermissionService CreateService() => new(
-        _tenantInfoServiceMock.Object,
-        _clientRepositoryMock.Object,
-        _contextFactoryMock.Object
+        _tenantInfoServiceMock,
+        _clientRepositoryMock,
+        _contextFactoryMock
     );
 
     private async Task SeedJobAsync(int jobId, int? clientId = 1)
@@ -251,22 +251,22 @@ public class PricingPermissionServiceTests : IAsyncDisposable
 
     private void SetupAsStaff(int staffId = 1)
     {
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(staffId);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(0);
+        _tenantInfoServiceMock.GetStaffId().Returns(staffId);
+        _tenantInfoServiceMock.GetContactId().Returns(0);
     }
 
     private void SetupAsContact(int contactId, List<int> accessibleClientIds)
     {
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(0);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(contactId);
-        _clientRepositoryMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync(accessibleClientIds.Select(id => new Suggestion { Id = id, Text = $"Client {id}" }).ToList());
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
+        _tenantInfoServiceMock.GetContactId().Returns(contactId);
+        _clientRepositoryMock.ClientContactsAsync(contactId)
+            .Returns(accessibleClientIds.Select(id => new Suggestion { Id = id, Text = $"Client {id}" }).ToList());
     }
 
     private void SetupAsUnauthenticated()
     {
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(0);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(0);
+        _tenantInfoServiceMock.GetStaffId().Returns(0);
+        _tenantInfoServiceMock.GetContactId().Returns(0);
     }
 
     [Fact]
@@ -417,7 +417,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
 
         await service.ValidateJobAccessAsync(1);
 
-        _contextFactoryMock.Verify(f => f.CreateDbContextAsync(It.IsAny<CancellationToken>()), Times.Never);
+        await _contextFactoryMock.DidNotReceive().CreateDbContextAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -598,7 +598,7 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         await service.ValidateJobAccessAsync(101);
 
         // ClientContactsAsync should only be called once due to caching
-        _clientRepositoryMock.Verify(x => x.ClientContactsAsync(10), Times.Once);
+        await _clientRepositoryMock.Received(1).ClientContactsAsync(10);
     }
 
     [Fact]
@@ -614,7 +614,6 @@ public class PricingPermissionServiceTests : IAsyncDisposable
         await service2.ValidateJobAccessAsync(100);
 
         // Each service instance should call ClientContactsAsync separately
-        _clientRepositoryMock.Verify(x => x.ClientContactsAsync(10), Times.Exactly(2));
+        await _clientRepositoryMock.Received(2).ClientContactsAsync(10);
     }
-
 }

@@ -1,8 +1,8 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Accessorial;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,22 +12,20 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class AccessorialChargeServiceTests
 {
-    private readonly Mock<IAccessorialChargeRepository> _repositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IAccessorialChargeRepository _repositoryMock = Substitute.For<IAccessorialChargeRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     private AccessorialChargeService CreateService() =>
-        new(_repositoryMock.Object, _tenantInfoServiceMock.Object);
+        new(_repositoryMock, _tenantInfoServiceMock);
 
     private void SetupStaffInfo(string name = "Test User") =>
-        _tenantInfoServiceMock
-            .Setup(t => t.GetStaffInfoAsync())
-            .ReturnsAsync(new Suggestion { Text = name });
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns(new Suggestion { Text = name });
 
     private void SetupUpdateRepository() =>
-        _repositoryMock
-            .Setup(r => r.UpdateChargeAsync(
-                It.IsAny<int>(), It.IsAny<decimal>(), It.IsAny<decimal?>(),
-                It.IsAny<decimal?>(), It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>()))
+        _repositoryMock.UpdateChargeAsync(
+                Arg.Any<int>(), Arg.Any<decimal>(), Arg.Any<decimal?>(),
+                Arg.Any<decimal?>(), Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>())
             .Returns(Task.CompletedTask);
 
     private async Task<JobAccessorialChargeDto> CallUpdate(JobAccessorialChargeDto existing,
@@ -39,9 +37,8 @@ public class AccessorialChargeServiceTests
             ItemCount = existing.ItemCount
         };
 
-        _repositoryMock
-            .Setup(r => r.GetAppliedChargeWithDetailsAsync(1))
-            .ReturnsAsync(existing);
+        _repositoryMock.GetAppliedChargeWithDetailsAsync(1)
+            .Returns(existing);
 
         SetupUpdateRepository();
         SetupStaffInfo();
@@ -63,14 +60,13 @@ public class AccessorialChargeServiceTests
     [Fact]
     public async Task GetJobAmountAsync_DelegatesToRepository()
     {
-        _repositoryMock
-            .Setup(r => r.GetJobAmountAsync(500))
-            .ReturnsAsync(127.50m);
+        _repositoryMock.GetJobAmountAsync(500)
+            .Returns(127.50m);
 
         var result = await CreateService().GetJobAmountAsync(500);
 
         Assert.Equal(127.50m, result);
-        _repositoryMock.Verify(r => r.GetJobAmountAsync(500), Times.Once);
+        await _repositoryMock.Received().GetJobAmountAsync(500);
     }
 
     [Fact]
@@ -81,14 +77,13 @@ public class AccessorialChargeServiceTests
             new() { JobId = 101, Label = "Pickup", AccessorialChargeGroupId = 5 },
             new() { JobId = 102, Label = "Flight", AccessorialChargeGroupId = 6 }
         };
-        _repositoryMock
-            .Setup(r => r.GetPortionJobsAsync(200))
-            .ReturnsAsync(expected);
+        _repositoryMock.GetPortionJobsAsync(200)
+            .Returns(expected);
 
         var result = await CreateService().GetPortionJobsAsync(200);
 
         Assert.Equivalent(expected, result);
-        _repositoryMock.Verify(r => r.GetPortionJobsAsync(200), Times.Once);
+        await _repositoryMock.Received().GetPortionJobsAsync(200);
     }
 
     [Fact]
@@ -290,9 +285,8 @@ public class AccessorialChargeServiceTests
     public async Task AddChargesAsync_CallsRepositoryForEachCharge()
     {
         SetupStaffInfo("Jane Smith");
-        _repositoryMock
-            .Setup(r => r.AddChargeAsync(It.IsAny<int>(), It.IsAny<JobAccessorialChargeCreateRequest>(),
-                It.IsAny<string>()))
+        _repositoryMock.AddChargeAsync(Arg.Any<int>(), Arg.Any<JobAccessorialChargeCreateRequest>(),
+                Arg.Any<string>())
             .Returns(Task.CompletedTask);
 
         var charges = new List<JobAccessorialChargeCreateRequest>
@@ -303,27 +297,25 @@ public class AccessorialChargeServiceTests
 
         await CreateService().AddChargesAsync(500, charges);
 
-        _repositoryMock.Verify(
-            r => r.AddChargeAsync(500, It.IsAny<JobAccessorialChargeCreateRequest>(), "Jane Smith"),
-            Times.Exactly(2));
+        await _repositoryMock
+            .Received(2)
+            .AddChargeAsync(500, Arg.Any<JobAccessorialChargeCreateRequest>(), "Jane Smith");
     }
 
     [Fact]
     public async Task AddChargesAsync_UsesUnknownWhenStaffInfoIsNull()
     {
-        _tenantInfoServiceMock
-            .Setup(t => t.GetStaffInfoAsync())
-            .ReturnsAsync((Suggestion?)null);
-        _repositoryMock
-            .Setup(r => r.AddChargeAsync(It.IsAny<int>(), It.IsAny<JobAccessorialChargeCreateRequest>(),
-                It.IsAny<string>()))
+        _tenantInfoServiceMock.GetStaffInfoAsync()
+            .Returns((Suggestion?)null);
+        _repositoryMock.AddChargeAsync(Arg.Any<int>(), Arg.Any<JobAccessorialChargeCreateRequest>(),
+                Arg.Any<string>())
             .Returns(Task.CompletedTask);
 
-        await CreateService().AddChargesAsync(500, [new() { AccessorialChargeId = 1, ItemCount = 1 }]);
+        await CreateService().AddChargesAsync(500,
+            [new JobAccessorialChargeCreateRequest { AccessorialChargeId = 1, ItemCount = 1 }]);
 
-        _repositoryMock.Verify(
-            r => r.AddChargeAsync(500, It.IsAny<JobAccessorialChargeCreateRequest>(), "Unknown"),
-            Times.Once);
+        await _repositoryMock
+            .Received(1)
+            .AddChargeAsync(500, Arg.Any<JobAccessorialChargeCreateRequest>(), "Unknown");
     }
-
 }

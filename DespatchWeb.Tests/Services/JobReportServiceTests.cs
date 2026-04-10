@@ -1,9 +1,9 @@
-using Amazon.S3;
+﻿using Amazon.S3;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,18 +12,18 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobReportServiceTests
 {
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly Mock<IAmazonS3> _s3ClientMock = new();
+    private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
 
     private JobReportService CreateService() => new(
-        _jobQueryRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
-        _recurringJobRepositoryMock.Object,
+        _jobQueryRepositoryMock,
+        _jobCommandRepositoryMock,
+        _recurringJobRepositoryMock,
         _clock,
-        _s3ClientMock.Object
+        _s3ClientMock
     );
 
     [Fact]
@@ -46,8 +46,8 @@ public class JobReportServiceTests
     public async Task ParseBulkPriceFileAsync_EmptyFileName_ThrowsArgumentException()
     {
         // Arrange
-        var fileMock = new Mock<IFormFile>();
-        fileMock.Setup(f => f.FileName).Returns(string.Empty);
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.FileName.Returns(string.Empty);
 
         var service = CreateService();
 
@@ -58,7 +58,7 @@ public class JobReportServiceTests
         return;
 
         // Act
-        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock.Object);
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class JobReportServiceTests
         return;
 
         // Act
-        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock.Object);
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock);
     }
 
     [Theory]
@@ -95,7 +95,7 @@ public class JobReportServiceTests
         return;
 
         // Act
-        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock.Object);
+        Task<IReadOnlyList<JobManualPriceModel>> Act() => service.ParseBulkPriceFileAsync(fileMock);
     }
 
     [Theory]
@@ -116,7 +116,7 @@ public class JobReportServiceTests
         Exception? caughtException = null;
         try
         {
-            await service.ParseBulkPriceFileAsync(fileMock.Object);
+            await service.ParseBulkPriceFileAsync(fileMock);
         }
         catch (ArgumentException ex) when (ex.Message.Contains("Invalid file format"))
         {
@@ -140,7 +140,7 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -163,7 +163,7 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
 
         // Assert
         Assert.Equal(2, result.Count);
@@ -183,7 +183,7 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
 
         // Assert
         Assert.Single(result);
@@ -208,7 +208,7 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
 
         // Assert
         Assert.Empty(result);
@@ -223,7 +223,7 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        var result = await service.ParseBulkPriceFileAsync(fileMock.Object);
+        var result = await service.ParseBulkPriceFileAsync(fileMock);
 
         // Assert
         Assert.Single(result);
@@ -259,16 +259,16 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        await service.ProcessJobPriceUploadAsync(fileMock.Object);
+        await service.ProcessJobPriceUploadAsync(fileMock);
 
         // Assert - verify S3 upload was called
-        _s3ClientMock.Verify(x => x.PutObjectAsync(
-            It.IsAny<Amazon.S3.Model.PutObjectRequest>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _s3ClientMock.Received().PutObjectAsync(
+            Arg.Any<Amazon.S3.Model.PutObjectRequest>(),
+            Arg.Any<CancellationToken>());
 
         // Assert - verify repository update was called
-        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(
-            It.Is<IReadOnlyList<JobManualPriceModel>>(l => l.Count == 2)), Times.Once);
+        await _jobCommandRepositoryMock.Received().UpdateManualPriceAsync(
+            Arg.Is<IReadOnlyList<JobManualPriceModel>>(l => l.Count == 2));
     }
 
     [Fact]
@@ -283,43 +283,43 @@ public class JobReportServiceTests
         var service = CreateService();
 
         // Act
-        await service.ProcessJobPriceUploadAsync(fileMock.Object);
+        await service.ProcessJobPriceUploadAsync(fileMock);
 
         // Assert - should not call update when no data
-        _jobCommandRepositoryMock.Verify(x => x.UpdateManualPriceAsync(It.IsAny<IReadOnlyList<JobManualPriceModel>>()), Times.Never);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateManualPriceAsync(Arg.Any<IReadOnlyList<JobManualPriceModel>>());
     }
 
-    private static Mock<IFormFile> CreateMockFile(string fileName, string content)
+    private static IFormFile CreateMockFile(string fileName, string content)
     {
-        var fileMock = new Mock<IFormFile>();
+        var fileMock = Substitute.For<IFormFile>();
         var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
 
-        fileMock.Setup(f => f.FileName).Returns(fileName);
-        fileMock.Setup(f => f.Length).Returns(stream.Length);
-        fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
-        fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns<Stream, CancellationToken>((s, x) =>
+        fileMock.FileName.Returns(fileName);
+        fileMock.Length.Returns(stream.Length);
+        fileMock.OpenReadStream().Returns(stream);
+        fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 stream.Position = 0;
-                return stream.CopyToAsync(s, x);
+                return stream.CopyToAsync(callInfo.Arg<Stream>(), callInfo.Arg<CancellationToken>());
             });
 
         return fileMock;
     }
 
-    private static Mock<IFormFile> CreateMockCsvFile(string fileName, string csvContent)
+    private static IFormFile CreateMockCsvFile(string fileName, string csvContent)
     {
-        var fileMock = new Mock<IFormFile>();
+        var fileMock = Substitute.For<IFormFile>();
         var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
 
-        fileMock.Setup(f => f.FileName).Returns(fileName);
-        fileMock.Setup(f => f.Length).Returns(bytes.Length);
-        fileMock.Setup(f => f.OpenReadStream()).Returns(() => new MemoryStream(bytes));
-        fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Returns<Stream, CancellationToken>((s, x) =>
+        fileMock.FileName.Returns(fileName);
+        fileMock.Length.Returns(bytes.Length);
+        fileMock.OpenReadStream().Returns(_ => new MemoryStream(bytes));
+        fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 var ms = new MemoryStream(bytes);
-                return ms.CopyToAsync(s, x);
+                return ms.CopyToAsync(callInfo.Arg<Stream>(), callInfo.Arg<CancellationToken>());
             });
 
         return fileMock;

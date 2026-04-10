@@ -22,7 +22,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
 
     public JobRepositoryPodSearchDownloadTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
+        _contextFactoryMock = _db.CreateMoqFactoryMock();
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -70,8 +70,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -105,8 +105,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -139,8 +139,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: [100]
         );
 
@@ -171,8 +171,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [10],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -203,8 +203,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [1],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -236,7 +236,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             courierIds: [],
             speedIds: [],
             job: "ABC",
-            wild: null,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -271,7 +271,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             courierIds: [],
             speedIds: [],
             job: searchTerm,
-            wild: null,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -302,7 +302,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             courierIds: [],
             speedIds: [],
             job: "   ",
-            wild: null,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -332,8 +332,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -366,8 +366,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -395,8 +395,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -427,8 +427,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
-            wild: null,
+            job: string.Empty,
+            wild: string.Empty,
             clientIds: []
         );
 
@@ -458,7 +458,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "John",
             clientIds: []
         );
@@ -491,7 +491,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "0412",
             clientIds: []
         );
@@ -524,7 +524,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "031",
             clientIds: []
         );
@@ -556,7 +556,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "07",
             clientIds: []
         );
@@ -589,7 +589,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "example.com",
             clientIds: []
         );
@@ -622,7 +622,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "0400",
             clientIds: []
         );
@@ -655,7 +655,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "company.com",
             clientIds: []
         );
@@ -688,7 +688,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "0422",
             clientIds: []
         );
@@ -721,7 +721,7 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             toDate: new DateTime(2024, 1, 31),
             courierIds: [],
             speedIds: [],
-            job: null,
+            job: string.Empty,
             wild: "John",
             clientIds: []
         );
@@ -747,9 +747,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         string? podEmail = null,
         string? podMobile = null,
         string? trackingEmail = null,
-        string? trackingMobile = null)
-    {
-        return new TucJob
+        string? trackingMobile = null) =>
+        new()
         {
             UcjbId = id,
             UcjbNumber = jobNumber,
@@ -771,7 +770,6 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             TrackingEmail = trackingEmail,
             TrackingMobile = trackingMobile
         };
-    }
 
     private static TucJobArchive CreateArchivedJob(
         int id,
@@ -788,9 +786,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         string? podEmail = null,
         string? podMobile = null,
         string? trackingEmail = null,
-        string? trackingMobile = null)
-    {
-        return new TucJobArchive
+        string? trackingMobile = null) =>
+        new()
         {
             UcjbId = id,
             UcjbNumber = jobNumber,
@@ -812,6 +809,4 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
             TrackingEmail = trackingEmail,
             TrackingMobile = trackingMobile
         };
-    }
-
 }

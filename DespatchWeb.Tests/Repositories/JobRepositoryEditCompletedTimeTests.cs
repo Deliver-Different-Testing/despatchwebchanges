@@ -37,7 +37,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
 
     public JobRepositoryEditCompletedTimeTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
+        _contextFactoryMock = _db.CreateMoqFactoryMock();
 
         // Seed timezone records for entity-based tests
         using var context = _db.CreateContext();
@@ -324,5 +324,4 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         Assert.Equal(14, updatedJob.FollowupTime!.Value.Hour);
         Assert.Equal(30, updatedJob.FollowupTime!.Value.Minute);
     }
-
 }

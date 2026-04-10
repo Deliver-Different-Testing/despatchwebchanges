@@ -1,7 +1,7 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -10,9 +10,9 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class FlightRateServiceTests
 {
-    private readonly Mock<INationwideJobRepository> _repositoryMock = new();
+    private readonly INationwideJobRepository _repositoryMock = Substitute.For<INationwideJobRepository>();
 
-    private FlightRateService CreateService() => new(_repositoryMock.Object);
+    private FlightRateService CreateService() => new(_repositoryMock);
 
     [Fact]
     public async Task GetCarrierFlightRateByJobIdAsync_NullDto_ReturnsZero()
@@ -20,8 +20,8 @@ public class FlightRateServiceTests
         // Arrange
         var service = CreateService();
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, null))
-            .ReturnsAsync((FlightRateCalculationDto)null!);
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", false, null)
+            .Returns((FlightRateCalculationDto)null!);
 
         // Act
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
@@ -37,10 +37,10 @@ public class FlightRateServiceTests
         var service = CreateService();
         var dto = CreateBasicFlightRateDto();
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, null))
-            .ReturnsAsync(dto);
-        _repositoryMock.Setup(x => x.GetCarrierFlightRatesAsync(dto))
-            .ReturnsAsync([]);
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", false, null)
+            .Returns(dto);
+        _repositoryMock.GetCarrierFlightRatesAsync(dto)
+            .Returns([]);
 
         // Act
         var result = await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
@@ -57,10 +57,10 @@ public class FlightRateServiceTests
         var dto = CreateBasicFlightRateDto();
         var expectedRate = 150.50m;
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, null))
-            .ReturnsAsync(dto);
-        _repositoryMock.Setup(x => x.GetCarrierFlightRatesAsync(dto))
-            .ReturnsAsync(
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", false, null)
+            .Returns(dto);
+        _repositoryMock.GetCarrierFlightRatesAsync(dto)
+            .Returns(
             [
                 new FlightRateDto
                 {
@@ -92,10 +92,10 @@ public class FlightRateServiceTests
         var service = CreateService();
         var dto = CreateBasicFlightRateDto();
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, null))
-            .ReturnsAsync(dto);
-        _repositoryMock.Setup(x => x.GetCarrierFlightRatesAsync(dto))
-            .ReturnsAsync(
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", false, null)
+            .Returns(dto);
+        _repositoryMock.GetCarrierFlightRatesAsync(dto)
+            .Returns(
             [
                 new FlightRateDto { Rate = 100m },
                 new FlightRateDto { Rate = 200m },
@@ -117,16 +117,16 @@ public class FlightRateServiceTests
         var dto = CreateBasicFlightRateDto();
         var bookTime = new DateTime(2024, 12, 25, 10, 0, 0);
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, bookTime))
-            .ReturnsAsync(dto);
-        _repositoryMock.Setup(x => x.GetCarrierFlightRatesAsync(dto))
-            .ReturnsAsync([]);
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", false, bookTime)
+            .Returns(dto);
+        _repositoryMock.GetCarrierFlightRatesAsync(dto)
+            .Returns([]);
 
         // Act
         await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, bookTime);
 
         // Assert
-        _repositoryMock.Verify(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, bookTime), Times.Once);
+        await _repositoryMock.Received().GetFlightRateCalculationDtoAsync(1, "AA", false, bookTime);
     }
 
     [Fact]
@@ -136,16 +136,16 @@ public class FlightRateServiceTests
         var service = CreateService();
         var dto = CreateBasicFlightRateDto();
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", true, null))
-            .ReturnsAsync(dto);
-        _repositoryMock.Setup(x => x.GetCarrierFlightRatesAsync(dto))
-            .ReturnsAsync([]);
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", true, null)
+            .Returns(dto);
+        _repositoryMock.GetCarrierFlightRatesAsync(dto)
+            .Returns([]);
 
         // Act
         await service.GetCarrierFlightRateByJobIdAsync(1, "AA", true, null);
 
         // Assert
-        _repositoryMock.Verify(x => x.GetFlightRateCalculationDtoAsync(1, "AA", true, null), Times.Once);
+        await _repositoryMock.Received().GetFlightRateCalculationDtoAsync(1, "AA", true, null);
     }
 
     [Fact]
@@ -155,16 +155,16 @@ public class FlightRateServiceTests
         var service = CreateService();
         var dto = CreateBasicFlightRateDto();
 
-        _repositoryMock.Setup(x => x.GetFlightRateCalculationDtoAsync(1, "AA", false, null))
-            .ReturnsAsync(dto);
-        _repositoryMock.Setup(x => x.GetCarrierFlightRatesAsync(It.IsAny<FlightRateCalculationDto>()))
-            .ReturnsAsync([new FlightRateDto { Rate = 100m }]);
+        _repositoryMock.GetFlightRateCalculationDtoAsync(1, "AA", false, null)
+            .Returns(dto);
+        _repositoryMock.GetCarrierFlightRatesAsync(Arg.Any<FlightRateCalculationDto>())
+            .Returns([new FlightRateDto { Rate = 100m }]);
 
         // Act
         await service.GetCarrierFlightRateByJobIdAsync(1, "AA", false, null);
 
         // Assert
-        _repositoryMock.Verify(x => x.GetCarrierFlightRatesAsync(dto), Times.Once);
+        await _repositoryMock.Received().GetCarrierFlightRatesAsync(dto);
     }
 
     private static FlightRateCalculationDto CreateBasicFlightRateDto() => new()
@@ -178,5 +178,4 @@ public class FlightRateServiceTests
         Quantity = 1,
         ClientId = 1
     };
-
 }

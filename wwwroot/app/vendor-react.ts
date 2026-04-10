@@ -9,7 +9,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 import * as jsxRuntime from 'react/jsx-runtime';
-import {QueryClient, QueryClientProvider, keepPreviousData, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import {QueryClient, QueryClientProvider, keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
 
 // Expose React globally for module bundles to use via shims
 window.React = React;
@@ -22,6 +22,7 @@ window.QueryClient = QueryClient;
 window.QueryClientProvider = QueryClientProvider;
 window.keepPreviousData = keepPreviousData;
 window.useQuery = useQuery;
+window.useInfiniteQuery = useInfiniteQuery;
 window.useMutation = useMutation;
 window.useQueryClient = useQueryClient;
 

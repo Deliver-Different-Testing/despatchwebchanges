@@ -1,9 +1,10 @@
-using System.Text;
+﻿using System.Text;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,11 +13,11 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class CourierReportServiceTests
 {
-    private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
+    private readonly ICourierRepository _courierRepositoryMock = Substitute.For<ICourierRepository>();
     private FakeTenantClock _clock = new(new DateTime(2026, 2, 18, 14, 30, 0));
 
     private CourierReportService CreateService() => new(
-        _courierRepositoryMock.Object,
+        _courierRepositoryMock,
         _clock
     );
 
@@ -29,7 +30,8 @@ public class CourierReportServiceTests
         return text;
     }
 
-    private static string[] GetCsvLines(byte[] bytes) => DecodeCsv(bytes).TrimEnd('\r', '\n').Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
+    private static string[] GetCsvLines(byte[] bytes) =>
+        DecodeCsv(bytes).TrimEnd('\r', '\n').Split('\n').Select(l => l.TrimEnd('\r')).ToArray();
 
     [Fact]
     public async Task GenerateTodayActiveDriversCsvAsync_WithData_ReturnsCorrectHeadersAndRows()
@@ -53,13 +55,14 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetTodayActiveDriversForExportAsync(Arg.Any<TodayActiveDriversFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
         // Act
-        var (fileBytes, fileName) = await service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
+        var (fileBytes, fileName) =
+            await service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
 
         // Assert
         var lines = GetCsvLines(fileBytes);
@@ -90,8 +93,8 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetTodayActiveDriversForExportAsync(Arg.Any<TodayActiveDriversFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -108,8 +111,8 @@ public class CourierReportServiceTests
     public async Task GenerateTodayActiveDriversCsvAsync_EmptyData_ReturnsHeaderOnly()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetTodayActiveDriversForExportAsync(Arg.Any<TodayActiveDriversFilterRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -126,18 +129,20 @@ public class CourierReportServiceTests
     public async Task GenerateTodayActiveDriversCsvAsync_RepositoryThrows_PropagatesException()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(It.IsAny<TodayActiveDriversFilterRequest>()))
+        _courierRepositoryMock.GetTodayActiveDriversForExportAsync(Arg.Any<TodayActiveDriversFilterRequest>())
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var service = CreateService();
 
         // Assert
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            (Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
         Assert.Equal("Database error", ex.Message);
         return;
 
         // Act
-        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
+        Task<(byte[] FileBytes, string FileName)> Act() =>
+            service.GenerateTodayActiveDriversCsvAsync(new TodayActiveDriversFilterRequest());
     }
 
     [Fact]
@@ -146,8 +151,8 @@ public class CourierReportServiceTests
         // Arrange
         var request = new TodayActiveDriversFilterRequest { SearchTerm = "test", Status = "active", Fleet = 5 };
 
-        _courierRepositoryMock.Setup(x => x.GetTodayActiveDriversForExportAsync(request))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetTodayActiveDriversForExportAsync(request)
+            .Returns([]);
 
         var service = CreateService();
 
@@ -155,7 +160,7 @@ public class CourierReportServiceTests
         await service.GenerateTodayActiveDriversCsvAsync(request);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.GetTodayActiveDriversForExportAsync(request), Times.Once);
+        await _courierRepositoryMock.Received().GetTodayActiveDriversForExportAsync(request);
     }
 
     [Fact]
@@ -179,8 +184,8 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -215,8 +220,8 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -233,8 +238,8 @@ public class CourierReportServiceTests
     public async Task GenerateComplianceCsvAsync_EmptyData_ReturnsHeaderOnly()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -251,17 +256,19 @@ public class CourierReportServiceTests
     public async Task GenerateComplianceCsvAsync_RepositoryThrows_PropagatesException()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var service = CreateService();
 
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ??
+                                                            throw new InvalidOperationException());
         return;
 
         // Act
-        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateComplianceCsvAsync(new CourierComplianceFilterRequest());
+        Task<(byte[] FileBytes, string FileName)> Act() =>
+            service.GenerateComplianceCsvAsync(new CourierComplianceFilterRequest());
     }
 
     [Fact]
@@ -280,13 +287,14 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetAfterHoursScheduleForExportAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetAfterHoursScheduleForExportAsync(Arg.Any<CourierAfterHoursFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
         // Act
-        var (fileBytes, fileName) = await service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
+        var (fileBytes, fileName) =
+            await service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
 
         // Assert
         var lines = GetCsvLines(fileBytes);
@@ -317,8 +325,8 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetAfterHoursScheduleForExportAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetAfterHoursScheduleForExportAsync(Arg.Any<CourierAfterHoursFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -345,8 +353,8 @@ public class CourierReportServiceTests
             }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetAfterHoursScheduleForExportAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetAfterHoursScheduleForExportAsync(Arg.Any<CourierAfterHoursFilterRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -362,8 +370,8 @@ public class CourierReportServiceTests
     public async Task GenerateAfterHoursScheduleCsvAsync_EmptyData_ReturnsHeaderOnly()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetAfterHoursScheduleForExportAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetAfterHoursScheduleForExportAsync(Arg.Any<CourierAfterHoursFilterRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -380,17 +388,19 @@ public class CourierReportServiceTests
     public async Task GenerateAfterHoursScheduleCsvAsync_RepositoryThrows_PropagatesException()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetAfterHoursScheduleForExportAsync(It.IsAny<CourierAfterHoursFilterRequest>()))
+        _courierRepositoryMock.GetAfterHoursScheduleForExportAsync(Arg.Any<CourierAfterHoursFilterRequest>())
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var service = CreateService();
 
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ??
+                                                            throw new InvalidOperationException());
         return;
 
         // Act
-        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
+        Task<(byte[] FileBytes, string FileName)> Act() =>
+            service.GenerateAfterHoursScheduleCsvAsync(new CourierAfterHoursFilterRequest());
     }
 
     [Fact]
@@ -399,12 +409,20 @@ public class CourierReportServiceTests
         // Arrange
         var data = new List<CourierEmailViewModel>
         {
-            new() { CourierId = 1, Code = "C001", Name = "John Doe", Email = "john@example.com", Phone = "021-555-1234", Fleet = "Fleet A" },
-            new() { CourierId = 2, Code = "C002", Name = "Jane Smith", Email = "jane@example.com", Phone = "021-555-5678", Fleet = "Fleet B" }
+            new()
+            {
+                CourierId = 1, Code = "C001", Name = "John Doe", Email = "john@example.com", Phone = "021-555-1234",
+                Fleet = "Fleet A"
+            },
+            new()
+            {
+                CourierId = 2, Code = "C002", Name = "Jane Smith", Email = "jane@example.com", Phone = "021-555-5678",
+                Fleet = "Fleet B"
+            }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -428,8 +446,8 @@ public class CourierReportServiceTests
     public async Task GenerateDriverEmailsCsvAsync_EmptyData_ReturnsHeaderOnly()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -446,13 +464,14 @@ public class CourierReportServiceTests
     public async Task GenerateDriverEmailsCsvAsync_RepositoryThrows_PropagatesException()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var service = CreateService();
 
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ??
+                                                            throw new InvalidOperationException());
         return;
 
         // Act
@@ -465,12 +484,20 @@ public class CourierReportServiceTests
         // Arrange
         var data = new List<CourierDailyEarningsViewModel>
         {
-            new() { CourierId = 1, Name = "John Doe", HoursLogged = 7.5, Deliveries = 12, Earnings = 250.75m, HourlyRate = 33.43m },
-            new() { CourierId = 2, Name = "Jane Smith", HoursLogged = 4.0, Deliveries = 5, Earnings = 120.00m, HourlyRate = 30.00m }
+            new()
+            {
+                CourierId = 1, Name = "John Doe", HoursLogged = 7.5, Deliveries = 12, Earnings = 250.75m,
+                HourlyRate = 33.43m
+            },
+            new()
+            {
+                CourierId = 2, Name = "Jane Smith", HoursLogged = 4.0, Deliveries = 5, Earnings = 120.00m,
+                HourlyRate = 30.00m
+            }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierDailyEarningsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -493,11 +520,14 @@ public class CourierReportServiceTests
         // Arrange
         var data = new List<CourierDailyEarningsViewModel>
         {
-            new() { CourierId = 1, Name = "New Driver", HoursLogged = 0, Deliveries = 0, Earnings = 0m, HourlyRate = 0m }
+            new()
+            {
+                CourierId = 1, Name = "New Driver", HoursLogged = 0, Deliveries = 0, Earnings = 0m, HourlyRate = 0m
+            }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierDailyEarningsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -513,8 +543,8 @@ public class CourierReportServiceTests
     public async Task GenerateDriverEarningsCsvAsync_EmptyData_ReturnsHeaderOnly()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetCourierDailyEarningsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -531,17 +561,19 @@ public class CourierReportServiceTests
     public async Task GenerateDriverEarningsCsvAsync_RepositoryThrows_PropagatesException()
     {
         // Arrange
-        _courierRepositoryMock.Setup(x => x.GetCourierDailyEarningsForExportAsync(It.IsAny<PaginatedRequest>()))
+        _courierRepositoryMock.GetCourierDailyEarningsForExportAsync(Arg.Any<PaginatedRequest>())
             .ThrowsAsync(new InvalidOperationException("Database error"));
 
         var service = CreateService();
 
         // Assert
-        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(byte[] FileBytes, string FileName)>>?)Act ??
+                                                            throw new InvalidOperationException());
         return;
 
         // Act
-        Task<(byte[] FileBytes, string FileName)> Act() => service.GenerateDriverEarningsCsvAsync(new PaginatedRequest());
+        Task<(byte[] FileBytes, string FileName)> Act() =>
+            service.GenerateDriverEarningsCsvAsync(new PaginatedRequest());
     }
 
     [Fact]
@@ -550,11 +582,14 @@ public class CourierReportServiceTests
         // Arrange
         var data = new List<CourierEmailViewModel>
         {
-            new() { CourierId = 1, Code = "C001", Name = "Doe, John", Email = "test@test.com", Phone = "123", Fleet = "A" }
+            new()
+            {
+                CourierId = 1, Code = "C001", Name = "Doe, John", Email = "test@test.com", Phone = "123", Fleet = "A"
+            }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -572,11 +607,15 @@ public class CourierReportServiceTests
         // Arrange
         var data = new List<CourierEmailViewModel>
         {
-            new() { CourierId = 1, Code = "C001", Name = "John \"JD\" Doe", Email = "test@test.com", Phone = "123", Fleet = "A" }
+            new()
+            {
+                CourierId = 1, Code = "C001", Name = "John \"JD\" Doe", Email = "test@test.com", Phone = "123",
+                Fleet = "A"
+            }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -597,8 +636,8 @@ public class CourierReportServiceTests
             new() { CourierId = 1, Code = null!, Name = null!, Email = null!, Phone = null!, Fleet = null! }
         };
 
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync(data);
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns(data);
 
         var service = CreateService();
 
@@ -619,8 +658,8 @@ public class CourierReportServiceTests
         // Arrange
         _clock = new FakeTenantClock(new DateTime(year, month, day, hour, minute, 0));
 
-        _courierRepositoryMock.Setup(x => x.GetCourierEmailsForExportAsync(It.IsAny<PaginatedRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetCourierEmailsForExportAsync(Arg.Any<PaginatedRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -630,5 +669,4 @@ public class CourierReportServiceTests
         // Assert
         Assert.Equal($"driver-emails-{expectedTimestamp}.csv", fileName);
     }
-
 }

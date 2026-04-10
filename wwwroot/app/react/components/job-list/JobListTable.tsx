@@ -430,6 +430,9 @@ interface JobListTableProps {
     appPage?: number;
     isJobSearchPage?: boolean;
     loggedInCouriersOnly?: boolean;
+    onLoadMore?: () => void;
+    hasMore?: boolean;
+    isFetchingMore?: boolean;
 }
 
 export const JobListTable: React.FC<JobListTableProps> = ({
@@ -449,6 +452,9 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                                                               appPage,
                                                               isJobSearchPage,
                                                               loggedInCouriersOnly,
+                                                              onLoadMore,
+                                                              hasMore,
+                                                              isFetchingMore,
                                                           }) => {
     // Tick every 60s to keep time-dependent late/overdue checks current.
     // Stored as a ref to avoid re-rendering every row — only rows with
@@ -527,6 +533,17 @@ export const JobListTable: React.FC<JobListTableProps> = ({
     });
 
     const virtualItems = virtualizer.getVirtualItems();
+
+    // Infinite scroll: fetch next page when scrolled near bottom
+    useEffect(() => {
+        if (!onLoadMore || !hasMore || isFetchingMore) return;
+        if (virtualItems.length === 0) return;
+
+        const lastItem = virtualItems[virtualItems.length - 1];
+        if (lastItem.index >= jobs.length - 10) {
+            onLoadMore();
+        }
+    }, [virtualItems, jobs.length, onLoadMore, hasMore, isFetchingMore]);
 
     if (jobs.length === 0) {
         return (

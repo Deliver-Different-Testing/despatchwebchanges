@@ -1,19 +1,19 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 public class TenantClockTests
 {
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
-    private TenantClock CreateClock() => new(_tenantInfoServiceMock.Object);
+    private TenantClock CreateClock() => new(_tenantInfoServiceMock);
 
     [Fact]
     public void TenantNow_ReturnsTenantTimeFromService()
     {
-        _tenantInfoServiceMock.Setup(s => s.GetCurrentTenantTime()).Returns(TestDates.Now);
+        _tenantInfoServiceMock.GetCurrentTenantTime().Returns(TestDates.Now);
 
         var clock = CreateClock();
 
@@ -23,7 +23,7 @@ public class TenantClockTests
     [Fact]
     public void TenantNow_PreservesTimeComponent()
     {
-        _tenantInfoServiceMock.Setup(s => s.GetCurrentTenantTime()).Returns(TestDates.Now);
+        _tenantInfoServiceMock.GetCurrentTenantTime().Returns(TestDates.Now);
 
         var clock = CreateClock();
 
@@ -38,22 +38,21 @@ public class TenantClockTests
         var first = new DateTime(2024, 6, 15, 10, 0, 0);
         var second = new DateTime(2024, 6, 15, 10, 0, 1);
 
-        _tenantInfoServiceMock.SetupSequence(s => s.GetCurrentTenantTime())
-            .Returns(first)
-            .Returns(second);
+        _tenantInfoServiceMock.GetCurrentTenantTime()
+            .Returns(first, second);
 
         var clock = CreateClock();
 
         Assert.Equal(first, clock.TenantNow);
         Assert.Equal(second, clock.TenantNow);
 
-        _tenantInfoServiceMock.Verify(s => s.GetCurrentTenantTime(), Times.Exactly(2));
+        _tenantInfoServiceMock.Received(2).GetCurrentTenantTime();
     }
 
     [Fact]
     public void TenantToday_ReturnsDateWithoutTimeComponent()
     {
-        _tenantInfoServiceMock.Setup(s => s.GetCurrentTenantTime()).Returns(TestDates.Now);
+        _tenantInfoServiceMock.GetCurrentTenantTime().Returns(TestDates.Now);
 
         var clock = CreateClock();
 
@@ -63,7 +62,7 @@ public class TenantClockTests
     [Fact]
     public void TenantToday_HasZeroTimeComponent()
     {
-        _tenantInfoServiceMock.Setup(s => s.GetCurrentTenantTime()).Returns(TestDates.Now);
+        _tenantInfoServiceMock.GetCurrentTenantTime().Returns(TestDates.Now);
 
         var clock = CreateClock();
 
@@ -73,7 +72,7 @@ public class TenantClockTests
     [Fact]
     public void TenantToday_MatchesDateOfTenantNow()
     {
-        _tenantInfoServiceMock.Setup(s => s.GetCurrentTenantTime()).Returns(TestDates.Now);
+        _tenantInfoServiceMock.GetCurrentTenantTime().Returns(TestDates.Now);
 
         var clock = CreateClock();
 
@@ -99,6 +98,6 @@ public class TenantClockTests
 
         _ = clock.UtcNow;
 
-        _tenantInfoServiceMock.Verify(s => s.GetCurrentTenantTime(), Times.Never);
+        _tenantInfoServiceMock.DidNotReceive().GetCurrentTenantTime();
     }
 }

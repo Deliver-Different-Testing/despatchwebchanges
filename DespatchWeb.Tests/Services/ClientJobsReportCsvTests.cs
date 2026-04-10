@@ -1,11 +1,11 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Text;
 using Amazon.S3;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -15,19 +15,19 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class ClientJobsReportCsvTests
 {
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
-    private readonly Mock<IAmazonS3> _s3ClientMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
+    private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private JobReportService CreateService() =>
         new(
-            _jobQueryRepositoryMock.Object,
-            _jobCommandRepositoryMock.Object,
-            _recurringJobRepositoryMock.Object,
+            _jobQueryRepositoryMock,
+            _jobCommandRepositoryMock,
+            _recurringJobRepositoryMock,
             _clock,
-            _s3ClientMock.Object
+            _s3ClientMock
         );
 
     [Fact]
@@ -38,8 +38,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: 150.50m)
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -61,8 +61,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(fuelSurchargeAmount: 25.75m)
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -84,8 +84,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: 100.00m, fuelSurchargeAmount: 15.00m)
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -107,8 +107,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: null, fuelSurchargeAmount: null)
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -127,8 +127,8 @@ public class ClientJobsReportCsvTests
     public async Task GenerateClientJobsReportCsvAsync_CsvHeader_ContainsAmountColumns()
     {
         // Arrange
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync([]);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns([]);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -152,8 +152,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(podName: "John Smith")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -175,8 +175,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucjbType: "Pick up from us")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -198,8 +198,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(chargeExclGst: "250.00")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -221,8 +221,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucclLegalName: "Test Company Ltd")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -242,8 +242,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucjbFromAddr: "123 Pickup Street")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -265,8 +265,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(uccrName: "Express Courier")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -288,8 +288,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucjbClientId: "12345")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -311,8 +311,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(ucclNote: "Important client note")
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -330,8 +330,8 @@ public class ClientJobsReportCsvTests
     public async Task GenerateClientJobsReportCsvAsync_CsvHeader_HasCorrectColumnOrder()
     {
         // Arrange
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync([]);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns([]);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -404,8 +404,8 @@ public class ClientJobsReportCsvTests
                 UcclNote = "Client note"
             }
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();
@@ -441,8 +441,8 @@ public class ClientJobsReportCsvTests
         {
             CreateTestModel(rawBaseAmount: amount)
         };
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = CreateTestRequest();

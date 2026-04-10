@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -16,12 +16,12 @@ namespace DespatchWeb.Tests.Services;
 public class SplitJobServiceTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
-    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<IRateJobService> _rateJobServiceMock = new();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
+    private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
     private readonly DespatchContext _seedContext;
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly ITenantClock _fakeTenantClock = new FakeTenantClock(TestDates.Now);
     private static readonly string[] Expected = ["JOB-500A", "JOB-500B"];
 
@@ -31,10 +31,10 @@ public class SplitJobServiceTests : IAsyncDisposable
         _contextFactoryMock = _db.CreateFactoryMock();
 
         // Default tenant info
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
+        _tenantInfoServiceMock.GetStaffId().Returns(1);
+        _tenantInfoServiceMock.GetContactId().Returns(1);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
 
         SeedLookupData();
     }
@@ -187,13 +187,13 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     private SplitJobService CreateService() => new(
-        _contextFactoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _contextFactoryMock,
+        _tenantInfoServiceMock,
         _fakeTenantClock,
-        _rateJobServiceMock.Object,
-        _jobRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
-        new CreateJobService(_contextFactoryMock.Object));
+        _rateJobServiceMock,
+        _jobRepositoryMock,
+        _jobCommandRepositoryMock,
+        new CreateJobService(_contextFactoryMock));
 
     private static AddressViewModel CreateMeetingPointAddress() => new(
         addressLine1: "100 Meeting Point Rd",

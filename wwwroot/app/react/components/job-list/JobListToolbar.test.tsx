@@ -76,6 +76,21 @@ describe('JobListToolbar', () => {
         expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
     });
 
+    it('hides logged-in only toggle when hideLoggedInSwitch is true', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps({appPage: AppPage.Dispatch})} hideLoggedInSwitch/>);
+        expect(screen.queryByText('Logged-in only')).not.toBeInTheDocument();
+    });
+
+    it('shows today only toggle when onTodayOnlyChange is provided', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps()} todayOnly onTodayOnlyChange={jest.fn()}/>);
+        expect(screen.getByText('Today only')).toBeInTheDocument();
+    });
+
+    it('hides today only toggle by default', () => {
+        renderWithTheme(<JobListToolbar {...createDefaultProps()}/>);
+        expect(screen.queryByText('Today only')).not.toBeInTheDocument();
+    });
+
     it('fires onResetColumns when reset button is clicked', async () => {
         const user = userEvent.setup();
         const props = createDefaultProps();

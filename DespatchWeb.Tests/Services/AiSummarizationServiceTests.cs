@@ -1,20 +1,20 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 public class AiSummarizationServiceTests
 {
-    private readonly Mock<IAiClientService> _aiClientMock = new();
-    private readonly Mock<INoteRepository> _noteRepositoryMock = new();
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
-    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
-    private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoMock = new();
+    private readonly IAiClientService _aiClientMock = Substitute.For<IAiClientService>();
+    private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();
+    private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
+    private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly ICourierRepository _courierRepositoryMock = Substitute.For<ICourierRepository>();
+    private readonly ITenantInfoService _tenantInfoMock = Substitute.For<ITenantInfoService>();
 
     private readonly IOptions<AnthropicSettings> _settings = Options.Create(new AnthropicSettings
     {
@@ -22,20 +22,20 @@ public class AiSummarizationServiceTests
     });
 
     private AiSummarizationService CreateService() => new(
-        _aiClientMock.Object,
-        _noteRepositoryMock.Object,
-        _taskRepositoryMock.Object,
-        _jobRepositoryMock.Object,
-        _courierRepositoryMock.Object,
-        _tenantInfoMock.Object,
+        _aiClientMock,
+        _noteRepositoryMock,
+        _taskRepositoryMock,
+        _jobRepositoryMock,
+        _courierRepositoryMock,
+        _tenantInfoMock,
         _settings);
 
     [Fact]
     public async Task SummarizeJobNotesAsync_NoNotes_ReturnsDefaultMessage()
     {
         // Arrange
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns([]);
 
         var service = CreateService();
 
@@ -52,8 +52,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobNotesAsync_NullNotes_ReturnsDefaultMessage()
     {
         // Arrange
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync((List<TucNoteViewModel>?)null);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns((List<TucNoteViewModel>?)null);
 
         var service = CreateService();
 
@@ -88,13 +88,13 @@ public class AiSummarizationServiceTests
             }
         };
 
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync(notes);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns(notes);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), 1024,
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), 1024,
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "Driver arrived and collected the package.",
                 InputTokens = 150,
@@ -116,8 +116,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobNotesAsync_NullResponseText_ReturnsFallback()
     {
         // Arrange
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync([
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns([
                 new TucNoteViewModel
                 {
                     NoteId = 1,
@@ -128,10 +128,10 @@ public class AiSummarizationServiceTests
                 }
             ]);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse { TextContent = null, InputTokens = 50, OutputTokens = 0 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse { TextContent = null, InputTokens = 50, OutputTokens = 0 });
 
         var service = CreateService();
 
@@ -146,8 +146,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobNotesAsync_SanitizesNoteContent()
     {
         // Arrange
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync([
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns([
                 new TucNoteViewModel
                 {
                     NoteId = 1,
@@ -159,12 +159,14 @@ public class AiSummarizationServiceTests
             ]);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -181,8 +183,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobNotesAsync_UsesMaxTokensPerSummary()
     {
         // Arrange
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync([
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns([
                 new TucNoteViewModel
                 {
                     NoteId = 1,
@@ -194,12 +196,14 @@ public class AiSummarizationServiceTests
             ]);
 
         var capturedMaxTokens = 0;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>,
-                CancellationToken>((_, _, maxTokens, _, _) => capturedMaxTokens = maxTokens)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMaxTokens = callInfo.ArgAt<int>(2);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -214,8 +218,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobEventsAsync_NoEvents_ReturnsDefaultMessage()
     {
         // Arrange
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -243,13 +247,13 @@ public class AiSummarizationServiceTests
             }
         };
 
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(events);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(events);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "A late alert was triggered and resolved.",
                 InputTokens = 100,
@@ -271,9 +275,12 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         TaskTableFiltersRequest? capturedFilters = null;
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .Callback<TaskTableFiltersRequest>(f => capturedFilters = f)
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(callInfo =>
+            {
+                capturedFilters = callInfo.Arg<TaskTableFiltersRequest>();
+                return new List<TaskViewModel>();
+            });
 
         var service = CreateService();
 
@@ -290,8 +297,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeTaskDashboardAsync_NoTasks_ReturnsDefaultMessage()
     {
         // Arrange
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -308,8 +315,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeTaskDashboardAsync_NullTasks_ReturnsDefaultMessage()
     {
         // Arrange
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync((List<TaskViewModel>?)null);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns((List<TaskViewModel>?)null);
 
         var service = CreateService();
 
@@ -341,13 +348,13 @@ public class AiSummarizationServiceTests
             }
         };
 
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(tasks);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(tasks);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "2 open tasks. 1 overdue ETA request needs attention.",
                 InputTokens = 200, OutputTokens = 40
@@ -369,9 +376,12 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         TaskTableFiltersRequest? capturedFilters = null;
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .Callback<TaskTableFiltersRequest>(f => capturedFilters = f)
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(callInfo =>
+            {
+                capturedFilters = callInfo.Arg<TaskTableFiltersRequest>();
+                return new List<TaskViewModel>();
+            });
 
         var service = CreateService();
 
@@ -402,16 +412,18 @@ public class AiSummarizationServiceTests
             }
         };
 
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(tasks);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(tasks);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -439,16 +451,18 @@ public class AiSummarizationServiceTests
             }
         };
 
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(tasks);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(tasks);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -464,10 +478,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobAsync_NoData_ReturnsDefaultMessage()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel?)null);
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync((List<TucNoteViewModel>?)null!);
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync((List<TaskViewModel>?)null!);
+        _jobRepositoryMock.GetSingleJobById(1).Returns((JobViewModel?)null);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns((List<TucNoteViewModel>?)null!);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns((List<TaskViewModel>?)null!);
 
         var service = CreateService();
 
@@ -483,20 +497,20 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobAsync_WithJobOnly_ReturnsSummary()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "ABC123", Status = "Active", SpeedName = "Express",
             From = "Auckland", ToAddress = "Wellington", Courier = "DriverX",
             Booked = new DateTime(2025, 6, 15, 9, 0, 0)
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([]);
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "Express job booked at 9:00 AM from Auckland to Wellington.",
                 InputTokens = 180, OutputTokens = 25
@@ -516,20 +530,20 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobAsync_WithAllData_IncludesAllSections()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "ABC123", Status = "Active", SpeedName = "Same Day",
             From = "Auckland", ToAddress = "Hamilton"
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([
             new TucNoteViewModel
             {
                 NoteId = 1, NoteText = "Customer called", NoteTypeName = "Internal",
                 CreatedByName = "Admin", CreatedDate = DateTimeOffset.UtcNow
             }
         ]);
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([
                 new TaskViewModel
                 {
                     Id = 1, Title = "Late Alert", EventType = "Alert",
@@ -538,13 +552,15 @@ public class AiSummarizationServiceTests
             ]);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse
-                { TextContent = "Combined summary.", InputTokens = 200, OutputTokens = 30 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse
+                    { TextContent = "Combined summary.", InputTokens = 200, OutputTokens = 30 };
+            });
 
         var service = CreateService();
 
@@ -562,23 +578,25 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobAsync_SanitizesAddresses()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J1", Status = "Active",
             From = "Contact: driver@test.com, 123 Street",
             ToAddress = "Call 021-555-1234"
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([]);
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -596,21 +614,23 @@ public class AiSummarizationServiceTests
     public async Task SummarizeOperationsAsync_ReturnsSummaryWithStats()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync()).ReturnsAsync(new OverviewStatsViewModel
+        _jobRepositoryMock.GetOverviewStatsAsync().Returns(new OverviewStatsViewModel
         {
             Active = 15, Inactive = 8, Completed = 42
         });
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
-                TextContent = "15 active, 8 inactive. Inactive count is elevated.",
-                InputTokens = 100, OutputTokens = 25
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse
+                {
+                    TextContent = "15 active, 8 inactive. Inactive count is elevated.",
+                    InputTokens = 100, OutputTokens = 25
+                };
             });
 
         var service = CreateService();
@@ -630,15 +650,15 @@ public class AiSummarizationServiceTests
     public async Task SummarizeOperationsAsync_NullResponseText_ReturnsFallback()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync()).ReturnsAsync(new OverviewStatsViewModel
+        _jobRepositoryMock.GetOverviewStatsAsync().Returns(new OverviewStatsViewModel
         {
             Active = 1, Inactive = 0, Completed = 0
         });
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse { TextContent = null, InputTokens = 50, OutputTokens = 0 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse { TextContent = null, InputTokens = 50, OutputTokens = 0 });
 
         var service = CreateService();
 
@@ -653,9 +673,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeComplianceAsync_NoRecords_ReturnsDefaultMessage()
     {
         // Arrange
-        _courierRepositoryMock
-            .Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns([]);
 
         var service = CreateService();
 
@@ -671,9 +690,8 @@ public class AiSummarizationServiceTests
     public async Task SummarizeComplianceAsync_NullRecords_ReturnsDefaultMessage()
     {
         // Arrange
-        _courierRepositoryMock
-            .Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync((IReadOnlyList<CourierComplianceViewModel>?)null!);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns((IReadOnlyList<CourierComplianceViewModel>?)null!);
 
         var service = CreateService();
 
@@ -707,19 +725,20 @@ public class AiSummarizationServiceTests
             }
         };
 
-        _courierRepositoryMock
-            .Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync(items);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns(items);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
-                TextContent = "CRITICAL: 1 expired license.", InputTokens = 150, OutputTokens = 20
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse
+                {
+                    TextContent = "CRITICAL: 1 expired license.", InputTokens = 150, OutputTokens = 20
+                };
             });
 
         var service = CreateService();
@@ -749,17 +768,18 @@ public class AiSummarizationServiceTests
             });
         }
 
-        _courierRepositoryMock
-            .Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync(items);
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns(items);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 300, OutputTokens = 30 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 300, OutputTokens = 30 };
+            });
 
         var service = CreateService();
 
@@ -774,8 +794,8 @@ public class AiSummarizationServiceTests
     public async Task AnalyzeLateAlertAsync_NullLateInfo_ReturnsDefaultMessage()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(1))
-            .ReturnsAsync((Models.Dto.JobLateCallDto?)null);
+        _jobRepositoryMock.GetJobForLateCallAsync(1)
+            .Returns((Models.Dto.JobLateCallDto?)null);
 
         var service = CreateService();
 
@@ -791,21 +811,21 @@ public class AiSummarizationServiceTests
     public async Task AnalyzeLateAlertAsync_WithLateInfo_ReturnsSummary()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(1))
-            .ReturnsAsync(new Models.Dto.JobLateCallDto
+        _jobRepositoryMock.GetJobForLateCallAsync(1)
+            .Returns(new Models.Dto.JobLateCallDto
             {
                 Id = 1, MinutesRemaining = 30, PickupTime = 60, DeliveryTime = 120,
                 AlertLatePickup = 15, AlertLateDelivery = 30,
                 JobTime = new DateTime(2025, 6, 15, 9, 0, 0),
                 BookedSpeed = "Express", NotifiedSpeed = "Express"
             });
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "Job is 15 min late. Recommend: Monitor.",
                 InputTokens = 120, OutputTokens = 20
@@ -825,24 +845,26 @@ public class AiSummarizationServiceTests
     public async Task AnalyzeLateAlertAsync_IncludesLateInfoInPrompt()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(42))
-            .ReturnsAsync(new Models.Dto.JobLateCallDto
+        _jobRepositoryMock.GetJobForLateCallAsync(42)
+            .Returns(new Models.Dto.JobLateCallDto
             {
                 Id = 42, MinutesRemaining = 15, PickupTime = 45, DeliveryTime = 90,
                 AlertLatePickup = 10, AlertLateDelivery = 20,
                 JobTime = new DateTime(2025, 6, 15, 10, 30, 0),
                 BookedSpeed = "Same Day", NotifiedSpeed = "Same Day"
             });
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Analysis", InputTokens = 80, OutputTokens = 15 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Analysis", InputTokens = 80, OutputTokens = 15 };
+            });
 
         var service = CreateService();
 
@@ -859,8 +881,8 @@ public class AiSummarizationServiceTests
     public async Task AnalyzeLateAlertAsync_WithRecentEvents_IncludesEvents()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(1))
-            .ReturnsAsync(new Models.Dto.JobLateCallDto
+        _jobRepositoryMock.GetJobForLateCallAsync(1)
+            .Returns(new Models.Dto.JobLateCallDto
             {
                 Id = 1, MinutesRemaining = 10, PickupTime = 30, DeliveryTime = 60,
                 AlertLatePickup = 5, AlertLateDelivery = 10,
@@ -875,16 +897,18 @@ public class AiSummarizationServiceTests
                 DueDate = DateTimeOffset.UtcNow.AddMinutes(-5), Closed = false
             }
         };
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync(events);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns(events);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Analysis", InputTokens = 100, OutputTokens = 20 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Analysis", InputTokens = 100, OutputTokens = 20 };
+            });
 
         var service = CreateService();
 
@@ -900,7 +924,7 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_NullJob_ReturnsDefaultMessage()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync((JobViewModel?)null);
+        _jobRepositoryMock.GetSingleJobById(1).Returns((JobViewModel?)null);
 
         var service = CreateService();
 
@@ -917,14 +941,14 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_NoCourierData_ReturnsDefaultMessage()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J1", SpeedName = "Express", From = "A", ToAddress = "B"
         });
-        _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync([]);
-        _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetPotentialCouriersAsync(1)
+            .Returns([]);
+        _courierRepositoryMock.GetDriverWorkOverviewAsync()
+            .Returns([]);
 
         var service = CreateService();
 
@@ -940,30 +964,30 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_WithCourierData_ReturnsSummaryAndCouriers()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J100", SpeedName = "Same Day",
             From = "Auckland CBD", ToAddress = "Hamilton", Weight = 5.5
         });
-        _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync([
+        _courierRepositoryMock.GetPotentialCouriersAsync(1)
+            .Returns([
                 new PotentialCouriersViewModel
                     { CourierId = 10, Code = "C10", FirstName = "John", Reason = "Closest driver" },
                 new PotentialCouriersViewModel
                     { CourierId = 11, Code = "C11", FirstName = "Jane", Reason = "DG certified" }
             ]);
-        _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync([
+        _courierRepositoryMock.GetDriverWorkOverviewAsync()
+            .Returns([
                 new DriverWorkOverviewViewModel
                     { CourierId = 10, Name = "John", VehicleType = "Van", JobCount = 3, DriverStatusText = "Active" },
                 new DriverWorkOverviewViewModel
                     { CourierId = 11, Name = "Jane", VehicleType = "Car", JobCount = 1, DriverStatusText = "Active" }
             ]);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
             {
                 TextContent = "1. Jane - lowest workload. 2. John - closest driver.",
                 InputTokens = 250, OutputTokens = 40
@@ -989,26 +1013,28 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_IncludesJobDetailsInPrompt()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J200", SpeedName = "Express",
             From = "Contact: user@email.com at 10 Queen St",
             ToAddress = "20 King St", Weight = 12.0
         });
-        _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync([
+        _courierRepositoryMock.GetPotentialCouriersAsync(1)
+            .Returns([
                 new PotentialCouriersViewModel { CourierId = 1, Code = "C1", FirstName = "Test", Reason = "Match" }
             ]);
-        _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync([]);
+        _courierRepositoryMock.GetDriverWorkOverviewAsync()
+            .Returns([]);
 
         List<AiMessage>? capturedMessages = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((_, msgs, _, _, _) =>
-                capturedMessages = msgs)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Suggestion", InputTokens = 100, OutputTokens = 15 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedMessages = callInfo.ArgAt<List<AiMessage>>(1);
+                return new AiClientResponse { TextContent = "Suggestion", InputTokens = 100, OutputTokens = 15 };
+            });
 
         var service = CreateService();
 
@@ -1027,22 +1053,22 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_WithOnlyDriverOverview_StillCallsAiButEmptyCouriers()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J1", From = "A", ToAddress = "B"
         });
-        _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync([]);
-        _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync([
+        _courierRepositoryMock.GetPotentialCouriersAsync(1)
+            .Returns([]);
+        _courierRepositoryMock.GetDriverWorkOverviewAsync()
+            .Returns([
                 new DriverWorkOverviewViewModel
                     { Name = "Driver1", VehicleType = "Van", JobCount = 2, DriverStatusText = "Active" }
             ]);
 
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new AiClientResponse
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(new AiClientResponse
                 { TextContent = "Driver1 recommended.", InputTokens = 80, OutputTokens = 10 });
 
         var service = CreateService();
@@ -1053,19 +1079,19 @@ public class AiSummarizationServiceTests
         // Assert
         Assert.Equal("Driver1 recommended.", result.Summary);
         Assert.Empty(result.Couriers);
-        _aiClientMock.Verify(x => x.SendMessageAsync(
-            It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-            It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()), Times.Once);
+        await _aiClientMock.Received().SendMessageAsync(
+            Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+            Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task SummarizeJobNotesAsync_NzTenant_IncludesNzRegionContext()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoMock.IsUsTenant().Returns(false);
 
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync([
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns([
                 new TucNoteViewModel
                 {
                     NoteId = 1, NoteText = "Test", NoteTypeName = "Note",
@@ -1074,12 +1100,14 @@ public class AiSummarizationServiceTests
             ]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1095,10 +1123,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobNotesAsync_UsTenant_IncludesUsRegionContext()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoMock.IsUsTenant().Returns(true);
 
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1))
-            .ReturnsAsync([
+        _noteRepositoryMock.GetNotesByJobIdAsync(1)
+            .Returns([
                 new TucNoteViewModel
                 {
                     NoteId = 1, NoteText = "Test", NoteTypeName = "Note",
@@ -1107,12 +1135,14 @@ public class AiSummarizationServiceTests
             ]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1128,10 +1158,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeTaskDashboardAsync_UsTenant_UsesUsRegionInPrompt()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoMock.IsUsTenant().Returns(true);
 
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([
                 new TaskViewModel
                 {
                     Id = 1, Title = "Test", DueDate = DateTimeOffset.UtcNow,
@@ -1140,12 +1170,14 @@ public class AiSummarizationServiceTests
             ]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1160,20 +1192,22 @@ public class AiSummarizationServiceTests
     public async Task SummarizeOperationsAsync_NzTenant_UsesNzRegionInPrompt()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoMock.IsUsTenant().Returns(false);
 
-        _jobRepositoryMock.Setup(x => x.GetOverviewStatsAsync()).ReturnsAsync(new OverviewStatsViewModel
+        _jobRepositoryMock.GetOverviewStatsAsync().Returns(new OverviewStatsViewModel
         {
             Active = 5, Inactive = 2, Completed = 10
         });
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1188,21 +1222,23 @@ public class AiSummarizationServiceTests
     public async Task SummarizeJobAsync_PromptsIncludeMarkdownFormattingInstructions()
     {
         // Arrange
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J1", Status = "Active", From = "A", ToAddress = "B"
         });
-        _noteRepositoryMock.Setup(x => x.GetNotesByJobIdAsync(1)).ReturnsAsync([]);
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _noteRepositoryMock.GetNotesByJobIdAsync(1).Returns([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1218,11 +1254,10 @@ public class AiSummarizationServiceTests
     public async Task SummarizeComplianceAsync_UsTenant_UsesUsRegionInPrompt()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoMock.IsUsTenant().Returns(true);
 
-        _courierRepositoryMock
-            .Setup(x => x.GetCourierComplianceForExportAsync(It.IsAny<CourierComplianceFilterRequest>()))
-            .ReturnsAsync([
+        _courierRepositoryMock.GetCourierComplianceForExportAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns([
                 new CourierComplianceViewModel
                 {
                     Code = "D01", Name = "Driver", ComplianceType = "License",
@@ -1231,12 +1266,14 @@ public class AiSummarizationServiceTests
             ]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Summary", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1251,25 +1288,27 @@ public class AiSummarizationServiceTests
     public async Task AnalyzeLateAlertAsync_NzTenant_UsesNzRegionInPrompt()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoMock.IsUsTenant().Returns(false);
 
-        _jobRepositoryMock.Setup(x => x.GetJobForLateCallAsync(1))
-            .ReturnsAsync(new Models.Dto.JobLateCallDto
+        _jobRepositoryMock.GetJobForLateCallAsync(1)
+            .Returns(new Models.Dto.JobLateCallDto
             {
                 Id = 1, MinutesRemaining = 10, PickupTime = 30, DeliveryTime = 60,
                 AlertLatePickup = 5, AlertLateDelivery = 10,
                 JobTime = DateTime.UtcNow, BookedSpeed = "Express", NotifiedSpeed = "Express"
             });
-        _taskRepositoryMock.Setup(x => x.GetAllTasksAsync(It.IsAny<TaskTableFiltersRequest>()))
-            .ReturnsAsync([]);
+        _taskRepositoryMock.GetAllTasksAsync(Arg.Any<TaskTableFiltersRequest>())
+            .Returns([]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Analysis", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Analysis", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 
@@ -1284,29 +1323,31 @@ public class AiSummarizationServiceTests
     public async Task SuggestCouriersAsync_UsTenant_UsesUsRegionInPrompt()
     {
         // Arrange
-        _tenantInfoMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoMock.IsUsTenant().Returns(true);
 
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(1)).ReturnsAsync(new JobViewModel
+        _jobRepositoryMock.GetSingleJobById(1).Returns(new JobViewModel
         {
             Id = 1, JobNo = "J1", From = "NYC", ToAddress = "LA"
         });
-        _courierRepositoryMock.Setup(x => x.GetPotentialCouriersAsync(1))
-            .ReturnsAsync([
+        _courierRepositoryMock.GetPotentialCouriersAsync(1)
+            .Returns([
                 new PotentialCouriersViewModel { CourierId = 1, Code = "C1", FirstName = "Test", Reason = "Match" }
             ]);
-        _courierRepositoryMock.Setup(x => x.GetDriverWorkOverviewAsync())
-            .ReturnsAsync([
+        _courierRepositoryMock.GetDriverWorkOverviewAsync()
+            .Returns([
                 new DriverWorkOverviewViewModel
                     { CourierId = 1, Name = "Test", VehicleType = "Van", JobCount = 2, DriverStatusText = "Active" }
             ]);
 
         string? capturedSystemPrompt = null;
-        _aiClientMock.Setup(x => x.SendMessageAsync(
-                It.IsAny<string>(), It.IsAny<List<AiMessage>>(), It.IsAny<int>(),
-                It.IsAny<List<AiToolDefinition>>(), It.IsAny<CancellationToken>()))
-            .Callback<string, List<AiMessage>, int, List<AiToolDefinition>, CancellationToken>((sys, _, _, _, _) =>
-                capturedSystemPrompt = sys)
-            .ReturnsAsync(new AiClientResponse { TextContent = "Suggestion", InputTokens = 50, OutputTokens = 10 });
+        _aiClientMock.SendMessageAsync(
+                Arg.Any<string>(), Arg.Any<List<AiMessage>>(), Arg.Any<int>(),
+                Arg.Any<List<AiToolDefinition>>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedSystemPrompt = callInfo.ArgAt<string>(0);
+                return new AiClientResponse { TextContent = "Suggestion", InputTokens = 50, OutputTokens = 10 };
+            });
 
         var service = CreateService();
 

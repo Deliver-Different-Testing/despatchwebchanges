@@ -1,9 +1,9 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,17 +12,17 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class AddAgentRecoveryJobServiceTests
 {
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<INationwideJobRepository> _nationwideJobRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly INationwideJobRepository _nationwideJobRepositoryMock = Substitute.For<INationwideJobRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private AddAgentRecoveryJobService CreateService() => new(
-        _jobQueryRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
-        _nationwideJobRepositoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _jobQueryRepositoryMock,
+        _jobCommandRepositoryMock,
+        _nationwideJobRepositoryMock,
+        _tenantInfoServiceMock,
         _clock
     );
 
@@ -49,8 +49,8 @@ public class AddAgentRecoveryJobServiceTests
         var service = CreateService();
         var request = CreateValidRequest();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync((TucJob)null!);
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns((TucJob)null!);
 
         // Assert
         await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
@@ -76,10 +76,10 @@ public class AddAgentRecoveryJobServiceTests
 
         // Assert
         Assert.Equal(newJobId, result);
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
             j.UcjbNumber == "JOB001R1" &&
             j.ParentId == parentJob.UcjbId &&
-            j.JobRelationshipTypeId == (int)JobRelationshipTypes.SplitChild)), Times.Once);
+            j.JobRelationshipTypeId == (int)JobRelationshipTypes.SplitChild));
     }
 
     [Fact]
@@ -97,8 +97,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
-            j.ParentId == 500)), Times.Once);
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
+            j.ParentId == 500));
     }
 
     [Fact]
@@ -115,10 +115,10 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucNote>(n =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
             n.JobId == parentJob.UcjbId &&
             n.NoteText.Contains("Recovery agent") &&
-            n.NoteTypeId == (int)NoteType.AgentUpdate)), Times.Once);
+            n.NoteTypeId == (int)NoteType.AgentUpdate));
     }
 
     [Fact]
@@ -136,10 +136,10 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<JobRecoveryAgent>(r =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<JobRecoveryAgent>(r =>
             r.AgentId == request.AgentId &&
             r.AirportId == request.AirportId &&
-            r.IsPrimary == request.IsPrimaryRecoveryAgent)), Times.Once);
+            r.IsPrimary == request.IsPrimaryRecoveryAgent));
     }
 
     [Fact]
@@ -156,7 +156,7 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.SaveChangesAsync(), Times.Exactly(2));
+        await _jobCommandRepositoryMock.Received(2).SaveChangesAsync();
     }
 
     [Fact]
@@ -177,11 +177,11 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
             j.UcjbClientId == parentJob.UcjbClientId &&
             j.UcjbWeight == parentJob.UcjbWeight &&
             j.UcjbSpeed == parentJob.UcjbSpeed &&
-            j.UcjbType == parentJob.UcjbType)), Times.Once);
+            j.UcjbType == parentJob.UcjbType));
     }
 
     [Fact]
@@ -198,8 +198,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
-            j.UcjbAttention == true)), Times.Once);
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
+            j.UcjbAttention == true));
     }
 
     [Fact]
@@ -217,8 +217,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
-            j.UcjbOurRef == "PARENT123")), Times.Once);
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
+            j.UcjbOurRef == "PARENT123"));
     }
 
     [Fact]
@@ -236,8 +236,8 @@ public class AddAgentRecoveryJobServiceTests
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
-            j.UcjbNumber == "JOB001R1")), Times.Once);
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
+            j.UcjbNumber == "JOB001R1"));
     }
 
     [Fact]
@@ -250,17 +250,17 @@ public class AddAgentRecoveryJobServiceTests
         parentJob.UcjbNumber = "JOB001";
 
         SetupSuccessfulMocks(request, parentJob, 999);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync("JOB001R1"))
-            .ReturnsAsync(true);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync("JOB001R2"))
-            .ReturnsAsync(false);
+        _jobQueryRepositoryMock.JobNumberExistsAsync("JOB001R1")
+            .Returns(true);
+        _jobQueryRepositoryMock.JobNumberExistsAsync("JOB001R2")
+            .Returns(false);
 
         // Act
         await service.AddRecoveryAgentJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJob>(j =>
-            j.UcjbNumber == "JOB001R2")), Times.Once);
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJob>(j =>
+            j.UcjbNumber == "JOB001R2"));
     }
 
     private static AddAgentRecoveryRequest CreateValidRequest() => new()
@@ -287,24 +287,27 @@ public class AddAgentRecoveryJobServiceTests
 
     private void SetupSuccessfulMocks(AddAgentRecoveryRequest request, TucJob parentJob, int newJobId)
     {
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync(parentJob);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
-            .ReturnsAsync(false);
-        _nationwideJobRepositoryMock.Setup(x => x.GetAgentNameAsync(request.AgentId))
-            .ReturnsAsync("Test Agent");
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId())
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns(parentJob);
+        _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
+            .Returns(false);
+        _nationwideJobRepositoryMock.GetAgentNameAsync(request.AgentId)
+            .Returns("Test Agent");
+        _tenantInfoServiceMock.GetStaffId()
             .Returns(1);
 
         // Capture the job when added and set its ID
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucJob>()))
-            .Callback<TucJob>(j => j.UcjbId = newJobId)
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucJob>())
+            .Returns(callInfo =>
+            {                                                                                                                                                                   
+                callInfo.Arg<TucJob>().UcjbId = newJobId;
+                return Task.CompletedTask;                                                                                                                                      
+            });          
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucNote>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucNote>()))
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<JobRecoveryAgent>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<JobRecoveryAgent>()))
-            .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.SaveChangesAsync())
+        _jobCommandRepositoryMock.SaveChangesAsync()
             .Returns(Task.CompletedTask);
     }
 }

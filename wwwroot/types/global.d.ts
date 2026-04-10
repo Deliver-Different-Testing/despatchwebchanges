@@ -82,6 +82,7 @@ declare global {
         QueryClientProvider?: typeof QueryClientProvider;
         keepPreviousData?: typeof import('@tanstack/react-query').keepPreviousData;
         useQuery?: typeof import('@tanstack/react-query').useQuery;
+        useInfiniteQuery?: typeof import('@tanstack/react-query').useInfiniteQuery;
         useMutation?: typeof import('@tanstack/react-query').useMutation;
         useQueryClient?: typeof import('@tanstack/react-query').useQueryClient;
         ReactQueryClient?: QueryClient;

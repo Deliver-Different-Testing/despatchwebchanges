@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -7,7 +7,7 @@ using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -18,20 +18,20 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobReportServiceLargeDataTests
 {
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
-    private readonly Mock<IAmazonS3> _s3ClientMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
+    private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
 
     private JobReportService CreateService()
     {
         return new JobReportService(
-            _jobQueryRepositoryMock.Object,
-            _jobCommandRepositoryMock.Object,
-            _recurringJobRepositoryMock.Object,
+            _jobQueryRepositoryMock,
+            _jobCommandRepositoryMock,
+            _recurringJobRepositoryMock,
             _clock,
-            _s3ClientMock.Object
+            _s3ClientMock
         );
     }
 
@@ -41,18 +41,18 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 20000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(jobs);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -90,19 +90,19 @@ public class JobReportServiceLargeDataTests
     {
         // Arrange
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(jobs);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
 
         // Skip S3 upload
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -131,18 +131,18 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 10000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(jobs);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -168,18 +168,18 @@ public class JobReportServiceLargeDataTests
         // Arrange - This tests memory handling with a very large dataset
         const int recordCount = 50000;
         var jobs = GenerateLargeJobDownloadDataset(recordCount);
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(jobs);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -215,18 +215,18 @@ public class JobReportServiceLargeDataTests
             }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(jobs);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -262,18 +262,18 @@ public class JobReportServiceLargeDataTests
             }
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(jobs);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns(jobs);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -298,18 +298,18 @@ public class JobReportServiceLargeDataTests
     public async Task GenerateJobsReportAsync_EmptyDataset_ReturnsHeaderOnly()
     {
         // Arrange
-        _jobQueryRepositoryMock.Setup(x => x.PodSearchDownloadAsync(
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<IReadOnlyList<int>>(),
-                It.IsAny<string>(),
-                It.IsAny<string>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<DateTime>(),
-                It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync([]);
+        _jobQueryRepositoryMock.PodSearchDownloadAsync(
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<IReadOnlyList<int>>(),
+                Arg.Any<string>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<IReadOnlyList<int>>())
+            .Returns([]);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         var service = CreateService();
         var request = new PodSearchDownloadRequest
@@ -336,8 +336,8 @@ public class JobReportServiceLargeDataTests
     {
         // Arrange
         var reports = GenerateLargePerformanceSpendDataset(recordCount);
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = new ClientJobsReportRequest
@@ -365,8 +365,8 @@ public class JobReportServiceLargeDataTests
         // Arrange
         const int recordCount = 10000;
         var reports = GenerateLargePerformanceSpendDataset(recordCount);
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync(reports);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns(reports);
 
         var service = CreateService();
         var request = new ClientJobsReportRequest
@@ -390,8 +390,8 @@ public class JobReportServiceLargeDataTests
     public async Task GenerateClientJobsReportCsvAsync_NoData_ReturnsHeaderOnly()
     {
         // Arrange
-        _jobQueryRepositoryMock.Setup(x => x.GetClientJobsReportDataAsync(It.IsAny<ClientJobsReportRequest>()))
-            .ReturnsAsync([]);
+        _jobQueryRepositoryMock.GetClientJobsReportDataAsync(Arg.Any<ClientJobsReportRequest>())
+            .Returns([]);
 
         var service = CreateService();
         var request = new ClientJobsReportRequest

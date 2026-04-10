@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -7,7 +7,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -18,37 +18,42 @@ namespace DespatchWeb.Tests.Services;
 public class RateJobServiceTests : IDisposable
 {
     private readonly HttpClient _httpClient = new();
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<IJobReportService> _jobReportServiceMock = new();
-    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
+    private readonly IJobReportService _jobReportServiceMock = Substitute.For<IJobReportService>();
+
+    private readonly IPricingPermissionService _pricingPermissionServiceMock =
+        Substitute.For<IPricingPermissionService>();
 
     public RateJobServiceTests()
     {
         // By default, allow all job access in tests (internal user behavior)
-        _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync([]);
+        _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns([]);
 
         // Default: US tenant
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
 
         // Set required environment variable for HERE Maps API calls
         Environment.SetEnvironmentVariable("HereMapsAPIKey", "test-api-key");
     }
 
-    public void Dispose() => _httpClient.Dispose();
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     private RateJobService CreateService(HttpClient? httpClient = null) => new(
-        _jobQueryRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
+        _jobQueryRepositoryMock,
+        _jobCommandRepositoryMock,
         httpClient ?? _httpClient,
-        _tenantInfoServiceMock.Object,
-        _httpContextAccessorMock.Object,
-        _jobReportServiceMock.Object,
-        _pricingPermissionServiceMock.Object
+        _tenantInfoServiceMock,
+        _httpContextAccessorMock,
+        _jobReportServiceMock,
+        _pricingPermissionServiceMock
     );
 
     private static HttpClient CreateMockHttpClient(HttpStatusCode statusCode, string content)
@@ -205,15 +210,19 @@ public class RateJobServiceTests : IDisposable
     public async Task RateJobUsAsync_NonFlightSpeed_CallsRateJobUsWithTotalMiles()
     {
         // Arrange - non-flight speed (GroupingId = 1, which is SpeedGrouping.Excelerator)
-        const string hereResponse = """{"routes":[{"sections":[{"transport":{"mode":"car"},"summary":{"length":16093}}]}]}""";
+        const string hereResponse =
+            """{"routes":[{"sections":[{"transport":{"mode":"car"},"summary":{"length":16093}}]}]}""";
         var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
 
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails();
 
@@ -223,7 +232,7 @@ public class RateJobServiceTests : IDisposable
         await service.RateJobUsAsync(jobDetails);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().RateJobUsAsync(Arg.Any<RateJobUsDto>());
         Assert.NotNull(capturedDto);
         Assert.Equal(10m, capturedDto!.TotalMiles); // 16093 meters / 1609.344 = ~10 miles
         Assert.Equal(0m, capturedDto.FromMiles); // Non-flight should not have FromMiles
@@ -241,9 +250,12 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails(pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
 
@@ -277,9 +289,12 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails();
 
@@ -300,9 +315,12 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = new JobRatingDetailsDto
         {
@@ -361,7 +379,8 @@ public class RateJobServiceTests : IDisposable
     public async Task RateJobUsAsync_FlightSpeed_GetsClosestAirportsAndCalculatesFromToMiles()
     {
         // Arrange - flight speed (GroupingId = 2 for US = SpeedGrouping.Flight)
-        const string hereResponse = """{"routes":[{"sections":[{"transport":{"mode":"car"},"summary":{"length":8046}}]}]}""";
+        const string hereResponse =
+            """{"routes":[{"sections":[{"transport":{"mode":"car"},"summary":{"length":8046}}]}]}""";
         var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
 
         SetupFlightSpeed();
@@ -381,15 +400,18 @@ public class RateJobServiceTests : IDisposable
             StreetAddress = "LAX Airport"
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m))
-            .ReturnsAsync([fromAirport]);
-        _jobQueryRepositoryMock.Setup(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m))
-            .ReturnsAsync([toAirport]);
+        _jobQueryRepositoryMock.GetClosestAirportsAsync(40.7128m, -74.0060m)
+            .Returns([fromAirport]);
+        _jobQueryRepositoryMock.GetClosestAirportsAsync(34.0522m, -118.2437m)
+            .Returns([toAirport]);
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails(speedId: 2, deliveryLat: 34.0522m, deliveryLong: -118.2437m);
 
@@ -399,8 +421,8 @@ public class RateJobServiceTests : IDisposable
         await service.RateJobUsAsync(jobDetails);
 
         // Assert - flight path calculates FromMiles and ToMiles separately
-        _jobQueryRepositoryMock.Verify(x => x.GetClosestAirportsAsync(40.7128m, -74.0060m), Times.Once);
-        _jobQueryRepositoryMock.Verify(x => x.GetClosestAirportsAsync(34.0522m, -118.2437m), Times.Once);
+        await _jobQueryRepositoryMock.Received().GetClosestAirportsAsync(40.7128m, -74.0060m);
+        await _jobQueryRepositoryMock.Received().GetClosestAirportsAsync(34.0522m, -118.2437m);
 
         Assert.NotNull(capturedDto);
         Assert.Equal(5m, capturedDto!.FromMiles); // 8046 meters / 1609.344 = ~5 miles
@@ -426,15 +448,19 @@ public class RateJobServiceTests : IDisposable
             StreetAddress = "Test"
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetClosestAirportsAsync(It.IsAny<decimal>(), It.IsAny<decimal>()))
-            .ReturnsAsync([airport]);
+        _jobQueryRepositoryMock.GetClosestAirportsAsync(Arg.Any<decimal>(), Arg.Any<decimal>())
+            .Returns([airport]);
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
-        var jobDetails = CreateValidUsJobDetails(speedId: 2, pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
+        var jobDetails =
+            CreateValidUsJobDetails(speedId: 2, pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
 
         var service = CreateService();
 
@@ -452,7 +478,8 @@ public class RateJobServiceTests : IDisposable
     {
         var service = CreateService();
 
-        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                        throw new InvalidOperationException());
         return;
 
         Task<decimal> Act() => service.GetJobRateNzAsync(null!);
@@ -464,7 +491,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(clientId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("ClientId", ex.Message);
         return;
@@ -478,7 +506,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(fromId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("FromId", ex.Message);
         return;
@@ -492,7 +521,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(toId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("ToId", ex.Message);
         return;
@@ -506,7 +536,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(speedId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SpeedId", ex.Message);
         return;
@@ -520,7 +551,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(sizeId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SizeId", ex.Message);
         return;
@@ -533,7 +565,8 @@ public class RateJobServiceTests : IDisposable
     {
         var service = CreateService();
 
-        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                        throw new InvalidOperationException());
         return;
 
         Task<decimal> Act() => service.GetJobRateUsAsync(null!);
@@ -545,7 +578,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(speedId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SpeedId", ex.Message);
         return;
@@ -559,7 +593,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(clientId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("ClientId", ex.Message);
         return;
@@ -573,7 +608,8 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(sizeId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+                                                                 throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SizeId", ex.Message);
         return;
@@ -587,8 +623,8 @@ public class RateJobServiceTests : IDisposable
         // Arrange
         SetupNonFlightSpeed();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
-            .ReturnsAsync(250.75m);
+        _jobQueryRepositoryMock.GetJobRateUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(250.75m);
 
         var jobDetails = CreateValidUsJobDetails(pickupLat: 0, pickupLong: 0, deliveryLat: 0, deliveryLong: 0);
 
@@ -599,7 +635,7 @@ public class RateJobServiceTests : IDisposable
 
         // Assert
         Assert.Equal(250.75m, rate);
-        _jobQueryRepositoryMock.Verify(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()), Times.Once);
+        await _jobQueryRepositoryMock.Received().GetJobRateUsAsync(Arg.Any<RateJobUsDto>());
     }
 
     [Fact]
@@ -609,9 +645,12 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobQueryRepositoryMock.Setup(x => x.GetJobRateUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .ReturnsAsync(100m);
+        _jobQueryRepositoryMock.GetJobRateUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return 100m;
+            });
 
         var jobDetails = new JobRatingDetailsDto
         {
@@ -656,15 +695,18 @@ public class RateJobServiceTests : IDisposable
     public async Task RateJobUsAsync_EmptyRouteSections_ReturnsTotalMilesZero()
     {
         // Arrange - route response with no sections
-        var hereResponse = """{"routes":[{"sections":[]}]}""";
+        const string hereResponse = """{"routes":[{"sections":[]}]}""";
         var httpClient = CreateMockHttpClient(HttpStatusCode.OK, hereResponse);
 
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails();
 
@@ -688,9 +730,12 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails();
 
@@ -714,9 +759,12 @@ public class RateJobServiceTests : IDisposable
         SetupNonFlightSpeed();
 
         RateJobUsDto? capturedDto = null;
-        _jobCommandRepositoryMock.Setup(x => x.RateJobUsAsync(It.IsAny<RateJobUsDto>()))
-            .Callback<RateJobUsDto>(dto => capturedDto = dto)
-            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.RateJobUsAsync(Arg.Any<RateJobUsDto>())
+            .Returns(callInfo =>
+            {
+                capturedDto = callInfo.Arg<RateJobUsDto>();
+                return Task.CompletedTask;
+            });
 
         var jobDetails = CreateValidUsJobDetails();
 
@@ -735,14 +783,14 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m, Void = true },
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = true }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 100m }
@@ -751,11 +799,11 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(
-            It.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(2))), Times.Once);
+        await _jobCommandRepositoryMock.Received().UpdateJobVoidStatusAsync(
+            Arg.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(2)));
     }
 
     [Fact]
@@ -763,14 +811,14 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m, Void = false },
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = null }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 100m }
@@ -779,10 +827,10 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(It.IsAny<IReadOnlyList<int>>()), Times.Never);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobVoidStatusAsync(Arg.Any<IReadOnlyList<int>>());
     }
 
     [Fact]
@@ -790,15 +838,15 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m, Void = true },
                 new JobManualPriceModel { Id = 2, Amount = 200m, Void = false },
                 new JobManualPriceModel { Id = 3, Amount = 300m, Void = true }
             ]);
 
-        _jobQueryRepositoryMock.Setup(x => x.GetJobCurrentAmountsAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync(new Dictionary<int, JobCurrentAmountInfo>
+        _jobQueryRepositoryMock.GetJobCurrentAmountsAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns(new Dictionary<int, JobCurrentAmountInfo>
             {
                 [1] = new() { JobId = 1, JobNo = "JOB-001", Amount = 50m },
                 [2] = new() { JobId = 2, JobNo = "JOB-002", Amount = 100m },
@@ -808,12 +856,11 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
 
         // Act
-        await service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        await service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.UpdateJobVoidStatusAsync(
-            It.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2))),
-            Times.Once);
+        await _jobCommandRepositoryMock.Received().UpdateJobVoidStatusAsync(
+            Arg.Is<List<int>>(ids => ids.Count == 2 && ids.Contains(1) && ids.Contains(3) && !ids.Contains(2)));
     }
 
     [Fact]
@@ -821,26 +868,26 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m },
                 new JobManualPriceModel { Id = 2, Amount = 200m }
             ]);
 
         // Return inaccessible job IDs
-        _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync([1, 2]);
+        _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns([1, 2]);
 
         var service = CreateService();
 
         // Assert
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>((Func<Task<BulkPricePreviewResponse>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>((Func<Task<BulkPricePreviewResponse>>?)Act ??
+                                                                       throw new InvalidOperationException());
         Assert.Contains("do not have access", ex.Message);
         return;
 
         // Act
-        Task<BulkPricePreviewResponse> Act() => service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        Task<BulkPricePreviewResponse> Act() => service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
     }
 
     [Fact]
@@ -848,27 +895,27 @@ public class RateJobServiceTests : IDisposable
     {
         // Arrange
         var fileMock = CreateMockFile("test.csv", string.Empty);
-        _jobReportServiceMock.Setup(x => x.ParseBulkPriceFileAsync(fileMock.Object))
-            .ReturnsAsync([
+        _jobReportServiceMock.ParseBulkPriceFileAsync(fileMock)
+            .Returns([
                 new JobManualPriceModel { Id = 1, Amount = 100m },
                 new JobManualPriceModel { Id = 2, Amount = 200m },
                 new JobManualPriceModel { Id = 3, Amount = 300m }
             ]);
 
         // Only job 2 is inaccessible
-        _pricingPermissionServiceMock
-            .Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
-            .ReturnsAsync([2]);
+        _pricingPermissionServiceMock.ValidateJobsAccessAsync(Arg.Any<IReadOnlyList<int>>())
+            .Returns([2]);
 
         var service = CreateService();
 
         // Assert
-        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>((Func<Task<BulkPricePreviewResponse>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<UnauthorizedAccessException>((Func<Task<BulkPricePreviewResponse>>?)Act ??
+                                                                       throw new InvalidOperationException());
         Assert.Contains("2", ex.Message);
         return;
 
         // Act
-        Task<BulkPricePreviewResponse> Act() => service.ApplyBulkPriceUpdateAsync(fileMock.Object, "gross");
+        Task<BulkPricePreviewResponse> Act() => service.ApplyBulkPriceUpdateAsync(fileMock, "gross");
     }
 
     [Fact]
@@ -930,8 +977,8 @@ public class RateJobServiceTests : IDisposable
     };
 
     private void SetupNonFlightSpeed() =>
-        _jobQueryRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(new TucJobType
+        _jobQueryRepositoryMock.GetJobTypeByIdAsync(Arg.Any<int>())
+            .Returns(new TucJobType
             {
                 UcjtId = 1,
                 UcjtName = "Same Day",
@@ -939,27 +986,29 @@ public class RateJobServiceTests : IDisposable
             });
 
     private void SetupFlightSpeed() =>
-        _jobQueryRepositoryMock.Setup(x => x.GetJobTypeByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync(new TucJobType
+        _jobQueryRepositoryMock.GetJobTypeByIdAsync(Arg.Any<int>())
+            .Returns(new TucJobType
             {
                 UcjtId = 2,
                 UcjtName = "Flight",
                 Grouping = new TucJobTypeGrouping { GroupingId = (int)SpeedGrouping.Flight, GroupingName = "Flight" }
             });
 
-    private static Mock<IFormFile> CreateMockFile(string fileName, string content)
+    private static IFormFile CreateMockFile(string fileName, string content)
     {
-        var fileMock = new Mock<IFormFile>();
+        var fileMock = Substitute.For<IFormFile>();
         var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
 
-        fileMock.Setup(f => f.FileName).Returns(fileName);
-        fileMock.Setup(f => f.Length).Returns(stream.Length);
-        fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
-        fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Callback<Stream, CancellationToken>((s, _) => stream.CopyTo(s))
-            .Returns(Task.CompletedTask);
+        fileMock.FileName.Returns(fileName);
+        fileMock.Length.Returns(stream.Length);
+        fileMock.OpenReadStream().Returns(stream);
+        fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                stream.CopyTo(callInfo.Arg<Stream>());
+                return Task.CompletedTask;
+            });
 
         return fileMock;
     }
-
 }
