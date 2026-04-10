@@ -23,7 +23,7 @@ public class NoteRepositoryTests : IAsyncDisposable
     public NoteRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");

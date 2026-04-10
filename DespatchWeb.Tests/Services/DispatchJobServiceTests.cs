@@ -1,7 +1,7 @@
-using DespatchWeb.Enums;
+﻿using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -10,12 +10,12 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class DispatchJobServiceTests
 {
-    private readonly Mock<IJobCommandRepository> _jobRepositoryMock = new();
-    private readonly Mock<ICourierRepository> _courierRepositoryMock = new();
+    private readonly IJobCommandRepository _jobRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly ICourierRepository _courierRepositoryMock = Substitute.For<ICourierRepository>();
 
     private DispatchJobService CreateService() => new(
-        _jobRepositoryMock.Object,
-        _courierRepositoryMock.Object
+        _jobRepositoryMock,
+        _courierRepositoryMock
     );
 
     [Fact]
@@ -71,19 +71,19 @@ public class DispatchJobServiceTests
         var jobIds = new List<int> { 1 };
         const int courierId = 100;
 
-        _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
+        _jobRepositoryMock.AssignCourierToJobAsync(Arg.Any<IReadOnlyList<int>>(), courierId)
             .Returns(Task.CompletedTask);
-        _courierRepositoryMock.Setup(x => x.ResetClearListAreaOrderAsync(courierId))
+        _courierRepositoryMock.ResetClearListAreaOrderAsync(courierId)
             .Returns(Task.CompletedTask);
-        _jobRepositoryMock.Setup(x => x.AssignCourierToChildJobsAsync(It.IsAny<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod))
+        _jobRepositoryMock.AssignCourierToChildJobsAsync(Arg.Any<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod)
             .Returns(Task.CompletedTask);
 
         // Act
         await service.DispatchJobsToCourierAsync(jobIds, courierId);
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.AssignCourierToJobAsync(
-            It.Is<List<int>>(ids => ids.Contains(1)), courierId), Times.Once);
+        await _jobRepositoryMock.Received().AssignCourierToJobAsync(
+            Arg.Is<List<int>>(ids => ids.Contains(1)), courierId);
     }
 
     [Fact]
@@ -94,19 +94,19 @@ public class DispatchJobServiceTests
         var jobIds = new List<int> { 1, 2, 3 };
         var courierId = 100;
 
-        _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
+        _jobRepositoryMock.AssignCourierToJobAsync(Arg.Any<IReadOnlyList<int>>(), courierId)
             .Returns(Task.CompletedTask);
-        _courierRepositoryMock.Setup(x => x.ResetClearListAreaOrderAsync(courierId))
+        _courierRepositoryMock.ResetClearListAreaOrderAsync(courierId)
             .Returns(Task.CompletedTask);
-        _jobRepositoryMock.Setup(x => x.AssignCourierToChildJobsAsync(It.IsAny<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod))
+        _jobRepositoryMock.AssignCourierToChildJobsAsync(Arg.Any<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod)
             .Returns(Task.CompletedTask);
 
         // Act
         await service.DispatchJobsToCourierAsync(jobIds, courierId);
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.AssignCourierToJobAsync(
-            It.Is<List<int>>(ids => ids.Count == 3), courierId), Times.Once);
+        await _jobRepositoryMock.Received().AssignCourierToJobAsync(
+            Arg.Is<List<int>>(ids => ids.Count == 3), courierId);
     }
 
     [Fact]
@@ -117,18 +117,18 @@ public class DispatchJobServiceTests
         var jobIds = new List<int> { 1 };
         const int courierId = 100;
 
-        _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
+        _jobRepositoryMock.AssignCourierToJobAsync(Arg.Any<IReadOnlyList<int>>(), courierId)
             .Returns(Task.CompletedTask);
-        _courierRepositoryMock.Setup(x => x.ResetClearListAreaOrderAsync(courierId))
+        _courierRepositoryMock.ResetClearListAreaOrderAsync(courierId)
             .Returns(Task.CompletedTask);
-        _jobRepositoryMock.Setup(x => x.AssignCourierToChildJobsAsync(It.IsAny<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod))
+        _jobRepositoryMock.AssignCourierToChildJobsAsync(Arg.Any<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod)
             .Returns(Task.CompletedTask);
 
         // Act
         await service.DispatchJobsToCourierAsync(jobIds, courierId);
 
         // Assert
-        _courierRepositoryMock.Verify(x => x.ResetClearListAreaOrderAsync(courierId), Times.Once);
+        await _courierRepositoryMock.Received().ResetClearListAreaOrderAsync(courierId);
     }
 
     [Fact]
@@ -139,19 +139,19 @@ public class DispatchJobServiceTests
         var jobIds = new List<int> { 1, 2 };
         const int courierId = 100;
 
-        _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
+        _jobRepositoryMock.AssignCourierToJobAsync(Arg.Any<IReadOnlyList<int>>(), courierId)
             .Returns(Task.CompletedTask);
-        _courierRepositoryMock.Setup(x => x.ResetClearListAreaOrderAsync(courierId))
+        _courierRepositoryMock.ResetClearListAreaOrderAsync(courierId)
             .Returns(Task.CompletedTask);
-        _jobRepositoryMock.Setup(x => x.AssignCourierToChildJobsAsync(It.IsAny<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod))
+        _jobRepositoryMock.AssignCourierToChildJobsAsync(Arg.Any<IReadOnlyList<int>>(), InternalJobStatus.AwaitingPod)
             .Returns(Task.CompletedTask);
 
         // Act
         await service.DispatchJobsToCourierAsync(jobIds, courierId);
 
         // Assert
-        _jobRepositoryMock.Verify(x => x.AssignCourierToChildJobsAsync(
-            It.Is<List<int>>(ids => ids.Count == 2), InternalJobStatus.AwaitingPod), Times.Once);
+        await _jobRepositoryMock.Received().AssignCourierToChildJobsAsync(
+            Arg.Is<List<int>>(ids => ids.Count == 2), InternalJobStatus.AwaitingPod);
     }
 
     [Fact]
@@ -162,8 +162,8 @@ public class DispatchJobServiceTests
         var jobIds = new List<int> { 1 };
         const int courierId = 100;
 
-        _jobRepositoryMock.Setup(x => x.AssignCourierToJobAsync(It.IsAny<IReadOnlyList<int>>(), courierId))
-            .ThrowsAsync(new InvalidOperationException("Database error"));
+        _jobRepositoryMock.AssignCourierToJobAsync(Arg.Any<IReadOnlyList<int>>(), courierId)
+            .Returns(_ => throw new InvalidOperationException("Database error"));
 
         // Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(Act);

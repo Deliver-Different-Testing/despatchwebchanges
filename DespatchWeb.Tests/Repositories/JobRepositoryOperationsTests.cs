@@ -27,7 +27,7 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
 
     public JobRepositoryOperationsTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
+        _contextFactoryMock = _db.CreateMoqFactoryMock();
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");

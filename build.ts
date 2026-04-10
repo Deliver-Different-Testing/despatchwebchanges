@@ -370,6 +370,7 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                     export const QueryClientProvider = window.QueryClientProvider;
                     export const keepPreviousData = window.keepPreviousData;
                     export const useQuery = window.useQuery;
+                    export const useInfiniteQuery = window.useInfiniteQuery;
                     export const useMutation = window.useMutation;
                     export const useQueryClient = window.useQueryClient;
                 `,

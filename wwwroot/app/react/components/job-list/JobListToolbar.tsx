@@ -57,6 +57,9 @@ interface JobListToolbarProps {
     onBulkRestore?: () => void;
     onBulkMarkRead?: () => void;
     onBulkMarkUnread?: () => void;
+    hideLoggedInSwitch?: boolean;
+    todayOnly?: boolean;
+    onTodayOnlyChange?: (checked: boolean) => void;
 }
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -141,6 +144,9 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkRestore,
     onBulkMarkRead,
     onBulkMarkUnread,
+    hideLoggedInSwitch,
+    todayOnly,
+    onTodayOnlyChange,
 }) => {
     const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -347,7 +353,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
             />
 
             {/* Logged-in couriers only toggle - only shown when dispatching is enabled */}
-            {allowDispatch && (
+            {allowDispatch && !hideLoggedInSwitch && (
                 <FormControlLabel
                     control={
                         <Switch
@@ -357,6 +363,22 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                         />
                     }
                     label="Logged-in only"
+                    slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap'}}}}
+                    sx={{ml: 0, mr: 0}}
+                />
+            )}
+
+            {/* Today only toggle - shown on current work list */}
+            {onTodayOnlyChange && (
+                <FormControlLabel
+                    control={
+                        <Switch
+                            size="small"
+                            checked={todayOnly ?? true}
+                            onChange={(_, checked) => onTodayOnlyChange(checked)}
+                        />
+                    }
+                    label="Today only"
                     slotProps={{typography: {variant: 'body2', sx: {fontSize: '0.75rem', whiteSpace: 'nowrap'}}}}
                     sx={{ml: 0, mr: 0}}
                 />

@@ -1,9 +1,10 @@
-using Amazon.S3;
+﻿using Amazon.S3;
 using Amazon.S3.Model;
 using DespatchWeb.Enums;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,9 +13,9 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class JobPhotoServiceTests
 {
-    private readonly Mock<IAmazonS3> _s3ClientMock = new();
+    private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
 
-    private JobPhotoService CreateService() => new(_s3ClientMock.Object);
+    private JobPhotoService CreateService() => new(_s3ClientMock);
 
     [Fact]
     public async Task UploadJobPhotoOrSignatureAsync_NullFile_ReturnsFailure()
@@ -35,11 +36,11 @@ public class JobPhotoServiceTests
     {
         // Arrange
         var service = CreateService();
-        var fileMock = new Mock<IFormFile>();
-        fileMock.Setup(f => f.Length).Returns(0);
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.Length.Returns(0);
 
         // Act
-        var result = await service.UploadJobPhotoOrSignatureAsync(1, fileMock.Object, JobPhotoType.Delivery);
+        var result = await service.UploadJobPhotoOrSignatureAsync(1, fileMock, JobPhotoType.Delivery);
 
         // Assert
         Assert.False(result.Success);
@@ -54,8 +55,8 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("test.jpg", "image/jpeg", 100);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         // Act
         var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Delivery);
@@ -64,7 +65,7 @@ public class JobPhotoServiceTests
         Assert.True(result.Success);
         Assert.Contains(".jpg", result.FileName);
         Assert.Contains("DeliveryPhotos", result.S3Key);
-        _s3ClientMock.Verify(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()), Times.Once);
+        await _s3ClientMock.Received().PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -75,8 +76,8 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("signature.png", "image/png", 50);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         // Act
         var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Delivery, isPod: false);
@@ -94,8 +95,8 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("pickup.jpg", "image/jpeg", 100);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         // Act
         var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Pickup);
@@ -113,8 +114,7 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("test.jpg", "image/jpeg", 100);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new AmazonS3Exception("S3 Error"));
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AmazonS3Exception("S3 Error"));
 
         // Act
         var result = await service.UploadJobPhotoOrSignatureAsync(1, file, JobPhotoType.Delivery);
@@ -146,17 +146,17 @@ public class JobPhotoServiceTests
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.Setup(x => x.DeleteObjectAsync(It.IsAny<DeleteObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeleteObjectResponse());
+        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new DeleteObjectResponse());
 
         // Act
         var result = await service.DeleteJobPhotoOrSignatureAsync(1, "DeliveryPhotos/2024/01/1-test.jpg");
 
         // Assert
         Assert.True(result);
-        _s3ClientMock.Verify(x => x.DeleteObjectAsync(
-            It.Is<DeleteObjectRequest>(r => r.Key == "DeliveryPhotos/2024/01/1-test.jpg"),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _s3ClientMock.Received().DeleteObjectAsync(
+            Arg.Is<DeleteObjectRequest>(r => r.Key == "DeliveryPhotos/2024/01/1-test.jpg"),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -166,8 +166,7 @@ public class JobPhotoServiceTests
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.Setup(x => x.DeleteObjectAsync(It.IsAny<DeleteObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new AmazonS3Exception("Delete failed"));
+        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>()).ThrowsAsync(new AmazonS3Exception("Delete failed"));
 
         // Act
         var result = await service.DeleteJobPhotoOrSignatureAsync(1, "test-key");
@@ -228,8 +227,8 @@ public class JobPhotoServiceTests
         var service = CreateService();
         var file = CreateMockFile("document.pdf", "application/pdf", 1024);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         // Act
         var result = await service.UploadJobAttachmentAsync(1, file);
@@ -259,8 +258,8 @@ public class JobPhotoServiceTests
         };
         var file = CreateMockFile($"test{extension}", contentType, 100);
 
-        _s3ClientMock.Setup(x => x.PutObjectAsync(It.IsAny<PutObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new PutObjectResponse());
+        _s3ClientMock.PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PutObjectResponse());
 
         // Act
         var result = await service.UploadJobAttachmentAsync(1, file);
@@ -307,8 +306,8 @@ public class JobPhotoServiceTests
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.Setup(x => x.DeleteObjectAsync(It.IsAny<DeleteObjectRequest>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new DeleteObjectResponse());
+        _s3ClientMock.DeleteObjectAsync(Arg.Any<DeleteObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new DeleteObjectResponse());
 
         // Act
         var result = await service.DeleteFileAsync("JobAttachments/1-test.pdf");
@@ -324,8 +323,8 @@ public class JobPhotoServiceTests
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.Setup(x => x.ListObjectsV2Async(It.IsAny<ListObjectsV2Request>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
 
         // Act
         var result = await service.GetDeliveryPhotosAsync(1, 2024, 1);
@@ -341,8 +340,8 @@ public class JobPhotoServiceTests
         Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
         var service = CreateService();
 
-        _s3ClientMock.Setup(x => x.ListObjectsV2Async(It.IsAny<ListObjectsV2Request>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(new ListObjectsV2Response { S3Objects = new List<S3Object>() });
 
         // Act
         var result = await service.GetPickupPhotosAsync(1, 2024, 1);
@@ -356,20 +355,20 @@ public class JobPhotoServiceTests
         var content = new byte[size];
         var stream = new MemoryStream(content);
 
-        var fileMock = new Mock<IFormFile>();
-        fileMock.Setup(f => f.FileName).Returns(fileName);
-        fileMock.Setup(f => f.ContentType).Returns(contentType);
-        fileMock.Setup(f => f.Length).Returns(size);
-        fileMock.Setup(f => f.OpenReadStream()).Returns(stream);
-        fileMock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-            .Callback<Stream, CancellationToken>((s, _) =>
+        var fileMock = Substitute.For<IFormFile>();
+        fileMock.FileName.Returns(fileName);
+        fileMock.ContentType.Returns(contentType);
+        fileMock.Length.Returns(size);
+        fileMock.OpenReadStream().Returns(stream);
+        fileMock.CopyToAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
             {
                 stream.Position = 0;
-                stream.CopyTo(s);
-            })
-            .Returns(Task.CompletedTask);
+                stream.CopyTo(callInfo.Arg<Stream>());
+                return Task.CompletedTask;
+            });
 
-        return fileMock.Object;
+        return fileMock;
     }
 
 }

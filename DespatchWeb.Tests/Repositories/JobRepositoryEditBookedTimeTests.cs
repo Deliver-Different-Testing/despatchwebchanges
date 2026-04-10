@@ -23,7 +23,7 @@ public class JobRepositoryEditBookedTimeTests : IAsyncDisposable
 
     public JobRepositoryEditBookedTimeTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
+        _contextFactoryMock = _db.CreateMoqFactoryMock();
 
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);

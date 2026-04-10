@@ -1,4 +1,4 @@
-using Amazon.S3;
+﻿using Amazon.S3;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Extensions;
 using DespatchWeb.Interfaces;
@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Infrastructure;
 
@@ -33,12 +33,12 @@ public class DiCompositionTests
             .Build();
         services.AddSingleton<IConfiguration>(config);
 
-        services.AddSingleton(Mock.Of<IDbContextFactory<DespatchContext>>());
-        services.AddSingleton(Mock.Of<IHttpContextAccessor>());
-        services.AddSingleton(Mock.Of<IAmazonS3>());
-        services.AddSingleton(Mock.Of<IConnectionStringManager>());
-        services.AddSingleton(Mock.Of<IDistributedCache>());
-        services.AddSingleton(Mock.Of<ITenantBrandingService>());
+        services.AddSingleton(Substitute.For<IDbContextFactory<DespatchContext>>());
+        services.AddSingleton(Substitute.For<IHttpContextAccessor>());
+        services.AddSingleton(Substitute.For<IAmazonS3>());
+        services.AddSingleton(Substitute.For<IConnectionStringManager>());
+        services.AddSingleton(Substitute.For<IDistributedCache>());
+        services.AddSingleton(Substitute.For<ITenantBrandingService>());
         services.AddMemoryCache();
         services.AddHttpClient();
         services.AddScoped(_ => new HttpClient());

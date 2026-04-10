@@ -1,19 +1,19 @@
-using DespatchWeb.Interfaces;
+﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 public class ClientAccessValidatorServiceTests
 {
-    private readonly Mock<IClientRepository> _clientRepoMock;
+    private readonly IClientRepository _clientRepoMock;
     private readonly ClientAccessValidatorService _sut;
 
     public ClientAccessValidatorServiceTests()
     {
-        _clientRepoMock = new Mock<IClientRepository>();
-        _sut = new ClientAccessValidatorService(_clientRepoMock.Object);
+        _clientRepoMock = Substitute.For<IClientRepository>();
+        _sut = new ClientAccessValidatorService(_clientRepoMock);
     }
 
     [Fact]
@@ -22,8 +22,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange
         const int contactId = 1;
         const string clientIds = "1,2,3";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
                 new Suggestion { Id = 1, Text = "Client 1" },
                 new Suggestion { Id = 2, Text = "Client 2" },
                 new Suggestion { Id = 3, Text = "Client 3" }
@@ -40,8 +40,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange - This is the security fix: malformed input should not cause exceptions
         const int contactId = 1;
         const string clientIds = "1,abc,3,xyz,5";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
                 new Suggestion { Id = 1, Text = "Client 1" },
                 new Suggestion { Id = 3, Text = "Client 3" },
                 new Suggestion { Id = 5, Text = "Client 5" }
@@ -62,7 +62,7 @@ public class ClientAccessValidatorServiceTests
         // Act & Assert - Should return early without calling repository
         var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
         Assert.Null(exception);
-        _clientRepoMock.Verify(x => x.ClientContactsAsync(It.IsAny<int>()), Times.Never);
+        await _clientRepoMock.DidNotReceive().ClientContactsAsync(Arg.Any<int>());
     }
 
     [Fact]
@@ -75,17 +75,17 @@ public class ClientAccessValidatorServiceTests
         // Act & Assert
         var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
         Assert.Null(exception);
-        _clientRepoMock.Verify(x => x.ClientContactsAsync(It.IsAny<int>()), Times.Never);
+        await _clientRepoMock.DidNotReceive().ClientContactsAsync(Arg.Any<int>());
     }
 
     [Fact]
     public async Task ValidateClientAccessAsync_WhitespaceInIds_TrimsCorrectly()
     {
         // Arrange
-        var contactId = 1;
-        var clientIds = " 1 , 2 , 3 ";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([
+        const int contactId = 1;
+        const string clientIds = " 1 , 2 , 3 ";
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
                 new Suggestion { Id = 1, Text = "Client 1" },
                 new Suggestion { Id = 2, Text = "Client 2" }
             ]);
@@ -114,8 +114,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange
         const int contactId = 1;
         const string clientIds = "999"; // Client the contact doesn't have access to
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([
                 new Suggestion { Id = 1, Text = "Client 1" },
                 new Suggestion { Id = 2, Text = "Client 2" }
             ]);
@@ -131,8 +131,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange - Contact has access to at least one of the requested clients
         const int contactId = 1;
         const string clientIds = "1,999"; // Has access to 1, not to 999
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([new Suggestion { Id = 1, Text = "Client 1" }]);
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([new Suggestion { Id = 1, Text = "Client 1" }]);
 
         // Act & Assert - Has access to at least one, so should not throw
         var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
@@ -145,8 +145,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange
         const int contactId = 1;
         const string clientIds = "1";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync((List<Suggestion>)null!);
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns((List<Suggestion>)null!);
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
@@ -159,8 +159,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange
         const int contactId = 1;
         const string clientIds = "1";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([]);
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([]);
 
         // Act & Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>(
@@ -173,8 +173,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange - Edge case: negative numbers should still parse
         const int contactId = 1;
         const string clientIds = "-1,2";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([new Suggestion { Id = -1, Text = "Client -1" }]);
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([new Suggestion { Id = -1, Text = "Client -1" }]);
 
         // Act & Assert
         var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));
@@ -187,8 +187,8 @@ public class ClientAccessValidatorServiceTests
         // Arrange
         const int contactId = 1;
         const string clientIds = "1,1,1,2,2";
-        _clientRepoMock.Setup(x => x.ClientContactsAsync(contactId))
-            .ReturnsAsync([new Suggestion { Id = 1, Text = "Client 1" }]);
+        _clientRepoMock.ClientContactsAsync(contactId)
+            .Returns([new Suggestion { Id = 1, Text = "Client 1" }]);
 
         // Act & Assert - HashSet deduplicates, should still work
         var exception = await Record.ExceptionAsync(() => _sut.ValidateClientAccessAsync(contactId, clientIds));

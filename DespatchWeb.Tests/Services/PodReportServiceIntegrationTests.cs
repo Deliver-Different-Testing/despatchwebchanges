@@ -1,20 +1,20 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using DeliverDifferentReporting.Services;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
 public class PodReportServiceIntegrationTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<ITenantBrandingService> _tenantBrandingServiceMock = new();
-    private readonly Mock<IJobQueryRepository> _jobRepositoryMock = new();
-    private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
+    private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
+    private readonly ITenantBrandingService _tenantBrandingServiceMock = Substitute.For<ITenantBrandingService>();
+    private readonly IJobQueryRepository _jobRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
 
     public async ValueTask DisposeAsync()
     {
@@ -23,11 +23,11 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     }
 
     private PodReportService CreateService() => new(
-        _httpContextAccessorMock.Object,
-        _tenantBrandingServiceMock.Object,
-        _jobRepositoryMock.Object,
-        _jobPhotoServiceMock.Object,
-        _db.CreateFactoryMock().Object
+        _httpContextAccessorMock,
+        _tenantBrandingServiceMock,
+        _jobRepositoryMock,
+        _jobPhotoServiceMock,
+        _db.CreateFactoryMock()
     );
 
     private void SetupHttpContext(string tenantId = "42")
@@ -36,7 +36,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
         var identity = new ClaimsIdentity(claims, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
         var httpContext = new DefaultHttpContext { User = principal };
-        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+        _httpContextAccessorMock.HttpContext.Returns(httpContext);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     {
         SetupHttpContext();
         // Branding setup not needed - test throws before branding is used
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999)).ReturnsAsync((JobViewModel?)null);
+        _jobRepositoryMock.GetSingleJobById(999).Returns((JobViewModel?)null);
 
         var service = CreateService();
 
@@ -58,7 +58,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     public async Task GeneratePodReportAsync_MissingTenantClaim_ThrowsInvalidOperationException()
     {
         var httpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity()) };
-        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+        _httpContextAccessorMock.HttpContext.Returns(httpContext);
 
         var service = CreateService();
 
@@ -71,7 +71,7 @@ public class PodReportServiceIntegrationTests : IAsyncDisposable
     {
         SetupHttpContext();
         // Branding setup not needed - test throws before branding is used
-        _jobRepositoryMock.Setup(x => x.GetSingleJobById(999)).ReturnsAsync((JobViewModel?)null);
+        _jobRepositoryMock.GetSingleJobById(999).Returns((JobViewModel?)null);
 
         var service = CreateService();
 

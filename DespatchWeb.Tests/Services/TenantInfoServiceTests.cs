@@ -1,10 +1,10 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Moq;
+using NSubstitute;
 using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Services;
@@ -15,8 +15,8 @@ namespace DespatchWeb.Tests.Services;
 public class TenantInfoServiceTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly MemoryCache _memoryCache = new(new MemoryCacheOptions());
 
     public TenantInfoServiceTests() => _contextFactoryMock = _db.CreateFactoryMock();
@@ -29,8 +29,8 @@ public class TenantInfoServiceTests : IAsyncDisposable
     }
 
     private TenantInfoService CreateService() => new(
-        _httpContextAccessorMock.Object,
-        _contextFactoryMock.Object,
+        _httpContextAccessorMock,
+        _contextFactoryMock,
         _memoryCache
     );
 
@@ -40,7 +40,7 @@ public class TenantInfoServiceTests : IAsyncDisposable
         var identity = new ClaimsIdentity(claimsList, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
         var httpContext = new DefaultHttpContext { User = principal };
-        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+        _httpContextAccessorMock.HttpContext.Returns(httpContext);
     }
 
     [Fact]
@@ -426,5 +426,4 @@ public class TenantInfoServiceTests : IAsyncDisposable
         // Assert
         Assert.Null(result);
     }
-
 }

@@ -22,7 +22,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     public NationwideJobRepositoryTests()
     {
         _context = _db.CreateContext();
-        _contextFactoryMock = SqliteTestDatabase.CreateFactoryMock(_context);
+        _contextFactoryMock = SqliteTestDatabase.CreateMoqFactoryMock(_context);
 
         // Default tenant setup
         _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("New Zealand Standard Time");
@@ -1196,7 +1196,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         return;
 
         // Act & Assert
-        async Task Act() => await repository.AddJobNationwideAsync(request, null);
+        async Task Act() => await repository.AddJobNationwideAsync(request, null!);
     }
 
     [Fact]

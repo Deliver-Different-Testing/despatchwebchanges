@@ -1,10 +1,10 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 // EditAddressDialogViewModel is in DespatchWeb.Models namespace (JobViewModel.cs)
 
@@ -15,17 +15,17 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class AddStopJobServiceTests
 {
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
+    private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
     private readonly FakeTenantClock _clock = new(TestDates.Now);
     private TucJob _createdStopJob = new();
     private TucJobBooking _createdStopBooking = new();
 
     private AddStopJobService CreateService() => new(
-        _jobQueryRepositoryMock.Object,
-        _jobCommandRepositoryMock.Object,
-        _tenantInfoServiceMock.Object,
+        _jobQueryRepositoryMock,
+        _jobCommandRepositoryMock,
+        _tenantInfoServiceMock,
         _clock
     );
 
@@ -50,8 +50,8 @@ public class AddStopJobServiceTests
         var service = CreateService();
         var request = CreateValidRequest();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync((TucJob)null!);
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns((TucJob)null!);
 
         // Assert
         await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
@@ -73,8 +73,8 @@ public class AddStopJobServiceTests
             DeliveryAddress = new EditAddressDialogViewModel()
         };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync(CreateParentJob());
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns(CreateParentJob());
 
         // Assert
         await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
@@ -100,9 +100,9 @@ public class AddStopJobServiceTests
 
         // Assert
         Assert.Equal(newJobId, result);
-        _jobCommandRepositoryMock.Verify(x => x.CreateMinimalTucJobAsync(
-            It.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber.StartsWith(parentJob.UcjbNumber)),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber.StartsWith(parentJob.UcjbNumber)),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -119,9 +119,9 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert - Amount set via SP input, CourierPayment set post-load
-        _jobCommandRepositoryMock.Verify(x => x.CreateMinimalTucJobAsync(
-            It.Is<CreateMinimalTucJobInputModel>(m => m.Amount == 20m),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m.Amount == 20m),
+            Arg.Any<CancellationToken>());
         Assert.Equal(10m, _createdStopJob.CourierPayment);
     }
 
@@ -139,10 +139,10 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<PricingBreakdown>(p =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<PricingBreakdown>(p =>
             p.ChargeAmount == 20m &&
             p.CostAmount == 10m &&
-            p.ChargeName == "Extra Stop")), Times.Once);
+            p.ChargeName == "Extra Stop"));
     }
 
     [Fact]
@@ -160,10 +160,10 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucNote>(n =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
             n.JobId == parentJob.UcjbId &&
             n.NoteText == "Test note" &&
-            n.NoteTypeId == (int)NoteType.InternalNote)), Times.Once);
+            n.NoteTypeId == (int)NoteType.InternalNote));
     }
 
     [Fact]
@@ -181,7 +181,9 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.IsAny<TucNote>()), Times.Never);
+        await _jobCommandRepositoryMock
+            .Received(0)
+            .AddEntityAsync(Arg.Any<TucNote>());
     }
 
     [Fact]
@@ -268,9 +270,9 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddPackagesToJobAsync(
+        await _jobCommandRepositoryMock.Received().AddPackagesToJobAsync(
             parentJob.UcjbId,
-            It.Is<List<TucJobItem>>(items => items.Count == 3)), Times.Once);
+            Arg.Is<List<TucJobItem>>(items => items.Count == 3));
     }
 
     [Fact]
@@ -294,8 +296,8 @@ public class AddStopJobServiceTests
         var service = CreateService();
         var request = CreateValidRequest();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJobBooking>(request.JobId))
-            .ReturnsAsync((TucJobBooking)null!);
+        _jobQueryRepositoryMock.GetByIdAsync<TucJobBooking>(request.JobId)
+            .Returns((TucJobBooking)null!);
 
         // Assert
         await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
@@ -321,8 +323,8 @@ public class AddStopJobServiceTests
 
         // Assert
         Assert.Equal(newJobId, result);
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucJobBooking>(j =>
-            j.UcbkJobNumber.StartsWith(parentBooking.UcbkJobNumber))), Times.Once);
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucJobBooking>(j =>
+            j.UcbkJobNumber.StartsWith(parentBooking.UcbkJobNumber)));
     }
 
     [Fact]
@@ -339,10 +341,10 @@ public class AddStopJobServiceTests
         await service.AddStopInsertRecurringJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<PricingBreakdown>(p =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<PricingBreakdown>(p =>
             p.PrebookJobId != null &&
             p.JobId == null &&
-            p.ChargeName == "Extra Stop")), Times.Once);
+            p.ChargeName == "Extra Stop"));
     }
 
     [Fact]
@@ -360,9 +362,9 @@ public class AddStopJobServiceTests
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.CreateMinimalTucJobAsync(
-            It.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001a"),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001a"),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -375,18 +377,18 @@ public class AddStopJobServiceTests
         parentJob.UcjbNumber = "JOB001";
 
         SetupSuccessfulMocks(request, parentJob, 999);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync("JOB001a"))
-            .ReturnsAsync(true);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync("JOB001b"))
-            .ReturnsAsync(false);
+        _jobQueryRepositoryMock.JobNumberExistsAsync("JOB001a")
+            .Returns(true);
+        _jobQueryRepositoryMock.JobNumberExistsAsync("JOB001b")
+            .Returns(false);
 
         // Act
         await service.AddStopInsertJobAsync(request);
 
         // Assert
-        _jobCommandRepositoryMock.Verify(x => x.CreateMinimalTucJobAsync(
-            It.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001b"),
-            It.IsAny<CancellationToken>()), Times.Once);
+        await _jobCommandRepositoryMock.Received().CreateMinimalTucJobAsync(
+            Arg.Is<CreateMinimalTucJobInputModel>(m => m.JobNumber == "JOB001b"),
+            Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -397,10 +399,10 @@ public class AddStopJobServiceTests
         var request = CreateValidRequest();
         var parentJob = CreateParentJob();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync(parentJob);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
-            .ReturnsAsync(true); // All suffixes taken
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns(parentJob);
+        _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
+            .Returns(true); // All suffixes taken
 
         // Assert
         var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
@@ -418,14 +420,14 @@ public class AddStopJobServiceTests
         var request = CreateValidRequest();
         var parentJob = CreateParentJob();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync(parentJob);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(1);
-        _jobCommandRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CreateMinimalTucJobResponse { Success = false, Message = "SP error" });
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns(parentJob);
+        _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
+            .Returns(false);
+        _tenantInfoServiceMock.GetContactId().Returns(1);
+        _jobCommandRepositoryMock.CreateMinimalTucJobAsync(
+                Arg.Any<CreateMinimalTucJobInputModel>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateMinimalTucJobResponse { Success = false, Message = "SP error" });
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("Failed to create stop job", ex.Message);
@@ -441,14 +443,14 @@ public class AddStopJobServiceTests
         var request = CreateValidRequest();
         var parentJob = CreateParentJob();
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync(parentJob);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId()).Returns(1);
-        _jobCommandRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CreateMinimalTucJobResponse { Success = true, JobId = null });
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns(parentJob);
+        _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
+            .Returns(false);
+        _tenantInfoServiceMock.GetContactId().Returns(1);
+        _jobCommandRepositoryMock.CreateMinimalTucJobAsync(
+                Arg.Any<CreateMinimalTucJobInputModel>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateMinimalTucJobResponse { Success = true, JobId = null });
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<int>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("Failed to create stop job", ex.Message);
@@ -501,8 +503,8 @@ public class AddStopJobServiceTests
 
         await service.AddStopInsertJobAsync(request);
 
-        _jobCommandRepositoryMock.Verify(x => x.AddPackagesToJobAsync(
-            It.IsAny<int>(), It.IsAny<List<TucJobItem>>()), Times.Never);
+        await _jobCommandRepositoryMock.DidNotReceive().AddPackagesToJobAsync(
+            Arg.Any<int>(), Arg.Any<List<TucJobItem>>());
     }
 
     [Fact]
@@ -542,11 +544,11 @@ public class AddStopJobServiceTests
         var parentJob = CreateParentJob();
 
         SetupSuccessfulMocks(request, parentJob, 999);
-        _jobQueryRepositoryMock.Setup(x => x.GetNationwideServiceRawPriceAsync(
-                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
-                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<float?>(),
-                It.IsAny<int?>(), It.IsAny<int?>()))
-            .ReturnsAsync(42m);
+        _jobQueryRepositoryMock.GetNationwideServiceRawPriceAsync(
+                Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<int?>(),
+                Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<float?>(),
+                Arg.Any<int?>(), Arg.Any<int?>())
+            .Returns(42m);
 
         await service.AddStopInsertJobAsync(request);
 
@@ -565,10 +567,10 @@ public class AddStopJobServiceTests
 
         await service.AddStopInsertRecurringJobAsync(request);
 
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.Is<TucNote>(n =>
+        await _jobCommandRepositoryMock.Received().AddEntityAsync(Arg.Is<TucNote>(n =>
             n.JobBookingId == parentBooking.UcbkId &&
             n.NoteText == "Booking note" &&
-            n.NoteTypeId == (int)NoteType.InternalNote)), Times.Once);
+            n.NoteTypeId == (int)NoteType.InternalNote));
     }
 
     [Fact]
@@ -583,7 +585,7 @@ public class AddStopJobServiceTests
 
         await service.AddStopInsertRecurringJobAsync(request);
 
-        _jobCommandRepositoryMock.Verify(x => x.AddEntityAsync(It.IsAny<TucNote>()), Times.Never);
+        await _jobCommandRepositoryMock.DidNotReceive().AddEntityAsync(Arg.Any<TucNote>());
     }
 
     [Fact]
@@ -713,56 +715,57 @@ public class AddStopJobServiceTests
     {
         _createdStopJob = new TucJob { UcjbId = newJobId };
 
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(request.JobId))
-            .ReturnsAsync(parentJob);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
-            .ReturnsAsync(false);
-        _jobQueryRepositoryMock.Setup(x => x.GetNationwideServiceRawPriceAsync(
-                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<int?>(),
-                It.IsAny<int?>(), It.IsAny<int?>(), It.IsAny<float?>(),
-                It.IsAny<int?>(), It.IsAny<int?>()))
-            .ReturnsAsync(15m);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId())
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(request.JobId)
+            .Returns(parentJob);
+        _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
+            .Returns(false);
+        _jobQueryRepositoryMock.GetNationwideServiceRawPriceAsync(
+                Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<int?>(),
+                Arg.Any<int?>(), Arg.Any<int?>(), Arg.Any<float?>(),
+                Arg.Any<int?>(), Arg.Any<int?>())
+            .Returns(15m);
+        _tenantInfoServiceMock.GetStaffId()
             .Returns(1);
-        _tenantInfoServiceMock.Setup(x => x.GetContactId())
+        _tenantInfoServiceMock.GetContactId()
             .Returns(1);
 
-        _jobCommandRepositoryMock.Setup(x => x.CreateMinimalTucJobAsync(
-                It.IsAny<CreateMinimalTucJobInputModel>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new CreateMinimalTucJobResponse { Success = true, JobId = newJobId });
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJob>(newJobId))
-            .ReturnsAsync(_createdStopJob);
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucNote>()))
+        _jobCommandRepositoryMock.CreateMinimalTucJobAsync(
+                Arg.Any<CreateMinimalTucJobInputModel>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateMinimalTucJobResponse { Success = true, JobId = newJobId });
+        _jobQueryRepositoryMock.GetByIdAsync<TucJob>(newJobId)
+            .Returns(_createdStopJob);
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucNote>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<PricingBreakdown>()))
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<PricingBreakdown>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.AddPackagesToJobAsync(It.IsAny<int>(), It.IsAny<List<TucJobItem>>()))
+        _jobCommandRepositoryMock.AddPackagesToJobAsync(Arg.Any<int>(), Arg.Any<List<TucJobItem>>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.SaveChangesAsync())
+        _jobCommandRepositoryMock.SaveChangesAsync()
             .Returns(Task.CompletedTask);
     }
 
     private void SetupRecurringSuccessfulMocks(AddStopRequest request, TucJobBooking parentBooking, int newJobId)
     {
-        _jobQueryRepositoryMock.Setup(x => x.GetByIdAsync<TucJobBooking>(request.JobId))
-            .ReturnsAsync(parentBooking);
-        _jobQueryRepositoryMock.Setup(x => x.JobNumberExistsAsync(It.IsAny<string>()))
-            .ReturnsAsync(false);
-        _tenantInfoServiceMock.Setup(x => x.GetStaffId())
+        _jobQueryRepositoryMock.GetByIdAsync<TucJobBooking>(request.JobId)
+            .Returns(parentBooking);
+        _jobQueryRepositoryMock.JobNumberExistsAsync(Arg.Any<string>())
+            .Returns(false);
+        _tenantInfoServiceMock.GetStaffId()
             .Returns(1);
 
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucJobBooking>()))
-            .Callback<TucJobBooking>(j =>
-            {
-                j.UcbkId = newJobId;
-                _createdStopBooking = j;
-            })
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucJobBooking>())
+            .Returns(callInfo =>
+            {                                                                                                                                                                   
+                var j = callInfo.Arg<TucJobBooking>();
+                j.UcbkId = newJobId;                                                                                                                                            
+                _createdStopBooking = j;                      
+                return Task.CompletedTask;
+            });
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<TucNote>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<TucNote>()))
+        _jobCommandRepositoryMock.AddEntityAsync(Arg.Any<PricingBreakdown>())
             .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.AddEntityAsync(It.IsAny<PricingBreakdown>()))
-            .Returns(Task.CompletedTask);
-        _jobCommandRepositoryMock.Setup(x => x.SaveChangesAsync())
+        _jobCommandRepositoryMock.SaveChangesAsync()
             .Returns(Task.CompletedTask);
     }
 

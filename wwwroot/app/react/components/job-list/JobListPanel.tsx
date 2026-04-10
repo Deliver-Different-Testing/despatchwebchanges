@@ -251,6 +251,8 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                                                               defaultCategory,
                                                               storagePrefix = DEFAULT_STORAGE_PREFIX,
                                                               fetchConfig,
+                                                              hideLoggedInSwitch,
+                                                              onDateFilterModeChange,
                                                               setJobsCallback,
                                                               setRefreshCallback,
                                                               setSelectJobCallback,
@@ -324,6 +326,14 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             return localStorage.getItem(getStorageKey('loggedInCouriersOnly')) === 'true';
         } catch { /* ignore */ }
         return false;
+    });
+    const [todayOnly, setTodayOnly] = useState(() => {
+        if (!onDateFilterModeChange) return true;
+        try {
+            const stored = localStorage.getItem(getStorageKey('todayOnly'));
+            return stored === null ? true : stored === 'true';
+        } catch { /* ignore */ }
+        return true;
     });
     const [lastUpdated, setLastUpdated] = useState(() => `Last updated: ${dayjs().format('h:mm A')}`);
 
@@ -405,6 +415,20 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
     }, [loggedInCouriersOnly, getStorageKey]);
 
+    useEffect(() => {
+        if (onDateFilterModeChange) {
+            localStorage.setItem(getStorageKey('todayOnly'), String(todayOnly));
+        }
+    }, [todayOnly, getStorageKey, onDateFilterModeChange]);
+
+    // Notify AngularJS of initial todayOnly state on mount
+    useEffect(() => {
+        if (onDateFilterModeChange) {
+            onDateFilterModeChange(todayOnly);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // ── Debounced search (avoids filtering on every keystroke) ────────
     useEffect(() => {
         if (!searchQuery) {
@@ -456,7 +480,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         const selectedJob = jobs.find((j) => j.id === selectedJobId);
         if (!selectedJob?.relatedJobs?.length) return new Set<number>();
         return new Set(selectedJob.relatedJobs.map((r) => r.id));
-    }, [selectedJobId, jobs]);
+    }, [jobs, selectedJobId]);
 
     // ── Visible jobs (backend controls ordering) ───────────────────
     const visibleJobs = filteredJobs;
@@ -519,7 +543,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             setContextMenuJob(job);
             setContextMenuPos({mouseX: event.clientX, mouseY: event.clientY});
         },
-        [multiSelect],
+        [multiSelect, multiSelect.selectedIds],
     );
 
     const handleCloseContextMenu = useCallback(() => {
@@ -580,6 +604,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
     const handleLoggedInCouriersOnlyChange = useCallback((checked: boolean) => {
         setLoggedInCouriersOnly(checked);
     }, []);
+
+    const handleTodayOnlyChange = useCallback((checked: boolean) => {
+        setTodayOnly(checked);
+        onDateFilterModeChange?.(checked);
+    }, [onDateFilterModeChange]);
 
     const handleDensityModeChange = useCallback((mode: DensityMode) => {
         setDensityMode(mode);
@@ -748,6 +777,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkRestore={handleBulkRestore}
                 onBulkMarkRead={handleBulkMarkRead}
                 onBulkMarkUnread={handleBulkMarkUnread}
+                hideLoggedInSwitch={hideLoggedInSwitch}
+                todayOnly={onDateFilterModeChange ? todayOnly : undefined}
+                onTodayOnlyChange={onDateFilterModeChange ? handleTodayOnlyChange : undefined}
             />
             <JobListTable
                 jobs={visibleJobs}
@@ -766,12 +798,16 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 appPage={appPage}
                 isJobSearchPage={isJobSearchPage}
                 loggedInCouriersOnly={loggedInCouriersOnly}
+                onLoadMore={fetchConfig ? hookData.fetchNextPage : undefined}
+                hasMore={fetchConfig ? hookData.hasMore : false}
+                isFetchingMore={fetchConfig ? hookData.isFetchingNextPage : false}
             />
             <JobListFooter
                 displayedCount={visibleJobs.length}
                 totalCount={totalCount}
                 lastUpdated={lastUpdated}
-                allJobsLoaded={totalCount > 0 && jobs.length >= totalCount}
+                isLoadingMore={fetchConfig ? hookData.isFetchingNextPage : false}
+                allJobsLoaded={fetchConfig ? !hookData.hasMore && totalCount > 0 : totalCount > 0 && jobs.length >= totalCount}
             />
             <JobListContextMenu
                 job={contextMenuJob}

@@ -23,7 +23,7 @@ public class CourierRepositoryTests : IAsyncDisposable
 
     public CourierRepositoryTests()
     {
-        _contextFactoryMock = _db.CreateFactoryMock();
+        _contextFactoryMock = _db.CreateMoqFactoryMock();
 
         _tenantInfoServiceMock
             .Setup(x => x.GetTenantTimeZone())

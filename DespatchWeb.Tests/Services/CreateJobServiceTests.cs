@@ -1,9 +1,8 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
-using Moq;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -15,7 +14,7 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class CreateJobServiceTests : IAsyncDisposable
 {
-    private readonly Mock<IDbContextFactory<DespatchContext>> _contextFactoryMock;
+    private readonly IDbContextFactory<DespatchContext> _contextFactoryMock;
     private readonly SqliteTestDatabase _db = new();
     private readonly DespatchContext _seedContext;
 
@@ -204,7 +203,7 @@ public class CreateJobServiceTests : IAsyncDisposable
         LastModifiedBy = "Test"
     };
 
-    private CreateJobService CreateService() => new(_contextFactoryMock.Object);
+    private CreateJobService CreateService() => new(_contextFactoryMock);
 
     /// <summary>
     /// Seeds reference data via raw SQL since tblReference is a view (HasNoKey) and

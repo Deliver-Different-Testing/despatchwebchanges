@@ -1,7 +1,7 @@
-using DespatchWeb.EntityClasses;
+﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
-using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -12,15 +12,15 @@ namespace DespatchWeb.Tests.Services;
 public class DeliveryJourneyServiceTests : IAsyncDisposable
 {
     private readonly SqliteTestDatabase _db = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
 
     public DeliveryJourneyServiceTests()
     {
         // Default tenant info setup
-        _tenantInfoServiceMock.Setup(x => x.GetTenantTimeZone()).Returns("UTC");
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
-        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
-            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero));
+        _tenantInfoServiceMock.GetTenantTimeZone().Returns("UTC");
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(callInfo => new DateTimeOffset(callInfo.Arg<DateTime>(), TimeSpan.Zero));
     }
 
     public async ValueTask DisposeAsync()
@@ -30,8 +30,8 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     }
 
     private DeliveryJourneyService CreateService() => new(
-        _db.CreateFactoryMock().Object,
-        _tenantInfoServiceMock.Object
+        _db.CreateFactoryMock(),
+        _tenantInfoServiceMock
     );
 
     private async Task SeedJobsAsync(params TucJob[] jobs)
@@ -276,8 +276,8 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     public async Task GetDeliveryJourneyForJobAsync_WithLiveNotes_ConvertsDatePropertyTimezone()
     {
         // Arrange — ConvertUtcToTenantTimeZone converts UTC to NZ (+13 in January)
-        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
-            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(13)));
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(callInfo => new DateTimeOffset(callInfo.Arg<DateTime>(), TimeSpan.Zero).ToOffset(TimeSpan.FromHours(13)));
         await SeedJobsAsync(new TucJob { UcjbId = 1 });
         await SeedNotesAsync(new TucNote
         {
@@ -415,8 +415,8 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     public async Task GetDeliveryJourneyForJobAsync_WithArchivedNotes_ConvertsDatePropertyTimezone()
     {
         // Arrange — ConvertUtcToTenantTimeZone converts UTC to NZ (+13 in January)
-        _tenantInfoServiceMock.Setup(x => x.ConvertUtcToTenantTimeZone(It.IsAny<DateTime>()))
-            .Returns((DateTime dt) => new DateTimeOffset(dt, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(13)));
+        _tenantInfoServiceMock.ConvertUtcToTenantTimeZone(Arg.Any<DateTime>())
+            .Returns(callInfo => new DateTimeOffset(callInfo.Arg<DateTime>(), TimeSpan.Zero).ToOffset(TimeSpan.FromHours(13)));
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
             NoteId = 1, JobId = 1, NoteText = "Archived TZ test",
@@ -616,7 +616,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     public async Task GetDeliveryJourneyForJobAsync_NzTenant_UsesCorrectDateFormat()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
         // Don't seed in TucJobs so IsLiveJobAsync returns false (archived job path)
         await SeedArchivedNotesAsync(new TucNoteArchive
         {
@@ -643,7 +643,7 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     public async Task GetDeliveryJourneyForJobAsync_UsTenant_UsesCorrectDateFormat()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
         // Don't seed in TucJobs so IsLiveJobAsync returns false (archived job path)
         await SeedArchivedNotesAsync(new TucNoteArchive
         {

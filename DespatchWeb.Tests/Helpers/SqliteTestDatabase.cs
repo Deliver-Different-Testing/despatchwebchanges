@@ -3,6 +3,7 @@ using DespatchWeb.EntityClasses;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using NSubstitute;
 
 namespace DespatchWeb.Tests.Helpers;
 
@@ -40,9 +41,37 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
     public DespatchContext CreateContext() => new(Options);
 
     /// <summary>
-    /// Creates a factory mock that returns a new context per call (for parallel queries).
+    /// Creates an NSubstitute factory mock that returns a new context per call (for parallel queries).
     /// </summary>
-    public Mock<IDbContextFactory<DespatchContext>> CreateFactoryMock()
+    public IDbContextFactory<DespatchContext> CreateFactoryMock()
+    {
+        var mock = Substitute.For<IDbContextFactory<DespatchContext>>();
+        mock.CreateDbContext()
+            .Returns(_ => new DespatchContext(Options));
+        mock.CreateDbContextAsync(Arg.Any<CancellationToken>())
+            .Returns(_ => new DespatchContext(Options));
+        return mock;
+    }
+
+    /// <summary>
+    /// Creates an NSubstitute factory mock that always returns the same context instance.
+    /// Use when tests don't need parallel query support.
+    /// </summary>
+    public static IDbContextFactory<DespatchContext> CreateFactoryMock(DespatchContext sharedContext)
+    {
+        var mock = Substitute.For<IDbContextFactory<DespatchContext>>();
+        mock.CreateDbContext()
+            .Returns(sharedContext);
+        mock.CreateDbContextAsync(Arg.Any<CancellationToken>())
+            .Returns(sharedContext);
+        return mock;
+    }
+
+    /// <summary>
+    /// Creates a Moq factory mock that returns a new context per call.
+    /// Used by repository tests that still use Moq.
+    /// </summary>
+    public Mock<IDbContextFactory<DespatchContext>> CreateMoqFactoryMock()
     {
         var mock = new Mock<IDbContextFactory<DespatchContext>>();
         mock.Setup(f => f.CreateDbContext())
@@ -53,10 +82,10 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
     }
 
     /// <summary>
-    /// Creates a factory mock that always returns the same context instance.
-    /// Use when tests don't need parallel query support.
+    /// Creates a Moq factory mock that always returns the same context instance.
+    /// Used by repository tests that still use Moq.
     /// </summary>
-    public static Mock<IDbContextFactory<DespatchContext>> CreateFactoryMock(DespatchContext sharedContext)
+    public static Mock<IDbContextFactory<DespatchContext>> CreateMoqFactoryMock(DespatchContext sharedContext)
     {
         var mock = new Mock<IDbContextFactory<DespatchContext>>();
         mock.Setup(f => f.CreateDbContext())
@@ -66,9 +95,5 @@ public sealed class SqliteTestDatabase : IAsyncDisposable
         return mock;
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        GC.SuppressFinalize(this);
-        await Connection.DisposeAsync();
-    }
+    public async ValueTask DisposeAsync() => await Connection.DisposeAsync();
 }

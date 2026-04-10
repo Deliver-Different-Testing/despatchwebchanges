@@ -1,4 +1,4 @@
-using DespatchWeb.Enums;
+﻿using DespatchWeb.Enums;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
 
@@ -19,7 +19,7 @@ public class ClearListEnvelopeServiceTests : IAsyncDisposable
     }
 
     private ClearListEnvelopeService CreateService() => new(
-        _db.CreateFactoryMock().Object,
+        _db.CreateFactoryMock(),
         _clock
     );
 

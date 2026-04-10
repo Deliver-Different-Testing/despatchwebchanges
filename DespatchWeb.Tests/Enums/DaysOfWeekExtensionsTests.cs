@@ -161,5 +161,4 @@ public class DaysOfWeekExtensionsTests
         var result = days.ToBinaryString();
         Assert.Equal("0101000", result);
     }
-
 }

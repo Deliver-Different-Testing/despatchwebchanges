@@ -1,15 +1,16 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
-using Moq;
+using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests;
 
 public class ConnectionStringManagerTests
 {
-    private readonly Mock<IDistributedCache> _distributedCacheMock = new();
+    private readonly IDistributedCache _distributedCacheMock = Substitute.For<IDistributedCache>();
     private readonly MemoryCache _memoryCache = new(new MemoryCacheOptions());
 
-    private ConnectionStringManager CreateManager() => new(_distributedCacheMock.Object, _memoryCache);
+    private ConnectionStringManager CreateManager() => new(_distributedCacheMock, _memoryCache);
 
     [Fact]
     public async Task SetConnectionStringAsync_StoresInMemoryAndDistributedCache()
@@ -23,9 +24,10 @@ public class ConnectionStringManagerTests
         Assert.Equal("Server=test;", memoryCached);
 
         // Verify distributed cache was called
-        _distributedCacheMock.Verify(
-            x => x.SetAsync("tenant-1", It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()),
-            Times.Once);
+        await _distributedCacheMock
+            .Received()
+            .SetAsync("tenant-1", Arg.Any<byte[]>(), Arg.Any<DistributedCacheEntryOptions>(),
+                Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -50,7 +52,7 @@ public class ConnectionStringManagerTests
     public async Task SetConnectionStringAsync_DistributedCacheFails_StillSetsMemoryCache()
     {
         _distributedCacheMock
-            .Setup(x => x.SetAsync(It.IsAny<string>(), It.IsAny<byte[]>(), It.IsAny<DistributedCacheEntryOptions>(), It.IsAny<CancellationToken>()))
+            .SetAsync(Arg.Any<string>(), Arg.Any<byte[]>(), Arg.Any<DistributedCacheEntryOptions>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception("Redis down"));
 
         var manager = CreateManager();
@@ -104,18 +106,17 @@ public class ConnectionStringManagerTests
 
         Assert.Equal("Server=memory;", result);
         // Should not hit distributed cache
-        _distributedCacheMock.Verify(
-            x => x.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
-            Times.Never);
+        await _distributedCacheMock
+            .DidNotReceive()
+            .GetAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task GetConnectionStringAsync_FallsBackToDistributedCache_WhenMemoryCacheEmpty()
     {
         var connectionBytes = "Server=distributed;"u8.ToArray();
-        _distributedCacheMock
-            .Setup(x => x.GetAsync("tenant-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(connectionBytes);
+        _distributedCacheMock.GetAsync("tenant-1", Arg.Any<CancellationToken>())
+            .Returns(connectionBytes);
 
         var manager = CreateManager();
 
@@ -130,9 +131,8 @@ public class ConnectionStringManagerTests
     [Fact]
     public async Task GetConnectionStringAsync_ReturnsNull_WhenNotInAnyCache()
     {
-        _distributedCacheMock
-            .Setup(x => x.GetAsync("tenant-1", It.IsAny<CancellationToken>()))
-            .ReturnsAsync((byte[])null!);
+        _distributedCacheMock.GetAsync("tenant-1", Arg.Any<CancellationToken>())
+            .Returns((byte[])null!);
 
         var manager = CreateManager();
 
@@ -144,8 +144,7 @@ public class ConnectionStringManagerTests
     [Fact]
     public async Task GetConnectionStringAsync_ReturnsNull_WhenDistributedCacheThrows()
     {
-        _distributedCacheMock
-            .Setup(x => x.GetAsync("tenant-1", It.IsAny<CancellationToken>()))
+        _distributedCacheMock.GetAsync("tenant-1", Arg.Any<CancellationToken>())
             .ThrowsAsync(new Exception("Redis down"));
 
         var manager = CreateManager();

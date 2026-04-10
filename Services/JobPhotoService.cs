@@ -579,7 +579,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             
                 // Only load data for images, not for PDFs or other files
                 string data = null;
-                string displayContentType = contentType;
+                var displayContentType = contentType;
                 if (contentType.StartsWith("image/"))
                 {
                     using var memoryStream = new MemoryStream();

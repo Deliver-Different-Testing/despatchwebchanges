@@ -4,8 +4,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Moq;
-using Moq.Protected;
+using NSubstitute;
 using System.Net;
 using System.Text.Json;
 using DespatchWeb.Models;
@@ -14,18 +13,18 @@ namespace DespatchWeb.Tests.Services;
 
 public class FlightStatsServiceTests
 {
-    private readonly Mock<HttpMessageHandler> _httpHandlerMock = new();
-    private readonly Mock<IHttpContextAccessor> _httpContextAccessorMock = new();
-    private readonly Mock<INationwideJobRepository> _nationwideJobRepositoryMock = new();
+    private readonly FakeHttpMessageHandler _httpHandler = new();
+    private readonly IHttpContextAccessor _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
+    private readonly INationwideJobRepository _nationwideJobRepositoryMock = Substitute.For<INationwideJobRepository>();
     private FakeTenantClock _clock = new(TestDates.Now);
 
     private FlightStatsService CreateService()
     {
-        var httpClient = new HttpClient(_httpHandlerMock.Object);
+        var httpClient = new HttpClient(_httpHandler);
         return new FlightStatsService(
             httpClient,
-            _httpContextAccessorMock.Object,
-            _nationwideJobRepositoryMock.Object,
+            _httpContextAccessorMock,
+            _nationwideJobRepositoryMock,
             _clock);
     }
 
@@ -90,11 +89,7 @@ public class FlightStatsServiceTests
         await service.DeleteFlightRuleById(webhookId);
 
         // Assert - verify no HTTP call was made
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Never(),
-            ItExpr.IsAny<HttpRequestMessage>(),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Empty(_httpHandler.Requests);
     }
 
     [Fact]
@@ -108,12 +103,8 @@ public class FlightStatsServiceTests
         await service.DeleteFlightRuleById("webhook-123");
 
         // Assert
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null && req.RequestUri.ToString().Contains("json/delete/webhook-123")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        Assert.Contains("json/delete/webhook-123", _httpHandler.Requests[0].RequestUri!.ToString());
     }
 
     [Fact]
@@ -173,8 +164,8 @@ public class FlightStatsServiceTests
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ", "QF"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ", "QF"]);
         _clock = new FakeTenantClock(TestDates.Now);
 
         var response = new FlightConnectionsRoot { Connections = null };
@@ -197,8 +188,8 @@ public class FlightStatsServiceTests
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ", "QF"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ", "QF"]);
         _clock = new FakeTenantClock(TestDates.Now);
 
         var response = CreateFlightConnectionsResponse();
@@ -221,10 +212,10 @@ public class FlightStatsServiceTests
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ", "QF"]);
-        _nationwideJobRepositoryMock.Setup(x => x.GetAirlineCodeByIdAsync(5))
-            .ReturnsAsync("NZ");
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ", "QF"]);
+        _nationwideJobRepositoryMock.GetAirlineCodeByIdAsync(5)
+            .Returns("NZ");
         _clock = new FakeTenantClock(TestDates.Now);
 
         var response = CreateFlightConnectionsResponse();
@@ -240,12 +231,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null && req.RequestUri.ToString().Contains("includeAirlines=NZ")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        Assert.Contains("includeAirlines=NZ", _httpHandler.Requests[0].RequestUri!.ToString());
     }
 
     [Fact]
@@ -253,8 +240,8 @@ public class FlightStatsServiceTests
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ", "QF", "AA"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ", "QF", "AA"]);
         _clock = new FakeTenantClock(TestDates.Now);
 
         var response = CreateFlightConnectionsResponse();
@@ -270,15 +257,11 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - should include all active airline codes (comma is URL encoded as %2c or %2C)
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null &&
-                req.RequestUri.ToString().Contains("includeAirlines=NZ") &&
-                req.RequestUri.ToString().Contains("QF") &&
-                req.RequestUri.ToString().Contains("AA")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        var url = _httpHandler.Requests[0].RequestUri!.ToString();
+        Assert.Contains("includeAirlines=NZ", url);
+        Assert.Contains("QF", url);
+        Assert.Contains("AA", url);
     }
 
     [Fact]
@@ -286,8 +269,8 @@ public class FlightStatsServiceTests
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync([]); // Empty list - no active airlines
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns([]); // Empty list - no active airlines
         _clock = new FakeTenantClock(TestDates.Now);
 
         var response = CreateFlightConnectionsResponse();
@@ -303,12 +286,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - should NOT include any airline filter in the URL
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null && !req.RequestUri.ToString().Contains("includeAirlines")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        Assert.DoesNotContain("includeAirlines", _httpHandler.Requests[0].RequestUri!.ToString());
     }
 
     [Fact]
@@ -321,22 +300,11 @@ public class FlightStatsServiceTests
 
         // Simulate active airlines in database
         var activeAirlines = new List<string> { "NZ", "QF", "AA" };
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(activeAirlines);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(activeAirlines);
         _clock = new FakeTenantClock(TestDates.Now);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(CreateFlightConnectionsResponse()))
-            });
-
+        SetupHttpResponse(CreateFlightConnectionsResponse());
         var service = CreateService();
 
         // Act - Call WITHOUT specific airline (should use all active airlines)
@@ -348,6 +316,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert & Diagnose
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
 
         // Output URL for diagnosis
@@ -356,7 +325,7 @@ public class FlightStatsServiceTests
         TestContext.Current.TestOutputHelper?.WriteLine("==============================================");
 
         // Check if includeAirlines parameter exists
-        var containsAirlineFilter = capturedUrl!.Contains("includeAirlines");
+        var containsAirlineFilter = capturedUrl.Contains("includeAirlines");
         TestContext.Current.TestOutputHelper?.WriteLine($"Contains includeAirlines parameter: {containsAirlineFilter}");
 
         if (containsAirlineFilter)
@@ -387,27 +356,13 @@ public class FlightStatsServiceTests
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
 
         var activeAirlines = new List<string> { "NZ", "QF", "AA" };
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(activeAirlines);
-        _nationwideJobRepositoryMock.Setup(x => x.GetAirlineCodeByIdAsync(3))
-            .ReturnsAsync("QF");
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(activeAirlines);
+        _nationwideJobRepositoryMock.GetAirlineCodeByIdAsync(3)
+            .Returns("QF");
         _clock = new FakeTenantClock(TestDates.Now);
 
-        var capturedUrls = new List<string>();
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) =>
-            {
-                capturedUrls.Add(req.RequestUri?.ToString() ?? string.Empty);
-            })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(CreateFlightConnectionsResponse()))
-            });
-
+        SetupHttpResponse(CreateFlightConnectionsResponse());
         var service = CreateService();
 
         // Act 1 - Call WITH specific airline
@@ -428,13 +383,13 @@ public class FlightStatsServiceTests
 
         // Output for comparison
         TestContext.Current.TestOutputHelper?.WriteLine("=== URL COMPARISON ===");
-        TestContext.Current.TestOutputHelper?.WriteLine($"URL with airlineId=3: {capturedUrls[0]}");
-        TestContext.Current.TestOutputHelper?.WriteLine($"URL with airlineId=null: {capturedUrls[1]}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"URL with airlineId=3: {_httpHandler.Requests[0].RequestUri}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"URL with airlineId=null: {_httpHandler.Requests[1].RequestUri}");
         TestContext.Current.TestOutputHelper?.WriteLine("======================");
 
         // Parse and compare includeAirlines values
-        var uri1 = new Uri(capturedUrls[0]);
-        var uri2 = new Uri(capturedUrls[1]);
+        var uri1 = new Uri(_httpHandler.Requests[0].RequestUri!.ToString());
+        var uri2 = new Uri(_httpHandler.Requests[1].RequestUri!.ToString());
         var params1 = System.Web.HttpUtility.ParseQueryString(uri1.Query);
         var params2 = System.Web.HttpUtility.ParseQueryString(uri2.Query);
 
@@ -453,39 +408,23 @@ public class FlightStatsServiceTests
         var identity = new ClaimsIdentity(claimsList, "TestAuth");
         var principal = new ClaimsPrincipal(identity);
         var httpContext = new DefaultHttpContext { User = principal };
-        _httpContextAccessorMock.Setup(x => x.HttpContext).Returns(httpContext);
+        _httpContextAccessorMock.HttpContext.Returns(httpContext);
     }
 
     private void SetupHttpResponse<T>(T responseObject)
     {
         var jsonResponse = JsonSerializer.Serialize(responseObject);
-        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(jsonResponse)
-        };
-
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(httpResponse);
+        });
     }
 
-    private void SetupHttpError(HttpStatusCode statusCode)
-    {
-        var httpResponse = new HttpResponseMessage(statusCode)
+    private void SetupHttpError(HttpStatusCode statusCode) =>
+        _httpHandler.SetResponse(new HttpResponseMessage(statusCode)
         {
             ReasonPhrase = "Error"
-        };
-
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(httpResponse);
-    }
+        });
 
     private void SetupAirportMocks(bool departureAirportExists, bool arrivalAirportExists)
     {
@@ -509,8 +448,8 @@ public class FlightStatsServiceTests
                 Timezone = "Australia/Sydney"
             });
 
-        _nationwideJobRepositoryMock.Setup(x => x.GetAllActiveAirportsAsync())
-            .ReturnsAsync(airports);
+        _nationwideJobRepositoryMock.GetAllActiveAirportsAsync()
+            .Returns(airports);
     }
 
     private static FlightConnectionsRoot CreateFlightConnectionsResponse() => new()
@@ -572,11 +511,7 @@ public class FlightStatsServiceTests
 
         // Assert
         Assert.False(result);
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Never(),
-            ItExpr.IsAny<HttpRequestMessage>(),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Empty(_httpHandler.Requests);
     }
 
     [Fact]
@@ -595,12 +530,8 @@ public class FlightStatsServiceTests
 
         // Assert
         Assert.True(result);
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null && req.RequestUri.ToString().Contains("json/get/12345")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        Assert.Contains("json/get/12345", _httpHandler.Requests[0].RequestUri!.ToString());
     }
 
     [Fact]
@@ -702,22 +633,11 @@ public class FlightStatsServiceTests
     {
         // Arrange
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
         _clock = new FakeTenantClock(TestDates.Now);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
-            });
-
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
         var service = CreateService();
 
         // Act
@@ -728,6 +648,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
         Assert.DoesNotContain("payloadType", capturedUrl);
     }
@@ -738,8 +659,8 @@ public class FlightStatsServiceTests
         // Arrange - A connecting flight where the second segment is operated by a partner carrier
         // not in activeAirlineCodes (e.g., regional affiliate OO operating for AA)
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["AA"]); // Only AA is active, but OO operates a connecting leg
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["AA"]); // Only AA is active, but OO operates a connecting leg
         _clock = new FakeTenantClock(TestDates.Now);
 
         var response = new FlightConnectionsRoot
@@ -838,22 +759,11 @@ public class FlightStatsServiceTests
         var pastDepartureDate = new DateTimeOffset(2024, 6, 15, 8, 0, 0, TimeSpan.Zero); // 8:00 AM (past)
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
         _clock = new FakeTenantClock(currentTenantTime);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
-            });
-
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
         var service = CreateService();
 
         // Act
@@ -864,6 +774,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - URL should use current time (14:00) + buffer (60 min) = 15:00, NOT the pastime (08:00)
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
 
         // The URL should contain the time based on currentTenantTime + buffer, not the past departure time
@@ -881,22 +792,11 @@ public class FlightStatsServiceTests
         var futureDepartureDate = new DateTimeOffset(2024, 6, 15, 14, 0, 0, TimeSpan.Zero); // 2:00 PM (future)
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
         _clock = new FakeTenantClock(currentTenantTime);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
-            });
-
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
         var service = CreateService();
 
         // Act
@@ -907,6 +807,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - URL should use future departure time + buffer = 15:00
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
         Assert.Contains("leaving_after/2024/6/15/15/0", capturedUrl);
     }
@@ -918,22 +819,11 @@ public class FlightStatsServiceTests
         var currentTenantTime = new DateTime(2024, 6, 15, 10, 30, 0); // 10:30 AM
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
         _clock = new FakeTenantClock(currentTenantTime);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
-            });
-
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
         var service = CreateService();
 
         // Act
@@ -944,6 +834,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - URL should use current time (10:30) + buffer (60 min) = 11:30
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
         Assert.Contains("leaving_after/2024/6/15/11/30", capturedUrl);
     }
@@ -956,22 +847,11 @@ public class FlightStatsServiceTests
         var departureDateSameAsCurrent = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
         SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["NZ"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
         _clock = new FakeTenantClock(currentTenantTime);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
-            });
-
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
         var service = CreateService();
 
         // Act
@@ -982,6 +862,7 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - Should use departure time (which equals current time) + buffer = 13:00
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
         Assert.Contains("leaving_after/2024/6/15/13/0", capturedUrl);
     }
@@ -995,8 +876,8 @@ public class FlightStatsServiceTests
         const int customBufferMinutes = 90;
 
         // Setup airport with custom buffer
-        _nationwideJobRepositoryMock.Setup(x => x.GetAllActiveAirportsAsync())
-            .ReturnsAsync(
+        _nationwideJobRepositoryMock.GetAllActiveAirportsAsync()
+            .Returns(
             [
                 new GetAirportsDto
                 {
@@ -1013,22 +894,11 @@ public class FlightStatsServiceTests
                     Timezone = "America/New_York"
                 }
             ]);
-        _nationwideJobRepositoryMock.Setup(x => x.GetActiveAirlineCodesAsync())
-            .ReturnsAsync(["AA"]);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["AA"]);
         _clock = new FakeTenantClock(currentTenantTime);
 
-        string? capturedUrl = null;
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .Callback<HttpRequestMessage, CancellationToken>((req, _) => { capturedUrl = req.RequestUri?.ToString(); })
-            .ReturnsAsync(new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(JsonSerializer.Serialize(new FlightConnectionsRoot { Connections = null }))
-            });
-
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
         var service = CreateService();
 
         // Act
@@ -1039,8 +909,8 @@ public class FlightStatsServiceTests
             arrivalAirportId: 2);
 
         // Assert - Should use departure time (14:00) + 90 min buffer = 15:30
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
         Assert.NotNull(capturedUrl);
         Assert.Contains("leaving_after/2024/6/15/15/30", capturedUrl);
     }
-
 }

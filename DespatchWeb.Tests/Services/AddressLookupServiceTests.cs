@@ -3,8 +3,7 @@ using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
-using Moq;
-using Moq.Protected;
+using NSubstitute;
 
 // Alias for HereMaps Address which is just called Address in the Models
 using HereMapsAddress = DespatchWeb.Models.Address;
@@ -16,8 +15,8 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class AddressLookupServiceTests
 {
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly Mock<HttpMessageHandler> _httpHandlerMock = new();
+    private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
+    private readonly FakeHttpMessageHandler _httpHandler = new();
 
     public AddressLookupServiceTests()
     {
@@ -27,8 +26,8 @@ public class AddressLookupServiceTests
 
     private AddressLookupService CreateService()
     {
-        var httpClient = new HttpClient(_httpHandlerMock.Object);
-        return new AddressLookupService(httpClient, _tenantInfoServiceMock.Object);
+        var httpClient = new HttpClient(_httpHandler);
+        return new AddressLookupService(httpClient, _tenantInfoServiceMock);
     }
 
     [Theory]
@@ -65,7 +64,7 @@ public class AddressLookupServiceTests
     public async Task AutocompleteAddressSearchAsync_UsCustomer_SendsUsaCountryCode()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
         SetupHttpResponse(new HereMapsAutocompleteResponse { Items = [] });
         var service = CreateService();
 
@@ -73,19 +72,15 @@ public class AddressLookupServiceTests
         await service.AutocompleteAddressSearchAsync("123 Main");
 
         // Assert
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null && req.RequestUri.ToString().Contains("countryCode%3AUSA")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        Assert.Contains("countryCode%3AUSA", _httpHandler.Requests[0].RequestUri!.ToString());
     }
 
     [Fact]
     public async Task AutocompleteAddressSearchAsync_NzCustomer_SendsNzlCountryCode()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
+        _tenantInfoServiceMock.IsUsTenant().Returns(false);
         SetupHttpResponse(new HereMapsAutocompleteResponse { Items = [] });
         var service = CreateService();
 
@@ -93,19 +88,15 @@ public class AddressLookupServiceTests
         await service.AutocompleteAddressSearchAsync("123 Main");
 
         // Assert
-        _httpHandlerMock.Protected().Verify(
-            "SendAsync",
-            Times.Once(),
-            ItExpr.Is<HttpRequestMessage>(req =>
-                req.RequestUri != null && req.RequestUri.ToString().Contains("countryCode%3ANZL")),
-            ItExpr.IsAny<CancellationToken>());
+        Assert.Single(_httpHandler.Requests);
+        Assert.Contains("countryCode%3ANZL", _httpHandler.Requests[0].RequestUri!.ToString());
     }
 
     [Fact]
     public async Task AutocompleteAddressSearchAsync_ValidResponse_ReturnsResults()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
         var response = new HereMapsAutocompleteResponse
         {
             Items =
@@ -138,7 +129,7 @@ public class AddressLookupServiceTests
     public async Task AutocompleteAddressSearchAsync_FiltersCategoryQueries()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
         var response = new HereMapsAutocompleteResponse
         {
             Items =
@@ -177,7 +168,7 @@ public class AddressLookupServiceTests
     public async Task AutocompleteAddressSearchAsync_FiltersNullAddressLabels()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
         var response = new HereMapsAutocompleteResponse
         {
             Items =
@@ -215,7 +206,7 @@ public class AddressLookupServiceTests
     public async Task AutocompleteAddressSearchAsync_HttpError_ThrowsException()
     {
         // Arrange
-        _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(true);
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
         SetupHttpError(HttpStatusCode.InternalServerError);
         var service = CreateService();
 
@@ -324,29 +315,15 @@ public class AddressLookupServiceTests
     private void SetupHttpResponse<T>(T responseObject)
     {
         var jsonResponse = JsonSerializer.Serialize(responseObject);
-        var httpResponse = new HttpResponseMessage(HttpStatusCode.OK)
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = new StringContent(jsonResponse)
-        };
-
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(httpResponse);
+        });
     }
 
     private void SetupHttpError(HttpStatusCode statusCode)
     {
-        var httpResponse = new HttpResponseMessage(statusCode);
-
-        _httpHandlerMock.Protected()
-            .Setup<Task<HttpResponseMessage>>(
-                "SendAsync",
-                ItExpr.IsAny<HttpRequestMessage>(),
-                ItExpr.IsAny<CancellationToken>())
-            .ReturnsAsync(httpResponse);
+        _httpHandler.SetResponse(new HttpResponseMessage(statusCode));
     }
 
 }
