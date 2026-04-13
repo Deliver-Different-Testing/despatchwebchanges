@@ -42,7 +42,7 @@ import {
 } from '../JobDetails.styles';
 
 const leftColumnSx = {...cardContainerSx as object, flex: 3, minWidth: 0};
-const rightColumnSx = {...cardContainerSx as object, flex: 2, minWidth: 0, bgcolor: 'grey.50'};
+const rightColumnSx = {...cardContainerSx as object, flex: 2, minWidth: 0};
 const packageRowSx = {display: 'flex', flexDirection: {xs: 'column', sm: 'row'}, ...sectionBorderSx as object};
 
 interface JobFieldsSectionProps {

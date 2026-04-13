@@ -71,7 +71,7 @@ const addressDisplaySx: SxProps<Theme> = {
     mx: 1.5,
     mt: 1.5,
     mb: 1,
-    p: 1,
+    p: 1.5,
     borderRadius: 1,
     border: 1,
     borderColor: 'divider',
@@ -79,24 +79,24 @@ const addressDisplaySx: SxProps<Theme> = {
     transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
     '&:hover': {
         bgcolor: 'grey.100',
-        borderColor: 'primary.main',
+        borderColor: 'grey.400',
     },
 };
 
 const contactCardSx: SxProps<Theme> = {
     bgcolor: 'grey.50',
-    p: 1,
+    p: 1.5,
     borderRadius: 1,
     transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
     border: 1,
     borderColor: 'transparent',
     '&:hover': {
         bgcolor: 'action.selected',
-        borderColor: 'primary.main',
+        borderColor: 'grey.400',
     },
 };
 
-const contactCardDenseSx: SxProps<Theme> = {...contactCardSx as object, p: 0.5};
+const contactCardDenseSx: SxProps<Theme> = {...contactCardSx as object, p: 1};
 
 const contactLabelSx: SxProps<Theme> = {
     fontSize: '0.6875rem',
@@ -131,7 +131,7 @@ function ContactCard({
 }) {
     const card = (
         <Box sx={dense ? contactCardDenseSx : contactCardSx}>
-            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5}}>
+            <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25}}>
                 <IconComp sx={{fontSize: 14, color: 'text.secondary'}}/>
                 <Typography variant="caption" color="text.secondary" sx={contactLabelSx}>
                     {label}

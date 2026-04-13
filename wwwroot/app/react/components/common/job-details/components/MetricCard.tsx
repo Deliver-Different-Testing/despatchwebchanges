@@ -35,7 +35,7 @@ const cardSx: SxProps<Theme> = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    px: 1,
+    px: 1.5,
     py: 1.5,
     textAlign: 'center',
     width: '100%',
@@ -87,7 +87,7 @@ export const MetricCard = React.memo(({
         },
     } : {};
 
-    const densePaddingSx = dense ? {py: 0.5, px: 0.75} : {};
+    const densePaddingSx = dense ? {py: 0.5, px: 1} : {};
 
     const content = (
         <Box sx={{

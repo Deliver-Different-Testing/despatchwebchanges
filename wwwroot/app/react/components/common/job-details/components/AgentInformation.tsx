@@ -16,6 +16,8 @@ import type {SxProps, Theme} from '@mui/material';
 import type {IAgent} from '../JobDetails.types';
 import {
     cardContainerSx,
+    cardContentSx,
+    cardNotesContainerSx,
     sectionToolbarSx,
     sectionToolbarTitleSx,
     sectionToolbarIconSx,
@@ -26,10 +28,6 @@ interface AgentInformationProps {
 }
 
 const styles: Record<string, SxProps<Theme>> = {
-    content: {
-        px: 2,
-        py: 1.5,
-    },
     nameRow: {
         display: 'flex',
         alignItems: 'center',
@@ -37,7 +35,7 @@ const styles: Record<string, SxProps<Theme>> = {
         mb: 1.5,
     },
     name: {
-        fontWeight: 700,
+        fontWeight: 600,
         fontSize: '1rem',
         color: 'primary.main',
     },
@@ -51,22 +49,13 @@ const styles: Record<string, SxProps<Theme>> = {
         fontSize: 16,
         color: 'text.secondary',
     },
-    detailValue: {
-        fontSize: '0.8125rem',
-    },
-    notesContainer: {
-        px: 2,
-        py: 1,
-        borderTop: 1,
-        borderColor: 'divider',
-    },
 };
 
 function AgentDetailRow({icon: IconComp, value}: {icon: React.ComponentType<any>; value: string}) {
     return (
         <Box sx={styles.detailRow}>
             <IconComp sx={styles.detailIcon} />
-            <Typography variant="body2" sx={styles.detailValue}>
+            <Typography variant="body2">
                 {value}
             </Typography>
         </Box>
@@ -84,7 +73,7 @@ export const AgentInformation = React.memo(function AgentInformation({agent}: Ag
                     Agent Information
                 </Typography>
             </Box>
-            <Box sx={styles.content}>
+            <Box sx={cardContentSx}>
                 {/* Agent name + ranking/rate chips */}
                 <Box sx={styles.nameRow}>
                     <Typography sx={styles.name}>
@@ -119,11 +108,11 @@ export const AgentInformation = React.memo(function AgentInformation({agent}: Ag
                 )}
             </Box>
             {agent.agentNotes && (
-                <Box sx={styles.notesContainer}>
+                <Box sx={cardNotesContainerSx}>
                     <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
                         Notes:
                     </Typography>
-                    <Typography variant="body2" sx={{fontSize: '0.8125rem'}}>
+                    <Typography variant="body2">
                         {agent.agentNotes}
                     </Typography>
                 </Box>

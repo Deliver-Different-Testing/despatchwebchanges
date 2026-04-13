@@ -29,7 +29,7 @@ export const sectionToolbarSx: SxProps<Theme> = {
     px: 2,
     height: 40,
     minHeight: 40,
-    bgcolor: 'grey.50',
+    bgcolor: 'grey.100',
     borderBottom: 1,
     borderColor: 'divider',
 };
@@ -43,7 +43,7 @@ export const sectionToolbarTitleSx: SxProps<Theme> = {
 
 export const sectionToolbarIconSx: SxProps<Theme> = {
     fontSize: 18,
-    color: 'text.secondary',
+    color: 'action.active',
 };
 
 /* ── Section border separator ─────────────────────────────────────── */
@@ -89,7 +89,7 @@ export const listItemIconInnerSx: SxProps<Theme> = {
 
 export const metricLabelSx: SxProps<Theme> = {
     fontSize: '0.6875rem',
-    fontWeight: 500,
+    fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     mb: 0.75,
@@ -100,6 +100,27 @@ export const metricValueSx: SxProps<Theme> = {
     fontWeight: 700,
     lineHeight: 1.2,
     color: 'text.primary',
+};
+
+/* ── Card content padding ────────────────────────────────────────── */
+
+export const cardContentSx: SxProps<Theme> = {
+    px: 2,
+    py: 1.5,
+};
+
+export const cardContentDenseSx: SxProps<Theme> = {
+    px: 1.5,
+    py: 1,
+};
+
+/* ── Notes container (shared by AgentInformation, FlightInformation) */
+
+export const cardNotesContainerSx: SxProps<Theme> = {
+    px: 2,
+    py: 1,
+    borderTop: 1,
+    borderColor: 'divider',
 };
 
 /* ── Dense-aware helpers ─────────────────────────────────────────── */

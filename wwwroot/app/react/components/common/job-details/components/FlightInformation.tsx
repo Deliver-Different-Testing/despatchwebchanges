@@ -15,6 +15,7 @@ import type {IAssignedFlight, IFlightSegment} from '../JobDetails.types';
 import type {Dayjs} from 'dayjs';
 import {
     cardContainerSx,
+    cardNotesContainerSx,
     sectionToolbarSx,
     sectionToolbarTitleSx,
     sectionToolbarIconSx,
@@ -203,11 +204,11 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
                 </React.Fragment>
             ))}
             {flight.notes && (
-                <Box sx={{px: 2, py: 1, borderTop: 1, borderColor: 'divider'}}>
+                <Box sx={cardNotesContainerSx}>
                     <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
                         Notes:
                     </Typography>
-                    <Typography variant="body2" sx={{fontSize: '0.8125rem'}}>
+                    <Typography variant="body2">
                         {flight.notes}
                     </Typography>
                 </Box>
