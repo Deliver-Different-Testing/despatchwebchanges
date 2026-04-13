@@ -220,7 +220,7 @@ public sealed class CreateJobService(
             DeliverToContact = data.ToContactName,
             DeliverToPhone = data.ToPhoneNumber,
             ScheduleName = data.RecurringName,
-            IsRecurringJob = !string.IsNullOrWhiteSpace(data.RecurringName),
+            IsRecurringJob = !string.IsNullOrWhiteSpace(data.RecurringName)
         };
     }
 

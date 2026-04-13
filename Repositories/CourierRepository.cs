@@ -1647,7 +1647,7 @@ public class CourierRepository(
                     : null,
                 AssignedStatus = c.TblClearListAreaOrder != null
                     ? (int?)c.TblClearListAreaOrder.Status
-                    : null,
+                    : null
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -2134,7 +2134,20 @@ public class CourierRepository(
                 Log.Information("Cache MISS for polygon mappings - fetching from database");
 
                 await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
-                return await context.GetPolygonMappings(clearListAreaIds);
+                return await Context.TblClearListAreas
+                    .Where(cla => clearListAreaIds.Contains(cla.ClearListAreaId))
+                    .Join(
+                        Context.TblClearListAreaPolygons,
+                        cla => cla.ClearListAreaId,
+                        cap => cap.ClearListAreaId,
+                        (cla, cap) => new PolygonChannelMapping
+                        {
+                            ClearListAreaId = cap.ClearListAreaId,
+                            PolygonId = cap.PolygonId,
+                            ZipPolygonId = cap.ZipPolygonId,
+                            ChannelId = cla.ChannelId
+                        })
+                    .ToListAsync(cancellationToken: cancellationToken);
             }) ?? [];
     }
 

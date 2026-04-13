@@ -295,7 +295,7 @@ public sealed class AiAssistantService(
     private async Task<string> SearchCouriersAsync(JsonDocument args)
     {
         var searchTerm = args.RootElement.GetProperty("searchTerm").GetString();
-        var couriers = await courierRepository.AllActiveCouriersAsync(searchTerm);
+        var couriers = await courierRepository.AllActiveCouriersAsync(searchTerm ?? string.Empty);
         return JsonSerializer.Serialize(couriers, JsonOptions);
     }
 

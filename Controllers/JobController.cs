@@ -415,8 +415,18 @@ public class JobController(
         {
             return Json(new[]
             {
-                new { fileName = "delivery_front_door.jpg", s3Key = $"pods/{jobId}/delivery_front_door.jpg", contentType = "image/jpeg", size = 2_097_152L, uploadDate = DateTimeOffset.UtcNow.AddDays(-1).ToString("o"), podDescription = "Left at front door" },
-                new { fileName = "signature_smith.png", s3Key = $"pods/{jobId}/signature_smith.png", contentType = "image/png", size = 51_200L, uploadDate = DateTimeOffset.UtcNow.AddHours(-2).ToString("o"), podDescription = "Signed by J. Smith" },
+                new
+                {
+                    fileName = "delivery_front_door.jpg", s3Key = $"pods/{jobId}/delivery_front_door.jpg",
+                    contentType = "image/jpeg", size = 2_097_152L,
+                    uploadDate = DateTimeOffset.UtcNow.AddDays(-1).ToString("o"), podDescription = "Left at front door"
+                },
+                new
+                {
+                    fileName = "signature_smith.png", s3Key = $"pods/{jobId}/signature_smith.png",
+                    contentType = "image/png", size = 51_200L,
+                    uploadDate = DateTimeOffset.UtcNow.AddHours(-2).ToString("o"), podDescription = "Signed by J. Smith"
+                }
             });
         }
 
@@ -1609,9 +1619,23 @@ public class JobController(
         {
             return Ok(new[]
             {
-                new { fileName = "invoice_2026.pdf", s3Key = $"jobs/{jobId}/invoice_2026.pdf", contentType = "application/pdf", size = 245_760L, lastModified = DateTimeOffset.UtcNow.AddDays(-2), isPOD = false },
-                new { fileName = "packing_slip.pdf", s3Key = $"jobs/{jobId}/packing_slip.pdf", contentType = "application/pdf", size = 102_400L, lastModified = DateTimeOffset.UtcNow.AddDays(-3), isPOD = false },
-                new { fileName = "label_photo.jpg", s3Key = $"jobs/{jobId}/label_photo.jpg", contentType = "image/jpeg", size = 1_048_576L, lastModified = DateTimeOffset.UtcNow.AddDays(-4), isPOD = false },
+                new
+                {
+                    fileName = "invoice_2026.pdf", s3Key = $"jobs/{jobId}/invoice_2026.pdf",
+                    contentType = "application/pdf", size = 245_760L, lastModified = DateTimeOffset.UtcNow.AddDays(-2),
+                    isPOD = false
+                },
+                new
+                {
+                    fileName = "packing_slip.pdf", s3Key = $"jobs/{jobId}/packing_slip.pdf",
+                    contentType = "application/pdf", size = 102_400L, lastModified = DateTimeOffset.UtcNow.AddDays(-3),
+                    isPOD = false
+                },
+                new
+                {
+                    fileName = "label_photo.jpg", s3Key = $"jobs/{jobId}/label_photo.jpg", contentType = "image/jpeg",
+                    size = 1_048_576L, lastModified = DateTimeOffset.UtcNow.AddDays(-4), isPOD = false
+                }
             });
         }
 
@@ -1677,7 +1701,8 @@ public class JobController(
         if (Debugger.IsAttached)
         {
             // Return a 1x1 transparent PNG as placeholder
-            var png = Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
+            var png = Convert.FromBase64String(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==");
             var fileName = key.Contains('/') ? key[(key.LastIndexOf('/') + 1)..] : key;
             return File(png, "image/png", fileName);
         }

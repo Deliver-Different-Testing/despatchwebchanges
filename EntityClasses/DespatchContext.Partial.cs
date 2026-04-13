@@ -17,7 +17,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
-                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
@@ -25,7 +24,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveArchiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives
-                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId ?? j.UcjbId)
                 .FirstOrDefault());
@@ -33,7 +31,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveBulkJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int bulkJobId) =>
             context.TblBulkJobs
-                .AsNoTracking()
                 .Where(j => j.BulkJobId == bulkJobId)
                 .Select(j => j.BulkParentId ?? j.BulkJobId)
                 .FirstOrDefault());
@@ -41,7 +38,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobBookingIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobBookingId) =>
             context.TucJobBookings
-                .AsNoTracking()
                 .Where(j => j.UcbkId == jobBookingId)
                 .Select(j => j.BookingParentId ?? j.UcbkId)
                 .FirstOrDefault());
@@ -53,7 +49,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int?>> GetJobParentIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
-                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Select(j => j.ParentId)
                 .FirstOrDefault());
@@ -61,7 +56,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, Task<int?>> GetEconomySpeedIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TucJobTypes
-                .AsNoTracking()
                 .Where(s => s.UcjtName == "Economy")
                 .Select(s => (int?)s.UcjtId)
                 .FirstOrDefault());
@@ -69,14 +63,12 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, Task<DateTime?>> GetEcoDeliveryTimeCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TblEcoSettings
-                .AsNoTracking()
                 .Select(x => x.EconomyDeliveryTime)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, int, bool, Task<bool>> DoesAddressMatchAirportComplied =
         EF.CompileAsyncQuery((DespatchContext context, int jobId, bool isPickupAddress) =>
             context.TucJobs
-                .AsNoTracking()
                 .Where(j => j.UcjbId == jobId)
                 .Any(j => context.TblAirports
                     .Any(a => a.AddressLine2 == (isPickupAddress ? j.PickupAddressLine2 : j.DeliveryAddressLine2))));
@@ -84,7 +76,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, DateTime, IAsyncEnumerable<ActiveCourierDto>>
         GetActiveCouriersCompiled = EF.CompileAsyncQuery((DespatchContext context, DateTime today) =>
             context.TucCouriers
-                .AsNoTracking()
                 .Where(c => c.Active &&
                             (c.SendJobsViaSms ||
                              c.SendAlertSms ||
@@ -110,7 +101,6 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, DateTime, Task<ActiveCouriersViewModel>> GetCourierByIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int courierId, DateTime now) =>
             context.TucCouriers
-                .AsNoTracking()
                 .Where(c => c.UccrId == courierId)
                 .Select(c => new ActiveCouriersViewModel
                 {
@@ -135,48 +125,25 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllVehicleSizesCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.VehicleSizes
-                .AsNoTracking()
                 .OrderBy(v => v.VehicleName)
                 .Select(v => new Suggestion { Id = v.VehicleSizeId, Text = v.VehicleName }));
 
     private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllRegionsCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TblBulkRegions
-                .AsNoTracking()
                 .OrderBy(r => r.Name)
                 .Select(r => new Suggestion { Id = r.BulkRegionId, Text = r.Name }));
 
     private static readonly Func<DespatchContext, IAsyncEnumerable<Suggestion>> GetAllSpeedsCompiled =
         EF.CompileAsyncQuery((DespatchContext context) =>
             context.TucJobTypes
-                .AsNoTracking()
                 .OrderBy(r => r.UcjtName)
                 .Select(r => new Suggestion { Id = r.UcjtId, Text = r.UcjtName }));
-
-    private static readonly Func<DespatchContext, List<int>, IAsyncEnumerable<PolygonChannelMapping>>
-        GetPolygonMappingsCompiled =
-            EF.CompileAsyncQuery((DespatchContext context, List<int> clearListAreaIds) =>
-                context.TblClearListAreas
-                    .AsNoTracking()
-                    .Where(cla => clearListAreaIds.Contains(cla.ClearListAreaId))
-                    .Join(
-                        context.TblClearListAreaPolygons.AsNoTracking(),
-                        cla => cla.ClearListAreaId,
-                        cap => cap.ClearListAreaId,
-                        (cla, cap) => new PolygonChannelMapping
-                        {
-                            ClearListAreaId = cap.ClearListAreaId,
-                            PolygonId = cap.PolygonId,
-                            ZipPolygonId = cap.ZipPolygonId,
-                            ChannelId = cla.ChannelId
-                        }));
-
 
     private static readonly Func<DespatchContext, int, IAsyncEnumerable<TucNoteViewModel>>
         GetActiveNotesByJobIdCompiled =
             EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
                 context.TucNotes
-                    .AsNoTracking()
                     .Where(n => n.JobId == jobId)
                     .OrderByDescending(n => n.CreatedDate)
                     .Select(NoteMappings.ActiveNoteMap));
@@ -184,31 +151,9 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<int>> GetUnreadMessageCountCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int staffId) =>
             context.TucManualMessages
-                .AsNoTracking()
                 .Count(m => m.UcmmSendToStaffId == staffId && !m.Read)
         );
 
-    private static readonly Func<DespatchContext, int, int, DateTime, Task<int>> MarkCourierMessagesAsReadCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int staffId, int courierId, DateTime readTime) =>
-            context.TucManualMessages
-                .Where(m => m.UcmmSendToStaffId == staffId &&
-                            !m.Read &&
-                            m.UcmmSendFromCourierId == courierId)
-                .ExecuteUpdate(s => s
-                    .SetProperty(m => m.Read, true)
-                    .SetProperty(m => m.TimeRead, readTime))
-        );
-
-    private static readonly Func<DespatchContext, int, int, DateTime, Task<int>> MarkStaffMessagesAsReadCompiled =
-        EF.CompileAsyncQuery((DespatchContext context, int staffId, int fromStaffId, DateTime readTime) =>
-            context.TucManualMessages
-                .Where(m => m.UcmmSendToStaffId == staffId &&
-                            !m.Read &&
-                            m.UcmmSendFromStaffId == fromStaffId)
-                .ExecuteUpdate(s => s
-                    .SetProperty(m => m.Read, true)
-                    .SetProperty(m => m.TimeRead, readTime))
-        );
 
     private static readonly Func<DespatchContext, int, Task<TucNoteViewModel>> GetActiveNoteByIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int noteId) =>
@@ -247,23 +192,16 @@ public partial class DespatchContext
     public async Task<IReadOnlyList<TucNoteViewModel>> GetActiveNotesByJobIdAsync(int jobId) =>
         await GetActiveNotesByJobIdCompiled(this, jobId).ToListAsync();
 
-    public async Task<int> MarkCourierMessagesAsReadAsync(int staffId, int fromStaffId, DateTime readTime) =>
-        await MarkCourierMessagesAsReadCompiled(this, staffId, fromStaffId, readTime);
-
-    public async Task<int> MarkStaffMessagesAsReadAsync(int staffId, int fromStaffId, DateTime readTime) =>
-        await MarkStaffMessagesAsReadCompiled(this, staffId, fromStaffId, readTime);
-
     public async Task<int> GetUnreadMessageCountAsync(int staffId, DespatchContext context = null) =>
         await GetUnreadMessageCountCompiled(context ?? this, staffId);
 
     public async Task<IReadOnlyList<Suggestion>> GetAllVehicleSizesAsync() =>
         await GetAllVehicleSizesCompiled(this).ToListAsync();
 
-    public async Task<IReadOnlyList<Suggestion>> GetAllRegionsAsync() => await GetAllRegionsCompiled(this).ToListAsync();
-    public async Task<IReadOnlyList<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this).ToListAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetAllRegionsAsync() =>
+        await GetAllRegionsCompiled(this).ToListAsync();
 
-    public async Task<IReadOnlyList<PolygonChannelMapping>> GetPolygonMappings(List<int> clearListAreaIds) =>
-        await GetPolygonMappingsCompiled(this, clearListAreaIds).ToListAsync();
+    public async Task<IReadOnlyList<Suggestion>> GetAllSpeedsAsync() => await GetAllSpeedsCompiled(this).ToListAsync();
 
     public async Task<ActiveCouriersViewModel> GetCourierByIdAsync(int courierId, DateTime tenantTime) =>
         await GetCourierByIdCompiled(this, courierId, tenantTime);
