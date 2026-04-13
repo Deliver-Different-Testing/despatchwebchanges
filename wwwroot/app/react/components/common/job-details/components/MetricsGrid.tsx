@@ -34,10 +34,8 @@ const gridSx: SxProps<Theme> = {
         md: 'repeat(6, 1fr)',
     },
     gap: '1px',
-    bgcolor: 'divider',
+    bgcolor: 'grey.200',
 };
-
-const gridWithBorderSx: SxProps<Theme> = {...gridSx as object, borderTop: 1, borderColor: 'divider'};
 
 function getTzStr(timezone?: { text?: string }): string {
     if (timezone?.text) return getTimezoneAbbreviation(timezone.text);
@@ -168,7 +166,7 @@ export const MetricsGrid = React.memo(({
             </Box>
 
             {/* Row 2: DISPATCHED, DEL ARRIVAL, POD NAME, POD TIME, FOLLOW UP, CLIENT NAME */}
-            <Box sx={gridWithBorderSx}>
+            <Box sx={{...gridSx as object, borderTop: 1, borderColor: 'divider'}}>
                 <MetricCard
                     label="Dispatched"
                     value={job.dispatchTime ? `${job._dispatchTimeStr} ${defaultTz}` : '-'}

@@ -26,7 +26,7 @@ interface PalletSectionProps {
     isUsCustomer: boolean;
 }
 
-const cellSx = {py: 0.5, px: 1, fontSize: '0.8125rem'} as const;
+const cellSx = {py: 0.75, px: 1.5, fontSize: '0.8125rem'} as const;
 const cellBoldSx = {...cellSx, fontWeight: 600} as const;
 const headerCellSx = {...cellSx, fontWeight: 600, fontSize: '0.75rem', color: 'text.secondary'} as const;
 
