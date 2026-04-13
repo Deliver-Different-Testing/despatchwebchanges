@@ -1,8 +1,8 @@
+using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
-using DespatchWeb.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 
@@ -15,23 +15,23 @@ namespace DespatchWeb.Tests.Repositories;
 /// </summary>
 public class JobRepositoryBulkSearchTests : IDisposable
 {
-    private readonly HttpClient _httpClient = new();
-    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
-    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
-    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
+    private readonly Mock<IAddStopJobService> _addStopJobServiceMock = new();
     private readonly Mock<IClientAccessValidatorService> _clientAccessValidatorMock = new();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
+    private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
+    private readonly Mock<IDispatchJobService> _dispatchJobServiceMock = new();
+    private readonly HttpClient _httpClient = new();
+    private readonly Mock<IJobCommandRepository> _jobCommandRepositoryMock = new();
+    private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
+    private readonly Mock<IJobQueryRepository> _jobQueryRepositoryMock = new();
+    private readonly Mock<IJobReportService> _jobReportServiceMock = new();
+    private readonly Mock<IPodReportService> _podReportServiceMock = new();
+    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
     private readonly Mock<IRateJobService> _rateJobServiceMock = new();
     private readonly Mock<IRecurringJobRepository> _recurringJobRepositoryMock = new();
-    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
-    private readonly FakeTenantClock _clock = new(TestDates.Now);
-    private readonly Mock<IAddStopJobService> _addStopJobServiceMock = new();
-    private readonly Mock<IJobReportService> _jobReportServiceMock = new();
-    private readonly Mock<IJobPhotoService> _jobPhotoServiceMock = new();
-    private readonly Mock<IDispatchJobService> _dispatchJobServiceMock = new();
-    private readonly Mock<IDeliveryJourneyService> _deliveryJourneyServiceMock = new();
-    private readonly Mock<IPricingPermissionService> _pricingPermissionServiceMock = new();
     private readonly Mock<ISplitJobService> _splitJobServiceMock = new();
-    private readonly Mock<IPodReportService> _podReportServiceMock = new();
+    private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
+    private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
 
     public JobRepositoryBulkSearchTests()
     {
@@ -40,10 +40,15 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _pricingPermissionServiceMock.Setup(x => x.CanModifyPriceBreakdownAsync()).ReturnsAsync(true);
         _pricingPermissionServiceMock.Setup(x => x.CanUsePricingModeAsync(It.IsAny<string>())).ReturnsAsync(true);
         _pricingPermissionServiceMock.Setup(x => x.ValidateJobAccessAsync(It.IsAny<int>())).Returns(Task.CompletedTask);
-        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>())).ReturnsAsync([]);
+        _pricingPermissionServiceMock.Setup(x => x.ValidateJobsAccessAsync(It.IsAny<IReadOnlyList<int>>()))
+            .ReturnsAsync([]);
     }
 
-    public void Dispose() => _httpClient.Dispose();
+    public void Dispose()
+    {
+        _httpClient.Dispose();
+        GC.SuppressFinalize(this);
+    }
 
     private JobController CreateController() => new(
         _jobQueryRepositoryMock.Object,
@@ -77,12 +82,12 @@ public class JobRepositoryBulkSearchTests : IDisposable
             CourierIds = [888],
             SpeedIds = [777],
             Job = "SHOULD-BE-IGNORED",
-            Wild = "ignored-search",
+            Wild = "ignored-search"
         };
         var expectedResult = new JobSearchResult
         {
             Jobs = [new DispatchJobViewModel { Id = 42, JobNo = "BULK-001", IsBulkJob = true }],
-            TotalCount = 1,
+            TotalCount = 1
         };
 
         _jobQueryRepositoryMock
@@ -106,15 +111,16 @@ public class JobRepositoryBulkSearchTests : IDisposable
         var request = new PodSearchRequest
         {
             FromDate = TestDates.Today.AddDays(-30),
-            ToDate = TestDates.Today,
+            ToDate = TestDates.Today
         };
         var expectedResult = new JobSearchResult
         {
-            Jobs = [
+            Jobs =
+            [
                 new DispatchJobViewModel { Id = 1, JobNo = "BULK-001", IsBulkJob = true },
-                new DispatchJobViewModel { Id = 2, JobNo = "BULK-002", IsBulkJob = true },
+                new DispatchJobViewModel { Id = 2, JobNo = "BULK-002", IsBulkJob = true }
             ],
-            TotalCount = 2,
+            TotalCount = 2
         };
 
         _jobQueryRepositoryMock
@@ -143,12 +149,12 @@ public class JobRepositoryBulkSearchTests : IDisposable
             CourierIds = [888],
             SpeedIds = [777],
             Job = "SHOULD-BE-IGNORED",
-            Wild = "ignored-search",
+            Wild = "ignored-search"
         };
         var expectedResult = new JobSearchResult
         {
             Jobs = [new DispatchJobViewModel { Id = 123, JobNo = "JOB-001" }],
-            TotalCount = 1,
+            TotalCount = 1
         };
 
         _jobQueryRepositoryMock

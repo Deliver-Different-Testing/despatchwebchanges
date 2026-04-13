@@ -17,6 +17,7 @@ public class MessageRepository(
     IMessageHelperService messageHelper,
     IMemoryCache cache) : BaseRepository(contextFactory), IMessageRepository
 {
+    private const int RecentMessageDays = 90;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
 
     public async Task<int> GetUnreadMessageCountAsync()
@@ -43,8 +44,6 @@ public class MessageRepository(
 
         return unreadCount;
     }
-
-    private const int RecentMessageDays = 90;
 
     public async Task<IReadOnlyList<RecentMessageViewModel>> GetRecentListAsync()
     {
@@ -96,7 +95,8 @@ public class MessageRepository(
         return result;
     }
 
-    public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId, int limit = 200) =>
+    public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByCourierIdAsync(int courierId, int staffId,
+        int limit = 200) =>
         await Context.TucManualMessages
             .BetweenStaffAndCourier(staffId, courierId)
             .OrderByDescending(m => m.UcmmDate)
@@ -118,7 +118,8 @@ public class MessageRepository(
             })
             .ToListAsync();
 
-    public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId, int currentStaffId, int limit = 200) =>
+    public async Task<IReadOnlyList<ChatMessageViewModel>> GetMessagesByStaffIdAsync(int otherStaffId,
+        int currentStaffId, int limit = 200) =>
         await Context.TucManualMessages
             .BetweenStaff(currentStaffId, otherStaffId)
             .OrderByDescending(m => m.UcmmDate)
@@ -148,7 +149,8 @@ public class MessageRepository(
 
         // Validate that exactly one recipient is specified
         if ((request.SendToStaffId.HasValue ? 1 : 0) + (request.SendToCourierId.HasValue ? 1 : 0) != 1)
-            throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)", nameof(request));
+            throw new ArgumentException("Must specify exactly one recipient (either SendToStaffId or SendToCourierId)",
+                nameof(request));
 
         ArgumentException.ThrowIfNullOrEmpty(request.Message);
 
@@ -184,12 +186,12 @@ public class MessageRepository(
                 join loginOut in Context.TblCourierLogInOuts
                     on courier.CourierLogInOutId equals loginOut.CourierLogInOutId into loginGroup
                 from login in loginGroup.DefaultIfEmpty()
-                select new
+                select new CourierDataDto
                 {
                     CourierId = courier.UccrId,
-                    courier.Code,
-                    courier.PersonalMobile,
-                    courier.UccrMobile,
+                    Code = courier.Code,
+                    PersonalMobile = courier.PersonalMobile,
+                    UccrMobile = courier.UccrMobile,
                     IsLoggedInToday = login != null &&
                                       login.LogInTime.Date == currentDate.Date &&
                                       !login.LogOutTime.HasValue
@@ -206,10 +208,19 @@ public class MessageRepository(
                     UcmmSendFromStaffId = currentStaffId,
                     UcmmAttempts = 0,
                     UcmmMessage = request.Message,
-                    UcmmSendToCourierId = courierId
+                    UcmmSendToCourierId = courierId,
+                    UcmmSendTo = courierId
                 };
 
                 var deliveryMethod = GetDeliveryMethod(request.MessageType, courierData.IsLoggedInToday);
+
+                // Always set SendToMobile so SMPP_qryManualMessages can find the message
+                var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
+                    ? courierData.PersonalMobile
+                    : courierData.UccrMobile;
+
+                if (!string.IsNullOrWhiteSpace(mobileNumber))
+                    message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
 
                 if (deliveryMethod == MessageDeliveryType.App)
                 {
@@ -217,15 +228,10 @@ public class MessageRepository(
                 }
                 else
                 {
-                    if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
-                        string.IsNullOrWhiteSpace(courierData.UccrMobile))
-                        throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS", nameof(courierData));
+                    if (string.IsNullOrWhiteSpace(message.SendToMobile))
+                        throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS",
+                            nameof(request));
 
-                    var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
-                        ? courierData.PersonalMobile
-                        : courierData.UccrMobile;
-
-                    message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
                     message.Subject = $"SMS to Courier: {courierData.Code}";
                 }
 
@@ -257,8 +263,8 @@ public class MessageRepository(
         var currentStaffId = infoService.GetStaffId();
 
         var affectedRows = otherPartyType == OtherMessagePartyType.Courier
-            ? await Context.MarkCourierMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate)
-            : await Context.MarkStaffMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate);
+            ? await MarkCourierMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate)
+            : await MarkStaffMessagesAsReadAsync(currentStaffId, otherPartyId, currentDate);
 
         if (affectedRows > 0)
         {
@@ -309,7 +315,8 @@ public class MessageRepository(
                 .SetProperty(r => r.IsActive, false));
 
         if (rowsAffected == 0)
-            throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.", nameof(responseId));
+            throw new ArgumentException($"Quick response with ID {responseId} not found for current staff member.",
+                nameof(responseId));
     }
 
     public async Task<IReadOnlyList<MessageContactOptionViewModel>> GetNewMessageContactOptionsAsync(string searchTerm)
@@ -354,24 +361,39 @@ public class MessageRepository(
         return results;
     }
 
+    private async Task<int> MarkCourierMessagesAsReadAsync(int staffId, int fromCourierId, DateTime readTime) =>
+        await Context.TucManualMessages
+            .Where(m => m.UcmmSendToStaffId == staffId &&
+                        !m.Read &&
+                        m.UcmmSendFromCourierId == fromCourierId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.Read, true)
+                .SetProperty(m => m.TimeRead, readTime));
+
+    private async Task<int> MarkStaffMessagesAsReadAsync(int staffId, int fromStaffId, DateTime readTime) =>
+        await Context.TucManualMessages
+            .Where(m => m.UcmmSendToStaffId == staffId &&
+                        !m.Read &&
+                        m.UcmmSendFromStaffId == fromStaffId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(m => m.Read, true)
+                .SetProperty(m => m.TimeRead, readTime));
+
     private async Task HandleCourierMessageAsync(TucManualMessage message, int sendToCourierId, int messageType,
         bool isUsTenant,
         DateTime currentDate)
     {
-        var courierData = await (from courier in Context.TucCouriers
-            where courier.UccrId == sendToCourierId && courier.Active
-            join loginOut in Context.TblCourierLogInOuts
-                on courier.CourierLogInOutId equals loginOut.CourierLogInOutId into loginGroup
-            from login in loginGroup.DefaultIfEmpty()
-            select new
+        var courierData = await Context.TucCouriers
+            .Where(c => c.UccrId == sendToCourierId && c.Active == true)
+            .Select(c => new CourierDataDto
             {
-                CourierId = courier.UccrId,
-                courier.Code,
-                courier.PersonalMobile,
-                courier.UccrMobile,
-                IsLoggedInToday = login != null &&
-                                  login.LogInTime.Date == currentDate &&
-                                  !login.LogOutTime.HasValue
+                CourierId = c.UccrId,
+                Code = c.Code,
+                PersonalMobile = c.PersonalMobile,
+                UccrMobile = c.UccrMobile,
+                IsLoggedInToday = c.CourierLogInOut != null &&
+                                  c.CourierLogInOut.LogInTime.Date == currentDate &&
+                                  !c.CourierLogInOut.LogOutTime.HasValue
             }).FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(courierData);
@@ -379,6 +401,16 @@ public class MessageRepository(
         var deliveryMethod = GetDeliveryMethod(messageType, courierData.IsLoggedInToday);
 
         message.UcmmSendToCourierId = sendToCourierId;
+        message.UcmmSendTo = sendToCourierId;
+
+        // Always set SendToMobile so SMPP_qryManualMessages can find the message
+        // even if the tucCourier JOIN fails (e.g. uccrMobile is NULL)
+        var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
+            ? courierData.PersonalMobile
+            : courierData.UccrMobile;
+
+        if (!string.IsNullOrWhiteSpace(mobileNumber))
+            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
 
         if (deliveryMethod == MessageDeliveryType.App)
         {
@@ -386,15 +418,10 @@ public class MessageRepository(
         }
         else // SMS
         {
-            if (string.IsNullOrWhiteSpace(courierData.PersonalMobile) &&
-                string.IsNullOrWhiteSpace(courierData.UccrMobile))
-                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS", nameof(courierData));
+            if (string.IsNullOrWhiteSpace(message.SendToMobile))
+                throw new ArgumentException($"Courier {courierData.Code} must have a mobile number to send SMS",
+                    nameof(sendToCourierId));
 
-            var mobileNumber = !string.IsNullOrWhiteSpace(courierData.PersonalMobile)
-                ? courierData.PersonalMobile
-                : courierData.UccrMobile;
-
-            message.SendToMobile = NormalizeMobileNumber(mobileNumber, isUsTenant);
             message.Subject = $"SMS to Courier: {courierData.Code}";
         }
     }
@@ -427,5 +454,14 @@ public class MessageRepository(
         var normalized = phoneNumber.Replace(" ", string.Empty);
 
         return isUsTenant ? normalized.Replace("+1", string.Empty) : normalized.Replace("+64", "0");
+    }
+
+    private class CourierDataDto
+    {
+        public int CourierId { get; init; }
+        public string Code { get; init; }
+        public string PersonalMobile { get; init; }
+        public string UccrMobile { get; init; }
+        public bool IsLoggedInToday { get; init; }
     }
 }
