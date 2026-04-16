@@ -1741,7 +1741,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1760,14 +1760,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_SplitJobRestore] @JobID = @JobID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJobRestoreResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJobRestore] @JobID = @JobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<int> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<DES_stpJob_UnSplitResult>> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterMessage = new SqlParameter
             {
@@ -1795,7 +1795,7 @@ namespace DespatchWeb.EntityClasses
                 parameterMessage,
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_UnSplit] @JobID = @JobID, @Message = @Message OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<DES_stpJob_UnSplitResult>("EXEC @returnValue = [dbo].[DES_stpJob_UnSplit] @JobID = @JobID, @Message = @Message OUTPUT", sqlParameters, cancellationToken);
 
             message?.SetValue(parameterMessage.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
@@ -2324,7 +2324,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<uspReassignJobResult>> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -2343,14 +2343,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspReassignJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<uspReassignJobResult>("EXEC @returnValue = [dbo].[uspReassignJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<uspReDespatchJobResult>> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -2369,7 +2369,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspReDespatchJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<uspReDespatchJobResult>("EXEC @returnValue = [dbo].[uspReDespatchJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

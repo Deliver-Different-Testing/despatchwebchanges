@@ -15,6 +15,7 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<IAddAgentRecoveryJobService, AddAgentRecoveryJobService>();
         services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
         services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
+        services.AddScoped<ISendToPartnerService, SendToPartnerService>();
 
         return services;
     }

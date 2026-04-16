@@ -69,6 +69,7 @@ public class DispatchJobViewModel
 
     // Job flags
     public bool? Locked { get; set; }
+    public bool IsPartnerJob { get; set; }
     public bool? Done { get; set; }
     public bool? PreBook { get; set; }
 

@@ -4916,6 +4916,24 @@ public partial class JobRepository(
             );
     }
 
+    public async Task<List<Suggestion>> GetActivePartnerOptionsAsync() =>
+        await Context.IntMgrPartnerPairings
+            .Where(p => p.Status == "Active")
+            .Select(p => new Suggestion()
+            {
+                Id = p.Id,
+                Text = p.PartnerTenantName
+            })
+            .ToListAsync();
+
+    public async Task<bool> IsPartnerJobAsync(int jobId) =>
+        await Context.TucJobs
+            .Where(j => j.UcjbId == jobId && j.PartnerPairingId.HasValue)
+            .AnyAsync()
+        || await Context.TucJobArchives
+            .Where(j => j.UcjbId == jobId && j.PartnerPairingId.HasValue)
+            .AnyAsync();
+
     #region IJobRepository Interface Methods (delegating to protected base methods)
 
     public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,

@@ -19,6 +19,7 @@ import DensityMediumIcon from '@mui/icons-material/DensityMedium';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import CheckIcon from '@mui/icons-material/Check';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
@@ -141,17 +142,30 @@ export function JobDetailHeader({
                         sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
                     />
                 )}
-                <Tooltip title={job.locked ? 'Unlock Job' : 'Lock Job'}>
-                    <IconButton
+                {job.isPartnerJob && (
+                    <Chip
+                        icon={<HandshakeIcon sx={{fontSize: 14}}/>}
+                        label="Partner Job"
                         size="small"
-                        color={job.locked ? 'warning' : 'default'}
-                        onClick={onLockToggle}
-                    >
-                        {job.locked
-                            ? <LockIcon sx={{fontSize: ICON_SIZE}}/>
-                            : <LockOpenIcon sx={{fontSize: ICON_SIZE}}/>
-                        }
-                    </IconButton>
+                        color="info"
+                        variant="outlined"
+                        sx={{fontWeight: 600, fontSize: '0.7rem', height: 26}}
+                    />
+                )}
+                <Tooltip title={job.isPartnerJob ? 'Locked — managed by partner' : job.locked ? 'Unlock Job' : 'Lock Job'}>
+                    <span>
+                        <IconButton
+                            size="small"
+                            color={job.locked ? 'warning' : 'default'}
+                            onClick={onLockToggle}
+                            disabled={Boolean(job.isPartnerJob)}
+                        >
+                            {job.locked
+                                ? <LockIcon sx={{fontSize: ICON_SIZE}}/>
+                                : <LockOpenIcon sx={{fontSize: ICON_SIZE}}/>
+                            }
+                        </IconButton>
+                    </span>
                 </Tooltip>
 
                 {/* AI Summary Panel Toggle */}

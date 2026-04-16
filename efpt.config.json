@@ -71,6 +71,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[IntMgrPartnerPairing]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[JobAccessorialCharges]",
          "ObjectType": 0
       },

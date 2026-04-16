@@ -33,7 +33,9 @@ import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import type {SxProps, Theme} from '@mui/material';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
+import SendIcon from '@mui/icons-material/Send';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
+import {getActivePartnerOptions} from '../../services/jobListApi';
 
 interface CourierOption {
     id: number;
@@ -57,6 +59,7 @@ interface JobListToolbarProps {
     onBulkRestore?: () => void;
     onBulkMarkRead?: () => void;
     onBulkMarkUnread?: () => void;
+    onBulkSendToPartner?: (partnerId: number, partnerName: string) => void;
     hideLoggedInSwitch?: boolean;
     todayOnly?: boolean;
     onTodayOnlyChange?: (checked: boolean) => void;
@@ -144,6 +147,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     onBulkRestore,
     onBulkMarkRead,
     onBulkMarkUnread,
+    onBulkSendToPartner,
     hideLoggedInSwitch,
     todayOnly,
     onTodayOnlyChange,
@@ -228,6 +232,32 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
         setCourierOptions([]);
     }, [onBulkDispatch]);
 
+    // Partner popover state
+    const [partnerAnchor, setPartnerAnchor] = useState<HTMLElement | null>(null);
+    const [partnerOptions, setPartnerOptions] = useState<CourierOption[]>([]);
+    const [partnerLoading, setPartnerLoading] = useState(false);
+
+    const handlePartnerPopoverOpen = useCallback(async (e: React.MouseEvent<HTMLElement>) => {
+        setPartnerAnchor(e.currentTarget);
+        if (partnerOptions.length > 0) return;
+        setPartnerLoading(true);
+        try {
+            const options = await getActivePartnerOptions();
+            setPartnerOptions(options.map(o => ({id: o.id, text: o.text})));
+        } catch {
+            setPartnerOptions([]);
+        } finally {
+            setPartnerLoading(false);
+        }
+    }, [partnerOptions.length]);
+
+    const handlePartnerSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
+        if (value && onBulkSendToPartner) {
+            onBulkSendToPartner(value.id, value.text);
+        }
+        setPartnerAnchor(null);
+    }, [onBulkSendToPartner]);
+
     // Selection action bar
     if (selectedCount > 0) {
         return (
@@ -289,6 +319,55 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                                                     endAdornment: (
                                                         <>
                                                             {courierLoading ? <CircularProgress size={18}/> : null}
+                                                            {params.InputProps.endAdornment}
+                                                        </>
+                                                    ),
+                                                },
+                                            }}
+                                        />
+                                    )}
+                                />
+                            </Box>
+                        </Popover>
+                    </>
+                )}
+
+                {allowDispatch && (
+                    <>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<SendIcon/>}
+                            onClick={handlePartnerPopoverOpen}
+                        >
+                            Send to DFRNT Partner
+                        </Button>
+                        <Popover
+                            open={Boolean(partnerAnchor)}
+                            anchorEl={partnerAnchor}
+                            onClose={() => setPartnerAnchor(null)}
+                            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
+                        >
+                            <Box sx={{p: 2, width: 300}}>
+                                <Autocomplete
+                                    autoFocus
+                                    openOnFocus
+                                    size="small"
+                                    options={partnerOptions}
+                                    getOptionLabel={(o) => o.text}
+                                    loading={partnerLoading}
+                                    onChange={handlePartnerSelect}
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            label="Select partner..."
+                                            autoFocus
+                                            slotProps={{
+                                                input: {
+                                                    ...params.InputProps,
+                                                    endAdornment: (
+                                                        <>
+                                                            {partnerLoading ? <CircularProgress size={18}/> : null}
                                                             {params.InputProps.endAdornment}
                                                         </>
                                                     ),

@@ -487,6 +487,8 @@ public partial class TucJobArchive
 
     public DateTime? CreatedTimeUtc { get; set; }
 
+    public int? PartnerPairingId { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }

@@ -65,6 +65,8 @@ jest.mock('../../utils/dateUtils', () => ({
 jest.mock('../../services/jobListApi', () => ({
     allocateJobs: jest.fn(),
     getEventGroups: jest.fn().mockResolvedValue([]),
+    getActivePartnerOptions: jest.fn().mockResolvedValue([]),
+    sendToPartner: jest.fn().mockResolvedValue({success: true, trackingNumber: 'TRK-123', message: 'OK'}),
     updateJobReadStatus: jest.fn().mockResolvedValue(undefined),
     bulkUpdateReadStatus: jest.fn().mockResolvedValue(undefined),
     lateCall: jest.fn().mockResolvedValue(undefined),

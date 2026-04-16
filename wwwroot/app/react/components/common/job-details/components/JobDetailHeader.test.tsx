@@ -182,21 +182,39 @@ describe('JobDetailHeader', () => {
         it('calls onLockToggle when lock button is clicked', () => {
             const onLockToggle = jest.fn();
             renderWithTheme(<JobDetailHeader {...createDefaultProps({onLockToggle})} />);
-            fireEvent.click(screen.getByLabelText('Lock Job'));
+            const lockBtn = screen.getByLabelText('Lock Job').querySelector('button')
+                ?? screen.getByLabelText('Lock Job');
+            fireEvent.click(lockBtn);
             expect(onLockToggle).toHaveBeenCalledTimes(1);
         });
 
         it('applies warning color when job is locked', () => {
             const job = createMockJob({locked: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
-            const button = screen.getByLabelText('Unlock Job');
-            expect(button).toHaveClass('MuiIconButton-colorWarning');
+            const lockBtn = screen.getByLabelText('Unlock Job').querySelector('button')
+                ?? screen.getByLabelText('Unlock Job');
+            expect(lockBtn).toHaveClass('MuiIconButton-colorWarning');
         });
 
         it('is always visible regardless of preBook status', () => {
             const job = createMockJob({preBook: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
             expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+        });
+
+        it('disables lock button and shows partner badge for partner jobs', () => {
+            const job = createMockJob({locked: true, isPartnerJob: true});
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+            expect(screen.getByText('Partner Job')).toBeInTheDocument();
+            const lockWrapper = screen.getByLabelText('Locked — managed by partner');
+            const lockBtn = lockWrapper.querySelector('button')!;
+            expect(lockBtn).toBeDisabled();
+        });
+
+        it('does not show partner badge for non-partner jobs', () => {
+            const job = createMockJob({locked: false, isPartnerJob: false});
+            renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+            expect(screen.queryByText('Partner Job')).not.toBeInTheDocument();
         });
     });
 

@@ -109,6 +109,7 @@ export interface IJob {
     internalStatusId?: number;
     childNotes: string;
     locked?: boolean;
+    isPartnerJob?: boolean;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -306,6 +307,7 @@ export interface IJobDto {
     internalStatusId?: number;
     childNotes: string;
     locked?: boolean;
+    isPartnerJob?: boolean;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -781,6 +783,7 @@ export interface IDispatchJob {
 
     // Job flags
     locked?: boolean;
+    isPartnerJob?: boolean;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;
@@ -906,6 +909,7 @@ export interface IDispatchJobDto {
 
     // Job flags
     locked?: boolean;
+    isPartnerJob?: boolean;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;
