@@ -5,6 +5,7 @@ using DespatchWeb.Interfaces;
 using DeliverDifferentReporting.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +39,7 @@ public class DiCompositionTests
         services.AddSingleton(Substitute.For<IAmazonS3>());
         services.AddSingleton(Substitute.For<IConnectionStringManager>());
         services.AddSingleton(Substitute.For<IDistributedCache>());
+        services.AddSingleton(Substitute.For<IWebHostEnvironment>());
         services.AddSingleton(Substitute.For<ITenantBrandingService>());
         services.AddMemoryCache();
         services.AddHttpClient();

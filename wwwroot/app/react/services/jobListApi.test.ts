@@ -19,6 +19,8 @@ import {
     getEventGroups,
     markJobMissing,
     moveJobToReprice,
+    getActivePartnerOptions,
+    sendToPartner,
 } from './jobListApi';
 import {apiClient} from './apiClient';
 
@@ -183,6 +185,29 @@ describe('jobListApi', () => {
             expect(mockedPost).toHaveBeenCalledWith('job/UpdateJob', null, {
                 params: expect.objectContaining({jobId: 1, field: 'InternalStatusID', value: 4}),
             });
+        });
+    });
+
+    describe('getActivePartnerOptions', () => {
+        it('fetches active partner options', async () => {
+            mockedGet.mockResolvedValue([{id: 1, text: 'Partner A'}]);
+
+            const result = await getActivePartnerOptions();
+
+            expect(mockedGet).toHaveBeenCalledWith('job/GetActivePartnerOptions');
+            expect(result).toEqual([{id: 1, text: 'Partner A'}]);
+        });
+    });
+
+    describe('sendToPartner', () => {
+        it('sends job to partner', async () => {
+            const response = {success: true, trackingNumber: 'TRK-123', message: 'OK'};
+            mockedPost.mockResolvedValue(response);
+
+            const result = await sendToPartner(42, 5);
+
+            expect(mockedPost).toHaveBeenCalledWith('job/SendToPartner', {jobId: 42, partnerId: 5});
+            expect(result).toEqual(response);
         });
     });
 });

@@ -34,7 +34,8 @@ public class JobController(
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
     IPodReportService podReportService,
-    ISplitJobService splitJobService
+    ISplitJobService splitJobService,
+    ISendToPartnerService sendToPartnerService
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -919,6 +920,12 @@ public class JobController(
     {
         try
         {
+            foreach (var jobId in data.JobIds)
+            {
+                var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+                if (partnerGuard != null) return partnerGuard;
+            }
+
             await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
             return Ok();
         }
@@ -934,6 +941,12 @@ public class JobController(
     {
         try
         {
+            foreach (var jobId in data.JobIds)
+            {
+                var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+                if (partnerGuard != null) return partnerGuard;
+            }
+
             await jobCommandRepository.ReDispatchSelectedJobsAsync(data.JobIds);
             await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
             return Ok();
@@ -978,6 +991,9 @@ public class JobController(
     {
         try
         {
+            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            if (partnerGuard != null) return partnerGuard;
+
             var isArchived = await jobQueryRepository.IsJobArchived(request.JobId);
 
             if (isArchived)
@@ -1125,6 +1141,9 @@ public class JobController(
     {
         try
         {
+            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            if (partnerGuard != null) return partnerGuard;
+
             var staffInfo = await infoService.GetStaffInfoAsync();
             var staffName = staffInfo.Text;
 
@@ -1372,6 +1391,9 @@ public class JobController(
     {
         try
         {
+            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+            if (partnerGuard != null) return partnerGuard;
+
             await jobCommandRepository.UpdateJobAsync(jobId, field, value);
         }
         catch (Exception e)
@@ -1867,6 +1889,9 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request)
     {
+        var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+        if (partnerGuard != null) return partnerGuard;
+
         return await UpdateAddressAsync(
             request,
             jobCommandRepository.UpdateDeliveryAddressAsync,
@@ -1877,6 +1902,9 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UpdatePickupAddress([FromBody] UpdateAddressRequest request)
     {
+        var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+        if (partnerGuard != null) return partnerGuard;
+
         return await UpdateAddressAsync(
             request,
             jobCommandRepository.UpdatePickupAddressAsync,
@@ -2200,5 +2228,51 @@ public class JobController(
             Log.Error(ex, "Error getting pricing permissions");
             return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
         }
+    }
+
+    public async Task<IActionResult> GetActivePartnerOptions()
+    {
+        try
+        {
+            var activePartners = await jobQueryRepository.GetActivePartnerOptionsAsync();
+            return Json(activePartners);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting active partner options");
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> SendToPartner([FromBody] SendToPartnerRequest request)
+    {
+        try
+        {
+            var result = await sendToPartnerService.SendAsync(request);
+
+            if (result.Success)
+            {
+                await jobCommandRepository.UpdateJobAsync(request.JobId, JobProperty.Locked, "true");
+            }
+
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error sending job {JobId} to partner", request.JobId);
+            return Json(new SendToPartnerResponse
+            {
+                Success = false,
+                Message = "An error occurred while sending job to partner"
+            });
+        }
+    }
+
+    private async Task<IActionResult> RejectIfPartnerJobAsync(int jobId)
+    {
+        if (await jobQueryRepository.IsPartnerJobAsync(jobId))
+            return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
+        return null;
     }
 }

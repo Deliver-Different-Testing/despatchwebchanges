@@ -24,7 +24,7 @@ import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
-import {allocateJobs, bulkUpdateReadStatus, restoreJobs, updateJobReadStatus} from '../../services/jobListApi';
+import {allocateJobs, bulkUpdateReadStatus, restoreJobs, sendToPartner, updateJobReadStatus} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
@@ -680,6 +680,29 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
+    const handleBulkSendToPartner = useCallback(async (partnerId: number, partnerName: string) => {
+        const ids = [...multiSelect.selectedIds];
+        try {
+            const results = await Promise.allSettled(ids.map(id => sendToPartner(id, partnerId)));
+            const succeeded = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+            const failed = ids.length - succeeded;
+            if (failed === 0) {
+                showToast(`${succeeded} job(s) sent to ${partnerName}`, 'success');
+            } else {
+                showToast(`${succeeded} sent, ${failed} failed for ${partnerName}`, 'warning');
+            }
+            multiSelect.clear();
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
+            if (fetchConfig) {
+                hookDataRef.current.refresh();
+            } else if (onRefresh) {
+                onRefresh();
+            }
+        } catch {
+            showToast('Failed to send jobs to partner', 'error');
+        }
+    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
     const handleBulkDispatch = useCallback(async (courierId: number, courierName: string) => {
         const ids = [...multiSelect.selectedIds];
         try {
@@ -777,6 +800,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkRestore={handleBulkRestore}
                 onBulkMarkRead={handleBulkMarkRead}
                 onBulkMarkUnread={handleBulkMarkUnread}
+                onBulkSendToPartner={handleBulkSendToPartner}
                 hideLoggedInSwitch={hideLoggedInSwitch}
                 todayOnly={onDateFilterModeChange ? todayOnly : undefined}
                 onTodayOnlyChange={onDateFilterModeChange ? handleTodayOnlyChange : undefined}

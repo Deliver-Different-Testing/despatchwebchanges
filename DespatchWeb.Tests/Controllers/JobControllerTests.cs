@@ -37,6 +37,7 @@ public class JobControllerTests : IDisposable
     private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
     private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
+    private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
 
     public JobControllerTests()
     {
@@ -74,7 +75,8 @@ public class JobControllerTests : IDisposable
             _deliveryJourneyServiceMock,
             _pricingPermissionServiceMock,
             _podReportServiceMock,
-            _splitJobServiceMock);
+            _splitJobServiceMock,
+            _sendToPartnerServiceMock);
     }
 
     /// <summary>
@@ -2906,5 +2908,99 @@ public class JobControllerTests : IDisposable
             From = "123 Test St",
             ToAddress = "456 Delivery Ave"
         };
+
+    #region Partner Job Locking Tests
+
+    [Fact]
+    public async Task SendToPartner_Success_LocksJob()
+    {
+        var controller = CreateController();
+        var request = new SendToPartnerRequest { JobId = 1, PartnerId = 10 };
+
+        _sendToPartnerServiceMock.SendAsync(request)
+            .Returns(new SendToPartnerResponse { Success = true, TrackingNumber = "DFRNT-123" });
+
+        await controller.SendToPartner(request);
+
+        await _jobCommandRepositoryMock.Received(1)
+            .UpdateJobAsync(1, JobProperty.Locked, "true");
+    }
+
+    [Fact]
+    public async Task SendToPartner_Failure_DoesNotLockJob()
+    {
+        var controller = CreateController();
+        var request = new SendToPartnerRequest { JobId = 1, PartnerId = 10 };
+
+        _sendToPartnerServiceMock.SendAsync(request)
+            .Returns(new SendToPartnerResponse { Success = false, Message = "Partner unavailable" });
+
+        await controller.SendToPartner(request);
+
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), JobProperty.Locked, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task UpdateJob_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(42).Returns(true);
+
+        var result = await controller.UpdateJob(42, JobProperty.RefA, "new-ref");
+
+        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
+        Assert.Contains("partner", badRequest.Value!.ToString()!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task UpdateJob_AllowsNonPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(42).Returns(false);
+
+        var result = await controller.UpdateJob(42, JobProperty.RefA, "new-ref");
+
+        Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task Void_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(1).Returns(true);
+
+        var result = await controller.Void(new VoidJobRequest { JobId = 1 });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task Allocate_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(5).Returns(true);
+
+        var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [5], CourierId = 1 });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task SplitJob_RejectsPartnerJob()
+    {
+        var controller = CreateControllerForSplitJob();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(7).Returns(true);
+
+        var result = await controller.SplitJob(new SplitJobRequest
+        {
+            JobId = 7,
+            MeetingPointAddress = new AddressViewModel()
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    #endregion
 
 }

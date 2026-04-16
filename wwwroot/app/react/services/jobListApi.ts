@@ -125,6 +125,22 @@ export async function moveJobToReprice(jobId: number): Promise<void> {
     await updateJobDetail(jobId, 'InternalStatusID', InternalJobStatus.Reprice);
 }
 
+// ── Partner Dispatch ────────────────────────────────────────────────
+
+export async function getActivePartnerOptions(): Promise<EventGroupItem[]> {
+    return apiClient.get<EventGroupItem[]>('job/GetActivePartnerOptions');
+}
+
+export interface SendToPartnerResponse {
+    success: boolean;
+    trackingNumber: string | null;
+    message: string;
+}
+
+export async function sendToPartner(jobId: number, partnerId: number): Promise<SendToPartnerResponse> {
+    return apiClient.post<SendToPartnerResponse>('job/SendToPartner', {jobId, partnerId});
+}
+
 // ── Aggregate Export ─────────────────────────────────────────────────
 
 export const jobListApi = {
@@ -143,6 +159,8 @@ export const jobListApi = {
     getEventGroups,
     markJobMissing,
     moveJobToReprice,
+    getActivePartnerOptions,
+    sendToPartner,
 };
 
 export default jobListApi;

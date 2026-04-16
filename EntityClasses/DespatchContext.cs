@@ -45,6 +45,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<FlightZoneCombo> FlightZoneCombos { get; set; }
 
+    public virtual DbSet<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; }
+
     public virtual DbSet<JobAccessorialCharge> JobAccessorialCharges { get; set; }
 
     public virtual DbSet<JobDeliveryJourney> JobDeliveryJourneys { get; set; }
@@ -966,6 +968,39 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Carrier).WithMany(p => p.FlightZoneCombos)
                 .HasForeignKey(d => d.CarrierId)
                 .HasConstraintName("FK__FlightZon__Carri__1E2636F2");
+        });
+
+        modelBuilder.Entity<IntMgrPartnerPairing>(entity =>
+        {
+            entity.ToTable("IntMgrPartnerPairing");
+
+            entity.HasIndex(e => e.CarrierIntegrationId, "IX_IntMgrPartnerPairing_CarrierIntegrationId");
+
+            entity.HasIndex(e => e.InvitationToken, "IX_IntMgrPartnerPairing_InvitationToken")
+                .IsUnique()
+                .HasFilter("([InvitationToken] IS NOT NULL)");
+
+            entity.HasIndex(e => e.PartnerTenantId, "IX_IntMgrPartnerPairing_PartnerTenantId");
+
+            entity.Property(e => e.CreatedAtUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_IntMgrPartnerPairing_CreatedAtUtc")
+                .HasColumnType("datetime");
+            entity.Property(e => e.InvitationToken).HasMaxLength(128);
+            entity.Property(e => e.PartnerBaseUrl)
+                .IsRequired()
+                .HasMaxLength(500);
+            entity.Property(e => e.PartnerTenantId)
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.PartnerTenantName)
+                .IsRequired()
+                .HasMaxLength(200);
+            entity.Property(e => e.Status)
+                .IsRequired()
+                .HasMaxLength(20);
+            entity.Property(e => e.UpdatedAtUtc)
+                .HasDefaultValueSql("(getutcdate())", "DF_IntMgrPartnerPairing_UpdatedAtUtc")
+                .HasColumnType("datetime");
         });
 
         modelBuilder.Entity<JobAccessorialCharge>(entity =>
@@ -5451,6 +5486,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.FdcourierId, "IX_tucJob_FDCourierID");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
+
+            entity.HasIndex(e => e.PartnerPairingId, "IX_tucJob_PartnerPairingId").HasFilter("([PartnerPairingId] IS NOT NULL)");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
 

@@ -114,4 +114,7 @@ public interface IJobQueryRepository
     Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived, bool isBulkJob = false);
     Task<int?> GetJobParentIdAsync(int jobId);
     Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds);
+
+    Task<List<Suggestion>> GetActivePartnerOptionsAsync();
+    Task<bool> IsPartnerJobAsync(int jobId);
 }

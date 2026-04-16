@@ -140,6 +140,7 @@ export interface DispatchJob {
 
     // Job flags
     locked?: boolean;
+    isPartnerJob?: boolean;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;

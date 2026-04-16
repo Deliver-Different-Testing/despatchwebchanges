@@ -18,6 +18,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 
 // MUI Icons
@@ -77,6 +78,10 @@ interface JobListContextMenuProps {
 let eventGroupsCache: api.EventGroupItem[] = [];
 let eventGroupsLoading = false;
 
+// Static cache for partner options
+let partnerOptionsCache: api.EventGroupItem[] = [];
+let partnerOptionsLoading = false;
+
 export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     job,
     position,
@@ -98,6 +103,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const [splitJobLoading, setSplitJobLoading] = useState(false);
     const [eventGroups, setEventGroups] = useState<api.EventGroupItem[]>(eventGroupsCache);
     const [eventGroupsAnchor, setEventGroupsAnchor] = useState<HTMLElement | null>(null);
+    const [partnerOptions, setPartnerOptions] = useState<api.EventGroupItem[]>(partnerOptionsCache);
+    const [partnerOptionsAnchor, setPartnerOptionsAnchor] = useState<HTMLElement | null>(null);
 
     // Capture job reference for dialogs that outlive the context menu
     const dialogJobRef = useRef<DispatchJob | null>(null);
@@ -122,9 +129,27 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             });
     }, []);
 
+    // Preload partner options
+    useEffect(() => {
+        if (partnerOptionsCache.length > 0 || partnerOptionsLoading) return;
+        partnerOptionsLoading = true;
+        api.getActivePartnerOptions()
+            .then((options) => {
+                partnerOptionsCache = options;
+                setPartnerOptions(options);
+            })
+            .catch(() => {
+                partnerOptionsCache = [];
+            })
+            .finally(() => {
+                partnerOptionsLoading = false;
+            });
+    }, []);
+
     const closeAll = useCallback(() => {
         onClose();
         setEventGroupsAnchor(null);
+        setPartnerOptionsAnchor(null);
     }, [onClose]);
 
     const refresh = useCallback(() => {
@@ -288,6 +313,22 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
+    const handleSendToPartner = async (partnerId: number, partnerName: string) => {
+        setPartnerOptionsAnchor(null);
+        closeAll();
+        try {
+            const result = await api.sendToPartner(activeJob.id, partnerId);
+            if (result.success) {
+                showToast(`Job ${activeJob.jobNo} sent to ${partnerName} — tracking: ${result.trackingNumber}`, 'success');
+                refresh();
+            } else {
+                showToast(result.message || 'Failed to send job to partner', 'error');
+            }
+        } catch {
+            showToast('Error sending job to partner', 'error');
+        }
+    };
+
     const handleSendToLive = () => {
         closeAll();
         setConfirmDialogConfig({
@@ -417,6 +458,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const hasChildren = activeJob._groupChildren && activeJob._groupChildren.length > 0;
     const isNationwideSpeed = activeJob.speedId === NationwideSpeedId;
     const notReprice = activeJob.internalStatusId !== INTERNAL_STATUS_REPRICE;
+    const isPartnerJob = Boolean(activeJob.isPartnerJob);
+    const partnerDisabledTooltip = 'This job is managed by a partner';
 
     return (
         <>
@@ -472,14 +515,22 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                 {/* Late Pickup / Delivery (Dispatch or JobSearch) */}
                 {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && [
-                    <MenuItem key="late-pickup" onClick={handleLatePickup}>
-                        <ListItemIcon><ScheduleIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Late Pickup</ListItemText>
-                    </MenuItem>,
-                    <MenuItem key="late-delivery" onClick={handleLateDelivery}>
-                        <ListItemIcon><LocalShippingIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Late Delivery</ListItemText>
-                    </MenuItem>,
+                    <Tooltip key="late-pickup" title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
+                        <span>
+                            <MenuItem disabled={isPartnerJob} onClick={handleLatePickup}>
+                                <ListItemIcon><ScheduleIcon fontSize="small"/></ListItemIcon>
+                                <ListItemText>Late Pickup</ListItemText>
+                            </MenuItem>
+                        </span>
+                    </Tooltip>,
+                    <Tooltip key="late-delivery" title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
+                        <span>
+                            <MenuItem disabled={isPartnerJob} onClick={handleLateDelivery}>
+                                <ListItemIcon><LocalShippingIcon fontSize="small"/></ListItemIcon>
+                                <ListItemText>Late Delivery</ListItemText>
+                            </MenuItem>
+                        </span>
+                    </Tooltip>,
                 ]}
 
                 {/* AI Late Alert Analysis */}
@@ -494,10 +545,14 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
                 {/* Reprice (Nationwide only) */}
                 {isNationwideSpeed && notReprice && !activeJob.preBook && (
-                    <MenuItem onClick={handleReprice}>
-                        <ListItemIcon><PriceCheckIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Reprice Job</ListItemText>
-                    </MenuItem>
+                    <Tooltip title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
+                        <span>
+                            <MenuItem disabled={isPartnerJob} onClick={handleReprice}>
+                                <ListItemIcon><PriceCheckIcon fontSize="small"/></ListItemIcon>
+                                <ListItemText>Reprice Job</ListItemText>
+                            </MenuItem>
+                        </span>
+                    </Tooltip>
                 )}
 
                 {/* Add Task / Task Groups */}
@@ -521,11 +576,34 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </MenuItem>
                 )}
 
+                {/* Send to DFRNT Partner (dispatch/jobsearch only) */}
+                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && (
+                    <Tooltip
+                        title={isPartnerJob ? partnerDisabledTooltip : activeJob.assignedCourier ? 'Restore job before sending to partner' : ''}
+                        placement="right"
+                    >
+                        <span>
+                            <MenuItem
+                                disabled={Boolean(activeJob.assignedCourier) || isPartnerJob}
+                                onClick={(e) => setPartnerOptionsAnchor(e.currentTarget)}
+                            >
+                                <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
+                                <ListItemText>Send to DFRNT Partner</ListItemText>
+                                <ChevronRightIcon fontSize="small" sx={{ml: 1, color: 'text.disabled'}}/>
+                            </MenuItem>
+                        </span>
+                    </Tooltip>
+                )}
+
                 {/* Void Job */}
-                <MenuItem onClick={handleVoidJob}>
-                    <ListItemIcon><CancelIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Void Job</ListItemText>
-                </MenuItem>
+                <Tooltip title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
+                    <span>
+                        <MenuItem disabled={isPartnerJob} onClick={handleVoidJob}>
+                            <ListItemIcon><CancelIcon fontSize="small"/></ListItemIcon>
+                            <ListItemText>Void Job</ListItemText>
+                        </MenuItem>
+                    </span>
+                </Tooltip>
 
                 {/* Swap PODs (completed non-bulk non-prebook) */}
                 {activeJob.done && !activeJob.isBulkJob && !activeJob.preBook && (
@@ -536,7 +614,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 )}
 
                 {/* Split Job */}
-                {activeJob.allowSplit && !hasChildren && (
+                {activeJob.allowSplit && !hasChildren && !isPartnerJob && (
                     <MenuItem onClick={handleSplitJob}>
                         <ListItemIcon><CallSplitIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Split Job</ListItemText>
@@ -546,13 +624,15 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 <Divider/>
 
                 {/* Set First Job */}
-                <MenuItem onClick={handleSetFirstJob}>
-                    <ListItemIcon><FirstPageIcon fontSize="small"/></ListItemIcon>
-                    <ListItemText>Set First Job</ListItemText>
-                </MenuItem>
+                {!isPartnerJob && (
+                    <MenuItem onClick={handleSetFirstJob}>
+                        <ListItemIcon><FirstPageIcon fontSize="small"/></ListItemIcon>
+                        <ListItemText>Set First Job</ListItemText>
+                    </MenuItem>
+                )}
 
                 {/* Re-Dispatch */}
-                {activeJob.assignedCourier && (
+                {activeJob.assignedCourier && !isPartnerJob && (
                     <MenuItem onClick={handleRedispatch}>
                         <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Re-Dispatch</ListItemText>
@@ -590,6 +670,29 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     eventGroups.map((group) => (
                         <MenuItem key={group.id} onClick={() => handleEventGroup(group.id)}>
                             <ListItemText>{group.text}</ListItemText>
+                        </MenuItem>
+                    ))
+                )}
+            </Menu>
+
+            {/* Partner Options Submenu */}
+            <Menu
+                open={Boolean(partnerOptionsAnchor)}
+                anchorEl={partnerOptionsAnchor}
+                onClose={() => setPartnerOptionsAnchor(null)}
+                anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+                transformOrigin={{vertical: 'top', horizontal: 'left'}}
+            >
+                {partnerOptions.length === 0 ? (
+                    <MenuItem disabled>
+                        <ListItemText>
+                            <Typography variant="body2" color="text.secondary">No active partners</Typography>
+                        </ListItemText>
+                    </MenuItem>
+                ) : (
+                    partnerOptions.map((partner) => (
+                        <MenuItem key={partner.id} onClick={() => handleSendToPartner(partner.id, partner.text)}>
+                            <ListItemText>{partner.text}</ListItemText>
                         </MenuItem>
                     ))
                 )}

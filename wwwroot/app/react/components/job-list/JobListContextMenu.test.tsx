@@ -111,6 +111,8 @@ const mockEventGroups: api.EventGroupItem[] = [
 beforeEach(() => {
     // Default API mocks
     mockedApi.getEventGroups.mockResolvedValue(mockEventGroups);
+    mockedApi.getActivePartnerOptions.mockResolvedValue([]);
+    mockedApi.sendToPartner.mockResolvedValue({success: true, trackingNumber: 'TRK-123', message: 'OK'});
     mockedApi.updateJobReadStatus.mockResolvedValue(undefined);
     mockedApi.moveJobToReprice.mockResolvedValue(undefined);
     mockedApi.reAllocateJobs.mockResolvedValue(undefined);
