@@ -1,4 +1,5 @@
 import {alpha, createTheme, Theme} from '@mui/material/styles';
+import Grow from '@mui/material/Grow';
 
 /**
  * MUI Theme - Matching AngularJS Material Theme
@@ -214,7 +215,7 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
             grey: accentPalette,
         },
         typography: {
-            fontFamily: 'Roboto, "Helvetica Neue", sans-serif',
+            fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif',
             fontSize: 14,
             fontWeightLight: 300,
             fontWeightRegular: 400,
@@ -430,10 +431,13 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                 },
             },
             MuiDialog: {
+                defaultProps: {
+                    slots: { transition: Grow },
+                },
                 styleOverrides: {
                     paper: {
-                        borderRadius: tokens.radius.lg,
-                        boxShadow: tokens.shadow.xl,
+                        borderRadius: tokens.radius.xl,
+                        boxShadow: '0 24px 48px -12px rgba(0,0,0,.18), 0 0 0 1px rgba(0,0,0,.04)',
                     },
                 },
             },
@@ -442,24 +446,25 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                     root: {
                         fontSize: '1.125rem',
                         fontWeight: 600,
-                        padding: '16px 24px',
-                        backgroundColor: accentPalette[100],
+                        padding: '20px 24px',
                         color: colors.text.primary,
+                        borderBottom: `1px solid ${colors.divider}`,
                     },
                 },
             },
             MuiDialogContent: {
                 styleOverrides: {
                     root: {
-                        padding: '20px 24px',
+                        padding: '24px 24px',
                     },
                 },
             },
             MuiDialogActions: {
                 styleOverrides: {
                     root: {
-                        padding: '12px 24px 16px',
+                        padding: '16px 24px 24px',
                         gap: 8,
+                        borderTop: `1px solid ${colors.divider}`,
                     },
                 },
             },
@@ -547,9 +552,14 @@ export function createAppTheme(isUsCustomer: boolean): Theme {
                         borderColor: colors.divider,
                     },
                     head: {
-                        fontWeight: 500,
+                        fontWeight: 600,
                         color: colors.text.secondary,
-                        fontSize: '0.75rem',
+                        fontSize: '0.8125rem',
+                        textTransform: 'none' as const,
+                        letterSpacing: 'normal',
+                        backgroundColor: accentPalette[50],
+                        borderBottomWidth: 1,
+                        borderBottomColor: colors.divider,
                     },
                 },
             },
