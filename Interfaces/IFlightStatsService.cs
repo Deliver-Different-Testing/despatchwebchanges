@@ -4,13 +4,6 @@ namespace DespatchWeb.Interfaces;
 
 public interface IFlightStatsService
 {
-    Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTimeOffset departureTime,
-        string departureAirportCode);
-
-    Task DeleteFlightRuleById(string webhookId);
-
-    Task<bool> IsFlightRuleActiveAsync(string webhookId);
-
     Task<IReadOnlyList<FlightViewModel>> GetFlightsAsync(
         int jobId,
         DateTimeOffset? departureDateTime = null,
@@ -21,4 +14,11 @@ public interface IFlightStatsService
         IReadOnlyList<string> extendedOptions = null,
         int minimumLayoverMinutes = 60
     );
+
+    Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTimeOffset departureTime,
+        string departureAirportCode);
+
+    Task DeleteFlightRuleById(string webhookId);
+
+    Task<bool> IsFlightRuleActiveAsync(string webhookId);
 }

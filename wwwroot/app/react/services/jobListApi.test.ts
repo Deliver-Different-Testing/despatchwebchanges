@@ -200,13 +200,13 @@ describe('jobListApi', () => {
     });
 
     describe('sendToPartner', () => {
-        it('sends job to partner', async () => {
+        it('sends job to partner with agreed rate', async () => {
             const response = {success: true, trackingNumber: 'TRK-123', message: 'OK'};
             mockedPost.mockResolvedValue(response);
 
-            const result = await sendToPartner(42, 5);
+            const result = await sendToPartner(42, 5, 75.50);
 
-            expect(mockedPost).toHaveBeenCalledWith('job/SendToPartner', {jobId: 42, partnerId: 5});
+            expect(mockedPost).toHaveBeenCalledWith('job/SendToPartner', {jobId: 42, partnerId: 5, agreedRate: 75.50});
             expect(result).toEqual(response);
         });
     });

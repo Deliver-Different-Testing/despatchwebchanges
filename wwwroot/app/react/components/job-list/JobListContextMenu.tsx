@@ -52,6 +52,7 @@ import {isAiEnabled} from '../../../functions/aiSettings';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
+import {SendToPartnerDialog} from '../dialogs/send-to-partner-dialog';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
 
@@ -105,6 +106,11 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const [eventGroupsAnchor, setEventGroupsAnchor] = useState<HTMLElement | null>(null);
     const [partnerOptions, setPartnerOptions] = useState<api.EventGroupItem[]>(partnerOptionsCache);
     const [partnerOptionsAnchor, setPartnerOptionsAnchor] = useState<HTMLElement | null>(null);
+    const [sendToPartnerDialog, setSendToPartnerDialog] = useState<{
+        open: boolean;
+        partnerId: number;
+        partnerName: string;
+    }>({open: false, partnerId: 0, partnerName: ''});
 
     // Capture job reference for dialogs that outlive the context menu
     const dialogJobRef = useRef<DispatchJob | null>(null);
@@ -156,7 +162,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -313,19 +319,21 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
-    const handleSendToPartner = async (partnerId: number, partnerName: string) => {
+    const handleSendToPartner = (partnerId: number, partnerName: string) => {
         setPartnerOptionsAnchor(null);
         closeAll();
-        try {
-            const result = await api.sendToPartner(activeJob.id, partnerId);
-            if (result.success) {
-                showToast(`Job ${activeJob.jobNo} sent to ${partnerName} — tracking: ${result.trackingNumber}`, 'success');
-                refresh();
-            } else {
-                showToast(result.message || 'Failed to send job to partner', 'error');
-            }
-        } catch {
-            showToast('Error sending job to partner', 'error');
+        setSendToPartnerDialog({open: true, partnerId, partnerName});
+    };
+
+    const handleSendToPartnerConfirm = async (agreedRate: number) => {
+        const {partnerId, partnerName} = sendToPartnerDialog;
+        const result = await api.sendToPartner(activeJob.id, partnerId, agreedRate);
+        if (result.success) {
+            setSendToPartnerDialog(prev => ({...prev, open: false}));
+            showToast(`Job ${activeJob.jobNo} sent to ${partnerName} — tracking: ${result.trackingNumber}`, 'success');
+            refresh();
+        } else {
+            throw new Error(result.message || 'Failed to send job to partner');
         }
     };
 
@@ -767,6 +775,18 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </Typography>
                 </DialogContent>
             </Dialog>
+
+            {/* Send to Partner Dialog */}
+            <SendToPartnerDialog
+                open={sendToPartnerDialog.open}
+                partnerId={sendToPartnerDialog.partnerId}
+                partnerName={sendToPartnerDialog.partnerName}
+                jobId={activeJob.id}
+                jobNo={activeJob.jobNo}
+                onClose={() => setSendToPartnerDialog(prev => ({...prev, open: false}))}
+                onConfirm={handleSendToPartnerConfirm}
+                fetchRate={api.getPartnerRateForJob}
+            />
         </>
     );
 };

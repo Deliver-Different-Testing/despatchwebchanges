@@ -152,6 +152,60 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task ConnectionsApi_SearchFlights_AucklandToChristchurch_ReturnsFlights()
+    {
+        // Arrange - mirrors the live request:
+        // /nationwideJob/GetScheduledFlightOptions?arrivalAirportId=3&departureAirportId=1&departureDate=2026-04-20T11:10:00+12:00&jobId=25692788&minimumLayoverMinutes=60
+        Assert.SkipUnless(_hasCredentials, "FlightStats API credentials not configured");
+
+        const string departureAirport = "AKL";
+        const string arrivalAirport = "CHC";
+        var (year, month, day) = DateTime.UtcNow.AddDays(1);
+        const int hour = 11;
+        const int minute = 10;
+
+        var url = $"{ConnectionsBaseUrl}json/firstflightout/{departureAirport}/to/{arrivalAirport}/leaving_after/{year}/{month}/{day}/{hour}/{minute}" +
+                  $"?appId={_appId}&appKey={_appKey}&maxResults=80&includeCodeshares=false&maxConnections=1&numHours=24&minimumConnectTime=60";
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"Request URL: {url}");
+
+        // Act
+        var response = await _httpClient.GetAsync(url, TestContext.Current.CancellationToken);
+        var content = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"Status Code: {response.StatusCode}");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Response Length: {content.Length} characters");
+        TestContext.Current.TestOutputHelper?.WriteLine($"Raw Response: {content}");
+
+        // Assert
+        Assert.True(response.IsSuccessStatusCode, $"API returned {response.StatusCode}: {content}");
+
+        var result = JsonSerializer.Deserialize<FlightConnectionsRoot>(content);
+        Assert.NotNull(result);
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"Connections found: {result.Connections?.Count ?? 0}");
+
+        // AKL to CHC is a domestic NZ route
+        Assert.NotNull(result.Connections);
+        Assert.NotEmpty(result.Connections);
+
+        if (result.Connections is { Count: > 0 })
+        {
+            foreach (var connection in result.Connections.Take(5))
+            {
+                var firstFlight = connection.ScheduledFlight?.FirstOrDefault();
+                if (firstFlight != null)
+                {
+                    TestContext.Current.TestOutputHelper?.WriteLine(
+                        $"  Flight: {firstFlight.CarrierFsCode}{firstFlight.FlightNumber} " +
+                        $"{firstFlight.DepartureAirportFsCode}->{firstFlight.ArrivalAirportFsCode} " +
+                        $"Departs: {firstFlight.DepartureTime} Arrives: {firstFlight.ArrivalTime}");
+                }
+            }
+        }
+    }
+
+    [Fact]
     public async Task ConnectionsApi_SearchFlights_LosAngelesToNewYork_ReturnsFlights()
     {
         // Arrange
