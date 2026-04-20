@@ -7148,7 +7148,7 @@ public partial class DespatchContext : DbContext
         {
             entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FF13C671E");
 
-            entity.ToTable("tucNote");
+            entity.ToTable("tucNote", tb => tb.HasTrigger("tucNote_Insert_SendToDevices"));
 
             entity.HasIndex(e => e.CreatedDate, "IX_Note_CreatedDate");
 
