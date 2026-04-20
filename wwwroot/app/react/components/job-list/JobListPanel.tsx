@@ -680,28 +680,11 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
-    const handleBulkSendToPartner = useCallback(async (partnerId: number, partnerName: string) => {
-        const ids = [...multiSelect.selectedIds];
-        try {
-            const results = await Promise.allSettled(ids.map(id => sendToPartner(id, partnerId)));
-            const succeeded = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
-            const failed = ids.length - succeeded;
-            if (failed === 0) {
-                showToast(`${succeeded} job(s) sent to ${partnerName}`, 'success');
-            } else {
-                showToast(`${succeeded} sent, ${failed} failed for ${partnerName}`, 'warning');
-            }
-            multiSelect.clear();
-            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
-            if (fetchConfig) {
-                hookDataRef.current.refresh();
-            } else if (onRefresh) {
-                onRefresh();
-            }
-        } catch {
-            showToast('Failed to send jobs to partner', 'error');
-        }
-    }, [multiSelect, showToast, fetchConfig, onRefresh]);
+    const handleBulkSendToPartner = useCallback(async (_partnerId: number, _partnerName: string) => {
+        // Bulk partner dispatch requires per-job rate confirmation via the SendToPartnerDialog.
+        // A shared-rate bulk dialog can be added later if needed.
+        showToast('Partner dispatch requires rate confirmation — please dispatch jobs individually via right-click', 'info');
+    }, [showToast]);
 
     const handleBulkDispatch = useCallback(async (courierId: number, courierName: string) => {
         const ids = [...multiSelect.selectedIds];

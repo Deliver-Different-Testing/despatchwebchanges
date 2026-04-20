@@ -137,8 +137,26 @@ export interface SendToPartnerResponse {
     message: string;
 }
 
-export async function sendToPartner(jobId: number, partnerId: number): Promise<SendToPartnerResponse> {
-    return apiClient.post<SendToPartnerResponse>('job/SendToPartner', {jobId, partnerId});
+export async function sendToPartner(jobId: number, partnerId: number, agreedRate: number): Promise<SendToPartnerResponse> {
+    return apiClient.post<SendToPartnerResponse>('job/SendToPartner', {jobId, partnerId, agreedRate});
+}
+
+export interface PartnerRateQuote {
+    serviceCode: string;
+    serviceName: string;
+    totalCharge: number;
+    currency: string;
+    transitDays: number | null;
+}
+
+export interface PartnerRateForJobResponse {
+    rateCardRate: number | null;
+    liveQuotes: PartnerRateQuote[];
+    source: 'rate_card' | 'live_quote' | 'none';
+}
+
+export async function getPartnerRateForJob(pairingId: number, jobId: number): Promise<PartnerRateForJobResponse> {
+    return apiClient.post<PartnerRateForJobResponse>('job/GetPartnerRateForJob', {pairingId, jobId});
 }
 
 // ── Aggregate Export ─────────────────────────────────────────────────
@@ -161,6 +179,7 @@ export const jobListApi = {
     moveJobToReprice,
     getActivePartnerOptions,
     sendToPartner,
+    getPartnerRateForJob,
 };
 
 export default jobListApi;

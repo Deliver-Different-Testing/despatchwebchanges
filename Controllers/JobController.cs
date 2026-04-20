@@ -2269,6 +2269,22 @@ public class JobController(
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> GetPartnerRateForJob([FromBody] PartnerRateForJobRequest request)
+    {
+        try
+        {
+            var result = await sendToPartnerService.GetRateForJobAsync(request.PairingId, request.JobId);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error getting partner rate for pairing {PairingId}, job {JobId}",
+                request.PairingId, request.JobId);
+            return Json(new PartnerRateForJobResponse { Source = "none" });
+        }
+    }
+
     private async Task<IActionResult> RejectIfPartnerJobAsync(int jobId)
     {
         if (await jobQueryRepository.IsPartnerJobAsync(jobId))
