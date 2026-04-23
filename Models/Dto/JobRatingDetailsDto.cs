@@ -69,6 +69,14 @@ public record JobRatingDetailsDto
     /// When set, bypasses the DoesAddressMatchAirportAsync DB query for the delivery address.
     /// </summary>
     public bool? PrecomputedIsToAddressAirport { get; init; }
+
+    /// <summary>
+    /// Bulk run schedule ID — only set for Bulk Schedule jobs where the ID is directly available.
+    /// TucJobBooking and TblBulkJob have ScheduleId; live TucJob only has ScheduleName (requires lookup).
+    /// </summary>
+    public int? BulkScheduleId { get; init; }
+
+    public DateTime? CreatedTime { get; init; }
 }
 
 

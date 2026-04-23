@@ -107,6 +107,8 @@ public static partial class JobMappings
             Cubic = job.TucJobItemJobs.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
             IsPrebook = job.IsRecurringJob,
+            BulkScheduleId = job.ScheduleId,
+            CreatedTime = job.CreatedTime,
 
             FromCompanyName = job.PickupAddressLine1,
             FromBuildingName = job.PickupAddressLine2,
@@ -202,6 +204,8 @@ public static partial class JobMappings
             Cubic = job.TucJobItemsArchives.Sum(i => i.Cubic),
             IsManuallyRated = job.RatedManually,
             IsPrebook = job.IsRecurringJob,
+            BulkScheduleId = job.ScheduleId,
+            CreatedTime = job.CreatedTime,
 
             FromCompanyName = job.PickupAddressLine1,
             FromBuildingName = job.PickupAddressLine2,
@@ -392,6 +396,7 @@ public static partial class JobMappings
             TruckStartTime = job.TruckStartTime != null ? job.TruckStartTime.ToString() : null,
             TruckHours = job.TruckHours != null ? (int)job.TruckHours : null,
             JobType = JobType.Recurring,
-            IsTruck = job.Truck ?? false
+            IsTruck = job.Truck ?? false,
+            BulkScheduleId = job.ScheduleId
         };
 }
