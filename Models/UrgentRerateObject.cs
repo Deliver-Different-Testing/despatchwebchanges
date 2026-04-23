@@ -18,6 +18,7 @@ public sealed class UrgentRerateObject
     public string OurReference { get; init; }
     public string ClientReferenceA { get; init; }
     public string ClientReferenceB { get; init; }
+    public int? BulkScheduleId { get; init; }
 }
 
 public sealed class UrgentRerateAddressObject

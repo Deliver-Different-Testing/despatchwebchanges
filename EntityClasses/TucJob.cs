@@ -367,6 +367,8 @@ public partial class TucJob
 
     public string ScheduleName { get; set; }
 
+    public int? ScheduleId { get; set; }
+
     public int? LoggedInContactId { get; set; }
 
     public decimal? CourierFuel { get; set; }

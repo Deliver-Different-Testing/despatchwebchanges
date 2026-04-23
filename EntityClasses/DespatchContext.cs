@@ -5670,6 +5670,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
             entity.Property(e => e.ScheduleName).HasMaxLength(200);
+            entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
             entity.Property(e => e.ShopRef2).HasMaxLength(50);
             entity.Property(e => e.ShopRef3).HasMaxLength(50);
@@ -6197,6 +6198,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
             entity.Property(e => e.ScheduleName).HasMaxLength(200);
+            entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
             entity.Property(e => e.ShopRef2).HasMaxLength(50);
             entity.Property(e => e.ShopRef3).HasMaxLength(50);

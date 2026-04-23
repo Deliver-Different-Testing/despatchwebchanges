@@ -1819,6 +1819,7 @@ public class JobController(
         try
         {
             await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
+            await RecalculateJobRateAsync(request.JobId, isBooking: false);
             return Ok();
         }
         catch (Exception ex)

@@ -657,14 +657,14 @@ public sealed class RateJobService(
 
             var response = await httpClient.SendAsync(request);
             var rawContent = await response.Content.ReadAsStringAsync();
-            Log.Debug("Raw response: {RawContent}", rawContent);
 
             if (!response.IsSuccessStatusCode)
             {
-                Log.Error("Request failed with status code {ResponseStatusCode}", response.StatusCode);
-                Log.Error("Response content: {ReadAsStringAsync}", rawContent);
+                Log.Error("DFRNT API returned {StatusCode}: {RawContent}", response.StatusCode, rawContent);
+                throw new ApplicationException($"DFRNT API returned {(int)response.StatusCode} {response.StatusCode}: {rawContent}");
             }
 
+            Log.Debug("Raw response: {RawContent}", rawContent);
             var rerateResponse = await response.Content.ReadFromJsonAsync<RerateApiResponse>();
             return rerateResponse.Rerate ?? throw new ApplicationException("Failed to get rate from DFRNT API");
         }
@@ -724,13 +724,14 @@ public sealed class RateJobService(
             Quantity = dto.Quantity,
             IsDangerousGoods = dto.DangerousGoods,
             IsPrebook = dto.IsPrebook,
-            DateTime = dto.BookedDate,
+            DateTime = dto.BulkScheduleId.HasValue && dto.CreatedTime.HasValue ? dto.CreatedTime : dto.BookedDate,
             Van = dto.IsVan,
             Bike = dto.IsPedal,
             Truck = dto.IsTruck ? CreateTruckObject(dto) : null,
             OurReference = dto.OurRef,
             ClientReferenceA = dto.RefA,
-            ClientReferenceB = dto.RefB
+            ClientReferenceB = dto.RefB,
+            BulkScheduleId = dto.BulkScheduleId
         };
     }
 
