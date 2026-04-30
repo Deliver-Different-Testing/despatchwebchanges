@@ -90,6 +90,41 @@ public class SendToPartnerServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task SendAsync_OutgoingRequest_IncludesAuthorizationAndXRequestedWithHeaders()
+    {
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent(new { success = true, trackingNumber = "TRK-1" })
+        });
+
+        await CreateService().SendAsync(SampleRequest());
+
+        var sent = Assert.Single(_httpHandler.Requests);
+        Assert.True(sent.Headers.Contains("Authorization"),
+            "Authorization header must be sent so JWT auth can run on the receiver.");
+        Assert.StartsWith("Bearer ", sent.Headers.GetValues("Authorization").First());
+        Assert.True(sent.Headers.Contains("X-Requested-With"),
+            "X-Requested-With must be sent so the CSRF middleware accepts the request even " +
+            "if an upstream proxy strips Authorization.");
+        Assert.Equal("XMLHttpRequest", sent.Headers.GetValues("X-Requested-With").First());
+    }
+
+    [Fact]
+    public async Task GetRateForJobAsync_OutgoingRequest_IncludesAuthorizationAndXRequestedWithHeaders()
+    {
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = JsonContent(new { source = "none", liveQuotes = Array.Empty<object>() })
+        });
+
+        await CreateService().GetRateForJobAsync(7, 42);
+
+        var sent = Assert.Single(_httpHandler.Requests);
+        Assert.StartsWith("Bearer ", sent.Headers.GetValues("Authorization").First());
+        Assert.Equal("XMLHttpRequest", sent.Headers.GetValues("X-Requested-With").First());
+    }
+
+    [Fact]
     public async Task SendAsync_OkWithSuccessFalse_PropagatesPartnerMessage()
     {
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
@@ -129,6 +164,39 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.False(result.Success);
         Assert.Contains("502", result.Message);
+    }
+
+    [Fact]
+    public async Task SendAsync_ErrorStatusWithPlainTextBody_IncludesBodySnippetInMessage()
+    {
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.BadRequest)
+        {
+            Content = new StringContent("Invalid request - missing required header",
+                Encoding.UTF8, "text/plain")
+        });
+
+        var result = await CreateService().SendAsync(SampleRequest());
+
+        Assert.False(result.Success);
+        Assert.Contains("400", result.Message);
+        Assert.Contains("Invalid request - missing required header", result.Message);
+    }
+
+    [Fact]
+    public async Task SendAsync_ErrorStatusWithLongBody_TruncatesSnippet()
+    {
+        var longBody = new string('x', 500);
+        _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.InternalServerError)
+        {
+            Content = new StringContent(longBody, Encoding.UTF8, "text/plain")
+        });
+
+        var result = await CreateService().SendAsync(SampleRequest());
+
+        Assert.False(result.Success);
+        Assert.Contains("…", result.Message);
+        Assert.True(result.Message.Length < longBody.Length,
+            "Long bodies should be truncated to keep the error message readable.");
     }
 
     [Fact]

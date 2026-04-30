@@ -39,6 +39,10 @@ public sealed class SendToPartnerService(
             })
         };
         httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
+        // Sent in addition to Authorization so that an upstream proxy stripping the Bearer token
+        // doesn't trip Integration Manager's CSRF middleware — without this the rejection looks
+        // like a missing-header bug rather than the auth failure it actually is.
+        httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
         try
         {
@@ -54,7 +58,7 @@ public sealed class SendToPartnerService(
                 return result ?? new SendToPartnerResponse
                 {
                     Success = false,
-                    Message = $"Integration Manager returned {(int)response.StatusCode} {response.StatusCode}"
+                    Message = BuildFallbackErrorMessage(response.StatusCode, body)
                 };
             }
 
@@ -118,6 +122,19 @@ public sealed class SendToPartnerService(
         }
     }
 
+    // Includes a snippet of the raw response body so the actual cause (e.g. "Invalid request -
+    // missing required header" from a CSRF middleware, or an HTML error page from a proxy)
+    // surfaces in the UI instead of being hidden behind a generic "400 BadRequest".
+    private static string BuildFallbackErrorMessage(System.Net.HttpStatusCode statusCode, string body)
+    {
+        var prefix = $"Integration Manager returned {(int)statusCode} {statusCode}";
+        if (string.IsNullOrWhiteSpace(body))
+            return prefix;
+
+        var snippet = body.Length > 200 ? body[..200] + "…" : body;
+        return $"{prefix}: {snippet.Trim()}";
+    }
+
     public async Task<PartnerRateForJobResponse> GetRateForJobAsync(int pairingId, int jobId)
     {
         var (baseUrl, bearerToken) = ResolveUrlAndToken();
@@ -133,6 +150,7 @@ public sealed class SendToPartnerService(
             Content = JsonContent.Create(new { jobId })
         };
         httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
+        httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
 
         try
         {
