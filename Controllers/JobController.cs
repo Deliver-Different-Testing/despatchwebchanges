@@ -2265,7 +2265,7 @@ public class JobController(
             return Json(new SendToPartnerResponse
             {
                 Success = false,
-                Message = "An error occurred while sending job to partner"
+                Message = $"An error occurred while sending job to partner: {ErrorMessageStringFormatter.Format(ex)}"
             });
         }
     }

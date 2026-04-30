@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
@@ -39,25 +40,82 @@ public sealed class SendToPartnerService(
         };
         httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
 
-        var response = await httpClient.SendAsync(httpRequest);
-        var result = await response.Content.ReadFromJsonAsync<SendToPartnerResponse>();
+        try
+        {
+            var response = await httpClient.SendAsync(httpRequest);
+            var body = await response.Content.ReadAsStringAsync();
 
-        if (result is { Success: true })
-        {
-            Log.Information("Job {JobId} sent to partner, tracking: {TrackingNumber}",
-                request.JobId, result.TrackingNumber);
-        }
-        else
-        {
-            Log.Warning("Failed to send job {JobId} to partner: {Message}",
-                request.JobId, result?.Message);
-        }
+            var result = TryDeserialize(body);
 
-        return result ?? new SendToPartnerResponse
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.Warning("Failed to send job {JobId} to partner: {StatusCode} {Body}",
+                    request.JobId, response.StatusCode, body);
+                return result ?? new SendToPartnerResponse
+                {
+                    Success = false,
+                    Message = $"Integration Manager returned {(int)response.StatusCode} {response.StatusCode}"
+                };
+            }
+
+            if (result is null)
+            {
+                Log.Error("Invalid response body from Integration Manager for job {JobId}: {Body}",
+                    request.JobId, body);
+                return new SendToPartnerResponse
+                {
+                    Success = false,
+                    Message = "Invalid response from Integration Manager"
+                };
+            }
+
+            if (result.Success)
+            {
+                Log.Information("Job {JobId} sent to partner, tracking: {TrackingNumber}",
+                    request.JobId, result.TrackingNumber);
+            }
+            else
+            {
+                Log.Warning("Failed to send job {JobId} to partner: {Message}",
+                    request.JobId, result.Message);
+            }
+
+            return result;
+        }
+        catch (HttpRequestException ex)
         {
-            Success = false,
-            Message = "No response from Integration Manager"
-        };
+            Log.Error(ex, "Could not reach Integration Manager when sending job {JobId} to partner", request.JobId);
+            return new SendToPartnerResponse
+            {
+                Success = false,
+                Message = "Could not reach Integration Manager"
+            };
+        }
+        catch (TaskCanceledException ex)
+        {
+            Log.Error(ex, "Integration Manager request timed out when sending job {JobId} to partner", request.JobId);
+            return new SendToPartnerResponse
+            {
+                Success = false,
+                Message = "Integration Manager request timed out"
+            };
+        }
+    }
+
+    private static SendToPartnerResponse TryDeserialize(string body)
+    {
+        if (string.IsNullOrWhiteSpace(body))
+            return null;
+
+        try
+        {
+            return JsonSerializer.Deserialize<SendToPartnerResponse>(body,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 
     public async Task<PartnerRateForJobResponse> GetRateForJobAsync(int pairingId, int jobId)
@@ -79,15 +137,14 @@ public sealed class SendToPartnerService(
         try
         {
             var response = await httpClient.SendAsync(httpRequest);
-            if (!response.IsSuccessStatusCode)
-            {
-                Log.Warning("Rate lookup failed for pairing {PairingId}, job {JobId}: {StatusCode}",
-                    pairingId, jobId, response.StatusCode);
-                return new PartnerRateForJobResponse { Source = "none" };
-            }
+            if (response.IsSuccessStatusCode)
+                return await response.Content.ReadFromJsonAsync<PartnerRateForJobResponse>()
+                       ?? new PartnerRateForJobResponse { Source = "none" };
+           
+            Log.Warning("Rate lookup failed for pairing {PairingId}, job {JobId}: {StatusCode}",
+                pairingId, jobId, response.StatusCode);
+            return new PartnerRateForJobResponse { Source = "none" };
 
-            return await response.Content.ReadFromJsonAsync<PartnerRateForJobResponse>()
-                   ?? new PartnerRateForJobResponse { Source = "none" };
         }
         catch (Exception ex)
         {
@@ -96,7 +153,7 @@ public sealed class SendToPartnerService(
         }
     }
 
-    private (string? BaseUrl, string? BearerToken) ResolveUrlAndToken()
+    private (string BaseUrl, string BearerToken) ResolveUrlAndToken()
     {
         var baseUrl = ResolveBaseUrl();
         if (string.IsNullOrEmpty(baseUrl))
@@ -129,7 +186,7 @@ public sealed class SendToPartnerService(
         return (baseUrl.TrimEnd('/'), bearerToken);
     }
 
-    private string? ResolveBaseUrl()
+    private string ResolveBaseUrl()
     {
         if (environment.IsDevelopment())
             return Environment.GetEnvironmentVariable("IntegrationManagerUrl");
