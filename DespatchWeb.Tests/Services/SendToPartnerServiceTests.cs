@@ -90,7 +90,7 @@ public class SendToPartnerServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SendAsync_OutgoingRequest_IncludesAuthorizationAndXRequestedWithHeaders()
+    public async Task SendAsync_OutgoingRequest_IncludesAllAuthHeaders()
     {
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -100,17 +100,18 @@ public class SendToPartnerServiceTests : IDisposable
         await CreateService().SendAsync(SampleRequest());
 
         var sent = Assert.Single(_httpHandler.Requests);
-        Assert.True(sent.Headers.Contains("Authorization"),
-            "Authorization header must be sent so JWT auth can run on the receiver.");
         Assert.StartsWith("Bearer ", sent.Headers.GetValues("Authorization").First());
-        Assert.True(sent.Headers.Contains("X-Requested-With"),
-            "X-Requested-With must be sent so the CSRF middleware accepts the request even " +
-            "if an upstream proxy strips Authorization.");
         Assert.Equal("XMLHttpRequest", sent.Headers.GetValues("X-Requested-With").First());
+        // Fallback bearer header — proven necessary by AWS staging logs showing the
+        // ingress strips the standard Authorization header before it reaches IM.
+        Assert.StartsWith("Bearer ", sent.Headers.GetValues("X-IM-Authorization").First());
+        Assert.Equal(
+            sent.Headers.GetValues("Authorization").First(),
+            sent.Headers.GetValues("X-IM-Authorization").First());
     }
 
     [Fact]
-    public async Task GetRateForJobAsync_OutgoingRequest_IncludesAuthorizationAndXRequestedWithHeaders()
+    public async Task GetRateForJobAsync_OutgoingRequest_IncludesAllAuthHeaders()
     {
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -122,6 +123,7 @@ public class SendToPartnerServiceTests : IDisposable
         var sent = Assert.Single(_httpHandler.Requests);
         Assert.StartsWith("Bearer ", sent.Headers.GetValues("Authorization").First());
         Assert.Equal("XMLHttpRequest", sent.Headers.GetValues("X-Requested-With").First());
+        Assert.StartsWith("Bearer ", sent.Headers.GetValues("X-IM-Authorization").First());
     }
 
     [Fact]
