@@ -43,6 +43,12 @@ public sealed class SendToPartnerService(
         // doesn't trip Integration Manager's CSRF middleware — without this the rejection looks
         // like a missing-header bug rather than the auth failure it actually is.
         httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
+        // Fallback transport for the JWT. The IM staging ingress strips the standard
+        // Authorization header before it reaches the upstream pod (proven via diagnostic
+        // logging — AuthorizationHeader=absent on every despatchweb→IM call). Until the
+        // ingress is fixed to forward Authorization, IM's JWT bearer auth also accepts the
+        // token from this header. Same JWT, same validation; only the transport differs.
+        httpRequest.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");
 
         try
         {
@@ -151,6 +157,7 @@ public sealed class SendToPartnerService(
         };
         httpRequest.Headers.Add("Authorization", $"Bearer {bearerToken}");
         httpRequest.Headers.Add("X-Requested-With", "XMLHttpRequest");
+        httpRequest.Headers.Add("X-IM-Authorization", $"Bearer {bearerToken}");
 
         try
         {
