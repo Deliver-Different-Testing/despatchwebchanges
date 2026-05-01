@@ -367,8 +367,6 @@ public partial class TucJob
 
     public string ScheduleName { get; set; }
 
-    public int? ScheduleId { get; set; }
-
     public int? LoggedInContactId { get; set; }
 
     public decimal? CourierFuel { get; set; }
@@ -429,13 +427,15 @@ public partial class TucJob
 
     public string Connote { get; set; }
 
-    public int? PickUpWindowMins { get; set; }
-
-    public int? DeliverByWindowMins { get; set; }
-
     public int? PickupTimeZoneId { get; set; }
 
     public decimal? TotalDistance { get; set; }
+
+    public int? DeliverByTimeZoneId { get; set; }
+
+    public int? PickUpWindowMins { get; set; }
+
+    public int? DeliverByWindowMins { get; set; }
 
     public int? MasterCourierId { get; set; }
 
@@ -445,17 +445,15 @@ public partial class TucJob
 
     public decimal? SubContractorPercentage { get; set; }
 
-    public int? DeliverByTimeZoneId { get; set; }
-
     public bool? IsRecurringJob { get; set; }
 
     public int? BookingParentId { get; set; }
 
-    public int? DimensionsType { get; set; }
-
     public string PickupGps { get; set; }
 
     public string PickupCondition { get; set; }
+
+    public int? DimensionsType { get; set; }
 
     public string CustomJobName { get; set; }
 
@@ -469,9 +467,19 @@ public partial class TucJob
 
     public DateTime? DeliveryArrivalTime { get; set; }
 
+    public bool? CourierPaymentManualOverride { get; set; }
+
     public DateTime? CreatedTimeUtc { get; set; }
 
-    public int? PartnerPairingId { get; set; }
+    public decimal? ClosestCourierConfidence { get; set; }
+
+    public DateTime? ClosestCourierScoredAt { get; set; }
+
+    public decimal? PartnerAgreedRate { get; set; }
+
+    public int? ScheduleId { get; set; }
+
+    public Guid? PartnerJobGuid { get; set; }
 
     public virtual TucJobType AcceptedJobType { get; set; }
 

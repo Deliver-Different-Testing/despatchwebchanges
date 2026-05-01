@@ -277,7 +277,7 @@ public static partial class JobMappings
             : null,
 
         Locked = j.UcjbLocked ?? false,
-        IsPartnerJob = j.PartnerPairingId.HasValue,
+        IsPartnerJob = j.PartnerJobGuid.HasValue,
 
         // Job item flags - loaded inline from navigation property (3-tier: stop child → own → parent)
         TailLiftPu = j.TucJobItemChildJobs.Any(i => i.Pu == true)

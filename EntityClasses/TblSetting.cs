@@ -329,5 +329,13 @@ public partial class TblSetting
 
     public DateTime? ClientServiceProcessed { get; set; }
 
+    public string TrackingUrl { get; set; }
+
+    public int? OpenforceCommissionTypeId { get; set; }
+
+    public int? OpenforceDeductionTypeId { get; set; }
+
+    public bool OpenforceIsUat { get; set; }
+
     public virtual TucStaff InternetJobStaff { get; set; }
 }

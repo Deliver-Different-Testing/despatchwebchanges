@@ -125,6 +125,8 @@ public partial class TblJob
 
     public int? InvoiceNo { get; set; }
 
+    public int? OriginalInvoiceId { get; set; }
+
     public int? ContactId { get; set; }
 
     public bool LatePickupNotificationHasBeenSent { get; set; }
@@ -273,7 +275,13 @@ public partial class TblJob
 
     public decimal? CourierBonus { get; set; }
 
+    public DateTime? CourierBonusCancelled { get; set; }
+
     public decimal? CourierPercentageOverride { get; set; }
+
+    public bool CourierPaymentManualOverride { get; set; }
+
+    public int? CourierSettlementBatchId { get; set; }
 
     public int? Duration { get; set; }
 

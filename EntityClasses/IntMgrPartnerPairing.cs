@@ -9,19 +9,31 @@ public partial class IntMgrPartnerPairing
 {
     public int Id { get; set; }
 
-    public int CarrierIntegrationId { get; set; }
-
     public string PartnerTenantId { get; set; }
 
     public string PartnerTenantName { get; set; }
 
     public string PartnerBaseUrl { get; set; }
 
-    public string InvitationToken { get; set; }
-
     public string Status { get; set; }
 
     public DateTime CreatedAtUtc { get; set; }
 
     public DateTime UpdatedAtUtc { get; set; }
+
+    public string SecretKeyRef { get; set; }
+
+    public string KeyId { get; set; }
+
+    public string OwnerTenantId { get; set; }
+
+    public int? ClientId { get; set; }
+
+    public string RevokedBy { get; set; }
+
+    public DateTime? RevokedAcknowledgedAtUtc { get; set; }
+
+    public int? HubLinkRequestId { get; set; }
+
+    public virtual TucClient Client { get; set; }
 }

@@ -47,6 +47,10 @@ public partial class TucInvoiceNo
 
     public int? InvoiceTemplateId { get; set; }
 
+    public DateTime? Printed { get; set; }
+
+    public int ReportId { get; set; }
+
     public DateTime? Sent { get; set; }
 
     public DateTime? DueDate { get; set; }
@@ -63,7 +67,17 @@ public partial class TucInvoiceNo
 
     public decimal? CourierFuel { get; set; }
 
-    public int ReportId { get; set; }
+    public bool Void { get; set; }
+
+    public DateTime? VoidedAt { get; set; }
+
+    public string VoidedBy { get; set; }
+
+    public string VoidReason { get; set; }
+
+    public string Number { get; set; }
+
+    public int? OriginalInvoiceId { get; set; }
 
     public virtual TucInvoiceProcess Process { get; set; }
 

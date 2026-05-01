@@ -11,8 +11,6 @@ public partial class AirFreightRate
 
     public string AirFreightRateName { get; set; }
 
-    public int? ClientId { get; set; }
-
     public int? SpeedId { get; set; }
 
     public int? VehicleSizeId { get; set; }
@@ -56,6 +54,8 @@ public partial class AirFreightRate
     public int? GroundDistanceRateId { get; set; }
 
     public int? AccessorialChargeGroupId { get; set; }
+
+    public bool IsDefault { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 

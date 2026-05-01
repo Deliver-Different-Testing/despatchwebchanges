@@ -581,6 +581,8 @@ public partial class TblClient
 
     public bool ShowNwagent { get; set; }
 
+    public string DefaultJobListFilter { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

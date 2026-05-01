@@ -136,7 +136,7 @@ public static partial class JobMappings
             IsAgentAssigned = j.Agent != null,
 
             Locked = j.UcjbLocked ?? false,
-            IsPartnerJob = j.PartnerPairingId.HasValue,
+            IsPartnerJob = j.PartnerJobGuid.HasValue,
 
             ConNote = j.Parent != null ? j.Parent.Connote : j.Connote,
             FollowupTime = j.FollowupTime,
@@ -253,7 +253,7 @@ public static partial class JobMappings
             Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
             IsArchived = false,
             Locked = j.UcjbLocked ?? false,
-            IsPartnerJob = j.PartnerPairingId.HasValue,
+            IsPartnerJob = j.PartnerJobGuid.HasValue,
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId

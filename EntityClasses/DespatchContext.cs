@@ -241,7 +241,7 @@ public partial class DespatchContext : DbContext
     {
         modelBuilder.Entity<AccessorialCharge>(entity =>
         {
-            entity.HasKey(e => e.AccessorialChargeId).HasName("PK__Accessor__E79CDDE0792BA7B0");
+            entity.HasKey(e => e.AccessorialChargeId).HasName("PK__Accessor__E79CDDE0D1A757E1");
 
             entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.AvailableAtBooking).HasDefaultValue(true);
@@ -283,7 +283,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<AccessorialChargeGroup>(entity =>
         {
-            entity.HasKey(e => e.AccessorialChargeGroupId).HasName("PK__Accessor__ED5DBCA7E573DFD9");
+            entity.HasKey(e => e.AccessorialChargeGroupId).HasName("PK__Accessor__ED5DBCA7E396F28A");
 
             entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.Created)
@@ -301,7 +301,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<AccessorialChargeGroupMember>(entity =>
         {
-            entity.HasKey(e => e.AccessorialChargeGroupMemberId).HasName("PK__Accessor__D4933A9F6DD51EE7");
+            entity.HasKey(e => e.AccessorialChargeGroupMemberId).HasName("PK__Accessor__D4933A9FDB1680FB");
 
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
@@ -311,12 +311,12 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.AccessorialChargeGroup).WithMany(p => p.AccessorialChargeGroupMembers)
                 .HasForeignKey(d => d.AccessorialChargeGroupId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Accessori__Acces__4EF456D6");
+                .HasConstraintName("FK__Accessori__Acces__4FC87F7E");
 
             entity.HasOne(d => d.AccessorialCharge).WithMany(p => p.AccessorialChargeGroupMembers)
                 .HasForeignKey(d => d.AccessorialChargeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Accessori__Acces__4FE87B0F");
+                .HasConstraintName("FK__Accessori__Acces__50BCA3B7");
         });
 
         modelBuilder.Entity<AgentVehicle>(entity =>
@@ -324,8 +324,6 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.AgentVehicleId).HasName("PK__AgentVeh__0908E0C4AED032D0");
 
             entity.HasIndex(e => e.AirportId, "IX_AgentVehicles_AirportID");
-
-            entity.HasIndex(e => new { e.AirportId, e.VehicleSizeId }, "IX_AgentVehicles_AirportVehicleSize").HasFillFactor(90);
 
             entity.Property(e => e.AgentVehicleId).HasColumnName("AgentVehicleID");
             entity.Property(e => e.AgentId).HasColumnName("AgentID");
@@ -368,7 +366,6 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CargoSurchargeAboveRate).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.CargoSurchargeBelowCharge).HasColumnType("decimal(18, 4)");
             entity.Property(e => e.CargoSurchargeWeightBreakpoint).HasColumnType("decimal(18, 4)");
-            entity.Property(e => e.ClientId).HasColumnName("ClientID");
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())", "DF__AirFreigh__Creat__650DB527")
                 .HasColumnType("datetime");
@@ -387,7 +384,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.AccessorialChargeGroup).WithMany(p => p.AirFreightRates)
                 .HasForeignKey(d => d.AccessorialChargeGroupId)
-                .HasConstraintName("FK__AirFreigh__Acces__54AD302C");
+                .HasConstraintName("FK__AirFreigh__Acces__558158D4");
 
             entity.HasOne(d => d.ExtraCharge).WithMany(p => p.AirFreightRates)
                 .HasForeignKey(d => d.ExtraChargeId)
@@ -404,7 +401,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<CargoFacility>(entity =>
         {
-            entity.HasKey(e => e.CargoFacilityId).HasName("PK__CargoFac__309D8350B0257389");
+            entity.HasKey(e => e.CargoFacilityId).HasName("PK__CargoFac__309D83507FB6C1E3");
 
             entity.Property(e => e.CargoFacilityId).HasColumnName("CargoFacilityID");
             entity.Property(e => e.AirportId).HasColumnName("AirportID");
@@ -423,12 +420,12 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Airport).WithMany(p => p.CargoFacilities)
                 .HasForeignKey(d => d.AirportId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CargoFaci__Airpo__2E678BB3");
+                .HasConstraintName("FK__CargoFaci__Airpo__22A0D34C");
 
             entity.HasOne(d => d.Carrier).WithMany(p => p.CargoFacilities)
                 .HasForeignKey(d => d.CarrierId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__CargoFaci__Carri__2F5BAFEC");
+                .HasConstraintName("FK__CargoFaci__Carri__2394F785");
         });
 
         modelBuilder.Entity<DesQryAllJobType>(entity =>
@@ -831,8 +828,6 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.IsActive, "IX_FlightCarriers_Active").HasFillFactor(90);
 
-            entity.HasIndex(e => e.CarrierCode, "IX_FlightCarriers_CarrierCode").HasFillFactor(90);
-
             entity.Property(e => e.FlightCarrierId).HasColumnName("FlightCarrierID");
             entity.Property(e => e.CarrierCode).HasMaxLength(5);
             entity.Property(e => e.Created)
@@ -858,8 +853,6 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.FlightZoneId).HasName("PK__FlightCa__1D741C65BBC17565");
 
             entity.HasIndex(e => e.CarrierId, "IX_FlightCarrierZones_CarrierID");
-
-            entity.HasIndex(e => new { e.CarrierId, e.StateName, e.CityName }, "IX_FlightCarrierZones_CarrierStateCity").HasFillFactor(90);
 
             entity.Property(e => e.FlightZoneId).HasColumnName("FlightZoneID");
             entity.Property(e => e.CarrierId).HasColumnName("CarrierID");
@@ -888,11 +881,11 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<FlightWebhookEventType>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__FlightWe__3214EC079BC35BAC");
+            entity.HasKey(e => e.Id).HasName("PK__FlightWe__3214EC07C9B483C0");
 
             entity.HasIndex(e => new { e.IsActive, e.IsEnabled }, "IX_FlightWebhookEventTypes_ActiveEnabled").HasFillFactor(90);
 
-            entity.HasIndex(e => e.EventCode, "UQ__FlightWe__640F67164EC148F8").IsUnique();
+            entity.HasIndex(e => e.EventCode, "UQ__FlightWe__640F6716E813B3F1").IsUnique();
 
             entity.Property(e => e.Category)
                 .HasMaxLength(20)
@@ -936,8 +929,6 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.CarrierId, "IX_FlightZoneCombos_CarrierID");
 
-            entity.HasIndex(e => new { e.CarrierId, e.FromZoneName, e.ToZoneName }, "IX_FlightZoneCombos_CarrierZones").HasFillFactor(90);
-
             entity.Property(e => e.FlightZoneComboId).HasColumnName("FlightZoneComboID");
             entity.Property(e => e.AirFreightRateId).HasColumnName("AirFreightRateID");
             entity.Property(e => e.CarrierId).HasColumnName("CarrierID");
@@ -974,18 +965,17 @@ public partial class DespatchContext : DbContext
         {
             entity.ToTable("IntMgrPartnerPairing");
 
-            entity.HasIndex(e => e.CarrierIntegrationId, "IX_IntMgrPartnerPairing_CarrierIntegrationId");
+            entity.HasIndex(e => e.ClientId, "IX_IntMgrPartnerPairing_ClientId");
 
-            entity.HasIndex(e => e.InvitationToken, "IX_IntMgrPartnerPairing_InvitationToken")
-                .IsUnique()
-                .HasFilter("([InvitationToken] IS NOT NULL)");
+            entity.HasIndex(e => e.KeyId, "IX_IntMgrPartnerPairing_KeyId");
 
             entity.HasIndex(e => e.PartnerTenantId, "IX_IntMgrPartnerPairing_PartnerTenantId");
 
             entity.Property(e => e.CreatedAtUtc)
                 .HasDefaultValueSql("(getutcdate())", "DF_IntMgrPartnerPairing_CreatedAtUtc")
                 .HasColumnType("datetime");
-            entity.Property(e => e.InvitationToken).HasMaxLength(128);
+            entity.Property(e => e.KeyId).HasMaxLength(64);
+            entity.Property(e => e.OwnerTenantId).HasMaxLength(50);
             entity.Property(e => e.PartnerBaseUrl)
                 .IsRequired()
                 .HasMaxLength(500);
@@ -995,17 +985,24 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PartnerTenantName)
                 .IsRequired()
                 .HasMaxLength(200);
+            entity.Property(e => e.RevokedAcknowledgedAtUtc).HasColumnType("datetime");
+            entity.Property(e => e.RevokedBy).HasMaxLength(16);
+            entity.Property(e => e.SecretKeyRef).HasMaxLength(500);
             entity.Property(e => e.Status)
                 .IsRequired()
                 .HasMaxLength(20);
             entity.Property(e => e.UpdatedAtUtc)
                 .HasDefaultValueSql("(getutcdate())", "DF_IntMgrPartnerPairing_UpdatedAtUtc")
                 .HasColumnType("datetime");
+
+            entity.HasOne(d => d.Client).WithMany(p => p.IntMgrPartnerPairings)
+                .HasForeignKey(d => d.ClientId)
+                .HasConstraintName("FK_IntMgrPartnerPairing_tucClient");
         });
 
         modelBuilder.Entity<JobAccessorialCharge>(entity =>
         {
-            entity.HasKey(e => e.JobAccessorialChargeId).HasName("PK__JobAcces__2B866176711D73AA");
+            entity.HasKey(e => e.JobAccessorialChargeId).HasName("PK__JobAcces__2B8661762BB48759");
 
             entity.ToTable(tb =>
                 {
@@ -1033,17 +1030,17 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.AccessorialCharge).WithMany(p => p.JobAccessorialCharges)
                 .HasForeignKey(d => d.AccessorialChargeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__JobAccess__Acces__3FB21346");
+                .HasConstraintName("FK__JobAccess__Acces__40863BEE");
 
             entity.HasOne(d => d.Job).WithMany(p => p.JobAccessorialCharges)
                 .HasForeignKey(d => d.JobId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__JobAccess__JobId__3EBDEF0D");
+                .HasConstraintName("FK__JobAccess__JobId__3F9217B5");
         });
 
         modelBuilder.Entity<JobDeliveryJourney>(entity =>
         {
-            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CFA99F08CB");
+            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF7A520701");
 
             entity.ToTable("JobDeliveryJourney");
 
@@ -1052,8 +1049,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.CourierId, "IX_JobDeliveryJourney_CourierID");
 
             entity.HasIndex(e => new { e.CourierId, e.UpdatedAt }, "IX_JobDeliveryJourney_Courier_Date").HasFilter("([CourierID] IS NOT NULL)");
-
-            entity.HasIndex(e => e.JobId, "IX_JobDeliveryJourney_JobID");
 
             entity.HasIndex(e => new { e.JobId, e.ChangeType, e.UpdatedAt }, "IX_JobDeliveryJourney_Job_ChangeType_Date");
 
@@ -1140,15 +1135,13 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<JobDeliveryJourneyArchive>(entity =>
         {
-            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF15F138C3");
+            entity.HasKey(e => e.JourneyId).HasName("PK__JobDeliv__4159B9CF37BD79EC");
 
             entity.ToTable("JobDeliveryJourneyArchive");
 
             entity.HasIndex(e => e.ChangeType, "IX_JobDeliveryJourneyArchive_ChangeType");
 
             entity.HasIndex(e => e.CourierId, "IX_JobDeliveryJourneyArchive_CourierID");
-
-            entity.HasIndex(e => e.JobId, "IX_JobDeliveryJourneyArchive_JobID");
 
             entity.HasIndex(e => e.StaffId, "IX_JobDeliveryJourneyArchive_StaffID");
 
@@ -1182,11 +1175,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<JobRecoveryAgent>(entity =>
         {
-            entity.HasKey(e => e.RecoveryId).HasName("PK__JobRecov__EE4C84AC989929EC");
-
-            entity.HasIndex(e => new { e.JobId, e.IsPrimary }, "IX_JobRecoveryAgents_JobParentLookup").HasFillFactor(90);
-
-            entity.HasIndex(e => e.RecoveryId, "IX_JobRecoveryAgents_RecoveryId").HasFillFactor(90);
+            entity.HasKey(e => e.RecoveryId).HasName("PK__JobRecov__EE4C84ACAA36A485");
 
             entity.Property(e => e.CreatedOn)
                 .HasDefaultValueSql("(getdate())")
@@ -1236,6 +1225,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.ChildJobId, "IX_PricingBreakdown_ChildJobID").HasFilter("([ChildJobID] IS NOT NULL)");
 
+            entity.HasIndex(e => new { e.JobId, e.PrebookJobId }, "IX_PricingBreakdown_JobLookup").HasFillFactor(90);
+
             entity.Property(e => e.PricingBreakdownId).HasColumnName("PricingBreakdownID");
             entity.Property(e => e.ChargeAmount).HasColumnType("money");
             entity.Property(e => e.ChargeName)
@@ -1256,7 +1247,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.ChildPrebookJob).WithMany(p => p.PricingBreakdownChildPrebookJobs)
                 .HasForeignKey(d => d.ChildPrebookJobId)
-                .HasConstraintName("FK__PricingBr__Child__265C5597");
+                .HasConstraintName("FK__PricingBr__Child__1A959D30");
 
             entity.HasOne(d => d.Job).WithMany(p => p.PricingBreakdownJobs)
                 .HasForeignKey(d => d.JobId)
@@ -1352,8 +1343,6 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__tblAfter__3214EC27728AD932");
 
             entity.ToTable("tblAfterhoursCourier");
-
-            entity.HasIndex(e => new { e.CourierId, e.WeekDay, e.StartTime, e.EndTime }, "IX_TblAfterhoursCourier_Schedule").HasFillFactor(90);
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
@@ -1462,9 +1451,19 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
+            entity.HasIndex(e => new { e.BulkJobId, e.ParentId, e.BulkParentId }, "IX_TblBulkJobs_ParentChild").HasFillFactor(90);
+
+            entity.HasIndex(e => new { e.BulkJobId, e.Done }, "IX_TblBulkJobs_Release")
+                .HasFilter("([Done]=(0))")
+                .HasFillFactor(90);
+
             entity.HasIndex(e => new { e.BulkJobId, e.ParentId, e.MultiboxParentId, e.BulkParentId }, "IX_tblBulkJob_Composite");
 
             entity.HasIndex(e => e.JobId, "IX_tblBulkJob_JobID");
+
+            entity.HasIndex(e => new { e.JobNumber, e.ClientId }, "IX_tblBulkJob_JobNumber_ClientID").HasFilter("([JobNumber] IS NOT NULL)");
+
+            entity.HasIndex(e => new { e.ShopRef1, e.ShopRef2, e.ClientId }, "IX_tblBulkJob_ShopRef1_ShopRef2_ClientID").HasFilter("([ShopRef1] IS NOT NULL)");
 
             entity.HasIndex(e => e.JobId, "JobId-NonClusteredIndex-20190417-112100").IsDescending();
 
@@ -1568,7 +1567,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.AccessorialChargeGroup).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.AccessorialChargeGroupId)
-                .HasConstraintName("FK__tblBulkJo__Acces__7BC6FD4D");
+                .HasConstraintName("FK__tblBulkJo__Acces__080CD8A1");
 
             entity.HasOne(d => d.Client).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.ClientId)
@@ -1594,7 +1593,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TblBulkJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tblBulkJo__Picku__3652C63E");
+                .HasConstraintName("FK__tblBulkJo__Picku__4B82ED4E");
 
             entity.HasOne(d => d.Region).WithMany(p => p.TblBulkJobs)
                 .HasForeignKey(d => d.RegionId)
@@ -1616,8 +1615,6 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tblBulkJobItems", tb => tb.HasTrigger("trg_UpdateBulkJobTotals"));
 
-            entity.HasIndex(e => new { e.JobId, e.ChildJobId }, "IX_TblBulkJobItems_JobLookup").HasFillFactor(90);
-
             entity.HasIndex(e => e.JobId, "IX_tblBulkJobItems_JobID");
 
             entity.Property(e => e.JobId).HasColumnName("JobID");
@@ -1634,7 +1631,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.ChildJob).WithMany(p => p.TblBulkJobItemChildJobs)
                 .HasForeignKey(d => d.ChildJobId)
-                .HasConstraintName("FK__tblBulkJo__Child__1B1FAD15");
+                .HasConstraintName("FK_tblBulkJobItems_ChildJobID");
 
             entity.HasOne(d => d.Job).WithMany(p => p.TblBulkJobItemJobs)
                 .HasForeignKey(d => d.JobId)
@@ -1644,17 +1641,13 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TblBulkJobNote>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tblBulkJ__EACE357F685011A3");
+            entity.HasKey(e => e.NoteId).HasName("PK__tblBulkJ__EACE357F5EA02F53");
 
             entity.ToTable("tblBulkJobNotes");
 
-            entity.HasIndex(e => e.BulkJobId, "IX_TblBulkJobNotes_BulkJobId").HasFillFactor(90);
-
             entity.Property(e => e.NoteId).HasColumnName("NoteID");
             entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
-            entity.Property(e => e.CreatedDate)
-                .HasDefaultValueSql("(getdate())")
-                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedDate).HasColumnType("datetime");
             entity.Property(e => e.NoteText).IsRequired();
             entity.Property(e => e.NoteTypeId).HasColumnName("NoteTypeID");
             entity.Property(e => e.ProcessedNotificationDate).HasColumnType("datetime");
@@ -1663,20 +1656,20 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.BulkJob).WithMany(p => p.TblBulkJobNotes)
                 .HasForeignKey(d => d.BulkJobId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__tblBulkJo__BulkJ__5734971C");
+                .HasConstraintName("FK__tblBulkJo__BulkJ__7287ABD6");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TblBulkJobNoteCreatedByNavigations)
                 .HasForeignKey(d => d.CreatedBy)
-                .HasConstraintName("FK__tblBulkJo__Creat__5A1103C7");
+                .HasConstraintName("FK__tblBulkJo__Creat__75641881");
 
             entity.HasOne(d => d.NoteType).WithMany(p => p.TblBulkJobNotes)
                 .HasForeignKey(d => d.NoteTypeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__tblBulkJo__NoteT__564072E3");
+                .HasConstraintName("FK__tblBulkJo__NoteT__7193879D");
 
             entity.HasOne(d => d.UpdatedByNavigation).WithMany(p => p.TblBulkJobNoteUpdatedByNavigations)
                 .HasForeignKey(d => d.UpdatedBy)
-                .HasConstraintName("FK__tblBulkJo__Updat__5B052800");
+                .HasConstraintName("FK__tblBulkJo__Updat__76583CBA");
         });
 
         modelBuilder.Entity<TblBulkJobRun>(entity =>
@@ -1873,7 +1866,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.CourierId, "CourierID");
 
-            entity.HasIndex(e => e.CourierId, "IX_TblClearListAreaOrder_Courier").HasFillFactor(90);
+            entity.HasIndex(e => e.CourierId, "IX_ClearListAreaOrder_Courier").HasFillFactor(90);
 
             entity.HasIndex(e => e.CourierId, "UC_CourierID").IsUnique();
 
@@ -1913,10 +1906,6 @@ public partial class DespatchContext : DbContext
             entity.ToTable("tblClearListAreaPolygon");
 
             entity.HasIndex(e => e.ClearListAreaId, "ClearListAreaID");
-
-            entity.HasIndex(e => new { e.ClearListAreaId, e.PolygonId }, "IX_TblClearListAreaPolygon_Lookup").HasFillFactor(90);
-
-            entity.HasIndex(e => e.PolygonId, "IX_TblClearListAreaPolygon_Polygon").HasFillFactor(90);
 
             entity.HasIndex(e => e.PolygonId, "PolygonID");
 
@@ -2005,6 +1994,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.DangerousServiceRateCodeId).HasColumnName("DangerousServiceRateCodeID");
             entity.Property(e => e.DateJoined).HasColumnType("datetime");
+            entity.Property(e => e.DefaultJobListFilter).HasMaxLength(50);
             entity.Property(e => e.DgdryIce)
                 .HasColumnType("decimal(18, 2)")
                 .HasColumnName("DGDryIce");
@@ -2880,9 +2870,9 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.Created, "Created");
 
-            entity.HasIndex(e => new { e.Longitude, e.Latitude, e.PolygonId }, "IX_TblCourierGps_Location").HasFillFactor(90);
+            entity.HasIndex(e => new { e.Longitude, e.Latitude, e.PolygonId }, "IX_CourierGps_Location").HasFillFactor(90);
 
-            entity.HasIndex(e => e.ZipPolygonId, "IX_TblCourierGps_ZipPolygon").HasFillFactor(90);
+            entity.HasIndex(e => e.ZipPolygonId, "IX_CourierGps_ZipPolygon").HasFillFactor(90);
 
             entity.HasIndex(e => e.JobId, "JobID");
 
@@ -2923,7 +2913,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.Duration, "Duration");
 
-            entity.HasIndex(e => new { e.LogInTime, e.LogOutTime }, "IX_TblCourierLogInOut_Session").HasFillFactor(90);
+            entity.HasIndex(e => new { e.LogInTime, e.LogOutTime }, "IX_CourierLogInOut_Session").HasFillFactor(90);
 
             entity.HasIndex(e => e.LogInTime, "LogInTime");
 
@@ -2954,8 +2944,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.DespatchViewId, "IX_DfrntappViews_ViewId");
 
             entity.HasIndex(e => e.DespatchViewId, "IX_DfrntappViews_ViewId_Include_Name");
-
-            entity.HasIndex(e => new { e.DespatchViewId, e.ShowOnAssistDespatch }, "IX_TblDespatchView_ClearList").HasFillFactor(90);
 
             entity.HasIndex(e => e.Name, "IX_tblDespatchView_Name").IsUnique();
 
@@ -3013,8 +3001,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.CourierId, "CourierID");
 
             entity.HasIndex(e => e.Date, "Date");
-
-            entity.HasIndex(e => new { e.ClientId, e.Date, e.JobEntryType, e.CanBook }, "IX_TblHolidays_ClientDateLookup").HasFillFactor(90);
 
             entity.HasIndex(e => e.JobEntryType, "JobEntryType");
 
@@ -3112,6 +3098,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(15)
                 .IsUnicode(false);
             entity.Property(e => e.CourierBonus).HasColumnType("money");
+            entity.Property(e => e.CourierBonusCancelled).HasPrecision(3);
             entity.Property(e => e.CourierFuel).HasColumnType("money");
             entity.Property(e => e.CourierId).HasColumnName("CourierID");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
@@ -3474,8 +3461,6 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tblPolygonSuburb");
 
-            entity.HasIndex(e => new { e.SuburbId, e.PolygonId }, "IX_TblPolygonSuburb_Lookup").HasFillFactor(90);
-
             entity.HasIndex(e => e.PolygonId, "PolygonID");
 
             entity.HasIndex(e => e.SuburbId, "SuburbID");
@@ -3748,6 +3733,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.TrackAndTrackReplyFromEmail)
                 .IsRequired()
                 .HasMaxLength(100);
+            entity.Property(e => e.TrackingUrl).HasMaxLength(2048);
             entity.Property(e => e.UncheckDirectEmailMessage)
                 .IsRequired()
                 .HasColumnType("ntext");
@@ -4038,11 +4024,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TimeZone>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC072CB4AFDD");
+            entity.HasKey(e => e.Id).HasName("PK__TimeZone__3214EC07FB74C3A0");
 
             entity.ToTable("TimeZone");
-
-            entity.HasIndex(e => new { e.Name, e.Code }, "IX_TimeZones_NameCode").HasFillFactor(90);
 
             entity.Property(e => e.Code)
                 .IsRequired()
@@ -4231,6 +4215,7 @@ public partial class DespatchContext : DbContext
                 .IsRequired()
                 .HasMaxLength(50);
             entity.Property(e => e.DangerousServiceRateCodeId).HasColumnName("DangerousServiceRateCodeID");
+            entity.Property(e => e.DefaultJobListFilter).HasMaxLength(50);
             entity.Property(e => e.DeliverDifferent).HasDefaultValue(false, "DF__tucClient__Deliv__1AFEE62D");
             entity.Property(e => e.DgdryIce)
                 .HasColumnType("decimal(18, 2)")
@@ -4662,7 +4647,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.VehicleSize).WithMany(p => p.TucClientItems)
                 .HasForeignKey(d => d.VehicleSizeId)
-                .HasConstraintName("FK__tucClient__Vehic__2D3E5D50");
+                .HasConstraintName("FK__tucClient__Vehic__54382EE0");
         });
 
         modelBuilder.Entity<TucContact>(entity =>
@@ -4712,10 +4697,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
 
             entity.HasIndex(e => e.RegionId, "IX_RegionId");
-
-            entity.HasIndex(e => new { e.Active, e.CourierGpsid, e.CourierFleetId }, "IX_TucCourier_Active_LoggedIn").HasFillFactor(90);
-
-            entity.HasIndex(e => new { e.CourierFleetId, e.UccrDangerousGoods, e.DriversLicenseExpiry }, "IX_TucCourier_Compliance").HasFillFactor(90);
 
             entity.HasIndex(e => e.UccrEmail, "IX_TucCourier_Email").HasFillFactor(90);
 
@@ -5131,7 +5112,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventAudit>(entity =>
         {
-            entity.HasKey(e => e.UceaId).HasName("PK__tucEvent__F945B1EEE8B4C242");
+            entity.HasKey(e => e.UceaId).HasName("PK__tucEvent__F945B1EE72BFED7D");
 
             entity.ToTable("tucEventAudit");
 
@@ -5195,7 +5176,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventTypeEventTypeGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07566A90D1");
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC0771D171D9");
 
             entity.ToTable("TucEventType_EventTypeGroups");
 
@@ -5230,7 +5211,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucEventTypeGroup>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07D5CBF0B4");
+            entity.HasKey(e => e.Id).HasName("PK__TucEvent__3214EC07ADA95062");
 
             entity.Property(e => e.Created)
                 .HasDefaultValueSql("(getdate())")
@@ -5288,9 +5269,11 @@ public partial class DespatchContext : DbContext
                 .IsClustered(false)
                 .HasFillFactor(80);
 
-            entity.ToTable("tucInvoiceNo");
+            entity.ToTable("tucInvoiceNo", tb => tb.HasTrigger("TR_tucInvoiceNo_SetNumber"));
 
             entity.HasIndex(e => e.InvoiceTemplateId, "IX_InvoiceTemplateId");
+
+            entity.HasIndex(e => e.Number, "IX_Number").IsDescending();
 
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
@@ -5311,6 +5294,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ExternalJournalHeaderId).HasColumnName("ExternalJournalHeaderID");
             entity.Property(e => e.FuelSurcharge).HasColumnType("numeric(18, 2)");
             entity.Property(e => e.GrossProfit).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.Number).HasMaxLength(50);
             entity.Property(e => e.PostedOa)
                 .HasColumnType("datetime")
                 .HasColumnName("PostedOA");
@@ -5318,6 +5302,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PpdCode).HasMaxLength(50);
             entity.Property(e => e.PpdItemCode).HasMaxLength(50);
             entity.Property(e => e.PpdTax).HasColumnType("numeric(18, 2)");
+            entity.Property(e => e.Printed).HasColumnType("datetime");
             entity.Property(e => e.ProcessId).HasColumnName("ProcessID");
             entity.Property(e => e.ReportId).HasColumnName("ReportID");
             entity.Property(e => e.Sent).HasPrecision(3);
@@ -5334,6 +5319,8 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucinDateGenerated");
             entity.Property(e => e.UcinLocked).HasColumnName("ucinLocked");
+            entity.Property(e => e.VoidReason).HasMaxLength(1000);
+            entity.Property(e => e.VoidedBy).HasMaxLength(256);
             entity.Property(e => e.XeroId).HasMaxLength(50);
             entity.Property(e => e.XeroIdPpdCancellation).HasMaxLength(50);
 
@@ -5455,25 +5442,15 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.ContactId, "IX_TucJob_ContactID");
 
-            entity.HasIndex(e => new { e.UcjbCourierId, e.UcjbVoid, e.UcjbJobDone, e.UcjbDate }, "IX_TucJob_CourierStatus_Date").HasFillFactor(90);
-
             entity.HasIndex(e => e.UcjbSpeed, "IX_TucJob_Speed");
 
             entity.HasIndex(e => new { e.ParentId, e.UcjbCourierId }, "IX_TucJobs_ChildJobAssignment").HasFillFactor(90);
 
-            entity.HasIndex(e => e.UcjbCourierId, "IX_TucJobs_CourierId");
-
-            entity.HasIndex(e => new { e.UcjbDate, e.UcjbTime }, "IX_TucJobs_Date_Time");
-
             entity.HasIndex(e => e.UcjbId, "IX_TucJobs_DeliveryCoordinates").HasFillFactor(90);
-
-            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_Lookup");
-
-            entity.HasIndex(e => e.UcjbId, "IX_TucJobs_NationwideFlightQueries").HasFillFactor(90);
 
             entity.HasIndex(e => e.UcjbId, "IX_TucJobs_PickupCoordinates").HasFillFactor(90);
 
-            entity.HasIndex(e => new { e.UcjbStatus, e.UcjbDate }, "IX_TucJobs_Status_Date");
+            entity.HasIndex(e => new { e.UcjbDate, e.UcjbTime, e.UcjbId }, "IX_TucJobs_PodSearch").HasFillFactor(90);
 
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
@@ -5487,7 +5464,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
-            entity.HasIndex(e => e.PartnerPairingId, "IX_tucJob_PartnerPairingId").HasFilter("([PartnerPairingId] IS NOT NULL)");
+            entity.HasIndex(e => e.PartnerJobGuid, "IX_tucJob_PartnerJobGuid");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
 
@@ -5547,12 +5524,14 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(4000);
+            entity.Property(e => e.ClosestCourierConfidence).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.ClosestCourierId).HasColumnName("ClosestCourierID");
             entity.Property(e => e.Connote).IsUnicode(false);
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierBonus).HasColumnType("money");
             entity.Property(e => e.CourierFuel).HasColumnType("money");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
+            entity.Property(e => e.CourierPaymentManualOverride).HasDefaultValue(false);
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.CreatedTime)
@@ -5631,6 +5610,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("NWRawAmount");
             entity.Property(e => e.OutForDelivery).HasColumnType("datetime");
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
+            entity.Property(e => e.PartnerAgreedRate).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.PickUpLongitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.PickUpName).HasMaxLength(100);
@@ -5669,8 +5649,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
-            entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
+            entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
             entity.Property(e => e.ShopRef2).HasMaxLength(50);
             entity.Property(e => e.ShopRef3).HasMaxLength(50);
@@ -5831,7 +5811,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.AccessorialChargeGroup).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.AccessorialChargeGroupId)
-                .HasConstraintName("FK__tucJob__Accessor__760E23F7");
+                .HasConstraintName("FK__tucJob__Accessor__0253FF4B");
 
             entity.HasOne(d => d.Agent).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.AgentId)
@@ -5843,7 +5823,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.DeliverByTimeZone).WithMany(p => p.TucJobDeliverByTimeZones)
                 .HasForeignKey(d => d.DeliverByTimeZoneId)
-                .HasConstraintName("FK_tucJob_TimeZone");
+                .HasConstraintName("FK__tucJob__DeliverB__224BCD91");
 
             entity.HasOne(d => d.DeliverToLeave).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.DeliverToLeaveId)
@@ -5869,13 +5849,13 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobMasterCouriers)
                 .HasForeignKey(d => d.MasterCourierId)
-                .HasConstraintName("FK_tucJob_tucCourierMaster");
+                .HasConstraintName("FK__tucJob__MasterCo__69135035");
 
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJob__PickupTi__33765993");
+                .HasConstraintName("FK__tucJob__PickupTi__48A680A3");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.SourceId)
@@ -5989,7 +5969,11 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.MasterCourierId, "IX_MasterCourierId");
 
+            entity.HasIndex(e => e.OriginalInvoiceId, "IX_OriginalInvoiceId").IsDescending();
+
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+            entity.HasIndex(e => new { e.UcjbId, e.ParentId }, "IX_TucJobArchives_FamilyRoot_Lookup").HasFillFactor(90);
 
             entity.HasIndex(e => e.UcjbClientRefb, "IX_tucJobArchive");
 
@@ -6058,12 +6042,14 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.BulkParentId).HasColumnName("BulkParentID");
             entity.Property(e => e.ClientItemIds).HasMaxLength(100);
             entity.Property(e => e.ClientNotes).HasMaxLength(4000);
+            entity.Property(e => e.ClosestCourierConfidence).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.ClosestCourierId).HasColumnName("ClosestCourierID");
             entity.Property(e => e.ContactId).HasColumnName("ContactID");
             entity.Property(e => e.CourierBonus).HasColumnType("money");
             entity.Property(e => e.CourierBonusCancelled).HasPrecision(3);
             entity.Property(e => e.CourierFuel).HasColumnType("money");
             entity.Property(e => e.CourierPayment).HasColumnType("money");
+            entity.Property(e => e.CourierPaymentManualOverride).HasDefaultValue(false);
             entity.Property(e => e.CourierPercentage).HasColumnType("numeric(18, 4)");
             entity.Property(e => e.CourierPercentageOverride).HasColumnType("numeric(5, 4)");
             entity.Property(e => e.CreatedTime)
@@ -6153,6 +6139,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("NWRawAmount");
             entity.Property(e => e.OutForDelivery).HasColumnType("datetime");
             entity.Property(e => e.ParentId).HasColumnName("ParentID");
+            entity.Property(e => e.PartnerAgreedRate).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.PickUpFromContact).HasMaxLength(100);
             entity.Property(e => e.PickUpFromPhone).HasMaxLength(100);
             entity.Property(e => e.PickUpLatitude).HasColumnType("decimal(18, 9)");
@@ -6197,8 +6184,8 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
             entity.Property(e => e.RootParentId).HasColumnName("RootParentID");
             entity.Property(e => e.RunName).HasMaxLength(50);
-            entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
+            entity.Property(e => e.ScheduleName).HasMaxLength(200);
             entity.Property(e => e.ShopRef1).HasMaxLength(50);
             entity.Property(e => e.ShopRef2).HasMaxLength(50);
             entity.Property(e => e.ShopRef3).HasMaxLength(50);
@@ -6354,7 +6341,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.AccessorialChargeGroup).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.AccessorialChargeGroupId)
-                .HasConstraintName("FK__tucJobArc__Acces__79DEB4DB");
+                .HasConstraintName("FK__tucJobArc__Acces__0624902F");
 
             entity.HasOne(d => d.Agent).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.AgentId)
@@ -6370,11 +6357,11 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.MasterCourier).WithMany(p => p.TucJobArchives)
                 .HasForeignKey(d => d.MasterCourierId)
-                .HasConstraintName("FK_tucJobArchive_tucCourierMaster");
+                .HasConstraintName("FK__tucJobArc__Maste__6A07746E");
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobArchivePickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJobArc__Picku__346A7DCC");
+                .HasConstraintName("FK__tucJobArc__Picku__499AA4DC");
 
             entity.HasOne(d => d.ToAirport).WithMany(p => p.TucJobArchiveToAirports)
                 .HasForeignKey(d => d.ToAirportId)
@@ -6402,6 +6389,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.UcbkNextDue, "DespatchWebSearch2");
 
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
+
+            entity.HasIndex(e => new { e.UcbkId, e.ParentId }, "IX_TucJobBookings_Lookup").HasFillFactor(90);
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
 
@@ -6599,7 +6588,12 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkDateDone");
             entity.Property(e => e.UcbkDay).HasColumnName("ucbkDay");
-            entity.Property(e => e.UcbkDays).HasDefaultValueSql("((0))", "DF_tucJobBooking_UcbkDays");
+            entity.Property(e => e.UcbkDays)
+                .HasMaxLength(9)
+                .IsUnicode(false)
+                .IsFixedLength()
+                .HasDefaultValueSql("((0))", "DF_tucJobBooking_ucbkDays")
+                .HasColumnName("ucbkDays");
             entity.Property(e => e.UcbkDone)
                 .HasDefaultValue(false, "DF_tucJobBooking_ucbkDone")
                 .HasColumnName("ucbkDone");
@@ -6607,9 +6601,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnType("datetime")
                 .HasColumnName("ucbkFirstDue");
             entity.Property(e => e.UcbkFortnight).HasColumnName("ucbkFortnight");
-            entity.Property(e => e.UcbkFrequency)
-                .HasDefaultValue(0)
-                .HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
+            entity.Property(e => e.UcbkFrequency).HasComment("Frequency of job recurrence (Weekly=1, Fortnightly=2, FirstOfMonth=4, etc.)");
             entity.Property(e => e.UcbkFrom).HasColumnName("ucbkFrom");
             entity.Property(e => e.UcbkFromAddr)
                 .HasMaxLength(150)
@@ -6673,7 +6665,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.AccessorialChargeGroup).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.AccessorialChargeGroupId)
-                .HasConstraintName("FK__tucJobBoo__Acces__77F66C69");
+                .HasConstraintName("FK__tucJobBoo__Acces__043C47BD");
 
             entity.HasOne(d => d.BookingParent).WithMany(p => p.InverseBookingParent)
                 .HasForeignKey(d => d.BookingParentId)
@@ -6701,7 +6693,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobBookingPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)
-                .HasConstraintName("FK__tucJobBoo__Picku__355EA205");
+                .HasConstraintName("FK__tucJobBoo__Picku__4A8EC915");
 
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobBookings)
                 .HasForeignKey(d => d.SourceId)
@@ -6731,8 +6723,6 @@ public partial class DespatchContext : DbContext
             entity.HasKey(e => new { e.BookingId, e.ItemId }).HasName("PK_tucBookingItems");
 
             entity.ToTable("tucJobBookingItems", tb => tb.HasTrigger("trg_UpdateJobBookingTotals"));
-
-            entity.HasIndex(e => e.BookingId, "IX_TucJobBookingItems_BookingId").HasFillFactor(90);
 
             entity.Property(e => e.BookingId).HasColumnName("BookingID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
@@ -6782,7 +6772,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.JobId, "IX_TucJobItems_Job");
 
-            entity.HasIndex(e => new { e.JobId, e.ChildJobId }, "IX_TucJobItems_JobLookup").HasFillFactor(90);
+            entity.HasIndex(e => e.Barcode, "IX_tucJobItems_Barcode").HasFilter("([Barcode] IS NOT NULL)");
 
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.ItemId).HasColumnName("ItemID");
@@ -6826,7 +6816,7 @@ public partial class DespatchContext : DbContext
 
             entity.HasOne(d => d.ChildJob).WithMany(p => p.TucJobItemsArchives)
                 .HasForeignKey(d => d.ChildJobId)
-                .HasConstraintName("FK__tucJobIte__Child__1C13D14E");
+                .HasConstraintName("FK_tucJobItemsArchive_ChildJobID");
         });
 
         modelBuilder.Entity<TucJobNationwide>(entity =>
@@ -6836,10 +6826,6 @@ public partial class DespatchContext : DbContext
                 .HasFillFactor(80);
 
             entity.ToTable("tucJobNationwide");
-
-            entity.HasIndex(e => e.UcnwJobId, "IX_TucJobNationwide_JobLookup").HasFillFactor(90);
-
-            entity.HasIndex(e => e.UcnwJobId, "IX_TucJobNationwides_Job");
 
             entity.HasIndex(e => e.UcnwJobId, "IX_tucJobNationwide_ucnwJobID").HasFillFactor(80);
 
@@ -6933,7 +6919,7 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucJobReadTracker");
 
-            entity.HasIndex(e => new { e.JobId, e.HasBeenRead }, "IX_TucJobs_ReadTracker");
+            entity.HasIndex(e => e.JobId, "IX_TucJobReadTracker_JobId").HasFillFactor(90);
 
             entity.Property(e => e.JobId).ValueGeneratedNever();
             entity.Property(e => e.ReadTimestamp).HasColumnType("datetime");
@@ -7058,8 +7044,6 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucManualMessage", tb => tb.HasTrigger("tucManualMessage_Insert"));
 
-            entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read }, "IX_TucManualMessage_Unread").HasFillFactor(90);
-
             entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read, e.UcmmSendFromCourierId }, "IX_tucManualMessage_UnreadByCourier").HasFillFactor(90);
 
             entity.HasIndex(e => new { e.UcmmSendToStaffId, e.Read, e.UcmmSendFromStaffId }, "IX_tucManualMessage_UnreadByStaff").HasFillFactor(90);
@@ -7148,7 +7132,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNote>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FF13C671E");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNote__EACE357FAA284A1B");
 
             entity.ToTable("tucNote", tb => tb.HasTrigger("tucNote_Insert_SendToDevices"));
 
@@ -7159,8 +7143,6 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.JobId, "IX_Note_JobID").HasFilter("([JobID] IS NOT NULL)");
 
             entity.HasIndex(e => e.NoteTypeId, "IX_Note_NoteTypeID");
-
-            entity.HasIndex(e => new { e.JobId, e.JobBookingId }, "IX_TucNotes_JobLookup").HasFillFactor(90);
 
             entity.HasIndex(e => new { e.ProcessedNotificationDate, e.CreatedDate }, "IX_tucNote_ProcessedNotificationDate");
 
@@ -7201,11 +7183,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteArchive>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357F9C2F0B4B");
+            entity.HasKey(e => e.NoteId).HasName("PK__tucNoteA__EACE357FFEC2152E");
 
             entity.ToTable("tucNoteArchive");
-
-            entity.HasIndex(e => new { e.JobId, e.JobBookingId }, "IX_TucNoteArchive_JobLookup").HasFillFactor(90);
 
             entity.HasIndex(e => e.JobBookingId, "IX_tucNoteArchive_JobBookingId");
 
@@ -7226,7 +7206,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteHistory>(entity =>
         {
-            entity.HasKey(e => e.NoteHistoryId).HasName("PK__tucNoteH__F3CB5FBA468F64AA");
+            entity.HasKey(e => e.NoteHistoryId).HasName("PK__tucNoteH__F3CB5FBAD8FFA529");
 
             entity.ToTable("tucNoteHistory");
 
@@ -7271,7 +7251,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<TucNoteType>(entity =>
         {
-            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CFC7BB1CD0");
+            entity.HasKey(e => e.NoteTypeId).HasName("PK__tucNoteT__28ABD5CF9386AF41");
 
             entity.ToTable("tucNoteType");
 
@@ -7497,9 +7477,9 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<UnitType>(entity =>
         {
-            entity.HasKey(e => e.UnitTypeId).HasName("PK__UnitType__1B7AB9340B8A442F");
+            entity.HasKey(e => e.UnitTypeId).HasName("PK__UnitType__1B7AB934040A9035");
 
-            entity.HasIndex(e => e.Code, "UQ__UnitType__A25C5AA7C50D4EF1").IsUnique();
+            entity.HasIndex(e => e.Code, "UQ__UnitType__A25C5AA72BBAA5FA").IsUnique();
 
             entity.Property(e => e.Active).HasDefaultValue(true);
             entity.Property(e => e.Category).HasMaxLength(50);
@@ -7522,7 +7502,7 @@ public partial class DespatchContext : DbContext
 
         modelBuilder.Entity<UserQuickResponse>(entity =>
         {
-            entity.HasKey(e => e.ResponseId).HasName("PK__UserQuic__1AAA640CA2077CE3");
+            entity.HasKey(e => e.ResponseId).HasName("PK__UserQuic__1AAA640C02BCA7AD");
 
             entity.HasIndex(e => e.CourierId, "IX_UserQuickResponses_CourierID");
 
