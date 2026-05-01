@@ -249,7 +249,7 @@ public static partial class JobMappings
                 : null,
 
         Locked = j.UcjbLocked != null && j.UcjbLocked != 0,
-        IsPartnerJob = j.PartnerPairingId.HasValue,
+        IsPartnerJob = j.PartnerJobGuid.HasValue,
 
         // Job item flags - loaded inline from navigation property
         TailLiftPu = j.TucJobItemsArchives.Any(i => i.Pu == true),
@@ -392,7 +392,7 @@ public static partial class JobMappings
                 : DateTime.MinValue,
             IsArchived = true,
             Locked = j.UcjbLocked.HasValue && j.UcjbLocked != 0,
-            IsPartnerJob = j.PartnerPairingId.HasValue,
+            IsPartnerJob = j.PartnerJobGuid.HasValue,
 
             ToAirportId = j.ToAirportId,
             FromAirportId = j.FromAirportId

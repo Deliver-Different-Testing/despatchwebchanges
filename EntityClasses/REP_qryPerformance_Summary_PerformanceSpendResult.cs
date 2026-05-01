@@ -29,7 +29,7 @@ namespace DespatchWeb.EntityClasses
         [StringLength(30)]
         public string Booker { get; set; }
         [Column("Achieved Speed")]
-        [StringLength(500)]
+        [StringLength(50)]
         public string AchievedSpeed { get; set; }
         [StringLength(30)]
         public string From { get; set; }
@@ -57,6 +57,10 @@ namespace DespatchWeb.EntityClasses
         public string Notes { get; set; }
         [Column("Charge($) Excl GST", TypeName = "money")]
         public decimal? ChargeExclGST { get; set; }
+        [Column("RawBaseAmount", TypeName = "money")]
+        public decimal? RawBaseAmount { get; set; }
+        [Column("FuelSurchargeAmount", TypeName = "money")]
+        public decimal FuelSurchargeAmount { get; set; }
         [Column("Ref A")]
         [StringLength(20)]
         public string RefA { get; set; }

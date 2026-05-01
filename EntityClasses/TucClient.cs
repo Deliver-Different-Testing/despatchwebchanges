@@ -581,6 +581,10 @@ public partial class TucClient
 
     public bool ShowNwagent { get; set; }
 
+    public string DefaultJobListFilter { get; set; }
+
+    public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
+
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
     public virtual ICollection<TblBulkJob> TblBulkJobs { get; set; } = new List<TblBulkJob>();

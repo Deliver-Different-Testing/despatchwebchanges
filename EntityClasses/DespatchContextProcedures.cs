@@ -82,7 +82,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DD_stpBulkScheduleJob_InsertAsync(int? type, DateTime? dateTime, int? clientID, string contact, int? urgentScheduleSpeedID, string fromCompany, string fromAddress, string fromCity, string fromState, int? fromZipCode, string fromStreet, string fromExtra, string fromContact, string fromPhone, string toCompany, string toAddress, string toCity, string toState, int? toZipCode, string toStreet, string toExtra, string toContact, string toContactPhone, int? vehicleSizeID, int? opID, short? size, short? qty, decimal? weight, double? totalDistance, int? courierID, string clientRefa, string clientRefb, string ourRef, bool? deliverToPrivateBusiness, int? deliverToLeaveID, string notes, string pickupNotes, string deliveryNotes, string clientNotes, bool? remoteJob, int? trackingMethod, string trackingEmail, string trackingMobile, int? proofOfDelivery, string proofOfDeliveryMobile, string proofOfDeliveryEmail, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, bool? prebookJob, bool? onHold, string orderRef, int? storageState, int? deliveryState, string bookFromAddress, string bookFromCompany, string bookFromExtra, string bookFromStreet, string bookFromCity, string bookFromState, int? bookFromZipCode, string bookPickUpLatitude, string bookPickUpLongitude, int? sourceId, DateTime? pickupReadyDateTime, int? loggedInContactId, int? accessorialChargeGroupId, decimal? courierPercentageOverride, string cubicList, string weightList, string barcodeList, int? stockSizeId, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, int? dimensionsType, OutputParameter<int?> jobID, OutputParameter<string> jobNumber, OutputParameter<decimal?> amount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DD_stpBulkScheduleJob_InsertAsync(int? type, DateTime? dateTime, int? clientID, string contact, int? urgentScheduleSpeedID, string fromCompany, string fromAddress, string fromCity, string fromState, int? fromZipCode, string fromStreet, string fromExtra, string fromContact, string fromPhone, string toCompany, string toAddress, string toCity, string toState, int? toZipCode, string toStreet, string toExtra, string toContact, string toContactPhone, int? vehicleSizeID, int? opID, short? size, short? qty, decimal? weight, double? totalDistance, int? courierID, string clientRefa, string clientRefb, string ourRef, bool? deliverToPrivateBusiness, int? deliverToLeaveID, string notes, string pickupNotes, string deliveryNotes, string clientNotes, bool? remoteJob, int? trackingMethod, string trackingEmail, string trackingMobile, int? proofOfDelivery, string proofOfDeliveryMobile, string proofOfDeliveryEmail, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, bool? prebookJob, bool? onHold, string orderRef, int? storageState, int? deliveryState, string bookFromAddress, string bookFromCompany, string bookFromExtra, string bookFromStreet, string bookFromCity, string bookFromState, int? bookFromZipCode, string bookPickUpLatitude, string bookPickUpLongitude, int? sourceId, DateTime? pickupReadyDateTime, int? loggedInContactId, int? accessorialChargeGroupId, decimal? courierPercentageOverride, string cubicList, string weightList, string barcodeList, int? stockSizeId, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, int? dimensionsType, string recurringName, string recurringDays, int? daysInt, int? frequencyInt, int? recurringHoliday, int? recurringInitialDays, OutputParameter<int?> jobID, OutputParameter<string> jobNumber, OutputParameter<decimal?> amount, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobID = new SqlParameter
             {
@@ -632,9 +632,47 @@ namespace DespatchWeb.EntityClasses
                     Value = dimensionsType ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "RecurringName",
+                    Size = 510,
+                    Value = recurringName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RecurringDays",
+                    Size = 40,
+                    Value = recurringDays ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "DaysInt",
+                    Value = daysInt ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "FrequencyInt",
+                    Value = frequencyInt ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RecurringHoliday",
+                    Value = recurringHoliday ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "RecurringInitialDays",
+                    Value = recurringInitialDays ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpBulkScheduleJob_Insert] @JobID = @JobID OUTPUT, @JobNumber = @JobNumber OUTPUT, @Type = @Type, @DateTime = @DateTime, @ClientID = @ClientID, @Contact = @Contact, @Amount = @Amount OUTPUT, @UrgentScheduleSpeedID = @UrgentScheduleSpeedID, @FromCompany = @FromCompany, @FromAddress = @FromAddress, @FromCity = @FromCity, @FromState = @FromState, @FromZipCode = @FromZipCode, @FromStreet = @FromStreet, @FromExtra = @FromExtra, @FromContact = @FromContact, @FromPhone = @FromPhone, @ToCompany = @ToCompany, @ToAddress = @ToAddress, @ToCity = @ToCity, @ToState = @ToState, @ToZipCode = @ToZipCode, @ToStreet = @ToStreet, @ToExtra = @ToExtra, @ToContact = @ToContact, @ToContactPhone = @ToContactPhone, @VehicleSizeID = @VehicleSizeID, @OpID = @OpID, @Size = @Size, @Qty = @Qty, @Weight = @Weight, @TotalDistance = @TotalDistance, @CourierID = @CourierID, @ClientRefa = @ClientRefa, @ClientRefb = @ClientRefb, @OurRef = @OurRef, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @DeliverToLeaveID = @DeliverToLeaveID, @Notes = @Notes, @PickupNotes = @PickupNotes, @DeliveryNotes = @DeliveryNotes, @ClientNotes = @ClientNotes, @RemoteJob = @RemoteJob, @TrackingMethod = @TrackingMethod, @TrackingEmail = @TrackingEmail, @TrackingMobile = @TrackingMobile, @ProofOfDelivery = @ProofOfDelivery, @ProofOfDeliveryMobile = @ProofOfDeliveryMobile, @ProofOfDeliveryEmail = @ProofOfDeliveryEmail, @PickUpLatitude = @PickUpLatitude, @PickUpLongitude = @PickUpLongitude, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude, @PrebookJob = @PrebookJob, @OnHold = @OnHold, @OrderRef = @OrderRef, @StorageState = @StorageState, @DeliveryState = @DeliveryState, @BookFromAddress = @BookFromAddress, @BookFromCompany = @BookFromCompany, @BookFromExtra = @BookFromExtra, @BookFromStreet = @BookFromStreet, @BookFromCity = @BookFromCity, @BookFromState = @BookFromState, @BookFromZipCode = @BookFromZipCode, @BookPickUpLatitude = @BookPickUpLatitude, @BookPickUpLongitude = @BookPickUpLongitude, @SourceId = @SourceId, @PickupReadyDateTime = @PickupReadyDateTime, @LoggedInContactId = @LoggedInContactId, @AccessorialChargeGroupId = @AccessorialChargeGroupId, @CourierPercentageOverride = @CourierPercentageOverride, @CubicList = @CubicList, @WeightList = @WeightList, @BarcodeList = @BarcodeList, @StockSizeId = @StockSizeId, @DeliverByDateTime = @DeliverByDateTime, @PickupTimeZone = @PickupTimeZone, @DeliverByTimeZone = @DeliverByTimeZone, @DimensionsType = @DimensionsType", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpBulkScheduleJob_Insert] @JobID = @JobID OUTPUT, @JobNumber = @JobNumber OUTPUT, @Type = @Type, @DateTime = @DateTime, @ClientID = @ClientID, @Contact = @Contact, @Amount = @Amount OUTPUT, @UrgentScheduleSpeedID = @UrgentScheduleSpeedID, @FromCompany = @FromCompany, @FromAddress = @FromAddress, @FromCity = @FromCity, @FromState = @FromState, @FromZipCode = @FromZipCode, @FromStreet = @FromStreet, @FromExtra = @FromExtra, @FromContact = @FromContact, @FromPhone = @FromPhone, @ToCompany = @ToCompany, @ToAddress = @ToAddress, @ToCity = @ToCity, @ToState = @ToState, @ToZipCode = @ToZipCode, @ToStreet = @ToStreet, @ToExtra = @ToExtra, @ToContact = @ToContact, @ToContactPhone = @ToContactPhone, @VehicleSizeID = @VehicleSizeID, @OpID = @OpID, @Size = @Size, @Qty = @Qty, @Weight = @Weight, @TotalDistance = @TotalDistance, @CourierID = @CourierID, @ClientRefa = @ClientRefa, @ClientRefb = @ClientRefb, @OurRef = @OurRef, @DeliverToPrivateBusiness = @DeliverToPrivateBusiness, @DeliverToLeaveID = @DeliverToLeaveID, @Notes = @Notes, @PickupNotes = @PickupNotes, @DeliveryNotes = @DeliveryNotes, @ClientNotes = @ClientNotes, @RemoteJob = @RemoteJob, @TrackingMethod = @TrackingMethod, @TrackingEmail = @TrackingEmail, @TrackingMobile = @TrackingMobile, @ProofOfDelivery = @ProofOfDelivery, @ProofOfDeliveryMobile = @ProofOfDeliveryMobile, @ProofOfDeliveryEmail = @ProofOfDeliveryEmail, @PickUpLatitude = @PickUpLatitude, @PickUpLongitude = @PickUpLongitude, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude, @PrebookJob = @PrebookJob, @OnHold = @OnHold, @OrderRef = @OrderRef, @StorageState = @StorageState, @DeliveryState = @DeliveryState, @BookFromAddress = @BookFromAddress, @BookFromCompany = @BookFromCompany, @BookFromExtra = @BookFromExtra, @BookFromStreet = @BookFromStreet, @BookFromCity = @BookFromCity, @BookFromState = @BookFromState, @BookFromZipCode = @BookFromZipCode, @BookPickUpLatitude = @BookPickUpLatitude, @BookPickUpLongitude = @BookPickUpLongitude, @SourceId = @SourceId, @PickupReadyDateTime = @PickupReadyDateTime, @LoggedInContactId = @LoggedInContactId, @AccessorialChargeGroupId = @AccessorialChargeGroupId, @CourierPercentageOverride = @CourierPercentageOverride, @CubicList = @CubicList, @WeightList = @WeightList, @BarcodeList = @BarcodeList, @StockSizeId = @StockSizeId, @DeliverByDateTime = @DeliverByDateTime, @PickupTimeZone = @PickupTimeZone, @DeliverByTimeZone = @DeliverByTimeZone, @DimensionsType = @DimensionsType, @RecurringName = @RecurringName, @RecurringDays = @RecurringDays, @DaysInt = @DaysInt, @FrequencyInt = @FrequencyInt, @RecurringHoliday = @RecurringHoliday, @RecurringInitialDays = @RecurringInitialDays", sqlParameters, cancellationToken);
 
             jobID?.SetValue(parameterJobID.Value);
             jobNumber?.SetValue(parameterJobNumber.Value);
@@ -903,7 +941,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<int> DD_stpJob_Excelerator_InsertAsync(int? type, int? clientID, DateTime? bookdate, string contact, int? chargeType, string toCity, string toState, int? toZipCode, string toAddress, string toStreet, string toExtra, string toCompany, string fromCity, string fromState, int? fromZipCode, string fromAddress, string fromStreet, string fromExtra, string fromCompany, int? vehicleSizeID, int? qty, double? totalWeight, double? totalDistance, string clientRefa, string clientRefb, int? opID, int? pickUpFrom, string notes, string clientNotes, string pickupNotes, string deliveryNotes, string contactPhone, int? service, string fromContact, string fromPhone, string toContact, string toPhone, int? contactID, int? proofOfDelivery, string proofOfDeliveryEmail, string proofOfDeliveryMobile, string ourRef, int? speed, bool? parked, int? sigNotRequired, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, int? sourceId, int? totalPallets, int? extraStopOffs, decimal? dryIceWeight, decimal? cubic, int? waitTime, int? dGClass, bool? dGDocs, int? loggedInContactId, int? accessorialChargeGroupId, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, string recurringName, string recurringDays, int? daysInt, int? frequencyInt, int? recurringHoliday, int? recurringInitialDays, int? courierID, int? dimensionsType, OutputParameter<int?> jobID, OutputParameter<string> jobNumber, OutputParameter<decimal?> amount, OutputParameter<bool?> pOA, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DD_stpJob_Excelerator_InsertAsync(int? type, int? clientID, DateTime? bookdate, string contact, int? chargeType, string toCity, string toState, int? toZipCode, string toAddress, string toStreet, string toExtra, string toCompany, string fromCity, string fromState, int? fromZipCode, string fromAddress, string fromStreet, string fromExtra, string fromCompany, int? vehicleSizeID, int? qty, double? totalWeight, double? totalDistance, string clientRefa, string clientRefb, int? opID, int? pickUpFrom, string notes, string clientNotes, string pickupNotes, string deliveryNotes, string contactPhone, int? service, string fromContact, string fromPhone, string toContact, string toPhone, int? contactID, int? proofOfDelivery, string proofOfDeliveryEmail, string proofOfDeliveryMobile, string ourRef, int? speed, bool? parked, int? sigNotRequired, string pickUpLatitude, string pickUpLongitude, string deliveryLatitude, string deliveryLongitude, int? sourceId, int? totalPallets, int? extraStopOffs, decimal? dryIceWeight, decimal? cubic, int? waitTime, int? dGClass, bool? dGDocs, int? loggedInContactId, int? accessorialChargeGroupId, DateTime? deliverByDateTime, string pickupTimeZone, string deliverByTimeZone, string recurringName, string recurringDays, int? daysInt, int? frequencyInt, int? recurringHoliday, int? recurringInitialDays, int? courierID, int? dimensionsType, string scheduleName, int? scheduleID, OutputParameter<int?> jobID, OutputParameter<string> jobNumber, OutputParameter<decimal?> amount, OutputParameter<bool?> pOA, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterJobID = new SqlParameter
             {
@@ -1408,9 +1446,22 @@ namespace DespatchWeb.EntityClasses
                     Value = dimensionsType ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "ScheduleName",
+                    Size = 400,
+                    Value = scheduleName ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                },
+                new SqlParameter
+                {
+                    ParameterName = "ScheduleID",
+                    Value = scheduleID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_Excelerator_Insert] @JobID = @JobID OUTPUT, @Type = @Type, @ClientID = @ClientID, @Bookdate = @Bookdate, @Contact = @Contact, @ChargeType = @ChargeType, @ToCity = @ToCity, @ToState = @ToState, @ToZipCode = @ToZipCode, @ToAddress = @ToAddress, @ToStreet = @ToStreet, @ToExtra = @ToExtra, @ToCompany = @ToCompany, @FromCity = @FromCity, @FromState = @FromState, @FromZipCode = @FromZipCode, @FromAddress = @FromAddress, @FromStreet = @FromStreet, @FromExtra = @FromExtra, @FromCompany = @FromCompany, @VehicleSizeID = @VehicleSizeID, @Qty = @Qty, @TotalWeight = @TotalWeight, @TotalDistance = @TotalDistance, @ClientRefa = @ClientRefa, @ClientRefb = @ClientRefb, @OpID = @OpID, @PickUpFrom = @PickUpFrom, @Notes = @Notes, @ClientNotes = @ClientNotes, @PickupNotes = @PickupNotes, @DeliveryNotes = @DeliveryNotes, @ContactPhone = @ContactPhone, @Service = @Service, @FromContact = @FromContact, @FromPhone = @FromPhone, @ToContact = @ToContact, @ToPhone = @ToPhone, @ContactID = @ContactID, @ProofOfDelivery = @ProofOfDelivery, @ProofOfDeliveryEmail = @ProofOfDeliveryEmail, @ProofOfDeliveryMobile = @ProofOfDeliveryMobile, @JobNumber = @JobNumber OUTPUT, @Amount = @Amount OUTPUT, @POA = @POA OUTPUT, @OurRef = @OurRef, @Speed = @Speed, @Parked = @Parked, @SigNotRequired = @SigNotRequired, @PickUpLatitude = @PickUpLatitude, @PickUpLongitude = @PickUpLongitude, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude, @SourceId = @SourceId, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @DryIceWeight = @DryIceWeight, @Cubic = @Cubic, @WaitTime = @WaitTime, @DGClass = @DGClass, @DGDocs = @DGDocs, @LoggedInContactId = @LoggedInContactId, @AccessorialChargeGroupId = @AccessorialChargeGroupId, @DeliverByDateTime = @DeliverByDateTime, @PickupTimeZone = @PickupTimeZone, @DeliverByTimeZone = @DeliverByTimeZone, @RecurringName = @RecurringName, @RecurringDays = @RecurringDays, @DaysInt = @DaysInt, @FrequencyInt = @FrequencyInt, @RecurringHoliday = @RecurringHoliday, @RecurringInitialDays = @RecurringInitialDays, @CourierID = @CourierID, @DimensionsType = @DimensionsType", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DD_stpJob_Excelerator_Insert] @JobID = @JobID OUTPUT, @Type = @Type, @ClientID = @ClientID, @Bookdate = @Bookdate, @Contact = @Contact, @ChargeType = @ChargeType, @ToCity = @ToCity, @ToState = @ToState, @ToZipCode = @ToZipCode, @ToAddress = @ToAddress, @ToStreet = @ToStreet, @ToExtra = @ToExtra, @ToCompany = @ToCompany, @FromCity = @FromCity, @FromState = @FromState, @FromZipCode = @FromZipCode, @FromAddress = @FromAddress, @FromStreet = @FromStreet, @FromExtra = @FromExtra, @FromCompany = @FromCompany, @VehicleSizeID = @VehicleSizeID, @Qty = @Qty, @TotalWeight = @TotalWeight, @TotalDistance = @TotalDistance, @ClientRefa = @ClientRefa, @ClientRefb = @ClientRefb, @OpID = @OpID, @PickUpFrom = @PickUpFrom, @Notes = @Notes, @ClientNotes = @ClientNotes, @PickupNotes = @PickupNotes, @DeliveryNotes = @DeliveryNotes, @ContactPhone = @ContactPhone, @Service = @Service, @FromContact = @FromContact, @FromPhone = @FromPhone, @ToContact = @ToContact, @ToPhone = @ToPhone, @ContactID = @ContactID, @ProofOfDelivery = @ProofOfDelivery, @ProofOfDeliveryEmail = @ProofOfDeliveryEmail, @ProofOfDeliveryMobile = @ProofOfDeliveryMobile, @JobNumber = @JobNumber OUTPUT, @Amount = @Amount OUTPUT, @POA = @POA OUTPUT, @OurRef = @OurRef, @Speed = @Speed, @Parked = @Parked, @SigNotRequired = @SigNotRequired, @PickUpLatitude = @PickUpLatitude, @PickUpLongitude = @PickUpLongitude, @DeliveryLatitude = @DeliveryLatitude, @DeliveryLongitude = @DeliveryLongitude, @SourceId = @SourceId, @TotalPallets = @TotalPallets, @ExtraStopOffs = @ExtraStopOffs, @DryIceWeight = @DryIceWeight, @Cubic = @Cubic, @WaitTime = @WaitTime, @DGClass = @DGClass, @DGDocs = @DGDocs, @LoggedInContactId = @LoggedInContactId, @AccessorialChargeGroupId = @AccessorialChargeGroupId, @DeliverByDateTime = @DeliverByDateTime, @PickupTimeZone = @PickupTimeZone, @DeliverByTimeZone = @DeliverByTimeZone, @RecurringName = @RecurringName, @RecurringDays = @RecurringDays, @DaysInt = @DaysInt, @FrequencyInt = @FrequencyInt, @RecurringHoliday = @RecurringHoliday, @RecurringInitialDays = @RecurringInitialDays, @CourierID = @CourierID, @DimensionsType = @DimensionsType, @ScheduleName = @ScheduleName, @ScheduleID = @ScheduleID", sqlParameters, cancellationToken);
 
             jobID?.SetValue(parameterJobID.Value);
             jobNumber?.SetValue(parameterJobNumber.Value);
@@ -1741,7 +1792,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_SplitJobRestoreResult>> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DES_stpJob_SplitJobRestoreAsync(int? jobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1760,14 +1811,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_SplitJobRestoreResult>("EXEC @returnValue = [dbo].[DES_stpJob_SplitJobRestore] @JobID = @JobID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_SplitJobRestore] @JobID = @JobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<List<DES_stpJob_UnSplitResult>> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> DES_stpJob_UnSplitAsync(int? jobID, OutputParameter<string> message, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterMessage = new SqlParameter
             {
@@ -1795,7 +1846,7 @@ namespace DespatchWeb.EntityClasses
                 parameterMessage,
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<DES_stpJob_UnSplitResult>("EXEC @returnValue = [dbo].[DES_stpJob_UnSplit] @JobID = @JobID, @Message = @Message OUTPUT", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[DES_stpJob_UnSplit] @JobID = @JobID, @Message = @Message OUTPUT", sqlParameters, cancellationToken);
 
             message?.SetValue(parameterMessage.Value);
             returnValue?.SetValue(parameterreturnValue.Value);
@@ -2324,7 +2375,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<uspReassignJobResult>> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> uspReassignJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -2343,14 +2394,14 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<uspReassignJobResult>("EXEC @returnValue = [dbo].[uspReassignJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspReassignJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 
             return _;
         }
 
-        public virtual async Task<List<uspReDespatchJobResult>> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<int> uspReDespatchJobAsync(int? intJobID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -2369,7 +2420,7 @@ namespace DespatchWeb.EntityClasses
                 },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<uspReDespatchJobResult>("EXEC @returnValue = [dbo].[uspReDespatchJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
+            var _ = await _context.Database.ExecuteSqlRawAsync("EXEC @returnValue = [dbo].[uspReDespatchJob] @intJobID = @intJobID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

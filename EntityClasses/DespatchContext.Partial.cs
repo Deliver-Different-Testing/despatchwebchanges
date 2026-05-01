@@ -13,7 +13,15 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs.Any(j => j.UcjbId == jobId));
-
+    
+    
+    private static readonly Func<DespatchContext, int, Task<bool>> IsPartnerJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobs
+                .Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue) || 
+            context.TucJobArchives
+                .Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
+    
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobs
@@ -232,6 +240,8 @@ public partial class DespatchContext
         await DoesAddressMatchAirportComplied(this, jobId, isPickupAddress);
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
+    
+    public async Task<bool> IsPartnerJobAsync(int jobId) => await IsPartnerJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {

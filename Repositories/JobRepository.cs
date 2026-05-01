@@ -4927,12 +4927,7 @@ public partial class JobRepository(
             .ToListAsync();
 
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
-        await Context.TucJobs
-            .Where(j => j.UcjbId == jobId && j.PartnerPairingId.HasValue)
-            .AnyAsync()
-        || await Context.TucJobArchives
-            .Where(j => j.UcjbId == jobId && j.PartnerPairingId.HasValue)
-            .AnyAsync();
+        await Context.IsPartnerJobAsync(jobId);
 
     #region IJobRepository Interface Methods (delegating to protected base methods)
 
