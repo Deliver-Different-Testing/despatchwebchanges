@@ -15,12 +15,13 @@ public partial class DespatchContext
             context.TucJobs.Any(j => j.UcjbId == jobId));
     
     
-    private static readonly Func<DespatchContext, int, Task<bool>> IsPartnerJobCompiled =
+    private static readonly Func<DespatchContext, int, Task<bool>> IsLivePartnerJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
-            context.TucJobs
-                .Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue) || 
-            context.TucJobArchives
-                .Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
+            context.TucJobs.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
+
+    private static readonly Func<DespatchContext, int, Task<bool>> IsArchivedPartnerJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.TucJobArchives.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
     
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
@@ -241,7 +242,9 @@ public partial class DespatchContext
 
     public async Task<bool> IsLiveJobAsync(int jobId) => await IsLiveJobCompiled(this, jobId);
     
-    public async Task<bool> IsPartnerJobAsync(int jobId) => await IsPartnerJobCompiled(this, jobId);
+    public async Task<bool> IsPartnerJobAsync(int jobId) =>
+        await IsLivePartnerJobCompiled(this, jobId)
+        || await IsArchivedPartnerJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
