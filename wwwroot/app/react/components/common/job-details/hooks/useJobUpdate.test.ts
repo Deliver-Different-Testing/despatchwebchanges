@@ -480,7 +480,7 @@ describe('useJobUpdate', () => {
 
             expect(result.current.isUpdating).toBe(false);
 
-            let mutationPromise: Promise<void>;
+            let mutationPromise: Promise<unknown>;
             act(() => {
                 mutationPromise = result.current.updateField({job, field: 'x', value: 'y', isRecurring: false}).catch(() => {});
             });

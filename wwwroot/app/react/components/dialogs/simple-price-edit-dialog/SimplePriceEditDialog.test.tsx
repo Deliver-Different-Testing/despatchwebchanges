@@ -257,7 +257,7 @@ describe('SimplePriceEditDialog', () => {
             await userEvent.click(screen.getByRole('button', { name: /Apply Raw Base/i }));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith('base', 150);
+                expect(onSubmit).toHaveBeenCalledWith('base', 150, []);
             });
         });
 
@@ -269,7 +269,7 @@ describe('SimplePriceEditDialog', () => {
             await userEvent.click(screen.getByRole('button', { name: /Recalculate & Save/i }));
 
             await waitFor(() => {
-                expect(onSubmit).toHaveBeenCalledWith('recalculate', 150);
+                expect(onSubmit).toHaveBeenCalledWith('recalculate', 150, []);
             });
         });
 

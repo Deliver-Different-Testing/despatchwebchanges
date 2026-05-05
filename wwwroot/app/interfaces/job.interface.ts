@@ -408,6 +408,7 @@ export interface IParcelDimensions {
     height?: number;
     length?: number;
     depth?: number;
+    weight?: number;
     dimensions: string;
     barcode?: string;
 }

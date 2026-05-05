@@ -13,4 +13,5 @@ public sealed class UpdateBulkJobPackagesRequest : UpdateJobPackagesBase
 public class UpdateJobPackagesBase
 {
     public List<ParcelDimensions> Parcels { get; init; }
+    public decimal? Weight { get; init; }
 }

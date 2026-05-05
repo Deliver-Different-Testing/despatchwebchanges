@@ -1,7 +1,7 @@
 /** @jest-environment jest-environment-jsdom */
 
 import React from 'react';
-import {screen, waitFor, within} from '@testing-library/react';
+import {screen, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {EditParcelDimensionsDialog} from './EditParcelDimensionsDialog';
 import {renderWithTheme} from '../../../__testUtils__';
@@ -15,7 +15,7 @@ jest.mock('../../../services/apiClient', () => ({
 }));
 
 const mockParcel = (overrides?: Partial<ParcelDimensions>): ParcelDimensions => ({
-    itemName: 'Test Parcel',
+    itemName: 'Box',
     length: 10,
     depth: 5,
     height: 3,
@@ -33,32 +33,35 @@ const defaultProps = {
     showToast: jest.fn(),
 };
 
-describe('EditParcelDimensionsDialog item count chip', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+// ── Header parcel count ────────────────────────────────────────────
 
-    it('displays a chip with plural item count', () => {
-        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel(), mockParcel()]} />);
+describe('EditParcelDimensionsDialog header parcel count', () => {
+    beforeEach(() => jest.clearAllMocks());
 
-        const chip = document.querySelector('.MuiChip-root .MuiChip-label')!;
-        expect(chip).toBeInTheDocument();
-        expect(chip.textContent).toBe('3 items');
-    });
-
-    it('displays a chip with singular item count', () => {
+    it('shows singular parcel count for one parcel', () => {
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
+        expect(screen.getByText(/1 type · 1 parcel total/i)).toBeInTheDocument();
+    });
 
-        const chip = document.querySelector('.MuiChip-root .MuiChip-label')!;
-        expect(chip).toBeInTheDocument();
-        expect(chip.textContent).toBe('1 item');
+    it('shows plural parcel count for multiple identical parcels', () => {
+        // Same attributes → grouped into 1 row with qty 3
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel(), mockParcel()]} />);
+        expect(screen.getByText(/1 type · 3 parcels total/i)).toBeInTheDocument();
+    });
+
+    it('shows correct type count for different parcels', () => {
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[
+            mockParcel({itemName: 'A'}),
+            mockParcel({itemName: 'B'}),
+        ]} />);
+        expect(screen.getByText(/2 types · 2 parcels total/i)).toBeInTheDocument();
     });
 });
 
+// ── Discard changes confirmation ───────────────────────────────────
+
 describe('EditParcelDimensionsDialog discard changes confirmation', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+    beforeEach(() => jest.clearAllMocks());
 
     it('closes directly when no changes have been made', async () => {
         const user = userEvent.setup();
@@ -70,41 +73,41 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
         expect(screen.queryByText('Discard unsaved changes')).not.toBeInTheDocument();
     });
 
-    it('shows MUI confirmation dialog when cancelling with unsaved changes', async () => {
+    it('shows confirmation dialog when cancelling with unsaved changes', async () => {
         const user = userEvent.setup();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
-        const nameInput = screen.getByLabelText(/item name/i);
+        const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
         await user.type(nameInput, 'Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
         expect(screen.getByText('Discard unsaved changes')).toBeInTheDocument();
-        expect(screen.getByText(/haven't been saved and will be lost/i)).toBeInTheDocument();
         expect(defaultProps.onClose).not.toHaveBeenCalled();
     });
 
-    it('closes the dialog when Discard is confirmed', async () => {
+    it('closes when Discard is confirmed', async () => {
         const user = userEvent.setup();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
-        const nameInput = screen.getByLabelText(/item name/i);
+        const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
         await user.type(nameInput, 'Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
-        await user.click(screen.getByRole('button', {name: /discard/i}));
+        const confirmDialog = screen.getByText('Discard unsaved changes').closest('[role="dialog"]') as HTMLElement;
+        await user.click(within(confirmDialog).getByRole('button', {name: /discard/i}));
 
         expect(defaultProps.onClose).toHaveBeenCalled();
     });
 
-    it('keeps the dialog open when Keep editing is clicked on the confirmation', async () => {
+    it('keeps dialog open when Keep editing is clicked', async () => {
         const user = userEvent.setup();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} />);
 
-        const nameInput = screen.getByLabelText(/item name/i);
+        const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
         await user.type(nameInput, 'Changed');
 
@@ -114,60 +117,96 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
         await user.click(within(confirmDialog).getByRole('button', {name: /keep editing/i}));
 
         expect(defaultProps.onClose).not.toHaveBeenCalled();
-        await waitFor(() => {
-            expect(screen.queryByText('Discard unsaved changes')).not.toBeInTheDocument();
-        });
+        // Main dialog is still open and editable
+        expect(screen.getByPlaceholderText('Name')).toBeInTheDocument();
     });
 });
 
-describe('EditParcelDimensionsDialog remove parcels', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
+// ── Row qty and delete ─────────────────────────────────────────────
 
-    it('removes parcels from the end when clicking the remove button', async () => {
-        const user = userEvent.setup();
-        const threeParcels = [mockParcel({itemName: 'A'}), mockParcel({itemName: 'B'}), mockParcel({itemName: 'C'})];
-        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={threeParcels} />);
+describe('EditParcelDimensionsDialog row quantity and delete', () => {
+    beforeEach(() => jest.clearAllMocks());
 
-        const chip = document.querySelector('.MuiChip-root .MuiChip-label')!;
-        expect(chip.textContent).toBe('3 items');
-
-        await user.click(screen.getByRole('button', {name: /remove parcels/i}));
-
-        const updatedChip = document.querySelector('.MuiChip-root .MuiChip-label')!;
-        expect(updatedChip.textContent).toBe('2 items');
-        expect(defaultProps.showToast).toHaveBeenCalledWith('Removed 1 parcel from the end', 'success');
-    });
-
-    it('shows warning when trying to remove more parcels than exist minus one', async () => {
-        const user = userEvent.setup();
-        const twoParcels = [mockParcel({itemName: 'A'}), mockParcel({itemName: 'B'})];
-        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={twoParcels} />);
-
-        const qtyInput = screen.getByLabelText('Qty');
-        await user.clear(qtyInput);
-        await user.type(qtyInput, '5');
-
-        await user.click(screen.getByRole('button', {name: /remove parcels/i}));
-
-        expect(defaultProps.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Cannot remove'),
-            'warning',
-        );
-        const chip = document.querySelector('.MuiChip-root .MuiChip-label')!;
-        expect(chip.textContent).toBe('2 items');
-    });
-
-    it('shows warning when trying to remove all parcels (must keep at least one)', async () => {
+    it('increases qty when + is clicked', async () => {
         const user = userEvent.setup();
         renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
 
-        await user.click(screen.getByRole('button', {name: /remove parcels/i}));
+        expect(screen.getByText(/1 parcel total/i)).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: /increase quantity/i}));
+        expect(screen.getByText(/2 parcels total/i)).toBeInTheDocument();
+    });
 
-        expect(defaultProps.showToast).toHaveBeenCalledWith(
-            expect.stringContaining('Cannot remove 1 parcel'),
-            'warning',
-        );
+    it('decreases qty when - is clicked', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel(), mockParcel()]} />);
+
+        expect(screen.getByText(/2 parcels total/i)).toBeInTheDocument();
+        await user.click(screen.getByRole('button', {name: /decrease quantity/i}));
+        expect(screen.getByText(/1 parcel total/i)).toBeInTheDocument();
+    });
+
+    it('disables - button when qty is 1', () => {
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
+        expect(screen.getByRole('button', {name: /decrease quantity/i})).toBeDisabled();
+    });
+
+    it('deletes a row when Delete row is clicked', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[
+            mockParcel({itemName: 'A'}),
+            mockParcel({itemName: 'B'}),
+        ]} />);
+
+        expect(screen.getByText(/2 types · 2 parcels total/i)).toBeInTheDocument();
+        await user.click(screen.getAllByRole('button', {name: /delete row/i})[0]);
+        expect(screen.getByText(/1 type · 1 parcel total/i)).toBeInTheDocument();
+    });
+
+    it('keeps at least one empty row when the last row is deleted', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
+
+        await user.click(screen.getByRole('button', {name: /delete row/i}));
+
+        // Still has one row (reset to empty), so still shows 1 parcel total
+        expect(screen.getByText(/1 type · 1 parcel total/i)).toBeInTheDocument();
+    });
+});
+
+// ── Weight validation ──────────────────────────────────────────────
+
+describe('EditParcelDimensionsDialog weight validation', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    it('disables Save and shows error when a parcel has no weight', () => {
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
+
+        expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
+        expect(screen.getByText(/all parcels must have a weight greater than 0/i)).toBeInTheDocument();
+    });
+
+    it('enables Save once all parcels have a weight greater than 0', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel()]} />);
+
+        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInput = weightInputs[weightInputs.length - 1];
+        await user.clear(weightInput);
+        await user.type(weightInput, '10');
+
+        expect(screen.getByRole('button', {name: /save/i})).not.toBeDisabled();
+        expect(screen.queryByText(/all parcels must have a weight greater than 0/i)).not.toBeInTheDocument();
+    });
+
+    it('disables Save when a parcel weight is zero', async () => {
+        const user = userEvent.setup();
+        renderWithTheme(<EditParcelDimensionsDialog {...defaultProps} parcels={[mockParcel({weight: 5})]} />);
+
+        const weightInputs = screen.getAllByPlaceholderText('—');
+        const weightInput = weightInputs[weightInputs.length - 1];
+        await user.clear(weightInput);
+        await user.type(weightInput, '0');
+
+        expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
     });
 });

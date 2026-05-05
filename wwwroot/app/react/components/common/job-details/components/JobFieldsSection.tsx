@@ -28,7 +28,7 @@ import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
 import BusinessIcon from '@mui/icons-material/Business';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
-import Chip from '@mui/material/Chip';
+import Tooltip from '@mui/material/Tooltip';
 import {EditableField} from './EditableField';
 import type {IJob} from '../JobDetails.types';
 import {getTrackingMethodText} from '../JobDetails.types';
@@ -59,7 +59,6 @@ interface JobFieldsSectionProps {
     onEditRefB: () => void;
     onEditOurRef: () => void;
     onEditConNote: () => void;
-    onEditWeight: () => void;
     onDgClassClick: () => void;
     onLeaveClick: () => void;
     onTrackingMethodClick: () => void;
@@ -124,7 +123,6 @@ export const JobFieldsSection = React.memo(({
                                                 onEditRefB,
                                                 onEditOurRef,
                                                 onEditConNote,
-                                                onEditWeight,
                                                 onDgClassClick,
                                                 onLeaveClick,
                                                 onTrackingMethodClick,
@@ -160,33 +158,22 @@ export const JobFieldsSection = React.memo(({
                             <List dense disablePadding>
                                 <EditableField
                                     icon="straighten" label="Dimensions"
-                                    value={job.parcelDimensions?.length ? `${job.parcelDimensions.length} parcels` : '\u2014'}
+                                    value={(() => {
+                                        const count = job.parcelDimensions?.length;
+                                        const weight = job.weight;
+                                        const parts: string[] = [];
+                                        if (count) parts.push(`${count} parcel${count !== 1 ? 's' : ''}`);
+                                        if (weight != null) parts.push(`${weight} ${isUsCustomer ? 'lbs' : 'kg'}`);
+                                        return parts.length ? parts.join(' \u00b7 ') : '\u2014';
+                                    })()}
                                     onClick={onEditDimensions} disabled={locked}
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('dimensions')}
                                     onToggleVisibility={onToggleField} fieldKey="dimensions"
                                     endAdornment={job.calculateDimsOncePerJob ?
-                                        <Chip label="CALC ONCE" size="small" color="success" sx={{
-                                            height: 20,
-                                            fontSize: '0.6875rem',
-                                            fontWeight: 600,
-                                            ml: 0.5
-                                        }}/> : undefined}
-                                />
-                                <EditableField
-                                    icon="scale" label="Weight"
-                                    value={job.weight != null ? `${job.weight} ${isUsCustomer ? 'lbs' : 'kg'}` : undefined}
-                                    onClick={onEditWeight} disabled={locked}
-                                    dense={dense} isEditMode={isEditMode}
-                                    isVisible={isFieldVisible('weight')}
-                                    onToggleVisibility={onToggleField} fieldKey="weight"
-                                    endAdornment={job.calculateDimsOncePerJob ?
-                                        <Chip label="CALC ONCE" size="small" color="success" sx={{
-                                            height: 20,
-                                            fontSize: '0.6875rem',
-                                            fontWeight: 600,
-                                            ml: 0.5
-                                        }}/> : undefined}
+                                        <Tooltip title="Dimensions calculated once per job">
+                                            <Box data-testid="calc-once-indicator" sx={{width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main', ml: 1, flexShrink: 0}} />
+                                        </Tooltip> : undefined}
                                 />
                                 <EditableField
                                     icon="qr_code" label="Barcode" value={job.barcode}

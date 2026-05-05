@@ -66,6 +66,7 @@ class EditParcelDimensionsDialogService {
                 jobId: job.isBulkJob ? undefined : job.id,
                 bulkJobId: job.isBulkJob ? job.id : undefined,
                 isUsCustomer: this.appConfig.US_Customer,
+                jobWeight: job.weight,
             });
         } catch (error) {
             console.error('EditParcelDimensionsDialogService: Error in showJobDimensionsDialog', error);

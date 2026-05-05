@@ -30,7 +30,6 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onEditRefB: jest.fn(),
         onEditOurRef: jest.fn(),
         onEditConNote: jest.fn(),
-        onEditWeight: jest.fn(),
         onDgClassClick: jest.fn(),
         onLeaveClick: jest.fn(),
         onTrackingMethodClick: jest.fn(),
@@ -259,11 +258,10 @@ describe('JobFieldsSection', () => {
     });
 
     describe('Package Details', () => {
-        it('shows CALC ONCE chip when calculateDimsOncePerJob is true', () => {
+        it('shows calc-once indicator when calculateDimsOncePerJob is true', () => {
             const job = createMockJob({calculateDimsOncePerJob: true});
             renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
-            const chips = screen.getAllByText('CALC ONCE');
-            expect(chips.length).toBeGreaterThan(0);
+            expect(screen.getByTestId('calc-once-indicator')).toBeInTheDocument();
         });
 
         it('shows DG Class when present', () => {

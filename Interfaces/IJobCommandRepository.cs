@@ -51,6 +51,7 @@ public interface IJobCommandRepository
     Task DeleteJobPriceBreakdownAsync(int chargeId, bool isArchived = false);
 
     Task VoidPrebookJobAsync(int jobId);
+    Task UpdateJobWeightAsync(int jobId, decimal weight);
 
     Task UpdateDeliveryAddressAsync(UpdateAddressRequest request);
     Task UpdatePickupAddressAsync(UpdateAddressRequest request);

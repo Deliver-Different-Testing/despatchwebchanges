@@ -77,21 +77,23 @@ describe('job-details-react.module', () => {
             expect(mockInvalidateQueries).not.toHaveBeenCalled();
         });
 
-        it('should invalidate all four query keys when mounted', async () => {
+        it('should invalidate photos and priceBreakdowns and re-render with incremented nonce', async () => {
             const container = document.createElement('div');
             container.id = 'test-refresh';
             document.body.appendChild(container);
 
             mountJobDetails('test-refresh', makeConfig(1));
             mockInvalidateQueries.mockClear();
+            mockRender.mockClear();
 
             await refreshJobDetails();
 
-            expect(mockInvalidateQueries).toHaveBeenCalledTimes(4);
-            expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['jobs', 'detail']});
+            // jobs/detail and notes are handled inside JobDetails via the nonce effect
+            expect(mockInvalidateQueries).toHaveBeenCalledTimes(2);
             expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['jobs', 'photos']});
-            expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['notes']});
             expect(mockInvalidateQueries).toHaveBeenCalledWith({queryKey: ['priceBreakdowns']});
+            // Component re-rendered with incremented nonce so JobDetails triggers refetch()
+            expect(mockRender).toHaveBeenCalledTimes(1);
 
             document.body.removeChild(container);
         });
@@ -112,7 +114,7 @@ describe('job-details-react.module', () => {
             document.body.removeChild(container);
         });
 
-        it('should await all invalidations in parallel', async () => {
+        it('should await both invalidations in parallel', async () => {
             const container = document.createElement('div');
             container.id = 'test-refresh-parallel';
             document.body.appendChild(container);
@@ -127,9 +129,9 @@ describe('job-details-react.module', () => {
 
             const refreshPromise = refreshJobDetails();
 
-            // All 4 calls made immediately (parallel), but promise not yet resolved
-            expect(mockInvalidateQueries).toHaveBeenCalledTimes(4);
-            expect(resolvers).toHaveLength(4);
+            // Both calls made immediately (parallel), but promise not yet resolved
+            expect(mockInvalidateQueries).toHaveBeenCalledTimes(2);
+            expect(resolvers).toHaveLength(2);
 
             // Resolve all
             resolvers.forEach((r) => r());

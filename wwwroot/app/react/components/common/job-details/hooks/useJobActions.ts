@@ -57,6 +57,7 @@ interface UseJobActionsOptions {
     refreshAndNotify: () => Promise<void>;
     invalidateJobLists: () => Promise<void[]>;
     invalidatePhotos: () => Promise<void>;
+    checkForRateChange: (job: IJob) => Promise<void>;
     onStatusChange?: (statusId: number) => void;
 }
 
@@ -72,6 +73,7 @@ export function useJobActions({
     refreshAndNotify,
     invalidateJobLists,
     invalidatePhotos,
+    checkForRateChange,
     onStatusChange,
 }: UseJobActionsOptions) {
     const {
@@ -87,9 +89,10 @@ export function useJobActions({
         ensureJobFileUploadDialog,
     } = useDialogLoader();
 
-    // Stable ref for job so callbacks don't recreate on every job change
+    // Stable ref for job so callbacks don't recreate on every job change.
+    // Assigned synchronously (not via useEffect) so it's never one render behind.
     const jobRef = useRef(job);
-    useEffect(() => { jobRef.current = job; }, [job]);
+    jobRef.current = job;
 
     // ── Text Dialog ────────────────────────────────────────────────
 
@@ -519,7 +522,7 @@ export function useJobActions({
         await markJobAsDone('time');
     }, [editDateAndTime, markJobAsDone]);
 
-    const handlePricingClick = useCallback(async () => {
+    const handlePricingClick = useCallback(async (hideRecalculate?: boolean) => {
         const j = jobRef.current;
         if (!j) return;
         if (j.isInvoiced) {
@@ -527,7 +530,7 @@ export function useJobActions({
             return;
         }
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
-        const isUsingOldAmountMethod = !isUsCustomer && j.charge > 0 && breakdowns.length === 0;
+        const isUsingOldAmountMethod = !isUsCustomer && breakdowns.length === 0;
         if (isUsingOldAmountMethod) {
             await ensureSimplePriceEditDialog();
             window.ReactSimplePriceEditDialog?.setToastService({showToast});
@@ -536,6 +539,7 @@ export function useJobActions({
                 jobNumber: j.jobNo,
                 currentCharge: j.charge,
                 isPrebook: j.preBook,
+                hideRecalculate: hideRecalculate === true,
             });
         } else {
             await ensurePriceBreakdownDialog();
@@ -612,14 +616,20 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         await ensureParcelDimensionsDialog();
-        await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
+        window.ReactEditParcelDimensionsDialog?.setToastService({showToast});
+        const result = await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
             jobId: j.isBulkJob ? undefined : j.id,
             bulkJobId: j.isBulkJob ? j.id : undefined,
             parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
+            jobWeight: j.weight,
         });
+        if (!result) return;
         await refreshAndNotify();
-    }, [ensureParcelDimensionsDialog, isUsCustomer, refreshAndNotify]);
+        if (!j.isBulkJob && !j.ratedManually) {
+            await checkForRateChange(j);
+        }
+    }, [ensureParcelDimensionsDialog, isUsCustomer, showToast, refreshAndNotify, checkForRateChange]);
 
     const handleEditRefA = useCallback(() => {
         const j = jobRef.current;

@@ -441,12 +441,12 @@ public class SplitJobService(
                     if (isUs)
                     {
                         var details = await jobRepository.GetJobDetailsForRatingAsync(childId);
-                        rate = await rateJobService.GetJobRateUsAsync(details);
+                        rate = (await rateJobService.GetJobRateUsAsync(details)).Rate;
                     }
                     else
                     {
                         var details = await jobRepository.GetJobDetailsForRatingNzAsync(childId, false);
-                        rate = await rateJobService.GetJobRateNzAsync(details);
+                        rate = (await rateJobService.GetJobRateNzAsync(details)).Rate;
                     }
                 }
                 catch (Exception ex)

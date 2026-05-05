@@ -7,8 +7,8 @@ public interface IRateJobService
 {
     Task RateJobNzAsync(JobRatingDetailsDtoNz jobDetails);
     Task RateJobUsAsync(JobRatingDetailsDto jobDetails);
-    Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails);
-    Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails);
+    Task<ApiRerate> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails);
+    Task<ApiRerate> GetJobRateUsAsync(JobRatingDetailsDto jobDetails);
 
     /// <summary>
     /// Applies bulk price updates from an uploaded spreadsheet and returns the results.

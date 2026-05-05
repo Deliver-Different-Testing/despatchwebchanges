@@ -2,6 +2,7 @@
  * Hook for job field update mutations
  */
 
+import {useState, useCallback} from 'react';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {
     updateJobDetail,
@@ -13,8 +14,40 @@ import {
     restoreJobs,
     allocateJob,
     getCourierById,
+    previewJobRate,
+    applyJobRate,
 } from '../../../../services/jobDetailApi';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
+import {JobProperty} from '../../../../../enums/job-property.enum';
+
+const RERATE_FIELDS = new Set<string>([
+    JobProperty.Date,
+    JobProperty.Size,
+    JobProperty.Items,
+    JobProperty.SpeedID,
+    JobProperty.AcceptedJobTypeID,
+    JobProperty.Weight,
+    JobProperty.ClientID,
+    JobProperty.Reprice,
+    JobProperty.Truck,
+    JobProperty.Van,
+    JobProperty.DGClass,
+    JobProperty.DGDocumentation,
+    JobProperty.Direct,
+    JobProperty.BookedTime,
+    JobProperty.TailLiftPu,
+    JobProperty.TailLiftDo,
+    JobProperty.DeliverToPrivateRes,
+]);
+
+export interface PendingRateChange {
+    jobId: number;
+    jobNo: string;
+    oldPrice: number;
+    newPrice: number;
+    description: string | null;
+    isPrebook: boolean;
+}
 
 interface UpdateFieldParams {
     job: IJob;
@@ -39,6 +72,8 @@ export function useJobUpdate(
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void,
 ) {
     const queryClient = useQueryClient();
+    const [pendingRateChange, setPendingRateChange] = useState<PendingRateChange | null>(null);
+    const [isApplyingRate, setIsApplyingRate] = useState(false);
 
     const invalidateJob = async (jobId: number) => {
         await queryClient.invalidateQueries({queryKey: ['jobs', 'detail', jobId]});
@@ -53,6 +88,24 @@ export function useJobUpdate(
         ]);
     };
 
+    const checkForRateChange = useCallback(async (job: IJob) => {
+        try {
+            const preview = await previewJobRate(job.id);
+            if (Math.abs(preview.rate - job.charge) > 0.001) {
+                setPendingRateChange({
+                    jobId: job.id,
+                    jobNo: job.jobNo,
+                    oldPrice: job.charge,
+                    newPrice: preview.rate,
+                    description: preview.description,
+                    isPrebook: job.preBook,
+                });
+            }
+        } catch {
+            // Preview failure is non-fatal — user can still manually edit price
+        }
+    }, []);
+
     const updateFieldMutation = useMutation({
         mutationFn: async ({job, field, value, isRecurring, timezone}: UpdateFieldParams) => {
             if (job.isBulkJob) {
@@ -60,11 +113,15 @@ export function useJobUpdate(
             } else {
                 await updateJobDetail(job.id, field, value, isRecurring, timezone);
             }
+            return {job, field};
         },
-        onSuccess: async (_data, {job}) => {
+        onSuccess: async ({job, field}) => {
             showToast(`${job.jobNo} updated`, 'success');
             await invalidateJob(job.id);
             await invalidateJobLists();
+            if (RERATE_FIELDS.has(field) && !job.ratedManually) {
+                await checkForRateChange(job);
+            }
         },
         onError: () => {
             showToast('Failed to update job. Please try again.', 'error');
@@ -78,11 +135,15 @@ export function useJobUpdate(
             } else {
                 await updatePickupAddress(job.id, job.preBook, address);
             }
+            return {job};
         },
-        onSuccess: async (_data, {job}) => {
+        onSuccess: async ({job}) => {
             showToast(`${job.jobNo} updated`, 'success');
             await invalidateJob(job.id);
             await invalidateJobLists();
+            if (!job.ratedManually) {
+                await checkForRateChange(job);
+            }
         },
         onError: () => {
             showToast('Failed to update address. Please try again.', 'error');
@@ -146,6 +207,27 @@ export function useJobUpdate(
         },
     });
 
+    const confirmRateChange = useCallback(async () => {
+        if (!pendingRateChange) return;
+        setIsApplyingRate(true);
+        try {
+            await applyJobRate(pendingRateChange.jobId, pendingRateChange.isPrebook);
+            await invalidateJob(pendingRateChange.jobId);
+            await invalidateJobLists();
+            await queryClient.invalidateQueries({queryKey: ['notes']});
+            showToast('Price updated', 'success');
+        } catch {
+            showToast('Failed to apply new price. Please try again.', 'error');
+        } finally {
+            setIsApplyingRate(false);
+            setPendingRateChange(null);
+        }
+    }, [pendingRateChange, showToast]);
+
+    const dismissRateChange = useCallback(() => {
+        setPendingRateChange(null);
+    }, []);
+
     return {
         updateField: updateFieldMutation.mutateAsync,
         updateAddress: updateAddressMutation.mutateAsync,
@@ -158,5 +240,10 @@ export function useJobUpdate(
             || dispatchJobMutation.isPending,
         invalidateJob,
         invalidateJobLists,
+        checkForRateChange,
+        pendingRateChange,
+        isApplyingRate,
+        confirmRateChange,
+        dismissRateChange,
     };
 }

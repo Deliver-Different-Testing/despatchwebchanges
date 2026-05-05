@@ -19,6 +19,7 @@ import type {MountJobDetailsConfig} from './JobDetails.types';
 let jobDetailsRoot: Root | null = null;
 let jobDetailsContainer: HTMLElement | null = null;
 let currentConfig: MountJobDetailsConfig | null = null;
+let refreshNonce = 0;
 
 /**
  * Mounts the job details panel into a container element
@@ -80,15 +81,19 @@ function renderJobDetails(config: MountJobDetailsConfig): void {
 }
 
 /**
- * Triggers a data refresh by invalidating cached queries and re-rendering
+ * Triggers a data refresh. Increments a nonce passed to JobDetails which causes
+ * the component to call refetch() directly — this guarantees a network request
+ * regardless of React Query's cache state.
  */
 export async function refreshJobDetails(): Promise<void> {
     if (currentConfig && jobDetailsRoot) {
-        console.log('[JobDetailsReact] Refreshing job details, invalidating queries');
+        console.log('[JobDetailsReact] Refreshing job details');
+        refreshNonce++;
+        // Pass the incremented nonce — JobDetails watches this and calls refetch()
+        renderJobDetails({...currentConfig, _refreshNonce: refreshNonce});
+        // Invalidate ancillary queries; notes are also invalidated inside JobDetails' effect
         await Promise.all([
-            queryClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
             queryClient.invalidateQueries({queryKey: ['jobs', 'photos']}),
-            queryClient.invalidateQueries({queryKey: ['notes']}),
             queryClient.invalidateQueries({queryKey: ['priceBreakdowns']}),
         ]);
     }

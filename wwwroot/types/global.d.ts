@@ -28,7 +28,7 @@ import type {EditDateTimeDialogOptions, EditDateTimeDialogResult} from '../app/r
 import type {OpenBulkPriceUploadDialogOptions} from '../app/react/components/dialogs/bulk-price-upload-dialog/types';
 import type {OpenAccessorialChargesDialogOptions} from '../app/react/components/dialogs/accessorial-charges-dialog/types';
 import type {OpenAdditionalServicesDialogOptions} from '../app/react/components/dialogs/additional-services-dialog/types';
-import type {EditParcelDimensionsDialogOptions, ParcelDimensions} from '../app/react/components/dialogs/edit-parcel-dimensions-dialog/types';
+import type {EditParcelDimensionsDialogOptions, EditParcelDimensionsDialogResult} from '../app/react/components/dialogs/edit-parcel-dimensions-dialog/types';
 import type {OpenMessagingDialogOptions} from '../app/react/components/dialogs/messaging-dialog/types';
 import type {SelectDialogOptions, SelectDialogResult} from '../app/react/components/dialogs/select-dialog/types';
 import type {SimplePriceEditDialogOptions, PriceEditResult} from '../app/react/components/dialogs/simple-price-edit-dialog/types';
@@ -270,7 +270,7 @@ declare global {
             ) => Promise<AfterHoursCourierSchedule | null>;
         };
         ReactEditParcelDimensionsDialog?: {
-            showEditParcelDimensionsDialog: (options: EditParcelDimensionsDialogOptions) => Promise<ParcelDimensions[] | null>;
+            showEditParcelDimensionsDialog: (options: EditParcelDimensionsDialogOptions) => Promise<EditParcelDimensionsDialogResult | null>;
             setToastService: (service: ToastService) => void;
         };
         ReactEventGroupDialog?: {

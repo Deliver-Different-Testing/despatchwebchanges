@@ -97,6 +97,7 @@ function setup(opts: SetupOptions = {}) {
             refreshAndNotify: mockRefreshAndNotify,
             invalidateJobLists: mockInvalidateJobLists,
             invalidatePhotos: mockInvalidatePhotos,
+            checkForRateChange: jest.fn().mockResolvedValue(undefined),
         }),
     );
 
@@ -341,6 +342,7 @@ describe('useJobActions — markJobAsDone / handleDoneClick', () => {
                     refreshAndNotify: jest.fn().mockResolvedValue(undefined),
                     invalidateJobLists: jest.fn().mockResolvedValue([]),
                     invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                    checkForRateChange: jest.fn().mockResolvedValue(undefined),
                 }),
             );
 
@@ -633,6 +635,7 @@ describe('useJobActions — handleVoidClick', () => {
                 refreshAndNotify: mockRefreshAndNotify,
                 invalidateJobLists: mockInvalidateJobLists,
                 invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                checkForRateChange: jest.fn().mockResolvedValue(undefined),
             }),
         );
 

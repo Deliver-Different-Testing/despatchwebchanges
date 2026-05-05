@@ -266,6 +266,7 @@ public static partial class JobMappings
                     Height = i.Height,
                     Depth = i.Depth,
                     Length = i.Length,
+                    Weight = i.Weight,
                     Barcode = i.Barcode
                 }).ToList()
             : null,

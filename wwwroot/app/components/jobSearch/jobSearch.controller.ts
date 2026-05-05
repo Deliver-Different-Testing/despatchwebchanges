@@ -1293,6 +1293,8 @@ class JobSearchController extends BaseController {
                 } else {
                     await this.selectJobDetail(jobIdToRefresh);
                 }
+                // Refresh the React panel (nonce-based, guarantees a job/Detail network call)
+                window.ReactJobDetails?.refresh?.();
                 break;
             }
         }

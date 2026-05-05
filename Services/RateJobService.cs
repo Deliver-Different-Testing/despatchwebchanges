@@ -133,12 +133,12 @@ public sealed class RateJobService(
     /// </summary>
     /// <param name="jobDetails">The job rating details including client, addresses, speed, and size information.</param>
     /// <returns>The calculated rate, or 0 if rating fails.</returns>
-    public async Task<decimal> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails)
+    public async Task<ApiRerate> GetJobRateNzAsync(JobRatingDetailsDtoNz jobDetails)
     {
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            
+
             if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
             if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
             if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
@@ -146,13 +146,13 @@ public sealed class RateJobService(
             if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
-            if (rateResult is { Rate: > 0 }) return rateResult.Rate;
+            if (rateResult is { Rate: > 0 }) return rateResult;
 
             Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                 jobDetails.JobId,
                 rateResult?.Rate ?? 0);
 
-            return 0;
+            return new ApiRerate();
         }
         catch (Exception ex)
         {
@@ -167,7 +167,7 @@ public sealed class RateJobService(
     /// </summary>
     /// <param name="jobDetails">The job rating details including client, addresses, speed, size, and weight information.</param>
     /// <returns>The calculated rate.</returns>
-    public async Task<decimal> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
+    public async Task<ApiRerate> GetJobRateUsAsync(JobRatingDetailsDto jobDetails)
     {
         try
         {
@@ -226,7 +226,7 @@ public sealed class RateJobService(
                 PrecomputedIsToAddressAirport = jobDetails.PrecomputedIsToAddressAirport
             });
 
-            return rate;
+            return new ApiRerate { Rate = rate };
         }
         catch (Exception ex)
         {

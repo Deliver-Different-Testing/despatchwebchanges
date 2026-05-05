@@ -26,7 +26,8 @@ interface DialogState {
     jobId?: number;
     bulkJobId?: number;
     isUsCustomer: boolean;
-    resolve?: (result: ParcelDimensions[] | null) => void;
+    jobWeight?: number;
+    resolve?: (result: EditParcelDimensionsDialogResult | null) => void;
 }
 
 const defaultToastService: ToastService = {
@@ -70,7 +71,7 @@ class EditParcelDimensionsDialogManager {
 
         const handleSubmit = (result: EditParcelDimensionsDialogResult) => {
             this.dialogState.open = false;
-            this.dialogState.resolve?.(result.parcels);
+            this.dialogState.resolve?.(result);
             this.dialogState.resolve = undefined;
             this.renderDialog();
         };
@@ -87,6 +88,7 @@ class EditParcelDimensionsDialogManager {
                         jobId={this.dialogState.jobId}
                         bulkJobId={this.dialogState.bulkJobId}
                         isUsCustomer={this.dialogState.isUsCustomer}
+                        jobWeight={this.dialogState.jobWeight}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
                         showToast={this.toastService.showToast}
@@ -96,7 +98,7 @@ class EditParcelDimensionsDialogManager {
         );
     }
 
-    showEditParcelDimensionsDialog(options: EditParcelDimensionsDialogOptions): Promise<ParcelDimensions[] | null> {
+    showEditParcelDimensionsDialog(options: EditParcelDimensionsDialogOptions): Promise<EditParcelDimensionsDialogResult | null> {
         this.initializeDialogRoot();
 
         return new Promise((resolve) => {
@@ -106,6 +108,7 @@ class EditParcelDimensionsDialogManager {
                 jobId: options.jobId,
                 bulkJobId: options.bulkJobId,
                 isUsCustomer: options.isUsCustomer,
+                jobWeight: options.jobWeight,
                 resolve,
             };
             this.renderDialog();
@@ -117,7 +120,7 @@ const dialogManager = new EditParcelDimensionsDialogManager();
 
 export function showEditParcelDimensionsDialog(
     options: EditParcelDimensionsDialogOptions
-): Promise<ParcelDimensions[] | null> {
+): Promise<EditParcelDimensionsDialogResult | null> {
     return dialogManager.showEditParcelDimensionsDialog(options);
 }
 

@@ -1,81 +1,113 @@
-/**
- * Edit Parcel Dimensions Dialog
- *
- * React replacement for the AngularJS edit-parcel-dimensions-dialog.
- * Supports adding/deleting parcels, bulk-add, per-parcel dimension entry,
- * a visual timeline for navigating between parcels, and saving via API.
- */
-
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import InputAdornment from '@mui/material/InputAdornment';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Divider from '@mui/material/Divider';
-import InputAdornment from '@mui/material/InputAdornment';
-import Chip from '@mui/material/Chip';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
 import Tooltip from '@mui/material/Tooltip';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
 import CloseIcon from '@mui/icons-material/Close';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import AddIcon from '@mui/icons-material/Add';
-import AddBoxIcon from '@mui/icons-material/AddBox';
-import IndeterminateCheckBoxIcon from '@mui/icons-material/IndeterminateCheckBox';
-import ViewTimelineIcon from '@mui/icons-material/ViewTimeline';
+import RemoveIcon from '@mui/icons-material/Remove';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import InfoIcon from '@mui/icons-material/Info';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 import {apiClient} from '../../../services/apiClient';
-import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions,} from './types';
+import {EditParcelDimensionsDialogProps, EditParcelDimensionsDialogResult, ParcelDimensions} from './types';
 
-const MAX_DIMENSION = 999.9;
 const MAX_NAME_LENGTH = 50;
 
-function initializeParcel(): ParcelDimensions {
+const noSpinnerSx = {
+    '& input::-webkit-outer-spin-button': {display: 'none'},
+    '& input::-webkit-inner-spin-button': {display: 'none'},
+    '& input[type=number]': {MozAppearance: 'textfield'},
+} as const;
+
+interface ParcelGroup {
+    id: string;
+    itemName: string;
+    length: string;
+    depth: string;
+    height: string;
+    weight: string;
+    barcodes: string[];
+    expandedBarcodes: boolean;
+}
+
+function newGroup(): ParcelGroup {
     return {
+        id: Math.random().toString(36).slice(2),
         itemName: '',
-        length: undefined,
-        depth: undefined,
-        height: undefined,
-        dimensions: '',
+        length: '',
+        depth: '',
+        height: '',
+        weight: '',
+        barcodes: [''],
+        expandedBarcodes: false,
     };
 }
 
-function validateField(fieldName: string, value: unknown): string | null {
-    switch (fieldName) {
-        case 'itemName':
-            if (typeof value === 'string' && value.length > MAX_NAME_LENGTH) {
-                return `Name must be ${MAX_NAME_LENGTH} characters or less`;
-            }
-            return null;
-        case 'length':
-        case 'depth':
-        case 'height': {
-            if (value === undefined || value === null || value === '') return null;
-            const num = typeof value === 'number' ? value : Number(value);
-            if (isNaN(num)) {
-                return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} must be a number`;
-            }
-            if (num <= 0) {
-                return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} must be greater than 0`;
-            }
-            if (num > MAX_DIMENSION) {
-                return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} must be ${MAX_DIMENSION} or less`;
-            }
-            return null;
+function parcelsToGroups(parcels: ParcelDimensions[]): ParcelGroup[] {
+    if (!parcels || parcels.length === 0) return [newGroup()];
+
+    const map = new Map<string, ParcelGroup>();
+
+    for (const p of parcels) {
+        const key = `${p.itemName ?? ''}|${p.length ?? ''}|${p.depth ?? ''}|${p.height ?? ''}|${p.weight ?? ''}`;
+        if (map.has(key)) {
+            map.get(key)!.barcodes.push(p.barcode ?? '');
+        } else {
+            map.set(key, {
+                id: Math.random().toString(36).slice(2),
+                itemName: p.itemName ?? '',
+                length: p.length != null ? String(p.length) : '',
+                depth: p.depth != null ? String(p.depth) : '',
+                height: p.height != null ? String(p.height) : '',
+                weight: p.weight != null ? String(p.weight) : '',
+                barcodes: [p.barcode ?? ''],
+                expandedBarcodes: false,
+            });
         }
-        default:
-            return null;
     }
+
+    return Array.from(map.values());
+}
+
+function groupsToParcels(groups: ParcelGroup[], dimensionUnit: string): ParcelDimensions[] {
+    return groups.flatMap(g => {
+        const length = g.length !== '' ? parseFloat(g.length) : undefined;
+        const depth = g.depth !== '' ? parseFloat(g.depth) : undefined;
+        const height = g.height !== '' ? parseFloat(g.height) : undefined;
+        const weight = g.weight !== '' ? parseFloat(g.weight) : undefined;
+        const dimensions = length && depth && height
+            ? `${length} × ${depth} × ${height} ${dimensionUnit}`
+            : '';
+
+        return g.barcodes.map(barcode => ({
+            itemName: g.itemName,
+            length,
+            depth,
+            height,
+            weight,
+            dimensions,
+            barcode: barcode || undefined,
+        }));
+    });
 }
 
 export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProps> = ({
@@ -84,227 +116,149 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     jobId,
     bulkJobId,
     isUsCustomer,
+    jobWeight,
     onClose,
     onSubmit,
     showToast,
 }) => {
-    const [parcels, setParcels] = useState<ParcelDimensions[]>([]);
-    const [selectedParcelIndex, setSelectedParcelIndex] = useState(0);
+    const [groups, setGroups] = useState<ParcelGroup[]>([]);
     const [isFormDirty, setIsFormDirty] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isParentJob, setIsParentJob] = useState(false);
-    const [bulkAddCount, setBulkAddCount] = useState(1);
-    const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+    const [targetWeight, setTargetWeight] = useState('');
 
-    const dimensionsString = isUsCustomer ? 'inches' : 'cm';
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
+    const weightUnit = isUsCustomer ? 'lbs' : 'kg';
 
-    // Initialize parcels and check parent status on open
     useEffect(() => {
         if (!open) return;
 
-        const initialized = initialParcels && initialParcels.length > 0
-            ? initialParcels.map(p => ({
-                ...p,
-                length: typeof p.length === 'number' ? p.length : undefined,
-                depth: typeof p.depth === 'number' ? p.depth : undefined,
-                height: typeof p.height === 'number' ? p.height : undefined,
-            }))
-            : [initializeParcel()];
-
-        setParcels(initialized);
-        setSelectedParcelIndex(0);
+        setGroups(parcelsToGroups(initialParcels));
         setIsFormDirty(false);
         setIsLoading(false);
         setIsParentJob(false);
-        setBulkAddCount(1);
-        setValidationErrors({});
+        setTargetWeight(jobWeight != null ? String(jobWeight) : '');
 
         if (jobId) {
-            apiClient.get<boolean>('job/IsJobParent', { jobId })
-                .then(setIsParentJob)
-                .catch(() => {});
+            apiClient.get<boolean>('job/IsJobParent', {jobId}).then(setIsParentJob).catch(() => {});
         } else if (bulkJobId) {
-            apiClient.get<boolean>('job/IsBulkJobParent', { bulkJobId })
-                .then(setIsParentJob)
-                .catch(() => {});
+            apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId}).then(setIsParentJob).catch(() => {});
         } else {
             showToast('No JobId or BulkJobId was provided. Something went wrong.', 'error');
         }
-    }, [open, initialParcels, jobId, bulkJobId, showToast]);
+    }, [open, initialParcels, jobId, bulkJobId, showToast, jobWeight]);
 
-    const validateCurrentParcel = useCallback((parcelsList: ParcelDimensions[], index: number): Record<string, string> => {
-        const currentParcel = parcelsList[index];
-        if (!currentParcel) return {};
-
-        const errors: Record<string, string> = {};
-        const fields = ['itemName', 'length', 'depth', 'height'] as const;
-
-        for (const field of fields) {
-            const error = validateField(field, currentParcel[field as keyof ParcelDimensions]);
-            if (error) errors[field] = error;
-        }
-
-        return errors;
+    const updateGroup = useCallback((id: string, field: keyof Pick<ParcelGroup, 'itemName' | 'length' | 'depth' | 'height' | 'weight'>, value: string) => {
+        setGroups(prev => prev.map(g => g.id === id ? {...g, [field]: value} : g));
+        setIsFormDirty(true);
     }, []);
 
-    const currentParcel = parcels[selectedParcelIndex] || null;
-    const hasParcels = parcels.length > 0;
-
-    const updateParcelField = useCallback((field: keyof ParcelDimensions, value: unknown) => {
-        setParcels(prev => {
-            const updated = [...prev];
-            updated[selectedParcelIndex] = { ...updated[selectedParcelIndex], [field]: value };
-
-            // Validate after update
-            const errors = validateCurrentParcel(updated, selectedParcelIndex);
-            setValidationErrors(errors);
-
-            return updated;
-        });
-        setIsFormDirty(true);
-    }, [selectedParcelIndex, validateCurrentParcel]);
-
-    const addNewParcel = useCallback(() => {
-        setParcels(prev => {
-            const updated = [...prev, initializeParcel()];
-            setSelectedParcelIndex(updated.length - 1);
-            return updated;
-        });
-        setIsFormDirty(true);
-        setValidationErrors({});
-    }, []);
-
-    const addBulkParcels = useCallback(() => {
-        if (!bulkAddCount || bulkAddCount < 1) {
-            showToast('Please enter a valid number of parcels to add', 'warning');
-            return;
-        }
-
-        const count = Math.floor(bulkAddCount);
-        setParcels(prev => {
-            const newParcels = Array.from({ length: count }, () => initializeParcel());
-            const updated = [...prev, ...newParcels];
-            setSelectedParcelIndex(updated.length - 1);
-            return updated;
-        });
-        setIsFormDirty(true);
-        setBulkAddCount(1);
-        setValidationErrors({});
-        showToast(`Added ${count} ${count === 1 ? 'parcel' : 'parcels'}`, 'success');
-    }, [bulkAddCount, showToast]);
-
-    const removeBulkParcels = useCallback(() => {
-        if (!bulkAddCount || bulkAddCount < 1) {
-            showToast('Please enter a valid number of parcels to remove', 'warning');
-            return;
-        }
-
-        const count = Math.floor(bulkAddCount);
-
-        if (count >= parcels.length) {
-            showToast(
-                `Cannot remove ${count} ${count === 1 ? 'parcel' : 'parcels'} — only ${parcels.length} ${parcels.length === 1 ? 'exists' : 'exist'}. You must keep at least one parcel.`,
-                'warning',
-            );
-            return;
-        }
-
-        setParcels(prev => {
-            const updated = prev.slice(0, prev.length - count);
-            const newIndex = Math.min(selectedParcelIndex, updated.length - 1);
-            setSelectedParcelIndex(Math.max(0, newIndex));
-            return updated;
-        });
-        setIsFormDirty(true);
-        setBulkAddCount(1);
-        setValidationErrors({});
-        showToast(`Removed ${count} ${count === 1 ? 'parcel' : 'parcels'} from the end`, 'success');
-    }, [bulkAddCount, parcels.length, selectedParcelIndex, showToast]);
-
-    const deleteParcel = useCallback((index: number, event?: React.MouseEvent) => {
-        if (event) event.stopPropagation();
-
-        setParcels(prev => {
-            const updated = [...prev];
-            updated.splice(index, 1);
-
-            if (updated.length === 0) {
-                setSelectedParcelIndex(0);
-            } else if (index <= selectedParcelIndex) {
-                setSelectedParcelIndex(Math.max(0, selectedParcelIndex - 1));
+    const adjustQty = useCallback((id: string, delta: number) => {
+        setGroups(prev => prev.map(g => {
+            if (g.id !== id) return g;
+            const newQty = g.barcodes.length + delta;
+            if (newQty < 1) return g;
+            const barcodes = [...g.barcodes];
+            if (delta > 0) {
+                for (let i = 0; i < delta; i++) barcodes.push('');
+            } else {
+                barcodes.splice(barcodes.length + delta, -delta);
             }
+            return {...g, barcodes};
+        }));
+        setIsFormDirty(true);
+    }, []);
 
-            return updated;
+    const updateBarcode = useCallback((id: string, index: number, value: string) => {
+        setGroups(prev => prev.map(g => {
+            if (g.id !== id) return g;
+            const barcodes = [...g.barcodes];
+            barcodes[index] = value;
+            return {...g, barcodes};
+        }));
+        setIsFormDirty(true);
+    }, []);
+
+    const addGroup = useCallback(() => {
+        setGroups(prev => [...prev, newGroup()]);
+        setIsFormDirty(true);
+    }, []);
+
+    const deleteGroup = useCallback((id: string) => {
+        setGroups(prev => {
+            const filtered = prev.filter(g => g.id !== id);
+            return filtered.length > 0 ? filtered : [newGroup()];
         });
         setIsFormDirty(true);
-        setValidationErrors({});
-    }, [selectedParcelIndex]);
+    }, []);
 
-    const switchParcel = useCallback((index: number) => {
-        if (index >= 0 && index < parcels.length) {
-            setSelectedParcelIndex(index);
-            const errors = validateCurrentParcel(parcels, index);
-            setValidationErrors(errors);
-        }
-    }, [parcels, validateCurrentParcel]);
+    const toggleBarcodes = useCallback((id: string) => {
+        setGroups(prev => prev.map(g => g.id === id ? {...g, expandedBarcodes: !g.expandedBarcodes} : g));
+    }, []);
+
+    const totalParcels = groups.reduce((sum, g) => sum + g.barcodes.length, 0);
+
+    const parcelTotal = useMemo(() =>
+        groups.reduce((sum, g) => {
+            const w = parseFloat(g.weight);
+            return sum + (isNaN(w) ? 0 : w * g.barcodes.length);
+        }, 0),
+    [groups]);
+
+    // Keep job weight in sync with parcel total as the user edits dimension rows
+    useEffect(() => {
+        if (parcelTotal > 0) setTargetWeight(String(Math.round(parcelTotal * 10) / 10));
+    }, [parcelTotal]);
+
+    const hasEmptyWeights = groups.some(g => { const w = parseFloat(g.weight); return isNaN(w) || w <= 0; });
+    const weightMismatch = !hasEmptyWeights && parcelTotal > 0 && Math.abs((parseFloat(targetWeight) || 0) - parcelTotal) > 1;
+
+    const handleMatchProportionally = useCallback(() => {
+        const target = parseFloat(targetWeight);
+        if (isNaN(target) || target <= 0 || parcelTotal <= 0) return;
+        const scale = target / parcelTotal;
+        setGroups(prev => prev.map(g => {
+            const w = parseFloat(g.weight);
+            if (isNaN(w) || w === 0) return g;
+            return {...g, weight: String(Math.round(w * scale * 10) / 10)};
+        }));
+        setIsFormDirty(true);
+    }, [targetWeight, parcelTotal]);
 
     const handleCancel = useCallback(() => {
         if (isFormDirty) {
             setDiscardDialogOpen(true);
-            return;
+        } else {
+            onClose();
         }
-        onClose();
     }, [isFormDirty, onClose]);
 
-    const handleDiscardConfirm = useCallback(() => {
-        setDiscardDialogOpen(false);
-        onClose();
-    }, [onClose]);
-
     const handleSubmit = useCallback(async () => {
-        const errors = validateCurrentParcel(parcels, selectedParcelIndex);
-        setValidationErrors(errors);
-
-        if (Object.keys(errors).length > 0) {
-            showToast('Please fix validation errors before saving', 'warning');
-            return;
-        }
-
         setIsLoading(true);
-
         try {
-            const updatedParcels = parcels.map(parcel => ({
-                ...parcel,
-                dimensions: parcel.length && parcel.depth && parcel.height
-                    ? `${parcel.length} × ${parcel.depth} × ${parcel.height} ${dimensionUnit}`
-                    : '',
-            }));
+            const updatedParcels = groupsToParcels(groups, dimensionUnit);
 
             if (jobId) {
-                await apiClient.post('job/UpdateJobPackages', { jobId, parcels: updatedParcels });
+                await apiClient.post('job/UpdateJobPackages', {jobId, parcels: updatedParcels, weight: parcelTotal > 0 ? parcelTotal : undefined});
             } else if (bulkJobId) {
-                await apiClient.post('job/UpdateBulkJobPackages', { bulkJobId, parcels: updatedParcels });
+                await apiClient.post('job/UpdateBulkJobPackages', {bulkJobId, parcels: updatedParcels});
             } else {
                 showToast('No JobId or BulkJobId was provided. Something went wrong.', 'error');
                 return;
             }
 
-            const count = updatedParcels.length;
-            showToast(`Successfully updated ${count} ${count === 1 ? 'parcel' : 'parcels'}`, 'success');
-
-            const result: EditParcelDimensionsDialogResult = { parcels: updatedParcels };
+            showToast(`Successfully updated ${totalParcels} ${totalParcels === 1 ? 'parcel' : 'parcels'}`, 'success');
+            const result: EditParcelDimensionsDialogResult = {parcels: updatedParcels, totalWeight: parcelTotal};
             onSubmit(result);
         } catch (error: unknown) {
-            console.error('An error occurred while updating packages:', error);
             showToast(error instanceof Error ? error.message : 'Failed to update parcels', 'error');
         } finally {
             setIsLoading(false);
         }
-    }, [parcels, selectedParcelIndex, validateCurrentParcel, jobId, bulkJobId, dimensionUnit, showToast, onSubmit]);
+    }, [groups, dimensionUnit, jobId, bulkJobId, totalParcels, parcelTotal, showToast, onSubmit]);
 
-    const isValid = Object.keys(validationErrors).length === 0;
+    const numInput = {min: 0, step: 0.01};
 
     return (
         <Dialog
@@ -312,7 +266,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             onClose={handleCancel}
             fullWidth
             maxWidth="md"
-            slotProps={{ paper: { sx: { maxHeight: '90vh', display: 'flex', flexDirection: 'column' } } }}
+            slotProps={{paper: {sx: {maxHeight: '90vh', display: 'flex', flexDirection: 'column'}}}}
         >
             {/* Header */}
             <Box
@@ -324,362 +278,236 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     display: 'flex',
                     alignItems: 'center',
                     gap: 2,
+                    flexShrink: 0,
                 })}
             >
-                <Box
-                    sx={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 1.5,
-                        bgcolor: 'rgba(255,255,255,0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <Inventory2OutlinedIcon sx={{ fontSize: 24 }} />
+                <Box sx={{width: 44, height: 44, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                    <Inventory2OutlinedIcon sx={{fontSize: 24}} />
                 </Box>
-                <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
-                        Edit Dimensions
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                        Update parcel sizes and weights
+                <Box sx={{flex: 1}}>
+                    <Typography variant="h6" fontWeight={600}>Edit Dimensions</Typography>
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        {groups.length} type{groups.length !== 1 ? 's' : ''} · {totalParcels} parcel{totalParcels !== 1 ? 's' : ''} total
                     </Typography>
                 </Box>
-                <IconButton
-                    onClick={handleCancel}
-                    disabled={isLoading}
-                    sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
-                >
+                <IconButton onClick={handleCancel} disabled={isLoading} sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}>
                     <CloseIcon />
                 </IconButton>
             </Box>
 
-            {/* Parent job banner */}
             {isParentJob && (
-                <Alert severity="info" icon={<InfoIcon />} sx={{ borderRadius: 0 }}>
+                <Alert severity="info" icon={<InfoIcon />} sx={{borderRadius: 0, flexShrink: 0}}>
                     This is a child job. Parcel information has been inherited from the parent job.
                 </Alert>
             )}
 
-            {/* Empty state */}
-            {!hasParcels && (
-                <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                    <Card sx={{ maxWidth: 500, textAlign: 'center' }}>
-                        <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, p: 4 }}>
-                            <Inventory2OutlinedIcon sx={{ fontSize: 64, color: 'primary.dark' }} />
-                            <Typography variant="h5">No Parcels Added</Typography>
-                            <Typography variant="body1" color="text.secondary">
-                                Add parcels to begin entering dimensions
-                            </Typography>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
-                                <Button variant="contained" startIcon={<AddIcon />} onClick={addNewParcel}>
-                                    Add Single Parcel
-                                </Button>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <TextField
-                                        label="Quantity"
-                                        type="number"
-                                        size="small"
-                                        value={bulkAddCount}
-                                        onChange={(e) => setBulkAddCount(Math.max(1, parseInt(e.target.value) || 1))}
-                                        slotProps={{ htmlInput: { min: 1, max: 100, step: 1 } }}
-                                        sx={{ width: 90 }}
-                                    />
-                                    <Button variant="outlined" startIcon={<AddBoxIcon />} onClick={addBulkParcels}>
-                                        Add Multiple
-                                    </Button>
-                                </Box>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Box>
-            )}
-
-            {/* Main content */}
-            {hasParcels && (
-                <Box sx={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                    {/* Current parcel header */}
-                    <Card
-                        sx={(theme) => ({
-                            mx: 2,
-                            mt: 2,
-                            bgcolor: theme.palette.primary.main + '0D',
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 2,
-                            py: 1.5,
-                            transition: 'box-shadow 0.2s',
-                            '&:hover': { boxShadow: 2 },
-                        })}
-                    >
-                        <Inventory2OutlinedIcon sx={{ color: 'primary.main', mr: 1.5 }} />
-                        <Typography variant="subtitle1" sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                            Add Additional Items
-                            <Chip label={`${parcels.length} ${parcels.length === 1 ? 'item' : 'items'}`} size="small" color="primary" />
-                        </Typography>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Tooltip title="Remove Parcels">
-                                <IconButton color="error" onClick={removeBulkParcels}>
-                                    <IndeterminateCheckBoxIcon />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Number of Parcels To Add/Remove">
-                                <TextField
-                                    label="Qty"
-                                    type="number"
-                                    size="small"
-                                    value={bulkAddCount}
-                                    onChange={(e) => setBulkAddCount(Math.max(1, parseInt(e.target.value) || 1))}
-                                    slotProps={{ htmlInput: { min: 1, max: 100, step: 1, style: { textAlign: 'center' } } }}
-                                    sx={{ width: 70 }}
-                                />
-                            </Tooltip>
-                            <Tooltip title="Add Parcels">
-                                <IconButton color="primary" onClick={addBulkParcels}>
-                                    <AddBoxIcon />
-                                </IconButton>
-                            </Tooltip>
-                        </Box>
-                    </Card>
-
-                    {/* Parcel form */}
-                    <Box sx={{ p: 2 }}>
-                        <TextField
-                            label="Item Name"
-                            fullWidth
-                            value={currentParcel?.itemName ?? ''}
-                            onChange={(e) => updateParcelField('itemName', e.target.value)}
-                            error={!!validationErrors.itemName}
-                            helperText={validationErrors.itemName}
-                            placeholder="Enter item name"
-                            sx={{ mb: 2 }}
-                        />
-
-                        <TextField
-                            label="Barcode"
-                            fullWidth
-                            value={currentParcel?.barcode ?? ''}
-                            onChange={(e) => updateParcelField('barcode', e.target.value)}
-                            placeholder="Enter barcode"
-                            sx={{ mb: 2 }}
-                        />
-
-                        <Card variant="outlined" sx={{ p: 2 }}>
-                            <Typography variant="subtitle2" sx={{ mb: 2 }}>
-                                Dimensions
-                            </Typography>
-                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                <TextField
-                                    label="Length"
-                                    type="number"
-                                    value={currentParcel?.length ?? ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                                        updateParcelField('length', val);
-                                    }}
-                                    error={!!validationErrors.length}
-                                    helperText={validationErrors.length}
-                                    placeholder="0.00"
-                                    slotProps={{
-                                        htmlInput: { min: 0, step: 0.01 },
-                                        input: { endAdornment: <InputAdornment position="end">{dimensionsString}</InputAdornment> },
-                                    }}
-                                    sx={{ flex: 1, minWidth: 120 }}
-                                />
-                                <TextField
-                                    label="Width"
-                                    type="number"
-                                    value={currentParcel?.depth ?? ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                                        updateParcelField('depth', val);
-                                    }}
-                                    error={!!validationErrors.depth}
-                                    helperText={validationErrors.depth}
-                                    placeholder="0.00"
-                                    slotProps={{
-                                        htmlInput: { min: 0, step: 0.01 },
-                                        input: { endAdornment: <InputAdornment position="end">{dimensionsString}</InputAdornment> },
-                                    }}
-                                    sx={{ flex: 1, minWidth: 120 }}
-                                />
-                                <TextField
-                                    label="Height"
-                                    type="number"
-                                    value={currentParcel?.height ?? ''}
-                                    onChange={(e) => {
-                                        const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                                        updateParcelField('height', val);
-                                    }}
-                                    error={!!validationErrors.height}
-                                    helperText={validationErrors.height}
-                                    placeholder="0.00"
-                                    slotProps={{
-                                        htmlInput: { min: 0, step: 0.01 },
-                                        input: { endAdornment: <InputAdornment position="end">{dimensionsString}</InputAdornment> },
-                                    }}
-                                    sx={{ flex: 1, minWidth: 120 }}
-                                />
-                            </Box>
-                        </Card>
-                    </Box>
-
-                    {/* Parcel Timeline */}
-                    <Card variant="outlined" sx={{ mx: 2, mb: 2, p: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <ViewTimelineIcon sx={{ fontSize: 20 }} />
-                                Parcel Items
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                                Total: {parcels.length} {parcels.length === 1 ? 'parcel' : 'parcels'}
-                            </Typography>
-                        </Box>
-                        <Divider sx={{ mb: 1 }} />
-
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                flexWrap: 'wrap',
-                                gap: 0.5,
-                                py: 2,
-                                px: 1,
-                            }}
-                        >
-                            {parcels.map((parcel, index) => (
-                                <React.Fragment key={index}>
-                                    {/* Parcel Step */}
-                                    <Box
-                                        onClick={() => switchParcel(index)}
-                                        sx={{
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            cursor: 'pointer',
-                                            px: 1.5,
-                                            minWidth: 80,
-                                            transition: 'transform 0.15s',
-                                            '&:hover': {
-                                                transform: 'translateY(-2px)',
-                                                '& .delete-badge': { opacity: 1 },
-                                                '& .step-circle': { boxShadow: 4 },
-                                            },
-                                        }}
-                                    >
-                                        <Box
-                                            className="step-circle"
-                                            sx={(theme) => ({
-                                                position: 'relative',
-                                                width: 40,
-                                                height: 40,
-                                                borderRadius: '50%',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                fontWeight: 500,
-                                                boxShadow: 1,
-                                                transition: 'all 0.2s',
-                                                bgcolor: selectedParcelIndex === index
-                                                    ? theme.palette.primary.main
-                                                    : theme.palette.grey[50],
-                                                color: selectedParcelIndex === index
-                                                    ? theme.palette.primary.contrastText
-                                                    : theme.palette.text.primary,
-                                            })}
-                                        >
-                                            {index + 1}
-                                            {parcels.length > 1 && (
-                                                <Box
-                                                    className="delete-badge"
-                                                    onClick={(e) => deleteParcel(index, e)}
-                                                    sx={{
-                                                        position: 'absolute',
-                                                        top: -6,
-                                                        right: -6,
-                                                        width: 20,
-                                                        height: 20,
-                                                        borderRadius: '50%',
-                                                        bgcolor: 'error.main',
-                                                        color: 'white',
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        justifyContent: 'center',
-                                                        fontSize: 14,
-                                                        opacity: 0,
-                                                        transition: 'opacity 0.2s',
-                                                        boxShadow: 1,
-                                                        '&:hover': { bgcolor: 'error.dark', transform: 'scale(1.1)' },
-                                                    }}
-                                                >
-                                                    <CloseIcon sx={{ fontSize: 14 }} />
-                                                </Box>
-                                            )}
-                                        </Box>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                mt: 1,
-                                                textAlign: 'center',
-                                                maxWidth: 100,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                fontWeight: selectedParcelIndex === index ? 600 : 400,
-                                            }}
-                                        >
-                                            {parcel.itemName || `Parcel ${index + 1}`}
-                                        </Typography>
-                                    </Box>
-
-                                    {/* Connector */}
-                                    {index < parcels.length - 1 && (
-                                        <Box
-                                            sx={(theme) => ({
-                                                height: 2,
-                                                width: 24,
-                                                bgcolor: theme.palette.grey[400],
-                                                alignSelf: 'center',
-                                                mt: -2,
-                                            })}
+            {/* Table */}
+            <Box sx={{flex: 1, overflowY: 'auto', p: 2}}>
+                <Table size="small" stickyHeader>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell sx={{minWidth: 130}}>Name</TableCell>
+                            <TableCell align="center" sx={{width: 80}}>L ({dimensionUnit})</TableCell>
+                            <TableCell align="center" sx={{width: 80}}>W ({dimensionUnit})</TableCell>
+                            <TableCell align="center" sx={{width: 80}}>H ({dimensionUnit})</TableCell>
+                            <TableCell align="center" sx={{width: 90}}>Weight (kg)</TableCell>
+                            <TableCell align="center" sx={{width: 110}}>Qty</TableCell>
+                            <TableCell sx={{width: 72}} />
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {groups.map(g => (
+                            <React.Fragment key={g.id}>
+                                <TableRow>
+                                    <TableCell>
+                                        <TextField
+                                            size="small"
+                                            fullWidth
+                                            value={g.itemName}
+                                            onChange={e => updateGroup(g.id, 'itemName', e.target.value)}
+                                            placeholder="Name"
+                                            inputProps={{maxLength: MAX_NAME_LENGTH}}
                                         />
-                                    )}
-                                </React.Fragment>
-                            ))}
-                        </Box>
-                    </Card>
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            size="small"
+                                            type="number"
+                                            fullWidth
+                                            value={g.length}
+                                            onChange={e => updateGroup(g.id, 'length', e.target.value)}
+                                            onWheel={e => e.currentTarget.blur()}
+                                            placeholder="—"
+                                            inputProps={numInput}
+                                            sx={noSpinnerSx}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            size="small"
+                                            type="number"
+                                            fullWidth
+                                            value={g.depth}
+                                            onChange={e => updateGroup(g.id, 'depth', e.target.value)}
+                                            onWheel={e => e.currentTarget.blur()}
+                                            placeholder="—"
+                                            inputProps={numInput}
+                                            sx={noSpinnerSx}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            size="small"
+                                            type="number"
+                                            fullWidth
+                                            value={g.height}
+                                            onChange={e => updateGroup(g.id, 'height', e.target.value)}
+                                            onWheel={e => e.currentTarget.blur()}
+                                            placeholder="—"
+                                            inputProps={numInput}
+                                            sx={noSpinnerSx}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <TextField
+                                            size="small"
+                                            type="number"
+                                            fullWidth
+                                            value={g.weight}
+                                            onChange={e => updateGroup(g.id, 'weight', e.target.value)}
+                                            onWheel={e => e.currentTarget.blur()}
+                                            placeholder="—"
+                                            inputProps={{min: 0, step: 0.001}}
+                                            sx={noSpinnerSx}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5}}>
+                                            <IconButton size="small" aria-label="Decrease quantity" onClick={() => adjustQty(g.id, -1)} disabled={g.barcodes.length <= 1}>
+                                                <RemoveIcon fontSize="small" />
+                                            </IconButton>
+                                            <Typography variant="body2" sx={{minWidth: 20, textAlign: 'center'}}>
+                                                {g.barcodes.length}
+                                            </Typography>
+                                            <IconButton size="small" aria-label="Increase quantity" onClick={() => adjustQty(g.id, 1)}>
+                                                <AddIcon fontSize="small" />
+                                            </IconButton>
+                                        </Box>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Box sx={{display: 'flex', alignItems: 'center', gap: 0.25}}>
+                                            <Tooltip title="Delete row">
+                                                <IconButton size="small" aria-label="Delete row" color="error" onClick={() => deleteGroup(g.id)}>
+                                                    <DeleteIcon fontSize="small" />
+                                                </IconButton>
+                                            </Tooltip>
+                                            <Tooltip title={g.expandedBarcodes ? 'Hide barcodes' : 'Show barcodes'}>
+                                                <IconButton size="small" onClick={() => toggleBarcodes(g.id)}>
+                                                    {g.expandedBarcodes ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />}
+                                                </IconButton>
+                                            </Tooltip>
+                                        </Box>
+                                    </TableCell>
+                                </TableRow>
+
+                                {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
+                                    <TableRow key={`${g.id}-bc-${i}`} sx={{bgcolor: 'action.hover'}}>
+                                        <TableCell sx={{pl: 4}}>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Item {i + 1}
+                                            </Typography>
+                                        </TableCell>
+                                        <TableCell colSpan={6}>
+                                            <TextField
+                                                size="small"
+                                                fullWidth
+                                                value={barcode}
+                                                onChange={e => updateBarcode(g.id, i, e.target.value)}
+                                                placeholder="Barcode"
+                                                label="Barcode"
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </React.Fragment>
+                        ))}
+                    </TableBody>
+                </Table>
+
+                <Box sx={{mt: 1.5}}>
+                    <Button size="small" startIcon={<AddIcon />} onClick={addGroup}>
+                        Add package type
+                    </Button>
                 </Box>
+            </Box>
+
+            {/* Weight section */}
+            <Box sx={{px: 2, py: 1.5, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, flexWrap: 'wrap'}}>
+                <TextField
+                    size="small"
+                    label="Job weight"
+                    type="number"
+                    value={targetWeight}
+                    onChange={e => setTargetWeight(e.target.value)}
+                    onWheel={e => e.currentTarget.blur()}
+                    inputProps={{min: 0, step: 0.001}}
+                    slotProps={{input: {endAdornment: <InputAdornment position="end">{weightUnit}</InputAdornment>}}}
+                    sx={{...noSpinnerSx, width: 150}}
+                    error={weightMismatch}
+                />
+                <Tooltip title="Scale individual item weights proportionally so they total the job weight">
+                    <span>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={handleMatchProportionally}
+                            disabled={isNaN(parseFloat(targetWeight)) || parseFloat(targetWeight) <= 0 || parcelTotal <= 0}
+                        >
+                            Match proportionally
+                        </Button>
+                    </span>
+                </Tooltip>
+                <Box sx={{flex: 1}} />
+                <Typography variant="body2" color="text.secondary">
+                    Parcel total: <strong>{parcelTotal > 0 ? parcelTotal.toFixed(1) : '—'} {parcelTotal > 0 ? weightUnit : ''}</strong>
+                </Typography>
+            </Box>
+
+            {hasEmptyWeights && (
+                <Alert severity="error" sx={{borderRadius: 0, flexShrink: 0, py: 0.25, '& .MuiAlert-message': {py: 0.5}}}>
+                    All parcels must have a weight greater than 0 before saving.
+                </Alert>
+            )}
+            {!hasEmptyWeights && weightMismatch && (
+                <Alert severity="warning" sx={{borderRadius: 0, flexShrink: 0, py: 0.25, '& .MuiAlert-message': {py: 0.5}}}>
+                    Job weight ({(parseFloat(targetWeight) || 0).toFixed(1)} {weightUnit}) doesn't match parcel total ({parcelTotal.toFixed(1)} {weightUnit}). Adjust line item weights or click <strong>Match proportionally</strong>.
+                </Alert>
             )}
 
-            {/* Actions */}
-            {hasParcels && (
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 2, borderTop: 1, borderColor: 'divider' }}>
-                    <Button onClick={handleCancel} disabled={isLoading}>
-                        Cancel
-                    </Button>
-                    {isLoading ? (
-                        <CircularProgress size={20} />
-                    ) : (
-                        <Button
-                            variant="contained"
-                            onClick={handleSubmit}
-                            disabled={!isValid || isLoading}
-                        >
-                            Save
-                        </Button>
-                    )}
-                </Box>
-            )}
-            {/* Discard Changes Confirmation Dialog */}
+            {/* Footer */}
+            <Box sx={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0}}>
+                <Button onClick={handleCancel} disabled={isLoading}>
+                    Cancel
+                </Button>
+                {isLoading ? (
+                    <CircularProgress size={20} />
+                ) : (
+                    <Tooltip title={hasEmptyWeights ? 'All parcels must have a weight greater than 0' : weightMismatch ? 'Job weight must match parcel total before saving' : ''}>
+                        <span>
+                            <Button variant="contained" onClick={handleSubmit} disabled={hasEmptyWeights || weightMismatch}>
+                                Save
+                            </Button>
+                        </span>
+                    </Tooltip>
+                )}
+            </Box>
+
+            {/* Discard confirmation */}
             <Dialog
                 open={discardDialogOpen}
                 onClose={() => setDiscardDialogOpen(false)}
                 maxWidth="xs"
                 fullWidth
-                aria-labelledby="discard-dialog-title"
-                aria-describedby="discard-dialog-description"
             >
                 <Box
                     sx={(theme) => ({
@@ -692,46 +520,25 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         gap: 2,
                     })}
                 >
-                    <Box
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 1.5,
-                            bgcolor: 'rgba(255,255,255,0.15)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <WarningAmberIcon sx={{ fontSize: 24 }} />
+                    <Box sx={{width: 44, height: 44, borderRadius: 1.5, bgcolor: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                        <WarningAmberIcon sx={{fontSize: 24}} />
                     </Box>
-                    <Box sx={{ flex: 1 }}>
-                        <Typography id="discard-dialog-title" variant="h6" fontWeight={600}>
-                            Discard unsaved changes
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
-                            Changes will be permanently lost
-                        </Typography>
+                    <Box sx={{flex: 1}}>
+                        <Typography variant="h6" fontWeight={600}>Discard unsaved changes</Typography>
+                        <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>Changes will be permanently lost</Typography>
                     </Box>
-                    <IconButton
-                        onClick={() => setDiscardDialogOpen(false)}
-                        sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}
-                    >
+                    <IconButton onClick={() => setDiscardDialogOpen(false)} sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}>
                         <CloseIcon />
                     </IconButton>
                 </Box>
                 <DialogContent>
-                    <DialogContentText id="discard-dialog-description" sx={{ mt: 1 }}>
+                    <DialogContentText sx={{mt: 1}}>
                         Your changes to parcel dimensions haven't been saved and will be lost.
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ px: 3, py: 2, borderTop: 1, borderColor: 'divider' }}>
-                    <Button autoFocus onClick={() => setDiscardDialogOpen(false)}>
-                        Keep editing
-                    </Button>
-                    <Button onClick={handleDiscardConfirm} color="error">
-                        Discard
-                    </Button>
+                <DialogActions sx={{px: 3, py: 2, borderTop: 1, borderColor: 'divider'}}>
+                    <Button autoFocus onClick={() => setDiscardDialogOpen(false)}>Keep editing</Button>
+                    <Button onClick={() => { setDiscardDialogOpen(false); onClose(); }} color="error">Discard</Button>
                 </DialogActions>
             </Dialog>
         </Dialog>

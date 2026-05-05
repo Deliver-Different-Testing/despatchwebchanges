@@ -6,7 +6,7 @@
  * Supports three pricing modes: recalculate, raw base amount, and gross amount.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { alpha } from '@mui/material/styles';
 import Dialog from '@mui/material/Dialog';
 import Box from '@mui/material/Box';
@@ -28,7 +28,7 @@ import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import InfoIcon from '@mui/icons-material/Info';
 import CheckIcon from '@mui/icons-material/Check';
 
-import { SimplePriceEditDialogProps, PricingMode } from './types';
+import { SimplePriceEditDialogProps, PricingMode, ChildPriceUpdate } from './types';
 
 interface ModeOption {
     mode: PricingMode;
@@ -93,12 +93,16 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     open,
     jobNumber,
     currentCharge,
+    hideRecalculate = false,
+    childJobs,
     onClose,
     onSubmit,
     showToast,
 }) => {
-    const [selectedMode, setSelectedMode] = useState<PricingMode>('recalculate');
+    const availableModes = hideRecalculate ? MODE_OPTIONS.filter(o => o.mode !== 'recalculate') : MODE_OPTIONS;
+    const [selectedMode, setSelectedMode] = useState<PricingMode>(hideRecalculate ? 'gross' : 'recalculate');
     const [amount, setAmount] = useState<number>(0);
+    const [childAmounts, setChildAmounts] = useState<Record<number, number>>({});
     const [isLoading, setIsLoading] = useState(false);
     const [showResult, setShowResult] = useState(false);
     const [savedAmount, setSavedAmount] = useState(0);
@@ -107,27 +111,47 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     // Reset state when dialog opens
     useEffect(() => {
         if (open) {
-            setSelectedMode('recalculate');
+            setSelectedMode(hideRecalculate ? 'gross' : 'recalculate');
             setAmount(Math.round(currentCharge * 100) / 100);
             setIsLoading(false);
             setShowResult(false);
             setSavedAmount(0);
             setErrorMessage('');
+            // Pre-fill child amounts from current charges
+            const initial: Record<number, number> = {};
+            (childJobs ?? []).forEach(c => { initial[c.jobId] = Math.round(c.charge * 100) / 100; });
+            setChildAmounts(initial);
         }
-    }, [open, currentCharge]);
+    }, [open, currentCharge, childJobs]);
 
-    const isSubmitDisabled = useCallback(() => {
-        if (isLoading) return true;
-        if (selectedMode === 'recalculate') return false;
-        return !amount || amount <= 0;
-    }, [isLoading, selectedMode, amount]);
+    // Sum of all current child amounts (null when no children)
+    const childSum = useMemo(() => {
+        if (!childJobs || childJobs.length === 0) return null;
+        return childJobs.reduce((sum, c) => sum + (childAmounts[c.jobId] ?? c.charge), 0);
+    }, [childJobs, childAmounts]);
+
+    // In gross/base modes with children the parent amount must equal the sum of children
+    const hasChildSumMismatch = (selectedMode === 'gross' || selectedMode === 'base') && childSum !== null && Math.abs(amount - childSum) > 0.001;
+
+    const isSubmitDisabled = isLoading
+        || (selectedMode !== 'recalculate' && (!amount || amount <= 0))
+        || hasChildSumMismatch;
 
     const handleSubmit = useCallback(async () => {
         setIsLoading(true);
         setErrorMessage('');
 
+        const childUpdates: ChildPriceUpdate[] = selectedMode === 'recalculate' ? [] : (childJobs ?? [])
+            .filter(c => Math.abs((childAmounts[c.jobId] ?? c.charge) - c.charge) > 0.001)
+            .map(c => ({
+                jobId: c.jobId,
+                isPrebook: c.isPrebook,
+                isBulkJob: c.isBulkJob,
+                newPrice: childAmounts[c.jobId],
+            }));
+
         try {
-            const resultAmount = await onSubmit(selectedMode, amount);
+            const resultAmount = await onSubmit(selectedMode, amount, childUpdates);
             setSavedAmount(resultAmount);
             setShowResult(true);
         } catch (error: unknown) {
@@ -138,7 +162,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
         } finally {
             setIsLoading(false);
         }
-    }, [selectedMode, amount, onSubmit, showToast]);
+    }, [selectedMode, amount, childJobs, childAmounts, onSubmit, showToast]);
 
     const handleDone = useCallback(() => {
         onClose();
@@ -167,7 +191,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
 
             {/* Pricing Options */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                {MODE_OPTIONS.map((opt) => {
+                {availableModes.map((opt) => {
                     const isSelected = selectedMode === opt.mode;
                     return (
                         <Box
@@ -267,6 +291,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             htmlInput: {
                                 step: '0.01',
                                 min: '0',
+                                onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur(),
                                 style: {
                                     fontSize: 28,
                                     fontWeight: 600,
@@ -295,6 +320,145 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                             },
                         })}
                     />
+                </Box>
+            )}
+
+            {/* Sum mismatch indicator — shown in gross/base modes when children are present */}
+            {(selectedMode === 'gross' || selectedMode === 'base') && childSum !== null && (
+                <Box sx={(theme) => ({
+                    mt: 1.5,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    px: 1.5,
+                    py: 1,
+                    borderRadius: 2,
+                    bgcolor: hasChildSumMismatch
+                        ? alpha(theme.palette.error.main, 0.06)
+                        : alpha(theme.palette.success.main, 0.06),
+                    border: `1px solid ${hasChildSumMismatch
+                        ? alpha(theme.palette.error.main, 0.25)
+                        : alpha(theme.palette.success.main, 0.25)}`,
+                })}>
+                    <Typography variant="caption" color={hasChildSumMismatch ? 'error.main' : 'success.main'} fontWeight={500}>
+                        {hasChildSumMismatch
+                            ? `Parent must equal children total — set to $${childSum.toFixed(2)}`
+                            : 'Parent matches children total'}
+                    </Typography>
+                    <Typography variant="caption" fontWeight={700} color={hasChildSumMismatch ? 'error.main' : 'success.main'}>
+                        ${childSum.toFixed(2)}
+                    </Typography>
+                </Box>
+            )}
+
+            {/* Child jobs — hidden in recalculate mode since the system sets the price */}
+            {childJobs && childJobs.length > 0 && selectedMode !== 'recalculate' && (
+                <Box sx={(theme) => ({
+                    mt: 2.5,
+                    pt: 2.5,
+                    borderTop: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
+                })}>
+                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5}}>
+                        <Typography variant="body2" fontWeight={500} color="text.secondary">
+                            Child Jobs
+                        </Typography>
+                        {(selectedMode === 'gross' || selectedMode === 'base') && amount > 0 && (
+                            <Button
+                                size="small"
+                                variant="text"
+                                onClick={() => {
+                                    const currentSum = childJobs.reduce((s, c) => s + (childAmounts[c.jobId] ?? c.charge), 0);
+                                    if (currentSum <= 0) return;
+                                    const updated: Record<number, number> = {};
+                                    childJobs.forEach((c, i) => {
+                                        const ratio = (childAmounts[c.jobId] ?? c.charge) / currentSum;
+                                        // Last child gets the remainder to avoid floating-point drift
+                                        if (i === childJobs.length - 1) {
+                                            const allocated = Object.values(updated).reduce((s, v) => s + v, 0);
+                                            updated[c.jobId] = Math.round((amount - allocated) * 100) / 100;
+                                        } else {
+                                            updated[c.jobId] = Math.round(ratio * amount * 100) / 100;
+                                        }
+                                    });
+                                    setChildAmounts(prev => ({...prev, ...updated}));
+                                }}
+                                sx={{fontSize: '0.75rem', py: 0.25, px: 1, minWidth: 0, textTransform: 'none'}}
+                            >
+                                Set proportionally
+                            </Button>
+                        )}
+                    </Box>
+                    <Box sx={{display: 'flex', flexDirection: 'column', gap: 1}}>
+                        {childJobs.map((child) => {
+                            const currentAmount = childAmounts[child.jobId] ?? child.charge;
+                            const isChanged = Math.abs(currentAmount - child.charge) > 0.001;
+                            return (
+                                <Box
+                                    key={child.jobId}
+                                    sx={(theme) => ({
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1.5,
+                                        p: '10px 12px',
+                                        bgcolor: alpha(theme.palette.common.black, 0.03),
+                                        borderRadius: 2,
+                                        border: `1px solid ${isChanged ? theme.palette.primary.main : alpha(theme.palette.common.black, 0.08)}`,
+                                        transition: 'border-color 0.2s ease',
+                                    })}
+                                >
+                                    <Box sx={(theme) => ({
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.75,
+                                        px: 1.25,
+                                        py: 0.5,
+                                        bgcolor: alpha(theme.palette.grey[600], 0.1),
+                                        borderRadius: 4,
+                                        flexShrink: 0,
+                                    })}>
+                                        <LocalShippingIcon sx={{fontSize: 13, color: 'text.secondary'}} />
+                                        <Typography variant="caption" fontWeight={600} noWrap>
+                                            {child.jobNumber}
+                                        </Typography>
+                                    </Box>
+                                    <TextField
+                                        type="number"
+                                        value={currentAmount || ''}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value) || 0;
+                                            setChildAmounts(prev => ({...prev, [child.jobId]: val}));
+                                        }}
+                                        size="small"
+                                        slotProps={{
+                                            input: {
+                                                startAdornment: (
+                                                    <InputAdornment position="start">$</InputAdornment>
+                                                ),
+                                            },
+                                            htmlInput: {step: '0.01', min: '0', onWheel: (e: React.WheelEvent<HTMLInputElement>) => e.currentTarget.blur()},
+                                        }}
+                                        sx={(theme) => ({
+                                            flex: 1,
+                                            '& .MuiOutlinedInput-root': {
+                                                '& fieldset': {borderColor: isChanged ? theme.palette.primary.main : undefined},
+                                            },
+                                            // Hide number spinner
+                                            '& input[type=number]': {MozAppearance: 'textfield'},
+                                            '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button': {
+                                                WebkitAppearance: 'none',
+                                                margin: 0,
+                                            },
+                                        })}
+                                    />
+                                    {isChanged && (
+                                        <Typography variant="caption" color="text.disabled" sx={{flexShrink: 0, minWidth: 60, textAlign: 'right'}}>
+                                            was ${child.charge.toFixed(2)}
+                                        </Typography>
+                                    )}
+                                </Box>
+                            );
+                        })}
+                    </Box>
                 </Box>
             )}
 
@@ -413,8 +577,11 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     sx: {
                         borderRadius: 2,
                         overflow: 'hidden',
-                        width: 420,
+                        width: childJobs && childJobs.length > 0 ? 480 : 420,
                         maxWidth: '95vw',
+                        maxHeight: '90vh',
+                        display: 'flex',
+                        flexDirection: 'column',
                     },
                 },
             }}
@@ -430,6 +597,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     alignItems: 'center',
                     gap: 1.5,
                     minHeight: 56,
+                    flexShrink: 0,
                 })}
             >
                 <PriceChangeIcon sx={{ fontSize: 24 }} />
@@ -453,10 +621,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 </IconButton>
             </Box>
 
-            {/* Content */}
-            {isLoading && renderLoadingState()}
-            {showResult && !isLoading && renderSuccessState()}
-            {!showResult && !isLoading && renderEditState()}
+            {/* Content — scrollable so action buttons remain visible */}
+            <Box sx={{overflowY: 'auto', flex: 1}}>
+                {isLoading && renderLoadingState()}
+                {showResult && !isLoading && renderSuccessState()}
+                {!showResult && !isLoading && renderEditState()}
+            </Box>
 
             {/* Actions for result state */}
             {showResult && !isLoading && (
@@ -467,6 +637,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     borderColor: 'divider',
                     display: 'flex',
                     justifyContent: 'flex-end',
+                    flexShrink: 0,
                 }}>
                     <Button
                         variant="contained"
@@ -490,6 +661,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     display: 'flex',
                     justifyContent: 'flex-end',
                     gap: 1,
+                    flexShrink: 0,
                 }}>
                     <Button
                         variant="outlined"
@@ -502,7 +674,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         variant="contained"
                         color="primary"
                         onClick={handleSubmit}
-                        disabled={isSubmitDisabled()}
+                        disabled={isSubmitDisabled}
                         startIcon={selectedMode === 'recalculate' ? <SyncIcon /> : undefined}
                         sx={{ minWidth: 120, borderRadius: 2, fontWeight: 500 }}
                     >
