@@ -13,6 +13,7 @@ export interface ParcelDimensions {
     height?: number;
     length?: number;
     depth?: number;
+    weight?: number;
     dimensions: string;
     barcode?: string;
 }
@@ -26,6 +27,7 @@ export interface EditParcelDimensionsDialogProps {
     jobId?: number;
     bulkJobId?: number;
     isUsCustomer: boolean;
+    jobWeight?: number;
     onClose: () => void;
     onSubmit: (result: EditParcelDimensionsDialogResult) => void;
     showToast: ShowToastFn;
@@ -39,6 +41,7 @@ export interface EditParcelDimensionsDialogOptions {
     jobId?: number;
     bulkJobId?: number;
     isUsCustomer: boolean;
+    jobWeight?: number;
 }
 
 /**
@@ -46,4 +49,5 @@ export interface EditParcelDimensionsDialogOptions {
  */
 export interface EditParcelDimensionsDialogResult {
     parcels: ParcelDimensions[];
+    totalWeight: number;
 }

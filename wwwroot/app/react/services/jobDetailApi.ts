@@ -95,6 +95,23 @@ export function updateDeliveryAddress(
     return apiClient.post(getAddressEndpoint(prebook, 'delivery'), {jobId, address});
 }
 
+// ── Pricing ─────────────────────────────────────────────────────────
+
+export interface JobRatePreview {
+    rate: number;
+    description: string | null;
+}
+
+export function previewJobRate(jobId: number): Promise<JobRatePreview> {
+    return apiClient.get<JobRatePreview>('job/RecalculateJobRate', {jobId});
+}
+
+export function applyJobRate(jobId: number, isPrebook: boolean): Promise<void> {
+    return apiClient.post('job/ApplyRecalculatedJobRate', null, {
+        params: {jobId, isPrebook},
+    });
+}
+
 // ── POD Operations ──────────────────────────────────────────────────
 
 export function updatePodDetails(data: UpdatePodDetailsRequest): Promise<void> {

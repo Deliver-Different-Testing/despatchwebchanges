@@ -13,7 +13,8 @@ import CssBaseline from '@mui/material/CssBaseline';
 import { SimplePriceEditDialog } from './SimplePriceEditDialog';
 import { getTheme } from '../../../theme/muiTheme';
 import { ReactQueryProvider } from '../../../query';
-import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions } from './types';
+import { PriceEditResult, PricingMode, SimplePriceEditDialogOptions, ChildJobPrice, ChildPriceUpdate } from './types';
+import type { IJobGroupDto } from '../../../../interfaces/job.interface';
 import { apiClient } from '../../../services/apiClient';
 import type { ShowToastFn, ToastService } from '../../../services/toastService';
 
@@ -23,6 +24,8 @@ interface DialogState {
     jobNumber: string;
     currentCharge: number;
     isPrebook: boolean;
+    hideRecalculate?: boolean;
+    childJobs?: ChildJobPrice[];
     resolve?: (result: PriceEditResult | null) => void;
 }
 
@@ -34,14 +37,16 @@ const defaultToastService: ToastService = {
 
 // --- API helpers ---
 
-async function applyRecalculatedJobRate(jobId: number, isPrebook: boolean): Promise<void> {
-    await apiClient.post('job/ApplyRecalculatedJobRate', null, {
+async function applyRecalculatedJobRate(jobId: number, isPrebook: boolean): Promise<number> {
+    const result = await apiClient.post<{ rate: number }>('job/ApplyRecalculatedJobRate', null, {
         params: { jobId, isPrebook },
     });
+    return result.rate;
 }
 
-async function recalculateJobRate(jobId: number, isPrebook: boolean): Promise<number> {
-    return apiClient.get<number>('job/RecalculateJobRate', { jobId, isBooking: isPrebook });
+
+async function getJobGroup(jobId: number): Promise<IJobGroupDto> {
+    return apiClient.get<IJobGroupDto>('job/Detail', { jobId });
 }
 
 async function repriceJobWithBaseAmount(jobId: number, isPrebook: boolean, baseAmount: number): Promise<number> {
@@ -91,19 +96,23 @@ class SimplePriceEditDialogManager {
             this.renderDialog();
         };
 
-        const handleSubmit = async (mode: PricingMode, amount: number): Promise<number> => {
+        const handleSubmit = async (mode: PricingMode, amount: number, childUpdates: ChildPriceUpdate[]): Promise<number> => {
             const { jobId, isPrebook } = this.dialogState;
             let savedAmount = 0;
 
             if (mode === 'recalculate') {
-                await applyRecalculatedJobRate(jobId, isPrebook);
-                savedAmount = await recalculateJobRate(jobId, isPrebook);
+                savedAmount = await applyRecalculatedJobRate(jobId, isPrebook);
             } else if (mode === 'base') {
                 savedAmount = await repriceJobWithBaseAmount(jobId, isPrebook, amount);
             } else if (mode === 'gross') {
                 await simpleRepriceJobManual(jobId, isPrebook, false, amount);
                 savedAmount = amount;
             }
+
+            // Save any changed child job prices
+            await Promise.all(
+                childUpdates.map(c => simpleRepriceJobManual(c.jobId, c.isPrebook, c.isBulkJob, c.newPrice))
+            );
 
             // Store the result for when the user clicks Done
             this.dialogState.resolve = ((prevResolve) => {
@@ -126,6 +135,8 @@ class SimplePriceEditDialogManager {
                         jobNumber={this.dialogState.jobNumber}
                         currentCharge={this.dialogState.currentCharge}
                         isPrebook={this.dialogState.isPrebook}
+                        hideRecalculate={this.dialogState.hideRecalculate}
+                        childJobs={this.dialogState.childJobs}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
                         showToast={this.toastService.showToast}
@@ -135,16 +146,35 @@ class SimplePriceEditDialogManager {
         );
     }
 
-    open(options: SimplePriceEditDialogOptions): Promise<PriceEditResult | null> {
+    async open(options: SimplePriceEditDialogOptions): Promise<PriceEditResult | null> {
         this.initializeDialogRoot();
 
-        return new Promise((resolve) => {
+        // Fetch child jobs before showing — non-fatal if unavailable
+        let childJobs: ChildJobPrice[] = [];
+        try {
+            const group = await getJobGroup(options.jobId);
+            childJobs = group.relatedJobs
+                .filter(j => j.rootParentId !== undefined && j.rootParentId === options.jobId)
+                .map(j => ({
+                    jobId: j.id,
+                    jobNumber: j.jobNo,
+                    charge: j.charge,
+                    isPrebook: j.preBook,
+                    isBulkJob: j.isBulkJob,
+                }));
+        } catch {
+            // Non-fatal — proceed without child jobs
+        }
+
+        return new Promise<PriceEditResult | null>((resolve) => {
             this.dialogState = {
                 open: true,
                 jobId: options.jobId,
                 jobNumber: options.jobNumber,
                 currentCharge: options.currentCharge,
                 isPrebook: options.isPrebook,
+                hideRecalculate: options.hideRecalculate,
+                childJobs,
                 resolve,
             };
             this.renderDialog();

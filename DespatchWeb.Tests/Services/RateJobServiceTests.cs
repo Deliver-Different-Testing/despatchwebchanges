@@ -478,11 +478,11 @@ public class RateJobServiceTests : IDisposable
     {
         var service = CreateService();
 
-        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                         throw new InvalidOperationException());
         return;
 
-        Task<decimal> Act() => service.GetJobRateNzAsync(null!);
+        Task<ApiRerate> Act() => service.GetJobRateNzAsync(null!);
     }
 
     [Fact]
@@ -491,13 +491,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(clientId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("ClientId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -506,13 +506,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(fromId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("FromId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -521,13 +521,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(toId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("ToId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -536,13 +536,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(speedId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SpeedId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -551,13 +551,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidNzJobDetails(sizeId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SizeId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateNzAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateNzAsync(jobDetails);
     }
 
     [Fact]
@@ -565,11 +565,11 @@ public class RateJobServiceTests : IDisposable
     {
         var service = CreateService();
 
-        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                         throw new InvalidOperationException());
         return;
 
-        Task<decimal> Act() => service.GetJobRateUsAsync(null!);
+        Task<ApiRerate> Act() => service.GetJobRateUsAsync(null!);
     }
 
     [Fact]
@@ -578,13 +578,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(speedId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SpeedId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateUsAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateUsAsync(jobDetails);
     }
 
     [Fact]
@@ -593,13 +593,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(clientId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("ClientId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateUsAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateUsAsync(jobDetails);
     }
 
     [Fact]
@@ -608,13 +608,13 @@ public class RateJobServiceTests : IDisposable
         var service = CreateService();
         var jobDetails = CreateValidUsJobDetails(sizeId: null);
 
-        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<decimal>>?)Act ??
+        var ex = await Assert.ThrowsAsync<ArgumentNullException>((Func<Task<ApiRerate>>?)Act ??
                                                                  throw new InvalidOperationException());
         Assert.Equal("jobDetails", ex.ParamName);
         Assert.Contains("SizeId", ex.Message);
         return;
 
-        Task<decimal> Act() => service.GetJobRateUsAsync(jobDetails);
+        Task<ApiRerate> Act() => service.GetJobRateUsAsync(jobDetails);
     }
 
     [Fact]
@@ -634,7 +634,7 @@ public class RateJobServiceTests : IDisposable
         var rate = await service.GetJobRateUsAsync(jobDetails);
 
         // Assert
-        Assert.Equal(250.75m, rate);
+        Assert.Equal(250.75m, rate.Rate);
         await _jobQueryRepositoryMock.Received().GetJobRateUsAsync(Arg.Any<RateJobUsDto>());
     }
 

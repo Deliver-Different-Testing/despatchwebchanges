@@ -9,6 +9,7 @@ using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
@@ -1409,34 +1410,6 @@ public class JobController(
 
         if (!ShouldRecalculateRate(field)) return Ok();
 
-        // Re-rate after successful update — failures are logged but do not fail the request
-        try
-        {
-            var isArchived = await jobQueryRepository.IsJobArchived(jobId);
-
-            var isUsTenant = infoService.IsUsTenant();
-            if (isUsTenant)
-            {
-                var jobDetails = await jobQueryRepository.GetJobDetailsForRatingAsync(jobId);
-                if (!jobDetails.IsManuallyRated)
-                    await rateJobService.RateJobUsAsync(jobDetails);
-            }
-            else
-            {
-                var jobDetails = await jobQueryRepository.GetJobDetailsForRatingNzAsync(jobId, isArchived);
-                if (!jobDetails.IsManuallyRated)
-                    await rateJobService.RateJobNzAsync(jobDetails);
-            }
-        }
-        catch (Exception e)
-        {
-            Log.Error(
-                e,
-                "Re-rating failed after updating field {JobProperty} for job {JobId}. The field update succeeded. Error: {Message}",
-                field, jobId, e.Message
-            );
-        }
-
         // Propagate field update and re-rate split children (best effort)
         try
         {
@@ -1819,7 +1792,8 @@ public class JobController(
         try
         {
             await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
-            await RecalculateJobRateAsync(request.JobId, isBooking: false);
+            if (request.Weight is > 0)
+                await jobCommandRepository.UpdateJobWeightAsync(request.JobId, request.Weight.Value);
             return Ok();
         }
         catch (Exception ex)
@@ -1943,10 +1917,6 @@ public class JobController(
         {
             // First update the address
             await updateAddressAction(request);
-
-            // Get job details for rating and update
-            await RecalculateJobRateAsync(request.JobId, isBooking);
-
             return Ok();
         }
         catch (Exception ex)
@@ -2146,6 +2116,7 @@ public class JobController(
         }
     }
 
+    [HttpGet]
     public async Task<IActionResult> RecalculateJobRate(int jobId)
     {
         try
@@ -2180,7 +2151,8 @@ public class JobController(
         try
         {
             await RecalculateJobRateAsync(jobId, isPrebook);
-            return Ok();
+            var newRate = await jobQueryRepository.GetJobAmountAsync(jobId, isPrebook);
+            return Ok(new { rate = newRate });
         }
         catch (Exception e)
         {
@@ -2191,7 +2163,7 @@ public class JobController(
         }
     }
 
-    private async Task<decimal> GetJobRateAsync(int jobId, bool isBooking)
+    private async Task<ApiRerate> GetJobRateAsync(int jobId, bool isBooking)
     {
         // Don't skip if a job is archived (should skip if invoiced tho)
         var isArchived = !isBooking && await jobQueryRepository.IsJobArchived(jobId);

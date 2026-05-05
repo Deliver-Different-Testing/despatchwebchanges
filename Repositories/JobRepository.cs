@@ -1714,6 +1714,7 @@ public partial class JobRepository(
                         Height = p.Height ?? 0,
                         Length = p.Length ?? 0,
                         Depth = p.Depth ?? 0,
+                        Weight = p.Weight ?? 0,
                         Notes = p.ItemName,
                         Barcode = p.Barcode,
                         Items = 1,
@@ -1746,6 +1747,26 @@ public partial class JobRepository(
                     nameof(UpdatePackagesForJobAsync)));
             throw;
         }
+    }
+
+    public async Task UpdateJobWeightAsync(int jobId, decimal weight)
+    {
+        await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
+    }
+
+    public async Task<decimal> GetJobAmountAsync(int jobId, bool isBooking)
+    {
+        if (isBooking)
+            return await Context.TucJobBookings
+                .Where(j => j.UcbkId == jobId)
+                .Select(j => j.UcbkAmount ?? 0)
+                .FirstOrDefaultAsync();
+        return await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.UcjbAmount ?? 0)
+            .FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -1792,6 +1813,7 @@ public partial class JobRepository(
                         Height = p.Height ?? 0,
                         Length = p.Length ?? 0,
                         Depth = p.Depth ?? 0,
+                        Weight = p.Weight ?? 0,
                         Notes = p.ItemName,
                         Barcode = p.Barcode,
                         ItemId = nextItemId++

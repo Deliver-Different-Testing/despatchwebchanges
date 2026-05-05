@@ -11,6 +11,21 @@ export interface PriceEditResult {
     amount: number;
 }
 
+export interface ChildJobPrice {
+    jobId: number;
+    jobNumber: string;
+    charge: number;
+    isPrebook: boolean;
+    isBulkJob: boolean;
+}
+
+export interface ChildPriceUpdate {
+    jobId: number;
+    isPrebook: boolean;
+    isBulkJob: boolean;
+    newPrice: number;
+}
+
 /**
  * Props for the SimplePriceEditDialog component
  */
@@ -19,8 +34,10 @@ export interface SimplePriceEditDialogProps {
     jobNumber: string;
     currentCharge: number;
     isPrebook: boolean;
+    hideRecalculate?: boolean;
+    childJobs?: ChildJobPrice[];
     onClose: () => void;
-    onSubmit: (mode: PricingMode, amount: number) => Promise<number>;
+    onSubmit: (mode: PricingMode, amount: number, childUpdates: ChildPriceUpdate[]) => Promise<number>;
     showToast: ShowToastFn;
 }
 
@@ -32,4 +49,5 @@ export interface SimplePriceEditDialogOptions {
     jobNumber: string;
     currentCharge: number;
     isPrebook: boolean;
+    hideRecalculate?: boolean;
 }

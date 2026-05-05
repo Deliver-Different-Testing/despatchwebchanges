@@ -121,6 +121,23 @@ public partial class JobRepository
     {
         try
         {
+            var previousRate = jobType switch
+            {
+                JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)
+                    .Select(j => j.UcjbAmount).FirstOrDefaultAsync(),
+                JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .Select(j => j.UcbkAmount).FirstOrDefaultAsync(),
+                JobType.Archived => await Context.TucJobArchives.Where(j => j.UcjbId == jobId)
+                    .Select(j => j.UcjbAmount).FirstOrDefaultAsync(),
+                _ => null
+            };
+
+            if (previousRate.HasValue && previousRate.Value == rate)
+            {
+                Log.Information("Price is unchanged. Not updating job {JobId}", jobId);
+                return;
+            }
+
             var rowsUpdated = jobType switch
             {
                 JobType.Active => await Context.TucJobs.Where(j => j.UcjbId == jobId)
@@ -134,7 +151,10 @@ public partial class JobRepository
 
             if (rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
 
-            await SaveNoteAsync(jobId, $"Rate updated to {rate}", true, JobType.Recurring == jobType);
+            var noteText = previousRate.HasValue
+                ? $"Rate updated to {rate} from {previousRate.Value}"
+                : $"Rate updated to {rate}";
+            await SaveNoteAsync(jobId, noteText, true, JobType.Recurring == jobType);
         }
         catch (Exception e)
         {

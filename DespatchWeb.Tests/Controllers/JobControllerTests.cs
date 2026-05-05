@@ -2614,7 +2614,7 @@ public class JobControllerTests : IDisposable
         _jobQueryRepositoryMock.GetJobDetailsForRatingAsync(jobId)
             .Returns(new JobRatingDetailsDto { JobId = jobId });
         _rateJobServiceMock.GetJobRateUsAsync(Arg.Any<JobRatingDetailsDto>())
-            .Returns(expectedRate);
+            .Returns(new ApiRerate { Rate = expectedRate });
 
         var controller = CreateController();
 
@@ -2624,20 +2624,24 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
-        Assert.Equal(expectedRate, okResult.Value);
+        var apiRerate = Assert.IsType<ApiRerate>(okResult.Value);
+        Assert.Equal(expectedRate, apiRerate.Rate);
     }
 
     [Fact]
-    public async Task ApplyRecalculatedJobRate_ValidRequest_ReturnsOk()
+    public async Task ApplyRecalculatedJobRate_ValidRequest_ReturnsOkWithRate()
     {
         // Arrange
         const int jobId = 1;
+        const decimal expectedRate = 99.50m;
 
         _jobQueryRepositoryMock.IsJobArchived(jobId)
             .Returns(false);
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _jobQueryRepositoryMock.GetJobDetailsForRatingNzAsync(jobId, false)
             .Returns(new JobRatingDetailsDtoNz());
+        _jobQueryRepositoryMock.GetJobAmountAsync(jobId, false)
+            .Returns(expectedRate);
 
         var controller = CreateController();
 
@@ -2645,7 +2649,8 @@ public class JobControllerTests : IDisposable
         var result = await controller.ApplyRecalculatedJobRate(jobId);
 
         // Assert
-        Assert.IsType<OkResult>(result);
+        var okResult = Assert.IsType<OkObjectResult>(result);
+        Assert.Equal(200, okResult.StatusCode);
     }
 
     [Fact]

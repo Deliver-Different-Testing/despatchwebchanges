@@ -28,6 +28,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {useJobDetail} from './hooks/useJobDetail';
 import {useJobUpdate} from './hooks/useJobUpdate';
+import {PriceChangeModal} from '../../dialogs/price-change-modal/PriceChangeModal';
 import {useFieldVisibility} from './hooks/useFieldVisibility';
 import {useViewDensity} from './hooks/useViewDensity';
 import {usePodPhotos} from './hooks/usePodPhotos';
@@ -193,7 +194,12 @@ export function JobDetails({config}: JobDetailsProps) {
 
     // Track which job tab is selected
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+    // Keep jobRef synchronously current so handlers never read a stale job
     const job: IJob | undefined = sortedRelatedJobs[selectedTabIndex] ?? sortedRelatedJobs[0];
+
+    // Tracks the jobId we've already initialized the tab for — prevents data refetches
+    // from snapping the user back to the originally-selected job after they navigate to a sibling tab
+    const tabInitializedForJobRef = useRef<number | undefined>(undefined);
 
     // Days of week for recurring jobs - derived from job data
     const daysOfWeekArray = useMemo(
@@ -209,7 +215,10 @@ export function JobDetails({config}: JobDetailsProps) {
     const aiContainerRef = useRef<HTMLDivElement>(null);
 
     // Update mutations
-    const {updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists} = useJobUpdate(showToast);
+    const {
+        updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists,
+        checkForRateChange, pendingRateChange, isApplyingRate, confirmRateChange, dismissRateChange,
+    } = useJobUpdate(showToast);
 
     // Photos
     const {deliveryPhotos, pickupPhotos, imageOnlyDeliveryPhotos, imageOnlyPickupPhotos, isLoading: photosLoading} = usePodPhotos({
@@ -217,14 +226,28 @@ export function JobDetails({config}: JobDetailsProps) {
         isRecurringJob,
     });
 
-    // Helper: refresh and notify parent
-    const refreshAndNotify = useCallback(async () => {
-        await refetch();
-        onJobUpdate?.();
-    }, [refetch, onJobUpdate]);
-
-    // Invalidate photo queries so newly uploaded POD photos are fetched
     const rqClient = useQueryClient();
+
+    // Helper: refresh and notify parent — refetches job detail and invalidates notes
+    const refreshAndNotify = useCallback(async () => {
+        await Promise.all([
+            refetch(),
+            rqClient.invalidateQueries({queryKey: ['notes']}),
+        ]);
+        onJobUpdate?.();
+    }, [refetch, rqClient, onJobUpdate]);
+
+    // When the AngularJS bridge calls refreshJobDetails(), it increments _refreshNonce and
+    // re-renders with the new value. Watching it here lets us call refetch() directly,
+    // bypassing React Query's cache invalidation path which can fail to trigger a network
+    // request in some scenarios. refetch/rqClient are stable refs and intentionally omitted.
+    const refreshNonce = config._refreshNonce;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (!refreshNonce) return;
+        void refetch();
+        void rqClient.invalidateQueries({queryKey: ['notes']});
+    }, [refreshNonce]);
     const invalidatePhotos = useCallback(async () => {
         if (!jobId) return;
         await rqClient.invalidateQueries({queryKey: queryKeys.jobs.photos(jobId, 'delivery')});
@@ -249,14 +272,17 @@ export function JobDetails({config}: JobDetailsProps) {
         refreshAndNotify,
         invalidateJobLists,
         invalidatePhotos,
+        checkForRateChange,
         onStatusChange: config.onStatusChange,
     });
 
-    // Reset tab index when jobId or data changes
+    // Initialize the tab to show the originally-selected job. Only runs once per jobId change —
+    // subsequent data refetches must not snap the user back if they navigated to a sibling tab.
     useEffect(() => {
-        if (jobId && sortedRelatedJobs.length > 0) {
+        if (jobId && sortedRelatedJobs.length > 0 && tabInitializedForJobRef.current !== jobId) {
             const idx = sortedRelatedJobs.findIndex(j => j.id === jobId);
             setSelectedTabIndex(idx >= 0 ? idx : 0);
+            tabInitializedForJobRef.current = jobId;
         }
     }, [jobId, sortedRelatedJobs]);
 
@@ -374,7 +400,7 @@ export function JobDetails({config}: JobDetailsProps) {
                         onEditPodName={actions.handleEditPodName}
                         onEditCompletedTime={actions.handleEditCompletedTime}
                         onClientClick={actions.handleClientClick}
-                        onPricingClick={actions.handlePricingClick}
+                        onPricingClick={() => actions.handlePricingClick()}
                         onInternalStatusClick={actions.handleInternalStatusClick}
                     />
                 </Box>
@@ -439,7 +465,6 @@ export function JobDetails({config}: JobDetailsProps) {
                         onEditRefB={actions.handleEditRefB}
                         onEditOurRef={actions.handleEditOurRef}
                         onEditConNote={actions.handleEditConNote}
-                        onEditWeight={actions.handleEditWeight}
                         onDgClassClick={actions.handleDgClassClick}
                         onLeaveClick={actions.handleLeaveClick}
                         onTrackingMethodClick={actions.handleTrackingMethodClick}
@@ -538,6 +563,24 @@ export function JobDetails({config}: JobDetailsProps) {
                         />
                     </Suspense>
                 </Box>
+            )}
+
+            {/* Price Change Modal */}
+            {pendingRateChange && (
+                <PriceChangeModal
+                    open={true}
+                    jobNumber={pendingRateChange.jobNo}
+                    oldPrice={pendingRateChange.oldPrice}
+                    newPrice={pendingRateChange.newPrice}
+                    description={pendingRateChange.description}
+                    isApplying={isApplyingRate}
+                    onAccept={confirmRateChange}
+                    onKeep={dismissRateChange}
+                    onManualEdit={() => {
+                        dismissRateChange();
+                        actions.handlePricingClick(true);
+                    }}
+                />
             )}
 
             {/* Text Input Dialog */}

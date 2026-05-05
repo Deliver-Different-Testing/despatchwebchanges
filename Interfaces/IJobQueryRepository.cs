@@ -46,6 +46,7 @@ public interface IJobQueryRepository
     Task<int> MaxAutoLatePickupAlertAsync();
     Task<int> MaxAutoLateDeliveryAlertAsync();
     Task<decimal> PpdExclusiveAmountAsync(int clientId, decimal amount);
+    Task<decimal> GetJobAmountAsync(int jobId, bool isBooking);
 
     Task<IReadOnlyList<Suggestion>> GetSpeedsAsync();
     Task<IReadOnlyList<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
