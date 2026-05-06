@@ -179,6 +179,7 @@ describe('SimplePriceEditDialogService', () => {
                 jobNumber: 'JOB-100',
                 currentCharge: 150.00,
                 isPrebook: false,
+                isBulk: false,
             });
         });
 
@@ -192,6 +193,22 @@ describe('SimplePriceEditDialogService', () => {
                 jobNumber: 'JOB-100',
                 currentCharge: 150.00,
                 isPrebook: true,
+                isBulk: false,
+            });
+        });
+
+        it('should pass isBulk: true for bulk jobs', async () => {
+            const bulkJob = { ...mockJob, isBulkJob: true };
+            await service.openSimplePriceEditDialog(
+                mockEvent, bulkJob
+            );
+
+            expect((window as any).ReactSimplePriceEditDialog.open).toHaveBeenCalledWith({
+                jobId: 42,
+                jobNumber: 'JOB-100',
+                currentCharge: 150.00,
+                isPrebook: false,
+                isBulk: true,
             });
         });
 

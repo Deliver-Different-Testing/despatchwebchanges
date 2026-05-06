@@ -24,6 +24,7 @@ interface DialogState {
     jobNumber: string;
     currentCharge: number;
     isPrebook: boolean;
+    isBulk: boolean;
     hideRecalculate?: boolean;
     childJobs?: ChildJobPrice[];
     resolve?: (result: PriceEditResult | null) => void;
@@ -71,6 +72,7 @@ class SimplePriceEditDialogManager {
         jobNumber: '',
         currentCharge: 0,
         isPrebook: false,
+        isBulk: false,
     };
 
     setToastService(service: ToastService): void {
@@ -97,7 +99,7 @@ class SimplePriceEditDialogManager {
         };
 
         const handleSubmit = async (mode: PricingMode, amount: number, childUpdates: ChildPriceUpdate[]): Promise<number> => {
-            const { jobId, isPrebook } = this.dialogState;
+            const { jobId, isPrebook, isBulk } = this.dialogState;
             let savedAmount = 0;
 
             if (mode === 'recalculate') {
@@ -105,7 +107,7 @@ class SimplePriceEditDialogManager {
             } else if (mode === 'base') {
                 savedAmount = await repriceJobWithBaseAmount(jobId, isPrebook, amount);
             } else if (mode === 'gross') {
-                await simpleRepriceJobManual(jobId, isPrebook, false, amount);
+                await simpleRepriceJobManual(jobId, isPrebook, isBulk, amount);
                 savedAmount = amount;
             }
 
@@ -135,6 +137,7 @@ class SimplePriceEditDialogManager {
                         jobNumber={this.dialogState.jobNumber}
                         currentCharge={this.dialogState.currentCharge}
                         isPrebook={this.dialogState.isPrebook}
+                        isBulk={this.dialogState.isBulk}
                         hideRecalculate={this.dialogState.hideRecalculate}
                         childJobs={this.dialogState.childJobs}
                         onClose={handleClose}
@@ -173,6 +176,7 @@ class SimplePriceEditDialogManager {
                 jobNumber: options.jobNumber,
                 currentCharge: options.currentCharge,
                 isPrebook: options.isPrebook,
+                isBulk: options.isBulk ?? false,
                 hideRecalculate: options.hideRecalculate,
                 childJobs,
                 resolve,

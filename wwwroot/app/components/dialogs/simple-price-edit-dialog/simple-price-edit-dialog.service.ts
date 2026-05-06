@@ -84,6 +84,7 @@ class SimplePriceEditDialogService implements angular.IServiceProvider {
                 jobNumber: job.jobNo,
                 currentCharge: job.charge,
                 isPrebook,
+                isBulk: !!job.isBulkJob,
             });
 
             if (!result) {

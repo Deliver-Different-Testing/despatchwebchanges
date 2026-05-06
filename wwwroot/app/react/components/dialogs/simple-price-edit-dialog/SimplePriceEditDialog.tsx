@@ -93,14 +93,22 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     open,
     jobNumber,
     currentCharge,
+    isBulk = false,
     hideRecalculate = false,
     childJobs,
     onClose,
     onSubmit,
     showToast,
 }) => {
-    const availableModes = hideRecalculate ? MODE_OPTIONS.filter(o => o.mode !== 'recalculate') : MODE_OPTIONS;
-    const [selectedMode, setSelectedMode] = useState<PricingMode>(hideRecalculate ? 'gross' : 'recalculate');
+    // Bulk jobs only support gross-amount editing — tblBulkJob has no fuel/PPD breakdown
+    // and no SuburbID for the rating pipeline. Recalculate/Raw Base remain visible but disabled.
+    const availableModes = hideRecalculate
+        ? MODE_OPTIONS.filter(o => o.mode !== 'recalculate')
+        : MODE_OPTIONS;
+    const isModeDisabled = (mode: PricingMode) => isBulk && mode !== 'gross';
+    const defaultMode: PricingMode = isBulk || hideRecalculate ? 'gross' : 'recalculate';
+
+    const [selectedMode, setSelectedMode] = useState<PricingMode>(defaultMode);
     const [amount, setAmount] = useState<number>(0);
     const [childAmounts, setChildAmounts] = useState<Record<number, number>>({});
     const [isLoading, setIsLoading] = useState(false);
@@ -111,7 +119,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     // Reset state when dialog opens
     useEffect(() => {
         if (open) {
-            setSelectedMode(hideRecalculate ? 'gross' : 'recalculate');
+            setSelectedMode(defaultMode);
             setAmount(Math.round(currentCharge * 100) / 100);
             setIsLoading(false);
             setShowResult(false);
@@ -122,7 +130,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             (childJobs ?? []).forEach(c => { initial[c.jobId] = Math.round(c.charge * 100) / 100; });
             setChildAmounts(initial);
         }
-    }, [open, currentCharge, childJobs]);
+    }, [open, currentCharge, childJobs, defaultMode]);
 
     // Sum of all current child amounts (null when no children)
     const childSum = useMemo(() => {
@@ -193,10 +201,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                 {availableModes.map((opt) => {
                     const isSelected = selectedMode === opt.mode;
+                    const disabled = isModeDisabled(opt.mode);
                     return (
                         <Box
                             key={opt.mode}
-                            onClick={() => setSelectedMode(opt.mode)}
+                            onClick={() => { if (!disabled) setSelectedMode(opt.mode); }}
+                            title={disabled ? 'Not available for bulk jobs' : undefined}
                             sx={(theme) => ({
                                 display: 'flex',
                                 alignItems: 'center',
@@ -205,10 +215,11 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 border: 2,
                                 borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.08),
                                 borderRadius: 2.5,
-                                cursor: 'pointer',
+                                cursor: disabled ? 'not-allowed' : 'pointer',
+                                opacity: disabled ? 0.5 : 1,
                                 bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : 'background.paper',
                                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                '&:hover': {
+                                '&:hover': disabled ? undefined : {
                                     borderColor: isSelected ? 'grey.600' : alpha(theme.palette.common.black, 0.18),
                                     bgcolor: isSelected ? alpha(theme.palette.grey[600], 0.06) : alpha(theme.palette.common.black, 0.02),
                                 },
@@ -216,6 +227,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         >
                             <Radio
                                 checked={isSelected}
+                                disabled={disabled}
                                 sx={{
                                     p: 0,
                                     color: 'text.disabled',
@@ -248,7 +260,7 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                     {opt.title}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" lineHeight={1.4}>
-                                    {opt.description}
+                                    {disabled ? 'Not available for bulk jobs' : opt.description}
                                 </Typography>
                             </Box>
                         </Box>

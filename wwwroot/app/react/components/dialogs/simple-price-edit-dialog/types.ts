@@ -34,6 +34,7 @@ export interface SimplePriceEditDialogProps {
     jobNumber: string;
     currentCharge: number;
     isPrebook: boolean;
+    isBulk?: boolean;
     hideRecalculate?: boolean;
     childJobs?: ChildJobPrice[];
     onClose: () => void;
@@ -49,5 +50,6 @@ export interface SimplePriceEditDialogOptions {
     jobNumber: string;
     currentCharge: number;
     isPrebook: boolean;
+    isBulk?: boolean;
     hideRecalculate?: boolean;
 }

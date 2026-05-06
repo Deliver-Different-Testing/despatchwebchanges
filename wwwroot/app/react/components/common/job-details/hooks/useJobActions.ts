@@ -539,6 +539,7 @@ export function useJobActions({
                 jobNumber: j.jobNo,
                 currentCharge: j.charge,
                 isPrebook: j.preBook,
+                isBulk: j.isBulkJob,
                 hideRecalculate: hideRecalculate === true,
             });
         } else {
