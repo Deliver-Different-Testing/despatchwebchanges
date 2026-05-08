@@ -182,8 +182,8 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         // Arrange — parent job 10 with two stop jobs (11A, 12B)
         await using var ctx = CreateContext();
         ctx.TucJobs.Add(CreateJob(10, "JOB010"));
-        ctx.TucJobs.Add(CreateJobWithParent(11, "JOB010A", 10));
-        ctx.TucJobs.Add(CreateJobWithParent(12, "JOB010B", 10));
+        ctx.TucJobs.Add(CreateJobWithParent(11, "JOB010a", 10));
+        ctx.TucJobs.Add(CreateJobWithParent(12, "JOB010b", 10));
 
         // Parent items (no ChildJobId)
         ctx.TucJobItems.Add(new TucJobItem { JobId = 10, ItemId = 1, Notes = "Parent item" });

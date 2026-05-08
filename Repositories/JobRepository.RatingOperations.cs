@@ -117,7 +117,7 @@ public partial class JobRepository
     /// <summary>
     /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.
     /// </summary>
-    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType)
+    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string? pricingBreakdown = null)
     {
         try
         {
@@ -150,6 +150,93 @@ public partial class JobRepository
             };
 
             if (rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
+
+            if (!string.IsNullOrEmpty(pricingBreakdown))
+            {
+                var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
+                var isPrebook = jobType == JobType.Recurring;
+
+                // Read existing breakdown rows so we can carry over ChildJobId associations.
+                // The SP overwrites all rows, so without this a split job's per-leg ChildJobIds
+                // would be lost (e.g. Pickup/LH1/LH2/Delivery each linked to their child job).
+                var existingChildJobIds = await Context.PricingBreakdowns
+                    .Where(pb => pb.JobId == effectiveJobId && pb.ChildJobId != null)
+                    .Select(pb => new { pb.ChargeName, pb.ChildJobId })
+                    .ToListAsync();
+
+                var breakdown = pricingBreakdown;
+                if (existingChildJobIds.Count > 0)
+                {
+                    var jobSpeed = jobType switch
+                    {
+                        JobType.Active    => await Context.TucJobs.Where(j => j.UcjbId == jobId).Select(j => (int?)j.UcjbSpeed).FirstOrDefaultAsync(),
+                        JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId).Select(j => (int?)j.UcbkSpeed).FirstOrDefaultAsync(),
+                        JobType.Archived  => await Context.TucJobArchives.Where(j => j.UcjbId == jobId).Select(j => (int?)j.UcjbSpeed).FirstOrDefaultAsync(),
+                        _ => null
+                    };
+
+                    var isFlightGrouping = false;
+                    if (jobSpeed.HasValue)
+                    {
+                        var groupingName = await Context.TucJobTypes
+                            .Where(jt => jt.UcjtId == jobSpeed.Value)
+                            .Select(jt => jt.Grouping.GroupingName)
+                            .FirstOrDefaultAsync();
+                        isFlightGrouping = groupingName?.Contains("Flight", StringComparison.OrdinalIgnoreCase) == true;
+                    }
+
+                    var lines = breakdown.Split('\r', StringSplitOptions.RemoveEmptyEntries);
+                    IEnumerable<string> modifiedLines;
+
+                    if (isFlightGrouping && lines.Length == existingChildJobIds.Count)
+                    {
+                        // Flight speed changes cause charge names to change completely
+                        // (e.g. "Domestic Flight" → "Nationwide Flight Priority"), so match by position.
+                        var orderedChildJobIds = existingChildJobIds
+                            .Select(pb => pb.ChildJobId!.Value)
+                            .ToList();
+
+                        modifiedLines = lines.Select((line, i) =>
+                        {
+                            var childJobId = orderedChildJobIds[i];
+                            return line.Count(c => c == '~') switch
+                            {
+                                0 => $"{line}~0~{childJobId}",
+                                1 => $"{line}~{childJobId}",
+                                _ => line
+                            };
+                        });
+                    }
+                    else
+                    {
+                        var childJobLookup = existingChildJobIds
+                            .GroupBy(pb => pb.ChargeName)
+                            .ToDictionary(g => g.Key, g => g.First().ChildJobId!.Value);
+
+                        modifiedLines = lines.Select(line =>
+                        {
+                            // API format is "ChargeName=Amount" — extract name before the '='
+                            var chargeName = line.Contains('=') ? line[..line.IndexOf('=')].Trim() : line.Trim();
+                            if (!childJobLookup.TryGetValue(chargeName, out var childJobId)) return line;
+                            return line.Count(c => c == '~') switch
+                            {
+                                0 => $"{line}~0~{childJobId}",
+                                1 => $"{line}~{childJobId}",
+                                _ => line
+                            };
+                        });
+                    }
+
+                    breakdown = string.Join("\r", modifiedLines);
+                }
+
+                await Context.Procedures.DD_InsertPricingBreakdownAsync(
+                    jobID: isPrebook ? null : effectiveJobId,
+                    prebookJobID: isPrebook ? effectiveJobId : null,
+                    pricingBreakdown: breakdown,
+                    returnValue: new OutputParameter<int>()
+                );
+            }
 
             var noteText = previousRate.HasValue
                 ? $"Rate updated to {rate} from {previousRate.Value}"

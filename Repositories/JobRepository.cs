@@ -1732,10 +1732,22 @@ public partial class JobRepository(
                                 (childJobId == null || i.ChildJobId == childJobId))
                     .CountAsync();
 
-                await Context.TucJobs
-                    .Where(j => j.UcjbId == jobId)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                if (childJobId == null)
+                {
+                    // Non-stop: sync qty across parent and all split children (they share the same parcels)
+                    await Context.TucJobs
+                        .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                }
+                else
+                {
+                    // Stop job: each stop has its own parcels — only update this stop's qty
+                    await Context.TucJobs
+                        .Where(j => j.UcjbId == jobId)
+                        .ExecuteUpdateAsync(setters => setters
+                            .SetProperty(j => j.UcjbQty, (short)totalItemCount));
+                }
 
                 await transaction.CommitAsync();
             });
@@ -1751,8 +1763,18 @@ public partial class JobRepository(
 
     public async Task UpdateJobWeightAsync(int jobId, decimal weight)
     {
+        if (await IsStopJob(jobId))
+        {
+            // Stop job: each stop has its own weight — only update this stop
+            await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
+            return;
+        }
+        // Non-stop: resolve to parent and sync weight across the entire delivery chain
+        var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
+            .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
     }
 
@@ -1959,6 +1981,9 @@ public partial class JobRepository(
 
             if (rowsChanged == 0)
                 throw new InvalidOperationException($"Job {data.JobId} not found");
+
+            if (!data.IsBulk && !data.IsPrebook)
+                await SyncBreakdownLinesToChildAmountAsync(data.JobId, data.NewPrice);
         }
         catch (InvalidOperationException)
         {
@@ -2020,6 +2045,8 @@ public partial class JobRepository(
 
                 if (rowsChanged == 0)
                     throw new InvalidOperationException($"Job {data.JobId} not found");
+
+                await SyncBreakdownLinesToChildAmountAsync(data.JobId, totalAmount);
             }
 
             return totalAmount;
@@ -4582,6 +4609,59 @@ public partial class JobRepository(
         await SaveNoteAsync(jobId, note);
     }
 
+    /// <summary>
+    /// When a child job's amount is manually set, scales the parent's pricing breakdown lines
+    /// for that child proportionally to sum to the new amount.
+    /// No-ops if no breakdown lines reference this job as a child.
+    /// </summary>
+    private async Task SyncBreakdownLinesToChildAmountAsync(int childJobId, decimal newAmount)
+    {
+        // Only applicable when repricing a child job in a split job; root parents should never
+        // have their own breakdown rows scaled via this path.
+        var parentId = await Context.TucJobs
+            .Where(j => j.UcjbId == childJobId)
+            .Select(j => j.ParentId)
+            .FirstOrDefaultAsync();
+
+        if (parentId == null) return;
+
+        var effectiveParentId = await Context.GetEffectiveJobIdAsync(parentId.Value);
+
+        var lines = await Context.PricingBreakdowns
+            .Where(pb => pb.ChildJobId == childJobId && pb.JobId == effectiveParentId)
+            .ToListAsync();
+
+        if (lines.Count == 0) return;
+
+        var currentTotal = lines.Sum(l => l.ChargeAmount);
+
+        if (currentTotal == 0 || newAmount == 0)
+        {
+            foreach (var line in lines)
+                line.ChargeAmount = 0;
+        }
+        else
+        {
+            var scaleFactor = newAmount / currentTotal;
+            var allocated = 0m;
+
+            for (var i = 0; i < lines.Count - 1; i++)
+            {
+                var scaled = Math.Round(lines[i].ChargeAmount * scaleFactor, 2);
+                lines[i].ChargeAmount = scaled;
+                allocated += scaled;
+            }
+
+            // Last line absorbs any rounding difference
+            lines[^1].ChargeAmount = newAmount - allocated;
+        }
+
+        await Context.SaveChangesAsync();
+
+        await SetJobAsManuallyPriceAsync(effectiveParentId,
+            $"Breakdown updated: child job {childJobId} manually repriced to {newAmount:C}");
+    }
+
     private async Task SetPrebookJobAsManuallyPriceAsync(int prebookJobId,
         string note)
     {
@@ -4714,7 +4794,13 @@ public partial class JobRepository(
             .FirstOrDefaultAsync();
 
         ArgumentNullException.ThrowIfNull(jobNumber);
-        return char.IsLetter(jobNumber.Last());
+        // Stop jobs are created by appending a single lowercase letter (a-z, not v) to the parent
+        // job number. Regular jobs and split children end in an uppercase letter or digit.
+        // Guard that the second-to-last char is not also lowercase to avoid false positives.
+        if (jobNumber.Length < 2) return false;
+        var last = jobNumber[^1];
+        var secondLast = jobNumber[^2];
+        return char.IsLower(last) && last != 'v' && !char.IsLower(secondLast);
     }
 
 
