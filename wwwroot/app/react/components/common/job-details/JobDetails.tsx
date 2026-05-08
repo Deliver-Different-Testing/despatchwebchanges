@@ -273,6 +273,8 @@ export function JobDetails({config}: JobDetailsProps) {
         invalidateJobLists,
         invalidatePhotos,
         checkForRateChange,
+        invalidateAllJobDetails: () => rqClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
+        relatedJobs: sortedRelatedJobs,
         onStatusChange: config.onStatusChange,
     });
 

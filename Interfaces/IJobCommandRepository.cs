@@ -89,7 +89,7 @@ public interface IJobCommandRepository
     Task SaveChangesAsync();
     Task BulkUpdateReadStatusAsync(BulkReadUpdateRequestModel data);
     Task AddPackagesToJobAsync(int effectiveJobId, List<TucJobItem> items);
-    Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType);
+    Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string? pricingBreakdown = null);
     Task SimpleRepriceJobManualAsync(SimpleRepriceJobModel data);
     Task<decimal> RepriceJobWithBaseAmountAsync(RepriceJobWithBaseAmountModel data);
     Task AssignCourierToJobAsync(IReadOnlyList<int> jobIds, int courierId);

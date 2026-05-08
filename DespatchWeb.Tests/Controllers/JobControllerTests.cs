@@ -2138,6 +2138,56 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task UpdateJobPackages_WithWeight_UpdatesWeightAcrossChain()
+    {
+        // Arrange
+        var request = new UpdateJobPackagesRequest
+        {
+            JobId = 1,
+            Parcels = [new ParcelDimensions { Length = 10, Height = 10, Depth = 10 }],
+            Weight = 15.5m
+        };
+
+        _jobCommandRepositoryMock.UpdatePackagesForJobAsync(request.JobId, request.Parcels)
+            .Returns(Task.CompletedTask);
+        _jobCommandRepositoryMock.UpdateJobWeightAsync(request.JobId, request.Weight.Value)
+            .Returns(Task.CompletedTask);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.UpdateJobPackages(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1).UpdateJobWeightAsync(request.JobId, request.Weight.Value);
+    }
+
+    [Fact]
+    public async Task UpdateJobPackages_WithZeroWeight_DoesNotUpdateWeight()
+    {
+        // Arrange
+        var request = new UpdateJobPackagesRequest
+        {
+            JobId = 1,
+            Parcels = [new ParcelDimensions { Length = 10, Height = 10, Depth = 10 }],
+            Weight = 0m
+        };
+
+        _jobCommandRepositoryMock.UpdatePackagesForJobAsync(request.JobId, request.Parcels)
+            .Returns(Task.CompletedTask);
+
+        var controller = CreateController();
+
+        // Act
+        var result = await controller.UpdateJobPackages(request);
+
+        // Assert
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobWeightAsync(Arg.Any<int>(), Arg.Any<decimal>());
+    }
+
+    [Fact]
     public async Task UpdateBulkJobPackages_ValidRequest_ReturnsOk()
     {
         // Arrange

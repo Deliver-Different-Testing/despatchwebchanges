@@ -58,6 +58,8 @@ interface UseJobActionsOptions {
     invalidateJobLists: () => Promise<void[]>;
     invalidatePhotos: () => Promise<void>;
     checkForRateChange: (job: IJob) => Promise<void>;
+    invalidateAllJobDetails: () => Promise<void>;
+    relatedJobs: IJob[];
     onStatusChange?: (statusId: number) => void;
 }
 
@@ -74,6 +76,8 @@ export function useJobActions({
     invalidateJobLists,
     invalidatePhotos,
     checkForRateChange,
+    invalidateAllJobDetails,
+    relatedJobs,
     onStatusChange,
 }: UseJobActionsOptions) {
     const {
@@ -626,11 +630,16 @@ export function useJobActions({
             jobWeight: j.weight,
         });
         if (!result) return;
-        await refreshAndNotify();
-        if (!j.isBulkJob && !j.ratedManually) {
-            await checkForRateChange(j);
+        await Promise.all([refreshAndNotify(), invalidateAllJobDetails()]);
+        if (!j.isBulkJob) {
+            const jobForRate = j.rootParentId
+                ? (relatedJobs.find(rj => rj.id === j.rootParentId) ?? j)
+                : j;
+            if (!jobForRate.ratedManually) {
+                await checkForRateChange(jobForRate);
+            }
         }
-    }, [ensureParcelDimensionsDialog, isUsCustomer, showToast, refreshAndNotify, checkForRateChange]);
+    }, [ensureParcelDimensionsDialog, isUsCustomer, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs]);
 
     const handleEditRefA = useCallback(() => {
         const j = jobRef.current;

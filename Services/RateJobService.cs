@@ -44,7 +44,7 @@ public sealed class RateJobService(
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
-                await jobCommandRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType);
+                await jobCommandRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType, rateResult.Description);
             else
                 Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                     jobDetails.JobId,
