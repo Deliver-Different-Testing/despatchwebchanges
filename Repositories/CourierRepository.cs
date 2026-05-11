@@ -2501,8 +2501,6 @@ public class CourierRepository(
         return string.Join(" ", lines);
     }
 
-    #region Driver Management Export Methods
-
     private const int MaxExportRows = 10_000;
 
     public async Task<IReadOnlyList<TodayActiveDriversViewModel>> GetTodayActiveDriversForExportAsync(
@@ -2820,6 +2818,4 @@ public class CourierRepository(
             };
         }).ToList();
     }
-
-    #endregion
 }

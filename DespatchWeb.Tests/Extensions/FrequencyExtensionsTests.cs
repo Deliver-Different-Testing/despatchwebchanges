@@ -5,8 +5,6 @@ namespace DespatchWeb.Tests.Extensions;
 
 public class FrequencyExtensionsTests
 {
-    #region ToDisplayString
-
     [Theory]
     [InlineData(Frequency.None, "None")]
     [InlineData(Frequency.Weekly, "Weekly")]
@@ -43,10 +41,6 @@ public class FrequencyExtensionsTests
         Assert.Equal("Weekly, Fortnightly, Last Workday of the Month", result);
     }
 
-    #endregion
-
-    #region IsWeeklyMatch
-
     [Fact]
     public void IsWeeklyMatch_SameDayOfWeek_ReturnsTrue()
     {
@@ -74,10 +68,6 @@ public class FrequencyExtensionsTests
 
         Assert.True(FrequencyExtensions.IsWeeklyMatch(date, date));
     }
-
-    #endregion
-
-    #region IsFortnightlyMatch
 
     [Fact]
     public void IsFortnightlyMatch_SameDate_ReturnsTrue()
@@ -120,10 +110,6 @@ public class FrequencyExtensionsTests
 
         Assert.True(FrequencyExtensions.IsFortnightlyMatch(date, reference));
     }
-
-    #endregion
-
-    #region IsFirstWorkdayOfMonth
 
     [Fact]
     public void IsFirstWorkdayOfMonth_FirstDayIsWeekday_ReturnsTrue()
@@ -179,10 +165,6 @@ public class FrequencyExtensionsTests
         Assert.True(FrequencyExtensions.IsFirstWorkdayOfMonth(date));
     }
 
-    #endregion
-
-    #region IsLastWorkdayOfMonth
-
     [Fact]
     public void IsLastWorkdayOfMonth_LastDayIsWeekday_ReturnsTrue()
     {
@@ -236,10 +218,6 @@ public class FrequencyExtensionsTests
 
         Assert.False(FrequencyExtensions.IsLastWorkdayOfMonth(date));
     }
-
-    #endregion
-
-    #region GetNextOccurrenceForSingleFrequency
 
     [Fact]
     public void GetNextOccurrenceForSingleFrequency_Weekly_ReturnsNextSameDayOfWeek()
@@ -315,6 +293,4 @@ public class FrequencyExtensionsTests
         Assert.NotNull(result);
         Assert.Equal(new DateTime(2025, 1, 31), result.Value);
     }
-
-    #endregion
 }

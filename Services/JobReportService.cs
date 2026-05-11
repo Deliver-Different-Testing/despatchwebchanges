@@ -44,8 +44,6 @@ public sealed class JobReportService(
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    #region POD Search Export
-
     /// <summary>
     /// Generates a CSV report of jobs matching the POD search criteria and uploads a copy to S3.
     /// </summary>
@@ -149,10 +147,6 @@ public sealed class JobReportService(
         ["Void"] = x => x.Void?.ToString()
     };
 
-    #endregion
-
-    #region Client Jobs Report
-
     /// <summary>
     /// Generates a client jobs report in CSV format based on search criteria.
     /// </summary>
@@ -248,10 +242,6 @@ public sealed class JobReportService(
         ["Client Notes"] = x => FormatCsvField(x.UcclNote)
     };
 
-    #endregion
-
-    #region File Parsing
-
     /// <summary>
     /// Parses an uploaded Excel or CSV file into job manual price models.
     /// </summary>
@@ -308,10 +298,6 @@ public sealed class JobReportService(
         if (parsedData.Count > 0)
             await jobCommandRepository.UpdateManualPriceAsync(parsedData);
     }
-
-    #endregion
-
-    #region Recurring Jobs Export
 
     /// <summary>
     /// Generates a CSV export of all recurring jobs matching the search criteria.
@@ -380,10 +366,6 @@ public sealed class JobReportService(
         ["Pickup Address"] = x => FormatAddress(x.PickupAddress),
         ["Delivery Address"] = x => FormatAddress(x.DeliveryAddress)
     };
-
-    #endregion
-
-    #region Helpers
 
     /// <summary>
     /// Validates an uploaded file has valid extension.
@@ -492,6 +474,4 @@ public sealed class JobReportService(
             Log.Error(e, "Error archiving job price upload file to S3");
         }
     }
-
-    #endregion
 }

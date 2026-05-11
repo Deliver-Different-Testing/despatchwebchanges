@@ -7,8 +7,6 @@ namespace DespatchWeb.Helpers;
 
 public static partial class JobMappings
 {
-    #region POD Search Download Mappings
-
     /// <summary>
     /// Projects TucJob (live jobs) directly to JobDownloadModel.
     /// Amount uses parent pricing breakdown sum if available, else job's own sum, else UcjbAmount.
@@ -127,6 +125,4 @@ public static partial class JobMappings
             Speed = j.SpeedNavigation != null ? j.SpeedNavigation.UcjtName : null,
             Notes = j.UcjbNotes
         };
-
-    #endregion
 }

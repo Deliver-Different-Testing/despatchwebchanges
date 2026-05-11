@@ -10,8 +10,6 @@ public sealed class CourierReportService(
     ICourierRepository courierRepository,
     ITenantClock clock) : ICourierReportService
 {
-    #region Today Active Drivers
-
     public async Task<(byte[] FileBytes, string FileName)> GenerateTodayActiveDriversCsvAsync(
         TodayActiveDriversFilterRequest request)
     {
@@ -42,10 +40,6 @@ public sealed class CourierReportService(
         ["Status"] = x => FormatCsvField(x.Status)
     };
 
-    #endregion
-
-    #region Compliance
-
     public async Task<(byte[] FileBytes, string FileName)> GenerateComplianceCsvAsync(
         CourierComplianceFilterRequest request)
     {
@@ -75,10 +69,6 @@ public sealed class CourierReportService(
         ["Days Until Expiry"] = x => FormatCsvField(x.DaysUntilExpiry)
     };
 
-    #endregion
-
-    #region After Hours Schedule
-
     public async Task<(byte[] FileBytes, string FileName)> GenerateAfterHoursScheduleCsvAsync(
         CourierAfterHoursFilterRequest request)
     {
@@ -107,10 +97,6 @@ public sealed class CourierReportService(
         ["Duration"] = x => FormatCsvField(x.Duration)
     };
 
-    #endregion
-
-    #region Driver Emails
-
     public async Task<(byte[] FileBytes, string FileName)> GenerateDriverEmailsCsvAsync(PaginatedRequest request)
     {
         try
@@ -137,10 +123,6 @@ public sealed class CourierReportService(
         ["Fleet"] = x => FormatCsvField(x.Fleet)
     };
 
-    #endregion
-
-    #region Driver Earnings
-
     public async Task<(byte[] FileBytes, string FileName)> GenerateDriverEarningsCsvAsync(PaginatedRequest request)
     {
         try
@@ -166,10 +148,6 @@ public sealed class CourierReportService(
         ["Earnings"] = x => x.Earnings.ToString("F2"),
         ["Hourly Rate"] = x => x.HourlyRate.ToString("F2")
     };
-
-    #endregion
-
-    #region Helpers
 
     private static async Task<byte[]> GenerateCsvAsync<T>(IEnumerable<T> data, Dictionary<string, Func<T, string>> columns)
     {
@@ -200,6 +178,4 @@ public sealed class CourierReportService(
             ? $"\"{escaped}\""
             : escaped;
     }
-
-    #endregion
 }

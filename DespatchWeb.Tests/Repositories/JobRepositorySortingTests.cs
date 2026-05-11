@@ -7,8 +7,6 @@ namespace DespatchWeb.Tests.Repositories;
 
 public class JobRepositorySortingTests
 {
-    #region ApplyDispatchJobSorting
-
     private static List<DispatchJobViewModel> CreateSortableJobs() =>
     [
         new()
@@ -100,10 +98,6 @@ public class JobRepositorySortingTests
         Assert.Equal(1, result.First().Id);
         Assert.Equal(2, result.Last().Id);
     }
-
-    #endregion
-
-    #region MapToPerformanceSpendReportModel
 
     [Fact]
     public void MapToPerformanceSpendReportModel_FullData_MapsAllFields()
@@ -247,7 +241,7 @@ public class JobRepositorySortingTests
     [InlineData("ValidSuburb", null, "ValidSuburb")]
     [InlineData("ValidSuburb", "Fallback", "ValidSuburb")]
     public void MapToPerformanceSpendReportModel_ToSuburb_FallsBackCorrectly(
-        string toSuburb, string toSuburbFromAddress, string expected)
+        string toSuburb, string? toSuburbFromAddress, string expected)
     {
         var row = new ClientJobsReportRow
         {
@@ -259,10 +253,6 @@ public class JobRepositorySortingTests
 
         Assert.Equal(expected, result.To);
     }
-
-    #endregion
-
-    #region GetCourierDescription
 
     private static TucCourier MakeCourier(int id, string code, string name, string surname) =>
         new() { UccrId = id, Code = code, UccrName = name, UccrSurname = surname };
@@ -356,6 +346,4 @@ public class JobRepositorySortingTests
 
         Assert.Equal("C01 Alice", result);
     }
-
-    #endregion
 }

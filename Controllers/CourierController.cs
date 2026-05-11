@@ -431,8 +431,6 @@ public class CourierController(
         }
     }
 
-    #region Driver Management CSV Exports
-
     [HttpPost]
     public async Task<IActionResult> ExportTodayActiveDriversCsv([FromBody] TodayActiveDriversFilterRequest request)
     {
@@ -517,6 +515,4 @@ public class CourierController(
             return StatusCode(500, ErrorMessageStringFormatter.Format(e));
         }
     }
-
-    #endregion
 }

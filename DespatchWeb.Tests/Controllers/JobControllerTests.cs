@@ -2964,8 +2964,6 @@ public class JobControllerTests : IDisposable
             ToAddress = "456 Delivery Ave"
         };
 
-    #region Partner Job Locking Tests
-
     [Fact]
     public async Task SendToPartner_Success_LocksJob()
     {
@@ -3055,7 +3053,4 @@ public class JobControllerTests : IDisposable
 
         Assert.IsType<BadRequestObjectResult>(result);
     }
-
-    #endregion
-
 }

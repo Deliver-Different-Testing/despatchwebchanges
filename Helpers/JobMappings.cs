@@ -29,8 +29,6 @@ public static partial class JobMappings
         public const string NotApplicable = "N/A";
     }
 
-    #region Utility Methods
-
     internal static string FormatDate(DateTime? date) => (date ?? SqlMinDateTime).ToString("MM/dd/yyyy");
 
     internal static string FormatFullName(TucStaff staff) =>
@@ -47,6 +45,4 @@ public static partial class JobMappings
             _ => "Pickup"
         };
     }
-
-    #endregion
 }
