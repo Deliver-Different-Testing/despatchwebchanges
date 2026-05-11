@@ -1,5 +1,4 @@
 using DespatchWeb.EntityClasses;
-using DespatchWeb.Extensions;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +7,6 @@ namespace DespatchWeb.Helpers;
 
 public static partial class JobMappings
 {
-    #region Job Enrichment Methods
-
     /// <summary>
     /// Enriches live jobs with collections (flight info for child jobs only).
     /// Pricing, parcels, and flags are now loaded inline via navigation properties.
@@ -188,14 +185,4 @@ public static partial class JobMappings
             job.IsFlightAssigned = true;
         }
     }
-
-    private static DateTimeOffset ConvertUtcToTimeZone(DateTime? utcDateTime, string timeZoneId) =>
-        !utcDateTime.HasValue ? SqlMinDateTime : ConvertUtcToTimeZone(utcDateTime.Value, timeZoneId);
-
-    private static DateTimeOffset ConvertUtcToTimeZone(DateTime utcDateTime, string timeZoneId) =>
-        string.IsNullOrEmpty(timeZoneId)
-            ? new DateTimeOffset(utcDateTime, TimeSpan.Zero)
-            : utcDateTime.ToTimeZoneOffset(timeZoneId);
-
-    #endregion
 }

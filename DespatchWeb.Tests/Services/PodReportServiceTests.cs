@@ -8,8 +8,6 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class PodReportServiceTests
 {
-    #region MapItems
-
     [Fact]
     public void MapItems_NullParcels_ReturnsEmptyList()
     {
@@ -59,10 +57,6 @@ public class PodReportServiceTests
         Assert.Single(result);
         Assert.Null(result[0].ItemCode);
     }
-
-    #endregion
-
-    #region MapPhotoCategories
 
     [Fact]
     public void MapPhotoCategories_EmptyPhotos_ReturnsEmptyList()
@@ -123,6 +117,4 @@ public class PodReportServiceTests
         Assert.Single(result);
         Assert.Equal(2, result[0].Photos.Count);
     }
-
-    #endregion
 }

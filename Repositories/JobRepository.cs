@@ -1211,6 +1211,7 @@ public partial class JobRepository(
                         .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
                         .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
                         .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
+                        .SetProperty(j => j.DeliveryAddressLine8, address.AddressLine8)
                         .SetProperty(j => j.UcjbToAddr, fullAddress));
 
                 return;
@@ -1228,10 +1229,11 @@ public partial class JobRepository(
                     .SetProperty(j => j.DeliveryAddressLine5, address.AddressLine5)
                     .SetProperty(j => j.DeliveryAddressLine6, address.AddressLine6)
                     .SetProperty(j => j.DeliveryAddressLine7, address.AddressLine7)
+                    .SetProperty(j => j.DeliveryAddressLine8, address.AddressLine8)
                     .SetProperty(j => j.UcjbToAddr, fullAddress));
 
             if (rowsAffected == 0)
-                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request));
         }
         catch (Exception ex)
         {
@@ -1270,6 +1272,7 @@ public partial class JobRepository(
                         .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
                         .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
                         .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
+                        .SetProperty(j => j.PickupAddressLine8, address.AddressLine8)
                         .SetProperty(j => j.UcjbFromAddr, fullAddress));
 
                 return;
@@ -1287,10 +1290,11 @@ public partial class JobRepository(
                     .SetProperty(j => j.PickupAddressLine5, address.AddressLine5)
                     .SetProperty(j => j.PickupAddressLine6, address.AddressLine6)
                     .SetProperty(j => j.PickupAddressLine7, address.AddressLine7)
+                    .SetProperty(j => j.PickupAddressLine8, address.AddressLine8)
                     .SetProperty(j => j.UcjbFromAddr, fullAddress));
 
             if (rowsAffected == 0)
-                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request.JobId));
+                throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request));
         }
         catch (Exception ex)
         {
@@ -2597,7 +2601,7 @@ public partial class JobRepository(
                     );
             }
 
-            if (!data.JobIdSet && data.WildSet)
+            if (data is { JobIdSet: false, WildSet: true })
             {
                 liveJobsQuery = liveJobsQuery.Where(j =>
                     j.TucJobNationwides.Any(nw => EF.Functions.Like(
@@ -2788,7 +2792,7 @@ public partial class JobRepository(
         var fromDateOnly = fromDate.Date;
         var toDateOnly = toDate.Date;
 
-        var jobSearch = $"%{job?.Trim()}%";
+        var jobSearch = $"%{job.Trim()}%";
         var wildSearch = $"%{wild}%";
 
         var clientSet = clientIds is { Count: > 0 };
@@ -3002,103 +3006,109 @@ public partial class JobRepository(
 
     /// <summary>
     /// Retrieves performance and spend report data for multiple clients.
-    /// Uses Dapper with explicit SQL for optimal query plan and ordering.
     /// </summary>
     public async Task<IReadOnlyList<PerformanceSpendReportModel>> GetClientJobsReportDataAsync(
         [FromQuery] ClientJobsReportRequest request)
     {
-        const string sql = """
-                           SELECT
-                               j.ucjbNumber        AS JobNumber,
-                               j.ucjbType          AS JobType,
-                               j.ucjbDate          AS [Date],
-                               j.ucjbTime          AS Booked,
-                               j.ucjbContact       AS BookedBy,
-                               j.PickUpTime        AS PickedUpTime,
-                               j.ucjbComplTime     AS Delivered,
-                               jt.ucjtDescription  AS JobTypeDescription,
-                               jt.Minutes,
-                               j.ucjbPODName       AS PodName,
-                               sfrom.UcsuName      AS FromSuburb,
-                               sfrom.PostCode      AS FromPostcode,
-                               sto.UcsuName        AS ToSuburb,
-                               sto.PostCode        AS ToPostcode,
-                               ad.ToSuburb         AS ToSuburbFromAddress,
-                               j.ucjbFromAddr      AS FromAddr,
-                               j.ucjbToAddr        AS ToAddr,
-                               j.ucjbCourierID     AS CourierId,
-                               CAST(CASE WHEN j.ucjbLatePick = 1 THEN 1 ELSE 0 END AS BIT) AS LatePickup,
-                               CAST(CASE WHEN j.ucjbLateDel = 1 THEN 1 ELSE 0 END AS BIT)  AS LateDelivery,
-                               cl.ucclLegalName    AS ClientLegalName,
-                               jt.ucjtName         AS Speed,
-                               ajt.ucjtName        AS AcceptedSpeed,
-                               j.ucjbNotes         AS Notes,
-                               j.ucjbAmount        AS Amount,
-                               j.ucjbClientRefa    AS RefA,
-                               j.ucjbClientRefb    AS RefB,
-                               j.ucjbOurRef        AS OurRef,
-                               CAST(j.ucjbWeight AS decimal(18,4)) AS [Weight],
-                               j.ucjbSize          AS Size,
-                               j.ucjbQty           AS Quantity,
-                               j.ucjbYear          AS [Year],
-                               j.ucjbMonth         AS [Month],
-                               cr.Code             AS CourierCode,
-                               cr.uccrName         AS CourierName,
-                               j.ucjbInvoiceNo     AS InvoiceNo,
-                               CAST(CASE WHEN j.ucjbLocked = 1 THEN 1 ELSE 0 END AS BIT) AS Locked,
-                               j.ucjbClientID      AS ClientId,
-                               cl.ucclNote         AS ClientNote,
-                               j.RawBaseAmount,
-                               j.FuelSurchargeAmount
-                           FROM tucJobArchive j
-                           LEFT JOIN tucJobType jt ON jt.ucjtID = j.ucjbSpeed
-                           LEFT JOIN tucJobType ajt ON ajt.ucjtID = j.AcceptedJobTypeID
-                           LEFT JOIN tucSuburb sfrom ON sfrom.ucsuID = j.ucjbFrom
-                           LEFT JOIN tucSuburb sto ON sto.ucsuID = j.ucjbTo
-                           LEFT JOIN tucJobAddressDeatil ad ON ad.JobID = j.ucjbID
-                           LEFT JOIN tucClient cl ON cl.ucclID = j.ucjbClientID
-                           LEFT JOIN tucCourier cr ON cr.uccrID = j.ucjbCourierID
-                           LEFT JOIN tblJobRelationshipType jrt ON jrt.JobRelationshipTypeID = j.JobRelationshipTypeID
-                           WHERE j.ucjbDate >= @StartDate
-                             AND j.ucjbDate <= @EndDate
-                             AND (j.JobRelationshipTypeID IS NULL OR jrt.DisplayStatement = 1)
-                             AND ISNULL(j.ucjbClientID, 0) IN @ClientIds
-                             AND j.ucjbVoid = 0
-                             AND j.ucjbJobDone = 1
-                           ORDER BY
-                               CASE
-                                   WHEN jt.ucjtDescription = '15 Minute' THEN 1
-                                   WHEN jt.ucjtDescription = '30 Minute' THEN 2
-                                   WHEN jt.ucjtDescription = '45 Minute' THEN 3
-                                   WHEN jt.ucjtDescription = '1 Hour' THEN 4
-                                   WHEN jt.ucjtDescription = '75 Minute' THEN 5
-                                   WHEN jt.ucjtDescription = '90 Minute' THEN 6
-                                   WHEN jt.ucjtDescription = '2 Hour' THEN 7
-                                   WHEN jt.ucjtDescription = '3 Hour' THEN 8
-                                   WHEN jt.ucjtDescription = 'Baggage' THEN 10
-                                   WHEN jt.ucjtDescription = 'Truck Super' THEN 11
-                                   WHEN jt.ucjtDescription = 'Truck Express' THEN 12
-                                   WHEN jt.ucjtDescription = 'Truck Standard' THEN 13
-                                   WHEN jt.ucjtDescription = 'Truck Economy' THEN 14
-                                   ELSE 100
-                               END,
-                               j.ucjbDate,
-                               j.ucjbTime,
-                               j.ucjbCourierID,
-                               jt.Minutes
-                           """;
+        var startDate = request.StartDate.Date;
+        var endDate = request.EndDate.Date;
+        var clientIds = request.ClientIds;
 
         try
         {
-            var connection = Context.GetDapperConnection();
-            var results = (await connection.QueryAsync<ClientJobsReportRow>(sql, new
-            {
-                StartDate = request.StartDate.Date,
-                EndDate = request.EndDate.Date,
-                request.ClientIds
-            })).AsList();
+            var query =
+                from j in Context.TucJobArchives
+                join jt0 in Context.TucJobTypes on j.UcjbSpeed equals jt0.UcjtId into jtJoin
+                from jt in jtJoin.DefaultIfEmpty()
+                join ajt0 in Context.TucJobTypes on j.AcceptedJobTypeId equals ajt0.UcjtId into ajtJoin
+                from ajt in ajtJoin.DefaultIfEmpty()
+                join sf0 in Context.TucSuburbs on j.UcjbFrom equals sf0.UcsuId into sfJoin
+                from sfrom in sfJoin.DefaultIfEmpty()
+                join st0 in Context.TucSuburbs on j.UcjbTo equals st0.UcsuId into stJoin
+                from sto in stJoin.DefaultIfEmpty()
+                join ad0 in Context.TucJobAddressDeatils on j.UcjbId equals ad0.JobId into adJoin
+                from ad in adJoin.DefaultIfEmpty()
+                join cl0 in Context.TucClients on j.UcjbClientId equals cl0.UcclId into clJoin
+                from cl in clJoin.DefaultIfEmpty()
+                join cr0 in Context.TucCouriers on j.UcjbCourierId equals cr0.UccrId into crJoin
+                from cr in crJoin.DefaultIfEmpty()
+                join jrt0 in Context.TblJobRelationshipTypes
+                    on j.JobRelationshipTypeId equals jrt0.JobRelationshipTypeId into jrtJoin
+                from jrt in jrtJoin.DefaultIfEmpty()
+                where j.UcjbDate >= startDate
+                      && j.UcjbDate <= endDate
+                      && (j.JobRelationshipTypeId == null || jrt.DisplayStatement)
+                      && clientIds.Contains(j.UcjbClientId ?? 0)
+                      && !j.UcjbVoid
+                      && j.UcjbJobDone
+                select new ClientJobsReportRow
+                {
+                    JobNumber = j.UcjbNumber,
+                    JobType = (int?)j.UcjbType,
+                    Date = j.UcjbDate,
+                    Booked = j.UcjbTime,
+                    BookedBy = j.UcjbContact,
+                    PickedUpTime = j.PickUpTime,
+                    Delivered = j.UcjbComplTime,
+                    JobTypeDescription = jt != null ? jt.UcjtDescription : null,
+                    Minutes = jt != null ? jt.Minutes : null,
+                    PodName = j.UcjbPodname,
+                    FromSuburb = sfrom != null ? sfrom.UcsuName : null,
+                    FromPostcode = sfrom != null ? sfrom.PostCode : null,
+                    ToSuburb = sto != null ? sto.UcsuName : null,
+                    ToPostcode = sto != null ? sto.PostCode : null,
+                    ToSuburbFromAddress = ad != null ? ad.ToSuburb : null,
+                    FromAddr = j.UcjbFromAddr,
+                    ToAddr = j.UcjbToAddr,
+                    CourierId = j.UcjbCourierId,
+                    LatePickup = j.UcjbLatePick == 1,
+                    LateDelivery = j.UcjbLateDel == 1,
+                    ClientLegalName = cl != null ? cl.UcclLegalName : null,
+                    Speed = jt != null ? jt.UcjtName : null,
+                    AcceptedSpeed = ajt != null ? ajt.UcjtName : null,
+                    Notes = j.UcjbNotes,
+                    Amount = j.UcjbAmount,
+                    RefA = j.UcjbClientRefa,
+                    RefB = j.UcjbClientRefb,
+                    OurRef = j.UcjbOurRef,
+                    Weight = (decimal?)j.UcjbWeight,
+                    Size = j.UcjbSize,
+                    Quantity = j.UcjbQty,
+                    Year = j.UcjbYear,
+                    Month = j.UcjbMonth,
+                    CourierCode = cr != null ? cr.Code : null,
+                    CourierName = cr != null ? cr.UccrName : null,
+                    InvoiceNo = j.UcjbInvoiceNo,
+                    Locked = j.UcjbLocked == 1,
+                    ClientId = j.UcjbClientId,
+                    ClientNote = cl != null ? cl.UcclNote : null,
+                    RawBaseAmount = j.RawBaseAmount,
+                    FuelSurchargeAmount = j.FuelSurchargeAmount
+                };
 
-            return results.ConvertAll(MapToPerformanceSpendReportModel);
+            var ordered = query
+                .OrderBy(r =>
+                    r.JobTypeDescription == "15 Minute" ? 1 :
+                    r.JobTypeDescription == "30 Minute" ? 2 :
+                    r.JobTypeDescription == "45 Minute" ? 3 :
+                    r.JobTypeDescription == "1 Hour" ? 4 :
+                    r.JobTypeDescription == "75 Minute" ? 5 :
+                    r.JobTypeDescription == "90 Minute" ? 6 :
+                    r.JobTypeDescription == "2 Hour" ? 7 :
+                    r.JobTypeDescription == "3 Hour" ? 8 :
+                    r.JobTypeDescription == "Baggage" ? 10 :
+                    r.JobTypeDescription == "Truck Super" ? 11 :
+                    r.JobTypeDescription == "Truck Express" ? 12 :
+                    r.JobTypeDescription == "Truck Standard" ? 13 :
+                    r.JobTypeDescription == "Truck Economy" ? 14 :
+                    100)
+                .ThenBy(r => r.Date)
+                .ThenBy(r => r.Booked)
+                .ThenBy(r => r.CourierId)
+                .ThenBy(r => r.Minutes);
+
+            var rows = await ordered.ToListAsync();
+            return rows.ConvertAll(MapToPerformanceSpendReportModel);
         }
         catch (Exception e)
         {
@@ -5037,8 +5047,6 @@ public partial class JobRepository(
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await Context.IsPartnerJobAsync(jobId);
 
-    #region IJobRepository Interface Methods (delegating to protected base methods)
-
     public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
         CancellationToken cancellationToken = default)
         => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
@@ -5102,6 +5110,4 @@ public partial class JobRepository(
 
         return true;
     }
-
-    #endregion
 }

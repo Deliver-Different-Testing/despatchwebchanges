@@ -2006,65 +2006,6 @@ public class JobMappingsTests
     }
 
     [Fact]
-    public void ConvertUtcToTimeZone_WithNullDateTime_ReturnsSqlMinDateTime()
-    {
-        // Arrange
-        DateTime? nullDateTime = null;
-
-        // Act
-        var method = typeof(JobMappings).GetMethod(
-            "ConvertUtcToTimeZone",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-            null,
-            [typeof(DateTime?), typeof(string)],
-            null);
-        var result = (DateTimeOffset)method!.Invoke(null, [nullDateTime, "Pacific Standard Time"])!;
-
-        // Assert - Should return SqlMinDateTime (1753-01-01)
-        Assert.Equal(1753, result.Year);
-    }
-
-    [Fact]
-    public void ConvertUtcToTimeZone_WithNullTimeZone_ReturnsUtcOffset()
-    {
-        // Arrange
-        var utcTime = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
-
-        // Act
-        var method = typeof(JobMappings).GetMethod(
-            "ConvertUtcToTimeZone",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-            null,
-            [typeof(DateTime), typeof(string)],
-            null);
-        var result = (DateTimeOffset)method!.Invoke(null, [utcTime, null])!;
-
-        // Assert - Should return with zero offset (UTC)
-        Assert.Equal(12, result.Hour);
-        Assert.Equal(TimeSpan.Zero, result.Offset);
-    }
-
-    [Fact]
-    public void ConvertUtcToTimeZone_WithEmptyTimeZone_ReturnsUtcOffset()
-    {
-        // Arrange
-        var utcTime = new DateTime(2024, 1, 15, 12, 0, 0, DateTimeKind.Utc);
-
-        // Act
-        var method = typeof(JobMappings).GetMethod(
-            "ConvertUtcToTimeZone",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
-            null,
-            [typeof(DateTime), typeof(string)],
-            null);
-        var result = (DateTimeOffset)method!.Invoke(null, [utcTime, ""])!;
-
-        // Assert
-        Assert.Equal(12, result.Hour);
-        Assert.Equal(TimeSpan.Zero, result.Offset);
-    }
-
-    [Fact]
     public void JobMappingCore_FromContactNumber_UsesJobPhone_WhenSet()
     {
         // Arrange

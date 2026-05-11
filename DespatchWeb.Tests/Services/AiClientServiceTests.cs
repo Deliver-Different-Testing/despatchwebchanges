@@ -7,8 +7,6 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class AiClientServiceTests
 {
-    #region ParseToolProperties
-
     [Fact]
     public void ParseToolProperties_ValidJson_ReturnsDictionaryWithCorrectKeys()
     {
@@ -47,10 +45,6 @@ public class AiClientServiceTests
         Assert.True(addressElement.TryGetProperty("properties", out var nested));
         Assert.True(nested.TryGetProperty("street", out _));
     }
-
-    #endregion
-
-    #region ParseToolRequired
 
     [Fact]
     public void ParseToolRequired_WithRequiredArray_ReturnsStringArray()
@@ -95,6 +89,4 @@ public class AiClientServiceTests
         Assert.Equal("age", result[1]);
         Assert.Equal("email", result[2]);
     }
-
-    #endregion
 }

@@ -9,8 +9,6 @@ namespace DespatchWeb.Tests.Services;
 /// </summary>
 public class DeliveryJourneyServiceStaticTests
 {
-    #region FormatFieldName
-
     [Theory]
     [InlineData(null, null)]
     [InlineData("", "")]
@@ -54,10 +52,6 @@ public class DeliveryJourneyServiceStaticTests
         Assert.Equal(expected, result);
     }
 
-    #endregion
-
-    #region GetIconForFieldName
-
     [Theory]
     [InlineData(null, "edit_note")]
     [InlineData("", "edit_note")]
@@ -79,14 +73,10 @@ public class DeliveryJourneyServiceStaticTests
         Assert.Equal(expectedIcon, result);
     }
 
-    #endregion
-
-    #region FormatFieldValue
-
     [Theory]
     [InlineData("ucjbStatus", null, null)]
     [InlineData("ucjbStatus", "", "")]
-    public void FormatFieldValue_NullOrEmpty_ReturnsAsIs(string fieldName, string value, string expected)
+    public void FormatFieldValue_NullOrEmpty_ReturnsAsIs(string fieldName, string? value, string? expected)
     {
         var result = DeliveryJourneyService.FormatFieldValue(fieldName, value);
 
@@ -159,10 +149,6 @@ public class DeliveryJourneyServiceStaticTests
 
         Assert.Equal("N/A", result);
     }
-
-    #endregion
-
-    #region GetDescription (live DTOs)
 
     [Fact]
     public void GetDescription_Live_StatusChange_ReturnsStatusDescription()
@@ -324,10 +310,6 @@ public class DeliveryJourneyServiceStaticTests
         Assert.Contains("; ", result);
     }
 
-    #endregion
-
-    #region GetDescription (archive DTOs)
-
     [Fact]
     public void GetDescription_Archive_StatusChange_ReturnsStatusDescription()
     {
@@ -396,10 +378,6 @@ public class DeliveryJourneyServiceStaticTests
         Assert.Contains("Updated connote", result);
     }
 
-    #endregion
-
-    #region ConvertToTitleCase
-
     [Theory]
     [InlineData("ucjbSomeField", "Some Field")]
     [InlineData("ucjbCBDZone", "C B D Zone")]
@@ -419,6 +397,4 @@ public class DeliveryJourneyServiceStaticTests
 
         Assert.Equal("Test Field", result);
     }
-
-    #endregion
 }
