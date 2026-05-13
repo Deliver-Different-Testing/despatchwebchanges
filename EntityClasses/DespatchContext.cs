@@ -185,6 +185,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucJobBookingItem> TucJobBookingItems { get; set; }
 
+    public virtual DbSet<TucJobChangeRequest> TucJobChangeRequests { get; set; }
+
     public virtual DbSet<TucJobInternalStatus> TucJobInternalStatuses { get; set; }
 
     public virtual DbSet<TucJobItem> TucJobItems { get; set; }
@@ -1682,14 +1684,18 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.RunId, "RunID-NonClusteredIndex-20190824-171500");
 
+            entity.HasIndex(e => e.BulkJobId, "UX_tblBulkJobRun_BulkJobID")
+                .IsUnique()
+                .HasFilter("([BulkJobID] IS NOT NULL)");
+
             entity.HasIndex(e => e.BulkJobId, "index_BulkJobID");
 
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.BulkJobId).HasColumnName("BulkJobID");
             entity.Property(e => e.RunId).HasColumnName("RunID");
 
-            entity.HasOne(d => d.BulkJob).WithMany(p => p.TblBulkJobRuns)
-                .HasForeignKey(d => d.BulkJobId)
+            entity.HasOne(d => d.BulkJob).WithOne(p => p.TblBulkJobRun)
+                .HasForeignKey<TblBulkJobRun>(d => d.BulkJobId)
                 .HasConstraintName("FK__tblBulkJo__BulkJ__0876219E");
 
             entity.HasOne(d => d.Run).WithMany(p => p.TblBulkJobRuns)
@@ -3142,6 +3148,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FromAddressExtras2).HasMaxLength(200);
             entity.Property(e => e.FromAddressStreetName).HasMaxLength(200);
             entity.Property(e => e.FromSuburbId).HasColumnName("FromSuburbID");
+            entity.Property(e => e.FuelPercentage).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.Gssamount)
                 .HasColumnType("money")
@@ -3198,6 +3205,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ppdexclusiveamount");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+            entity.Property(e => e.PumpPrice).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RawBaseAmount).HasColumnType("money");
             entity.Property(e => e.Rebate).HasColumnType("money");
@@ -5582,6 +5590,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FromAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressStreetName");
+            entity.Property(e => e.FuelPercentage).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.GssTrackingUrl)
                 .HasMaxLength(400)
@@ -5643,6 +5652,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PPDExclusiveAmount");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+            entity.Property(e => e.PumpPrice).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RawBaseAmount).HasColumnType("money");
             entity.Property(e => e.RebateAmt).HasColumnType("money");
@@ -6098,6 +6108,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.FromAddressStreetName)
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressStreetName");
+            entity.Property(e => e.FuelPercentage).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.FuelSurchargeGst)
                 .HasColumnType("money")
@@ -6172,6 +6183,7 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("PPDExclusiveAmount");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+            entity.Property(e => e.PumpPrice).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RawBaseAmount).HasColumnType("money");
             entity.Property(e => e.RebateAmt)
@@ -6463,6 +6475,7 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(200)
                 .HasColumnName("fromAddressStreetName");
             entity.Property(e => e.FromAirportId).HasColumnName("FromAirportID");
+            entity.Property(e => e.FuelPercentage).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.FuelSurchargeAmount).HasColumnType("money");
             entity.Property(e => e.GssTrackingUrl)
                 .HasMaxLength(400)
@@ -6503,6 +6516,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.PickupTimeZoneId).HasColumnName("PickupTimeZoneID");
             entity.Property(e => e.ProofOfDeliveryEmail).HasMaxLength(100);
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
+            entity.Property(e => e.PumpPrice).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.RawAmount).HasColumnType("money");
             entity.Property(e => e.RefJobId).HasColumnName("RefJobID");
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
@@ -6744,6 +6758,115 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.ChildJob).WithMany(p => p.TucJobBookingItemChildJobs)
                 .HasForeignKey(d => d.ChildJobId)
                 .HasConstraintName("FK_tucJobBookingItems_ChildJobID");
+        });
+
+        modelBuilder.Entity<TucJobChangeRequest>(entity =>
+        {
+            entity.HasKey(e => e.UjcrId).HasName("PK__tucJobCh__6D45118AD7170A94");
+
+            entity.ToTable("tucJobChangeRequest");
+
+            entity.HasIndex(e => e.UjcrJobId, "IX_tucJobChangeRequest_JobID");
+
+            entity.HasIndex(e => e.UjcrSourceRequestUuid, "IX_tucJobChangeRequest_SourceUuid");
+
+            entity.Property(e => e.UjcrId).HasColumnName("ujcrID");
+            entity.Property(e => e.UjcrAppliedAtUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ujcrAppliedAtUtc");
+            entity.Property(e => e.UjcrAppliedByStaffId).HasColumnName("ujcrAppliedByStaffID");
+            entity.Property(e => e.UjcrApprovalMode)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Manual")
+                .HasColumnName("ujcrApprovalMode");
+            entity.Property(e => e.UjcrApprovalPartyType)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("ujcrApprovalPartyType");
+            entity.Property(e => e.UjcrApprovedByStaffId).HasColumnName("ujcrApprovedByStaffID");
+            entity.Property(e => e.UjcrCurrentValue).HasColumnName("ujcrCurrentValue");
+            entity.Property(e => e.UjcrFieldName)
+                .IsRequired()
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("ujcrFieldName");
+            entity.Property(e => e.UjcrJobId).HasColumnName("ujcrJobID");
+            entity.Property(e => e.UjcrNewCommercialAmount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("ujcrNewCommercialAmount");
+            entity.Property(e => e.UjcrOldCommercialAmount)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("ujcrOldCommercialAmount");
+            entity.Property(e => e.UjcrOrigin)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("ujcrOrigin");
+            entity.Property(e => e.UjcrPairingId).HasColumnName("ujcrPairingID");
+            entity.Property(e => e.UjcrReason)
+                .HasMaxLength(1000)
+                .HasColumnName("ujcrReason");
+            entity.Property(e => e.UjcrRejectedByStaffId).HasColumnName("ujcrRejectedByStaffID");
+            entity.Property(e => e.UjcrRequestedAtUtc)
+                .HasDefaultValueSql("(getutcdate())")
+                .HasColumnType("datetime")
+                .HasColumnName("ujcrRequestedAtUtc");
+            entity.Property(e => e.UjcrRequestedByStaffId).HasColumnName("ujcrRequestedByStaffID");
+            entity.Property(e => e.UjcrRequestedValue).HasColumnName("ujcrRequestedValue");
+            entity.Property(e => e.UjcrRequestingPartyType)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("ujcrRequestingPartyType");
+            entity.Property(e => e.UjcrRequiresCommercialRefresh).HasColumnName("ujcrRequiresCommercialRefresh");
+            entity.Property(e => e.UjcrRespondedAtUtc)
+                .HasColumnType("datetime")
+                .HasColumnName("ujcrRespondedAtUtc");
+            entity.Property(e => e.UjcrRowVersion)
+                .IsRequired()
+                .IsRowVersion()
+                .IsConcurrencyToken()
+                .HasColumnName("ujcrRowVersion");
+            entity.Property(e => e.UjcrRuleCode)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("ujcrRuleCode");
+            entity.Property(e => e.UjcrSourceRequestUuid).HasColumnName("ujcrSourceRequestUuid");
+            entity.Property(e => e.UjcrStatus)
+                .IsRequired()
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("Pending")
+                .HasColumnName("ujcrStatus");
+            entity.Property(e => e.UjcrTucEventId).HasColumnName("ujcrTucEventID");
+
+            entity.HasOne(d => d.UjcrAppliedByStaff).WithMany(p => p.TucJobChangeRequestUjcrAppliedByStaffs)
+                .HasForeignKey(d => d.UjcrAppliedByStaffId)
+                .HasConstraintName("FK__tucJobCha__ujcrA__3AED5E29");
+
+            entity.HasOne(d => d.UjcrApprovedByStaff).WithMany(p => p.TucJobChangeRequestUjcrApprovedByStaffs)
+                .HasForeignKey(d => d.UjcrApprovedByStaffId)
+                .HasConstraintName("FK__tucJobCha__ujcrA__390515B7");
+
+            entity.HasOne(d => d.UjcrJob).WithMany(p => p.TucJobChangeRequests)
+                .HasForeignKey(d => d.UjcrJobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__tucJobCha__ujcrJ__334C3C61");
+
+            entity.HasOne(d => d.UjcrPairing).WithMany(p => p.TucJobChangeRequests)
+                .HasForeignKey(d => d.UjcrPairingId)
+                .HasConstraintName("FK__tucJobCha__ujcrP__3440609A");
+
+            entity.HasOne(d => d.UjcrRejectedByStaff).WithMany(p => p.TucJobChangeRequestUjcrRejectedByStaffs)
+                .HasForeignKey(d => d.UjcrRejectedByStaffId)
+                .HasConstraintName("FK__tucJobCha__ujcrR__39F939F0");
+
+            entity.HasOne(d => d.UjcrRequestedByStaff).WithMany(p => p.TucJobChangeRequestUjcrRequestedByStaffs)
+                .HasForeignKey(d => d.UjcrRequestedByStaffId)
+                .HasConstraintName("FK__tucJobCha__ujcrR__3810F17E");
         });
 
         modelBuilder.Entity<TucJobInternalStatus>(entity =>

@@ -7,6 +7,7 @@ using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
 using Microsoft.EntityFrameworkCore;
+
 namespace DespatchWeb.Repositories;
 
 public partial class JobRepository

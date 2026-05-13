@@ -1,0 +1,80 @@
+/**
+ * Job Change Request API Service
+ *
+ * React-side wrapper for the inter-tenant job-change-request workflow.
+ * Mirrors the eventApi pattern — thin axios calls, all routes return JSON.
+ */
+
+import {apiClient} from './apiClient';
+
+export interface JobChangeRequestDto {
+    id: number;
+    jobId: number;
+    partnerJobGuid?: string;
+    pairingId?: number;
+    sourceRequestUuid: string;
+    tucEventId?: number;
+    origin: string;
+    requestingPartyType: string;
+    approvalPartyType: string;
+    fieldName: string;
+    currentValue?: string;
+    requestedValue?: string;
+    reason?: string;
+    status: string;
+    approvalMode: string;
+    ruleCode?: string;
+    requiresCommercialRefresh: boolean;
+    oldCommercialAmount?: number;
+    newCommercialAmount?: number;
+    requestedAt: string;
+    respondedAt?: string;
+    appliedAt?: string;
+    rowVersion?: string;
+}
+
+export interface JobChangeRequestResult {
+    success: boolean;
+    message?: string;
+    request?: JobChangeRequestDto;
+}
+
+export interface CreateJobChangeRequestPayload {
+    jobId: number;
+    fieldName: string;
+    currentValue?: string;
+    requestedValue?: string;
+    reason?: string;
+}
+
+export interface DecisionPayload {
+    requestId: number;
+    rowVersion?: string;
+    reason?: string;
+}
+
+export class JobChangeRequestApiService {
+    create(payload: CreateJobChangeRequestPayload): Promise<JobChangeRequestResult> {
+        return apiClient.post<JobChangeRequestResult>('JobChangeRequest/Create', payload);
+    }
+
+    approve(payload: DecisionPayload): Promise<JobChangeRequestResult> {
+        return apiClient.post<JobChangeRequestResult>('JobChangeRequest/Approve', payload);
+    }
+
+    reject(payload: DecisionPayload): Promise<JobChangeRequestResult> {
+        return apiClient.post<JobChangeRequestResult>('JobChangeRequest/Reject', payload);
+    }
+
+    cancel(payload: DecisionPayload): Promise<JobChangeRequestResult> {
+        return apiClient.post<JobChangeRequestResult>('JobChangeRequest/Cancel', payload);
+    }
+
+    forJob(jobId: number): Promise<JobChangeRequestDto[]> {
+        return apiClient.get<JobChangeRequestDto[]>('JobChangeRequest/ForJob', {jobId});
+    }
+}
+
+export const jobChangeRequestApi = new JobChangeRequestApiService();
+
+export default jobChangeRequestApi;

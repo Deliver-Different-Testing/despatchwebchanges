@@ -169,9 +169,9 @@ public partial class JobRepository
                 {
                     var jobSpeed = jobType switch
                     {
-                        JobType.Active    => await Context.TucJobs.Where(j => j.UcjbId == jobId).Select(j => (int?)j.UcjbSpeed).FirstOrDefaultAsync(),
-                        JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId).Select(j => (int?)j.UcbkSpeed).FirstOrDefaultAsync(),
-                        JobType.Archived  => await Context.TucJobArchives.Where(j => j.UcjbId == jobId).Select(j => (int?)j.UcjbSpeed).FirstOrDefaultAsync(),
+                        JobType.Active    => await Context.TucJobs.Where(j => j.UcjbId == jobId).Select(j => j.UcjbSpeed).FirstOrDefaultAsync(),
+                        JobType.Recurring => await Context.TucJobBookings.Where(j => j.UcbkId == jobId).Select(j => j.UcbkSpeed).FirstOrDefaultAsync(),
+                        JobType.Archived  => await Context.TucJobArchives.Where(j => j.UcjbId == jobId).Select(j => j.UcjbSpeed).FirstOrDefaultAsync(),
                         _ => null
                     };
 

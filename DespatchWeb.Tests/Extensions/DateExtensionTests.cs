@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DespatchWeb.Extensions;
 
 namespace DespatchWeb.Tests.Extensions;
@@ -280,7 +281,7 @@ public class DateExtensionTests
 
         // Act
         var result = utcTime.ToTimeZoneOffset("Pacific Standard Time");
-        var jsonString = System.Text.Json.JsonSerializer.Serialize(result);
+        var jsonString = JsonSerializer.Serialize(result);
 
         // Assert - JSON should include the -08:00 offset
         Assert.Contains("-08:00", jsonString);

@@ -53,6 +53,8 @@ import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {SendToPartnerDialog} from '../dialogs/send-to-partner-dialog';
+import {JobChangeRequestDialog} from '../dialogs/job-change-request-dialog';
+import EditNoteIcon from '@mui/icons-material/EditNote';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
 
@@ -111,6 +113,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         partnerId: number;
         partnerName: string;
     }>({open: false, partnerId: 0, partnerName: ''});
+    const [jobChangeRequestDialogOpen, setJobChangeRequestDialogOpen] = useState(false);
 
     // Capture job reference for dialogs that outlive the context menu
     const dialogJobRef = useRef<DispatchJob | null>(null);
@@ -162,7 +165,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open
+        || jobChangeRequestDialogOpen;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -446,6 +450,17 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
+    const handleRequestChange = () => {
+        closeAll();
+        setJobChangeRequestDialogOpen(true);
+    };
+
+    const handleJobChangeRequestSubmitted = () => {
+        showToast(`Change request created for ${activeJob.jobNo}`, 'success');
+        setJobChangeRequestDialogOpen(false);
+        refresh();
+    };
+
     const handleMarkMissing = async () => {
         closeAll();
         try {
@@ -581,6 +596,14 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     <MenuItem onClick={handleSendToLive}>
                         <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Send to Live</ListItemText>
+                    </MenuItem>
+                )}
+
+                {/* Request Change (partner jobs only — opens change-request dialog) */}
+                {isPartnerJob && (
+                    <MenuItem onClick={handleRequestChange}>
+                        <ListItemIcon><EditNoteIcon fontSize="small"/></ListItemIcon>
+                        <ListItemText>Request Change…</ListItemText>
                     </MenuItem>
                 )}
 
@@ -786,6 +809,15 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 onClose={() => setSendToPartnerDialog(prev => ({...prev, open: false}))}
                 onConfirm={handleSendToPartnerConfirm}
                 fetchRate={api.getPartnerRateForJob}
+            />
+
+            {/* Job Change Request Dialog (inter-tenant change requests) */}
+            <JobChangeRequestDialog
+                open={jobChangeRequestDialogOpen}
+                jobId={activeJob.id}
+                jobNo={activeJob.jobNo}
+                onClose={() => setJobChangeRequestDialogOpen(false)}
+                onSubmitted={handleJobChangeRequestSubmitted}
             />
         </>
     );

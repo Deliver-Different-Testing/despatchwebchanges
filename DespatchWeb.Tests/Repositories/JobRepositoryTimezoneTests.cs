@@ -1,3 +1,4 @@
+using DespatchWeb.EntityClasses;
 using DespatchWeb.Helpers;
 using DespatchWeb.Models;
 
@@ -286,7 +287,7 @@ public class JobRepositoryTimezoneTests
         var createdTimestampUtc = new DateTime(2024, 6, 15, 2, 30, 45);
         var readyDate = new DateTime(2024, 6, 15); // date-only → 00:00
 
-        var archive = new EntityClasses.TucJobArchive
+        var archive = new TucJobArchive
         {
             UcjbId = 1,
             CreatedTimeUtc = createdTimestampUtc,
@@ -313,7 +314,7 @@ public class JobRepositoryTimezoneTests
 
         var createdTimestampUtc = new DateTime(2024, 6, 15, 2, 30, 45);
 
-        var archive = new EntityClasses.TucJobArchive
+        var archive = new TucJobArchive
         {
             UcjbId = 1,
             CreatedTimeUtc = createdTimestampUtc,
@@ -340,7 +341,7 @@ public class JobRepositoryTimezoneTests
     {
         var mapping = JobMappings.JobArchiveMapping.Compile();
 
-        var archive = new EntityClasses.TucJobArchive
+        var archive = new TucJobArchive
         {
             UcjbId = 1,
             CreatedTimeUtc = null,

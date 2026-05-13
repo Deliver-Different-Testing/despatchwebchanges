@@ -6,5 +6,7 @@ public enum TaskGroup
     SE,
     GE,
     OE,
-    CS
+    CS,
+    /// <summary>Partner Tasks — inter-tenant change-request workflow (see tucJobChangeRequest).</summary>
+    PT
 }

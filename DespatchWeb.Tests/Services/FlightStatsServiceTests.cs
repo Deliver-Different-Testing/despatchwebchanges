@@ -1,13 +1,14 @@
+using System.Net;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Web;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.FlightStats;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
 using NSubstitute;
-using System.Net;
-using System.Text.Json;
-using DespatchWeb.Models;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -332,7 +333,7 @@ public class FlightStatsServiceTests
         {
             // Extract the includeAirlines value
             var uri = new Uri(capturedUrl);
-            var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var queryParams = HttpUtility.ParseQueryString(uri.Query);
             var airlinesValue = queryParams["includeAirlines"];
             TestContext.Current.TestOutputHelper?.WriteLine($"includeAirlines value: '{airlinesValue}'");
             TestContext.Current.TestOutputHelper?.WriteLine("Expected: 'NZ,QF,AA'");
@@ -390,8 +391,8 @@ public class FlightStatsServiceTests
         // Parse and compare includeAirlines values
         var uri1 = new Uri(_httpHandler.Requests[0].RequestUri!.ToString());
         var uri2 = new Uri(_httpHandler.Requests[1].RequestUri!.ToString());
-        var params1 = System.Web.HttpUtility.ParseQueryString(uri1.Query);
-        var params2 = System.Web.HttpUtility.ParseQueryString(uri2.Query);
+        var params1 = HttpUtility.ParseQueryString(uri1.Query);
+        var params2 = HttpUtility.ParseQueryString(uri2.Query);
 
         TestContext.Current.TestOutputHelper?.WriteLine(
             $"With airlineId=3, includeAirlines='{params1["includeAirlines"]}'");

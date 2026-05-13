@@ -3330,11 +3330,13 @@ public partial class JobRepository(
             .ToListAsync();
 
     /// <summary>
-    /// Retrieves event types for customer service and general events.
+    /// Retrieves event types for customer service, general events, and partner-task events.
+    /// 'PT' covers the inter-tenant job-change-request workflow (Partner Change Request /
+    /// Approved / Rejected / Applied).
     /// </summary>
     public async Task<IReadOnlyList<Suggestion>> EventTypeListAsync() =>
         await Context.TucEventTypes
-            .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE")
+            .Where(u => u.UcetGroup == "CS" || u.UcetGroup == "GE" || u.UcetGroup == "PT")
             .OrderBy(u => u.UcetName)
             .Select(x => new Suggestion { Id = x.UcetId, Text = x.UcetName })
             .ToListAsync();
@@ -5037,7 +5039,7 @@ public partial class JobRepository(
     public async Task<List<Suggestion>> GetActivePartnerOptionsAsync() =>
         await Context.IntMgrPartnerPairings
             .Where(p => p.Status == "Active")
-            .Select(p => new Suggestion()
+            .Select(p => new Suggestion
             {
                 Id = p.Id,
                 Text = p.PartnerTenantName

@@ -27,9 +27,12 @@ public class TaskRepository(
         var tenantTimeZone = infoService.GetTenantTimeZone();
         var today = filters?.Date ?? clock.TenantNow.AddDays(1);
 
+        // Include partner-task events ('PT') alongside customer-service ('CS')
+        // so the inter-tenant change-request workflow surfaces in the task dashboard.
         var query = Context.TucEvents
             .AsNoTracking()
-            .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS));
+            .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
+                     || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
         if (filters != null) query = ApplyFilters(query, filters);
 

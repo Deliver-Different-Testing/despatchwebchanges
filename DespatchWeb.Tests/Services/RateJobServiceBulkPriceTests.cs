@@ -1,4 +1,6 @@
-﻿using DespatchWeb.Interfaces;
+﻿using System.Text;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
@@ -701,11 +703,11 @@ public class RateJobServiceBulkPriceTests : IDisposable
 
         // Mock the speed type lookup - non-flight type (GroupingId != 2)
         _jobQueryRepositoryMock.GetJobTypeByIdAsync(1)
-            .Returns(new EntityClasses.TucJobType
+            .Returns(new TucJobType
             {
                 UcjtId = 1,
                 UcjtName = "Same Day",
-                Grouping = new EntityClasses.TucJobTypeGrouping { GroupingId = 1, GroupingName = "Standard" }
+                Grouping = new TucJobTypeGrouping { GroupingId = 1, GroupingName = "Standard" }
             });
 
         // Mock the actual rate job call to succeed
@@ -815,7 +817,7 @@ public class RateJobServiceBulkPriceTests : IDisposable
     private static IFormFile CreateMockFile(string fileName, string content)
     {
         var fileMock = Substitute.For<IFormFile>();
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
 
         fileMock.FileName.Returns(fileName);
         fileMock.Length.Returns(stream.Length);

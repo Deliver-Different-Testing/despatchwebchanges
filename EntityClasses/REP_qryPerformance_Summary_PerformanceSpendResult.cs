@@ -45,7 +45,7 @@ namespace DespatchWeb.EntityClasses
         public string ucjbFromAddr { get; set; }
         [StringLength(150)]
         public string Address { get; set; }
-        public int? Courier { get; set; }
+        public int Courier { get; set; }
         [Column("Late Pickup")]
         public int? LatePickup { get; set; }
         [Column("Late Delivery")]

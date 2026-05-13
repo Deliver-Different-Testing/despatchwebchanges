@@ -481,6 +481,10 @@ public partial class TucJob
 
     public Guid? PartnerJobGuid { get; set; }
 
+    public decimal? FuelPercentage { get; set; }
+
+    public decimal? PumpPrice { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
@@ -524,6 +528,8 @@ public partial class TucJob
     public virtual TblAirport ToAirport { get; set; }
 
     public virtual ICollection<TucEvent> TucEvents { get; set; } = new List<TucEvent>();
+
+    public virtual ICollection<TucJobChangeRequest> TucJobChangeRequests { get; set; } = new List<TucJobChangeRequest>();
 
     public virtual ICollection<TucJobItem> TucJobItemChildJobs { get; set; } = new List<TucJobItem>();
 

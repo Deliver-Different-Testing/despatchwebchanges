@@ -1,11 +1,11 @@
 ﻿using Amazon.S3;
+using DeliverDifferentReporting.Services;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Extensions;
 using DespatchWeb.Interfaces;
-using DeliverDifferentReporting.Services;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

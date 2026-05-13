@@ -16,6 +16,9 @@ public static class JobServiceCollectionExtensions
         services.AddScoped<IClearListEnvelopeService, ClearListEnvelopeService>();
         services.AddScoped<IClientAccessValidatorService, ClientAccessValidatorService>();
         services.AddScoped<ISendToPartnerService, SendToPartnerService>();
+        services.AddScoped<IJobChangePolicyService, JobChangePolicyService>();
+        services.AddScoped<IJobChangeRequestService, JobChangeRequestService>();
+        services.AddScoped<IJobChangeRequestPartnerClient, JobChangeRequestPartnerClient>();
 
         return services;
     }
