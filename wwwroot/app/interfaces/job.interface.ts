@@ -411,6 +411,7 @@ export interface IParcelDimensions {
     weight?: number;
     dimensions: string;
     barcode?: string;
+    itemTypes?: Array<{name: string; quantity: number}>;
 }
 
 export interface IAssignedFlight {

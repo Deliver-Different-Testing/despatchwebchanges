@@ -3771,6 +3771,42 @@ public partial class JobRepository(
             .Select(j => j.ParentId.HasValue || j.BulkParentId.HasValue)
             .FirstOrDefaultAsync();
 
+    public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId)
+    {
+        var conn = Context.GetDapperConnection();
+
+        if (bulkJobId.HasValue)
+        {
+            var results = await conn.QueryAsync<JobItemTypeDto>(
+                @"SELECT jit.ItemId, it.Name, jit.Quantity
+                  FROM tblBulkJobItemTypes jit
+                  JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
+                  WHERE jit.JobId = @Id",
+                new { Id = bulkJobId.Value });
+            return results.ToList();
+        }
+
+        if (!jobId.HasValue) return [];
+
+        var rows = await conn.QueryAsync<JobItemTypeDto>(
+            @"SELECT jit.ItemId, it.Name, jit.Quantity
+              FROM tucJobItemTypes jit
+              JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
+              WHERE jit.JobId = @Id
+              UNION ALL
+              SELECT jit.ItemId, it.Name, jit.Quantity
+              FROM tucJobItemTypesArchive jit
+              JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
+              WHERE jit.JobId = @Id
+              UNION ALL
+              SELECT jit.ItemId, it.Name, jit.Quantity
+              FROM tucJobBookingItemTypes jit
+              JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
+              WHERE jit.BookingId = @Id",
+            new { Id = jobId.Value });
+        return rows.ToList();
+    }
+
     /// <summary>
     /// Retrieves all active jobs with location data for the mega map display.
     /// </summary>

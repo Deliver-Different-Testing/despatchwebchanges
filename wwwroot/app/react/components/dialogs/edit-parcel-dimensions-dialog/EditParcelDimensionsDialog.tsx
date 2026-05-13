@@ -38,6 +38,11 @@ const noSpinnerSx = {
     '& input[type=number]': {MozAppearance: 'textfield'},
 } as const;
 
+interface ParcelItemType {
+    name: string;
+    quantity: number;
+}
+
 interface ParcelGroup {
     id: string;
     itemName: string;
@@ -47,6 +52,7 @@ interface ParcelGroup {
     weight: string;
     barcodes: string[];
     expandedBarcodes: boolean;
+    representativeItemId?: number;
 }
 
 function newGroup(): ParcelGroup {
@@ -81,6 +87,7 @@ function parcelsToGroups(parcels: ParcelDimensions[]): ParcelGroup[] {
                 weight: p.weight != null ? String(p.weight) : '',
                 barcodes: [p.barcode ?? ''],
                 expandedBarcodes: false,
+                representativeItemId: p.itemId,
             });
         }
     }
@@ -127,6 +134,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     const [isParentJob, setIsParentJob] = useState(false);
     const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
     const [targetWeight, setTargetWeight] = useState('');
+    const [itemTypesByItemId, setItemTypesByItemId] = useState<Map<number, ParcelItemType[]>>(new Map());
 
     const dimensionUnit = isUsCustomer ? 'in' : 'cm';
     const weightUnit = isUsCustomer ? 'lbs' : 'kg';
@@ -139,6 +147,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         setIsLoading(false);
         setIsParentJob(false);
         setTargetWeight(jobWeight != null ? String(jobWeight) : '');
+        setItemTypesByItemId(new Map());
 
         if (jobId) {
             apiClient.get<boolean>('job/IsJobParent', {jobId}).then(setIsParentJob).catch(() => {});
@@ -146,6 +155,20 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
             apiClient.get<boolean>('job/IsBulkJobParent', {bulkJobId}).then(setIsParentJob).catch(() => {});
         } else {
             showToast('No JobId or BulkJobId was provided. Something went wrong.', 'error');
+        }
+
+        const itemTypeParams = jobId ? {jobId} : bulkJobId ? {bulkJobId} : null;
+        if (itemTypeParams) {
+            apiClient.get<Array<{itemId: number; name: string; quantity: number}>>('job/GetJobItemTypes', itemTypeParams)
+                .then(items => {
+                    const map = new Map<number, ParcelItemType[]>();
+                    for (const item of items) {
+                        if (!map.has(item.itemId)) map.set(item.itemId, []);
+                        map.get(item.itemId)!.push({name: item.name, quantity: item.quantity});
+                    }
+                    setItemTypesByItemId(map);
+                })
+                .catch(() => {});
         }
     }, [open, initialParcels, jobId, bulkJobId, showToast, jobWeight]);
 
@@ -328,6 +351,15 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             placeholder="Name"
                                             inputProps={{maxLength: MAX_NAME_LENGTH}}
                                         />
+                                        {g.representativeItemId != null && (itemTypesByItemId.get(g.representativeItemId) ?? []).length > 0 && (
+                                            <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5}}>
+                                                {(itemTypesByItemId.get(g.representativeItemId) ?? []).map((t, i) => (
+                                                    <Box key={i} sx={{fontSize: 11, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', px: 0.75, py: 0.25, color: '#1e40af', whiteSpace: 'nowrap', lineHeight: 1.6}}>
+                                                        {t.name} ×{t.quantity}
+                                                    </Box>
+                                                ))}
+                                            </Box>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <TextField

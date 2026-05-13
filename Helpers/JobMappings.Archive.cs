@@ -251,15 +251,17 @@ public static partial class JobMappings
         Locked = j.UcjbLocked != null && j.UcjbLocked != 0,
         IsPartnerJob = j.PartnerJobGuid.HasValue,
 
-        // Job item flags - loaded inline from navigation property
-        TailLiftPu = j.TucJobItemsArchives.Any(i => i.Pu == true),
-        TailLiftDo = j.TucJobItemsArchives.Any(i => i.Do == true),
-        DeliverToPrivateRes = j.TucJobItemsArchives.Any(i => i.PrivateRes == true),
+        // Job item flags - child stop items first, fall back to own (simple/parent) items
+        TailLiftPu = j.TucJobItemsArchives.Any(i => i.Pu == true)
+            || j.TucJobItemsArchiveJobs.Any(i => i.Pu == true),
+        TailLiftDo = j.TucJobItemsArchives.Any(i => i.Do == true)
+            || j.TucJobItemsArchiveJobs.Any(i => i.Do == true),
+        DeliverToPrivateRes = j.TucJobItemsArchives.Any(i => i.PrivateRes == true)
+            || j.TucJobItemsArchiveJobs.Any(i => i.PrivateRes == true),
 
-        // Parcel dimensions - from archived job items
+        // Parcel dimensions - child stop items first, fall back to own (simple/parent) items
         ParcelDimensions = j.TucJobItemsArchives.Any()
-            ? j.TucJobItemsArchives.Select(i =>
-                new ParcelDimensions
+            ? j.TucJobItemsArchives.Select(i => new ParcelDimensions
                 {
                     ItemId = i.ItemId,
                     ItemName = i.Notes,
@@ -269,9 +271,20 @@ public static partial class JobMappings
                     Weight = i.Weight,
                     Barcode = i.Barcode
                 }).ToList()
-            : null,
+            : j.TucJobItemsArchiveJobs.Any(i => i.ChildJobId == null)
+                ? j.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null).Select(i => new ParcelDimensions
+                {
+                    ItemId = i.ItemId,
+                    ItemName = i.Notes,
+                    Height = i.Height,
+                    Depth = i.Depth,
+                    Length = i.Length,
+                    Weight = i.Weight,
+                    Barcode = i.Barcode
+                }).ToList()
+                : null,
 
-        // Pallet info - from archived job items
+        // Pallet info - child stop items first, fall back to own (simple/parent) items
         PalletInfo = j.TucJobItemsArchives.Any()
             ? j.TucJobItemsArchives.Select(i => new PalletInfo
             {
@@ -287,7 +300,22 @@ public static partial class JobMappings
                 DgClass = i.Dgclass,
                 Notes = i.Notes
             }).ToList()
-            : null,
+            : j.TucJobItemsArchiveJobs.Any(i => i.ChildJobId == null)
+                ? j.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null).Select(i => new PalletInfo
+                {
+                    Id = i.JobId,
+                    Quantity = i.Items,
+                    ItemId = i.ItemId,
+                    Weight = i.Weight,
+                    Length = i.Length ?? 0,
+                    Depth = i.Depth ?? 0,
+                    Height = i.Height ?? 0,
+                    Pu = i.Pu,
+                    Do = i.Do,
+                    DgClass = i.Dgclass,
+                    Notes = i.Notes
+                }).ToList()
+                : null,
 
         CustomJobName = j.CustomJobName,
 
