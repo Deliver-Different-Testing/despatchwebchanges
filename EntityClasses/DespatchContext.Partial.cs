@@ -455,6 +455,12 @@ public partial class DespatchContext
                 .HasForeignKey<TucJobAddressDeatil>(ad => ad.JobId)
                 .HasPrincipalKey<TucJobArchive>(j => j.UcjbId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(d => d.TucJobItemsArchiveJobs)
+                .WithOne(i => i.Job)
+                .HasForeignKey(i => i.JobId)
+                .HasPrincipalKey(j => j.UcjbId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<TucNoteArchive>(entity =>

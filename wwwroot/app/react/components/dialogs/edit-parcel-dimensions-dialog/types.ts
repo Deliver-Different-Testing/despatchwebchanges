@@ -16,6 +16,7 @@ export interface ParcelDimensions {
     weight?: number;
     dimensions: string;
     barcode?: string;
+    itemTypes?: Array<{name: string; quantity: number}>;
 }
 
 /**

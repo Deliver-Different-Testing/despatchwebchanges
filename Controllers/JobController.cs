@@ -1846,6 +1846,12 @@ public class JobController(
         return Json(isParent);
     }
 
+    public async Task<IActionResult> GetJobItemTypes(int? jobId, int? bulkJobId)
+    {
+        var items = await jobQueryRepository.GetJobItemTypesAsync(jobId, bulkJobId);
+        return Json(items);
+    }
+
     [HttpPost]
     public async Task<IActionResult> UpdateJobReadStatus(int jobId, bool hasBeenRead)
     {
