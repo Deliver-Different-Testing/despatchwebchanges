@@ -1,8 +1,11 @@
 using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -764,10 +767,10 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
     {
         // Arrange
         var repository = CreateRepository();
-        var queryParams = new Models.JobQueryParams();
+        var queryParams = new JobQueryParams();
 
         // Act
-        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: string.Empty, DespatchWeb.Enums.NationwideWidget.JobList, [], cancellationToken: TestContext.Current.CancellationToken);
+        var result = await repository.NationwideJobListAsync(queryParams, isInternal: false, isUsTenant: false, clientIds: string.Empty, NationwideWidget.JobList, [], cancellationToken: TestContext.Current.CancellationToken);
 
         // Assert
         Assert.NotNull(result);
@@ -826,7 +829,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         var parentJob = CreateJobWithParent(1, "JOB001");
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
-        flightJob.UcjbStatus = (int)DespatchWeb.Enums.JobStatus.New;
+        flightJob.UcjbStatus = (int)JobStatus.New;
         _context.TucJobs.AddRange(parentJob, flightJob);
 
         var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -847,8 +850,8 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var updatedJob = await _context.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
-        Assert.Equal((int)DespatchWeb.Enums.JobStatus.Dispatched, updatedJob?.UcjbStatus);
-        Assert.Equal((int)DespatchWeb.Enums.InternalJobStatus.AwaitingPod, updatedJob?.InternalStatus);
+        Assert.Equal((int)JobStatus.Dispatched, updatedJob?.UcjbStatus);
+        Assert.Equal((int)InternalJobStatus.AwaitingPod, updatedJob?.InternalStatus);
     }
 
     [Fact]
@@ -936,7 +939,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.FromAirportId = 1;
 
         // Create pickup job (ends with '1' and has Agent speed grouping)
-        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
 
         // Airport with 60-minute processing time
@@ -978,7 +981,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create delivery job (ends with '3' and has Agent speed grouping)
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1128,7 +1131,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         // Add required note type for FlightUpdate
         _context.TucNoteTypes.Add(new TucNoteType
         {
-            NoteTypeId = (int)DespatchWeb.Enums.NoteType.FlightUpdate,
+            NoteTypeId = (int)NoteType.FlightUpdate,
             NoteTypeName = "Flight Update"
         });
 
@@ -1144,7 +1147,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
 
         // Assert
         var note = await _context.TucNotes
-            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)DespatchWeb.Enums.NoteType.FlightUpdate, TestContext.Current.CancellationToken);
+            .FirstOrDefaultAsync(n => n.JobId == 100 && n.NoteTypeId == (int)NoteType.FlightUpdate, TestContext.Current.CancellationToken);
         Assert.NotNull(note);
         Assert.Contains("Flight", note.NoteText);
         Assert.Contains("123", note.NoteText); // Flight number from segment
@@ -1159,7 +1162,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         _context.TucJobs.AddRange(parentJob, flightJob);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var request = new Models.AssignFlightToJobRequest
+        var request = new AssignFlightToJobRequest
         {
             JobId = 100,
             FlightSegments = [] // Empty segments
@@ -1281,7 +1284,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.FromAirportId = 1;
 
         // Create shared grouping to avoid EF tracking conflicts
-        var agentGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+        var agentGrouping = new TucJobTypeGrouping { GroupingId = (int)SpeedGrouping.Agent, GroupingName = "Agent" };
 
         // Create pickup job with suffix '1'
         var pickupJob = CreateAgentJobWithGrouping(101, "JOB0011", parentJob, agentGrouping);
@@ -1329,7 +1332,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 1;
 
         // Create shared grouping to avoid EF tracking conflicts
-        var agentGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+        var agentGrouping = new TucJobTypeGrouping { GroupingId = (int)SpeedGrouping.Agent, GroupingName = "Agent" };
 
         // Create delivery job with suffix '3'
         var deliveryJob = CreateAgentJobWithGrouping(103, "JOB0013", parentJob, agentGrouping);
@@ -1486,7 +1489,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create delivery job (final mile job - ends with '3' and has Agent speed grouping)
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1531,7 +1534,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1575,7 +1578,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1617,7 +1620,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2;
 
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1676,7 +1679,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 3; // Final destination
 
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland", "AKL", true, 60);
@@ -1737,7 +1740,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create shared grouping to avoid EF tracking conflicts
-        var sharedGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+        var sharedGrouping = new TucJobTypeGrouping { GroupingId = (int)SpeedGrouping.Agent, GroupingName = "Agent" };
 
         // Create BOTH job '2' (flight leg) and job '3' (drop-off) with Agent speed grouping
         var job2 = CreateAgentJobWithGrouping(102, "JOB0012", parentJob, sharedGrouping);
@@ -1796,7 +1799,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.FromAirportId = 1;
 
-        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
 
         var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, departureAirportProcessingTime);
@@ -1837,7 +1840,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.FromAirportId = 1;
 
-        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
 
         var airport = CreateAirportWithProcessingTime(1, "Los Angeles", "LAX", true, customProcessingTime);
@@ -1919,7 +1922,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.FromAirportId = 1;
 
-        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var pickupJob = CreateAgentJob(101, "JOB0011", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob);
 
         var airport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -1963,7 +1966,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create shared grouping to avoid EF tracking conflicts
-        var sharedGrouping = new TucJobTypeGrouping { GroupingId = (int)DespatchWeb.Enums.SpeedGrouping.Agent, GroupingName = "Agent" };
+        var sharedGrouping = new TucJobTypeGrouping { GroupingId = (int)SpeedGrouping.Agent, GroupingName = "Agent" };
         var pickupJob = CreateAgentJobWithGrouping(101, "JOB0011", parentJob, sharedGrouping);
         var deliveryJob = CreateAgentJobWithGrouping(102, "JOB0013", parentJob, sharedGrouping);
         _context.TucJobs.AddRange(parentJob, flightJob, pickupJob, deliveryJob);
@@ -2656,7 +2659,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         }
     };
 
-    private static EntityClasses.TimeZone CreateTimeZone(int id, string name, string code) => new()
+    private static TimeZone CreateTimeZone(int id, string name, string code) => new()
     {
         Id = id,
         Name = name,
@@ -2666,7 +2669,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         OffsetString = "+12:00"
     };
 
-    private static Models.AssignFlightToJobRequest CreateFlightRequest(
+    private static AssignFlightToJobRequest CreateFlightRequest(
         int jobId, int fromAirportId, int toAirportId,
         DateTimeOffset departureTime, DateTimeOffset arrivalTime,
         DateTimeOffset? packageReadyTime = null,
@@ -2681,7 +2684,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         PackageDeliverByTime = packageDeliverByTime,
         FlightSegments =
         [
-            new Models.FlightSegmentViewModel
+            new FlightSegmentViewModel
             {
                 SegmentOrder = 1,
                 CarrierFsCode = "NZ",
@@ -2704,7 +2707,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         ]
     };
 
-    private static Models.AssignFlightToJobRequest CreateFlightRequestWithMultipleLegs(
+    private static AssignFlightToJobRequest CreateFlightRequestWithMultipleLegs(
         int jobId, int fromAirportId, int toAirportId,
         DateTimeOffset departureTime1, DateTimeOffset arrivalTime1,
         DateTimeOffset departureTime2, DateTimeOffset arrivalTime2,
@@ -2720,7 +2723,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         PackageDeliverByTime = packageDeliverByTime,
         FlightSegments =
         [
-            new Models.FlightSegmentViewModel
+            new FlightSegmentViewModel
             {
                 SegmentOrder = 1,
                 CarrierFsCode = "NZ",
@@ -2740,7 +2743,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
                 AirlineName = "Air New Zealand",
                 AircraftName = "Boeing 787"
             },
-            new Models.FlightSegmentViewModel
+            new FlightSegmentViewModel
             {
                 SegmentOrder = 2,
                 CarrierFsCode = "NZ",
@@ -2781,7 +2784,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         flightJob.ToAirportId = 2; // Set the destination airport
 
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -2830,7 +2833,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create delivery job with FLIGHT grouping instead of AGENT grouping
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Flight);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Flight);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -2876,7 +2879,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         var flightJob = CreateFlightJob(100, "JOB001-F", parentJob);
         // NOTE: flightJob.ToAirportId is NOT set (null)
 
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -2925,7 +2928,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create delivery job with NationwideAgent grouping (6) - correct for NZ
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.UrgentSpeedGrouping.NationwideAgent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)UrgentSpeedGrouping.NationwideAgent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);
@@ -3049,7 +3052,7 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
         flightJob.ToAirportId = 2;
 
         // Create delivery job with US Agent grouping (3) - WRONG for NZ tenant
-        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)DespatchWeb.Enums.SpeedGrouping.Agent);
+        var deliveryJob = CreateAgentJob(102, "JOB0013", parentJob, (int)SpeedGrouping.Agent);
         _context.TucJobs.AddRange(parentJob, flightJob, deliveryJob);
 
         var departureAirport = CreateAirportWithProcessingTime(1, "Auckland Airport", "AKL", true, 60);

@@ -1,5 +1,4 @@
 using DespatchWeb.EntityClasses;
-
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;

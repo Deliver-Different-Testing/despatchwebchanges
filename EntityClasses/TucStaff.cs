@@ -117,6 +117,14 @@ public partial class TucStaff
 
     public virtual ICollection<TucJobBooking> TucJobBookings { get; set; } = new List<TucJobBooking>();
 
+    public virtual ICollection<TucJobChangeRequest> TucJobChangeRequestUjcrAppliedByStaffs { get; set; } = new List<TucJobChangeRequest>();
+
+    public virtual ICollection<TucJobChangeRequest> TucJobChangeRequestUjcrApprovedByStaffs { get; set; } = new List<TucJobChangeRequest>();
+
+    public virtual ICollection<TucJobChangeRequest> TucJobChangeRequestUjcrRejectedByStaffs { get; set; } = new List<TucJobChangeRequest>();
+
+    public virtual ICollection<TucJobChangeRequest> TucJobChangeRequestUjcrRequestedByStaffs { get; set; } = new List<TucJobChangeRequest>();
+
     public virtual ICollection<TucJobReadTracker> TucJobReadTrackers { get; set; } = new List<TucJobReadTracker>();
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();

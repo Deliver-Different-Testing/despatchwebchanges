@@ -79,6 +79,9 @@ export const DEFAULT_FIELD_VISIBILITY: FieldVisibility = {
     fromContactNumber: true,
     bookingSource: true,
 
+    // Inter-tenant change-request history (partner jobs only)
+    partnerChangeRequests: true,
+
     // Additional fields
     pricing: true,
     booked: true,

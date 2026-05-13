@@ -1,4 +1,6 @@
-﻿using Amazon.S3;
+﻿using System.Text;
+using Amazon.S3;
+using Amazon.S3.Model;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Services;
@@ -263,7 +265,7 @@ public class JobReportServiceTests
 
         // Assert - verify S3 upload was called
         await _s3ClientMock.Received().PutObjectAsync(
-            Arg.Any<Amazon.S3.Model.PutObjectRequest>(),
+            Arg.Any<PutObjectRequest>(),
             Arg.Any<CancellationToken>());
 
         // Assert - verify repository update was called
@@ -292,7 +294,7 @@ public class JobReportServiceTests
     private static IFormFile CreateMockFile(string fileName, string content)
     {
         var fileMock = Substitute.For<IFormFile>();
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
 
         fileMock.FileName.Returns(fileName);
         fileMock.Length.Returns(stream.Length);
@@ -310,7 +312,7 @@ public class JobReportServiceTests
     private static IFormFile CreateMockCsvFile(string fileName, string csvContent)
     {
         var fileMock = Substitute.For<IFormFile>();
-        var bytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
+        var bytes = Encoding.UTF8.GetBytes(csvContent);
 
         fileMock.FileName.Returns(fileName);
         fileMock.Length.Returns(bytes.Length);

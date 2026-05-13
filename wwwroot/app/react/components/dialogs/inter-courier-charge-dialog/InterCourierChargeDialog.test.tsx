@@ -298,10 +298,13 @@ describe('InterCourierChargeDialog', () => {
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
 
-            await waitFor(() => {
-                expect(showToast).toHaveBeenCalledWith('An error occurred while saving the charge', 'error');
+            // Drain the microtask queue so the rejected promise's catch + finally run.
+            // waitFor + fake timers is unreliable under CI load here.
+            await act(async () => {
+                await Promise.resolve();
             });
 
+            expect(showToast).toHaveBeenCalledWith('An error occurred while saving the charge', 'error');
             expect(onClose).not.toHaveBeenCalled();
             errorSpy.mockRestore();
         });
@@ -343,16 +346,17 @@ describe('InterCourierChargeDialog', () => {
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
 
-            await waitFor(() => {
-                expect(screen.getByRole('button', {name: /add charge/i})).toBeDisabled();
-                expect(screen.getByRole('button', {name: /cancel/i})).toBeDisabled();
+            // user.click wraps the dispatch in act, so the isSubmitting=true render
+            // has already flushed by the time it returns.
+            expect(screen.getByRole('button', {name: /add charge/i})).toBeDisabled();
+            expect(screen.getByRole('button', {name: /cancel/i})).toBeDisabled();
+
+            await act(async () => {
+                resolveSubmit!();
+                await Promise.resolve();
             });
 
-            resolveSubmit!();
-
-            await waitFor(() => {
-                expect(screen.getByRole('button', {name: /add charge/i})).not.toBeDisabled();
-            });
+            expect(screen.getByRole('button', {name: /add charge/i})).not.toBeDisabled();
         });
     });
 });

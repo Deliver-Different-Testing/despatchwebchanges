@@ -1,15 +1,17 @@
 ﻿using System.Security.AccessControl;
+using System.Security.Principal;
+using DeliverDifferentReporting.Extensions;
 using DespatchWeb;
 using DespatchWeb.Extensions;
 using DespatchWeb.Middleware;
+using DespatchWeb.Models;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
-using DeliverDifferentReporting.Extensions;
-using DespatchWeb.Models;
+using Newtonsoft.Json;
 using Serilog;
 using StackExchange.Redis;
 
@@ -21,8 +23,8 @@ builder.Services.AddHealthChecks()
 builder.Services.AddControllersWithViews()
     .AddNewtonsoftJson(options =>
     {
-        options.SerializerSettings.DateTimeZoneHandling = Newtonsoft.Json.DateTimeZoneHandling.RoundtripKind;
-        options.SerializerSettings.DateParseHandling = Newtonsoft.Json.DateParseHandling.DateTimeOffset;
+        options.SerializerSettings.DateTimeZoneHandling = DateTimeZoneHandling.RoundtripKind;
+        options.SerializerSettings.DateParseHandling = DateParseHandling.DateTimeOffset;
     });
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
@@ -47,7 +49,7 @@ if (builder.Environment.IsDevelopment())
         if (OperatingSystem.IsWindows())
         {
             // Get the current user's identity
-            var currentUser = System.Security.Principal.WindowsIdentity.GetCurrent();
+            var currentUser = WindowsIdentity.GetCurrent();
             const FileSystemRights fileSystemRights = FileSystemRights.FullControl;
             const InheritanceFlags inheritanceFlags = InheritanceFlags.ContainerInherit |
                                                       InheritanceFlags.ObjectInherit;

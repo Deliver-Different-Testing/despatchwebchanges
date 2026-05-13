@@ -331,6 +331,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucJobChangeRequest]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJobInternalStatus]",
          "ObjectType": 0
       },

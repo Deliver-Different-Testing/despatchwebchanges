@@ -1,4 +1,5 @@
 ﻿using System.Net;
+using System.Text;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -68,7 +69,7 @@ public class RateJobServiceTests : IDisposable
             CancellationToken cancellationToken) =>
             Task.FromResult(new HttpResponseMessage(statusCode)
             {
-                Content = new StringContent(content, System.Text.Encoding.UTF8, "application/json")
+                Content = new StringContent(content, Encoding.UTF8, "application/json")
             });
     }
 
@@ -997,7 +998,7 @@ public class RateJobServiceTests : IDisposable
     private static IFormFile CreateMockFile(string fileName, string content)
     {
         var fileMock = Substitute.For<IFormFile>();
-        var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(content));
+        var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
 
         fileMock.FileName.Returns(fileName);
         fileMock.Length.Returns(stream.Length);

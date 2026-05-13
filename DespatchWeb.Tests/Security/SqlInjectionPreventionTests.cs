@@ -1,4 +1,5 @@
 using System.Reflection;
+using DespatchWeb.Repositories;
 
 namespace DespatchWeb.Tests.Security;
 
@@ -13,7 +14,7 @@ public class SqlInjectionPreventionTests
     public SqlInjectionPreventionTests()
     {
         // Get the private static method via reflection for testing
-        var repositoryType = typeof(DespatchWeb.Repositories.BaseJobRepository);
+        var repositoryType = typeof(BaseJobRepository);
         _isValidWhereConditionMethod = repositoryType.GetMethod(
             "IsValidWhereCondition",
             BindingFlags.NonPublic | BindingFlags.Static)!;

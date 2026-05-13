@@ -1,4 +1,3 @@
-using DespatchWeb.Helpers;
 using static DespatchWeb.Helpers.AddressFormatter;
 
 namespace DespatchWeb.Tests.Helpers;
@@ -8,7 +7,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     [Fact]
     public void NullAddress_ReturnsEmptyString()
     {
-        var result = AddressFormatter.FormatWithCityStateZip(null);
+        var result = FormatWithCityStateZip(null);
 
         Assert.Equal(string.Empty, result);
     }
@@ -18,7 +17,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address();
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal(string.Empty, result);
     }
@@ -28,7 +27,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line1: "123 Main St");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St", result);
     }
@@ -38,7 +37,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line1: "123 Main St", line2: "Suite 100", line3: "Building A");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St, Suite 100, Building A", result);
     }
@@ -48,7 +47,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line1: "123 Main St", line6: "Denver");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St, Denver", result);
     }
@@ -58,7 +57,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line1: "123 Main St", line6: "Denver", line7: "CO");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St, Denver, CO", result);
     }
@@ -68,7 +67,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line1: "123 Main St", line6: "Denver", line7: "CO", line8: "80202");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St, Denver, CO 80202", result);
     }
@@ -78,7 +77,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line1: "  123 Main St  ", line6: "  Denver  ", line7: "  CO  ", line8: "  80202  ");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St, Denver, CO 80202", result);
     }
@@ -88,7 +87,7 @@ public class AddressFormatterFormatWithCityStateZipTests
     {
         var address = new Address(line2: "Suite 200", line4: "Floor 5");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("Suite 200, Floor 5", result);
     }
@@ -106,7 +105,7 @@ public class AddressFormatterFormatWithCityStateZipTests
             line7: "CO",
             line8: "80202");
 
-        var result = AddressFormatter.FormatWithCityStateZip(address);
+        var result = FormatWithCityStateZip(address);
 
         Assert.Equal("123 Main St, Suite 100, Building A, Floor 3, Attn: John, Denver, CO 80202", result);
     }
@@ -119,7 +118,7 @@ public class AddressFormatterGetSafeAddressTests
     [Fact]
     public void NullAddress_ReturnsDefault()
     {
-        var result = AddressFormatter.GetSafeAddress(null, DefaultAddress);
+        var result = GetSafeAddress(null, DefaultAddress);
 
         Assert.Equal(DefaultAddress, result);
     }
@@ -127,7 +126,7 @@ public class AddressFormatterGetSafeAddressTests
     [Fact]
     public void EmptyString_ReturnsDefault()
     {
-        var result = AddressFormatter.GetSafeAddress("", DefaultAddress);
+        var result = GetSafeAddress("", DefaultAddress);
 
         Assert.Equal(DefaultAddress, result);
     }
@@ -135,7 +134,7 @@ public class AddressFormatterGetSafeAddressTests
     [Fact]
     public void ShortAddress_ReturnsAsIs()
     {
-        var result = AddressFormatter.GetSafeAddress("123 Main St", DefaultAddress);
+        var result = GetSafeAddress("123 Main St", DefaultAddress);
 
         Assert.Equal("123 Main St", result);
     }
@@ -145,7 +144,7 @@ public class AddressFormatterGetSafeAddressTests
     {
         var address = new string('A', 150);
 
-        var result = AddressFormatter.GetSafeAddress(address, DefaultAddress);
+        var result = GetSafeAddress(address, DefaultAddress);
 
         Assert.Equal(150, result.Length);
         Assert.Equal(address, result);
@@ -156,7 +155,7 @@ public class AddressFormatterGetSafeAddressTests
     {
         var address = new string('A', 200);
 
-        var result = AddressFormatter.GetSafeAddress(address, DefaultAddress);
+        var result = GetSafeAddress(address, DefaultAddress);
 
         Assert.Equal(150, result.Length);
     }

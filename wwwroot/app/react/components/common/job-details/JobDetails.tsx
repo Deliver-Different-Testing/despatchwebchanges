@@ -47,6 +47,7 @@ import {ToggleProperties} from './components/ToggleProperties';
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
+import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
 
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
@@ -479,6 +480,22 @@ export function JobDetails({config}: JobDetailsProps) {
                         onEditDimensions={actions.handleEditDimensions}
                         onInActiveByClick={actions.handleInActiveByClick}
                     />
+
+                    {/* Inter-tenant change-request history (partner jobs only) */}
+                    {job.isPartnerJob && (
+                        <>
+                            {isEditMode && (
+                                <CardVisibilityToggle label="Partner Change Requests" fieldKey="partnerChangeRequests"
+                                    isVisible={isFieldVisible('partnerChangeRequests')} onToggle={toggleField}/>
+                            )}
+                            <Collapse in={isFieldVisible('partnerChangeRequests')} unmountOnExit>
+                                <JobChangeRequestsForJob
+                                    jobId={job.id}
+                                    onChanged={refreshAndNotify}
+                                />
+                            </Collapse>
+                        </>
+                    )}
 
                     <ToggleProperties
                         job={job}

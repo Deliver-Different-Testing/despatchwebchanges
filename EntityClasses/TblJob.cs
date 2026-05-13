@@ -394,4 +394,8 @@ public partial class TblJob
     public int? DimensionsType { get; set; }
 
     public DateTime? OutForDelivery { get; set; }
+
+    public decimal? FuelPercentage { get; set; }
+
+    public decimal? PumpPrice { get; set; }
 }

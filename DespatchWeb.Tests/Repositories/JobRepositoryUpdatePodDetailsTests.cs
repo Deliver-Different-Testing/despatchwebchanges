@@ -5,6 +5,7 @@ using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using TimeZone = DespatchWeb.EntityClasses.TimeZone;
 
 namespace DespatchWeb.Tests.Repositories;
 
@@ -31,7 +32,7 @@ public class JobRepositoryUpdatePodDetailsTests : IAsyncDisposable
         _tenantInfoServiceMock.Setup(x => x.IsUsTenant()).Returns(false);
         _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(1);
         _tenantInfoServiceMock
-            .Setup(x => x.GetCurrentTimeFromTimeZone(It.IsAny<EntityClasses.TimeZone>()))
+            .Setup(x => x.GetCurrentTimeFromTimeZone(It.IsAny<TimeZone>()))
             .Returns(TestDates.Now);
     }
 

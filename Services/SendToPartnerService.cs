@@ -1,4 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
 using DespatchWeb.Interfaces;
@@ -131,7 +132,7 @@ public sealed class SendToPartnerService(
     // Includes a snippet of the raw response body so the actual cause (e.g. "Invalid request -
     // missing required header" from a CSRF middleware, or an HTML error page from a proxy)
     // surfaces in the UI instead of being hidden behind a generic "400 BadRequest".
-    private static string BuildFallbackErrorMessage(System.Net.HttpStatusCode statusCode, string body)
+    private static string BuildFallbackErrorMessage(HttpStatusCode statusCode, string body)
     {
         var prefix = $"Integration Manager returned {(int)statusCode} {statusCode}";
         if (string.IsNullOrWhiteSpace(body))

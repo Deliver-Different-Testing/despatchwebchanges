@@ -382,6 +382,10 @@ public partial class TucJobBooking
 
     public DateTime? CreatedTimeUtc { get; set; }
 
+    public decimal? FuelPercentage { get; set; }
+
+    public decimal? PumpPrice { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }

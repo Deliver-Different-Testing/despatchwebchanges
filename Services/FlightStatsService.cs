@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text.Json;
@@ -51,7 +52,7 @@ public sealed class FlightStatsService(
         int minimumLayoverMinutes = 60
     )
     {
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         Log.Information("Flight search started for job {JobId} with departure {DepartureDateTime}",
             jobId, departureDateTime);
 

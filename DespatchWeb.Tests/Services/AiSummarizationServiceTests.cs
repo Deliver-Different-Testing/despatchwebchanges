@@ -1,5 +1,6 @@
 ﻿using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using Microsoft.Extensions.Options;
@@ -795,7 +796,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _jobRepositoryMock.GetJobForLateCallAsync(1)
-            .Returns((Models.Dto.JobLateCallDto?)null);
+            .Returns((JobLateCallDto?)null);
 
         var service = CreateService();
 
@@ -812,7 +813,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _jobRepositoryMock.GetJobForLateCallAsync(1)
-            .Returns(new Models.Dto.JobLateCallDto
+            .Returns(new JobLateCallDto
             {
                 Id = 1, MinutesRemaining = 30, PickupTime = 60, DeliveryTime = 120,
                 AlertLatePickup = 15, AlertLateDelivery = 30,
@@ -846,7 +847,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _jobRepositoryMock.GetJobForLateCallAsync(42)
-            .Returns(new Models.Dto.JobLateCallDto
+            .Returns(new JobLateCallDto
             {
                 Id = 42, MinutesRemaining = 15, PickupTime = 45, DeliveryTime = 90,
                 AlertLatePickup = 10, AlertLateDelivery = 20,
@@ -882,7 +883,7 @@ public class AiSummarizationServiceTests
     {
         // Arrange
         _jobRepositoryMock.GetJobForLateCallAsync(1)
-            .Returns(new Models.Dto.JobLateCallDto
+            .Returns(new JobLateCallDto
             {
                 Id = 1, MinutesRemaining = 10, PickupTime = 30, DeliveryTime = 60,
                 AlertLatePickup = 5, AlertLateDelivery = 10,
@@ -1291,7 +1292,7 @@ public class AiSummarizationServiceTests
         _tenantInfoMock.IsUsTenant().Returns(false);
 
         _jobRepositoryMock.GetJobForLateCallAsync(1)
-            .Returns(new Models.Dto.JobLateCallDto
+            .Returns(new JobLateCallDto
             {
                 Id = 1, MinutesRemaining = 10, PickupTime = 30, DeliveryTime = 60,
                 AlertLatePickup = 5, AlertLateDelivery = 10,

@@ -501,6 +501,10 @@ public partial class TucJobArchive
 
     public Guid? PartnerJobGuid { get; set; }
 
+    public decimal? FuelPercentage { get; set; }
+
+    public decimal? PumpPrice { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }
