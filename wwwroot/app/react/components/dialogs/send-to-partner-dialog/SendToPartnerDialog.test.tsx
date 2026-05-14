@@ -165,4 +165,25 @@ describe('SendToPartnerDialog', () => {
 
         expect(props.onClose).toHaveBeenCalled();
     });
+
+    it('shows the server error message below the rate input without flagging the rate field', async () => {
+        const user = userEvent.setup();
+        const serverMessage = "Fedex speed not found. A job speed with 'Fedex' in its name must be set up before Fedex bookings can be made.";
+        renderDialog({
+            onConfirm: jest.fn().mockRejectedValue(new Error(serverMessage)),
+        });
+
+        await waitFor(() => {
+            expect(screen.getByLabelText(/Agreed Rate/)).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole('button', {name: /Confirm & Send/}));
+
+        // Server message renders verbatim
+        expect(await screen.findByText(serverMessage)).toBeInTheDocument();
+
+        // Rate input is NOT marked invalid for a submission failure
+        const input = screen.getByLabelText(/Agreed Rate/);
+        expect(input).not.toHaveAttribute('aria-invalid', 'true');
+    });
 });
