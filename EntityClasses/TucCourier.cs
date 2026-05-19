@@ -269,6 +269,8 @@ public partial class TucCourier
 
     public decimal? BonusPercentage { get; set; }
 
+    public int? NpAgentId { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }
@@ -280,6 +282,8 @@ public partial class TucCourier
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyNewCouriers { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyOldCouriers { get; set; } = new List<JobDeliveryJourney>();
+
+    public virtual TucAgent NpAgent { get; set; }
 
     public virtual TblBulkRegion Region { get; set; }
 

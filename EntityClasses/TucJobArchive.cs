@@ -505,6 +505,10 @@ public partial class TucJobArchive
 
     public decimal? PumpPrice { get; set; }
 
+    public int? NpAgentId { get; set; }
+
+    public decimal? NpCourierPayment { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }

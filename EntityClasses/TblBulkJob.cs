@@ -239,6 +239,10 @@ public partial class TblBulkJob
 
     public DateTime? CreatedTimeUtc { get; set; }
 
+    public int? NpAgentId { get; set; }
+
+    public decimal? NpCourierPayment { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucClient Client { get; set; }

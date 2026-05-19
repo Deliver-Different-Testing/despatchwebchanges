@@ -1465,6 +1465,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => new { e.JobNumber, e.ClientId }, "IX_tblBulkJob_JobNumber_ClientID").HasFilter("([JobNumber] IS NOT NULL)");
 
+            entity.HasIndex(e => e.NpAgentId, "IX_tblBulkJob_NpAgentId");
+
             entity.HasIndex(e => new { e.ShopRef1, e.ShopRef2, e.ClientId }, "IX_tblBulkJob_ShopRef1_ShopRef2_ClientID").HasFilter("([ShopRef1] IS NOT NULL)");
 
             entity.HasIndex(e => e.JobId, "JobId-NonClusteredIndex-20190417-112100").IsDescending();
@@ -1524,6 +1526,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Manifest).HasMaxLength(50);
             entity.Property(e => e.MultiboxParentId).HasColumnName("MultiboxParentID");
             entity.Property(e => e.Notes).HasMaxLength(4000);
+            entity.Property(e => e.NpCourierPayment).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.NwdocJob).HasColumnName("NWDocJob");
             entity.Property(e => e.OrderRef).HasMaxLength(50);
             entity.Property(e => e.OurRef).HasMaxLength(20);
@@ -4058,6 +4061,8 @@ public partial class DespatchContext : DbContext
 
             entity.ToTable("tucAgents");
 
+            entity.HasIndex(e => e.IsNetworkPartner, "IX_tucAgents_IsNetworkPartner").HasFilter("([IsNetworkPartner]=(1))");
+
             entity.HasIndex(e => e.RankingId, "IX_tucAgents_RankingID");
 
             entity.HasIndex(e => e.StatusId, "IX_tucAgents_StatusID");
@@ -4076,10 +4081,15 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.AddressLine7).HasMaxLength(255);
             entity.Property(e => e.AddressLine8).HasMaxLength(255);
             entity.Property(e => e.AgentRateMarkup).HasColumnType("decimal(18, 4)");
+            entity.Property(e => e.Association).HasMaxLength(50);
+            entity.Property(e => e.AssociationMemberId).HasMaxLength(100);
+            entity.Property(e => e.ContactEmail).HasMaxLength(200);
+            entity.Property(e => e.ContactName).HasMaxLength(200);
             entity.Property(e => e.Created).HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .IsRequired()
                 .HasMaxLength(50);
+            entity.Property(e => e.DefaultCourierPayPercent).HasColumnType("decimal(9, 4)");
             entity.Property(e => e.Flagfall).HasColumnType("money");
             entity.Property(e => e.ItemRate).HasColumnType("money");
             entity.Property(e => e.KilometerRate).HasColumnType("money");
@@ -4091,6 +4101,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.Longitude).HasColumnType("decimal(18, 9)");
             entity.Property(e => e.MaxKms).HasColumnName("MaxKMs");
             entity.Property(e => e.Notes).HasColumnType("ntext");
+            entity.Property(e => e.NpTier).HasDefaultValue((byte)1, "DF_tucAgents_NpTier");
             entity.Property(e => e.PostCode).HasMaxLength(50);
             entity.Property(e => e.RankingId).HasColumnName("RankingID");
             entity.Property(e => e.SiteId).HasColumnName("SiteID");
@@ -4168,6 +4179,10 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.XeroId, "IX_XeroId");
 
+            entity.HasIndex(e => e.ClientTypeId, "IX_tucClient_ClientTypeId");
+
+            entity.HasIndex(e => e.NpAgentId, "IX_tucClient_NpAgentId");
+
             entity.HasIndex(e => e.UcclName, "Name").IsUnique();
 
             entity.HasIndex(e => e.SiteId, "SiteID");
@@ -4215,6 +4230,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.CitySurchargeRate)
                 .HasDefaultValue(1.75m, "DF_tucClient_CitySurchargeRate")
                 .HasColumnType("money");
+            entity.Property(e => e.ClientTypeId).HasDefaultValue(2, "DF_tucClient_ClientTypeId");
             entity.Property(e => e.CommissionDate).HasColumnType("datetime");
             entity.Property(e => e.CourierPercentage).HasColumnType("decimal(18, 6)");
             entity.Property(e => e.CreateBulkHomeDeliveryPickup).HasDefaultValue(false, "DF__tucClient__Creat__163A3110");
@@ -4547,6 +4563,10 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.WebServicePassword).HasMaxLength(100);
             entity.Property(e => e.XeroId).HasMaxLength(50);
 
+            entity.HasOne(d => d.NpAgent).WithMany(p => p.TucClients)
+                .HasForeignKey(d => d.NpAgentId)
+                .HasConstraintName("FK_tucClient_NpAgent");
+
             entity.HasOne(d => d.UcclSuburb).WithMany(p => p.TucClients)
                 .HasForeignKey(d => d.UcclSuburbId)
                 .HasConstraintName("FK_tucClient_tucSuburb");
@@ -4713,6 +4733,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.Code, "IX_tucCourier_Code");
 
             entity.HasIndex(e => new { e.UccrName, e.UccrSurname }, "IX_tucCourier_FullName").IsUnique();
+
+            entity.HasIndex(e => e.NpAgentId, "IX_tucCourier_NpAgentId");
 
             entity.HasIndex(e => e.UccrInsuranceId, "InsuranceID");
 
@@ -4956,6 +4978,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.CourierLogInOut).WithMany(p => p.TucCouriers)
                 .HasForeignKey(d => d.CourierLogInOutId)
                 .HasConstraintName("FK_tucCourier_tblCourierLogInOut");
+
+            entity.HasOne(d => d.NpAgent).WithMany(p => p.TucCouriers)
+                .HasForeignKey(d => d.NpAgentId)
+                .HasConstraintName("FK_tucCourier_NpAgent");
 
             entity.HasOne(d => d.Region).WithMany(p => p.TucCouriers)
                 .HasForeignKey(d => d.RegionId)
@@ -5472,6 +5498,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJob_FromAirportId");
 
+            entity.HasIndex(e => e.NpAgentId, "IX_tucJob_NpAgentId");
+
             entity.HasIndex(e => e.PartnerJobGuid, "IX_tucJob_PartnerJobGuid");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
@@ -5611,6 +5639,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobRelationshipTypeId).HasColumnName("JobRelationshipTypeID");
             entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
             entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
+            entity.Property(e => e.NpCourierPayment).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Nwamount)
                 .HasColumnType("money")
                 .HasColumnName("NWAmount");
@@ -5991,6 +6020,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobArchive_FromAirportId");
 
+            entity.HasIndex(e => e.NpAgentId, "IX_tucJobArchive_NpAgentId");
+
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobArchive_ToAirportId");
 
             entity.HasIndex(e => e.InformationParentId, "InformationParentID");
@@ -6142,6 +6173,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JournalHeaderId).HasColumnName("JournalHeaderID");
             entity.Property(e => e.LoggedInContactId).HasColumnName("LoggedInContactID");
             entity.Property(e => e.NotifiedJobTypeId).HasColumnName("NotifiedJobTypeID");
+            entity.Property(e => e.NpCourierPayment).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Nwamount)
                 .HasColumnType("money")
                 .HasColumnName("NWAmount");
@@ -6405,6 +6437,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => new { e.UcbkId, e.ParentId }, "IX_TucJobBookings_Lookup").HasFillFactor(90);
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
+
+            entity.HasIndex(e => e.NpAgentId, "IX_tucJobBooking_NpAgentId");
 
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 
@@ -7267,6 +7301,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.NoteTypeId, "IX_Note_NoteTypeID");
 
+            entity.HasIndex(e => e.NpAgentId, "IX_tucNote_NpAgentId");
+
             entity.HasIndex(e => new { e.ProcessedNotificationDate, e.CreatedDate }, "IX_tucNote_ProcessedNotificationDate");
 
             entity.Property(e => e.NoteId).HasColumnName("NoteID");
@@ -7313,6 +7349,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.JobBookingId, "IX_tucNoteArchive_JobBookingId");
 
             entity.HasIndex(e => e.JobId, "IX_tucNoteArchive_JobId");
+
+            entity.HasIndex(e => e.NpAgentId, "IX_tucNoteArchive_NpAgentId");
 
             entity.Property(e => e.NoteId).HasColumnName("NoteID");
             entity.Property(e => e.CreatedDate)

@@ -11,13 +11,20 @@ import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider} from '@mui/material/styles';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
+import Button from '@mui/material/Button';
 import type {AlertColor} from '@mui/material/Alert';
 import {getTheme} from '../theme/muiTheme';
 
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
 
+/** Optional action button rendered on the right side of a toast. */
+export interface ToastAction {
+    label: string;
+    onClick: () => void;
+}
+
 /** Shared callback type for showing a toast notification */
-export type ShowToastFn = (message: string, type: ToastType) => void;
+export type ShowToastFn = (message: string, type: ToastType, action?: ToastAction) => void;
 
 /** Minimal toast service interface used by dialog modules */
 export interface ToastService {
@@ -28,14 +35,15 @@ interface Toast {
     id: number;
     message: string;
     type: ToastType;
+    action?: ToastAction;
 }
 
 interface ToastContextValue {
-    showToast: (message: string, type: ToastType) => void;
-    showSuccessToast: (message: string) => void;
-    showWarningToast: (message: string) => void;
-    showErrorToast: (message: string) => void;
-    showInfoToast: (message: string) => void;
+    showToast: (message: string, type: ToastType, action?: ToastAction) => void;
+    showSuccessToast: (message: string, action?: ToastAction) => void;
+    showWarningToast: (message: string, action?: ToastAction) => void;
+    showErrorToast: (message: string, action?: ToastAction) => void;
+    showInfoToast: (message: string, action?: ToastAction) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -87,6 +95,19 @@ const ToastContainer: React.FC<{
                         severity={mapTypeToSeverity(toast.type)}
                         variant="filled"
                         sx={{width: '100%'}}
+                        action={toast.action ? (
+                            <Button
+                                color="inherit"
+                                size="small"
+                                onClick={() => {
+                                    toast.action!.onClick();
+                                    onClose(toast.id);
+                                }}
+                                sx={{fontWeight: 600}}
+                            >
+                                {toast.action.label}
+                            </Button>
+                        ) : undefined}
                     >
                         {toast.message}
                     </Alert>
@@ -102,25 +123,25 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
 }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const showToast = useCallback((message: string, type: ToastType) => {
+    const showToast = useCallback((message: string, type: ToastType, action?: ToastAction) => {
         const id = ++toastIdCounter;
-        setToasts(prev => [...prev, {id, message, type}]);
+        setToasts(prev => [...prev, {id, message, type, action}]);
     }, []);
 
-    const showSuccessToast = useCallback((message: string) => {
-        showToast(message, 'success');
+    const showSuccessToast = useCallback((message: string, action?: ToastAction) => {
+        showToast(message, 'success', action);
     }, [showToast]);
 
-    const showWarningToast = useCallback((message: string) => {
-        showToast(message, 'warning');
+    const showWarningToast = useCallback((message: string, action?: ToastAction) => {
+        showToast(message, 'warning', action);
     }, [showToast]);
 
-    const showErrorToast = useCallback((message: string) => {
-        showToast(message, 'error');
+    const showErrorToast = useCallback((message: string, action?: ToastAction) => {
+        showToast(message, 'error', action);
     }, [showToast]);
 
-    const showInfoToast = useCallback((message: string) => {
-        showToast(message, 'info');
+    const showInfoToast = useCallback((message: string, action?: ToastAction) => {
+        showToast(message, 'info', action);
     }, [showToast]);
 
     const handleClose = useCallback((id: number) => {
@@ -226,11 +247,11 @@ class StandaloneToastService {
         this.render();
     }
 
-    showToast(message: string, type: ToastType): void {
+    showToast(message: string, type: ToastType, action?: ToastAction): void {
         this.initialize();
 
         const id = ++toastIdCounter;
-        this.toasts = [...this.toasts, {id, message, type}];
+        this.toasts = [...this.toasts, {id, message, type, action}];
         this.render();
 
         // Auto-remove after duration
@@ -252,20 +273,20 @@ class StandaloneToastService {
         }
     }
 
-    showSuccessToast(message: string): void {
-        this.showToast(message, 'success');
+    showSuccessToast(message: string, action?: ToastAction): void {
+        this.showToast(message, 'success', action);
     }
 
-    showWarningToast(message: string): void {
-        this.showToast(message, 'warning');
+    showWarningToast(message: string, action?: ToastAction): void {
+        this.showToast(message, 'warning', action);
     }
 
-    showErrorToast(message: string): void {
-        this.showToast(message, 'error');
+    showErrorToast(message: string, action?: ToastAction): void {
+        this.showToast(message, 'error', action);
     }
 
-    showInfoToast(message: string): void {
-        this.showToast(message, 'info');
+    showInfoToast(message: string, action?: ToastAction): void {
+        this.showToast(message, 'info', action);
     }
 }
 

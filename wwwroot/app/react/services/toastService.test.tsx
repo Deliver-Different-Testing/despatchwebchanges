@@ -159,6 +159,39 @@ describe('ToastProvider', () => {
         });
     });
 
+    describe('action button', () => {
+        const ActionToastComponent: React.FC = () => {
+            const toast = useToast();
+            const handleClick = () => {
+                toast.showToast('Job sent', 'success', {
+                    label: 'Open',
+                    onClick: () => (window as any).openClicked = true,
+                });
+            };
+            return <button onClick={handleClick}>Show Toast</button>;
+        };
+
+        afterEach(() => {
+            delete (window as any).openClicked;
+        });
+
+        it('renders the action button, invokes onClick, and dismisses the toast', async () => {
+            renderWithProviders(<ActionToastComponent />);
+
+            fireEvent.click(screen.getByText('Show Toast'));
+
+            const actionButton = await screen.findByRole('button', {name: 'Open'});
+            expect(actionButton).toBeInTheDocument();
+
+            fireEvent.click(actionButton);
+
+            expect((window as any).openClicked).toBe(true);
+            await waitFor(() => {
+                expect(screen.queryByText('Job sent')).not.toBeInTheDocument();
+            });
+        });
+    });
+
     describe('toast dismissal', () => {
         it('should close toast when close button is clicked', async () => {
             renderWithProviders(<TestComponent action="success" />);

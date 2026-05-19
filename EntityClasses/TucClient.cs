@@ -583,7 +583,13 @@ public partial class TucClient
 
     public string DefaultJobListFilter { get; set; }
 
+    public int ClientTypeId { get; set; }
+
+    public int? NpAgentId { get; set; }
+
     public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
+
+    public virtual TucAgent NpAgent { get; set; }
 
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
