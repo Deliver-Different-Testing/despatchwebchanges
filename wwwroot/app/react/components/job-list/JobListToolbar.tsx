@@ -24,7 +24,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import RestoreIcon from '@mui/icons-material/Restore';
@@ -487,7 +487,7 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
             {/* Reset columns */}
             <Tooltip title="Reset column widths">
                 <IconButton size="small" onClick={onResetColumns} sx={{color: 'text.secondary'}}>
-                    <RestartAltIcon fontSize="small"/>
+                    <ViewWeekIcon fontSize="small"/>
                 </IconButton>
             </Tooltip>
         </Box>

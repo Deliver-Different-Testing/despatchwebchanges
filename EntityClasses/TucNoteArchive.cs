@@ -26,4 +26,6 @@ public partial class TucNoteArchive
     public DateTime? UpdatedDate { get; set; }
 
     public int? UpdatedBy { get; set; }
+
+    public int? NpAgentId { get; set; }
 }

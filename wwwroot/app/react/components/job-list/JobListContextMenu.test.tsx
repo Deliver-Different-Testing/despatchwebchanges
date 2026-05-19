@@ -38,6 +38,22 @@ jest.mock('../dialogs/job-change-request-dialog', () => ({
         open ? <div data-testid="job-change-request-dialog">{`open:${jobId}:${jobNo}`}</div> : null,
     ),
 }));
+// Stub the send-to-partner dialog so we can drive `onConfirm` directly from a test
+// without going through the dialog's rate-fetching flow (covered by its own test file).
+jest.mock('../dialogs/send-to-partner-dialog', () => ({
+    SendToPartnerDialog: jest.fn(({open, onConfirm}: {open: boolean; onConfirm: (rate: number) => Promise<void>}) =>
+        open ? (
+            <div data-testid="send-to-partner-dialog">
+                <button onClick={() => onConfirm(100)}>Stub Confirm</button>
+            </div>
+        ) : null,
+    ),
+}));
+jest.mock('../../services/navigationService', () => ({
+    openJobInSearch: jest.fn(),
+    openJobDetail: jest.fn(),
+    openHubUrl: jest.fn(),
+}));
 
 import * as api from '../../services/jobListApi';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
@@ -45,6 +61,7 @@ import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {isAiEnabled} from '../../../functions/aiSettings';
 import {JobChangeRequestDialog} from '../dialogs/job-change-request-dialog';
+import {openJobInSearch} from '../../services/navigationService';
 
 const mockedApi = api as jest.Mocked<typeof api>;
 const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;
@@ -52,6 +69,7 @@ const mockedOpenAddEventDialog = openAddEventDialog as jest.Mock;
 const mockedOpenEventGroupDialog = openEventGroupDialog as jest.Mock;
 const mockedIsAiEnabled = isAiEnabled as jest.Mock;
 const mockedJobChangeRequestDialog = JobChangeRequestDialog as unknown as jest.Mock;
+const mockedOpenJobInSearch = openJobInSearch as jest.Mock;
 
 // ── Mock Data Factory ─────────────────────────────────────────────────
 
@@ -969,6 +987,57 @@ describe('JobListContextMenu', () => {
             // accidentally opening it with the wrong job (e.g. stale dialogJobRef on quick clicks).
             expect(mockedJobChangeRequestDialog.mock.calls.some(([props]) =>
                 props.open === true && props.jobId === 42 && props.jobNo === 'J042')).toBe(true);
+        });
+    });
+
+    // ── 7c. Send to Partner — post-confirm side effects ─────────────────
+
+    describe('Send to Partner (post-confirm)', () => {
+        it('copies the job number, surfaces an Open toast action, and opens the job in search when clicked', async () => {
+            const user = userEvent.setup();
+            const writeTextMock = jest.fn().mockResolvedValue(undefined);
+            Object.defineProperty(navigator, 'clipboard', {
+                value: {writeText: writeTextMock},
+                configurable: true,
+            });
+
+            mockedApi.getActivePartnerOptions.mockResolvedValue([{id: 7, text: 'PartnerCo'}]);
+            mockedApi.sendToPartner.mockResolvedValue({
+                success: true,
+                trackingNumber: 'TRK-555',
+                message: 'OK',
+            });
+
+            const props = createDefaultProps({
+                job: createMockJob({id: 42, jobNo: 'J042'}),
+            });
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Send to DFRNT Partner'));
+            const partnerItem = await screen.findByText('PartnerCo');
+            await user.click(partnerItem);
+
+            await user.click(await screen.findByText('Stub Confirm'));
+
+            await waitFor(() => {
+                expect(mockedApi.sendToPartner).toHaveBeenCalledWith(42, 7, 100);
+            });
+            await waitFor(() => {
+                expect(writeTextMock).toHaveBeenCalledWith('J042');
+            });
+
+            // Toast was shown with an action callback that opens the job in search.
+            expect(props.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('J042'),
+                'success',
+                expect.objectContaining({label: 'Open', onClick: expect.any(Function)}),
+            );
+            const toastCall = (props.showToast as jest.Mock).mock.calls.find(
+                ([msg]) => typeof msg === 'string' && msg.includes('J042'),
+            );
+            const action = toastCall?.[2] as {label: string; onClick: () => void};
+            action.onClick();
+            expect(mockedOpenJobInSearch).toHaveBeenCalledWith(42);
         });
     });
 

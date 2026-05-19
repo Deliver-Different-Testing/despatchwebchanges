@@ -85,6 +85,22 @@ public partial class TucAgent
 
     public int? StatusId { get; set; }
 
+    public bool IsNetworkPartner { get; set; }
+
+    public bool NpPortalEnabled { get; set; }
+
+    public byte NpTier { get; set; }
+
+    public string Association { get; set; }
+
+    public string AssociationMemberId { get; set; }
+
+    public string ContactName { get; set; }
+
+    public string ContactEmail { get; set; }
+
+    public decimal? DefaultCourierPayPercent { get; set; }
+
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyNewAgents { get; set; } = new List<JobDeliveryJourney>();
@@ -98,6 +114,10 @@ public partial class TucAgent
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
     public virtual ICollection<TblAirport> TblAirports { get; set; } = new List<TblAirport>();
+
+    public virtual ICollection<TucClient> TucClients { get; set; } = new List<TucClient>();
+
+    public virtual ICollection<TucCourier> TucCouriers { get; set; } = new List<TucCourier>();
 
     public virtual ICollection<TucJobArchive> TucJobArchives { get; set; } = new List<TucJobArchive>();
 

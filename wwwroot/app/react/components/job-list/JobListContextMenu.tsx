@@ -54,6 +54,7 @@ import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {SendToPartnerDialog} from '../dialogs/send-to-partner-dialog';
 import {JobChangeRequestDialog} from '../dialogs/job-change-request-dialog';
+import {openJobInSearch} from '../../services/navigationService';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
@@ -331,10 +332,28 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
 
     const handleSendToPartnerConfirm = async (agreedRate: number) => {
         const {partnerId, partnerName} = sendToPartnerDialog;
-        const result = await api.sendToPartner(activeJob.id, partnerId, agreedRate);
+        const sentJobId = activeJob.id;
+        const sentJobNo = activeJob.jobNo;
+        const result = await api.sendToPartner(sentJobId, partnerId, agreedRate);
         if (result.success) {
             setSendToPartnerDialog(prev => ({...prev, open: false}));
-            showToast(`Job ${activeJob.jobNo} sent to ${partnerName} — tracking: ${result.trackingNumber}`, 'success');
+            try {
+                await navigator.clipboard.writeText(sentJobNo);
+            } catch {
+                const textarea = document.createElement('textarea');
+                textarea.value = sentJobNo;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+            showToast(
+                `Job ${sentJobNo} sent to ${partnerName} — tracking: ${result.trackingNumber} (job number copied)`,
+                'success',
+                {label: 'Open', onClick: () => openJobInSearch(sentJobId)},
+            );
             refresh();
         } else {
             throw new Error(result.message || 'Failed to send job to partner');

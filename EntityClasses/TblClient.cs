@@ -583,6 +583,10 @@ public partial class TblClient
 
     public string DefaultJobListFilter { get; set; }
 
+    public int ClientTypeId { get; set; }
+
+    public int? NpAgentId { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

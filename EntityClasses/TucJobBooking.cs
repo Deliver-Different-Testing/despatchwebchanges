@@ -386,6 +386,8 @@ public partial class TucJobBooking
 
     public decimal? PumpPrice { get; set; }
 
+    public int? NpAgentId { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucJobBooking BookingParent { get; set; }
