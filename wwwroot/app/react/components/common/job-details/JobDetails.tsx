@@ -5,6 +5,7 @@
  */
 
 import React, {lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -359,6 +360,17 @@ export function JobDetails({config}: JobDetailsProps) {
                     onLockToggle={actions.handleLockToggle}
                 />
 
+                {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)
+                    queue for counterparty approval; notes / refs / contacts sync
+                    automatically; dispatch state (courier, status, lock) stays local. */}
+                {job.isPartnerJob && isEditMode && (
+                    <Alert severity="info" sx={{mb: 1}}>
+                        Rated fields require partner approval before they apply. Notes and
+                        contact details sync automatically. See the change-request panel
+                        below for pending items.
+                    </Alert>
+                )}
+
                 {/* Metrics Grid */}
                 <Box sx={rootStyles.metricsWrapper}>
                     <MetricsGrid
@@ -563,7 +575,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     onKeep={dismissRateChange}
                     onManualEdit={() => {
                         dismissRateChange();
-                        actions.handlePricingClick(true);
+                        void actions.handlePricingClick(true);
                     }}
                 />
             )}

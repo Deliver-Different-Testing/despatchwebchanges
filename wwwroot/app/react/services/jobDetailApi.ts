@@ -18,6 +18,7 @@ import type {Is3PhotoInfo} from '../../interfaces/aws.interfaces';
 import type {UpdatePodDetailsRequest} from '../../interfaces/requests.interfaces';
 import type {JobFile} from '../components/dialogs/job-file-upload-dialog/types';
 import {formatDateForApi} from '../utils/dateUtils';
+import {assertValidS3Key, assertValidDownloadFileName} from '../utils/fileValidation';
 import type {Dayjs} from 'dayjs';
 import dayjs from 'dayjs';
 
@@ -37,20 +38,35 @@ export function getBulkJobDetail(bulkJobId: number, options?: RequestOptions): P
 
 // ── Job Updates ─────────────────────────────────────────────────────
 
+/**
+ * Response shape from /Job/UpdateJob and /Job/UpdateNote. For non-partner jobs the
+ * backend returns an empty 200 (all fields undefined). For partner jobs it returns
+ * one of:
+ *   - `{ applied: true, requestId }` — Auto field synced on both sides via change request.
+ *   - `{ pending: true, requestId }` — Manual field queued for counterparty approval (202).
+ *   - 400 with `{ message }` — field not supported on partner jobs in this version.
+ */
+export interface JobUpdateResponse {
+    applied?: boolean;
+    pending?: boolean;
+    requestId?: number;
+    message?: string;
+}
+
 export function updateJobDetail(
     jobId: number,
     field: string,
     value: unknown,
     isRecurring: boolean,
     timezone?: string
-): Promise<unknown> {
+): Promise<JobUpdateResponse> {
     let processedValue = value;
     if (value instanceof Date || dayjs.isDayjs(value as Dayjs)) {
         processedValue = formatDateForApi(value as Date | Dayjs, timezone);
     }
 
     const url = isRecurring ? 'job/UpdateRecurringJob' : 'job/UpdateJob';
-    return apiClient.post(url, null, {
+    return apiClient.post<JobUpdateResponse>(url, null, {
         params: {jobId, field, value: processedValue, isRecurring},
     });
 }
@@ -209,12 +225,8 @@ export function updateBulkJobPackages(bulkJobId: number, parcels: IParcelDimensi
 // ── File Downloads ──────────────────────────────────────────────────
 
 export async function downloadFile(s3Key: string, fileName: string): Promise<void> {
-    if (!s3Key || s3Key.includes('..') || s3Key.includes('\0')) {
-        throw new Error('Invalid file key');
-    }
-    if (!fileName || fileName.includes('..') || fileName.includes('\0') || fileName.includes('/') || fileName.includes('\\')) {
-        throw new Error('Invalid file name');
-    }
+    assertValidS3Key(s3Key);
+    assertValidDownloadFileName(fileName);
 
     const response = await apiClient.postForBlob('/job/DownloadFile', null, {
         params: {key: s3Key},

@@ -37,6 +37,7 @@ import {IEventGroupViewModel} from "../interfaces/event-group-view-model.interfa
 import {DfrntPageViewModel,} from "../interfaces/dfrnt-page-view-model.interface";
 import {ITask, ITaskDto, TaskTableFiltersRequest,} from "../interfaces/task.interfaces";
 import {JobProperty} from "../enums/job-property.enum";
+import {assertValidDownloadFileName, assertValidS3Key} from "../react/utils/fileValidation";
 import {
     IAllocateJobsToCourierRequest,
     UpdatePodDetailsRequest
@@ -939,12 +940,8 @@ class DispatchCoreService implements angular.IServiceProvider {
 
     async downloadFile(s3Key: string, fileName: string): Promise<void> {
         // Basic client-side validation (defense in depth - backend must also validate)
-        if (!s3Key || s3Key.includes('..') || s3Key.includes('\0')) {
-            throw new Error('Invalid file key');
-        }
-        if (!fileName || fileName.includes('..') || fileName.includes('\0') || fileName.includes('/') || fileName.includes('\\')) {
-            throw new Error('Invalid file name');
-        }
+        assertValidS3Key(s3Key);
+        assertValidDownloadFileName(fileName);
 
         try {
             const endpoint = "/job/DownloadFile";
