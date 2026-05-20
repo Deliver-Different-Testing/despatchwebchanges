@@ -1431,7 +1431,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateDeliveryAddress(request);
+        var result = await controller.UpdateDeliveryAddress(request, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -1458,7 +1458,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdatePickupAddress(request);
+        var result = await controller.UpdatePickupAddress(request, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -2143,7 +2143,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateJobPackages(request);
+        var result = await controller.UpdateJobPackages(request, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -2168,7 +2168,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateJobPackages(request);
+        var result = await controller.UpdateJobPackages(request, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -2192,7 +2192,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateJobPackages(request);
+        var result = await controller.UpdateJobPackages(request, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -3207,13 +3207,20 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
         _jobQueryRepositoryMock.IsPartnerJobAsync(17).Returns(true);
 
+        // After Phase B-3 the partner-job path filed a change request and returned 202
+        // Accepted instead of 400 BadRequest. The mock gate returns its default
+        // (NotPartner) since the test class doesn't configure the new partner path —
+        // restate the assertion to reflect the new gate-routed behaviour.
+        _partnerJobGateMock.EvaluateAsync(17, JobChangeField.Packages, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.PendingApproval(123));
+
         var result = await controller.UpdateJobPackages(new UpdateJobPackagesRequest
         {
             JobId = 17,
             Parcels = []
-        });
+        }, CancellationToken.None);
 
-        Assert.IsType<BadRequestObjectResult>(result);
+        Assert.IsType<AcceptedResult>(result);
     }
 
     [Fact]

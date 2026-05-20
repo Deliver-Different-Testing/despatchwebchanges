@@ -8,9 +8,11 @@ namespace DespatchWeb.Enums;
 ///   Auto-apply (customer-visible, non-rated)         — applies immediately on both sides.
 ///   Manual (rated / commercial-affecting)            — counterparty must approve.
 ///
-/// Compound fields (PickupAddress, DeliveryAddress, Packages) and the entity-tracked
-/// fields (Weight, Size, AirportOnly, recurring config) remain deferred — they have
-/// non-trivial apply paths that don't reduce to a single <c>SetProperty</c>.
+/// Compound fields (Packages, PickupAddress, DeliveryAddress) serialize a JSON payload
+/// into <c>UjcrRequestedValue</c>; on apply, the service deserialises and delegates to
+/// the same repository methods the standard edit endpoints use.
+/// Other entity-tracked fields (Weight, Size, AirportOnly, recurring config) remain
+/// deferred — they still don't reduce to a single repository call.
 /// </summary>
 public enum JobChangeField
 {
@@ -49,5 +51,10 @@ public enum JobChangeField
     AcceptedJobTypeID,
     Direct,
     DGClass,
-    DGDocumentation
+    DGDocumentation,
+
+    // Manual — compound fields. RequestedValue carries a JSON-encoded payload.
+    Packages,
+    PickupAddress,
+    DeliveryAddress
 }

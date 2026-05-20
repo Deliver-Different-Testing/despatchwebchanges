@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
@@ -23,6 +24,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     private readonly IJobChangeRequestPartnerClient _partnerClient = Substitute.For<IJobChangeRequestPartnerClient>();
     private readonly ISendToPartnerService _sendToPartner = Substitute.For<ISendToPartnerService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
+    private readonly IJobCommandRepository _jobCommandRepository = Substitute.For<IJobCommandRepository>();
     private readonly JobChangePolicyService _policy = new();
 
     public JobChangeRequestServiceTests()
@@ -61,7 +63,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     private JobChangeRequestService CreateService() =>
-        new(CreateFactory(), _policy, _partnerClient, _sendToPartner, _tenantInfo);
+        new(CreateFactory(), _policy, _partnerClient, _sendToPartner, _tenantInfo, _jobCommandRepository);
 
     private IDbContextFactory<DespatchContext> CreateFactory()
     {
@@ -268,6 +270,99 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         Assert.False(second.Success);
         Assert.Contains("pending request", second.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_packages_field_delegates_to_jobCommandRepository_with_parcels_and_weight()
+    {
+        await SeedJobAsync();
+        var pairingId = await SeedPairingAsync();
+        await SeedEventTypesAsync();
+        _sendToPartner.GetRateForJobAsync(pairingId, 1)
+            .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 200m });
+
+        var parcels = new List<ParcelDimensions>
+        {
+            new() { Length = 10, Depth = 20, Height = 30, Weight = 5 }
+        };
+        var payload = JsonSerializer.Serialize(new { Parcels = parcels, Weight = 12.5m });
+
+        var service = CreateService();
+        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Packages),
+            RequestedValue = payload
+        }, CancellationToken.None);
+        Assert.True(pending.Success);
+
+        var approved = await service.ApproveAsync(pending.Request!.Id,
+            new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
+        Assert.True(approved.Success, approved.Message);
+
+        // The compound field deserialised and called the repository with the parcels +
+        // weight from the payload. The change-request row's UjcrJobId carries the target.
+        await _jobCommandRepository.Received(1).UpdatePackagesForJobAsync(
+            1, Arg.Is<IReadOnlyList<ParcelDimensions>>(p => p.Count == 1 && p[0].Length == 10));
+        await _jobCommandRepository.Received(1).UpdateJobWeightAsync(1, 12.5m);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_pickup_address_field_delegates_to_jobCommandRepository_with_address()
+    {
+        await SeedJobAsync();
+        var pairingId = await SeedPairingAsync();
+        await SeedEventTypesAsync();
+        _sendToPartner.GetRateForJobAsync(pairingId, 1)
+            .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 200m });
+
+        var address = new AddressViewModel { AddressLine1 = "42 Wallaby Way", AddressLine2 = "Sydney" };
+        var payload = JsonSerializer.Serialize(address);
+
+        var service = CreateService();
+        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.PickupAddress),
+            RequestedValue = payload
+        }, CancellationToken.None);
+        Assert.True(pending.Success);
+
+        var approved = await service.ApproveAsync(pending.Request!.Id,
+            new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
+        Assert.True(approved.Success, approved.Message);
+
+        await _jobCommandRepository.Received(1).UpdatePickupAddressAsync(
+            Arg.Is<UpdateAddressRequest>(r => r.JobId == 1 && r.Address.AddressLine1 == "42 Wallaby Way"));
+        await _jobCommandRepository.DidNotReceive().UpdateDeliveryAddressAsync(Arg.Any<UpdateAddressRequest>());
+    }
+
+    [Fact]
+    public async Task ApproveAsync_delivery_address_field_routes_to_UpdateDeliveryAddressAsync()
+    {
+        await SeedJobAsync();
+        var pairingId = await SeedPairingAsync();
+        await SeedEventTypesAsync();
+        _sendToPartner.GetRateForJobAsync(pairingId, 1)
+            .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 200m });
+
+        var payload = JsonSerializer.Serialize(new AddressViewModel { AddressLine1 = "1 Park Lane" });
+
+        var service = CreateService();
+        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.DeliveryAddress),
+            RequestedValue = payload
+        }, CancellationToken.None);
+
+        var approved = await service.ApproveAsync(pending.Request!.Id,
+            new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
+        Assert.True(approved.Success, approved.Message);
+
+        await _jobCommandRepository.Received(1).UpdateDeliveryAddressAsync(
+            Arg.Is<UpdateAddressRequest>(r => r.JobId == 1 && r.Address.AddressLine1 == "1 Park Lane"));
+        await _jobCommandRepository.DidNotReceive().UpdatePickupAddressAsync(Arg.Any<UpdateAddressRequest>());
     }
 
     [Fact]
@@ -661,7 +756,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
                 UjcrOrigin = "Peer",
                 UjcrRequestingPartyType = "PartnerTenant",
                 UjcrApprovalPartyType = "OwnerTenant",
-                UjcrFieldName = "PickupAddress", // dropped from v1 enum
+                UjcrFieldName = "ServiceWindow", // not in the JobChangeField enum
                 UjcrRequestedValue = "12 Newland Rd",
                 UjcrStatus = "Pending",
                 UjcrApprovalMode = "Manual",

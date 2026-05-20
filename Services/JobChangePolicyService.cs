@@ -66,7 +66,10 @@ public sealed class JobChangePolicyService : IJobChangePolicyService
                 or JobChangeField.AcceptedJobTypeID
                 or JobChangeField.Direct
                 or JobChangeField.DGClass
-                or JobChangeField.DGDocumentation =>
+                or JobChangeField.DGDocumentation
+                or JobChangeField.Packages
+                or JobChangeField.PickupAddress
+                or JobChangeField.DeliveryAddress =>
                 Manual(approvalParty, $"{field}_CHANGE_{stage}", requiresCommercialRefresh: true),
 
             _ => Prohibited("UNKNOWN_FIELD")

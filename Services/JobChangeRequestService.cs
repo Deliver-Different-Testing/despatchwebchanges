@@ -1,8 +1,10 @@
 #nullable enable
 using System.Globalization;
+using System.Text.Json;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -14,8 +16,11 @@ public sealed class JobChangeRequestService(
     IJobChangePolicyService policyService,
     IJobChangeRequestPartnerClient partnerClient,
     ISendToPartnerService sendToPartner,
-    ITenantInfoService tenantInfo) : IJobChangeRequestService
+    ITenantInfoService tenantInfo,
+    IJobCommandRepository jobCommandRepository) : IJobChangeRequestService
 {
+    private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
+
     public async Task<JobChangeRequestResult> CreateLocalAsync(CreateJobChangeRequestRequest request,
         CancellationToken ct)
     {
@@ -554,7 +559,7 @@ public sealed class JobChangeRequestService(
         return rows.Select(ToDto).ToList();
     }
 
-    private static async Task ApplyFieldChangeAsync(DespatchContext ctx, int jobId, JobChangeField field,
+    private async Task ApplyFieldChangeAsync(DespatchContext ctx, int jobId, JobChangeField field,
         string? requestedValue, CancellationToken ct)
     {
         var q = ctx.TucJobs.Where(j => j.UcjbId == jobId);
@@ -682,10 +687,53 @@ public sealed class JobChangeRequestService(
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgdocument, dgDoc), ct);
                 break;
 
+            // Compound fields: RequestedValue is a JSON-encoded payload. We deserialise
+            // and delegate to the same IJobCommandRepository methods the standard edit
+            // endpoints use. The repo opens its own DbContext, so the column write is in
+            // a separate transaction from the change-request row update — acceptable for
+            // these apply-side mutations since the row commit happens after this returns
+            // and the audit trail records both halves regardless.
+            case JobChangeField.Packages:
+                await ApplyPackagesAsync(jobId, requestedValue);
+                break;
+            case JobChangeField.PickupAddress:
+                await ApplyAddressAsync(jobId, requestedValue, isDelivery: false);
+                break;
+            case JobChangeField.DeliveryAddress:
+                await ApplyAddressAsync(jobId, requestedValue, isDelivery: true);
+                break;
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(field), field, null);
         }
     }
+
+    private async Task ApplyPackagesAsync(int jobId, string? requestedValue)
+    {
+        if (string.IsNullOrWhiteSpace(requestedValue)) return;
+        var payload = JsonSerializer.Deserialize<UpdateJobPackagesPayload>(requestedValue, CompoundPayloadJsonOptions);
+        if (payload?.Parcels is null) return;
+        await jobCommandRepository.UpdatePackagesForJobAsync(jobId, payload.Parcels);
+        if (payload.Weight is > 0)
+            await jobCommandRepository.UpdateJobWeightAsync(jobId, payload.Weight.Value);
+    }
+
+    private async Task ApplyAddressAsync(int jobId, string? requestedValue, bool isDelivery)
+    {
+        if (string.IsNullOrWhiteSpace(requestedValue)) return;
+        var address = JsonSerializer.Deserialize<AddressViewModel>(requestedValue, CompoundPayloadJsonOptions);
+        if (address is null) return;
+        var request = new UpdateAddressRequest { JobId = jobId, Address = address };
+        if (isDelivery)
+            await jobCommandRepository.UpdateDeliveryAddressAsync(request);
+        else
+            await jobCommandRepository.UpdatePickupAddressAsync(request);
+    }
+
+    // Wire payload for JobChangeField.Packages. Mirrors UpdateJobPackagesRequest minus
+    // the JobId (carried in the change-request row) so the change-request body stays
+    // self-describing without coupling to the controller's DTO shape.
+    private sealed record UpdateJobPackagesPayload(List<ParcelDimensions> Parcels, decimal? Weight);
 
     private static string? Truncate(string? value, int max) =>
         value is null ? null : value[..Math.Min(value.Length, max)];
