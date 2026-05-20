@@ -6,6 +6,8 @@
  * correct request body/params, and correct return value handling.
  */
 
+import {assertValidDownloadFileName, assertValidS3Key} from '../react/utils/fileValidation';
+
 describe('DispatchCoreService', () => {
 
     // ---------------------------------------------------------------------------
@@ -782,17 +784,11 @@ describe('DispatchCoreService', () => {
     // ---------------------------------------------------------------------------
 
     describe('downloadFile validation', () => {
-        /**
-         * Mirrors the client-side validation from the downloadFile method.
-         * Defense in depth -- the backend also validates.
-         */
+        // Exercises the canonical helpers used by both jobDetailApi (React) and
+        // dispatch-core.service (AngularJS). Defense in depth — the backend also validates.
         const validateDownloadParams = (s3Key: string, fileName: string): void => {
-            if (!s3Key || s3Key.includes('..') || s3Key.includes('\0')) {
-                throw new Error('Invalid file key');
-            }
-            if (!fileName || fileName.includes('..') || fileName.includes('\0') || fileName.includes('/') || fileName.includes('\\')) {
-                throw new Error('Invalid file name');
-            }
+            assertValidS3Key(s3Key);
+            assertValidDownloadFileName(fileName);
         };
 
         it('should reject an s3Key containing path traversal (..)', () => {

@@ -17,6 +17,7 @@ import {
     previewJobRate,
     applyJobRate,
 } from '../../../../services/jobDetailApi';
+import type {JobUpdateResponse} from '../../../../services/jobDetailApi';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 
@@ -106,25 +107,45 @@ export function useJobUpdate(
         }
     }, []);
 
+    const invalidateChangeRequests = (jobId: number) =>
+        queryClient.invalidateQueries({queryKey: ['jobChangeRequests', jobId]});
+
     const updateFieldMutation = useMutation({
         mutationFn: async ({job, field, value, isRecurring, timezone}: UpdateFieldParams) => {
             if (job.isBulkJob) {
                 await updateBulkJobDetail(job.id, field, value, timezone);
-            } else {
-                await updateJobDetail(job.id, field, value, isRecurring, timezone);
+                return {job, field, response: {} as JobUpdateResponse};
             }
-            return {job, field};
+            const response = await updateJobDetail(job.id, field, value, isRecurring, timezone);
+            return {job, field, response};
         },
-        onSuccess: async ({job, field}) => {
-            showToast(`${job.jobNo} updated`, 'success');
+        onSuccess: async ({job, field, response}) => {
+            // Partner-job responses: the gate either auto-applied (and forwarded to the
+            // peer) or filed a Pending change request. Show the user what actually
+            // happened rather than the generic "updated" toast.
+            if (response?.pending) {
+                showToast(`${job.jobNo}: change requested — awaiting partner approval`, 'info');
+                await invalidateChangeRequests(job.id);
+            } else if (response?.applied && job.isPartnerJob) {
+                showToast(`${job.jobNo} synced with partner`, 'success');
+                await invalidateChangeRequests(job.id);
+            } else {
+                showToast(`${job.jobNo} updated`, 'success');
+            }
             await invalidateJob(job.id);
             await invalidateJobLists();
-            if (RERATE_FIELDS.has(field) && !job.ratedManually) {
+            // Pending changes haven't actually mutated the job — skip the rate-change probe.
+            if (!response?.pending && RERATE_FIELDS.has(field) && !job.ratedManually) {
                 await checkForRateChange(job);
             }
         },
-        onError: () => {
-            showToast('Failed to update job. Please try again.', 'error');
+        onError: (error: unknown) => {
+            // The apiClient interceptor reshapes axios errors into ApiError { status,
+            // statusText, message }. Surface the backend's "managed by partner" /
+            // "cannot be edited" message when present so the user sees why the save
+            // was refused.
+            const message = (error as {message?: string})?.message;
+            showToast(message ?? 'Failed to update job. Please try again.', 'error');
         },
     });
 

@@ -82,7 +82,7 @@ describe('useJobUpdate', () => {
 
     describe('updateField', () => {
         it('calls updateJobDetail for standard jobs and shows success toast', async () => {
-            mockUpdateJobDetail.mockResolvedValueOnce(undefined);
+            mockUpdateJobDetail.mockResolvedValueOnce({});
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
 
@@ -93,6 +93,36 @@ describe('useJobUpdate', () => {
             expect(mockUpdateJobDetail).toHaveBeenCalledWith(1, 'notes', 'test', false, undefined);
             expect(mockUpdateBulkJobDetail).not.toHaveBeenCalled();
             expect(mockShowToast).toHaveBeenCalledWith('J100 updated', 'success');
+        });
+
+        it('shows "awaiting partner approval" toast when the gate files a Pending change request', async () => {
+            mockUpdateJobDetail.mockResolvedValueOnce({pending: true, requestId: 42});
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob({isPartnerJob: true});
+
+            await act(async () => {
+                await result.current.updateField({job, field: 'SpeedID', value: '2', isRecurring: false});
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringMatching(/awaiting partner approval/i),
+                'info',
+            );
+        });
+
+        it('shows "synced with partner" toast when the gate auto-applies on a partner job', async () => {
+            mockUpdateJobDetail.mockResolvedValueOnce({applied: true, requestId: 43});
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob({isPartnerJob: true});
+
+            await act(async () => {
+                await result.current.updateField({job, field: 'RefA', value: 'NEW-REF', isRecurring: false});
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringMatching(/synced with partner/i),
+                'success',
+            );
         });
 
         it('calls updateBulkJobDetail for bulk jobs and shows success toast', async () => {
@@ -109,8 +139,24 @@ describe('useJobUpdate', () => {
             expect(mockShowToast).toHaveBeenCalledWith('B200 updated', 'success');
         });
 
-        it('shows error toast when updateField fails', async () => {
-            mockUpdateJobDetail.mockRejectedValueOnce(new Error('fail'));
+        it('surfaces the backend error message in the toast when present', async () => {
+            // apiClient interceptor reshapes axios errors into ApiError { status, statusText, message }
+            // so the backend's "managed by partner" / "cannot be edited" message reaches onError.
+            mockUpdateJobDetail.mockRejectedValueOnce({status: 400, statusText: 'Bad Request', message: 'managed by partner'});
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob();
+
+            await act(async () => {
+                try {
+                    await result.current.updateField({job, field: 'notes', value: 'x', isRecurring: false});
+                } catch { /* expected */ }
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith('managed by partner', 'error');
+        });
+
+        it('falls back to a generic toast when the error has no message', async () => {
+            mockUpdateJobDetail.mockRejectedValueOnce({});
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
 
@@ -342,7 +388,7 @@ describe('useJobUpdate', () => {
         const listPrefixes = [['dispatch'], ['jobSearch'], ['nationwide']];
 
         it('invalidates job list caches after a successful field update', async () => {
-            mockUpdateJobDetail.mockResolvedValueOnce(undefined);
+            mockUpdateJobDetail.mockResolvedValueOnce({});
             const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 
@@ -473,8 +519,8 @@ describe('useJobUpdate', () => {
 
     describe('isUpdating', () => {
         it('reflects pending state during a mutation', async () => {
-            let resolveUpdate: () => void;
-            mockUpdateJobDetail.mockReturnValueOnce(new Promise<void>(r => { resolveUpdate = r; }));
+            let resolveUpdate: (value: object) => void;
+            mockUpdateJobDetail.mockReturnValueOnce(new Promise<object>(r => { resolveUpdate = r; }));
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
 
@@ -488,7 +534,7 @@ describe('useJobUpdate', () => {
             await waitFor(() => expect(result.current.isUpdating).toBe(true));
 
             await act(async () => {
-                resolveUpdate!();
+                resolveUpdate!({});
                 await mutationPromise;
             });
 

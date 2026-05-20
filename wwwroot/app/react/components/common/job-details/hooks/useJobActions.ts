@@ -5,7 +5,7 @@
  * into a single hook so the root component stays focused on layout and rendering.
  */
 
-import {useState, useCallback, useRef, useEffect} from 'react';
+import {useState, useCallback, useRef} from 'react';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
@@ -531,6 +531,13 @@ export function useJobActions({
         if (!j) return;
         if (j.isInvoiced) {
             showToast(`Job ${j.jobNo} is invoiced and cannot be modified.`, 'warning');
+            return;
+        }
+        // Partner-side mirrors don't carry the owner's customer breakdown. The only
+        // commercially-meaningful field here is PartnerAgreedRate, which is set when
+        // the job is dispatched and can only change through a Manual change request.
+        if (j.isPartnerJob) {
+            showToast(`${j.jobNo} is managed by a partner. Use Request Change to negotiate the agreed rate.`, 'info');
             return;
         }
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
