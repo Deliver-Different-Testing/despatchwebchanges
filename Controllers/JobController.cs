@@ -1832,12 +1832,19 @@ public class JobController(
 
 
     [HttpPost]
-    public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request)
+    public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request, CancellationToken ct)
     {
         try
         {
-            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-            if (partnerGuard != null) return partnerGuard;
+            // Serialise just the apply-payload fields (Parcels + Weight) — not JobId,
+            // which lives on the change-request row. The peer applies against its own
+            // mirror by reading the row's UjcrJobId, not the JSON.
+            var payload = JsonSerializer.Serialize(
+                new { request.Parcels, request.Weight },
+                CompoundPayloadJsonOptions);
+            var gateResult = await partnerJobGate.EvaluateAsync(
+                request.JobId, JobChangeField.Packages, payload, reason: null, ct);
+            if (TryHandleGateResult(gateResult, out var earlyResponse)) return earlyResponse;
 
             await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
             if (request.Weight is > 0)
@@ -1916,10 +1923,12 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request)
+    public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request, CancellationToken ct)
     {
-        var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-        if (partnerGuard != null) return partnerGuard;
+        var payload = JsonSerializer.Serialize(request.Address, CompoundPayloadJsonOptions);
+        var gateResult = await partnerJobGate.EvaluateAsync(
+            request.JobId, JobChangeField.DeliveryAddress, payload, reason: null, ct);
+        if (TryHandleGateResult(gateResult, out var earlyResponse)) return earlyResponse;
 
         return await UpdateAddressAsync(
             request,
@@ -1929,10 +1938,12 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdatePickupAddress([FromBody] UpdateAddressRequest request)
+    public async Task<IActionResult> UpdatePickupAddress([FromBody] UpdateAddressRequest request, CancellationToken ct)
     {
-        var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-        if (partnerGuard != null) return partnerGuard;
+        var payload = JsonSerializer.Serialize(request.Address, CompoundPayloadJsonOptions);
+        var gateResult = await partnerJobGate.EvaluateAsync(
+            request.JobId, JobChangeField.PickupAddress, payload, reason: null, ct);
+        if (TryHandleGateResult(gateResult, out var earlyResponse)) return earlyResponse;
 
         return await UpdateAddressAsync(
             request,
@@ -2336,5 +2347,32 @@ public class JobController(
                 return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
         }
         return null;
+    }
+
+    private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
+
+    /// <summary>
+    /// Translate a partner-job gate result into an IActionResult and tell the caller
+    /// whether to short-circuit. Returns true when the gate handled the request (Auto
+    /// applied, Manual queued, or Blocked); false when the caller should fall through
+    /// to the existing direct-write path (NotPartner / LocalOnly).
+    /// </summary>
+    private static bool TryHandleGateResult(PartnerJobGateResult result, out IActionResult earlyResponse)
+    {
+        switch (result)
+        {
+            case PartnerJobGateResult.AutoApplied auto:
+                earlyResponse = new OkObjectResult(new { applied = true, requestId = auto.RequestId });
+                return true;
+            case PartnerJobGateResult.PendingApproval pending:
+                earlyResponse = new AcceptedResult(string.Empty, new { pending = true, requestId = pending.RequestId });
+                return true;
+            case PartnerJobGateResult.Blocked blocked:
+                earlyResponse = new BadRequestObjectResult(new { message = blocked.Message });
+                return true;
+            default:
+                earlyResponse = null!;
+                return false;
+        }
     }
 }
