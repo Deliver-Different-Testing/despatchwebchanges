@@ -166,6 +166,15 @@ describe('JobListTable', () => {
             expect(screen.queryByText('Client')).not.toBeInTheDocument();
             expect(screen.getByText('Archived')).toBeInTheDocument();
         });
+
+        it('renders the partner-job icon in the priority column when isPartnerJob is true', async () => {
+            const partnerJob = createMockDispatchJob({id: 2, jobNo: 'P001', isPartnerJob: true});
+            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [partnerJob]})}/>);
+
+            const row = screen.getByText('P001').closest('tr')!;
+            await userEvent.setup().hover(row.querySelector('svg[data-testid="HandshakeIcon"]')!);
+            expect(await screen.findByText('Partner Job')).toBeInTheDocument();
+        });
     });
 
     // ── Row Interaction & Sort ───────────────────────────────────────

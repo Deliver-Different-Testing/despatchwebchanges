@@ -38,9 +38,20 @@ public class JobControllerTests : IDisposable
     private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
+    private readonly IPartnerJobGate _partnerJobGateMock = Substitute.For<IPartnerJobGate>();
 
     public JobControllerTests()
     {
+        // By default the gate sees jobs as non-partner so existing tests don't need to
+        // care about partnership semantics. Tests that exercise partner flows override
+        // this on a per-call basis. Both overloads default to NotPartner.
+        _partnerJobGateMock.EvaluateAsync(
+                Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.NotPartner());
+        _partnerJobGateMock.EvaluateAsync(
+                Arg.Any<int>(), Arg.Any<JobChangeField>(), Arg.Any<string?>(), Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.NotPartner());
         // By default, allow all pricing operations in tests (internal user behavior)
         _pricingPermissionServiceMock.CanModifyPricesAsync().Returns(true);
         _pricingPermissionServiceMock.CanBulkUpdatePricesAsync().Returns(true);
@@ -76,7 +87,8 @@ public class JobControllerTests : IDisposable
             _pricingPermissionServiceMock,
             _podReportServiceMock,
             _splitJobServiceMock,
-            _sendToPartnerServiceMock);
+            _sendToPartnerServiceMock,
+            _partnerJobGateMock);
     }
 
     /// <summary>
@@ -1308,7 +1320,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateJob(jobId, field, value);
+        var result = await controller.UpdateJob(jobId, field, value, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -1333,7 +1345,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act - Note: rerating happens but is skipped in debug mode
-        var result = await controller.UpdateJob(jobId, field, value);
+        var result = await controller.UpdateJob(jobId, field, value, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkResult>(result);
@@ -1350,7 +1362,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateJob(jobId, JobProperty.ConNote, "test");
+        var result = await controller.UpdateJob(jobId, JobProperty.ConNote, "test", CancellationToken.None);
 
         // Assert
         Assert.IsType<ObjectResult>(result);
@@ -2054,7 +2066,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateNote(jobId, note);
+        var result = await controller.UpdateNote(jobId, note, CancellationToken.None);
 
         // Assert
         Assert.IsType<OkObjectResult>(result);
@@ -2070,7 +2082,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateNote(jobId, note);
+        var result = await controller.UpdateNote(jobId, note, CancellationToken.None);
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
@@ -2086,7 +2098,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateNote(jobId, note);
+        var result = await controller.UpdateNote(jobId, note, CancellationToken.None);
 
         // Assert
         Assert.IsType<BadRequestObjectResult>(result);
@@ -2104,7 +2116,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.UpdateNote(jobId, note);
+        var result = await controller.UpdateNote(jobId, note, CancellationToken.None);
 
         // Assert
         Assert.IsType<ObjectResult>(result);
@@ -2995,26 +3007,67 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task UpdateJob_RejectsPartnerJob()
+    public async Task UpdateJob_NonPartnerJob_WritesDirectly()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(42).Returns(true);
+        // Default mock returns NotPartner — UpdateJob falls through to the direct write.
 
-        var result = await controller.UpdateJob(42, JobProperty.RefA, "new-ref");
+        var result = await controller.UpdateJob(42, JobProperty.RefA, "new-ref", CancellationToken.None);
 
-        var badRequest = Assert.IsType<BadRequestObjectResult>(result);
-        Assert.Contains("partner", badRequest.Value!.ToString()!, StringComparison.OrdinalIgnoreCase);
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received().UpdateJobAsync(42, JobProperty.RefA, "new-ref");
     }
 
     [Fact]
-    public async Task UpdateJob_AllowsNonPartnerJob()
+    public async Task UpdateJob_PartnerJobLocalOnlyField_WritesDirectly()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(42).Returns(false);
+        _partnerJobGateMock.EvaluateAsync(42, JobProperty.CourierId, "7", Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.LocalOnly());
 
-        var result = await controller.UpdateJob(42, JobProperty.RefA, "new-ref");
+        var result = await controller.UpdateJob(42, JobProperty.CourierId, "7", CancellationToken.None);
 
         Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received().UpdateJobAsync(42, JobProperty.CourierId, "7");
+    }
+
+    [Fact]
+    public async Task UpdateJob_PartnerJobAutoField_ReturnsAppliedWithoutDirectWrite()
+    {
+        var controller = CreateController();
+        _partnerJobGateMock.EvaluateAsync(42, JobProperty.RefA, "new-ref", Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.AutoApplied(99));
+
+        var result = await controller.UpdateJob(42, JobProperty.RefA, "new-ref", CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(42, JobProperty.RefA, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task UpdateJob_PartnerJobManualField_ReturnsAcceptedWithoutDirectWrite()
+    {
+        var controller = CreateController();
+        _partnerJobGateMock.EvaluateAsync(42, JobProperty.SpeedID, "5", Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.PendingApproval(99));
+
+        var result = await controller.UpdateJob(42, JobProperty.SpeedID, "5", CancellationToken.None);
+
+        Assert.IsType<AcceptedResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(42, JobProperty.SpeedID, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task UpdateJob_PartnerJobUnsupportedField_ReturnsBadRequest()
+    {
+        var controller = CreateController();
+        _partnerJobGateMock.EvaluateAsync(42, JobProperty.Weight, "10", Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.Blocked("not supported"));
+
+        var result = await controller.UpdateJob(42, JobProperty.Weight, "10", CancellationToken.None);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(42, JobProperty.Weight, Arg.Any<string>());
     }
 
     [Fact]
@@ -3050,6 +3103,156 @@ public class JobControllerTests : IDisposable
             JobId = 7,
             MeetingPointAddress = new AddressViewModel()
         });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdatePriceComponent_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(11).Returns(true);
+
+        var result = await controller.UpdatePriceComponent(new ChargeViewModel
+        {
+            JobId = 11,
+            Name = "Fuel",
+            Amount = 12.50m
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdatePriceComponent_RejectsPartnerChildJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(12).Returns(false);
+        _jobQueryRepositoryMock.IsPartnerJobAsync(13).Returns(true);
+
+        var result = await controller.UpdatePriceComponent(new ChargeViewModel
+        {
+            JobId = 12,
+            ChildJobId = 13,
+            Name = "Fuel",
+            Amount = 12.50m
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task AddPriceComponent_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(14).Returns(true);
+
+        var result = await controller.AddPriceComponent(new ChargeViewModel
+        {
+            JobId = 14,
+            ChildJobId = 14,
+            Name = "Surcharge",
+            Amount = 5m
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task DeletePriceComponent_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(15).Returns(true);
+
+        var result = await controller.DeletePriceComponent(new DeletePriceComponentRequest
+        {
+            JobId = 15,
+            ChargeId = 99
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateNote_NonPartnerJob_WritesDirectly()
+    {
+        var controller = CreateController();
+        // Default gate mock returns NotPartner; controller falls through to the direct write.
+
+        var result = await controller.UpdateNote(16, "some note", CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        await _jobCommandRepositoryMock.Received().UpdateJobNoteAsync(16, "some note");
+    }
+
+    [Fact]
+    public async Task UpdateNote_PartnerJob_FilesAutoChangeRequestAndSkipsDirectWrite()
+    {
+        var controller = CreateController();
+        _partnerJobGateMock.EvaluateAsync(16, JobChangeField.Notes, "some note", null, Arg.Any<CancellationToken>())
+            .Returns(new PartnerJobGateResult.AutoApplied(99));
+
+        var result = await controller.UpdateNote(16, "some note", CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        // The gate's CreateLocalAsync path already wrote UcjbNotes and forwarded the
+        // change to the peer; the controller must NOT do a second direct write that
+        // would race the gate's update.
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobNoteAsync(Arg.Any<int>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task UpdateJobPackages_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(17).Returns(true);
+
+        var result = await controller.UpdateJobPackages(new UpdateJobPackagesRequest
+        {
+            JobId = 17,
+            Parcels = []
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateBookingPickupAddress_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(18).Returns(true);
+
+        var result = await controller.UpdateBookingPickupAddress(new UpdateAddressRequest
+        {
+            JobId = 18,
+            Address = new AddressViewModel()
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task UpdateBookingDeliveryAddress_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(19).Returns(true);
+
+        var result = await controller.UpdateBookingDeliveryAddress(new UpdateAddressRequest
+        {
+            JobId = 19,
+            Address = new AddressViewModel()
+        });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task ApplyWebQtyUpdate_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(20).Returns(true);
+
+        var result = await controller.ApplyWebQtyUpdate(20);
 
         Assert.IsType<BadRequestObjectResult>(result);
     }

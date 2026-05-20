@@ -29,26 +29,13 @@ public sealed class JobChangeRequestService(
         var job = await ctx.TucJobs
             .AsNoTracking()
             .Where(j => j.UcjbId == request.JobId)
-            .Select(j => new
-            {
-                j.UcjbId,
-                j.UcjbStatus,
-                j.PartnerJobGuid,
-                j.PartnerAgreedRate,
-                j.UcjbQty,
-                j.UcjbSpeed,
-                j.UcjbNotes
-            })
             .FirstOrDefaultAsync(ct);
 
-        if (job is null)
-            return new JobChangeRequestResult { Success = false, Message = $"Job {request.JobId} not found" };
-        if (!job.PartnerJobGuid.HasValue)
-            return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
+        if (job is null) return new JobChangeRequestResult { Success = false, Message = $"Job {request.JobId} not found" };
+        if (!job.PartnerJobGuid.HasValue) return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
 
         var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, request.PairingId, partnerTenantId: null, ct);
-        if (pairing is null)
-            return new JobChangeRequestResult { Success = false, Message = pairingError };
+        if (pairing is null) return new JobChangeRequestResult { Success = false, Message = pairingError };
 
         if (await ctx.TucJobChangeRequests
                 .AnyAsync(r => r.UjcrJobId == request.JobId
@@ -62,21 +49,27 @@ public sealed class JobChangeRequestService(
             };
 
         var stage = MapLifecycleStage(job.UcjbStatus);
-        const string requestingPartyType = "OwnerTenant";
+        // Local-vs-counterparty is decided by comparing the current tenant against the
+        // pairing's OwnerTenantId — the side that originally created the job is the owner
+        // on BOTH tenants' copies of the pairing row, so this works symmetrically.
+        // Falling back to OwnerTenant when the tenant claim is unavailable (background
+        // jobs, service-account paths, tests without a mocked tenant) preserves the
+        // prior hardcoded behaviour rather than mis-routing approvals.
+        var localTenantId = tenantInfo.GetCurrentTenantId();
+        var isLocalOwner = string.IsNullOrEmpty(localTenantId)
+                           || string.Equals(localTenantId, pairing.OwnerTenantId, StringComparison.Ordinal);
+        var requestingPartyType = isLocalOwner ? "OwnerTenant" : "PartnerTenant";
         var decision = policyService.Evaluate(field, requestingPartyType, stage);
-        if (!decision.Allowed)
-            return new JobChangeRequestResult
+        if (!decision.Allowed) return new JobChangeRequestResult
             {
                 Success = false,
                 Message = $"Change to '{field}' is prohibited at stage '{stage}' (rule {decision.RuleCode})"
             };
 
-        var currentValue = request.CurrentValue ?? SnapshotCurrentValue(field, job.UcjbQty, job.UcjbSpeed,
-            job.UcjbNotes,
-            job.PartnerAgreedRate);
+        var currentValue = request.CurrentValue ?? SnapshotCurrentValue(field, job);
 
         var sourceUuid = Guid.NewGuid();
-        var staffId = SafeGetStaffId();
+        var staffId = CurrentStaffIdOrNull();
 
         var row = new TucJobChangeRequest
         {
@@ -116,10 +109,10 @@ public sealed class JobChangeRequestService(
         };
 
         await using var tx = await ctx.Database.BeginTransactionAsync(ct);
-        ctx.TucEvents.Add(tucEvent);
+        await ctx.TucEvents.AddAsync(tucEvent, ct);
         await ctx.SaveChangesAsync(ct);
         row.UjcrTucEventId = tucEvent.UcevId;
-        ctx.TucJobChangeRequests.Add(row);
+        await ctx.TucJobChangeRequests.AddAsync(row, ct);
 
         if (decision.Mode == JobChangeApprovalMode.Auto)
             await ApplyFieldChangeAsync(ctx, request.JobId, field, request.RequestedValue, ct);
@@ -166,7 +159,38 @@ public sealed class JobChangeRequestService(
         if (request.RowVersion is not null)
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
 
-        var staffId = SafeGetStaffId();
+        // Commercial refresh is the only step that can fail with a recoverable "no rate"
+        // outcome. Run it FIRST — before any column mutation — so a refresh failure leaves
+        // the row Pending and the job untouched. ApplyFieldChangeAsync uses ExecuteUpdateAsync
+        // which writes immediately (not through change tracking), so deferring the rate-card
+        // probe would leave a half-applied state on failure.
+        decimal? refreshedAmount = null;
+        decimal? oldAmountForRefresh = null;
+        var needsRefresh = row.UjcrRequiresCommercialRefresh
+                          && field != JobChangeField.PartnerAgreedRate
+                          && row.UjcrPairingId is not null;
+        if (needsRefresh)
+        {
+            var refreshPairing = row.UjcrPairingId!.Value;
+            var refreshed = await sendToPartner.GetRateForJobAsync(refreshPairing, row.UjcrJobId);
+            if (refreshed.RateCardRate is null)
+            {
+                Log.Warning("Commercial refresh for change request {SourceUuid} produced no rate (source={Source}); leaving row Pending",
+                    row.UjcrSourceRequestUuid, refreshed.Source);
+                return new JobChangeRequestResult
+                {
+                    Success = false,
+                    Message = "Could not re-rate the job against the current rate card. Approval rolled back; please retry."
+                };
+            }
+            refreshedAmount = refreshed.RateCardRate;
+            oldAmountForRefresh = await ctx.TucJobs
+                .Where(j => j.UcjbId == row.UjcrJobId)
+                .Select(j => j.PartnerAgreedRate)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        var staffId = CurrentStaffIdOrNull();
         row.UjcrStatus = JobChangeRequestStatus.Applied;
         row.UjcrApprovedByStaffId = staffId;
         row.UjcrAppliedByStaffId = staffId;
@@ -189,33 +213,14 @@ public sealed class JobChangeRequestService(
 
         await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
 
-        // Commercial refresh for non-rate fields flagged by the policy (Quantity, Speed):
-        // re-rate the job against our own rate card via the IM rate-for-job endpoint, then
-        // push the new amount to both the local tucJob and the peer's mirror via
-        // ForwardAppliedAsync below. Skipped when the field IS PartnerAgreedRate (the user
-        // is supplying the amount directly), or when we have no pairing to ask through.
-        if (row.UjcrRequiresCommercialRefresh
-            && field != JobChangeField.PartnerAgreedRate
-            && row.UjcrPairingId is { } refreshPairing)
+        // Commercial refresh: apply the rate we successfully fetched at the top of the
+        // method. The fetch can't fail here — we'd have already returned BadRequest.
+        if (needsRefresh)
         {
-            var oldAmount = await ctx.TucJobs
-                .Where(j => j.UcjbId == row.UjcrJobId)
-                .Select(j => j.PartnerAgreedRate)
-                .FirstOrDefaultAsync(ct);
-
-            var refreshed = await sendToPartner.GetRateForJobAsync(refreshPairing, row.UjcrJobId);
-            if (refreshed.RateCardRate is { } refreshedAmount)
-            {
-                row.UjcrOldCommercialAmount = oldAmount;
-                row.UjcrNewCommercialAmount = refreshedAmount;
-                await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, refreshedAmount), ct);
-            }
-            else
-            {
-                Log.Warning("Commercial refresh for change request {SourceUuid} produced no rate (source={Source})",
-                    row.UjcrSourceRequestUuid, refreshed.Source);
-            }
+            row.UjcrOldCommercialAmount = oldAmountForRefresh;
+            row.UjcrNewCommercialAmount = refreshedAmount;
+            await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, refreshedAmount), ct);
         }
 
         if (row.UjcrTucEventId is { } eventId)
@@ -255,15 +260,14 @@ public sealed class JobChangeRequestService(
         var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
-            return new JobChangeRequestResult
+        if (row.UjcrStatus != JobChangeRequestStatus.Pending) return new JobChangeRequestResult
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot reject" };
 
         if (request.RowVersion is not null)
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
 
         row.UjcrStatus = JobChangeRequestStatus.Rejected;
-        row.UjcrRejectedByStaffId = SafeGetStaffId();
+        row.UjcrRejectedByStaffId = CurrentStaffIdOrNull();
         row.UjcrRespondedAtUtc = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(request.Reason))
             row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason)
@@ -299,10 +303,8 @@ public sealed class JobChangeRequestService(
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
-        if (row is null)
-            return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
-            return new JobChangeRequestResult
+        if (row is null) return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
+        if (row.UjcrStatus != JobChangeRequestStatus.Pending) return new JobChangeRequestResult
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot cancel" };
 
         // Only the originator can retract — peer-side rows are rejected via RejectAsync.
@@ -322,7 +324,7 @@ public sealed class JobChangeRequestService(
                 : $"{row.UjcrReason}\n--\n{request.Reason}";
 
         if (row.UjcrTucEventId is { } eventId)
-            await CloseEventAsync(ctx, eventId, "Partner Change Rejected", ct);
+            await CloseEventAsync(ctx, eventId, "Partner Change Cancelled", ct);
 
         try
         {
@@ -359,8 +361,7 @@ public sealed class JobChangeRequestService(
             .Where(j => j.PartnerJobGuid == payload.PartnerJobGuid)
             .Select(j => new { j.UcjbId, j.UcjbStatus })
             .FirstOrDefaultAsync(ct);
-        if (mirror is null)
-            return new JobChangeRequestResult
+        if (mirror is null) return new JobChangeRequestResult
                 { Success = false, Message = $"No mirror job for PartnerJobGuid {payload.PartnerJobGuid}" };
 
         // Pairing resolution order on the peer-inbound path:
@@ -372,8 +373,40 @@ public sealed class JobChangeRequestService(
         // Multiple active pairings with no disambiguator → fail loudly.
         var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, payload.PairingId,
             payload.PartnerTenantId, ct);
-        if (pairing is null)
-            return new JobChangeRequestResult { Success = false, Message = pairingError };
+        if (pairing is null) return new JobChangeRequestResult { Success = false, Message = pairingError };
+
+        // Re-evaluate the policy against OUR local mirror's lifecycle stage. The originator
+        // already checked their side, but our stage may have advanced (e.g., we've moved to
+        // Delivered while the peer is still pre-pickup). If the field isn't allowed at our
+        // stage, reject the inbound rather than silently queueing a request the approver
+        // can never act on.
+        if (Enum.TryParse<JobChangeField>(payload.FieldName, ignoreCase: true, out var peerField))
+        {
+            var localStage = MapLifecycleStage(mirror.UcjbStatus);
+            var localDecision = policyService.Evaluate(peerField, "PartnerTenant", localStage);
+            if (!localDecision.Allowed)
+                return new JobChangeRequestResult
+                {
+                    Success = false,
+                    Message =
+                        $"Change to '{payload.FieldName}' is prohibited on our side at stage '{localStage}' (rule {localDecision.RuleCode})"
+                };
+        }
+
+        // Mirror the local CreateLocalAsync duplicate guard: refuse a second Pending/Approved
+        // row for the same field on the same job. Without this, a peer that races our own
+        // Pending request lands a competing row; whoever's approve fires first wins
+        // arbitrarily. SourceRequestUuid dedup above only catches replays of the SAME request.
+        if (await ctx.TucJobChangeRequests
+                .AnyAsync(r => r.UjcrJobId == mirror.UcjbId
+                               && r.UjcrFieldName == payload.FieldName
+                               && (r.UjcrStatus == JobChangeRequestStatus.Pending
+                                   || r.UjcrStatus == JobChangeRequestStatus.Approved), ct))
+            return new JobChangeRequestResult
+            {
+                Success = false,
+                Message = $"A pending request for '{payload.FieldName}' already exists on this job"
+            };
 
         var row = new TucJobChangeRequest
         {
@@ -407,10 +440,10 @@ public sealed class JobChangeRequestService(
         };
 
         await using var tx = await ctx.Database.BeginTransactionAsync(ct);
-        ctx.TucEvents.Add(tucEvent);
+        await ctx.TucEvents.AddAsync(tucEvent, ct);
         await ctx.SaveChangesAsync(ct);
         row.UjcrTucEventId = tucEvent.UcevId;
-        ctx.TucJobChangeRequests.Add(row);
+        await ctx.TucJobChangeRequests.AddAsync(row, ct);
         await ctx.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
 
@@ -428,7 +461,7 @@ public sealed class JobChangeRequestService(
 
         // Terminal statuses short-circuit so a replayed inbound is idempotent. Approved
         // is non-terminal — the originator may still be waiting on the Applied event to
-        // finalise the mutation, but we don't accept a fresh Approved overwrite.
+        // finalize the mutation, but we don't accept a fresh Approved overwrite.
         if (row.UjcrStatus is JobChangeRequestStatus.Applied
             or JobChangeRequestStatus.Rejected
             or JobChangeRequestStatus.Cancelled)
@@ -453,9 +486,9 @@ public sealed class JobChangeRequestService(
     {
         if (outcome.Equals(JobChangeRequestStatus.Approved, StringComparison.OrdinalIgnoreCase))
             return (JobChangeRequestStatus.Approved, "Partner Change Approved");
-        if (outcome.Equals(JobChangeRequestStatus.Cancelled, StringComparison.OrdinalIgnoreCase))
-            return (JobChangeRequestStatus.Cancelled, "Partner Change Rejected");
-        return (JobChangeRequestStatus.Rejected, "Partner Change Rejected");
+        return outcome.Equals(JobChangeRequestStatus.Cancelled, StringComparison.OrdinalIgnoreCase)
+            ? (JobChangeRequestStatus.Cancelled, "Partner Change Cancelled")
+            : (JobChangeRequestStatus.Rejected, "Partner Change Rejected");
     }
 
     public async Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid,
@@ -468,7 +501,7 @@ public sealed class JobChangeRequestService(
             return new JobChangeRequestResult { Success = false, Message = $"No request for SourceUuid {sourceUuid}" };
 
         // Terminal short-circuit. Crucially includes Cancelled — if the originator
-        // cancelled after the peer applied, the late Applied event must not silently
+        // canceled after the peer applied, the late Applied event must not silently
         // re-mutate the originator's tucJob.
         if (row.UjcrStatus is JobChangeRequestStatus.Applied
             or JobChangeRequestStatus.Cancelled
@@ -524,11 +557,11 @@ public sealed class JobChangeRequestService(
     private static async Task ApplyFieldChangeAsync(DespatchContext ctx, int jobId, JobChangeField field,
         string? requestedValue, CancellationToken ct)
     {
+        var q = ctx.TucJobs.Where(j => j.UcjbId == jobId);
         switch (field)
         {
             case JobChangeField.Notes:
-                await ctx.TucJobs.Where(j => j.UcjbId == jobId)
-                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbNotes, requestedValue), ct);
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbNotes, requestedValue), ct);
                 break;
             case JobChangeField.ProgressNote:
                 await AppendNoteAsync(ctx, jobId, "Progress", requestedValue, ct);
@@ -538,23 +571,124 @@ public sealed class JobChangeRequestService(
                 break;
             case JobChangeField.Quantity:
                 if (short.TryParse(requestedValue, out var qty))
-                    await ctx.TucJobs.Where(j => j.UcjbId == jobId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, qty), ct);
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, qty), ct);
                 break;
             case JobChangeField.Speed:
                 if (int.TryParse(requestedValue, out var speedId))
-                    await ctx.TucJobs.Where(j => j.UcjbId == jobId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbSpeed, speedId), ct);
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbSpeed, speedId), ct);
                 break;
             case JobChangeField.PartnerAgreedRate:
                 if (decimal.TryParse(requestedValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
-                    await ctx.TucJobs.Where(j => j.UcjbId == jobId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, rate), ct);
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, rate), ct);
                 break;
+
+            // Auto — customer-visible non-rated. Mirror the truncation / parsing rules used by
+            // JobRepository.TryExecuteDirectUpdateAsync so a request applied here matches what
+            // a direct UpdateJob save would have stored.
+            case JobChangeField.ConNote:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Connote, requestedValue), ct);
+                break;
+            case JobChangeField.RefA:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientRefa, Truncate(requestedValue, 20)), ct);
+                break;
+            case JobChangeField.RefB:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientRefb, Truncate(requestedValue, 15)), ct);
+                break;
+            case JobChangeField.OurRef:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbOurRef, Truncate(requestedValue, 20)), ct);
+                break;
+            case JobChangeField.Attention:
+                if (bool.TryParse(requestedValue, out var attention))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbAttention, attention), ct);
+                break;
+            case JobChangeField.FromContactName:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, Truncate(requestedValue, 100)), ct);
+                break;
+            case JobChangeField.ToContactName:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, Truncate(requestedValue, 100)), ct);
+                break;
+            case JobChangeField.FromContactPhone:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromPhone, Truncate(requestedValue, 100)), ct);
+                break;
+            case JobChangeField.ToContactPhone:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, Truncate(requestedValue, 100)), ct);
+                break;
+            case JobChangeField.TrackingMobile:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMobile, Truncate(requestedValue, 100)), ct);
+                break;
+            case JobChangeField.TrackingEmail:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingEmail, Truncate(requestedValue, 100)), ct);
+                break;
+            case JobChangeField.TrackingMethod:
+                if (int.TryParse(requestedValue, out var trackingMethod))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMethod, trackingMethod), ct);
+                break;
+            case JobChangeField.Barcode:
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Barcode, Truncate(requestedValue, 20)), ct);
+                break;
+            case JobChangeField.DeliverToLeaveID:
+                if (int.TryParse(requestedValue, out var leaveId))
+                {
+                    var privateBusiness = leaveId == 1 ? (int?)null : 1;
+                    await q.ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.DeliverToLeaveId, leaveId)
+                        .SetProperty(j => j.DeliverToPrivateBusiness, privateBusiness), ct);
+                }
+                break;
+
+            // Manual — dates / times / DG / flags. The approver path runs the commercial
+            // refresh separately when RequiresCommercialRefresh is set.
+            case JobChangeField.Date:
+                if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal, out var date))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbDate, date.DateTime), ct);
+                break;
+            case JobChangeField.Time:
+                if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal, out var time))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbTime, time.DateTime), ct);
+                break;
+            case JobChangeField.PuTime:
+                if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal, out var puTime))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickUpTime, puTime.DateTime), ct);
+                break;
+            case JobChangeField.DeliverBy:
+                if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal, out var deliverBy))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverByTime, deliverBy.DateTime), ct);
+                break;
+            case JobChangeField.BookedTime:
+                if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal, out var booked))
+                    await q.ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.UcjbDate, booked.DateTime)
+                        .SetProperty(j => j.UcjbTime, booked.DateTime), ct);
+                break;
+            case JobChangeField.AcceptedJobTypeID:
+                if (short.TryParse(requestedValue, out var acceptedJobType))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.AcceptedJobTypeId, acceptedJobType), ct);
+                break;
+            case JobChangeField.Direct:
+                if (bool.TryParse(requestedValue, out var direct))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Direct, direct), ct);
+                break;
+            case JobChangeField.DGClass:
+                if (int.TryParse(requestedValue, out var dgClass))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgclass, dgClass), ct);
+                break;
+            case JobChangeField.DGDocumentation:
+                if (bool.TryParse(requestedValue, out var dgDoc))
+                    await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgdocument, dgDoc), ct);
+                break;
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(field), field, null);
         }
     }
+
+    private static string? Truncate(string? value, int max) =>
+        value is null ? null : value[..Math.Min(value.Length, max)];
 
     // ProgressNote / PodNote append to UcjbNotes with a labelled prefix rather than
     // replace it, so the existing dispatcher notes survive an auto-applied partner update.
@@ -595,15 +729,21 @@ public sealed class JobChangeRequestService(
                 .SetProperty(e => e.UcevType, newTypeId), ct);
     }
 
-    private int SafeGetStaffId()
+    // Returns the current staff ID for audit columns, or null when no real staff
+    // context is available (background jobs, peer-inbound paths, or transient claims
+    // failures). Writing null is more honest than writing 0 — the audit clearly says
+    // "we don't know who did this" rather than masquerading as staff #0.
+    private int? CurrentStaffIdOrNull()
     {
         try
         {
-            return tenantInfo.GetStaffId();
+            var id = tenantInfo.GetStaffId();
+            return id > 0 ? id : null;
         }
-        catch
+        catch (Exception ex)
         {
-            return 0;
+            Log.Warning(ex, "Could not resolve current staff ID for change-request audit; attributing to system");
+            return null;
         }
     }
 
@@ -680,14 +820,39 @@ public sealed class JobChangeRequestService(
         _ => JobLifecycleStage.Allocated
     };
 
-    private static string? SnapshotCurrentValue(JobChangeField field, short? qty, int? speedId, string? notes,
-        decimal? partnerAgreedRate) =>
+    private static string? SnapshotCurrentValue(JobChangeField field, TucJob job) =>
         field switch
         {
-            JobChangeField.Quantity => qty?.ToString(CultureInfo.InvariantCulture),
-            JobChangeField.Speed => speedId?.ToString(CultureInfo.InvariantCulture),
-            JobChangeField.Notes => notes,
-            JobChangeField.PartnerAgreedRate => partnerAgreedRate?.ToString(CultureInfo.InvariantCulture),
+            JobChangeField.Quantity => job.UcjbQty?.ToString(CultureInfo.InvariantCulture),
+            JobChangeField.Speed => job.UcjbSpeed?.ToString(CultureInfo.InvariantCulture),
+            JobChangeField.Notes => job.UcjbNotes,
+            JobChangeField.PartnerAgreedRate => job.PartnerAgreedRate?.ToString(CultureInfo.InvariantCulture),
+
+            JobChangeField.ConNote => job.Connote,
+            JobChangeField.RefA => job.UcjbClientRefa,
+            JobChangeField.RefB => job.UcjbClientRefb,
+            JobChangeField.OurRef => job.UcjbOurRef,
+            JobChangeField.Attention => job.UcjbAttention.ToString(),
+            JobChangeField.FromContactName => job.PickupFromContact,
+            JobChangeField.ToContactName => job.DeliverToContact,
+            JobChangeField.FromContactPhone => job.PickupFromPhone,
+            JobChangeField.ToContactPhone => job.DeliverToPhone,
+            JobChangeField.TrackingMobile => job.TrackingMobile,
+            JobChangeField.TrackingEmail => job.TrackingEmail,
+            JobChangeField.TrackingMethod => job.TrackingMethod?.ToString(CultureInfo.InvariantCulture),
+            JobChangeField.Barcode => job.Barcode,
+            JobChangeField.DeliverToLeaveID => job.DeliverToLeaveId?.ToString(CultureInfo.InvariantCulture),
+
+            JobChangeField.Date => job.UcjbDate.ToString("o", CultureInfo.InvariantCulture),
+            JobChangeField.Time => job.UcjbTime?.ToString("o", CultureInfo.InvariantCulture),
+            JobChangeField.PuTime => job.PickUpTime?.ToString("o", CultureInfo.InvariantCulture),
+            JobChangeField.DeliverBy => job.DeliverByTime?.ToString("o", CultureInfo.InvariantCulture),
+            JobChangeField.BookedTime => job.UcjbTime?.ToString("o", CultureInfo.InvariantCulture),
+            JobChangeField.AcceptedJobTypeID => job.AcceptedJobTypeId?.ToString(CultureInfo.InvariantCulture),
+            JobChangeField.Direct => job.Direct.ToString(),
+            JobChangeField.DGClass => job.Dgclass?.ToString(CultureInfo.InvariantCulture),
+            JobChangeField.DGDocumentation => job.Dgdocument?.ToString(),
+
             _ => null
         };
 

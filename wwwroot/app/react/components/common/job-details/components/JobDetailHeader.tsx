@@ -18,7 +18,6 @@ import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import DensityMediumIcon from '@mui/icons-material/DensityMedium';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import CheckIcon from '@mui/icons-material/Check';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
@@ -34,12 +33,9 @@ interface JobDetailHeaderProps {
     dense?: boolean;
     viewDensityLabel: string;
     isEditMode: boolean;
-    aiEnabled: boolean;
-    showAiPanel: boolean;
     onToggleDensity: () => void;
     onToggleEditMode: () => void;
     onResetFieldVisibility: () => void;
-    onToggleAiPanel: () => void;
     onStatusClick: () => void;
     onPodReport: () => void;
     onPodSpreadsheet: () => void;
@@ -93,12 +89,9 @@ export function JobDetailHeader({
                                     dense,
                                     viewDensityLabel,
                                     isEditMode,
-                                    aiEnabled,
-                                    showAiPanel,
                                     onToggleDensity,
                                     onToggleEditMode,
                                     onResetFieldVisibility,
-                                    onToggleAiPanel,
                                     onStatusClick,
                                     onPodReport,
                                     onPodSpreadsheet,
@@ -126,6 +119,16 @@ export function JobDetailHeader({
                 <Typography sx={jobNoSx}>
                     {job.jobNo}
                 </Typography>
+                {job.isPartnerJob && (
+                    <Chip
+                        icon={<HandshakeIcon sx={{fontSize: 14}}/>}
+                        label="Partner Job"
+                        size="small"
+                        color="info"
+                        variant="filled"
+                        sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
+                    />
+                )}
             </Box>
 
             {/* Actions */}
@@ -140,16 +143,6 @@ export function JobDetailHeader({
                         variant="filled"
                         clickable
                         sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
-                    />
-                )}
-                {job.isPartnerJob && (
-                    <Chip
-                        icon={<HandshakeIcon sx={{fontSize: 14}}/>}
-                        label="Partner Job"
-                        size="small"
-                        color="info"
-                        variant="outlined"
-                        sx={{fontWeight: 600, fontSize: '0.7rem', height: 26}}
                     />
                 )}
                 <Tooltip title={job.isPartnerJob ? 'Locked — managed by partner' : job.locked ? 'Unlock Job' : 'Lock Job'}>
@@ -167,19 +160,6 @@ export function JobDetailHeader({
                         </IconButton>
                     </span>
                 </Tooltip>
-
-                {/* AI Summary Panel Toggle */}
-                {aiEnabled && (
-                    <Tooltip title={showAiPanel ? 'Hide AI Summary' : 'AI Summary'}>
-                        <IconButton
-                            size="small"
-                            color={showAiPanel ? 'primary' : 'default'}
-                            onClick={onToggleAiPanel}
-                        >
-                            <AutoAwesomeIcon sx={{fontSize: ICON_SIZE}}/>
-                        </IconButton>
-                    </Tooltip>
-                )}
 
                 {/* View Density Toggle */}
                 <Tooltip title={`${isDense ? 'Normal' : 'Compact'} view`}>

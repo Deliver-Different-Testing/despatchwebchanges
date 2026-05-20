@@ -22,6 +22,7 @@
     <Content Remove="DespatchWeb.Tests\**" />
     <None Remove="DespatchWeb.Tests\**" />
     <EmbeddedResource Remove="DespatchWeb.Tests\**" />
+    <Compile Remove="EntityClasses\DespatchContext.JobItemTypes.cs" />
   </ItemGroup>
 
 	<PropertyGroup>
@@ -302,7 +303,6 @@
     <PackageReference Include="AWSSDK.S3" />
     <PackageReference Include="AWSSDK.SecurityToken" />
     <PackageReference Include="AWSSDK.SSO" />
-    <PackageReference Include="Dapper" />
     <PackageReference Include="Magick.NET-Q8-AnyCPU" />
     <PackageReference Include="DeliverDifferentReporting" />
     <PackageReference Include="ExcelDataReader" />

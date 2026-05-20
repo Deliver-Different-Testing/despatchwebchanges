@@ -123,7 +123,7 @@ builder.Services.AddOptions<AppSettings>()
 
 builder.Services
     .AddRepositories()
-    .AddJobServices()
+    .AddJobServices(builder.Configuration)
     .AddPricingServices()
     .AddReportingServices()
     .AddSupportServices()

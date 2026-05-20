@@ -87,7 +87,6 @@ public sealed class TenantInfoService(
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
         if (timeZone is null) return GetCurrentTenantTime();
-
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
@@ -124,6 +123,10 @@ public sealed class TenantInfoService(
         _cachedStaffId = int.Parse(staffIdString ?? "0");
         return _cachedStaffId.Value;
     }
+
+    /// <inheritdoc />
+    public string GetCurrentTenantId() =>
+        contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
 
     /// <summary>
     /// Gets the current contact's ID from user claims.

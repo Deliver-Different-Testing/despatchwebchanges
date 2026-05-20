@@ -40,4 +40,6 @@ public partial class TucJobBookingItem
     public virtual TucJobBooking Booking { get; set; }
 
     public virtual TucJobBooking ChildJob { get; set; }
+
+    public virtual ICollection<TucJobBookingItemType> TucJobBookingItemTypes { get; set; } = new List<TucJobBookingItemType>();
 }

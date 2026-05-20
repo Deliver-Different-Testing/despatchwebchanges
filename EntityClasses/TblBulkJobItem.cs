@@ -40,4 +40,6 @@ public partial class TblBulkJobItem
     public virtual TblBulkJob ChildJob { get; set; }
 
     public virtual TblBulkJob Job { get; set; }
+
+    public virtual ICollection<TblBulkJobItemType> TblBulkJobItemTypes { get; set; } = new List<TblBulkJobItemType>();
 }

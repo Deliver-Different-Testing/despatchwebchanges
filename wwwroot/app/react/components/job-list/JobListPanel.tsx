@@ -24,7 +24,7 @@ import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
-import {allocateJobs, bulkUpdateReadStatus, restoreJobs, sendToPartner, updateJobReadStatus} from '../../services/jobListApi';
+import {allocateJobs, bulkUpdateReadStatus, restoreJobs, updateJobReadStatus} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
@@ -123,24 +123,31 @@ function matchesSearch(job: DispatchJob, query: string): boolean {
     );
 }
 
-function getPickupAddressStr(job: DispatchJob): string {
-    if (job.pickupAddress) {
-        const addr = job.pickupAddress;
-        return [addr.addressLine2, addr.addressLine3, addr.addressLine4, addr.addressLine5, addr.addressLine6, addr.addressLine7, addr.addressLine8]
-            .filter((l) => l && l.trim())
-            .join(', ');
+function formatAddressOrFallback(
+    address: AddressViewModel | undefined,
+    pickLines: (a: AddressViewModel) => Array<string | undefined>,
+    fallback: string | undefined,
+): string {
+    if (address) {
+        return pickLines(address).filter((l): l is string => Boolean(l && l.trim())).join(', ');
     }
-    return (job.from || '').split(',').map((l) => l.trim()).join(', ');
+    return (fallback || '').split(',').map((l) => l.trim()).join(', ');
+}
+
+function getPickupAddressStr(job: DispatchJob): string {
+    return formatAddressOrFallback(
+        job.pickupAddress,
+        (a) => [a.addressLine2, a.addressLine3, a.addressLine4, a.addressLine5, a.addressLine6, a.addressLine7, a.addressLine8],
+        job.from,
+    );
 }
 
 function getDeliveryAddressStr(job: DispatchJob): string {
-    if (job.deliveryAddress) {
-        const addr = job.deliveryAddress;
-        return [addr.addressLine2, addr.addressLine3, addr.addressLine4, addr.addressLine5, addr.addressLine8]
-            .filter((l) => l && l.trim())
-            .join(', ');
-    }
-    return (job.toAddress || '').split(',').map((l) => l.trim()).join(', ');
+    return formatAddressOrFallback(
+        job.deliveryAddress,
+        (a) => [a.addressLine2, a.addressLine3, a.addressLine4, a.addressLine5, a.addressLine8],
+        job.toAddress,
+    );
 }
 
 function getSortValue(job: DispatchJob, column: string, isUsCustomer?: boolean): string | number {
@@ -327,14 +334,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch { /* ignore */ }
         return false;
     });
-    const [todayOnly, setTodayOnly] = useState(() => {
-        if (!onDateFilterModeChange) return true;
-        try {
-            const stored = localStorage.getItem(getStorageKey('todayOnly'));
-            return stored === null ? true : stored === 'true';
-        } catch { /* ignore */ }
-        return true;
-    });
     const [lastUpdated, setLastUpdated] = useState(() => `Last updated: ${dayjs().format('h:mm A')}`);
 
     // Context menu state
@@ -415,17 +414,9 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         localStorage.setItem(getStorageKey('loggedInCouriersOnly'), String(loggedInCouriersOnly));
     }, [loggedInCouriersOnly, getStorageKey]);
 
+    // The current-work table is locked to today-only; tell AngularJS on mount.
     useEffect(() => {
-        if (onDateFilterModeChange) {
-            localStorage.setItem(getStorageKey('todayOnly'), String(todayOnly));
-        }
-    }, [todayOnly, getStorageKey, onDateFilterModeChange]);
-
-    // Notify AngularJS of initial todayOnly state on mount
-    useEffect(() => {
-        if (onDateFilterModeChange) {
-            onDateFilterModeChange(todayOnly);
-        }
+        onDateFilterModeChange?.(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -605,11 +596,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         setLoggedInCouriersOnly(checked);
     }, []);
 
-    const handleTodayOnlyChange = useCallback((checked: boolean) => {
-        setTodayOnly(checked);
-        onDateFilterModeChange?.(checked);
-    }, [onDateFilterModeChange]);
-
     const handleDensityModeChange = useCallback((mode: DensityMode) => {
         setDensityMode(mode);
     }, []);
@@ -785,8 +771,6 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onBulkMarkUnread={handleBulkMarkUnread}
                 onBulkSendToPartner={handleBulkSendToPartner}
                 hideLoggedInSwitch={hideLoggedInSwitch}
-                todayOnly={onDateFilterModeChange ? todayOnly : undefined}
-                onTodayOnlyChange={onDateFilterModeChange ? handleTodayOnlyChange : undefined}
             />
             <JobListTable
                 jobs={visibleJobs}

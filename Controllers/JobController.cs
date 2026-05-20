@@ -36,7 +36,8 @@ public class JobController(
     IPricingPermissionService pricingPermissionService,
     IPodReportService podReportService,
     ISplitJobService splitJobService,
-    ISendToPartnerService sendToPartnerService
+    ISendToPartnerService sendToPartnerService,
+    IPartnerJobGate partnerJobGate
 ) : Controller
 {
     public async Task<IActionResult> Index(
@@ -194,7 +195,12 @@ public class JobController(
                 return BadRequest(ModelState);
 
             var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
-            if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
+            if (!jobId.HasValue) throw new ArgumentException(
+                    "ChildJobId or PrebookJobId must be provided",
+                    nameof(breakdown));
+
+            var partnerGuard = await RejectIfAnyPartnerJobAsync(breakdown.JobId, breakdown.ChildJobId);
+            if (partnerGuard != null) return partnerGuard;
 
             // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
@@ -239,7 +245,13 @@ public class JobController(
         try
         {
             var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
-            if (!jobId.HasValue) throw new ArgumentNullException(nameof(jobId));
+            if (!jobId.HasValue)
+                throw new ArgumentException(
+                    "JobId or PrebookJobId must be provided",
+                    nameof(breakdown));
+
+            var partnerGuard = await RejectIfAnyPartnerJobAsync(breakdown.JobId, breakdown.ChildJobId);
+            if (partnerGuard != null) return partnerGuard;
 
             // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
@@ -283,6 +295,9 @@ public class JobController(
     {
         try
         {
+            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            if (partnerGuard != null) return partnerGuard;
+
             // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
                 return StatusCode(StatusCodes.Status403Forbidden,
@@ -1387,13 +1402,28 @@ public class JobController(
     public async Task<IActionResult> UpdateJob(
         int jobId,
         JobProperty field,
-        string value
+        string value,
+        CancellationToken ct
     )
     {
         try
         {
-            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
-            if (partnerGuard != null) return partnerGuard;
+            // Route through the partner-job gate. For non-partner jobs and LocalOnly
+            // fields this is a no-op and we fall through to the direct write. For
+            // Manual / Auto fields on a partner job the gate files a change request
+            // (auto-applying or queueing for counterparty approval) and we short-circuit
+            // with the gate's outcome instead of writing directly.
+            var gateResult = await partnerJobGate.EvaluateAsync(jobId, field, value, ct);
+            switch (gateResult)
+            {
+                case PartnerJobGateResult.AutoApplied auto:
+                    return Ok(new { applied = true, requestId = auto.RequestId });
+                case PartnerJobGateResult.PendingApproval pending:
+                    return Accepted(new { pending = true, requestId = pending.RequestId });
+                case PartnerJobGateResult.Blocked blocked:
+                    return BadRequest(new { message = blocked.Message });
+                // NotPartner / LocalOnly → fall through to the direct write below.
+            }
 
             await jobCommandRepository.UpdateJobAsync(jobId, field, value);
         }
@@ -1746,7 +1776,7 @@ public class JobController(
 
 
     [HttpPost]
-    public async Task<IActionResult> UpdateNote(int jobId, string note)
+    public async Task<IActionResult> UpdateNote(int jobId, string note, CancellationToken ct)
     {
         Log.Information("Request received to update note for job {JobId}", jobId);
 
@@ -1760,6 +1790,21 @@ public class JobController(
         {
             Log.Warning("Empty note value received for job {JobId}", jobId);
             return BadRequest(new { message = "Note cannot be empty" });
+        }
+
+        // Notes is an Auto-apply field on partner jobs: the gate writes UcjbNotes on
+        // our side via the change-request flow AND forwards the same change to the peer
+        // so both mirrors stay in sync. Non-partner jobs fall through to the direct write.
+        var gateResult = await partnerJobGate.EvaluateAsync(jobId, JobChangeField.Notes, note, reason: null, ct);
+        switch (gateResult)
+        {
+            case PartnerJobGateResult.AutoApplied auto:
+                return Ok(new { applied = true, requestId = auto.RequestId, message = "Note synced with partner" });
+            case PartnerJobGateResult.PendingApproval pending:
+                return Accepted(new { pending = true, requestId = pending.RequestId });
+            case PartnerJobGateResult.Blocked blocked:
+                return BadRequest(new { message = blocked.Message });
+            // NotPartner / LocalOnly → fall through to direct write below.
         }
 
         try
@@ -1791,6 +1836,9 @@ public class JobController(
     {
         try
         {
+            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            if (partnerGuard != null) return partnerGuard;
+
             await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
             if (request.Weight is > 0)
                 await jobCommandRepository.UpdateJobWeightAsync(request.JobId, request.Weight.Value);
@@ -1896,6 +1944,9 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UpdateBookingPickupAddress([FromBody] UpdateAddressRequest request)
     {
+        var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+        if (partnerGuard != null) return partnerGuard;
+
         return await UpdateAddressAsync(
             request,
             recurringJobRepository.UpdateBookingPickupAddressAsync,
@@ -1906,6 +1957,9 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> UpdateBookingDeliveryAddress([FromBody] UpdateAddressRequest request)
     {
+        var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+        if (partnerGuard != null) return partnerGuard;
+
         return await UpdateAddressAsync(
             request,
             recurringJobRepository.UpdateBookingDeliveryAddressAsync,
@@ -2023,6 +2077,9 @@ public class JobController(
     {
         try
         {
+            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+            if (partnerGuard != null) return partnerGuard;
+
             var applied = await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
             return applied ? Ok() : NotFound("No pending web qty update found for this job.");
         }
@@ -2268,6 +2325,16 @@ public class JobController(
     {
         if (await jobQueryRepository.IsPartnerJobAsync(jobId))
             return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
+        return null;
+    }
+
+    private async Task<IActionResult> RejectIfAnyPartnerJobAsync(params int?[] jobIds)
+    {
+        foreach (var id in jobIds)
+        {
+            if (id is { } jobId && await jobQueryRepository.IsPartnerJobAsync(jobId))
+                return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
+        }
         return null;
     }
 }

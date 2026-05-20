@@ -16,7 +16,7 @@ declare const H: any;
 interface UseHereMapOptions {
     center?: { lat: number; lng: number };
     zoom?: number;
-    onMapReady?: (map: any, platform: any, ui: any) => void;
+    onMapReady?: (map: any, platform: any, ui: any, defaultLayers: any) => void;
 }
 
 interface UseHereMapReturn {
@@ -94,14 +94,12 @@ export function useHereMap({
                     new H.mapevents.MapEvents(map)
                 );
 
-                // Add UI components
+                // Add UI components (ScaleBar etc.). Zoom and map-settings are
+                // rendered as MUI controls instead — see MapZoomViewControls.
                 const ui = H.ui.UI.createDefault(map, defaultLayers);
-
-                // Configure zoom control
                 ui.removeControl('zoom');
+                ui.removeControl('mapsettings');
                 behavior.disable(H.mapevents.Behavior.Feature.FRACTIONAL_ZOOM);
-                const zoomControl = new H.ui.ZoomControl({ fractionalZoom: false });
-                ui.addControl('zoom', zoomControl, H.ui.LayoutAlignment.RIGHT_TOP);
 
                 platformRef.current = platform;
                 mapRef.current = map;
@@ -109,7 +107,7 @@ export function useHereMap({
                 setIsReady(true);
 
                 if (onMapReadyRef.current) {
-                    onMapReadyRef.current(map, platform, ui);
+                    onMapReadyRef.current(map, platform, ui, defaultLayers);
                 }
             } catch (err) {
                 if (isMounted) {
@@ -120,7 +118,7 @@ export function useHereMap({
             }
         };
 
-        initMap();
+        void initMap();
 
         return () => {
             isMounted = false;

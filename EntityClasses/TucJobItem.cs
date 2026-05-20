@@ -40,4 +40,6 @@ public partial class TucJobItem
     public virtual TucJob ChildJob { get; set; }
 
     public virtual TucJob Job { get; set; }
+
+    public virtual ICollection<TucJobItemType> TucJobItemTypes { get; set; } = new List<TucJobItemType>();
 }

@@ -173,8 +173,7 @@ public sealed class PodReportService(
 
     internal static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
     {
-        if (parcels == null || parcels.Count == 0)
-            return [];
+        if (parcels == null || parcels.Count == 0) return [];
 
         return parcels.Select(p => new PodItem
         {

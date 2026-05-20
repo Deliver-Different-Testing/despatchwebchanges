@@ -8,15 +8,26 @@
 import React from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import IconButton from '@mui/material/IconButton';
-import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Divider from '@mui/material/Divider';
+import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
+import FitScreenIcon from '@mui/icons-material/FitScreen';
+import MapIcon from '@mui/icons-material/Map';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import EmergencyIcon from '@mui/icons-material/Emergency';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import type { MapControlButtonsProps } from './DispatchMap.types';
+
+const ICON_SIZE = 20;
 
 interface ControlButtonProps {
     active: boolean;
     disabled?: boolean;
     onClick: () => void;
-    icon: string;
-    activeIcon?: string;
+    icon: React.ReactNode;
+    activeIcon?: React.ReactNode;
     tooltip: string;
     activeTooltip?: string;
     ariaLabel: string;
@@ -39,29 +50,15 @@ function ControlButton({
         <Tooltip title={displayTooltip} placement="right">
             <span>
                 <IconButton
+                    size="small"
                     onClick={onClick}
                     disabled={disabled}
+                    color={active ? 'primary' : 'default'}
                     aria-label={ariaLabel}
                     data-active={active}
-                    sx={(theme) => ({
-                        width: 40,
-                        height: 40,
-                        bgcolor: active ? theme.palette.primary.main : theme.palette.error.main,
-                        color: active ? theme.palette.primary.contrastText : theme.palette.error.contrastText,
-                        boxShadow: 3,
-                        '&:hover': {
-                            bgcolor: active ? theme.palette.primary.dark : theme.palette.error.dark,
-                        },
-                        '&:disabled': {
-                            opacity: 0.5,
-                            bgcolor: active ? theme.palette.primary.main : theme.palette.error.main,
-                            color: active ? theme.palette.primary.contrastText : theme.palette.error.contrastText,
-                        },
-                    })}
+                    sx={{borderRadius: 0, p: 0.75}}
                 >
-                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>
-                        {displayIcon}
-                    </span>
+                    {displayIcon}
                 </IconButton>
             </span>
         </Tooltip>
@@ -79,7 +76,8 @@ export function MapControlButtons({
         controlState;
 
     return (
-        <Box
+        <Paper
+            elevation={3}
             sx={{
                 position: 'absolute',
                 bottom: 20,
@@ -87,54 +85,52 @@ export function MapControlButtons({
                 zIndex: 10,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 1,
+                borderRadius: 1,
+                overflow: 'hidden',
+                bgcolor: 'background.paper',
             }}
         >
-            {/* Auto Zoom Button */}
             <ControlButton
                 active={autoZoomEnabled}
                 onClick={onToggleAutoZoom}
-                icon="zoom_out_map"
-                activeIcon="fit_screen"
+                icon={<ZoomOutMapIcon sx={{fontSize: ICON_SIZE}}/>}
+                activeIcon={<FitScreenIcon sx={{fontSize: ICON_SIZE}}/>}
                 tooltip="Auto Zoom Disabled"
                 activeTooltip="Auto Zoom Enabled"
                 ariaLabel="Toggle Auto Zoom"
             />
-
-            {/* Couriers Only Button */}
+            <Divider/>
             <ControlButton
                 active={couriersOnlyEnabled}
                 disabled={couriersLargeViewEnabled}
                 onClick={onToggleCouriersOnly}
-                icon="map"
-                activeIcon="local_shipping"
+                icon={<MapIcon sx={{fontSize: ICON_SIZE}}/>}
+                activeIcon={<LocalShippingIcon sx={{fontSize: ICON_SIZE}}/>}
                 tooltip="Pins and Couriers"
                 activeTooltip="Couriers Only"
                 ariaLabel="Toggle Couriers Only"
             />
-
-            {/* Urgent Army Button */}
+            <Divider/>
             <ControlButton
                 active={urgentArmyOnlyEnabled}
                 disabled={couriersLargeViewEnabled}
                 onClick={onToggleUrgentArmyOnly}
-                icon="visibility_off"
-                activeIcon="emergency"
+                icon={<VisibilityOffIcon sx={{fontSize: ICON_SIZE}}/>}
+                activeIcon={<EmergencyIcon sx={{fontSize: ICON_SIZE}}/>}
                 tooltip="Show All Couriers"
                 activeTooltip="Show Fleet Only"
                 ariaLabel="Toggle Urgent Army Filter"
             />
-
-            {/* Couriers Large View Button */}
+            <Divider/>
             <ControlButton
                 active={couriersLargeViewEnabled}
                 onClick={onToggleCouriersLargeView}
-                icon="fullscreen_exit"
-                activeIcon="fullscreen"
+                icon={<FullscreenExitIcon sx={{fontSize: ICON_SIZE}}/>}
+                activeIcon={<FullscreenIcon sx={{fontSize: ICON_SIZE}}/>}
                 tooltip="Normal View"
                 activeTooltip="Couriers Large View"
                 ariaLabel="Toggle Couriers Large View"
             />
-        </Box>
+        </Paper>
     );
 }

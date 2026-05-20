@@ -71,6 +71,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TblBulkJobItem> TblBulkJobItems { get; set; }
 
+    public virtual DbSet<TblBulkJobItemType> TblBulkJobItemTypes { get; set; }
+
     public virtual DbSet<TblBulkJobNote> TblBulkJobNotes { get; set; }
 
     public virtual DbSet<TblBulkJobRun> TblBulkJobRuns { get; set; }
@@ -175,6 +177,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucInvoiceProcess> TucInvoiceProcesses { get; set; }
 
+    public virtual DbSet<TucItemType> TucItemTypes { get; set; }
+
     public virtual DbSet<TucJob> TucJobs { get; set; }
 
     public virtual DbSet<TucJobAddressDeatil> TucJobAddressDeatils { get; set; }
@@ -185,11 +189,17 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<TucJobBookingItem> TucJobBookingItems { get; set; }
 
+    public virtual DbSet<TucJobBookingItemType> TucJobBookingItemTypes { get; set; }
+
     public virtual DbSet<TucJobChangeRequest> TucJobChangeRequests { get; set; }
 
     public virtual DbSet<TucJobInternalStatus> TucJobInternalStatuses { get; set; }
 
     public virtual DbSet<TucJobItem> TucJobItems { get; set; }
+
+    public virtual DbSet<TucJobItemType> TucJobItemTypes { get; set; }
+
+    public virtual DbSet<TucJobItemTypesArchive> TucJobItemTypesArchives { get; set; }
 
     public virtual DbSet<TucJobItemsArchive> TucJobItemsArchives { get; set; }
 
@@ -1000,6 +1010,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Client).WithMany(p => p.IntMgrPartnerPairings)
                 .HasForeignKey(d => d.ClientId)
                 .HasConstraintName("FK_IntMgrPartnerPairing_tucClient");
+
+            entity.HasOne(d => d.Courier).WithMany(p => p.IntMgrPartnerPairings)
+                .HasForeignKey(d => d.CourierId)
+                .HasConstraintName("FK__IntMgrPar__Couri__434D9A00");
         });
 
         modelBuilder.Entity<JobAccessorialCharge>(entity =>
@@ -1642,6 +1656,26 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.JobId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tblBulkJobItems_JobID");
+        });
+
+        modelBuilder.Entity<TblBulkJobItemType>(entity =>
+        {
+            entity.HasKey(e => e.JobItemTypeId);
+
+            entity.ToTable("tblBulkJobItemTypes");
+
+            entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.Quantity).HasDefaultValue(1, "DF_tblBulkJobItemTypes_Quantity");
+
+            entity.HasOne(d => d.ItemType).WithMany(p => p.TblBulkJobItemTypes)
+                .HasForeignKey(d => d.ItemTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tblBulkJobItemTypes_ItemType");
+
+            entity.HasOne(d => d.TblBulkJobItem).WithMany(p => p.TblBulkJobItemTypes)
+                .HasForeignKey(d => new { d.JobId, d.ItemId })
+                .HasConstraintName("FK_tblBulkJobItemTypes_JobItem");
         });
 
         modelBuilder.Entity<TblBulkJobNote>(entity =>
@@ -5413,6 +5447,35 @@ public partial class DespatchContext : DbContext
                 .HasColumnName("ucipPrintedDate");
         });
 
+        modelBuilder.Entity<TucItemType>(entity =>
+        {
+            entity.HasKey(e => e.ItemTypeId);
+
+            entity.ToTable("tucItemTypes");
+
+            entity.Property(e => e.Created)
+                .HasDefaultValueSql("(getdate())", "DF_tucItemTypes_Created")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasDefaultValue("", "DF_tucItemTypes_CreatedBy");
+            entity.Property(e => e.LastModified)
+                .HasDefaultValueSql("(getdate())", "DF_tucItemTypes_LastModified")
+                .HasColumnType("datetime");
+            entity.Property(e => e.LastModifiedBy)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasDefaultValue("", "DF_tucItemTypes_LastModifiedBy");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            entity.HasOne(d => d.Client).WithMany(p => p.TucItemTypes)
+                .HasForeignKey(d => d.ClientId)
+                .HasConstraintName("FK_tucItemTypes_ClientId");
+        });
+
         modelBuilder.Entity<TucJob>(entity =>
         {
             entity.HasKey(e => e.UcjbId)
@@ -6794,6 +6857,26 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK_tucJobBookingItems_ChildJobID");
         });
 
+        modelBuilder.Entity<TucJobBookingItemType>(entity =>
+        {
+            entity.HasKey(e => e.JobItemTypeId);
+
+            entity.ToTable("tucJobBookingItemTypes");
+
+            entity.Property(e => e.BookingId).HasColumnName("BookingID");
+            entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.Quantity).HasDefaultValue(1, "DF_tucJobBookingItemTypes_Quantity");
+
+            entity.HasOne(d => d.ItemType).WithMany(p => p.TucJobBookingItemTypes)
+                .HasForeignKey(d => d.ItemTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucJobBookingItemTypes_ItemType");
+
+            entity.HasOne(d => d.TucJobBookingItem).WithMany(p => p.TucJobBookingItemTypes)
+                .HasForeignKey(d => new { d.BookingId, d.ItemId })
+                .HasConstraintName("FK_tucJobBookingItemTypes_JobItem");
+        });
+
         modelBuilder.Entity<TucJobChangeRequest>(entity =>
         {
             entity.HasKey(e => e.UjcrId).HasName("PK__tucJobCh__6D45118AD7170A94");
@@ -6951,6 +7034,46 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.JobId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_tucJobItems_tucJob");
+        });
+
+        modelBuilder.Entity<TucJobItemType>(entity =>
+        {
+            entity.HasKey(e => e.JobItemTypeId);
+
+            entity.ToTable("tucJobItemTypes");
+
+            entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.Quantity).HasDefaultValue(1, "DF_tucJobItemTypes_Quantity");
+
+            entity.HasOne(d => d.ItemType).WithMany(p => p.TucJobItemTypes)
+                .HasForeignKey(d => d.ItemTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucJobItemTypes_ItemType");
+
+            entity.HasOne(d => d.TucJobItem).WithMany(p => p.TucJobItemTypes)
+                .HasForeignKey(d => new { d.JobId, d.ItemId })
+                .HasConstraintName("FK_tucJobItemTypes_JobItem");
+        });
+
+        modelBuilder.Entity<TucJobItemTypesArchive>(entity =>
+        {
+            entity.HasKey(e => e.JobItemTypeId);
+
+            entity.ToTable("tucJobItemTypesArchive");
+
+            entity.Property(e => e.ItemId).HasColumnName("ItemID");
+            entity.Property(e => e.JobId).HasColumnName("JobID");
+            entity.Property(e => e.Quantity).HasDefaultValue(1, "DF_tucJobItemTypesArchive_Quantity");
+
+            entity.HasOne(d => d.ItemType).WithMany(p => p.TucJobItemTypesArchives)
+                .HasForeignKey(d => d.ItemTypeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_tucJobItemTypesArchive_ItemType");
+
+            entity.HasOne(d => d.TucJobItemsArchive).WithMany(p => p.TucJobItemTypesArchives)
+                .HasForeignKey(d => new { d.JobId, d.ItemId })
+                .HasConstraintName("FK_tucJobItemTypesArchive_JobItem");
         });
 
         modelBuilder.Entity<TucJobItemsArchive>(entity =>

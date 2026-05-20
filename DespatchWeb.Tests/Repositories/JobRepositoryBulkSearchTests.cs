@@ -33,6 +33,7 @@ public class JobRepositoryBulkSearchTests : IDisposable
     private readonly Mock<ITaskRepository> _taskRepositoryMock = new();
     private readonly Mock<ITenantInfoService> _tenantInfoServiceMock = new();
     private readonly Mock<ISendToPartnerService> _sendToPartnerServiceMock = new();
+    private readonly Mock<IPartnerJobGate> _partnerJobGateMock = new();
 
     public JobRepositoryBulkSearchTests()
     {
@@ -69,7 +70,8 @@ public class JobRepositoryBulkSearchTests : IDisposable
         _pricingPermissionServiceMock.Object,
         _podReportServiceMock.Object,
         _splitJobServiceMock.Object,
-        _sendToPartnerServiceMock.Object);
+        _sendToPartnerServiceMock.Object,
+        _partnerJobGateMock.Object);
 
     [Fact]
     public async Task BulkSearch_WithBulkJobId_IgnoresOtherFilters()

@@ -58,10 +58,6 @@ jest.mock('../../dialogs/note-management-dialog/note-management-dialog-react.mod
     openNoteManagementDialog: jest.fn(),
 }));
 
-jest.mock('../../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn(() => false),
-}));
-
 jest.mock('../../../utils/dateUtils', () => ({
     getTimezoneAbbreviation: jest.fn(() => 'NZDT'),
 }));
@@ -536,19 +532,6 @@ describe('JobDetails', () => {
             renderJobDetails();
 
             expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();
-        });
-    });
-
-    describe('aiEnabled initialization', () => {
-        it('reads isAiEnabled once on mount via lazy useState', () => {
-            const {isAiEnabled} = require('../../../../functions/aiSettings');
-            (isAiEnabled as jest.Mock).mockReturnValue(true);
-
-            setupDefaultMocks();
-            renderJobDetails();
-
-            // isAiEnabled should be called exactly once (lazy init), not on every render
-            expect(isAiEnabled).toHaveBeenCalledTimes(1);
         });
     });
 
