@@ -123,6 +123,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tblBulkJobItemTypes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblBulkJobNotes]",
          "ObjectType": 0
       },
@@ -311,6 +315,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucItemTypes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJob]",
          "ObjectType": 0
       },
@@ -331,6 +339,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[tucJobBookingItemTypes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tucJobChangeRequest]",
          "ObjectType": 0
       },
@@ -344,6 +356,14 @@
       },
       {
          "Name": "[dbo].[tucJobItemsArchive]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItemTypes]",
+         "ObjectType": 0
+      },
+      {
+         "Name": "[dbo].[tucJobItemTypesArchive]",
          "ObjectType": 0
       },
       {

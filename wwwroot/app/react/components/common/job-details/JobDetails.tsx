@@ -52,7 +52,6 @@ import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeReques
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
 import {DaysOfWeekHelpers} from '../../../../enums/days-of-week.enum';
-import {isAiEnabled} from '../../../../functions/aiSettings';
 import {NoData} from '../no-data/NoData';
 
 const RecurringJobFields = lazy(() => import('./components/RecurringJobFields').then(m => ({default: m.RecurringJobFields})));
@@ -114,10 +113,6 @@ const rootStyles: Record<string, SxProps<Theme>> = {
         flexDirection: 'column',
         gap: 1,
         p: 1.5,
-    },
-    aiContainer: {
-        mx: 1.5,
-        mb: 1,
     },
     readStatusBar: {
         display: 'flex',
@@ -210,11 +205,6 @@ export function JobDetails({config}: JobDetailsProps) {
         [job?.daysOfWeek]
     );
 
-    // AI panel state
-    const [aiEnabled] = useState(() => isAiEnabled());
-    const [showAiPanel, setShowAiPanel] = useState(false);
-    const aiContainerRef = useRef<HTMLDivElement>(null);
-
     // Update mutations
     const {
         updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists,
@@ -289,18 +279,6 @@ export function JobDetails({config}: JobDetailsProps) {
         }
     }, [jobId, sortedRelatedJobs]);
 
-    // AI panel render effect
-    useEffect(() => {
-        if (showAiPanel && aiContainerRef.current && job?.id) {
-            window.ReactAiAssistant?.renderSummaryPanel(aiContainerRef.current, job.id);
-        }
-        return () => {
-            if (aiContainerRef.current) {
-                window.ReactAiAssistant?.unmountSummaryPanel(aiContainerRef.current);
-            }
-        };
-    }, [showAiPanel, job?.id]);
-
     const handleTabChange = useCallback((index: number) => {
         setSelectedTabIndex(index);
         const selectedJob = sortedRelatedJobs[index];
@@ -308,10 +286,6 @@ export function JobDetails({config}: JobDetailsProps) {
             onRelatedJobChange?.(selectedJob.id);
         }
     }, [sortedRelatedJobs, onRelatedJobChange]);
-
-    const handleToggleAiPanel = useCallback(() => {
-        setShowAiPanel(prev => !prev);
-    }, []);
 
     const handleResetFieldVisibility = useCallback(() => {
         resetToDefaults();
@@ -375,23 +349,15 @@ export function JobDetails({config}: JobDetailsProps) {
                     dense={isDense}
                     viewDensityLabel={viewDensityLabel}
                     isEditMode={isEditMode}
-                    aiEnabled={aiEnabled}
-                    showAiPanel={showAiPanel}
                     onToggleDensity={toggleDensity}
                     onToggleEditMode={toggleEditMode}
                     onResetFieldVisibility={handleResetFieldVisibility}
-                    onToggleAiPanel={handleToggleAiPanel}
                     onStatusClick={actions.handleStatusClick}
                     onPodReport={actions.handlePodReport}
                     onPodSpreadsheet={actions.handlePodSpreadsheet}
                     onSendPodEmail={actions.handleSendPodEmail}
                     onLockToggle={actions.handleLockToggle}
                 />
-
-                {/* AI Summary Panel Container */}
-                {aiEnabled && showAiPanel && (
-                    <Box ref={aiContainerRef} sx={rootStyles.aiContainer} />
-                )}
 
                 {/* Metrics Grid */}
                 <Box sx={rootStyles.metricsWrapper}>

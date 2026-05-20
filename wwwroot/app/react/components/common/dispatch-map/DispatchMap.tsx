@@ -5,7 +5,7 @@
  * Displays job markers and courier positions on HERE Maps.
  */
 
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import LinearProgress from '@mui/material/LinearProgress';
@@ -17,6 +17,7 @@ import {getDefaultMapCenter} from '../here-map/HereMap.types';
 import {JobMarkerManager} from './JobMarkerManager';
 import {DispatchCourierMarkerManager} from './DispatchCourierMarkerManager';
 import {MapControlButtons} from './MapControlButtons';
+import {MapZoomViewControls} from './MapZoomViewControls';
 import {getAvailableCourierLocations, getClearListEnvelope} from '../../../services/courierApi';
 import {queryKeys} from '../../../query/queryClient';
 import styles from './DispatchMap.module.css';
@@ -38,6 +39,8 @@ export function DispatchMap({
     const courierMarkerManagerRef = useRef<DispatchCourierMarkerManager | null>(null);
     const uiRef = useRef<any>(null);
     const mapInstanceRef = useRef<any>(null);
+    const [defaultLayers, setDefaultLayers] = useState<any>(null);
+    const [platformInstance, setPlatformInstance] = useState<any>(null);
 
     // Map preferences (auto zoom, couriers only, etc.)
     const {
@@ -50,8 +53,10 @@ export function DispatchMap({
 
     // Handle map ready
     const handleMapReady = useCallback(
-        (map: any, _platform: any, ui: any) => {
+        (map: any, platform: any, ui: any, layers: any) => {
             uiRef.current = ui;
+            setDefaultLayers(layers);
+            setPlatformInstance(platform);
 
             // Initialize managers with UI for tooltips
             jobMarkerManagerRef.current = new JobMarkerManager(map, ui, onMarkerClick);
@@ -230,13 +235,16 @@ export function DispatchMap({
                     <div ref={mapContainerRef} className={styles.mapContainer} />
                 </Box>
                 {isReady && (
-                    <MapControlButtons
-                        controlState={controlState}
-                        onToggleAutoZoom={toggleAutoZoom}
-                        onToggleCouriersOnly={toggleCouriersOnly}
-                        onToggleUrgentArmyOnly={toggleUrgentArmyOnly}
-                        onToggleCouriersLargeView={toggleCouriersLargeView}
-                    />
+                    <>
+                        <MapZoomViewControls map={map} platform={platformInstance} defaultLayers={defaultLayers}/>
+                        <MapControlButtons
+                            controlState={controlState}
+                            onToggleAutoZoom={toggleAutoZoom}
+                            onToggleCouriersOnly={toggleCouriersOnly}
+                            onToggleUrgentArmyOnly={toggleUrgentArmyOnly}
+                            onToggleCouriersLargeView={toggleCouriersLargeView}
+                        />
+                    </>
                 )}
             </Box>
         </Box>

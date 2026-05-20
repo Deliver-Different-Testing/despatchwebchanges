@@ -1,15 +1,13 @@
-﻿using System.Data;
-using Dapper;
-using DespatchWeb.Constants;
+﻿using DespatchWeb.Constants;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
-using DespatchWeb.Extensions;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Models.Response;
+using DespatchWeb.Services.JobApi;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -23,7 +21,8 @@ public partial class JobRepository(
     ITenantInfoService infoService,
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
-    ICreateJobService createJobService)
+    ICreateJobService createJobService,
+    IJobApiClient jobApiClient)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
@@ -479,10 +478,7 @@ public partial class JobRepository(
     /// Sets a job as the first priority job for a courier.
     /// </summary>
     public async Task SetFirstJobAsync(int jobId, int courierId) =>
-        await Context.GetDapperConnection().ExecuteAsync(
-            "[dbo].[DES_stpJob_AutoDespatchSelectedJobs_FSCourierID]",
-            new { JobID = jobId, CourierID = courierId },
-            commandType: CommandType.StoredProcedure);
+        await Context.Procedures.DES_stpJob_AutoDespatchSelectedJobs_FSCourierIDAsync(jobId, courierId);
 
     /// <summary>
     /// Updates POD (proof of delivery) details including name, time, and status for a job and its related jobs.
@@ -720,13 +716,9 @@ public partial class JobRepository(
         if (jobIds == null || jobIds.Count == 0)
             return;
 
-        var connection = Context.GetDapperConnection();
         foreach (var jobId in jobIds)
         {
-            await connection.ExecuteAsync(
-                "[dbo].[DES_stpJob_SplitJobRestore]",
-                new { JobID = jobId },
-                commandType: CommandType.StoredProcedure);
+            await Context.Procedures.DES_stpJob_SplitJobRestoreAsync(jobId);
         }
     }
 
@@ -1472,49 +1464,7 @@ public partial class JobRepository(
     {
         try
         {
-            var now = _clock.TenantNow;
-            var staffInfo = await _infoService.GetStaffInfoAsync();
-
-            // Generate request number
-            var jobNumber = await GenerateJobNumberAsync(staffInfo.Id, request.SpeedId);
-            var speed = await GetSpeedSuggestionBySpeedIdAsync(request.SpeedId);
-
-            var jobInput = new CreateMinimalTucJobInputModel
-            {
-                JobNumber = jobNumber,
-                FromAddress = request.PickUpAddress,
-                ToAddress = request.DeliveryAddress,
-                BookedBy = staffInfo.Text,
-                ClientId = request.ClientId,
-                AgentCourierId = null,
-                Speed = speed.Text,
-                SpeedId = speed.Id,
-                Amount = request.Charge,
-                Reference = request.RefA,
-                ReferenceB = request.RefB,
-                Notes = request.JobNotes,
-                TenantCurrentTime = now,
-                LoggedInContactId = staffInfo.Id,
-
-                // Additional properties specific to QuickAdd
-                FromContactName = request.FromContactName,
-                ToContactName = request.DeliverToContact,
-                PickupNotes = request.PickupNotes,
-                DeliveryNotes = request.DeliveryNotes,
-                PickUpLatitude = request.PickUpAddress?.Latitude,
-                PickUpLongitude = request.PickUpAddress?.Longitude,
-                DeliveryLatitude = request.DeliveryAddress?.Latitude,
-                DeliveryLongitude = request.DeliveryAddress?.Longitude,
-                Pickup = request.Date.DateTime,
-
-                // Set other properties as needed
-                Hold = false
-            };
-
-            // Call the reusable function
-            var result = await CreateMinimalTucJobAsync(jobInput);
-            if (!result.Success) throw new Exception($"Failed to create quick add job: {result.Message}");
-            return result.JobId ?? throw new Exception("Failed to get job id from quick add job");
+            return await jobApiClient.QuickCreateAsync(request);
         }
         catch (Exception e)
         {
@@ -3212,14 +3162,9 @@ public partial class JobRepository(
     /// </summary>
     public async Task<int> MaxAutoLatePickupAlertAsync()
     {
-        var connection = Context.GetDapperConnection();
-        var parameters = new DynamicParameters();
-        parameters.Add("@MaxAutoLatePickupAlert", dbType: DbType.Int32, direction: ParameterDirection.Output);
-        await connection.ExecuteAsync(
-            "[dbo].[GEN_qdfSetting_GetMaxAutoLatePickupAlert]",
-            parameters,
-            commandType: CommandType.StoredProcedure);
-        return parameters.Get<int?>("@MaxAutoLatePickupAlert") ?? 0;
+        var output = new OutputParameter<int?>();
+        await Context.Procedures.GEN_qdfSetting_GetMaxAutoLatePickupAlertAsync(output);
+        return output.Value ?? 0;
     }
 
     /// <summary>
@@ -3227,14 +3172,9 @@ public partial class JobRepository(
     /// </summary>
     public async Task<int> MaxAutoLateDeliveryAlertAsync()
     {
-        var connection = Context.GetDapperConnection();
-        var parameters = new DynamicParameters();
-        parameters.Add("@MaxAutoLateDeliveryAlert", dbType: DbType.Int32, direction: ParameterDirection.Output);
-        await connection.ExecuteAsync(
-            "[dbo].[GEN_qdfSetting_GetMaxAutoLateDeliveryAlert]",
-            parameters,
-            commandType: CommandType.StoredProcedure);
-        return parameters.Get<int?>("@MaxAutoLateDeliveryAlert") ?? 0;
+        var output = new OutputParameter<int?>();
+        await Context.Procedures.GEN_qdfSetting_GetMaxAutoLateDeliveryAlertAsync(output);
+        return output.Value ?? 0;
     }
 
     /// <summary>
@@ -3773,38 +3713,52 @@ public partial class JobRepository(
 
     public async Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId)
     {
-        var conn = Context.GetDapperConnection();
-
         if (bulkJobId.HasValue)
         {
-            var results = await conn.QueryAsync<JobItemTypeDto>(
-                @"SELECT jit.ItemId, it.Name, jit.Quantity
-                  FROM tblBulkJobItemTypes jit
-                  JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
-                  WHERE jit.JobId = @Id",
-                new { Id = bulkJobId.Value });
-            return results.ToList();
+            var id = bulkJobId.Value;
+            return await Context.TblBulkJobItemTypes
+                .Where(jit => jit.JobId == id)
+                .Select(jit => new JobItemTypeDto
+                {
+                    ItemId = jit.ItemId,
+                    Name = jit.ItemType.Name,
+                    Quantity = jit.Quantity
+                })
+                .ToListAsync();
         }
 
         if (!jobId.HasValue) return [];
 
-        var rows = await conn.QueryAsync<JobItemTypeDto>(
-            @"SELECT jit.ItemId, it.Name, jit.Quantity
-              FROM tucJobItemTypes jit
-              JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
-              WHERE jit.JobId = @Id
-              UNION ALL
-              SELECT jit.ItemId, it.Name, jit.Quantity
-              FROM tucJobItemTypesArchive jit
-              JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
-              WHERE jit.JobId = @Id
-              UNION ALL
-              SELECT jit.ItemId, it.Name, jit.Quantity
-              FROM tucJobBookingItemTypes jit
-              JOIN tucItemTypes it ON it.ItemTypeId = jit.ItemTypeId
-              WHERE jit.BookingId = @Id",
-            new { Id = jobId.Value });
-        return rows.ToList();
+        var jid = jobId.Value;
+
+        var active = Context.TucJobItemTypes
+            .Where(jit => jit.JobId == jid)
+            .Select(jit => new JobItemTypeDto
+            {
+                ItemId = jit.ItemId,
+                Name = jit.ItemType.Name,
+                Quantity = jit.Quantity
+            });
+
+        var archive = Context.TucJobItemTypesArchives
+            .Where(jit => jit.JobId == jid)
+            .Select(jit => new JobItemTypeDto
+            {
+                ItemId = jit.ItemId,
+                Name = jit.ItemType.Name,
+                Quantity = jit.Quantity
+            });
+
+        var booking = Context.TucJobBookingItemTypes
+            .Where(jit => jit.BookingId == jid)
+            .Select(jit => new JobItemTypeDto
+            {
+                ItemId = jit.ItemId,
+                Name = jit.ItemType.Name,
+                Quantity = jit.Quantity
+            });
+
+        return await active.Concat(archive).Concat(booking).ToListAsync();
     }
 
     /// <summary>

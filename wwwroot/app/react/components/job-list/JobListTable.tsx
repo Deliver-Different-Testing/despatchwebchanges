@@ -45,6 +45,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import LinkIcon from '@mui/icons-material/Link';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 
 import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
@@ -370,6 +371,9 @@ function getPriorityIndicator(job: DispatchJob): React.ReactNode {
     }
     if (isMultiPartJob(job)) {
         return <Tooltip title="Multi-Part"><AccountTreeIcon fontSize="small" sx={{color: 'text.secondary'}}/></Tooltip>;
+    }
+    if (job.isPartnerJob) {
+        return <Tooltip title="Partner Job"><HandshakeIcon fontSize="small" sx={{color: 'primary.main'}}/></Tooltip>;
     }
     if (isLateForPickup(job)) {
         return <Tooltip title="Late Pickup"><ScheduleIcon fontSize="small" sx={{color: 'error.main'}}/></Tooltip>;

@@ -282,7 +282,7 @@ export interface MountJobListConfig {
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
-    /** Called when the "Today only" date filter toggle changes (current work list) */
+    /** Called once on mount with the current-work date filter mode (always today-only). */
     onDateFilterModeChange?: (todayOnly: boolean) => void;
 }
 
@@ -309,7 +309,7 @@ export interface JobListPanelProps {
     fetchConfig?: FetchConfig;
     /** Hide the "Logged-in only" toggle in the toolbar */
     hideLoggedInSwitch?: boolean;
-    /** Called when the "Today only" date filter toggle changes (current work list) */
+    /** Called once on mount with the current-work date filter mode (always today-only). */
     onDateFilterModeChange?: (todayOnly: boolean) => void;
     /** Called by mount module to allow pushing jobs from AngularJS (legacy, used when no fetchConfig) */
     setJobsCallback?: (cb: (jobs: DispatchJob[], totalCount: number) => void) => void;

@@ -5,7 +5,7 @@ namespace DespatchWeb.Models.Dto;
 /// <summary>
 /// Result model for REP_qryPerformance_Summary_PerformanceSpend stored procedure
 /// All properties are strings to handle varying database types flexibly
-/// Using Column attribute for Dapper to map column names with spaces
+/// Using Column attribute to map column names with spaces
 /// </summary>
 public sealed class PerformanceSpendReportModel
 {

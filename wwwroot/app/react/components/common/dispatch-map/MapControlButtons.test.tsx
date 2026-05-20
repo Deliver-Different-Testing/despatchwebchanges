@@ -211,8 +211,7 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            // When enabled, should show fit_screen icon
-            expect(screen.getByText('fit_screen')).toBeInTheDocument();
+            expect(screen.getByTestId('FitScreenIcon')).toBeInTheDocument();
 
             rerender(
                 <ThemeProvider theme={theme}>
@@ -224,8 +223,7 @@ describe('MapControlButtons Component', () => {
                 </ThemeProvider>
             );
 
-            // When disabled, should show zoom_out_map icon
-            expect(screen.getByText('zoom_out_map')).toBeInTheDocument();
+            expect(screen.getByTestId('ZoomOutMapIcon')).toBeInTheDocument();
         });
 
         it('displays correct icon for couriers only based on state', () => {
@@ -237,7 +235,7 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByText('local_shipping')).toBeInTheDocument();
+            expect(screen.getByTestId('LocalShippingIcon')).toBeInTheDocument();
 
             rerender(
                 <ThemeProvider theme={theme}>
@@ -249,7 +247,7 @@ describe('MapControlButtons Component', () => {
                 </ThemeProvider>
             );
 
-            expect(screen.getByText('map')).toBeInTheDocument();
+            expect(screen.getByTestId('MapIcon')).toBeInTheDocument();
         });
 
         it('displays correct icon for urgent army based on state', () => {
@@ -261,7 +259,7 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByText('emergency')).toBeInTheDocument();
+            expect(screen.getByTestId('EmergencyIcon')).toBeInTheDocument();
 
             rerender(
                 <ThemeProvider theme={theme}>
@@ -273,7 +271,7 @@ describe('MapControlButtons Component', () => {
                 </ThemeProvider>
             );
 
-            expect(screen.getByText('visibility_off')).toBeInTheDocument();
+            expect(screen.getByTestId('VisibilityOffIcon')).toBeInTheDocument();
         });
 
         it('displays correct icon for large view based on state', () => {
@@ -285,7 +283,7 @@ describe('MapControlButtons Component', () => {
                 />
             );
 
-            expect(screen.getByText('fullscreen')).toBeInTheDocument();
+            expect(screen.getByTestId('FullscreenIcon')).toBeInTheDocument();
 
             rerender(
                 <ThemeProvider theme={theme}>
@@ -297,7 +295,7 @@ describe('MapControlButtons Component', () => {
                 </ThemeProvider>
             );
 
-            expect(screen.getByText('fullscreen_exit')).toBeInTheDocument();
+            expect(screen.getByTestId('FullscreenExitIcon')).toBeInTheDocument();
         });
     });
 });

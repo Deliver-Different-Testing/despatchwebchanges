@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Repositories;
+using DespatchWeb.Services.JobApi;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 
@@ -43,7 +44,8 @@ public class JobRepositoryInterfaceTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object
+        _createJobServiceMock.Object,
+        Mock.Of<IJobApiClient>()
     );
 
     [Fact]

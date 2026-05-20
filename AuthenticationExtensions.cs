@@ -13,7 +13,7 @@ public static class AuthenticationExtensions
 {
     private const int MinimumKeyLengthBytes = 32; // 256 bits minimum for HMAC-SHA256
 
-    public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone, int? clientId = null)
+    public static JwtSecurityToken CreateApiToken(string name, int tenantId, string connection, string timeZone, int? clientId = null, int? contactId = null)
     {
         try
         {
@@ -41,6 +41,10 @@ public static class AuthenticationExtensions
                 sensitiveClaims["ClientId"] = clientId.Value.ToString();
                 sensitiveClaims["SubAccounts"] = string.Empty;
             }
+
+            // BookPickupAsync / BookTopupAsync parse ContactId as a required int. Default
+            // to 0 when the caller doesn't supply one so JWTs aren't unusable for those flows.
+            sensitiveClaims["ContactId"] = (contactId ?? 0).ToString();
 
             var sensitiveClaimsJson = JsonSerializer.Serialize(sensitiveClaims);
             var encryptedClaims = EncryptClaims(sensitiveClaimsJson, Environment.GetEnvironmentVariable("ClaimsKey"));

@@ -274,8 +274,15 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     public async Task ApproveAsync_applies_field_change_and_closes_event()
     {
         await SeedJobAsync();
-        await SeedPairingAsync();
+        var pairingId = await SeedPairingAsync();
         await SeedEventTypesAsync();
+
+        // Quantity carries RequiresCommercialRefresh=true; ApproveAsync now fetches the
+        // rate-card first and aborts if it returns no rate. Stub a successful response so
+        // the approval reaches the apply step.
+        _sendToPartner.GetRateForJobAsync(pairingId, 1)
+            .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 150m });
+
         var service = CreateService();
 
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -289,7 +296,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         var approved = await service.ApproveAsync(pending.Request!.Id,
             new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
 
-        Assert.True(approved.Success);
+        Assert.True(approved.Success, approved.Message);
         Assert.Equal("Applied", approved.Request!.Status);
 
         await using var ctx = CreateContext();
@@ -525,8 +532,14 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // silently overwritten. Now EF carries the supplied rowversion as OriginalValues
         // and the DB enforces the check at UPDATE time.
         await SeedJobAsync();
-        await SeedPairingAsync();
+        var pairingId = await SeedPairingAsync();
         await SeedEventTypesAsync();
+
+        // Approval now fetches the rate-card BEFORE the concurrency check; without a stub
+        // it would bail out with "Could not re-rate" and never reach the rowversion path.
+        _sendToPartner.GetRateForJobAsync(pairingId, 1)
+            .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 150m });
+
         var service = CreateService();
 
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -712,35 +725,9 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             pairingId, pending.Request.SourceRequestUuid, 137.50m, Arg.Any<CancellationToken>());
     }
 
-    [Fact]
-    public async Task ApproveAsync_skips_commercial_refresh_when_rate_endpoint_returns_no_rate()
-    {
-        // If the IM rate-for-job endpoint can't price the job (Source="none"), keep the
-        // old PartnerAgreedRate in place rather than nulling it out. The decision still
-        // applies; only the price stays stable.
-        await SeedJobAsync(initialAgreedRate: 100m);
-        await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
-        // _sendToPartner default stub already returns Source="none" / RateCardRate=null.
-
-        var service = CreateService();
-        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
-        {
-            JobId = 1,
-            FieldName = nameof(JobChangeField.Quantity),
-            RequestedValue = "9"
-        }, CancellationToken.None);
-
-        var approved = await service.ApproveAsync(pending.Request!.Id,
-            new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id }, CancellationToken.None);
-
-        Assert.True(approved.Success);
-        Assert.Null(approved.Request!.NewCommercialAmount);
-
-        await using var ctx = CreateContext();
-        Assert.Equal(100m, ctx.TucJobs.Single(j => j.UcjbId == 1).PartnerAgreedRate);
-    }
+    // Supplanted by ApproveAsync_blocks_when_commercial_refresh_returns_no_rate: the
+    // service no longer silently skips refresh failures, it fails the approval with a
+    // clear message so the user can retry. See that test for the new contract.
 
     [Fact]
     public async Task ApproveAsync_does_not_call_rate_for_job_when_field_is_partner_agreed_rate()
@@ -949,6 +936,110 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         return ctx.IntMgrPartnerPairings.Single().Id;
     }
 
+    [Fact]
+    public async Task ApproveAsync_blocks_when_commercial_refresh_returns_no_rate()
+    {
+        // GIVEN a pending Manual change that requires commercial refresh
+        await SeedJobAsync(initialQty: 3, initialAgreedRate: 100m);
+        var pairingId = await SeedPairingAsync();
+        await SeedEventTypesAsync();
+        var service = CreateService();
+
+        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "5"
+        }, CancellationToken.None);
+        Assert.True(pending.Success);
+
+        // AND the rate-card lookup returns "no rate"
+        _sendToPartner.GetRateForJobAsync(pairingId, 1)
+            .Returns(new PartnerRateForJobResponse { Source = "none" });
+
+        // WHEN we try to approve
+        var result = await service.ApproveAsync(pending.Request!.Id,
+            new ApproveJobChangeRequestRequest { RequestId = pending.Request.Id },
+            CancellationToken.None);
+
+        // THEN approval fails AND the job stays unchanged AND the row stays Pending
+        Assert.False(result.Success);
+        Assert.Contains("re-rate", result.Message, StringComparison.OrdinalIgnoreCase);
+
+        await using var ctx = CreateContext();
+        var row = ctx.TucJobChangeRequests.Single(r => r.UjcrId == pending.Request.Id);
+        Assert.Equal(JobChangeRequestStatus.Pending, row.UjcrStatus);
+        var job = ctx.TucJobs.Single(j => j.UcjbId == 1);
+        Assert.Equal((short)3, job.UcjbQty); // Quantity not applied
+        Assert.Equal(100m, job.PartnerAgreedRate);
+    }
+
+    [Fact]
+    public async Task CancelAsync_writes_partner_change_cancelled_event_type()
+    {
+        await SeedJobAsync();
+        await SeedPairingAsync();
+        await SeedEventTypesAsync();
+        var service = CreateService();
+
+        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "7"
+        }, CancellationToken.None);
+        Assert.True(pending.Success);
+
+        var result = await service.CancelAsync(pending.Request!.Id,
+            new CancelJobChangeRequestRequest { RequestId = pending.Request.Id, Reason = "changed mind" },
+            CancellationToken.None);
+        Assert.True(result.Success);
+
+        await using var ctx = CreateContext();
+        var cancelledTypeId = ctx.TucEventTypes
+            .Where(t => t.UcetName == "Partner Change Cancelled")
+            .Select(t => (int?)t.UcetId)
+            .Single();
+        var ev = ctx.TucEvents.Single(e => e.UcevId == pending.Request.TucEventId);
+        Assert.Equal(cancelledTypeId, ev.UcevType);
+        Assert.True(ev.UcevClosed);
+    }
+
+    [Fact]
+    public async Task RecordPeerCreateAsync_rejects_duplicate_pending_for_same_field()
+    {
+        await SeedJobAsync();
+        var partnerJobGuid = (await GetPartnerJobGuidAsync(1))!.Value;
+        await SeedPairingAsync();
+        await SeedEventTypesAsync();
+        var service = CreateService();
+
+        // First peer-inbound: lands cleanly.
+        var first = await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
+        {
+            PartnerJobGuid = partnerJobGuid,
+            SourceRequestUuid = Guid.NewGuid(),
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "5",
+            ApprovalMode = "Manual"
+        }, CancellationToken.None);
+        Assert.True(first.Success);
+
+        // Second peer-inbound for the same field with a different SourceRequestUuid:
+        // should be refused, NOT silently queued alongside the first.
+        var second = await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
+        {
+            PartnerJobGuid = partnerJobGuid,
+            SourceRequestUuid = Guid.NewGuid(),
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "9",
+            ApprovalMode = "Manual"
+        }, CancellationToken.None);
+
+        Assert.False(second.Success);
+        Assert.Contains("already exists", second.Message);
+    }
+
     private async Task SeedJobAsync(short initialQty = 3, decimal? initialAgreedRate = null,
         bool unsetPartnerJobGuid = false, string? initialNotes = "original notes")
     {
@@ -990,7 +1081,8 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         foreach (var name in new[]
                  {
                      "Partner Change Request", "Partner Change Approved",
-                     "Partner Change Rejected", "Partner Change Applied"
+                     "Partner Change Rejected", "Partner Change Applied",
+                     "Partner Change Cancelled"
                  })
             ctx.TucEventTypes.Add(new TucEventType { UcetGroup = "PT", UcetName = name });
         await ctx.SaveChangesAsync();

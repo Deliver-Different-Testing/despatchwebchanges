@@ -35,7 +35,11 @@ public partial class IntMgrPartnerPairing
 
     public int? HubLinkRequestId { get; set; }
 
+    public int? CourierId { get; set; }
+
     public virtual TucClient Client { get; set; }
+
+    public virtual TucCourier Courier { get; set; }
 
     public virtual ICollection<TucJobChangeRequest> TucJobChangeRequests { get; set; } = new List<TucJobChangeRequest>();
 }

@@ -43,7 +43,8 @@ public class JobRepositoryUpdateAddressTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object
+        _createJobServiceMock.Object,
+        Mock.Of<IJobApiClient>()
     );
 
     private static AddressViewModel BuildAddress(string country) => new(

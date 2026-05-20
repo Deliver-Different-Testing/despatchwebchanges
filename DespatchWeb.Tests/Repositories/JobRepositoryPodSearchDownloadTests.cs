@@ -40,7 +40,8 @@ public class JobRepositoryPodSearchDownloadTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object
+        _createJobServiceMock.Object,
+        Mock.Of<IJobApiClient>()
     );
 
     private DespatchContext CreateContext() => _db.CreateContext();

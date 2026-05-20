@@ -21,12 +21,9 @@ function createDefaultProps(overrides?: Record<string, any>) {
         job: createMockJob(),
         viewDensityLabel: 'Normal',
         isEditMode: false,
-        aiEnabled: false,
-        showAiPanel: false,
         onToggleDensity: jest.fn(),
         onToggleEditMode: jest.fn(),
         onResetFieldVisibility: jest.fn(),
-        onToggleAiPanel: jest.fn(),
         onStatusClick: jest.fn(),
         onPodReport: jest.fn(),
         onPodSpreadsheet: jest.fn(),
@@ -100,13 +97,10 @@ describe('JobDetailHeader', () => {
         expect(onResetFieldVisibility).toHaveBeenCalledTimes(1);
     });
 
-    it('shows/hides AI toggle based on aiEnabled', () => {
-        const {unmount} = renderWithTheme(<JobDetailHeader {...createDefaultProps({aiEnabled: true})} />);
-        expect(screen.getByLabelText('AI Summary')).toBeInTheDocument();
-        unmount();
-
-        renderWithTheme(<JobDetailHeader {...createDefaultProps({aiEnabled: false})} />);
+    it('never renders the AI Summary toggle (feature disabled)', () => {
+        renderWithTheme(<JobDetailHeader {...createDefaultProps()} />);
         expect(screen.queryByLabelText('AI Summary')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Hide AI Summary')).not.toBeInTheDocument();
     });
 
     it('shows/hides POD report menu based on job done status', () => {
