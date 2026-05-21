@@ -263,6 +263,8 @@ public static partial class JobMappings
                 Latitude = j.DeliveryLatitude,
                 Longitude = j.DeliveryLongitude
             },
-            CustomJobName = j.CustomJobName
+            CustomJobName = j.CustomJobName,
+            RouteId = j.RouteId,
+            RouteName = j.Route != null ? j.Route.Name : null
         };
 }

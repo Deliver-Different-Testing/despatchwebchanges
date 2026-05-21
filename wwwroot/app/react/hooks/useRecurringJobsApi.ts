@@ -8,7 +8,7 @@
 import {useQuery, keepPreviousData} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {recurringJobsApi} from '../services/recurringJobsApi';
-import {PaginatedRecurringJobsResponse, RecurringJobQuery, SpeedOption} from '../interfaces';
+import {PaginatedRecurringJobsResponse, RecurringJobQuery, RouteOption, SpeedOption} from '../interfaces';
 
 /**
  * Hook to load paginated recurring jobs list
@@ -60,6 +60,22 @@ export function useSpeedList(options?: { enabled?: boolean }) {
         queryFn: ({signal}) => recurringJobsApi.getSpeedList({signal}),
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes (speeds rarely change)
+        gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    });
+}
+
+/**
+ * Hook to load active Recurring Routes for the route filter dropdown.
+ *
+ * @param options - Additional options
+ * @returns Query result with route options, loading state, and error
+ */
+export function useRouteList(options?: { enabled?: boolean }) {
+    return useQuery<RouteOption[], Error>({
+        queryKey: queryKeys.recurringJobs.routes,
+        queryFn: ({signal}) => recurringJobsApi.getRouteList({signal}),
+        enabled: options?.enabled ?? true,
+        staleTime: 5 * 60 * 1000, // Cache for 5 minutes (routes rarely change)
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
     });
 }

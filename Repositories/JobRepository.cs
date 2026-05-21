@@ -3203,6 +3203,19 @@ public partial class JobRepository(
             .ToListAsync();
 
     /// <summary>
+    /// Retrieves all active Recurring Routes for the current tenant, ordered by name.
+    /// Used by the Recurring Jobs Dashboard route filter dropdown.
+    /// Inactive routes are intentionally excluded so dispatchers can't filter by
+    /// retired routes that won't return any jobs anyway.
+    /// </summary>
+    public async Task<IReadOnlyList<Suggestion>> GetActiveRoutesAsync() =>
+        await Context.Routes
+            .Where(r => r.Active)
+            .OrderBy(r => r.Name)
+            .Select(r => new Suggestion { Id = r.RouteId, Text = r.Name })
+            .ToListAsync();
+
+    /// <summary>
     /// Retrieves active contacts for a specific client.
     /// </summary>
     /// <param name="clientId">The client ID to get contacts for.</param>

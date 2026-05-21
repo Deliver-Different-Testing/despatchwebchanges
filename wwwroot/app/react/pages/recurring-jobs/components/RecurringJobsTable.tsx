@@ -49,6 +49,7 @@ const columns: RecurringJobColumn[] = [
     {key: 'client', label: 'Client', sortable: true},
     {key: 'from', label: 'From', sortable: true},
     {key: 'to', label: 'To', sortable: true},
+    {key: 'route', label: 'Route', sortable: false, width: '140px'},
     {key: 'nextDueTime', label: 'Next Due', sortable: true, sortKey: 'nextDueTime', width: '110px'},
     {key: 'courier', label: 'Courier', sortable: true, width: '100px'},
     {key: 'actions', label: '', sortable: false, width: '60px', align: 'center'},
@@ -197,6 +198,14 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                                 {getAddressSecondary(job.deliveryAddress, isUsCustomer)}
                             </Typography>
                         </Box>
+                    </Tooltip>
+                );
+            case 'route':
+                return (
+                    <Tooltip title={job.routeName || ''} placement="top">
+                        <Typography variant="body2" noWrap sx={{maxWidth: 140}}>
+                            {job.routeName || '-'}
+                        </Typography>
                     </Tooltip>
                 );
             case 'nextDueTime':

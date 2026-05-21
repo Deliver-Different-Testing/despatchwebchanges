@@ -10,6 +10,7 @@ import {
     PaginatedRecurringJobsResponse,
     PaginatedRecurringJobsResponseDto,
     RecurringJobQuery,
+    RouteOption,
     SpeedOption,
     transformPaginatedResponse,
 } from '../interfaces';
@@ -37,6 +38,15 @@ export const recurringJobsApi = {
      */
     getSpeedList: async (options?: RequestOptions): Promise<SpeedOption[]> => {
         return await apiClient.get<SpeedOption[]>('job/SpeedList', undefined, options);
+    },
+
+    /**
+     * Fetch list of active Recurring Routes for the route filter dropdown.
+     * @param options - Request options (signal, timeout)
+     * @returns Array of route options
+     */
+    getRouteList: async (options?: RequestOptions): Promise<RouteOption[]> => {
+        return await apiClient.get<RouteOption[]>('job/RouteList', undefined, options);
     },
 
     /**

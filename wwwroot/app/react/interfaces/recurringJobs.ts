@@ -24,6 +24,7 @@ export interface RecurringJobQuery {
     time?: string;
     courierId?: number;
     daysOfWeek?: number;
+    routeId?: number;
 }
 
 /**
@@ -50,6 +51,15 @@ export interface SpeedOption {
 }
 
 /**
+ * Recurring Route option for filter dropdown.
+ * Same shape as SpeedOption — driven by Suggestion DTO on the backend.
+ */
+export interface RouteOption {
+    id: number;
+    text: string;
+}
+
+/**
  * Recurring job list item model (transformed from DTO)
  */
 export interface PrebookListModel {
@@ -64,6 +74,8 @@ export interface PrebookListModel {
     customJobName?: string;
     pickupAddress: AddressViewModel;
     deliveryAddress: AddressViewModel;
+    routeId?: number | null;
+    routeName?: string | null;
 }
 
 /**
@@ -81,6 +93,8 @@ export interface PrebookListModelDto {
     customJobName?: string;
     pickupAddress: AddressViewModel;
     deliveryAddress: AddressViewModel;
+    routeId?: number | null;
+    routeName?: string | null;
 }
 
 /**

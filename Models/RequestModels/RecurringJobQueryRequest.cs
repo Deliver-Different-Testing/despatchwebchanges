@@ -13,4 +13,5 @@ public sealed class RecurringJobQueryRequest
     public int? SpeedId { get; init; }
     public int? CourierId { get; init; }
     public int? DaysOfWeek { get; init; }
+    public int? RouteId { get; init; }
 }

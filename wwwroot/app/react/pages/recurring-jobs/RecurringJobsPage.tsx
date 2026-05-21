@@ -230,6 +230,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                             time: query.time,
                             courierId: query.courierId,
                             daysOfWeek: query.daysOfWeek,
+                            routeId: query.routeId,
                         }}
                         onSearchChange={handleSearchChange}
                         onActiveFilterChange={handleActiveFilterChange}

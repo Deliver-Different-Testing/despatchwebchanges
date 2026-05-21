@@ -703,6 +703,10 @@ public class RecurringJobRepository(
         if (request.DaysOfWeek is > 0)
             query = query.Where(j => (j.UcbkDaysInt & request.DaysOfWeek.Value) != 0);
 
+        // Apply Recurring Route filter
+        if (request.RouteId.HasValue)
+            query = query.Where(j => j.RouteId == request.RouteId.Value);
+
         return query;
     }
 

@@ -13,4 +13,6 @@ public sealed class PrebookListViewModel
     public string Speed { get; init; }
     public AddressViewModel PickupAddress { get; init; }
     public AddressViewModel DeliveryAddress { get; init; }
+    public int? RouteId { get; init; }
+    public string RouteName { get; init; }
 }
