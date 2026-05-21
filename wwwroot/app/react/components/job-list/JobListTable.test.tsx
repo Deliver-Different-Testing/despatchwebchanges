@@ -248,6 +248,16 @@ describe('JobListTable', () => {
             expect(screen.getByText('John Smith')).toBeInTheDocument();
             expect(screen.getByText('JS01')).toBeInTheDocument();
         });
+
+        it('renders the DFRNT partner name when the job was sent to a partner', () => {
+            const job = createMockDispatchJob({
+                id: 4, jobNo: 'J004',
+                sentToPartnerName: 'Acme Couriers',
+            });
+            renderWithTheme(<JobListTable {...createDefaultProps({jobs: [job]})}/>);
+
+            expect(screen.getByText('Acme Couriers')).toBeInTheDocument();
+        });
     });
 
     // ── CourierCell Assign Button ────────────────────────────────────

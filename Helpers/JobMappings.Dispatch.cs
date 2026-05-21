@@ -135,6 +135,10 @@ public static partial class JobMappings
                     : null,
             IsAgentAssigned = j.Agent != null,
 
+            SentToPartnerName = j.JobPartnerDispatch != null && j.JobPartnerDispatch.PartnerPairing != null
+                ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
+                : null,
+
             Locked = j.UcjbLocked ?? false,
             IsPartnerJob = j.PartnerJobGuid.HasValue,
 

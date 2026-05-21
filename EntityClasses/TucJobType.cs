@@ -83,6 +83,8 @@ public partial class TucJobType
 
     public bool ShowPhotosWhenChild { get; set; }
 
+    public bool AutoDispatchEnabled { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 
     public virtual TucJobTypeGrouping Grouping { get; set; }

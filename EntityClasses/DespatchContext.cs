@@ -53,6 +53,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<JobDeliveryJourneyArchive> JobDeliveryJourneyArchives { get; set; }
 
+    public virtual DbSet<JobPartnerDispatch> JobPartnerDispatches { get; set; }
+
     public virtual DbSet<JobRecoveryAgent> JobRecoveryAgents { get; set; }
 
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
@@ -1010,10 +1012,6 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Client).WithMany(p => p.IntMgrPartnerPairings)
                 .HasForeignKey(d => d.ClientId)
                 .HasConstraintName("FK_IntMgrPartnerPairing_tucClient");
-
-            entity.HasOne(d => d.Courier).WithMany(p => p.IntMgrPartnerPairings)
-                .HasForeignKey(d => d.CourierId)
-                .HasConstraintName("FK__IntMgrPar__Couri__434D9A00");
         });
 
         modelBuilder.Entity<JobAccessorialCharge>(entity =>
@@ -1187,6 +1185,25 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.UpdatedByType)
                 .IsRequired()
                 .HasMaxLength(20);
+        });
+
+        modelBuilder.Entity<JobPartnerDispatch>(entity =>
+        {
+            entity.HasKey(e => e.JobId).HasName("PK__JobPartn__056690C285B97BCF");
+
+            entity.ToTable("JobPartnerDispatch");
+
+            entity.Property(e => e.JobId).ValueGeneratedNever();
+
+            entity.HasOne(d => d.Job).WithOne(p => p.JobPartnerDispatch)
+                .HasForeignKey<JobPartnerDispatch>(d => d.JobId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__JobPartne__JobId__5D0D6C03");
+
+            entity.HasOne(d => d.PartnerPairing).WithMany(p => p.JobPartnerDispatches)
+                .HasForeignKey(d => d.PartnerPairingId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__JobPartne__Partn__5E01903C");
         });
 
         modelBuilder.Entity<JobRecoveryAgent>(entity =>
@@ -6502,6 +6519,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
 
             entity.HasIndex(e => e.NpAgentId, "IX_tucJobBooking_NpAgentId");
+
+            entity.HasIndex(e => e.RouteId, "IX_tucJobBooking_RouteId");
 
             entity.HasIndex(e => e.ToAirportId, "IX_tucJobBooking_ToAirportID");
 

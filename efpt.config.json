@@ -87,6 +87,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[JobPartnerDispatch]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[JobRecoveryAgents]",
          "ObjectType": 0
       },

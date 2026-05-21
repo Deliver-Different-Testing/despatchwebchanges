@@ -113,17 +113,21 @@ public sealed class JobChangeRequestService(
             UcevDescription = $"Partner change: {field}"
         };
 
-        await using var tx = await ctx.Database.BeginTransactionAsync(ct);
-        await ctx.TucEvents.AddAsync(tucEvent, ct);
-        await ctx.SaveChangesAsync(ct);
-        row.UjcrTucEventId = tucEvent.UcevId;
-        await ctx.TucJobChangeRequests.AddAsync(row, ct);
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await ctx.Database.BeginTransactionAsync(ct);
+            await ctx.TucEvents.AddAsync(tucEvent, ct);
+            await ctx.SaveChangesAsync(ct);
+            row.UjcrTucEventId = tucEvent.UcevId;
+            await ctx.TucJobChangeRequests.AddAsync(row, ct);
 
-        if (decision.Mode == JobChangeApprovalMode.Auto)
-            await ApplyFieldChangeAsync(ctx, request.JobId, field, request.RequestedValue, ct);
+            if (decision.Mode == JobChangeApprovalMode.Auto)
+                await ApplyFieldChangeAsync(ctx, request.JobId, field, request.RequestedValue, ct);
 
-        await ctx.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+            await ctx.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        });
 
         // Forward to peer via IM. Best-effort: local row is already saved; a transient peer
         // failure surfaces in the response but doesn't roll back the local state.
@@ -216,30 +220,46 @@ public sealed class JobChangeRequestService(
             row.UjcrNewCommercialAmount = newRate;
         }
 
-        await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
-
-        // Commercial refresh: apply the rate we successfully fetched at the top of the
-        // method. The fetch can't fail here — we'd have already returned BadRequest.
-        if (needsRefresh)
+        var concurrencyConflict = false;
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            row.UjcrOldCommercialAmount = oldAmountForRefresh;
-            row.UjcrNewCommercialAmount = refreshedAmount;
-            await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId)
-                .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, refreshedAmount), ct);
-        }
+            await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
-        if (row.UjcrTucEventId is { } eventId)
-            await CloseEventAsync(ctx, eventId, "Partner Change Approved", ct);
+            await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
 
-        try
-        {
-            await ctx.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
+            // Commercial refresh: apply the rate we successfully fetched at the top of the
+            // method. The fetch can't fail here — we'd have already returned BadRequest.
+            if (needsRefresh)
+            {
+                row.UjcrOldCommercialAmount = oldAmountForRefresh;
+                row.UjcrNewCommercialAmount = refreshedAmount;
+                await ctx.TucJobs.Where(j => j.UcjbId == row.UjcrJobId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, refreshedAmount), ct);
+            }
+
+            if (row.UjcrTucEventId is { } eventId)
+                await CloseEventAsync(ctx, eventId, "Partner Change Approved", ct);
+
+            try
+            {
+                await ctx.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // Tx auto-rolls back on dispose; skip commit and surface the conflict
+                // outside the strategy. The execution strategy will not retry this — its
+                // ShouldRetryOn predicate only matches transient SqlException codes.
+                concurrencyConflict = true;
+                return;
+            }
+
+            await tx.CommitAsync(ct);
+        });
+
+        if (concurrencyConflict)
             return new JobChangeRequestResult
                 { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
-        }
 
         if (row.UjcrPairingId is not { } pairingId)
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
@@ -279,18 +299,31 @@ public sealed class JobChangeRequestService(
                 ? request.Reason
                 : $"{row.UjcrReason}\n--\n{request.Reason}";
 
-        if (row.UjcrTucEventId is { } eventId)
-            await CloseEventAsync(ctx, eventId, "Partner Change Rejected", ct);
+        var concurrencyConflict = false;
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
-        try
-        {
-            await ctx.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
-        {
+            if (row.UjcrTucEventId is { } eventId)
+                await CloseEventAsync(ctx, eventId, "Partner Change Rejected", ct);
+
+            try
+            {
+                await ctx.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                concurrencyConflict = true;
+                return;
+            }
+
+            await tx.CommitAsync(ct);
+        });
+
+        if (concurrencyConflict)
             return new JobChangeRequestResult
                 { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
-        }
 
         if (row.UjcrPairingId is not { } pairingId)
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
@@ -444,13 +477,17 @@ public sealed class JobChangeRequestService(
             UcevDescription = $"Partner change: {payload.FieldName}"
         };
 
-        await using var tx = await ctx.Database.BeginTransactionAsync(ct);
-        await ctx.TucEvents.AddAsync(tucEvent, ct);
-        await ctx.SaveChangesAsync(ct);
-        row.UjcrTucEventId = tucEvent.UcevId;
-        await ctx.TucJobChangeRequests.AddAsync(row, ct);
-        await ctx.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
+        {
+            await using var tx = await ctx.Database.BeginTransactionAsync(ct);
+            await ctx.TucEvents.AddAsync(tucEvent, ct);
+            await ctx.SaveChangesAsync(ct);
+            row.UjcrTucEventId = tucEvent.UcevId;
+            await ctx.TucJobChangeRequests.AddAsync(row, ct);
+            await ctx.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        });
 
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
@@ -515,30 +552,39 @@ public sealed class JobChangeRequestService(
 
         row.UjcrStatus = JobChangeRequestStatus.Applied;
         row.UjcrAppliedAtUtc = DateTime.UtcNow;
-        if (payload.NewCommercialAmount.HasValue)
+
+        var strategy = ctx.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            // Capture the current rate before ExecuteUpdateAsync overwrites it. One scoped
-            // query + one update — the prior version did the read after the write, so old
-            // and new always ended up identical on rate changes.
-            row.UjcrOldCommercialAmount = await ctx.TucJobs
-                .Where(j => j.UcjbId == row.UjcrJobId)
-                .Select(j => j.PartnerAgreedRate)
-                .FirstOrDefaultAsync(ct);
-            row.UjcrNewCommercialAmount = payload.NewCommercialAmount;
+            await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
-            await ctx.TucJobs
-                .Where(j => j.UcjbId == row.UjcrJobId)
-                .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, payload.NewCommercialAmount), ct);
-        }
+            if (payload.NewCommercialAmount.HasValue)
+            {
+                // Capture the current rate before ExecuteUpdateAsync overwrites it. One scoped
+                // query + one update — the prior version did the read after the write, so old
+                // and new always ended up identical on rate changes.
+                row.UjcrOldCommercialAmount = await ctx.TucJobs
+                    .Where(j => j.UcjbId == row.UjcrJobId)
+                    .Select(j => j.PartnerAgreedRate)
+                    .FirstOrDefaultAsync(ct);
+                row.UjcrNewCommercialAmount = payload.NewCommercialAmount;
 
-        if (Enum.TryParse<JobChangeField>(row.UjcrFieldName, out var field)
-            && field != JobChangeField.PartnerAgreedRate)
-            await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
+                await ctx.TucJobs
+                    .Where(j => j.UcjbId == row.UjcrJobId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, payload.NewCommercialAmount), ct);
+            }
 
-        if (row.UjcrTucEventId is { } eventId)
-            await CloseEventAsync(ctx, eventId, "Partner Change Applied", ct);
+            if (Enum.TryParse<JobChangeField>(row.UjcrFieldName, out var field)
+                && field != JobChangeField.PartnerAgreedRate)
+                await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
 
-        await ctx.SaveChangesAsync(ct);
+            if (row.UjcrTucEventId is { } eventId)
+                await CloseEventAsync(ctx, eventId, "Partner Change Applied", ct);
+
+            await ctx.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+        });
+
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
@@ -736,7 +782,7 @@ public sealed class JobChangeRequestService(
     private sealed record UpdateJobPackagesPayload(List<ParcelDimensions> Parcels, decimal? Weight);
 
     private static string? Truncate(string? value, int max) =>
-        value is null ? null : value[..Math.Min(value.Length, max)];
+        value?[..Math.Min(value.Length, max)];
 
     // ProgressNote / PodNote append to UcjbNotes with a labelled prefix rather than
     // replace it, so the existing dispatcher notes survive an auto-applied partner update.

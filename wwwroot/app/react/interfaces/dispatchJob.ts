@@ -165,6 +165,7 @@ export interface DispatchJob {
     relatedJobs?: DispatchJobSuggestion[];
     assignedFlight?: AssignedFlight;
     assignedAgent?: AssignedAgent;
+    sentToPartnerName?: string | null;
     conNote?: string;
     followupTime?: Dayjs;
     fromAirportId?: number;

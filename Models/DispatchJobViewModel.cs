@@ -91,6 +91,8 @@ public class DispatchJobViewModel
     public AgentViewModel AssignedAgent { get; set; }
     public bool IsAgentAssigned { get; set; }
 
+    public string SentToPartnerName { get; set; }
+
     // UI helper fields
     public List<Suggestion> RelatedJobs { get; set; }
     public List<DispatchJobViewModel> Children { get; set; }
