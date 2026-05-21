@@ -26,6 +26,7 @@ jest.mock('../../components/common/job-details/JobDetails', () => ({
 jest.mock('../../hooks/useRecurringJobsApi', () => ({
     useRecurringJobsList: jest.fn(),
     useSpeedList: jest.fn(),
+    useRouteList: jest.fn(),
 }));
 
 jest.mock('../../hooks/useCourierApi', () => ({
@@ -40,12 +41,13 @@ jest.mock('../../services/recurringJobsApi', () => ({
     },
 }));
 
-import {useRecurringJobsList, useSpeedList} from '../../hooks/useRecurringJobsApi';
+import {useRecurringJobsList, useRouteList, useSpeedList} from '../../hooks/useRecurringJobsApi';
 import {useCourierSearch} from '../../hooks/useCourierApi';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 
 const mockUseRecurringJobsList = useRecurringJobsList as jest.MockedFunction<typeof useRecurringJobsList>;
 const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
+const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
 
@@ -127,6 +129,12 @@ describe('RecurringJobsPage', () => {
                 {id: 1, text: 'Standard'},
                 {id: 2, text: 'Express'},
             ],
+            isLoading: false,
+            error: null,
+        } as any);
+
+        mockUseRouteList.mockReturnValue({
+            data: [],
             isLoading: false,
             error: null,
         } as any);

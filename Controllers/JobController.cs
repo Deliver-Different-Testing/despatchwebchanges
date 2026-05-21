@@ -1312,6 +1312,12 @@ public class JobController(
         return Json(data);
     }
 
+    public async Task<IActionResult> RouteList()
+    {
+        var data = await jobQueryRepository.GetActiveRoutesAsync();
+        return Json(data);
+    }
+
     public async Task<IActionResult> SearchSpeedOptions(string searchTerm)
     {
         try

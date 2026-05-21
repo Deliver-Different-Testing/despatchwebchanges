@@ -50,6 +50,7 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<Suggestion>> GetSpeedsAsync();
     Task<IReadOnlyList<Suggestion>> GetSpeedsBySearchTermAsync(string searchTerm);
+    Task<IReadOnlyList<Suggestion>> GetActiveRoutesAsync();
     Task<IReadOnlyList<Suggestion>> GetContactsByClientIdAsync(int clientId);
     Task<IReadOnlyList<Lookup>> LeaveParcelLocationsAsync();
     Task<IReadOnlyList<UndeliverableLocation>> UndeliverableLocationsAsync();

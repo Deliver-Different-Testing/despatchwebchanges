@@ -113,8 +113,10 @@ export const queryKeys = {
             time?: string;
             courierId?: number;
             daysOfWeek?: number;
+            routeId?: number;
         }) => ['recurringJobs', 'list', query] as const,
         speeds: ['recurringJobs', 'speeds'] as const,
+        routes: ['recurringJobs', 'routes'] as const,
     },
     notes: {
         all: ['notes'] as const,

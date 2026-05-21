@@ -26,13 +26,14 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey} from '../../../interfaces';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
-import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
+import {useRouteList, useSpeedList} from '../../../hooks/useRecurringJobsApi';
 
 export interface RecurringJobsFilters {
     speedId?: number;
     time?: string;
     courierId?: number;
     daysOfWeek?: number;
+    routeId?: number;
 }
 
 export interface RecurringJobsToolbarProps {
@@ -79,8 +80,9 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
     const [selectedCourier, setSelectedCourier] = useState<CourierSuggestion | null>(null);
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Fetch speed list and courier search
+    // Fetch speed list, courier search, and route list
     const {data: speeds = []} = useSpeedList();
+    const {data: routes = []} = useRouteList();
     const {data: courierSuggestions = [], isLoading: isLoadingCouriers} = useCourierSearch(courierSearchText);
 
     // Sync local state with prop
@@ -144,6 +146,17 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
         [filters, onFiltersChange]
     );
 
+    const handleRouteChange = useCallback(
+        (event: SelectChangeEvent<number | ''>) => {
+            const value = event.target.value;
+            onFiltersChange({
+                ...filters,
+                routeId: value === '' ? undefined : Number(value),
+            });
+        },
+        [filters, onFiltersChange]
+    );
+
     const handleCourierChange = useCallback(
         (_event: React.SyntheticEvent, value: CourierSuggestion | null) => {
             setSelectedCourier(value);
@@ -182,12 +195,14 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
             speedId: undefined,
             courierId: undefined,
             daysOfWeek: undefined,
+            routeId: undefined,
         });
     }, [onFiltersChange]);
 
     const hasActiveFilters = filters.speedId !== undefined ||
         filters.courierId !== undefined ||
-        filters.daysOfWeek !== undefined;
+        filters.daysOfWeek !== undefined ||
+        filters.routeId !== undefined;
 
     // Cleanup timer on unmount
     useEffect(() => {
@@ -443,6 +458,27 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                         ))}
                     </ToggleButtonGroup>
                 </Box>
+
+                {/* Recurring Route Filter */}
+                <FormControl size="small" sx={{minWidth: 180}}>
+                    <InputLabel>Route</InputLabel>
+                    <Select
+                        value={filters.routeId ?? ''}
+                        onChange={handleRouteChange}
+                        label="Route"
+                        disabled={isLoading}
+                        sx={{bgcolor: 'background.paper'}}
+                    >
+                        <MenuItem value="">
+                            <em>All</em>
+                        </MenuItem>
+                        {routes.map((route) => (
+                            <MenuItem key={route.id} value={route.id}>
+                                {route.text}
+                            </MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
 
                 {/* Clear Filters Button */}
                 {hasActiveFilters && (

@@ -14,16 +14,18 @@ import {RecurringJobsToolbar, RecurringJobsToolbarProps, RecurringJobsFilters} f
 // Mock the hooks
 jest.mock('../../../hooks/useRecurringJobsApi', () => ({
     useSpeedList: jest.fn(),
+    useRouteList: jest.fn(),
 }));
 
 jest.mock('../../../hooks/useCourierApi', () => ({
     useCourierSearch: jest.fn(),
 }));
 
-import {useSpeedList} from '../../../hooks/useRecurringJobsApi';
+import {useRouteList, useSpeedList} from '../../../hooks/useRecurringJobsApi';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
 
 const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
+const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 
 const theme = createTheme();
@@ -77,6 +79,12 @@ describe('RecurringJobsToolbar', () => {
                 {id: 2, text: 'Express'},
                 {id: 3, text: 'Same Day'},
             ],
+            isLoading: false,
+            error: null,
+        } as any);
+
+        mockUseRouteList.mockReturnValue({
+            data: [],
             isLoading: false,
             error: null,
         } as any);
