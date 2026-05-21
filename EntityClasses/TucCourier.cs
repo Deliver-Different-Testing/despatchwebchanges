@@ -277,8 +277,6 @@ public partial class TucCourier
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
-    public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
-
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyCouriers { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyNewCouriers { get; set; } = new List<JobDeliveryJourney>();

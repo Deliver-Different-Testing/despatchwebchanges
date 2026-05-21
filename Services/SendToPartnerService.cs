@@ -16,7 +16,6 @@ public sealed class SendToPartnerService(
     HttpClient httpClient,
     IHttpContextAccessor contextAccessor,
     IWebHostEnvironment environment,
-    IDispatchJobService dispatchJobService,
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantInfoService tenantInfoService) : ISendToPartnerService
 {
@@ -91,44 +90,8 @@ public sealed class SendToPartnerService(
                 Log.Information("Job {JobId} sent to partner, tracking: {TrackingNumber}",
                     request.JobId, result.TrackingNumber);
 
-                // Assign the local job to the partner-shaped courier via the same
-                // service path the dispatcher UI uses (resets clear-list ordering and
-                // cascades to child jobs). IntegrationManager used to mutate
-                // UcjbCourierId directly; the assignment now lives here so partner
-                // handovers go through DispatchJobService like every other allocation.
-                if (result.CourierId.HasValue)
-                {
-                    try
-                    {
-                        await dispatchJobService.DispatchJobsToCourierAsync(
-                            [request.JobId], result.CourierId.Value);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Partner already accepted the job upstream; surface the local
-                        // assignment failure to the caller without unwinding the partner
-                        // handover (which we can't roll back).
-                        Log.Error(ex,
-                            "Partner accepted job {JobId} but local courier assignment to {CourierId} failed",
-                            request.JobId, result.CourierId.Value);
-                        return new SendToPartnerResponse
-                        {
-                            Success = false,
-                            TrackingNumber = result.TrackingNumber,
-                            CourierId = result.CourierId,
-                            Message =
-                                $"Partner accepted the job but assigning the local courier failed: {ex.Message}"
-                        };
-                    }
-                }
-                else
-                {
-                    Log.Warning(
-                        "Job {JobId}: IntegrationManager returned no CourierId — pairing has no courier configured, local assignment skipped",
-                        request.JobId);
-                }
-
-                await RecordPartnerDispatchJourneyAsync(request.JobId, result.TrackingNumber, result.CourierId);
+                await RecordOutboundPartnerDispatchAsync(request.JobId, request.PartnerId);
+                await RecordPartnerDispatchJourneyAsync(request.JobId, result.TrackingNumber);
             }
             else
             {
@@ -158,13 +121,46 @@ public sealed class SendToPartnerService(
         }
     }
 
+    // Persists the outbound job→pairing link so the dispatch UI can surface the partner
+    // name in the courier column. Idempotent: re-sending an already-linked job updates the
+    // pairing reference instead of failing on the PK.
+    private async Task RecordOutboundPartnerDispatchAsync(int jobId, int pairingId)
+    {
+        try
+        {
+            await using var ctx = await contextFactory.CreateDbContextAsync();
+            var existing = await ctx.JobPartnerDispatches.FindAsync(jobId);
+            if (existing is null)
+            {
+                ctx.JobPartnerDispatches.Add(new JobPartnerDispatch
+                {
+                    JobId = jobId,
+                    PartnerPairingId = pairingId
+                });
+            }
+            else
+            {
+                existing.PartnerPairingId = pairingId;
+            }
+            await ctx.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Partner already accepted upstream — log and continue so the success path
+            // isn't unwound by a local persistence hiccup.
+            Log.Error(ex,
+                "Job {JobId}: failed to persist JobPartnerDispatch link to pairing {PairingId}",
+                jobId, pairingId);
+        }
+    }
+
     /// <summary>
     /// Audit-only: records "this job was handed off to a partner" on JobDeliveryJourney so the
     /// dispatcher's journey timeline shows the partner dispatch alongside courier assignments,
     /// status changes, etc. Best-effort — partner already accepted upstream by this point, so a
     /// journey write failure must not unwind the success path.
     /// </summary>
-    private async Task RecordPartnerDispatchJourneyAsync(int jobId, string trackingNumber, int? newCourierId)
+    private async Task RecordPartnerDispatchJourneyAsync(int jobId, string trackingNumber)
     {
         try
         {
@@ -175,7 +171,6 @@ public sealed class SendToPartnerService(
                 ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
                 FieldName = "partnerJobGuid",
                 NewValue = trackingNumber,
-                NewCourierId = newCourierId,
                 StaffId = ResolveStaffIdOrNull(),
                 UpdatedAt = DateTime.UtcNow,
                 UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),

@@ -5,13 +5,6 @@ public sealed class SendToPartnerResponse
     public bool Success { get; init; }
     public string TrackingNumber { get; init; }
     public string Message { get; init; }
-
-    /// <summary>
-    /// Local placeholder courier the IntegrationManager pairing points at. Set on the
-    /// IM dispatch response so DispatchWeb can assign the job to that courier via
-    /// <see cref="Interfaces.IDispatchJobService"/> after a successful partner handover.
-    /// </summary>
-    public int? CourierId { get; init; }
 }
 
 public sealed class PartnerRateForJobResponse

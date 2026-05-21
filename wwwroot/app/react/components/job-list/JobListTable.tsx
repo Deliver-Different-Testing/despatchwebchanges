@@ -1145,6 +1145,14 @@ const CellContent: React.FC<{
                     </Typography>
                 );
             }
+            // Sent to DFRNT partner — show partner name, no Assign button
+            if (job.sentToPartnerName) {
+                return (
+                    <Typography variant="body2" sx={{fontSize: 'inherit', color: 'text.primary'}} noWrap>
+                        {job.sentToPartnerName}
+                    </Typography>
+                );
+            }
             // Agent assignment — show agent name, no Assign button
             if (job.assignedAgent) {
                 return (

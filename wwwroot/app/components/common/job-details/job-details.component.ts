@@ -30,7 +30,7 @@ class JobDetailBridgeController implements angular.IController {
     onJobUpdate?: () => void;
     onRelatedJobChange?: (args: { $event: number }) => void;
 
-    private containerId: string;
+    private readonly containerId: string;
     private loadPromise: Promise<void> | null = null;
     private manifest: Record<string, string> | null = null;
     private initialized = false;
@@ -60,7 +60,7 @@ class JobDetailBridgeController implements angular.IController {
         console.log('[JobDetailBridge] $onInit, jobId:', this.jobId, 'containerId:', this.containerId);
 
         // Always mount — the React component handles the no-job-selected state
-        this.loadAndMount();
+        void this.loadAndMount();
     }
 
     $onChanges(changes: angular.IOnChangesObject): void {
@@ -69,7 +69,7 @@ class JobDetailBridgeController implements angular.IController {
 
         if (changes['jobId']) {
             console.log('[JobDetailBridge] $onChanges jobId:', changes['jobId'].currentValue);
-            this.loadAndMount();
+            void this.loadAndMount();
         }
     }
 
