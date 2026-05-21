@@ -9,6 +9,7 @@ import React from 'react';
 import Box from '@mui/material/Box';
 import {useHereMap} from './useHereMap';
 import type {HereMapProps} from './HereMap.types';
+import {MapZoomViewControls} from '../dispatch-map';
 
 /**
  * HereMap Component
@@ -23,8 +24,7 @@ export const HereMap: React.FC<HereMapProps> = ({
                                                     config,
                                                     onMapReady,
                                                 }) => {
-    // Hook handles all map initialization and updates internally
-    useHereMap({
+    const {mapInstance, platform} = useHereMap({
         mapId,
         credentials,
         config,
@@ -33,14 +33,27 @@ export const HereMap: React.FC<HereMapProps> = ({
 
     return (
         <Box
-            id={mapId}
-            className="here-map"
             sx={{
+                position: 'relative',
                 width: '100%',
                 height: '100%',
                 minHeight: 300,
             }}
-        />
+        >
+            <Box
+                id={mapId}
+                className="here-map"
+                sx={{
+                    width: '100%',
+                    height: '100%',
+                }}
+            />
+            <MapZoomViewControls
+                map={mapInstance?.map ?? null}
+                platform={platform}
+                defaultLayers={mapInstance?.defaultLayers ?? null}
+            />
+        </Box>
     );
 };
 

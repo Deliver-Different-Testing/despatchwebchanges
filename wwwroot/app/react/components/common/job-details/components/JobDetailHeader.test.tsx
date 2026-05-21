@@ -196,13 +196,15 @@ describe('JobDetailHeader', () => {
             expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
         });
 
-        it('disables lock button and shows partner badge for partner jobs', () => {
+        it('shows partner badge and keeps lock toggle interactive for partner jobs', () => {
+            // Lock is a LocalOnly field per PartnerJobGate — each tenant manages its own
+            // copy. The field-level edit guards handle cross-tenant protection; the lock
+            // toggle should remain usable so dispatchers can still pin a job locally.
             const job = createMockJob({locked: true, isPartnerJob: true});
             renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
             expect(screen.getByText('Partner Job')).toBeInTheDocument();
-            const lockWrapper = screen.getByLabelText('Locked — managed by partner');
-            const lockBtn = lockWrapper.querySelector('button')!;
-            expect(lockBtn).toBeDisabled();
+            const lockBtn = screen.getByLabelText('Unlock Job');
+            expect(lockBtn).toBeEnabled();
         });
 
         it('does not show partner badge for non-partner jobs', () => {

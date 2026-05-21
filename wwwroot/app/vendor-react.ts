@@ -10,6 +10,8 @@ import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 import * as jsxRuntime from 'react/jsx-runtime';
 import {QueryClient, QueryClientProvider, keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient} from '@tanstack/react-query';
+import * as MUIMaterial from '@mui/material';
+import {MUIIcons} from './vendor-react-mui-icons.generated';
 
 // Expose React globally for module bundles to use via shims
 window.React = React;
@@ -25,6 +27,12 @@ window.useQuery = useQuery;
 window.useInfiniteQuery = useInfiniteQuery;
 window.useMutation = useMutation;
 window.useQueryClient = useQueryClient;
+
+// Expose MUI Material + the curated icon set used by the app. The module
+// bundles read these via the @mui shim plugin in build.ts instead of
+// bundling MUI per-entry (saved ~300 KB × 25 modules pre-shim).
+window.MUI = MUIMaterial as unknown as typeof window.MUI;
+window.MUIIcons = MUIIcons as unknown as typeof window.MUIIcons;
 
 // Create and expose a shared QueryClient instance.
 // Full default options are applied by queryClient.ts via setDefaultOptions()

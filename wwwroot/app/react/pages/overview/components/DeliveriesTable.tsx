@@ -44,10 +44,18 @@ const COLUMNS = [
     {key: 'actions', label: 'Actions', sortable: false},
 ];
 
-function getStatusChipStyle(status: string, theme: Theme) {
-    const normalized = status.toUpperCase().replace(/[\s-]/g, '_');
+type StatusStyleMap = Record<string, {bg: string; color?: string}>;
+
+// Cache the per-theme status chip palette so we build the lookup map once per
+// theme instance, not once per row. Themes are stable across the app lifetime
+// (effectively one instance), so this WeakMap holds at most a handful of entries.
+const STATUS_STYLE_CACHE = new WeakMap<Theme, StatusStyleMap>();
+
+function getStatusStylesForTheme(theme: Theme): StatusStyleMap {
+    const cached = STATUS_STYLE_CACHE.get(theme);
+    if (cached) return cached;
     const p = theme.palette;
-    const map: Record<string, {bg: string; color?: string}> = {
+    const map: StatusStyleMap = {
         NEW: {bg: alpha(p.info.main, 0.25)},
         PREASSIGNED: {bg: alpha(p.info.main, 0.25)},
         DESPATCHED: {bg: alpha(p.success.main, 0.2)},
@@ -64,7 +72,13 @@ function getStatusChipStyle(status: string, theme: Theme) {
         AWAITING_POD: {bg: p.grey[500], color: '#fff'},
         ASSUMING_COMPLETED: {bg: p.grey[500], color: '#fff'},
     };
-    return map[normalized] ?? {bg: p.grey[300]};
+    STATUS_STYLE_CACHE.set(theme, map);
+    return map;
+}
+
+function getStatusChipStyle(status: string, theme: Theme): {bg: string; color?: string} {
+    const normalized = status.toUpperCase().replace(/[\s-]/g, '_');
+    return getStatusStylesForTheme(theme)[normalized] ?? {bg: theme.palette.grey[300]};
 }
 
 function getProgressColor(completion: number, theme: Theme): string {
@@ -77,7 +91,7 @@ function transformStatus(status: string): string {
     return status.toUpperCase().replace(/[\s-]/g, '_');
 }
 
-const StatusChip: React.FC<{status: string; theme: Theme}> = ({status, theme}) => {
+const StatusChip: React.FC<{status: string; theme: Theme}> = React.memo(({status, theme}) => {
     const display = transformStatus(status);
     const style = getStatusChipStyle(display, theme);
     return (
@@ -93,9 +107,10 @@ const StatusChip: React.FC<{status: string; theme: Theme}> = ({status, theme}) =
             }}
         />
     );
-};
+});
+StatusChip.displayName = 'StatusChip';
 
-const ProgressBar: React.FC<{value: number; theme: Theme}> = ({value, theme}) => (
+const ProgressBar: React.FC<{value: number; theme: Theme}> = React.memo(({value, theme}) => (
     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, minWidth: 100}}>
         <LinearProgress
             variant="determinate"
@@ -112,9 +127,10 @@ const ProgressBar: React.FC<{value: number; theme: Theme}> = ({value, theme}) =>
             {value}%
         </Typography>
     </Box>
-);
+));
+ProgressBar.displayName = 'ProgressBar';
 
-export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
+export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
     deliveries,
     isLoading,
     sort,
@@ -309,6 +325,7 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
             )}
         </Box>
     );
-};
+});
+DeliveriesTable.displayName = 'DeliveriesTable';
 
 export default DeliveriesTable;

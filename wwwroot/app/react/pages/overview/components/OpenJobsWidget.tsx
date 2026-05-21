@@ -399,8 +399,14 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
 
 // ── Driver Card (card view subcomponent) ──
 
-const DriverCard: React.FC<{driver: DriverViewModel}> = ({driver: initialDriver}) => {
+const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: initialDriver}) => {
     const [expanded, setExpanded] = useState(false);
+    // Avoid running dayjs() per render — only recompute when the timestamp changes.
+    // For a 60-driver list each render previously triggered 60 dayjs() + diff() calls.
+    const minsSinceLastCompleted = useMemo(() => {
+        if (initialDriver.lastCompleted === 'N/A') return null;
+        return getTimeSinceLastCompleted(initialDriver.lastCompleted);
+    }, [initialDriver.lastCompleted]);
 
     return (
         <Card variant="outlined" sx={{mb: 1}}>
@@ -454,9 +460,9 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = ({driver: initialDriver}
                                 initialDriver.lastCompleted
                             )}
                         </Typography>
-                        {initialDriver.lastCompleted !== 'N/A' && (
+                        {minsSinceLastCompleted !== null && (
                             <Typography variant="caption" display="block" sx={{fontSize: '0.625rem'}}>
-                                {getTimeSinceLastCompleted(initialDriver.lastCompleted)} mins ago
+                                {minsSinceLastCompleted} mins ago
                             </Typography>
                         )}
                     </Box>
@@ -472,9 +478,10 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = ({driver: initialDriver}
             </Collapse>
         </Card>
     );
-};
+});
+DriverCard.displayName = 'DriverCard';
 
-const JobCard: React.FC<{job: ViewJob}> = ({job}) => (
+const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
     <Card variant="outlined" sx={{width: 'calc(50% - 8px)', minWidth: 300}}>
         <Box sx={{p: 2}}>
             {/* Header */}
@@ -556,6 +563,7 @@ const JobCard: React.FC<{job: ViewJob}> = ({job}) => (
             </Box>
         </Box>
     </Card>
-);
+));
+JobCard.displayName = 'JobCard';
 
 export default OpenJobsWidget;

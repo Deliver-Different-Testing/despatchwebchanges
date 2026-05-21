@@ -124,7 +124,7 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
             setTotalCost(0);
             setIsSubmitting(false);
             setJobSpeedRate(null);
-            loadServices();
+            void loadServices();
         }
     }, [open, loadServices]);
 

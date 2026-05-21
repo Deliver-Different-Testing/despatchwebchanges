@@ -62,6 +62,10 @@ export const AngularComponentWrapper: React.FC<AngularComponentWrapperProps> = (
     const containerRef = useRef<HTMLDivElement>(null);
     const childScopeRef = useRef<angular.IScope | null>(null);
     const compiledElementRef = useRef<JQLite | null>(null);
+    // Coalesce bindings -> $digest calls: when React batches multiple updates
+    // into one effect-flush tick we only need one digest at the end. The flag
+    // also guards against the (rare) destroy-during-microtask race.
+    const digestScheduledRef = useRef(false);
 
     // Memoize the compile function to avoid unnecessary re-renders
     const compileComponent = useCallback(() => {
@@ -154,14 +158,22 @@ export const AngularComponentWrapper: React.FC<AngularComponentWrapperProps> = (
             (childScope as unknown as Record<string, unknown>)[scopeKey] = value;
         });
 
-        // Trigger digest to propagate changes
-        if (!childScope.$$phase && !scope.$root.$$phase) {
+        // Defer the digest to a microtask so React can finish its commit
+        // before AngularJS sweeps the scope. queueMicrotask coalesces multiple
+        // binding updates within the same React tick into a single digest.
+        if (digestScheduledRef.current) return;
+        digestScheduledRef.current = true;
+        queueMicrotask(() => {
+            digestScheduledRef.current = false;
+            const live = childScopeRef.current;
+            if (!live) return; // unmounted during the microtask
+            if (live.$$phase || scope.$root.$$phase) return; // digest already running
             try {
-                childScope.$digest();
+                live.$digest();
             } catch {
-                // Ignore digest errors - component might be destroyed
+                // Ignore digest errors - component might be destroyed mid-flight
             }
-        }
+        });
     }, [bindings, scope]);
 
     return (

@@ -25,7 +25,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import EmailIcon from '@mui/icons-material/Email';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import type {IJob} from '../JobDetails.types';
 
 interface JobDetailHeaderProps {
@@ -145,20 +145,21 @@ export function JobDetailHeader({
                         sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
                     />
                 )}
-                <Tooltip title={job.isPartnerJob ? 'Locked — managed by partner' : job.locked ? 'Unlock Job' : 'Lock Job'}>
-                    <span>
-                        <IconButton
-                            size="small"
-                            color={job.locked ? 'warning' : 'default'}
-                            onClick={onLockToggle}
-                            disabled={Boolean(job.isPartnerJob)}
-                        >
-                            {job.locked
-                                ? <LockIcon sx={{fontSize: ICON_SIZE}}/>
-                                : <LockOpenIcon sx={{fontSize: ICON_SIZE}}/>
-                            }
-                        </IconButton>
-                    </span>
+                {/* Lock is a LocalOnly field per PartnerJobGate — each tenant owns its
+                    own copy independently. Don't disable on partner jobs: the field-level
+                    edit guards handle cross-tenant protection, and showing "Locked —
+                    managed by partner" here just conflates two distinct concepts. */}
+                <Tooltip title={job.locked ? 'Unlock Job' : 'Lock Job'}>
+                    <IconButton
+                        size="small"
+                        color={job.locked ? 'warning' : 'default'}
+                        onClick={onLockToggle}
+                    >
+                        {job.locked
+                            ? <LockIcon sx={{fontSize: ICON_SIZE}}/>
+                            : <LockOpenIcon sx={{fontSize: ICON_SIZE}}/>
+                        }
+                    </IconButton>
                 </Tooltip>
 
                 {/* View Density Toggle */}
@@ -189,7 +190,7 @@ export function JobDetailHeader({
                 {isEditMode && (
                     <Tooltip title="Reset to default layout">
                         <IconButton size="small" onClick={onResetFieldVisibility}>
-                            <RestartAltIcon sx={{fontSize: ICON_SIZE}}/>
+                            <ViewWeekIcon sx={{fontSize: ICON_SIZE}}/>
                         </IconButton>
                     </Tooltip>
                 )}
