@@ -991,6 +991,17 @@ public class JobController(
         var parsedIds = jobIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(id => int.Parse(id.Trim()))
             .ToList();
+
+        // Auto-dispatch reassignment swaps the courier on each job. On a partner job
+        // (tenant A side) UcjbCourierId is the partner-pairing's placeholder courier;
+        // changing it locally would diverge from the partner's view of who owns the
+        // job. Block before mutating, matching Allocate/ReAllocate.
+        foreach (var jobId in parsedIds)
+        {
+            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+            if (partnerGuard != null) return partnerGuard;
+        }
+
         await jobCommandRepository.ReAssignSelectedJobsAsync(parsedIds);
         return Ok();
     }
@@ -998,6 +1009,12 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
     {
+        // Set-first-job re-orders the courier's clear list. On a partner job that
+        // shouldn't be touched locally — the React context menu already hides this
+        // action for partner jobs; the backend now mirrors that contract.
+        var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+        if (partnerGuard != null) return partnerGuard;
+
         await jobCommandRepository.SetFirstJobAsync(jobId, courierId);
         return Ok();
     }
@@ -1443,7 +1460,7 @@ public class JobController(
         // Propagate field update and re-rate split children (best effort)
         try
         {
-            await splitJobService.PropagateUpdateToSplitChildrenAsync(jobId, field, value);
+            await splitJobService.PropagateUpdateToSplitChildrenAsync(jobId, field, value, ct);
         }
         catch (Exception e)
         {

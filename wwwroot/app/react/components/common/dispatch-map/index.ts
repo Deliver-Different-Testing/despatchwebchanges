@@ -11,6 +11,7 @@ export { useMapPreferences } from './useMapPreferences';
 export { JobMarkerManager } from './JobMarkerManager';
 export { DispatchCourierMarkerManager } from './DispatchCourierMarkerManager';
 export { MapControlButtons } from './MapControlButtons';
+export { MapZoomViewControls } from './MapZoomViewControls';
 export type {
     DispatchMapProps,
     IDispatchMapItem,

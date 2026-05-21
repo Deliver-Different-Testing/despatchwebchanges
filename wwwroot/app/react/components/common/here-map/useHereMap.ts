@@ -80,6 +80,7 @@ export function useHereMap({
                 onMapReady({
                     map: newMapInstance.map,
                     platform: newPlatform,
+                    defaultLayers: newMapInstance.defaultLayers,
                 });
             }
 

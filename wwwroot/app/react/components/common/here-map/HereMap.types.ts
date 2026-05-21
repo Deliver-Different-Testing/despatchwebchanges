@@ -31,7 +31,7 @@ export interface HereMapProps {
     /** Map configuration including job, courier location, zoom, etc. */
     config?: HereMapConfig;
     /** Callback when map is ready */
-    onMapReady?: (params: { map: any; platform: any }) => void;
+    onMapReady?: (params: { map: any; platform: any; defaultLayers: any }) => void;
 }
 
 // Internal state types
@@ -39,6 +39,7 @@ export interface MapInstance {
     map: any;
     behavior: any;
     ui: any;
+    defaultLayers: any;
 }
 
 export interface MarkerState {
@@ -117,5 +118,5 @@ export interface UseHereMapOptions {
     mapId: string;
     credentials?: HereMapCredentials;
     config?: HereMapConfig;
-    onMapReady?: (params: { map: any; platform: any }) => void;
+    onMapReady?: (params: { map: any; platform: any; defaultLayers: any }) => void;
 }

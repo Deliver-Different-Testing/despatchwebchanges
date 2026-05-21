@@ -15,7 +15,7 @@ const TAB_CONFIG = [
     {key: 'completed', label: 'Completed', icon: 'task_alt'},
 ] as const;
 
-export const StatsTabs: React.FC<StatsTabsProps> = ({statistics, activeTab, onTabChange}) => {
+export const StatsTabs: React.FC<StatsTabsProps> = React.memo(({statistics, activeTab, onTabChange}) => {
     return (
         <Box sx={{display: 'flex', justifyContent: 'center', gap: 4, py: 2}}>
             {TAB_CONFIG.map((tab, index) => {
@@ -83,6 +83,7 @@ export const StatsTabs: React.FC<StatsTabsProps> = ({statistics, activeTab, onTa
             })}
         </Box>
     );
-};
+});
+StatsTabs.displayName = 'StatsTabs';
 
 export default StatsTabs;

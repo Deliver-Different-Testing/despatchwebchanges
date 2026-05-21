@@ -2,9 +2,12 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Net;
 using System.Security.Claims;
 using System.Text.Json;
+using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace DespatchWeb.Services;
@@ -12,7 +15,10 @@ namespace DespatchWeb.Services;
 public sealed class SendToPartnerService(
     HttpClient httpClient,
     IHttpContextAccessor contextAccessor,
-    IWebHostEnvironment environment) : ISendToPartnerService
+    IWebHostEnvironment environment,
+    IDispatchJobService dispatchJobService,
+    IDbContextFactory<DespatchContext> contextFactory,
+    ITenantInfoService tenantInfoService) : ISendToPartnerService
 {
     public async Task<SendToPartnerResponse> SendAsync(SendToPartnerRequest request)
     {
@@ -84,6 +90,45 @@ public sealed class SendToPartnerService(
             {
                 Log.Information("Job {JobId} sent to partner, tracking: {TrackingNumber}",
                     request.JobId, result.TrackingNumber);
+
+                // Assign the local job to the partner-shaped courier via the same
+                // service path the dispatcher UI uses (resets clear-list ordering and
+                // cascades to child jobs). IntegrationManager used to mutate
+                // UcjbCourierId directly; the assignment now lives here so partner
+                // handovers go through DispatchJobService like every other allocation.
+                if (result.CourierId.HasValue)
+                {
+                    try
+                    {
+                        await dispatchJobService.DispatchJobsToCourierAsync(
+                            [request.JobId], result.CourierId.Value);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Partner already accepted the job upstream; surface the local
+                        // assignment failure to the caller without unwinding the partner
+                        // handover (which we can't roll back).
+                        Log.Error(ex,
+                            "Partner accepted job {JobId} but local courier assignment to {CourierId} failed",
+                            request.JobId, result.CourierId.Value);
+                        return new SendToPartnerResponse
+                        {
+                            Success = false,
+                            TrackingNumber = result.TrackingNumber,
+                            CourierId = result.CourierId,
+                            Message =
+                                $"Partner accepted the job but assigning the local courier failed: {ex.Message}"
+                        };
+                    }
+                }
+                else
+                {
+                    Log.Warning(
+                        "Job {JobId}: IntegrationManager returned no CourierId — pairing has no courier configured, local assignment skipped",
+                        request.JobId);
+                }
+
+                await RecordPartnerDispatchJourneyAsync(request.JobId, result.TrackingNumber, result.CourierId);
             }
             else
             {
@@ -110,6 +155,56 @@ public sealed class SendToPartnerService(
                 Success = false,
                 Message = "Integration Manager request timed out"
             };
+        }
+    }
+
+    /// <summary>
+    /// Audit-only: records "this job was handed off to a partner" on JobDeliveryJourney so the
+    /// dispatcher's journey timeline shows the partner dispatch alongside courier assignments,
+    /// status changes, etc. Best-effort — partner already accepted upstream by this point, so a
+    /// journey write failure must not unwind the success path.
+    /// </summary>
+    private async Task RecordPartnerDispatchJourneyAsync(int jobId, string trackingNumber, int? newCourierId)
+    {
+        try
+        {
+            await using var ctx = await contextFactory.CreateDbContextAsync();
+            ctx.JobDeliveryJourneys.Add(new JobDeliveryJourney
+            {
+                JobId = jobId,
+                ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+                FieldName = "partnerJobGuid",
+                NewValue = trackingNumber,
+                NewCourierId = newCourierId,
+                StaffId = ResolveStaffIdOrNull(),
+                UpdatedAt = DateTime.UtcNow,
+                UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff),
+                Comments = string.IsNullOrWhiteSpace(trackingNumber)
+                    ? "Job sent to partner"
+                    : $"Job sent to partner; tracking {trackingNumber}"
+            });
+            await ctx.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex,
+                "Job {JobId}: failed to record partner-dispatch journey entry (audit-only, ignored)", jobId);
+        }
+    }
+
+    // ITenantInfoService.GetStaffId throws when there's no HTTP user context (background calls,
+    // tests without a mocked tenant). Audit columns prefer "we don't know" (null) over a misleading
+    // staff #0, so swallow and return null.
+    private int? ResolveStaffIdOrNull()
+    {
+        try
+        {
+            var id = tenantInfoService.GetStaffId();
+            return id > 0 ? id : null;
+        }
+        catch
+        {
+            return null;
         }
     }
 

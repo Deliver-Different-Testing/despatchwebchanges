@@ -203,13 +203,15 @@ function getFlightIcon(job: DispatchJob): React.ReactNode {
 // Date column: short date only (e.g., "DD/MMM" or "MMM/DD") — matches AngularJS _deliveryDateString
 function formatJobDate(booked: dayjs.Dayjs | undefined): string {
     if (!booked) return '';
-    return formatShortDate(dayjs(booked));
+    // booked is already a Dayjs; formatShortDate detects this and no-ops the clone,
+    // so passing it through directly avoids an extra dayjs() wrap per row.
+    return formatShortDate(booked);
 }
 
 // Time column: HH:mm + timezone — matches AngularJS _deliveryTimeString + timeZoneShort
 function formatJobTime(booked: dayjs.Dayjs | undefined): string {
     if (!booked) return '';
-    const time = formatMins(dayjs(booked));
+    const time = formatMins(booked);
     const tz = getTimeZoneShort();
     return tz ? `${time} ${tz}` : time;
 }

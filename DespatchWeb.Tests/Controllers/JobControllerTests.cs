@@ -3093,6 +3093,47 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task ReAssignSelected_RejectsPartnerJob()
+    {
+        // Auto-dispatch reassignment would swap the partner-placeholder courier on the
+        // tenant A side and diverge from the partner's view of who owns the job.
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(31).Returns(true);
+
+        var result = await controller.ReAssignSelected("31");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
+    }
+
+    [Fact]
+    public async Task ReAssignSelected_RejectsWhenAnyJobInBatchIsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(32).Returns(false);
+        _jobQueryRepositoryMock.IsPartnerJobAsync(33).Returns(true);
+
+        var result = await controller.ReAssignSelected("32,33");
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
+    }
+
+    [Fact]
+    public async Task SetFirstJob_RejectsPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsPartnerJobAsync(34).Returns(true);
+
+        var result = await controller.SetFirstJob(jobId: 34, courierId: 1);
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive().SetFirstJobAsync(34, 1);
+    }
+
+    [Fact]
     public async Task SplitJob_RejectsPartnerJob()
     {
         var controller = CreateControllerForSplitJob();

@@ -113,6 +113,17 @@ describe('HereMap Component', () => {
 
             expect(document.getElementById('test-map')).toBeInTheDocument();
         });
+
+        it('renders the zoom/traffic/layers control buttons', () => {
+            const props = createDefaultProps({credentials: undefined});
+            renderWithProviders(<HereMap {...props} />);
+
+            expect(document.querySelector('button[aria-label="Zoom in"]')).toBeInTheDocument();
+            expect(document.querySelector('button[aria-label="Zoom out"]')).toBeInTheDocument();
+            expect(document.querySelector('button[aria-label="Toggle traffic conditions"]')).toBeInTheDocument();
+            expect(document.querySelector('button[aria-label="Toggle traffic incidents"]')).toBeInTheDocument();
+            expect(document.querySelector('button[aria-label="Choose view"]')).toBeInTheDocument();
+        });
     });
 });
 

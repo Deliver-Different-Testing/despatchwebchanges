@@ -82,6 +82,7 @@ export function createMap(
         map,
         behavior,
         ui,
+        defaultLayers,
     };
 }
 

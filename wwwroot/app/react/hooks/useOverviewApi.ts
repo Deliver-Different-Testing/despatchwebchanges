@@ -16,6 +16,10 @@ export function useOverviewJobs(params: OverviewQueryParams) {
         queryKey: queryKeys.overview.jobs(params),
         queryFn: ({signal}) => overviewApi.getAllJobs(params, {signal}),
         placeholderData: keepPreviousData,
+        // Page/filter combos are uniquely keyed, so the only thing staleTime
+        // affects here is back-nav within the same combo — 60s avoids an
+        // immediate refetch when the user toggles tabs and returns.
+        staleTime: 60 * 1000,
     });
 }
 
@@ -39,6 +43,9 @@ export function useOverviewStats() {
     return useQuery({
         queryKey: queryKeys.overview.stats,
         queryFn: ({signal}) => overviewApi.getStats({signal}),
+        // Stats drive the visible tab counts — let them go stale slightly
+        // faster than the table itself so the badges feel responsive.
+        staleTime: 30 * 1000,
     });
 }
 
@@ -50,6 +57,9 @@ export function useOverviewOpenJobs(
         queryKey: queryKeys.overview.openJobs(params),
         queryFn: ({signal}) => overviewApi.getOpenJobs(params, {signal}),
         refetchInterval,
+        // Align with the 60s poll the OverviewPage installs — without this,
+        // mounting the widget refetches even when the cache is seconds old.
+        staleTime: refetchInterval ?? 60 * 1000,
     });
 }
 

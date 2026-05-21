@@ -64,6 +64,27 @@ import {
     useQuickResponses
 } from "../../../hooks/useMessaging";
 
+// Static sx values hoisted to module scope. Hot paths inside .map() loops
+// (conversations list, messages list) and the message bubble re-create these
+// on every render; pinning them avoids redundant emotion cache lookups.
+const SX_WHITE_TEXT = {color: 'white'} as const;
+const SX_FLEX_1 = {flex: 1} as const;
+const SX_MR_1 = {mr: 1} as const;
+const SX_PRIMARY_AVATAR = {bgcolor: 'primary.main'} as const;
+const SX_DIALOG_CONTENT_ROW = {p: 0, display: 'flex', flex: 1, overflow: 'hidden'} as const;
+const SX_DIALOG_CONTENT_COL = {p: 0, display: 'flex', flexDirection: 'column' as const, flex: 1, overflow: 'hidden'} as const;
+const SX_CONV_NAME_ROW = {display: 'flex', justifyContent: 'space-between', alignItems: 'baseline'} as const;
+const SX_CONV_NAME_TEXT = {maxWidth: 140} as const;
+const SX_CONV_SECONDARY_ROW = {display: 'flex', alignItems: 'center', gap: 1} as const;
+const SX_UNREAD_CHIP = {height: 18, fontSize: 11} as const;
+const SX_LIST_CONTAINER = {flex: 1, overflow: 'auto', p: 0} as const;
+const SX_LOADING_BOX = {display: 'flex', justifyContent: 'center', p: 4} as const;
+const SX_LARGE_ICON = {fontSize: 48} as const;
+const SX_MSG_BODY = {whiteSpace: 'pre-wrap' as const, wordBreak: 'break-word' as const} as const;
+const SX_MSG_META_ROW = {display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'flex-end'} as const;
+const SX_MSG_TICK_ICON = {fontSize: 14, opacity: 0.8} as const;
+const SX_HEADER_SUBTITLE = {opacity: 0.85, mt: 0.25} as const;
+
 export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                                                                     open,
                                                                     onClose,
@@ -398,7 +419,7 @@ export const MessagingDialog: React.FC<MessagingDialogProps> = ({
                     subtitle="Send and receive messages"
                     onClose={onClose}
                 />
-                <DialogContent sx={{p: 0, display: 'flex', flex: 1, overflow: 'hidden'}}>
+                <DialogContent sx={SX_DIALOG_CONTENT_ROW}>
                     {conversationsError ? (
                         <ErrorState
                             message={conversationsError}
@@ -497,22 +518,22 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
             })}
         >
             {showBackButton && (
-                <IconButton onClick={onBack} sx={{color: 'white'}}>
+                <IconButton onClick={onBack} sx={SX_WHITE_TEXT}>
                     <ArrowBackIcon/>
                 </IconButton>
             )}
-            {!showBackButton && <ChatIcon sx={{mr: 1}}/>}
-            <Box sx={{flex: 1}}>
+            {!showBackButton && <ChatIcon sx={SX_MR_1}/>}
+            <Box sx={SX_FLEX_1}>
                 <Typography variant="h6" fontWeight={600}>
                     {title}
                 </Typography>
                 {subtitle && (
-                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                    <Typography variant="body2" sx={SX_HEADER_SUBTITLE}>
                         {subtitle}
                     </Typography>
                 )}
             </Box>
-            <IconButton onClick={onClose} sx={{color: 'white'}}>
+            <IconButton onClick={onClose} sx={SX_WHITE_TEXT}>
                 <CloseIcon/>
             </IconButton>
         </Box>
@@ -571,7 +592,7 @@ function ConversationsPanel({
                         sx={{ml: 0.5}}
                     />
                 )}
-                <Box sx={{flex: 1}}/>
+                <Box sx={SX_FLEX_1}/>
                 <IconButton size="small" onClick={onRefresh} disabled={isLoading}>
                     <RefreshIcon sx={{animation: isLoading ? 'spin 1s linear infinite' : 'none'}}/>
                 </IconButton>
@@ -582,13 +603,13 @@ function ConversationsPanel({
 
             {/* Loading indicator */}
             {isLoading && conversations.length === 0 && (
-                <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+                <Box sx={SX_LOADING_BOX}>
                     <CircularProgress size={32}/>
                 </Box>
             )}
 
             {/* Conversations List */}
-            <List sx={{flex: 1, overflow: 'auto', p: 0}}>
+            <List sx={SX_LIST_CONTAINER}>
                 {conversations.map((conv) => (
                     <ListItem
                         key={`${conv.otherPartyId}-${conv.otherPartyType}`}
@@ -621,15 +642,15 @@ function ConversationsPanel({
                                     />
                                 }
                             >
-                                <Avatar sx={{bgcolor: 'primary.main'}}>
+                                <Avatar sx={SX_PRIMARY_AVATAR}>
                                     {conv.otherPartyInitials || generateInitials(conv.otherPartyName)}
                                 </Avatar>
                             </Badge>
                         </ListItemAvatar>
                         <ListItemText
                             primary={
-                                <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'baseline'}}>
-                                    <Typography variant="body2" fontWeight={500} noWrap sx={{maxWidth: 140}}>
+                                <Box sx={SX_CONV_NAME_ROW}>
+                                    <Typography variant="body2" fontWeight={500} noWrap sx={SX_CONV_NAME_TEXT}>
                                         {conv.otherPartyName}
                                     </Typography>
                                     <Typography variant="caption" color="text.secondary">
@@ -638,12 +659,12 @@ function ConversationsPanel({
                                 </Box>
                             }
                             secondary={
-                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                <Box sx={SX_CONV_SECONDARY_ROW}>
                                     <Typography
                                         variant="caption"
                                         color="text.secondary"
                                         noWrap
-                                        sx={{flex: 1}}
+                                        sx={SX_FLEX_1}
                                     >
                                         {conv.lastMessage ? (
                                             <>
@@ -660,7 +681,7 @@ function ConversationsPanel({
                                             label={conv.unreadCount > 99 ? '99+' : conv.unreadCount}
                                             size="small"
                                             color="error"
-                                            sx={{height: 18, fontSize: 11}}
+                                            sx={SX_UNREAD_CHIP}
                                         />
                                     )}
                                 </Box>
@@ -673,7 +694,7 @@ function ConversationsPanel({
             {/* Empty State */}
             {!isLoading && conversations.length === 0 && (
                 <EmptyState
-                    icon={<ChatBubbleOutlineIcon sx={{fontSize: 48}}/>}
+                    icon={<ChatBubbleOutlineIcon sx={SX_LARGE_ICON}/>}
                     message="No conversations yet"
                     action={
                         <Button
@@ -757,10 +778,10 @@ function ChatPanel({
                     borderColor: 'divider',
                 }}
             >
-                <Avatar sx={{bgcolor: 'primary.main'}}>
+                <Avatar sx={SX_PRIMARY_AVATAR}>
                     {selectedConversation.otherPartyInitials}
                 </Avatar>
-                <Box sx={{flex: 1}}>
+                <Box sx={SX_FLEX_1}>
                     <Typography variant="body1" fontWeight={500}>
                         {selectedConversation.otherPartyName}
                     </Typography>
@@ -786,12 +807,12 @@ function ChatPanel({
                 }}
             >
                 {isMessagesLoading && messages.length === 0 ? (
-                    <Box sx={{display: 'flex', justifyContent: 'center', p: 4}}>
+                    <Box sx={SX_LOADING_BOX}>
                         <CircularProgress size={32}/>
                     </Box>
                 ) : messages.length === 0 ? (
                     <EmptyState
-                        icon={<ChatBubbleOutlineIcon sx={{fontSize: 48}}/>}
+                        icon={<ChatBubbleOutlineIcon sx={SX_LARGE_ICON}/>}
                         message="Start the conversation"
                     />
                 ) : (
@@ -958,10 +979,10 @@ function MessageBubble({message}: MessageBubbleProps) {
                     borderColor: 'divider',
                 }}
             >
-                <Typography variant="body2" sx={{whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
+                <Typography variant="body2" sx={SX_MSG_BODY}>
                     {message.message}
                 </Typography>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, justifyContent: 'flex-end'}}>
+                <Box sx={SX_MSG_META_ROW}>
                     <Typography
                         variant="caption"
                         sx={{opacity: isSent ? 0.8 : 0.6}}
@@ -969,10 +990,10 @@ function MessageBubble({message}: MessageBubbleProps) {
                         {formatMessageTime(message.messageTime)}
                     </Typography>
                     {isSent && message.read && (
-                        <DoneAllIcon sx={{fontSize: 14, opacity: 0.8}}/>
+                        <DoneAllIcon sx={SX_MSG_TICK_ICON}/>
                     )}
                     {isSent && !message.read && message.sent && (
-                        <DoneIcon sx={{fontSize: 14, opacity: 0.8}}/>
+                        <DoneIcon sx={SX_MSG_TICK_ICON}/>
                     )}
                 </Box>
             </Box>
@@ -1020,7 +1041,7 @@ function NewChatView({
                          isContactSelected,
                      }: NewChatViewProps) {
     return (
-        <DialogContent sx={{p: 0, display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden'}}>
+        <DialogContent sx={SX_DIALOG_CONTENT_COL}>
             {/* Multi-select Header */}
             {isMultiSelectMode && (
                 <Box
@@ -1179,7 +1200,7 @@ function NewChatView({
                 {/* No Results */}
                 {searchTerm && !isSearching && searchResults.length === 0 && (
                     <EmptyState
-                        icon={<SearchOffIcon sx={{fontSize: 48}}/>}
+                        icon={<SearchOffIcon sx={SX_LARGE_ICON}/>}
                         message={`No results for "${searchTerm}"`}
                     />
                 )}
@@ -1187,7 +1208,7 @@ function NewChatView({
                 {/* Empty State */}
                 {!searchTerm && recentConversations.length === 0 && (
                     <EmptyState
-                        icon={<PersonSearchIcon sx={{fontSize: 48}}/>}
+                        icon={<PersonSearchIcon sx={SX_LARGE_ICON}/>}
                         message="Search to start a conversation"
                     />
                 )}
@@ -1260,11 +1281,11 @@ function ContactListItem({
                     checked={isSelected}
                     onChange={onToggleSelection}
                     onClick={(e) => e.stopPropagation()}
-                    sx={{mr: 1}}
+                    sx={SX_MR_1}
                 />
             )}
             <ListItemAvatar>
-                <Avatar sx={{bgcolor: 'primary.main'}}>
+                <Avatar sx={SX_PRIMARY_AVATAR}>
                     {initials}
                 </Avatar>
             </ListItemAvatar>
