@@ -3,18 +3,9 @@
 
 // Shared libraries - expose globally to avoid duplication in module bundles
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
-import timezone from "dayjs/plugin/timezone";
-import localizedFormat from "dayjs/plugin/localizedFormat";
-import isoWeek from "dayjs/plugin/isoWeek";
-import weekday from "dayjs/plugin/weekday";
+import "./vendor-core-dayjs";
 import "dayjs/locale/en";
 import * as windowsIana from "windows-iana";
-dayjs.extend(utc);
-dayjs.extend(timezone);
-dayjs.extend(localizedFormat);
-dayjs.extend(isoWeek);
-dayjs.extend(weekday);
 dayjs.locale("en");
 window.dayjs = dayjs;
 window.windowsIana = windowsIana;

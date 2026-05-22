@@ -358,9 +358,6 @@ healthchecksdb
 .jest-cache
 .tsbuildinfo
 nul
-
-# Generated icon barrel for vendor-react bundle
-/wwwroot/app/vendor-react-mui-icons.generated.ts
 /test-output.txt
 /test-results.txt
 
