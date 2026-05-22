@@ -87,10 +87,6 @@ declare global {
         useQueryClient?: typeof import('@tanstack/react-query').useQueryClient;
         ReactQueryClient?: QueryClient;
 
-        // ── MUI globals (set by vendor-react bundle, consumed via shim) ──
-        MUI?: typeof import('@mui/material');
-        MUIIcons?: Record<string, React.ComponentType<import('@mui/material').SvgIconProps>>;
-
         // ── Utility library globals (set by vendor-core bundle) ──────────
         dayjs?: typeof import('dayjs').default;
         windowsIana?: typeof import('windows-iana');

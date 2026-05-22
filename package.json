@@ -69,10 +69,7 @@
   "scripts": {
     "dev": "tsx build.ts --dev",
     "build": "tsx build.ts",
-    "generate:mui-icons": "tsx scripts/generate-mui-icons-barrel.ts",
-    "pretype-check": "npm run generate:mui-icons",
     "type-check": "tsc --noEmit",
-    "prevalidate": "npm run generate:mui-icons",
     "validate": "concurrently -n tsc,lint --kill-others-on-fail \"tsc --noEmit\" \"eslint wwwroot/app/\"",
     "lint": "eslint wwwroot/app/",
     "lint:fix": "eslint wwwroot/app/ --fix",

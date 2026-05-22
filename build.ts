@@ -2,7 +2,6 @@ import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
 import {lessLoader} from "esbuild-plugin-less";
-import {generateMuiIconsBarrel} from "./scripts/generate-mui-icons-barrel";
 
 // Type definitions
 type EntryPointName =
@@ -110,11 +109,6 @@ async function getHtmlMinifier() {
     }
     return htmlMinifier;
 }
-
-// Generated barrel that re-exports every @mui/icons-material icon actually used
-// in wwwroot/app/react. Lets vendor-react bundle the icon set once so per-module
-// bundles can read them off window.MUIIcons via the shim. Implementation lives
-// in scripts/generate-mui-icons-barrel.ts so CI can run it ahead of tsc.
 
 // Utility functions
 function toRelativePath(filePath: string): string {
@@ -382,56 +376,6 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
                 `,
                 loader: "js",
             }));
-
-            // Shim @mui/material barrel — every named import resolves off window.MUI.
-            // CJS because we can't enumerate MUI's exports at build time.
-            build.onResolve({filter: /^@mui\/material$/}, () => ({
-                path: "@mui/material",
-                namespace: "mui-material-shim",
-            }));
-
-            build.onLoad({filter: /.*/, namespace: "mui-material-shim"}, () => ({
-                contents: `module.exports = window.MUI;`,
-                loader: "js",
-            }));
-
-            // Shim @mui/material/<subpath>. MUI's barrel re-exports the symbols
-            // exposed by these subpaths (Box, styles.alpha, useMediaQuery, ...),
-            // so the consumer's default and named imports all resolve via window.MUI.
-            // __esModule flag forces esbuild's interop to pick the real default.
-            build.onResolve({filter: /^@mui\/material\/[^/]+$/}, args => ({
-                path: args.path,
-                namespace: "mui-material-subpath-shim",
-                pluginData: { name: args.path.replace(/^@mui\/material\//, "") },
-            }));
-
-            build.onLoad({filter: /.*/, namespace: "mui-material-subpath-shim"}, args => {
-                const name = (args.pluginData as { name: string }).name;
-                return {
-                    contents: `
-                        const mui = window.MUI;
-                        const out = Object.assign({__esModule: true}, mui);
-                        out.default = mui[${JSON.stringify(name)}];
-                        module.exports = out;
-                    `,
-                    loader: "js",
-                };
-            });
-
-            // Shim @mui/icons-material/<IconName> — single default export per file.
-            build.onResolve({filter: /^@mui\/icons-material\/[^/]+$/}, args => ({
-                path: args.path,
-                namespace: "mui-icons-shim",
-                pluginData: { name: args.path.replace(/^@mui\/icons-material\//, "") },
-            }));
-
-            build.onLoad({filter: /.*/, namespace: "mui-icons-shim"}, args => {
-                const name = (args.pluginData as { name: string }).name;
-                return {
-                    contents: `export default window.MUIIcons[${JSON.stringify(name)}];`,
-                    loader: "js",
-                };
-            });
         },
     };
 }
@@ -719,7 +663,6 @@ async function buildProd(): Promise<void> {
 async function build(): Promise<void> {
     try {
         cleanDistFolder();
-        generateMuiIconsBarrel();
         await (isDev ? buildDev() : buildProd());
     } catch (error) {
         console.error("[ERROR] Build failed:", error);
