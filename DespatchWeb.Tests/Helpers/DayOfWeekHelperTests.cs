@@ -9,7 +9,6 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public class DayOfWeekHelperTests
 {
-
     [Theory]
     [InlineData("Monday", 1)]
     [InlineData("Tuesday", 2)]
@@ -186,5 +185,4 @@ public class DayOfWeekHelperTests
         Assert.Equal(4, DayOfWeekHelper.DayNameToSqlInt("Thursday"));
         Assert.Equal(5, DayOfWeekHelper.DayNameToSqlInt("Friday"));
     }
-
 }

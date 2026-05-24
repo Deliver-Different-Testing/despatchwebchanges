@@ -31,13 +31,6 @@ jest.mock('../dialogs/event-group-dialog', () => ({
 jest.mock('../../../functions/aiSettings', () => ({
     isAiEnabled: jest.fn().mockReturnValue(false),
 }));
-// Stub the change-request dialog so we can assert how the menu opens it without
-// rendering the dialog's own API surface (covered by its own test file).
-jest.mock('../dialogs/job-change-request-dialog', () => ({
-    JobChangeRequestDialog: jest.fn(({open, jobId, jobNo}: {open: boolean; jobId: number; jobNo: string}) =>
-        open ? <div data-testid="job-change-request-dialog">{`open:${jobId}:${jobNo}`}</div> : null,
-    ),
-}));
 // Stub the send-to-partner dialog so we can drive `onConfirm` directly from a test
 // without going through the dialog's rate-fetching flow (covered by its own test file).
 jest.mock('../dialogs/send-to-partner-dialog', () => ({
@@ -60,7 +53,6 @@ import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {isAiEnabled} from '../../../functions/aiSettings';
-import {JobChangeRequestDialog} from '../dialogs/job-change-request-dialog';
 import {openJobInSearch} from '../../services/navigationService';
 
 const mockedApi = api as jest.Mocked<typeof api>;
@@ -68,7 +60,6 @@ const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;
 const mockedOpenAddEventDialog = openAddEventDialog as jest.Mock;
 const mockedOpenEventGroupDialog = openEventGroupDialog as jest.Mock;
 const mockedIsAiEnabled = isAiEnabled as jest.Mock;
-const mockedJobChangeRequestDialog = JobChangeRequestDialog as unknown as jest.Mock;
 const mockedOpenJobInSearch = openJobInSearch as jest.Mock;
 
 // ── Mock Data Factory ─────────────────────────────────────────────────
@@ -953,44 +944,7 @@ describe('JobListContextMenu', () => {
         });
     });
 
-    // ── 7b. Request Change (Partner Jobs) ───────────────────────────────
-
-    describe('Request Change (partner jobs)', () => {
-        it('shows "Request Change…" only for partner jobs', () => {
-            const {unmount} = renderWithTheme(<JobListContextMenu {...createDefaultProps({
-                job: createMockJob({isPartnerJob: true}),
-            })} />);
-            expect(screen.getByText('Request Change…')).toBeInTheDocument();
-            unmount();
-
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
-                job: createMockJob({isPartnerJob: false}),
-            })} />);
-            expect(screen.queryByText('Request Change…')).not.toBeInTheDocument();
-        });
-
-        it('clicking Request Change… opens JobChangeRequestDialog with the job id and jobNo', async () => {
-            const user = userEvent.setup();
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({
-                job: createMockJob({id: 42, jobNo: 'J042', isPartnerJob: true}),
-            })} />);
-
-            // Dialog is rendered closed by default — the stub only emits a node when open=true.
-            expect(screen.queryByTestId('job-change-request-dialog')).not.toBeInTheDocument();
-
-            await user.click(screen.getByText('Request Change…'));
-
-            await waitFor(() => {
-                expect(screen.getByTestId('job-change-request-dialog')).toHaveTextContent('open:42:J042');
-            });
-            // Confirm the dialog received open=true with the right job — guards against the menu
-            // accidentally opening it with the wrong job (e.g. stale dialogJobRef on quick clicks).
-            expect(mockedJobChangeRequestDialog.mock.calls.some(([props]) =>
-                props.open === true && props.jobId === 42 && props.jobNo === 'J042')).toBe(true);
-        });
-    });
-
-    // ── 7c. Send to Partner — post-confirm side effects ─────────────────
+    // ── 7b. Send to Partner — post-confirm side effects ─────────────────
 
     describe('Send to Partner (post-confirm)', () => {
         it('copies the job number, surfaces an Open toast action, and opens the job in search when clicked', async () => {

@@ -55,14 +55,13 @@ class VoidJobConfirmationDialogService implements angular.IServiceProvider {
     }
 
     async showVoidConfirmationDialog(_$event: MouseEvent, job: IDispatchJob | IJob): Promise<VoidJobResult | null> {
+        await this.loadReactVoidJobConfirmationDialog();
+
+        if (!window.ReactVoidJobConfirmationDialog) {
+            throw new Error('React void job confirmation dialog not loaded');
+        }
+
         try {
-            // Load the React dialog module on demand
-            await this.loadReactVoidJobConfirmationDialog();
-
-            if (!window.ReactVoidJobConfirmationDialog) {
-                throw new Error('React void job confirmation dialog not loaded');
-            }
-
             // Create toast service wrapper for UI notifications
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {

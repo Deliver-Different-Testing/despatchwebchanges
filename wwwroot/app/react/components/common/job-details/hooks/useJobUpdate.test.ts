@@ -5,7 +5,8 @@
 
 import {act, renderHook, waitFor} from '@testing-library/react';
 import {QueryClient} from '@tanstack/react-query';
-import {useJobUpdate} from './useJobUpdate';
+import {useJobUpdate, type UseJobUpdateOptions} from './useJobUpdate';
+import {JobProperty} from '../../../../../enums/job-property.enum';
 import {createTestQueryClient, createWrapper, suppressConsoleError} from '../../../../__testUtils__';
 
 // Mock API services
@@ -75,9 +76,9 @@ describe('useJobUpdate', () => {
         errorSpy.mockRestore();
     });
 
-    function renderUseJobUpdate() {
+    function renderUseJobUpdate(options?: UseJobUpdateOptions) {
         const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
-        return renderHook(() => useJobUpdate(mockShowToast), {wrapper});
+        return renderHook(() => useJobUpdate(mockShowToast, options), {wrapper});
     }
 
     describe('updateField', () => {
@@ -168,11 +169,110 @@ describe('useJobUpdate', () => {
 
             expect(mockShowToast).toHaveBeenCalledWith('Failed to update job. Please try again.', 'error');
         });
+
+        describe('partner-job gate (onPartnerJobBlocked)', () => {
+            it('routes a 400 on a mappable field to the callback and suppresses the toast', async () => {
+                mockUpdateJobDetail.mockRejectedValueOnce({
+                    status: 400,
+                    statusText: 'Bad Request',
+                    message: 'PartnerAgreedRate cannot be edited on a partner job in this version',
+                });
+                const onPartnerJobBlocked = jest.fn();
+                const {result} = renderUseJobUpdate({onPartnerJobBlocked});
+                const job = createMockJob({isPartnerJob: true});
+
+                await act(async () => {
+                    try {
+                        await result.current.updateField({job, field: JobProperty.Amount, value: 99.99, isRecurring: false});
+                    } catch { /* expected */ }
+                });
+
+                expect(onPartnerJobBlocked).toHaveBeenCalledWith({
+                    field: 'PartnerAgreedRate',
+                    value: 99.99,
+                    message: 'PartnerAgreedRate cannot be edited on a partner job in this version',
+                });
+                expect(mockShowToast).not.toHaveBeenCalledWith(expect.any(String), 'error');
+            });
+
+            it('maps SpeedID → Speed and Items → Quantity', async () => {
+                const onPartnerJobBlocked = jest.fn();
+                const job = createMockJob({isPartnerJob: true});
+
+                mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'gated'});
+                const {result, rerender} = renderUseJobUpdate({onPartnerJobBlocked});
+
+                await act(async () => {
+                    try {
+                        await result.current.updateField({job, field: JobProperty.SpeedID, value: 2, isRecurring: false});
+                    } catch { /* expected */ }
+                });
+                expect(onPartnerJobBlocked).toHaveBeenLastCalledWith(expect.objectContaining({field: 'Speed', value: 2}));
+
+                mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'gated'});
+                rerender();
+
+                await act(async () => {
+                    try {
+                        await result.current.updateField({job, field: JobProperty.Items, value: 5, isRecurring: false});
+                    } catch { /* expected */ }
+                });
+                expect(onPartnerJobBlocked).toHaveBeenLastCalledWith(expect.objectContaining({field: 'Quantity', value: 5}));
+            });
+
+            it('does NOT fire the callback for non-mappable fields — falls back to toast', async () => {
+                mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'managed by partner'});
+                const onPartnerJobBlocked = jest.fn();
+                const {result} = renderUseJobUpdate({onPartnerJobBlocked});
+                const job = createMockJob({isPartnerJob: true});
+
+                await act(async () => {
+                    try {
+                        await result.current.updateField({job, field: 'Notes', value: 'x', isRecurring: false});
+                    } catch { /* expected */ }
+                });
+
+                expect(onPartnerJobBlocked).not.toHaveBeenCalled();
+                expect(mockShowToast).toHaveBeenCalledWith('managed by partner', 'error');
+            });
+
+            it('does NOT fire the callback for non-partner jobs — falls back to toast', async () => {
+                mockUpdateJobDetail.mockRejectedValueOnce({status: 400, message: 'bad value'});
+                const onPartnerJobBlocked = jest.fn();
+                const {result} = renderUseJobUpdate({onPartnerJobBlocked});
+                const job = createMockJob({isPartnerJob: false});
+
+                await act(async () => {
+                    try {
+                        await result.current.updateField({job, field: JobProperty.Amount, value: 1, isRecurring: false});
+                    } catch { /* expected */ }
+                });
+
+                expect(onPartnerJobBlocked).not.toHaveBeenCalled();
+                expect(mockShowToast).toHaveBeenCalledWith('bad value', 'error');
+            });
+
+            it('does NOT fire the callback for non-400 errors on partner jobs — falls back to toast', async () => {
+                mockUpdateJobDetail.mockRejectedValueOnce({status: 500, message: 'server boom'});
+                const onPartnerJobBlocked = jest.fn();
+                const {result} = renderUseJobUpdate({onPartnerJobBlocked});
+                const job = createMockJob({isPartnerJob: true});
+
+                await act(async () => {
+                    try {
+                        await result.current.updateField({job, field: JobProperty.Amount, value: 1, isRecurring: false});
+                    } catch { /* expected */ }
+                });
+
+                expect(onPartnerJobBlocked).not.toHaveBeenCalled();
+                expect(mockShowToast).toHaveBeenCalledWith('server boom', 'error');
+            });
+        });
     });
 
     describe('updateAddress', () => {
         it('calls updateDeliveryAddress when isDelivery is true', async () => {
-            mockUpdateDeliveryAddress.mockResolvedValueOnce(undefined);
+            mockUpdateDeliveryAddress.mockResolvedValueOnce({});
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
             const address = {line1: '123 Main St'} as any;
@@ -187,7 +287,7 @@ describe('useJobUpdate', () => {
         });
 
         it('calls updatePickupAddress when isDelivery is false', async () => {
-            mockUpdatePickupAddress.mockResolvedValueOnce(undefined);
+            mockUpdatePickupAddress.mockResolvedValueOnce({});
             const {result} = renderUseJobUpdate();
             const job = createMockJob();
             const address = {line1: '456 Oak Ave'} as any;
@@ -199,6 +299,41 @@ describe('useJobUpdate', () => {
             expect(mockUpdatePickupAddress).toHaveBeenCalledWith(1, false, address);
             expect(mockUpdateDeliveryAddress).not.toHaveBeenCalled();
             expect(mockShowToast).toHaveBeenCalledWith('J100 updated', 'success');
+        });
+
+        it('shows "awaiting partner approval" toast when an address edit files a Pending change request', async () => {
+            mockUpdateDeliveryAddress.mockResolvedValueOnce({pending: true, requestId: 77});
+            const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob({isPartnerJob: true});
+            const address = {line1: '789 Pine Rd'} as any;
+
+            await act(async () => {
+                await result.current.updateAddress({job, address, isDelivery: true});
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringMatching(/address change requested.*awaiting partner approval/i),
+                'info',
+            );
+            // The new Pending row should land in the per-job change-request history panel.
+            expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobChangeRequests', 1]});
+        });
+
+        it('shows "synced with partner" toast when an address edit auto-applies on a partner job', async () => {
+            mockUpdatePickupAddress.mockResolvedValueOnce({applied: true, requestId: 78});
+            const {result} = renderUseJobUpdate();
+            const job = createMockJob({isPartnerJob: true});
+            const address = {line1: '321 Elm St'} as any;
+
+            await act(async () => {
+                await result.current.updateAddress({job, address, isDelivery: false});
+            });
+
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.stringMatching(/synced with partner/i),
+                'success',
+            );
         });
 
         it('shows error toast when updateAddress fails', async () => {
@@ -402,7 +537,7 @@ describe('useJobUpdate', () => {
         });
 
         it('invalidates job list caches after a successful address update', async () => {
-            mockUpdateDeliveryAddress.mockResolvedValueOnce(undefined);
+            mockUpdateDeliveryAddress.mockResolvedValueOnce({});
             const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
             const {result} = renderUseJobUpdate();
 

@@ -19,12 +19,14 @@ namespace DespatchWeb.Tests.Controllers;
 /// </summary>
 public class JobControllerTests : IDisposable
 {
-
     private readonly HttpClient _httpClient = new();
     private readonly IJobQueryRepository _jobQueryRepositoryMock = Substitute.For<IJobQueryRepository>();
     private readonly IJobCommandRepository _jobCommandRepositoryMock = Substitute.For<IJobCommandRepository>();
     private readonly ITaskRepository _taskRepositoryMock = Substitute.For<ITaskRepository>();
-    private readonly IClientAccessValidatorService _clientAccessValidatorMock = Substitute.For<IClientAccessValidatorService>();
+
+    private readonly IClientAccessValidatorService _clientAccessValidatorMock =
+        Substitute.For<IClientAccessValidatorService>();
+
     private readonly IRateJobService _rateJobServiceMock = Substitute.For<IRateJobService>();
     private readonly IRecurringJobRepository _recurringJobRepositoryMock = Substitute.For<IRecurringJobRepository>();
     private readonly ITenantInfoService _tenantInfoServiceMock = Substitute.For<ITenantInfoService>();
@@ -34,7 +36,10 @@ public class JobControllerTests : IDisposable
     private readonly IJobPhotoService _jobPhotoServiceMock = Substitute.For<IJobPhotoService>();
     private readonly IDispatchJobService _dispatchJobServiceMock = Substitute.For<IDispatchJobService>();
     private readonly IDeliveryJourneyService _deliveryJourneyServiceMock = Substitute.For<IDeliveryJourneyService>();
-    private readonly IPricingPermissionService _pricingPermissionServiceMock = Substitute.For<IPricingPermissionService>();
+
+    private readonly IPricingPermissionService _pricingPermissionServiceMock =
+        Substitute.For<IPricingPermissionService>();
+
     private readonly ISplitJobService _splitJobServiceMock = Substitute.For<ISplitJobService>();
     private readonly IPodReportService _podReportServiceMock = Substitute.For<IPodReportService>();
     private readonly ISendToPartnerService _sendToPartnerServiceMock = Substitute.For<ISendToPartnerService>();
@@ -42,7 +47,7 @@ public class JobControllerTests : IDisposable
 
     public JobControllerTests()
     {
-        // By default the gate sees jobs as non-partner so existing tests don't need to
+        // By default, the gate sees jobs as non-partner so existing tests don't need to
         // care about partnership semantics. Tests that exercise partner flows override
         // this on a per-call basis. Both overloads default to NotPartner.
         _partnerJobGateMock.EvaluateAsync(
@@ -124,12 +129,15 @@ public class JobControllerTests : IDisposable
         };
 
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _jobQueryRepositoryMock.JobListAsync(queryParams, true, false, null, Arg.Any<IReadOnlyList<int>>(), null, Arg.Any<CancellationToken>()).Returns(expectedResult);
+        _jobQueryRepositoryMock
+            .JobListAsync(queryParams, true, false, null, Arg.Any<IReadOnlyList<int>>(), null,
+                Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.Index(queryParams, isInternal: true, cid: 0, clientIds: null, despatchViewIds: []);
+        var result =
+            await controller.Index(queryParams, isInternal: true, cid: 0, clientIds: null, despatchViewIds: []);
 
         // Assert
         Assert.IsType<JsonResult>(result);
@@ -151,12 +159,15 @@ public class JobControllerTests : IDisposable
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds)
             .Returns(Task.CompletedTask);
-        _jobQueryRepositoryMock.JobListAsync(Arg.Any<JobQueryParams>(), false, false, clientIds, Arg.Any<IReadOnlyList<int>>(), null, Arg.Any<CancellationToken>()).Returns(new JobSearchResult { Jobs = [], TotalCount = 0 });
+        _jobQueryRepositoryMock
+            .JobListAsync(Arg.Any<JobQueryParams>(), false, false, clientIds, Arg.Any<IReadOnlyList<int>>(), null,
+                Arg.Any<CancellationToken>()).Returns(new JobSearchResult { Jobs = [], TotalCount = 0 });
 
         var controller = CreateController();
 
         // Act
-        await controller.Index(queryParams, isInternal: false, cid: contactId, clientIds: clientIds, despatchViewIds: []);
+        await controller.Index(queryParams, isInternal: false, cid: contactId, clientIds: clientIds,
+            despatchViewIds: []);
 
         // Assert
         await _clientAccessValidatorMock.Received().ValidateClientAccessAsync(contactId, clientIds);
@@ -171,12 +182,14 @@ public class JobControllerTests : IDisposable
         const string clientIds = "456";
 
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds).ThrowsAsync(new UnauthorizedAccessException("Unauthorized"));
+        _clientAccessValidatorMock.ValidateClientAccessAsync(contactId, clientIds)
+            .ThrowsAsync(new UnauthorizedAccessException("Unauthorized"));
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.Index(queryParams, isInternal: false, cid: contactId, clientIds: clientIds, despatchViewIds: []);
+        var result = await controller.Index(queryParams, isInternal: false, cid: contactId, clientIds: clientIds,
+            despatchViewIds: []);
 
         // Assert
         Assert.IsType<ObjectResult>(result);
@@ -191,12 +204,15 @@ public class JobControllerTests : IDisposable
         var queryParams = new JobQueryParams();
 
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _jobQueryRepositoryMock.JobListAsync(Arg.Any<JobQueryParams>(), true, false, null, Arg.Any<IReadOnlyList<int>>(), null, Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Database error"));
+        _jobQueryRepositoryMock
+            .JobListAsync(Arg.Any<JobQueryParams>(), true, false, null, Arg.Any<IReadOnlyList<int>>(), null,
+                Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.Index(queryParams, isInternal: true, cid: 0, clientIds: null, despatchViewIds: []);
+        var result =
+            await controller.Index(queryParams, isInternal: true, cid: 0, clientIds: null, despatchViewIds: []);
 
         // Assert
         Assert.IsType<ObjectResult>(result);
@@ -214,7 +230,8 @@ public class JobControllerTests : IDisposable
             new() { Id = 2, PickupLatitude = -36.8500m, PickupLongitude = 174.7700m }
         };
 
-        _jobQueryRepositoryMock.GetJobCoordinatesAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>()).Returns(expectedCoordinates);
+        _jobQueryRepositoryMock.GetJobCoordinatesAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<CancellationToken>())
+            .Returns(expectedCoordinates);
 
         var controller = CreateController();
 
@@ -258,7 +275,8 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffId().Returns(1);
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
-        _jobQueryRepositoryMock.JobListAsync(queryParams, true, false, null, Arg.Any<IReadOnlyList<int>>(), clearListId, Arg.Any<CancellationToken>()).Returns(expectedResult);
+        _jobQueryRepositoryMock.JobListAsync(queryParams, true, false, null, Arg.Any<IReadOnlyList<int>>(), clearListId,
+            Arg.Any<CancellationToken>()).Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -552,7 +570,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 999;
 
-        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Job not found"));
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("Job not found"));
 
         var controller = CreateController();
 
@@ -996,7 +1015,8 @@ public class JobControllerTests : IDisposable
             JobIds = [1]
         };
 
-        _dispatchJobServiceMock.DispatchJobsToCourierAsync(request.JobIds, request.CourierId).ThrowsAsync(new Exception("Allocation failed"));
+        _dispatchJobServiceMock.DispatchJobsToCourierAsync(request.JobIds, request.CourierId)
+            .ThrowsAsync(new Exception("Allocation failed"));
 
         var controller = CreateController();
 
@@ -1062,7 +1082,8 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
-        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), ct: Arg.Any<CancellationToken>()).Returns((1, 2));
+        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), ct: Arg.Any<CancellationToken>())
+            .Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1100,7 +1121,8 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
-        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(), Arg.Any<CancellationToken>()).Returns((10, 11));
+        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(),
+            Arg.Any<int?>(), Arg.Any<CancellationToken>()).Returns((10, 11));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1145,7 +1167,8 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
-        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42, Arg.Any<CancellationToken>()).Returns((1, 2));
+        _splitJobServiceMock.SplitJobAsync(1, "John Doe", Arg.Any<AddressViewModel>(), 42, Arg.Any<CancellationToken>())
+            .Returns((1, 2));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1181,7 +1204,9 @@ public class JobControllerTests : IDisposable
 
         _tenantInfoServiceMock.GetStaffInfoAsync()
             .Returns(staffInfo);
-        _splitJobServiceMock.SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(), Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Job not found"));
+        _splitJobServiceMock
+            .SplitJobAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<AddressViewModel>(), Arg.Any<int?>(),
+                Arg.Any<CancellationToken>()).ThrowsAsync(new InvalidOperationException("Job not found"));
 
         var controller = CreateControllerForSplitJob();
 
@@ -1357,7 +1382,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 1;
 
-        _jobCommandRepositoryMock.UpdateJobAsync(jobId, JobProperty.ConNote, "test").ThrowsAsync(new Exception("Update failed"));
+        _jobCommandRepositoryMock.UpdateJobAsync(jobId, JobProperty.ConNote, "test")
+            .ThrowsAsync(new Exception("Update failed"));
 
         var controller = CreateController();
 
@@ -1830,7 +1856,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         var request = new ClientJobsReportRequest();
 
-        _jobReportServiceMock.GenerateClientJobsReportCsvAsync(request).ThrowsAsync(new InvalidOperationException("No jobs found"));
+        _jobReportServiceMock.GenerateClientJobsReportCsvAsync(request)
+            .ThrowsAsync(new InvalidOperationException("No jobs found"));
 
         var controller = CreateController();
 
@@ -2111,7 +2138,8 @@ public class JobControllerTests : IDisposable
         const int jobId = 999;
         const string note = "Test";
 
-        _jobCommandRepositoryMock.UpdateJobNoteAsync(jobId, note).ThrowsAsync(new KeyNotFoundException("Job not found"));
+        _jobCommandRepositoryMock.UpdateJobNoteAsync(jobId, note)
+            .ThrowsAsync(new KeyNotFoundException("Job not found"));
 
         var controller = CreateController();
 
@@ -3071,10 +3099,10 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Void_RejectsPartnerJob()
+    public async Task Void_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(1).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(1).Returns(true);
 
         var result = await controller.Void(new VoidJobRequest { JobId = 1 });
 
@@ -3082,10 +3110,26 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task Allocate_RejectsPartnerJob()
+    public async Task Void_AllowsInboundPartnerJob()
+    {
+        // Receiver-side mirror: PartnerJobGuid is set but no JobPartnerDispatch row,
+        // so IsOutboundPartnerJobAsync returns false and the void runs locally.
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(2).Returns(false);
+        _jobQueryRepositoryMock.IsJobArchived(2).Returns(false);
+        _jobQueryRepositoryMock.GetJobParentIdAsync(2).Returns((int?)null);
+
+        var result = await controller.Void(new VoidJobRequest { JobId = 2 });
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received().VoidJobAsync(Arg.Is<VoidJobRequest>(r => r.JobId == 2));
+    }
+
+    [Fact]
+    public async Task Allocate_RejectsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(5).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(5).Returns(true);
 
         var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [5], CourierId = 1 });
 
@@ -3093,12 +3137,42 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task ReAssignSelected_RejectsPartnerJob()
+    public async Task Allocate_AllowsInboundPartnerJob()
+    {
+        // Tenant B (receiver) has no JobPartnerDispatch row for the job — they own
+        // the courier slot locally and must be able to dispatch.
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(6).Returns(false);
+
+        var result = await controller.Allocate(new AllocateJobsToCourierRequest { JobIds = [6], CourierId = 1 });
+
+        Assert.IsType<OkResult>(result);
+        await _dispatchJobServiceMock.Received()
+            .DispatchJobsToCourierAsync(Arg.Is<List<int>>(ids => ids.Contains(6)), 1);
+    }
+
+    [Fact]
+    public async Task ReAllocate_RejectsOutboundPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(7).Returns(true);
+
+        var result = await controller.ReAllocate(new AllocateJobsToCourierRequest { JobIds = [7], CourierId = 1 });
+
+        Assert.IsType<BadRequestObjectResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .ReDispatchSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
+        await _dispatchJobServiceMock.DidNotReceive()
+            .DispatchJobsToCourierAsync(Arg.Any<List<int>>(), Arg.Any<int>());
+    }
+
+    [Fact]
+    public async Task ReAssignSelected_RejectsOutboundPartnerJob()
     {
         // Auto-dispatch reassignment would swap the partner-placeholder courier on the
-        // tenant A side and diverge from the partner's view of who owns the job.
+        // sender side and diverge from the partner's view of who owns the job.
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(31).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(31).Returns(true);
 
         var result = await controller.ReAssignSelected("31");
 
@@ -3108,11 +3182,11 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task ReAssignSelected_RejectsWhenAnyJobInBatchIsPartnerJob()
+    public async Task ReAssignSelected_RejectsWhenAnyJobInBatchIsOutboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(32).Returns(false);
-        _jobQueryRepositoryMock.IsPartnerJobAsync(33).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(32).Returns(false);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(33).Returns(true);
 
         var result = await controller.ReAssignSelected("32,33");
 
@@ -3122,15 +3196,40 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task SetFirstJob_RejectsPartnerJob()
+    public async Task ReAssignSelected_AllowsInboundPartnerJob()
     {
         var controller = CreateController();
-        _jobQueryRepositoryMock.IsPartnerJobAsync(34).Returns(true);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(35).Returns(false);
+
+        var result = await controller.ReAssignSelected("35");
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received()
+            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Contains(35)));
+    }
+
+    [Fact]
+    public async Task SetFirstJob_RejectsOutboundPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(34).Returns(true);
 
         var result = await controller.SetFirstJob(jobId: 34, courierId: 1);
 
         Assert.IsType<BadRequestObjectResult>(result);
         await _jobCommandRepositoryMock.DidNotReceive().SetFirstJobAsync(34, 1);
+    }
+
+    [Fact]
+    public async Task SetFirstJob_AllowsInboundPartnerJob()
+    {
+        var controller = CreateController();
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(36).Returns(false);
+
+        var result = await controller.SetFirstJob(jobId: 36, courierId: 2);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received().SetFirstJobAsync(36, 2);
     }
 
     [Fact]
@@ -3251,8 +3350,9 @@ public class JobControllerTests : IDisposable
         // After Phase B-3 the partner-job path filed a change request and returned 202
         // Accepted instead of 400 BadRequest. The mock gate returns its default
         // (NotPartner) since the test class doesn't configure the new partner path —
-        // restate the assertion to reflect the new gate-routed behaviour.
-        _partnerJobGateMock.EvaluateAsync(17, JobChangeField.Packages, Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
+        // restate the assertion to reflect the new gate-routed behavior.
+        _partnerJobGateMock.EvaluateAsync(17, JobChangeField.Packages, Arg.Any<string?>(), Arg.Any<string?>(),
+                Arg.Any<CancellationToken>())
             .Returns(new PartnerJobGateResult.PendingApproval(123));
 
         var result = await controller.UpdateJobPackages(new UpdateJobPackagesRequest

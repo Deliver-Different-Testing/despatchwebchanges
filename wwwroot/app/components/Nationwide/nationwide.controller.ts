@@ -45,14 +45,13 @@ import JobAddStopService from "../../services/job-add-stop.service";
 import FlightAgentConfirmationDialogService
     from "../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service";
 import {openAgentInfoDialog} from "../../react/components/dialogs/agent-info-dialog";
+import {openRecoveryAgentManagementDialog} from "../../react/components/dialogs/recovery-agent-management-dialog";
 import dayjs, {Dayjs} from "dayjs";
 import MessagingDialogService from "../dialogs/messaging-dialog/messaging-dialog.service";
 import {ContactID, TimeZone} from "../../contants";
 import {StatusFilter} from "../../enums/status-filter.enum";
 import TasksService from "../../services/tasks.service";
 import JobListType from "../../enums/job-list-type.enum";
-import RecoveryAgentManagementService
-    from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import {formatDateForApiWithTzs, getIanaTimezone} from "../../react/utils/dateUtils";
 import {
     fetchNationwideJobsNew,
@@ -94,7 +93,6 @@ class NationwideControl extends BaseController {
         'flightAgentConfirmationDialogService',
         'messagingDialogService',
         'tasksService',
-        'recoveryAgentManagementService',
         'dashboardSettingsDialogService',
         '$scope',
         '$timeout',
@@ -249,7 +247,6 @@ class NationwideControl extends BaseController {
         private flightAgentConfirmationDialogService: FlightAgentConfirmationDialogService,
         private messagingDialogService: MessagingDialogService,
         private tasksService: TasksService,
-        private recoveryAgentManagementService: RecoveryAgentManagementService,
         private dashboardSettingsDialog: DashboardSettingsDialogService,
         $scope: angular.IScope,
         $timeout: angular.ITimeoutService,
@@ -2078,8 +2075,8 @@ class NationwideControl extends BaseController {
         }
     }
 
-    async openRecoveryAgentDialog($event: MouseEvent, job: IDispatchJob): Promise<void> {
-        await this.recoveryAgentManagementService.openRecoveryAgentManagementDialog($event, job.id);
+    async openRecoveryAgentDialog(_$event: MouseEvent, job: IDispatchJob): Promise<void> {
+        await openRecoveryAgentManagementDialog({jobId: job.id});
     }
 
     initRefreshIntervalOptions(): void {

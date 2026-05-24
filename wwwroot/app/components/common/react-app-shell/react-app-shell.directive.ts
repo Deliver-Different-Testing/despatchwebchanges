@@ -1,6 +1,6 @@
 import angular from 'angular';
 import { initAiSettings } from '../../../functions/aiSettings';
-import { openHubUrl } from '../../../react/services/navigationService';
+import { openHubUrl, openJobInSearch } from '../../../react/services/navigationService';
 /**
  * React App Shell Directive
  *
@@ -216,6 +216,15 @@ function reactAppShellDirective(
                         },
                     };
                 }
+
+                // Partner approvals badge — always available, surfaces pending
+                // inter-tenant change requests this tenant must review. Clicking
+                // a job row in the drawer opens that job in a new tab via the
+                // existing deep-link helper.
+                actions.partnerApprovals = {
+                    enabled: true,
+                    onOpenJob: (jobId: number) => openJobInSearch(jobId),
+                };
 
                 ReactAppShell.setToolbarActions(actions);
             };

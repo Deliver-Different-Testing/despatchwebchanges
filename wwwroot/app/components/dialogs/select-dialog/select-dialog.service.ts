@@ -60,13 +60,13 @@ export class SelectDialogService implements angular.IServiceProvider {
     ): Promise<ISelectDialogResult | undefined> {
         console.debug('SelectDialogService: showSelectDialog called');
 
+        await this.loadReactDialog();
+
+        if (!window.ReactSelectDialog) {
+            throw new Error('React select dialog not loaded');
+        }
+
         try {
-            await this.loadReactDialog();
-
-            if (!window.ReactSelectDialog) {
-                throw new Error('React select dialog not loaded');
-            }
-
             const result = await window.ReactSelectDialog.showSelectDialog({
                 title,
                 fieldName,

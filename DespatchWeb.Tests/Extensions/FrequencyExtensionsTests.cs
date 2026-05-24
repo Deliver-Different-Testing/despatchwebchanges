@@ -24,7 +24,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void ToDisplayString_CombinedFlags_ReturnsCommaSeparatedString()
     {
-        var frequency = Frequency.Weekly | Frequency.FirstOfMonth;
+        const Frequency frequency = Frequency.Weekly | Frequency.FirstOfMonth;
 
         var result = frequency.ToDisplayString();
 
@@ -34,7 +34,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void ToDisplayString_MultipleCombinedFlags_ReturnsAllCommaSeparated()
     {
-        var frequency = Frequency.Weekly | Frequency.Fortnightly | Frequency.LastWorkdayOfMonth;
+        const Frequency frequency = Frequency.Weekly | Frequency.Fortnightly | Frequency.LastWorkdayOfMonth;
 
         var result = frequency.ToDisplayString();
 
@@ -159,7 +159,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void IsFirstWorkdayOfMonth_MonthStartsOnSunday_MondayIsFirstWorkday()
     {
-        // June 1, 2025 is a Sunday, so June 2 (Monday) is first workday
+        // June 1, 2025, is a Sunday, so June 2 (Monday) is first workday
         var date = new DateTime(2025, 6, 2);
 
         Assert.True(FrequencyExtensions.IsFirstWorkdayOfMonth(date));
@@ -177,7 +177,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void IsLastWorkdayOfMonth_LastDayIsMonday_ReturnsTrue()
     {
-        // March 31, 2025 is a Monday
+        // March 31, 2025, is a Monday
         var date = new DateTime(2025, 3, 31);
 
         Assert.True(FrequencyExtensions.IsLastWorkdayOfMonth(date));
@@ -195,7 +195,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void IsLastWorkdayOfMonth_NotLastWorkday_ReturnsFalse()
     {
-        // March 28, 2025 is a Friday, but March 31 is a Monday (weekday)
+        // March 28, 2025, is a Friday, but March 31 is a Monday (weekday)
         var date = new DateTime(2025, 3, 28);
 
         Assert.False(FrequencyExtensions.IsLastWorkdayOfMonth(date));
@@ -204,7 +204,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void IsLastWorkdayOfMonth_Saturday_ReturnsFalse()
     {
-        // March 29, 2025 is a Saturday
+        // March 29, 2025, is a Saturday
         var date = new DateTime(2025, 3, 29);
 
         Assert.False(FrequencyExtensions.IsLastWorkdayOfMonth(date));
@@ -213,7 +213,7 @@ public class FrequencyExtensionsTests
     [Fact]
     public void IsLastWorkdayOfMonth_Sunday_ReturnsFalse()
     {
-        // March 30, 2025 is a Sunday
+        // March 30, 2025, is a Sunday
         var date = new DateTime(2025, 3, 30);
 
         Assert.False(FrequencyExtensions.IsLastWorkdayOfMonth(date));
@@ -264,7 +264,8 @@ public class FrequencyExtensionsTests
         var after = new DateTime(2025, 1, 15);
         var reference = new DateTime(2025, 1, 1);
 
-        var result = FrequencyExtensions.GetNextOccurrenceForSingleFrequency(Frequency.FirstWorkdayOfMonth, after, reference);
+        var result =
+            FrequencyExtensions.GetNextOccurrenceForSingleFrequency(Frequency.FirstWorkdayOfMonth, after, reference);
 
         Assert.NotNull(result);
         Assert.Equal(new DateTime(2025, 2, 3), result.Value);
@@ -288,7 +289,8 @@ public class FrequencyExtensionsTests
         var after = new DateTime(2025, 1, 1);
         var reference = new DateTime(2025, 1, 1);
 
-        var result = FrequencyExtensions.GetNextOccurrenceForSingleFrequency(Frequency.LastWorkdayOfMonth, after, reference);
+        var result =
+            FrequencyExtensions.GetNextOccurrenceForSingleFrequency(Frequency.LastWorkdayOfMonth, after, reference);
 
         Assert.NotNull(result);
         Assert.Equal(new DateTime(2025, 1, 31), result.Value);

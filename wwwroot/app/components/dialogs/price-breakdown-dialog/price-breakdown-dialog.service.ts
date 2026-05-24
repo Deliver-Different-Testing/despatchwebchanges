@@ -122,12 +122,9 @@ class PriceBreakdownDialogService implements angular.IServiceProvider {
             // Load the React dialog module on demand
             await this.loadReactPriceBreakdownDialog();
 
-            if (!window.ReactPriceBreakdownDialog) {
-                throw new Error('React price breakdown dialog not loaded');
-            }
-
             // Open the React dialog (uses default React API service internally)
-            const newAmount = await window.ReactPriceBreakdownDialog.open(
+            // loadReactPriceBreakdownDialog throws on failure, so the global is populated here.
+            const newAmount = await window.ReactPriceBreakdownDialog!.open(
                 priceBreakdowns,
                 job.id,
                 job.preBook,

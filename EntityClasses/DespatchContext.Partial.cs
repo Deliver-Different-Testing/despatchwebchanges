@@ -29,6 +29,13 @@ public partial class DespatchContext
     private static readonly Func<DespatchContext, int, Task<bool>> IsArchivedPartnerJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
             context.TucJobArchives.Any(j => j.UcjbId == jobId && j.PartnerJobGuid.HasValue));
+
+    // "Outbound" = this tenant sent the job to a partner. The presence of a
+    // JobPartnerDispatch row is the marker — the receiving tenant's mirror row
+    // has PartnerJobGuid but no dispatch row, so it returns false here.
+    private static readonly Func<DespatchContext, int, Task<bool>> IsOutboundPartnerJobCompiled =
+        EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
+            context.JobPartnerDispatches.Any(d => d.JobId == jobId));
     
     private static readonly Func<DespatchContext, int, Task<int>> GetEffectiveJobIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
@@ -252,6 +259,9 @@ public partial class DespatchContext
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await IsLivePartnerJobCompiled(this, jobId)
         || await IsArchivedPartnerJobCompiled(this, jobId);
+
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) =>
+        await IsOutboundPartnerJobCompiled(this, jobId);
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {

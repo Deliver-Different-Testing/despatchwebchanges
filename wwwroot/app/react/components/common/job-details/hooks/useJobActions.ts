@@ -61,6 +61,14 @@ interface UseJobActionsOptions {
     invalidateAllJobDetails: () => Promise<void>;
     relatedJobs: IJob[];
     onStatusChange?: (statusId: number) => void;
+    /**
+     * Open the inter-tenant change-request dialog for the current partner job.
+     * Called from action handlers that know the inline edit will be rejected
+     * by the partner-job gate (e.g. Pricing). The field name must match a
+     * value in JobChangeRequestDialog.FIELD_OPTIONS — typically one of
+     * 'PartnerAgreedRate', 'Quantity', 'Speed'.
+     */
+    onRequestPartnerChange?: (field: string, initialValue?: string) => void;
 }
 
 export function useJobActions({
@@ -79,6 +87,7 @@ export function useJobActions({
     invalidateAllJobDetails,
     relatedJobs,
     onStatusChange,
+    onRequestPartnerChange,
 }: UseJobActionsOptions) {
     const {
         ensureSelectDialog,
@@ -537,7 +546,11 @@ export function useJobActions({
         // commercially-meaningful field here is PartnerAgreedRate, which is set when
         // the job is dispatched and can only change through a Manual change request.
         if (j.isPartnerJob) {
-            showToast(`${j.jobNo} is managed by a partner. Use Request Change to negotiate the agreed rate.`, 'info');
+            if (onRequestPartnerChange) {
+                onRequestPartnerChange('PartnerAgreedRate');
+            } else {
+                showToast(`${j.jobNo} is managed by a partner. Use Request Change to negotiate the agreed rate.`, 'info');
+            }
             return;
         }
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
@@ -558,7 +571,7 @@ export function useJobActions({
             await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived);
         }
         await refreshAndNotify();
-    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify]);
+    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange]);
 
     const handleStatusClick = useCallback(async () => {
         const j = jobRef.current;

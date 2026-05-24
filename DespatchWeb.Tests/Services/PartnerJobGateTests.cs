@@ -48,7 +48,6 @@ public class PartnerJobGateTests
     [Theory]
     [InlineData(JobProperty.RefA, "ABC")]
     [InlineData(JobProperty.ConNote, "note")]
-    [InlineData(JobProperty.FromContactName, "Jane")]
     [InlineData(JobProperty.TrackingMobile, "0211234")]
     public async Task PartnerJobAutoField_FilesAutoApplied(JobProperty property, string value)
     {
@@ -70,6 +69,8 @@ public class PartnerJobGateTests
     [InlineData(JobProperty.SpeedID, "5")]
     [InlineData(JobProperty.Date, "2026-05-21")]
     [InlineData(JobProperty.DGClass, "3")]
+    [InlineData(JobProperty.FromContactName, "Jane")]
+    [InlineData(JobProperty.ToContactPhone, "021-9999")]
     public async Task PartnerJobManualField_FilesPendingApproval(JobProperty property, string value)
     {
         _jobQueryRepository.IsPartnerJobAsync(1).Returns(true);

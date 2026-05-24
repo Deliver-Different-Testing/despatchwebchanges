@@ -35,4 +35,12 @@ public interface IJobChangeRequestService
     Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid, PeerInboundChangeAppliedPayload payload, CancellationToken ct);
 
     Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct);
+
+    /// <summary>
+    /// Rows the local tenant must approve — Status='Pending' AND Origin='Peer'
+    /// (anything peer-originated where this side is the approval party). Joined
+    /// with <c>tucJob</c> for the job number and client name so the inbox page
+    /// can render without per-row job fetches.
+    /// </summary>
+    Task<IReadOnlyList<JobChangeRequestInboxItem>> ListPendingForApprovalAsync(int limit, CancellationToken ct);
 }

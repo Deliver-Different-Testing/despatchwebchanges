@@ -39,6 +39,23 @@ public class JobChangePolicyServiceTests
         Assert.True(decision.RequiresCommercialRefresh);
     }
 
+    [Theory]
+    [InlineData(JobChangeField.FromContactName)]
+    [InlineData(JobChangeField.ToContactName)]
+    [InlineData(JobChangeField.FromContactPhone)]
+    [InlineData(JobChangeField.ToContactPhone)]
+    public void Contact_fields_require_counterparty_approval_without_commercial_refresh(JobChangeField field)
+    {
+        var decision = _service.Evaluate(field, "OwnerTenant", JobLifecycleStage.InTransit);
+
+        Assert.True(decision.Allowed);
+        Assert.Equal(JobChangeApprovalMode.Manual, decision.Mode);
+        Assert.Equal("PartnerTenant", decision.ApprovalPartyType);
+        // Changing who the courier calls doesn't affect rate — keep the re-rate flag off.
+        Assert.False(decision.RequiresCommercialRefresh);
+        Assert.Contains("InTransit", decision.RuleCode);
+    }
+
     [Fact]
     public void PartnerAgreedRate_is_manual_pre_settlement()
     {

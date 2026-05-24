@@ -605,6 +605,36 @@ public sealed class JobChangeRequestService(
         return rows.Select(ToDto).ToList();
     }
 
+    public async Task<IReadOnlyList<JobChangeRequestInboxItem>> ListPendingForApprovalAsync(int limit,
+        CancellationToken ct)
+    {
+        await using var ctx = await contextFactory.CreateDbContextAsync(ct);
+
+        // Pending + Origin=Peer is the canonical "this tenant must approve" filter:
+        // peer-originated rows always have ApprovalPartyType set to the local role,
+        // and local-originated rows are awaiting the *other* side's approval.
+        // Join through TucJobs → TucClients in a single round-trip so the inbox page
+        // doesn't N+1-fetch job details for every row.
+        var query =
+            from r in ctx.TucJobChangeRequests.AsNoTracking()
+            where r.UjcrStatus == JobChangeRequestStatus.Pending && r.UjcrOrigin == "Peer"
+            join j in ctx.TucJobs.AsNoTracking() on r.UjcrJobId equals j.UcjbId
+            join c in ctx.TucClients.AsNoTracking() on j.UcjbClientId equals c.UcclId into clients
+            from c in clients.DefaultIfEmpty()
+            orderby r.UjcrId descending
+            select new {Row = r, JobNo = j.UcjbNumber, ClientName = c != null ? c.UcclName : null};
+
+        var rows = await query.Take(limit).ToListAsync(ct);
+        return rows
+            .Select(x => new JobChangeRequestInboxItem
+            {
+                Request = ToDto(x.Row),
+                JobNo = x.JobNo ?? string.Empty,
+                ClientName = x.ClientName,
+            })
+            .ToList();
+    }
+
     private async Task ApplyFieldChangeAsync(DespatchContext ctx, int jobId, JobChangeField field,
         string? requestedValue, CancellationToken ct)
     {

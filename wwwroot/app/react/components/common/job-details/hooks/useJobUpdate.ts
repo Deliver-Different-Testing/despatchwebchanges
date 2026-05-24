@@ -41,6 +41,22 @@ const RERATE_FIELDS = new Set<string>([
     JobProperty.DeliverToPrivateRes,
 ]);
 
+/**
+ * Maps the JobProperty identifier used by inline Job Details edits to the
+ * JobChangeField string the partner change-request workflow expects
+ * (mirrors DespatchWeb.Enums.JobChangeField on the backend, and the closed
+ * set rendered by JobChangeRequestDialog.FIELD_OPTIONS).
+ *
+ * When an inline edit of one of these fields fails on a partner job, we
+ * surface the change-request dialog preselected with the mapped field
+ * instead of just toasting "managed by partner".
+ */
+export const PARTNER_CHANGE_REQUEST_FIELD_MAP: Record<string, string> = {
+    [JobProperty.Amount]: 'PartnerAgreedRate',
+    [JobProperty.SpeedID]: 'Speed',
+    [JobProperty.Items]: 'Quantity',
+};
+
 export interface PendingRateChange {
     jobId: number;
     jobNo: string;
@@ -69,8 +85,21 @@ interface DispatchJobParams {
     courierId: number;
 }
 
+export interface UseJobUpdateOptions {
+    /**
+     * Called when an inline field edit on a partner job is rejected by the
+     * backend gate AND the field is mappable to a JobChangeRequest field
+     * (see PARTNER_CHANGE_REQUEST_FIELD_MAP). The caller is expected to open
+     * the JobChangeRequestDialog preselected with the mapped field. When this
+     * fires, the generic error toast is suppressed so the user only sees the
+     * dialog.
+     */
+    onPartnerJobBlocked?: (args: {field: string; value: unknown; message: string}) => void;
+}
+
 export function useJobUpdate(
     showToast: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void,
+    options?: UseJobUpdateOptions,
 ) {
     const queryClient = useQueryClient();
     const [pendingRateChange, setPendingRateChange] = useState<PendingRateChange | null>(null);
@@ -139,30 +168,54 @@ export function useJobUpdate(
                 await checkForRateChange(job);
             }
         },
-        onError: (error: unknown) => {
+        onError: (error: unknown, variables: UpdateFieldParams) => {
             // The apiClient interceptor reshapes axios errors into ApiError { status,
             // statusText, message }. Surface the backend's "managed by partner" /
             // "cannot be edited" message when present so the user sees why the save
             // was refused.
-            const message = (error as {message?: string})?.message;
+            const err = error as {status?: number; message?: string};
+            const message = err?.message;
+            // Partner-job gate rejected an inline edit of a field the user can
+            // negotiate via the change-request workflow — route them to the dialog
+            // pre-populated instead of just toasting an opaque error.
+            const mappedField = PARTNER_CHANGE_REQUEST_FIELD_MAP[variables.field];
+            if (err?.status === 400 && variables.job.isPartnerJob && mappedField && options?.onPartnerJobBlocked) {
+                options.onPartnerJobBlocked({
+                    field: mappedField,
+                    value: variables.value,
+                    message: message ?? '',
+                });
+                return;
+            }
             showToast(message ?? 'Failed to update job. Please try again.', 'error');
         },
     });
 
     const updateAddressMutation = useMutation({
         mutationFn: async ({job, address, isDelivery}: UpdateAddressParams) => {
-            if (isDelivery) {
-                await updateDeliveryAddress(job.id, job.preBook, address);
-            } else {
-                await updatePickupAddress(job.id, job.preBook, address);
-            }
-            return {job};
+            const response = isDelivery
+                ? await updateDeliveryAddress(job.id, job.preBook, address)
+                : await updatePickupAddress(job.id, job.preBook, address);
+            return {job, response};
         },
-        onSuccess: async ({job}) => {
-            showToast(`${job.jobNo} updated`, 'success');
+        onSuccess: async ({job, response}) => {
+            // Partner-job address edits don't write locally — the gate files a Pending
+            // change request (Manual policy for PickupAddress / DeliveryAddress) and
+            // returns 202 with { pending: true }. Mirror the field-update toast so the
+            // user knows the change is queued, not silently lost.
+            if (response?.pending) {
+                showToast(`${job.jobNo}: address change requested — awaiting partner approval`, 'info');
+                await invalidateChangeRequests(job.id);
+            } else if (response?.applied && job.isPartnerJob) {
+                showToast(`${job.jobNo} synced with partner`, 'success');
+                await invalidateChangeRequests(job.id);
+            } else {
+                showToast(`${job.jobNo} updated`, 'success');
+            }
             await invalidateJob(job.id);
             await invalidateJobLists();
-            if (!job.ratedManually) {
+            // Pending changes haven't actually mutated the job — skip the rate-change probe.
+            if (!response?.pending && !job.ratedManually) {
                 await checkForRateChange(job);
             }
         },

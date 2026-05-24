@@ -55,13 +55,13 @@ class SimplePriceEditDialogService implements angular.IServiceProvider {
     }
 
     async openSimplePriceEditDialog(_$event: MouseEvent, job: IJob, isPrebook: boolean = false): Promise<PriceEditResult> {
+        await this.loadReactSimplePriceEditDialog();
+
+        if (!window.ReactSimplePriceEditDialog) {
+            throw new Error('React simple price edit dialog not loaded');
+        }
+
         try {
-            await this.loadReactSimplePriceEditDialog();
-
-            if (!window.ReactSimplePriceEditDialog) {
-                throw new Error('React simple price edit dialog not loaded');
-            }
-
             // Create toast bridge
             window.ReactSimplePriceEditDialog.setToastService({
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {

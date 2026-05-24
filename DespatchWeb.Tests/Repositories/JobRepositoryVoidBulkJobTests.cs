@@ -183,7 +183,7 @@ public class JobRepositoryVoidBulkJobTests
         var request = new VoidBulkJobRequest
         {
             BulkJobId = 2,
-            VoidSingleJobOnly = false,  // This will void parent and all siblings
+            VoidSingleJobOnly = false, // This will void parent and all siblings
             VoidReason = "Test void from child"
         };
 
@@ -545,10 +545,10 @@ public class JobRepositoryVoidBulkJobTests
         // Arrange
         var allJobs = new List<TestBulkJob>
         {
-            new() { BulkJobId = 1, ParentBulkJobId = null },  // Parent
-            new() { BulkJobId = 2, ParentBulkJobId = 1 },     // Child 1
-            new() { BulkJobId = 3, ParentBulkJobId = 1 },     // Child 2
-            new() { BulkJobId = 10, ParentBulkJobId = null },  // Another parent
+            new() { BulkJobId = 1, ParentBulkJobId = null }, // Parent
+            new() { BulkJobId = 2, ParentBulkJobId = 1 }, // Child 1
+            new() { BulkJobId = 3, ParentBulkJobId = 1 }, // Child 2
+            new() { BulkJobId = 10, ParentBulkJobId = null }, // Another parent
             new() { BulkJobId = 11, ParentBulkJobId = 10 } // Unrelated child
         };
 
@@ -563,5 +563,4 @@ public class JobRepositoryVoidBulkJobTests
         Assert.DoesNotContain(10, result);
         Assert.DoesNotContain(11, result);
     }
-
 }

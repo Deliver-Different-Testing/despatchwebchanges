@@ -63,16 +63,16 @@ class MessagingDialogService implements angular.IServiceProvider {
     }
 
     async openMessagingDialog(_$event?: MouseEvent) {
+        this.$log.debug("MessagingDialogService: Dialog opened!");
+
+        // Load the React dialog module
+        await this.loadReactDialog();
+
+        if (!window.ReactMessagingDialog) {
+            throw new Error('React messaging dialog not loaded');
+        }
+
         try {
-            this.$log.debug("MessagingDialogService: Dialog opened!");
-
-            // Load the React dialog module
-            await this.loadReactDialog();
-
-            if (!window.ReactMessagingDialog) {
-                throw new Error('React messaging dialog not loaded');
-            }
-
             // Create toast service wrapper for UI notifications
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {

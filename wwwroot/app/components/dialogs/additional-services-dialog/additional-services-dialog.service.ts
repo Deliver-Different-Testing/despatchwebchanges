@@ -61,10 +61,6 @@ class AdditionalServicesDialogService implements angular.IServiceProvider {
             // Load the React dialog module
             await this.loadReactDialog();
 
-            if (!window.ReactAdditionalServicesDialog) {
-                throw new Error('React additional services dialog not loaded');
-            }
-
             // Create toast service wrapper for UI notifications
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
@@ -84,7 +80,8 @@ class AdditionalServicesDialogService implements angular.IServiceProvider {
 
             // Open the React dialog (validation happens in React)
             // Note: 'items' and 'speedName' only exist on IJob, not IDispatchJob
-            await window.ReactAdditionalServicesDialog.open({
+            // loadReactDialog throws on failure, so the global is populated here.
+            await window.ReactAdditionalServicesDialog!.open({
                 job: {
                     id: job.id ?? 0,
                     clientId: job.clientId ?? 0,

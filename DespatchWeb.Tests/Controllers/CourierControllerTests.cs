@@ -30,12 +30,12 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "courier";
-        var expectedCouriers = new List<Suggestion>
-        {
+        IReadOnlyList<Suggestion> expectedCouriers =
+        [
             new() { Id = 1, Text = "001 (Courier Alpha)" },
             new() { Id = 2, Text = "002 (Courier Beta)" },
             new() { Id = 3, Text = "003 (Courier Charlie)" }
-        };
+        ];
 
         _courierRepository.AllActiveCouriersAsync(searchTerm, false, true).Returns(expectedCouriers);
 
@@ -45,15 +45,8 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> couriers)
-        {
-            Assert.Equal(3, couriers.Count);
-            Assert.Contains("Alpha", couriers[0].Text);
-            Assert.Contains("Beta", couriers[1].Text);
-            Assert.Contains("Charlie", couriers[2].Text);
-        }
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCouriers, jsonResult.Value);
     }
 
     [Fact]
@@ -61,11 +54,11 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "john";
-        var expectedCouriers = new List<Suggestion>
-        {
+        IReadOnlyList<Suggestion> expectedCouriers =
+        [
             new() { Id = 1, Text = "001 (John Doe)" },
             new() { Id = 2, Text = "002 (Johnny Smith)" }
-        };
+        ];
 
         _courierRepository.AllActiveCouriersAsync(searchTerm)
             .Returns(expectedCouriers);
@@ -76,11 +69,8 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        var couriers = jsonResult.Value as List<Suggestion>;
-        Assert.NotNull(couriers);
-        Assert.Equal(2, couriers.Count);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCouriers, jsonResult.Value);
     }
 
     [Fact]
@@ -88,10 +78,10 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "test";
-        var expectedCouriers = new List<Suggestion>
-        {
+        IReadOnlyList<Suggestion> expectedCouriers =
+        [
             new() { Id = 1, Text = "001 (DG Courier)" }
-        };
+        ];
 
         _courierRepository.AllActiveCouriersAsync(searchTerm, true).Returns(expectedCouriers);
 
@@ -104,7 +94,8 @@ public class CourierControllerTests
         await _courierRepository
             .Received(1)
             .AllActiveCouriersAsync(searchTerm, true);
-        Assert.IsType<JsonResult>(result);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCouriers, jsonResult.Value);
     }
 
     [Fact]
@@ -112,10 +103,10 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "test";
-        var expectedCouriers = new List<Suggestion>
-        {
+        IReadOnlyList<Suggestion> expectedCouriers =
+        [
             new() { Id = 1, Text = "001 (Logged In Courier)" }
-        };
+        ];
 
         _courierRepository.AllActiveCouriersAsync(searchTerm, false, true).Returns(expectedCouriers);
 
@@ -128,7 +119,8 @@ public class CourierControllerTests
         await _courierRepository
             .Received(1)
             .AllActiveCouriersAsync(searchTerm, false, true);
-        Assert.IsType<JsonResult>(result);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCouriers, jsonResult.Value);
     }
 
     [Fact]
@@ -136,10 +128,10 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "test";
-        var expectedCouriers = new List<Suggestion>
-        {
+        IReadOnlyList<Suggestion> expectedCouriers =
+        [
             new() { Id = 1, Text = "001 (DG Logged In Courier)" }
-        };
+        ];
 
         _courierRepository.AllActiveCouriersAsync(searchTerm, true, true).Returns(expectedCouriers);
 
@@ -152,7 +144,8 @@ public class CourierControllerTests
         await _courierRepository
             .Received(1)
             .AllActiveCouriersAsync(searchTerm, true, true);
-        Assert.IsType<JsonResult>(result);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCouriers, jsonResult.Value);
     }
 
     [Fact]
@@ -160,9 +153,8 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "test";
-        var expectedCouriers = new List<Suggestion>();
 
-        _courierRepository.AllActiveCouriersAsync(searchTerm).Returns(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm).Returns(Array.Empty<Suggestion>());
 
         var controller = CreateController();
 
@@ -179,7 +171,7 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "test";
-        var expectedCouriers = new List<Suggestion>();
+        IReadOnlyList<Suggestion> expectedCouriers = [];
 
         _courierRepository.AllActiveCouriersAsync(searchTerm, false, true).Returns(expectedCouriers);
 
@@ -189,11 +181,8 @@ public class CourierControllerTests
         var result = await controller.AllActiveSearch(searchTerm, dgOnly: false, loggedInOnly: true);
 
         // Assert
-        Assert.IsType<JsonResult>(result);
-        var jsonResult = (JsonResult)result;
-        var couriers = jsonResult.Value as List<Suggestion>;
-        Assert.NotNull(couriers);
-        Assert.Empty(couriers);
+        var jsonResult = Assert.IsType<JsonResult>(result);
+        Assert.Equal(expectedCouriers, jsonResult.Value);
     }
 
     [Fact]
@@ -221,9 +210,8 @@ public class CourierControllerTests
     {
         // Arrange
         const string searchTerm = "";
-        var expectedCouriers = new List<Suggestion>();
 
-        _courierRepository.AllActiveCouriersAsync(searchTerm).Returns(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm).Returns(Array.Empty<Suggestion>());
 
         var controller = CreateController();
 
@@ -241,9 +229,8 @@ public class CourierControllerTests
     {
         // Arrange
         string? searchTerm = null;
-        var expectedCouriers = new List<Suggestion>();
 
-        _courierRepository.AllActiveCouriersAsync(searchTerm!).Returns(expectedCouriers);
+        _courierRepository.AllActiveCouriersAsync(searchTerm!).Returns(Array.Empty<Suggestion>());
 
         var controller = CreateController();
 
@@ -263,7 +250,8 @@ public class CourierControllerTests
         var despatchViewIds = new List<int> { 1, 2 };
         var expectedResult = new ClearListViewModel();
 
-        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>()).Returns(expectedResult);
+        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>())
+            .Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -286,7 +274,8 @@ public class CourierControllerTests
         var endDate = new DateTimeOffset(2024, 1, 16, 0, 0, 0, TimeSpan.Zero);
         var expectedResult = new ClearListViewModel();
 
-        _courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, Arg.Any<CancellationToken>()).Returns(expectedResult);
+        _courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate, Arg.Any<CancellationToken>())
+            .Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -307,7 +296,8 @@ public class CourierControllerTests
         // Arrange
         var expectedResult = new ClearListViewModel();
 
-        _courierRepository.GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), null, null, Arg.Any<CancellationToken>()).Returns(expectedResult);
+        _courierRepository.GetClearListsAsync(Arg.Any<IReadOnlyList<int>>(), null, null, Arg.Any<CancellationToken>())
+            .Returns(expectedResult);
 
         var controller = CreateController();
 
@@ -327,7 +317,8 @@ public class CourierControllerTests
         // Arrange
         var despatchViewIds = new List<int> { 1 };
 
-        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>()).ThrowsAsync(new Exception("Database error"));
+        _courierRepository.GetClearListsAsync(despatchViewIds, null, null, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new Exception("Database error"));
 
         var controller = CreateController();
 
@@ -348,7 +339,8 @@ public class CourierControllerTests
         const string fileName = "today-active-drivers-2026-02-18-1430.csv";
 
         _courierReportService
-            .GenerateTodayActiveDriversCsvAsync(Arg.Any<TodayActiveDriversFilterRequest>()).Returns((csvBytes, fileName));
+            .GenerateTodayActiveDriversCsvAsync(Arg.Any<TodayActiveDriversFilterRequest>())
+            .Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -389,7 +381,8 @@ public class CourierControllerTests
         var csvBytes = "Code,Name\nC001,John"u8.ToArray();
         const string fileName = "driver-compliance-2026-02-18-1430.csv";
 
-        _courierReportService.GenerateComplianceCsvAsync(Arg.Any<CourierComplianceFilterRequest>()).Returns((csvBytes, fileName));
+        _courierReportService.GenerateComplianceCsvAsync(Arg.Any<CourierComplianceFilterRequest>())
+            .Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -425,10 +418,11 @@ public class CourierControllerTests
     {
         // Arrange
         var csvBytes = "Driver Name,Driver Code\nJohn,C001"u8.ToArray();
-        var fileName = "after-hours-schedule-2026-02-18-1430.csv";
+        const string fileName = "after-hours-schedule-2026-02-18-1430.csv";
 
         _courierReportService
-            .GenerateAfterHoursScheduleCsvAsync(Arg.Any<CourierAfterHoursFilterRequest>()).Returns((csvBytes, fileName));
+            .GenerateAfterHoursScheduleCsvAsync(Arg.Any<CourierAfterHoursFilterRequest>())
+            .Returns((csvBytes, fileName));
 
         var controller = CreateController();
 
@@ -619,7 +613,8 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "code" };
-        _courierRepository.GetCourierEmailsAsync(Arg.Any<PaginatedRequest>()).Returns(new PaginatedResponse<CourierEmailViewModel>());
+        _courierRepository.GetCourierEmailsAsync(Arg.Any<PaginatedRequest>())
+            .Returns(new PaginatedResponse<CourierEmailViewModel>());
 
         var controller = CreateController();
 
@@ -637,7 +632,8 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "name", SortDescending = true };
-        _courierRepository.GetCourierEmailsAsync(Arg.Any<PaginatedRequest>()).Returns(new PaginatedResponse<CourierEmailViewModel>());
+        _courierRepository.GetCourierEmailsAsync(Arg.Any<PaginatedRequest>())
+            .Returns(new PaginatedResponse<CourierEmailViewModel>());
 
         var controller = CreateController();
 
@@ -716,7 +712,8 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "earnings" };
-        _courierRepository.GetCourierDailyEarningsAsync(Arg.Any<PaginatedRequest>()).Returns(new CourierDailyEarningsPaginatedResponse());
+        _courierRepository.GetCourierDailyEarningsAsync(Arg.Any<PaginatedRequest>())
+            .Returns(new CourierDailyEarningsPaginatedResponse());
 
         var controller = CreateController();
 
@@ -734,7 +731,8 @@ public class CourierControllerTests
     {
         // Arrange
         var request = new PaginatedRequest { Page = 1, PageSize = 10, OrderBy = "hourlyrate", SortDescending = true };
-        _courierRepository.GetCourierDailyEarningsAsync(Arg.Any<PaginatedRequest>()).Returns(new CourierDailyEarningsPaginatedResponse());
+        _courierRepository.GetCourierDailyEarningsAsync(Arg.Any<PaginatedRequest>())
+            .Returns(new CourierDailyEarningsPaginatedResponse());
 
         var controller = CreateController();
 
@@ -746,5 +744,4 @@ public class CourierControllerTests
             .Received(1)
             .GetCourierDailyEarningsAsync(Arg.Is<PaginatedRequest>(r => r.SortDescending == true));
     }
-
 }

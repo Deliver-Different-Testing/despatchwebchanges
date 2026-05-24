@@ -62,13 +62,13 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
     ): Promise<IDialogDateTimeResult | undefined> {
         console.debug('EditDateTimeDialogService: showEditTimeDialog called');
 
+        await this.loadReactDialog();
+
+        if (!window.ReactEditDateTimeDialog) {
+            throw new Error('React edit date time dialog not loaded');
+        }
+
         try {
-            await this.loadReactDialog();
-
-            if (!window.ReactEditDateTimeDialog) {
-                throw new Error('React edit date time dialog not loaded');
-            }
-
             const result = await window.ReactEditDateTimeDialog.showEditTimeDialog({
                 title,
                 fieldName,
@@ -102,13 +102,13 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
     ): Promise<IDialogDateTimeResult | undefined> {
         console.debug('EditDateTimeDialogService: showEditDateDialog called');
 
+        await this.loadReactDialog();
+
+        if (!window.ReactEditDateTimeDialog) {
+            throw new Error('React edit date time dialog not loaded');
+        }
+
         try {
-            await this.loadReactDialog();
-
-            if (!window.ReactEditDateTimeDialog) {
-                throw new Error('React edit date time dialog not loaded');
-            }
-
             const result = await window.ReactEditDateTimeDialog.showEditDateDialog({
                 title,
                 fieldName,
@@ -142,13 +142,13 @@ export class EditDateTimeDialogService implements angular.IServiceProvider {
     ): Promise<IDialogDateTimeResult | undefined> {
         console.debug('EditDateTimeDialogService: showEditDateAndTimeDialog called');
 
+        await this.loadReactDialog();
+
+        if (!window.ReactEditDateTimeDialog) {
+            throw new Error('React edit date time dialog not loaded');
+        }
+
         try {
-            await this.loadReactDialog();
-
-            if (!window.ReactEditDateTimeDialog) {
-                throw new Error('React edit date time dialog not loaded');
-            }
-
             const result = await window.ReactEditDateTimeDialog.showEditDateAndTimeDialog({
                 title,
                 fieldName,

@@ -50,17 +50,16 @@ class FlightDetailsDialogService implements angular.IServiceProvider {
         }
     }
 
-    async openFlightDetailsDialog($event: MouseEvent, flightData: IFlightViewModel): Promise<void> {
+    async openFlightDetailsDialog(_$event: MouseEvent, flightData: IFlightViewModel): Promise<void> {
         console.debug('FlightDetailsDialogService: openFlightDetailsDialog called');
 
+        await this.loadReactDialog();
+
+        if (!window.ReactFlightDetailsDialog) {
+            throw new Error('React flight details dialog not loaded');
+        }
+
         try {
-            // Load the React dialog module on demand
-            await this.loadReactDialog();
-
-            if (!window.ReactFlightDetailsDialog) {
-                throw new Error('React flight details dialog not loaded');
-            }
-
             // Open the React dialog
             await window.ReactFlightDetailsDialog.openFlightDetailsDialog(flightData);
 

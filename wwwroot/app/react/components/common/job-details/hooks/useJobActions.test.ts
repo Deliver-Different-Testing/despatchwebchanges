@@ -654,3 +654,72 @@ describe('useJobActions — handleVoidClick', () => {
         expect(mockInvalidateJobLists).not.toHaveBeenCalled();
     });
 });
+
+describe('useJobActions — handlePricingClick on a partner job', () => {
+    it('invokes onRequestPartnerChange with PartnerAgreedRate and skips the legacy toast', async () => {
+        const mockShowToast = jest.fn();
+        const mockOnRequestPartnerChange = jest.fn();
+        const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
+
+        const {result} = renderHook(() =>
+            useJobActions({
+                job,
+                isRecurringJob: false,
+                isUsCustomer: false,
+                showToast: mockShowToast,
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                updatePod: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+                invalidateJobLists: jest.fn().mockResolvedValue([]),
+                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+                relatedJobs: [],
+                onRequestPartnerChange: mockOnRequestPartnerChange,
+            }),
+        );
+
+        await act(async () => {
+            await result.current.handlePricingClick();
+        });
+
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('PartnerAgreedRate');
+        // Legacy "managed by partner" toast must NOT fire — the dialog is the new path.
+        expect(mockShowToast).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the legacy toast when onRequestPartnerChange is not supplied', async () => {
+        const mockShowToast = jest.fn();
+        const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
+
+        const {result} = renderHook(() =>
+            useJobActions({
+                job,
+                isRecurringJob: false,
+                isUsCustomer: false,
+                showToast: mockShowToast,
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                updatePod: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+                invalidateJobLists: jest.fn().mockResolvedValue([]),
+                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+                relatedJobs: [],
+            }),
+        );
+
+        await act(async () => {
+            await result.current.handlePricingClick();
+        });
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.stringMatching(/managed by a partner/),
+            'info',
+        );
+    });
+});

@@ -71,10 +71,6 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
         try {
             await this.loadReactDialog();
 
-            if (!window.ReactAccessorialChargesDialog) {
-                throw new Error('React accessorial charges dialog not loaded');
-            }
-
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {
@@ -91,7 +87,8 @@ class AccessorialChargesDialogService implements angular.IServiceProvider {
                 },
             };
 
-            await window.ReactAccessorialChargesDialog.open({
+            // loadReactDialog throws on failure, so the global is populated here.
+            await window.ReactAccessorialChargesDialog!.open({
                 job: {
                     id: job.id ?? 0,
                     accessorialChargeGroupId: groupId ?? 0,

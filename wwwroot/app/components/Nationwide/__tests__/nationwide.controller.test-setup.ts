@@ -28,10 +28,10 @@ jest.mock('../../../services/job-add-stop.service', () => ({}));
 jest.mock('../../dialogs/flight-agent-conformation-dialog/flight-agent-confirmation-dialog.service', () => ({}));
 jest.mock('../../dialogs/messaging-dialog/messaging-dialog.service', () => ({}));
 jest.mock('../../../services/tasks.service', () => ({}));
-jest.mock('../../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service', () => ({}));
 jest.mock('../../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service', () => ({}));
 jest.mock('../../../react/components/dialogs/add-event-dialog', () => ({openAddEventDialog: jest.fn()}));
 jest.mock('../../../react/components/dialogs/agent-info-dialog', () => ({openAgentInfoDialog: jest.fn()}));
+jest.mock('../../../react/components/dialogs/recovery-agent-management-dialog', () => ({openRecoveryAgentManagementDialog: jest.fn()}));
 jest.mock('../../../react/services/jobSearchApi', () => ({
     fetchNationwideJobsNew: jest.fn(),
     fetchNationwideJobsPod: jest.fn(),

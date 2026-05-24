@@ -90,12 +90,9 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             // Load the React dialog module on demand
             await this.loadReactDialog();
 
-            if (!window.ReactFlightAgentConfirmationDialog) {
-                throw new Error('React flight agent confirmation dialog not loaded');
-            }
-
             // Open the React dialog
-            const result = await window.ReactFlightAgentConfirmationDialog.openFlightDialog({
+            // loadReactDialog throws on failure, so the global is populated here.
+            const result = await window.ReactFlightAgentConfirmationDialog!.openFlightDialog({
                 jobId: job.id,
                 jobNumber: job.jobNo,
                 flight: flight as unknown as FlightViewModelForReact,
@@ -131,12 +128,9 @@ class FlightAgentConfirmationDialogService implements angular.IServiceProvider {
             // Load the React dialog module on demand
             await this.loadReactDialog();
 
-            if (!window.ReactFlightAgentConfirmationDialog) {
-                throw new Error('React flight agent confirmation dialog not loaded');
-            }
-
             // Open the React dialog
-            const result = await window.ReactFlightAgentConfirmationDialog.openAgentDialog({
+            // loadReactDialog throws on failure, so the global is populated here.
+            const result = await window.ReactFlightAgentConfirmationDialog!.openAgentDialog({
                 jobId: job.id,
                 jobNumber: job.jobNo,
                 agent: agent,

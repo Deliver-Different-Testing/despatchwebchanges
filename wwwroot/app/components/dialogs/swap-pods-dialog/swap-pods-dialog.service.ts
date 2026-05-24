@@ -47,13 +47,13 @@ class SwapPodsDialogService implements angular.IServiceProvider {
     }
 
     async showSwapPodsDialog(job: IDispatchJob): Promise<boolean | null> {
+        await this.loadReactSwapPodsDialog();
+
+        if (!window.ReactSwapPodsDialog) {
+            throw new Error('React swap PODs dialog not loaded');
+        }
+
         try {
-            await this.loadReactSwapPodsDialog();
-
-            if (!window.ReactSwapPodsDialog) {
-                throw new Error('React swap PODs dialog not loaded');
-            }
-
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {

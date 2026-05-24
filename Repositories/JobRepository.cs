@@ -5052,6 +5052,9 @@ public partial class JobRepository(
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await Context.IsPartnerJobAsync(jobId);
 
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) =>
+        await Context.IsOutboundPartnerJobAsync(jobId);
+
     public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
         CancellationToken cancellationToken = default)
         => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);

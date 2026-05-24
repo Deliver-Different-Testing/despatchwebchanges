@@ -9,7 +9,6 @@ namespace DespatchWeb.Tests.Helpers;
 /// </summary>
 public class TimeZoneHelperTests
 {
-
     [Fact]
     public void SetDateTimeWithTimeZone_DateTimeOffset_WithUtc_ReturnsUtcOffset()
     {
@@ -75,12 +74,13 @@ public class TimeZoneHelperTests
         // Arrange
         var dateTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
-        // Act
-        Action act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Invalid TimeZone");
-
         // Assert
-        var ex = Assert.Throws<ArgumentException>(act);
+        var ex = Assert.Throws<ArgumentException>((Action)Act);
         Assert.Contains("Invalid or unsupported time zone", ex.Message);
+        return;
+
+        // Act
+        void Act() => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "Invalid TimeZone");
     }
 
     [Fact]
@@ -89,12 +89,13 @@ public class TimeZoneHelperTests
         // Arrange
         var dateTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
-        // Act
-        Action act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, "");
-
         // Assert
-        var ex = Assert.Throws<ArgumentException>(act);
+        var ex = Assert.Throws<ArgumentException>((Action)Act);
         Assert.Contains("Time zone cannot be null or empty", ex.Message);
+        return;
+
+        // Act
+        void Act() => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, string.Empty);
     }
 
     [Fact]
@@ -103,12 +104,13 @@ public class TimeZoneHelperTests
         // Arrange
         var dateTime = new DateTimeOffset(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
 
-        // Act
-        Action act = () => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, null!);
-
         // Assert
-        var ex = Assert.Throws<ArgumentException>(act);
+        var ex = Assert.Throws<ArgumentException>((Action)Act);
         Assert.Contains("Time zone cannot be null or empty", ex.Message);
+        return;
+
+        // Act
+        void Act() => TimeZoneHelper.SetDateTimeWithTimeZone(dateTime, null!);
     }
 
     [Fact]
@@ -210,5 +212,4 @@ public class TimeZoneHelperTests
         Assert.Equal(TimeSpan.FromHours(-7), result.Offset);
         Assert.Equal(new DateTime(2024, 7, 15, 12, 0, 0), result.DateTime);
     }
-
 }

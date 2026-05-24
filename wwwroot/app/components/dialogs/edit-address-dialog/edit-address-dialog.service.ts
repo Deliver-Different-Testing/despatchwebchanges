@@ -118,16 +118,16 @@ export class EditAddressDialogService implements angular.IServiceProvider {
         submitLabel: string = 'Save',
         showContactInfo: boolean = false
     ): Promise<IEditAddressDialogViewModel | undefined> {
+        console.debug('EditAddressDialogService: Opening dialog for address:', addressDetails);
+
+        // Load the React dialog module on demand
+        await this.loadReactEditAddressDialog();
+
+        if (!window.ReactEditAddressDialog) {
+            throw new Error('React edit address dialog not loaded');
+        }
+
         try {
-            console.debug('EditAddressDialogService: Opening dialog for address:', addressDetails);
-
-            // Load the React dialog module on demand
-            await this.loadReactEditAddressDialog();
-
-            if (!window.ReactEditAddressDialog) {
-                throw new Error('React edit address dialog not loaded');
-            }
-
             // Create toast service wrapper for UI notifications
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
