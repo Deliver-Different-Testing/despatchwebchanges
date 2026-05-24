@@ -210,7 +210,7 @@ public partial class JobRepository
                     else
                     {
                         var childJobLookup = existingChildJobIds
-                            .GroupBy(pb => pb.ChargeName)
+                            .GroupBy(pb => pb.ChargeName.Trim())
                             .ToDictionary(g => g.Key, g => g.First().ChildJobId!.Value);
 
                         modifiedLines = lines.Select(line =>
