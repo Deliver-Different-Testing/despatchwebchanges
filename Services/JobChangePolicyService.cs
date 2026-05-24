@@ -5,13 +5,15 @@ namespace DespatchWeb.Services;
 
 /// <summary>
 /// Hard-coded v1 policy matrix:
-///   Auto    — Notes family + customer-visible non-rated fields (refs, contacts,
-///             tracking, barcode). Applies immediately on both sides; no approval gate.
+///   Auto    — Notes family + customer-visible non-rated fields (refs, tracking,
+///             barcode, leave-parcel). Applies immediately on both sides; no
+///             approval gate.
 ///   Manual  — Rated / commercially-affecting fields (Quantity, Speed, rate, dates,
-///             times, DG, direct flag, accepted job type). Counterparty must approve.
-///             Quantity / Speed / time + date / direct / DG / accepted-type also flag
-///             RequiresCommercialRefresh so the approver re-rates via the IM rate-for-job
-///             endpoint before stamping Applied.
+///             times, DG, direct flag, accepted job type) PLUS the four explicit
+///             contact fields (From/To contact name + phone). Counterparty must
+///             approve. Rated entries also flag RequiresCommercialRefresh so the
+///             approver re-rates via the IM rate-for-job endpoint before stamping
+///             Applied; contact entries do not.
 /// SettlementInclusive (post-settlement rate lock) is deferred until tucJob carries a
 /// settlement marker — when added, restore the Prohibited branch on PartnerAgreedRate.
 /// Manual rules always assert the counterparty is the approval party.
@@ -36,16 +38,21 @@ public sealed class JobChangePolicyService : IJobChangePolicyService
                 or JobChangeField.RefB
                 or JobChangeField.OurRef
                 or JobChangeField.Attention
-                or JobChangeField.FromContactName
-                or JobChangeField.ToContactName
-                or JobChangeField.FromContactPhone
-                or JobChangeField.ToContactPhone
                 or JobChangeField.TrackingMobile
                 or JobChangeField.TrackingEmail
                 or JobChangeField.TrackingMethod
                 or JobChangeField.Barcode
                 or JobChangeField.DeliverToLeaveID =>
                 Auto(field, requestingPartyType),
+
+            // Manual — explicit contact fields (who the courier calls at pickup /
+            // dropoff). Operationally significant, but no commercial refresh — the
+            // rate doesn't depend on contact details.
+            JobChangeField.FromContactName
+                or JobChangeField.ToContactName
+                or JobChangeField.FromContactPhone
+                or JobChangeField.ToContactPhone =>
+                Manual(approvalParty, $"{field}_CHANGE_{stage}", requiresCommercialRefresh: false),
 
             // Manual — rate itself. The policy flags this as "refresh required" for
             // schema/audit consistency with other rated fields; ApproveAsync special-cases

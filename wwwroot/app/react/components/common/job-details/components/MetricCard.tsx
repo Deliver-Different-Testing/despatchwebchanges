@@ -21,6 +21,12 @@ interface MetricCardProps {
     category?: MetricCategory;
     filled?: boolean;
     dense?: boolean;
+    /**
+     * Optional overlay rendered absolutely on top of the card. Used for the
+     * partner-job "change pending" indicator — the wrapping container is
+     * already position: relative.
+     */
+    overlay?: React.ReactNode;
 }
 
 const categoryAccentMap: Record<MetricCategory, string> = {
@@ -64,6 +70,7 @@ export const MetricCard = React.memo(({
                                           category = 'info',
                                           filled,
                                           dense,
+                                          overlay,
                                       }: MetricCardProps) => {
     const isClickable = onClick && !disabled;
     const accentColor = categoryAccentMap[category];
@@ -113,6 +120,7 @@ export const MetricCard = React.memo(({
             >
                 {value || '\u2014'}
             </Typography>
+            {overlay}
         </Box>
     );
 

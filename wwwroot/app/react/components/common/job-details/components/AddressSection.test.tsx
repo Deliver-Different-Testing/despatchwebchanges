@@ -4,15 +4,15 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {AddressSection} from './AddressSection';
 import {createMockJob, createMockAddress} from '../__testUtils__/mockJob';
+import {renderWithProviders} from '../../../../__testUtils__';
 
-const theme = createTheme();
-
+// AddressSection reads usePendingChangeForField (React Query); the test needs
+// both ThemeProvider AND QueryClientProvider — renderWithProviders bundles them.
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithProviders(ui);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {

@@ -59,52 +59,52 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
     async openSettingsDialog(_$event: MouseEvent, appPage: AppPage, currentLayoutName: string,
                              boxes: Record<string, IBox>, selectedRefreshInterval?: ISuggestion,
                              selectedDriverLocationRefreshInterval?: ISuggestion): Promise<ISettingsDialogResult | undefined> {
+        let title: string;
+        switch (appPage) {
+            case AppPage.Dispatch:
+                title = "Dispatch Dashboard Settings";
+                break;
+            case AppPage.Domestic:
+                title = "Domestic Dashboard Settings";
+                break;
+            case AppPage.JobSearch:
+                title = "Job Search Dashboard Settings";
+                break;
+            default:
+                title = "Dashboard Settings";
+        }
+
+        const isValidPage = appPage === AppPage.Dispatch
+            || appPage === AppPage.Domestic
+            || appPage === AppPage.JobSearch;
+        const canShowDashboards = isValidPage && !isDefaultLayout(currentLayoutName);
+
+        console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
+
+        const config: IDashboardSettingsConfig = {
+            title,
+            showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
+            showDriverLocationRefresh: appPage === AppPage.Dispatch,
+            showDashboards: canShowDashboards,
+            showAiToggle: isAiServerEnabled()
+        };
+
+        if (!selectedRefreshInterval) {
+            selectedRefreshInterval = {id: 0, text: "Disabled"};
+        }
+
+        if (!selectedDriverLocationRefreshInterval) {
+            selectedDriverLocationRefreshInterval = {id: 0, text: "Disabled"};
+        }
+
+        // Load the React dialog module on demand
+        await this.loadReactDashboardSettingsDialog();
+
+        if (!window.ReactDashboardSettingsDialog) {
+            throw new Error('React dashboard settings dialog not loaded');
+        }
+
         try {
-            let title: string;
-            switch (appPage) {
-                case AppPage.Dispatch:
-                    title = "Dispatch Dashboard Settings";
-                    break;
-                case AppPage.Domestic:
-                    title = "Domestic Dashboard Settings";
-                    break;
-                case AppPage.JobSearch:
-                    title = "Job Search Dashboard Settings";
-                    break;
-                default:
-                    title = "Dashboard Settings";
-            }
-
-            const isValidPage = appPage === AppPage.Dispatch 
-                || appPage === AppPage.Domestic 
-                || appPage === AppPage.JobSearch;
-            const canShowDashboards = isValidPage && !isDefaultLayout(currentLayoutName);
-
-            console.log('DashboardSettingsDialog: Opening with layout', currentLayoutName, 'isDefault:', isDefaultLayout(currentLayoutName), 'canShowDashboards:', canShowDashboards);
-
-            const config: IDashboardSettingsConfig = {
-                title,
-                showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
-                showDriverLocationRefresh: appPage === AppPage.Dispatch,
-                showDashboards: canShowDashboards,
-                showAiToggle: isAiServerEnabled()
-            };
-
-            if (!selectedRefreshInterval) {
-                selectedRefreshInterval = {id: 0, text: "Disabled"};
-            }
-
-            if (!selectedDriverLocationRefreshInterval) {
-                selectedDriverLocationRefreshInterval = {id: 0, text: "Disabled"};
-            }
-
-            // Load the React dialog module on demand
-            await this.loadReactDashboardSettingsDialog();
-
-            if (!window.ReactDashboardSettingsDialog) {
-                throw new Error('React dashboard settings dialog not loaded');
-            }
-
             // Open the React dialog
             const result = await window.ReactDashboardSettingsDialog.open(
                 config,
@@ -122,7 +122,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 console.debug('User closed dialog');
                 return;
             }
-            
+
             console.error('DashboardSettingsDialogService: Error in openSettingsDialog', error);
             throw error;
         }

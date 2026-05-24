@@ -91,6 +91,28 @@ public class JobChangeRequestController(IJobChangeRequestService service) : Cont
     }
 
     /// <summary>
+    /// Approver inbox feed: Pending change requests this tenant must review.
+    /// Driven by Status='Pending' AND Origin='Peer' on the local DB — see
+    /// <see cref="IJobChangeRequestService.ListPendingForApprovalAsync"/>.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> PendingForApproval(int limit, CancellationToken ct)
+    {
+        try
+        {
+            var effective = limit is > 0 and <= 500 ? limit : 200;
+            var rows = await service.ListPendingForApprovalAsync(effective, ct);
+            return Json(rows);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "{Message}", ErrorMessageStringFormatter.FormatForLogging(
+                ex, nameof(JobChangeRequestController), nameof(PendingForApproval)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
+    /// <summary>
     /// Internal: called by Integration Manager (with SC-JWT) when a peer's change request arrives.
     /// Not user-facing; protected by the same [Authorize] gate as the rest of the controller —
     /// IM mints a per-tenant JWT that DespatchWeb's auth middleware accepts.

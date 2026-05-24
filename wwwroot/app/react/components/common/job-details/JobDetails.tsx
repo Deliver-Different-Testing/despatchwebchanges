@@ -24,7 +24,6 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import type {SxProps, Theme} from '@mui/material/styles';
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
 import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
-
 import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {useJobDetail} from './hooks/useJobDetail';
@@ -49,6 +48,8 @@ import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
 import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
+import {JobChangeRequestDialog} from '../../dialogs/job-change-request-dialog/JobChangeRequestDialog';
+import {PartnerJobBanner} from './components/PartnerJobBanner';
 
 import type {IJob, MountJobDetailsConfig} from './JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../utils/dateUtils';
@@ -70,7 +71,13 @@ function CardVisibilityToggle({label, fieldKey, isVisible, onToggle}: {
                 </IconButton>
             }>
                 <ListItemButton dense onClick={() => onToggle(fieldKey)}>
-                    <ListItemText primary={label} slotProps={{primary: {variant: 'body2', fontSize: '0.8125rem', color: isVisible ? 'text.primary' : 'text.disabled'}}}/>
+                    <ListItemText primary={label} slotProps={{
+                        primary: {
+                            variant: 'body2',
+                            fontSize: '0.8125rem',
+                            color: isVisible ? 'text.primary' : 'text.disabled'
+                        }
+                    }}/>
                 </ListItemButton>
             </ListItem>
         </List>
@@ -166,11 +173,22 @@ const rootStyles: Record<string, SxProps<Theme>> = {
 };
 
 export function JobDetails({config}: JobDetailsProps) {
-    const {jobId, isRecurringJob, isBulkJob, isUsCustomer, showToast: showToastProp, onJobUpdate, onJobReadChanged, onRelatedJobChange} = config;
+    const {
+        jobId,
+        isRecurringJob,
+        isBulkJob,
+        isUsCustomer,
+        showToast: showToastProp,
+        onJobUpdate,
+        onJobReadChanged,
+        onRelatedJobChange
+    } = config;
 
     // Stabilize showToast — may come from AngularJS bridge with unstable identity
     const showToastRef = useRef(showToastProp);
-    useEffect(() => { showToastRef.current = showToastProp; }, [showToastProp]);
+    useEffect(() => {
+        showToastRef.current = showToastProp;
+    }, [showToastProp]);
     const showToast = useCallback(
         (msg: string, type: 'success' | 'error' | 'warning' | 'info') => showToastRef.current(msg, type),
         []
@@ -206,14 +224,35 @@ export function JobDetails({config}: JobDetailsProps) {
         [job?.daysOfWeek]
     );
 
+    // Inter-tenant change-request dialog state. Opened when an inline edit on a
+    // partner job hits the gate (via useJobUpdate.onPartnerJobBlocked) or when
+    // a click handler short-circuits because it knows the field is gated (via
+    // useJobActions.onRequestPartnerChange). Carries the preselected field and
+    // any value the user already supplied so the dialog opens primed.
+    const [changeRequestDialog, setChangeRequestDialog] = useState<{
+        open: boolean;
+        field?: string;
+        value?: string
+    }>({open: false});
+
     // Update mutations
     const {
         updateField, updateAddress, updatePod, toggleReadStatus, dispatchJob, isUpdating, invalidateJobLists,
         checkForRateChange, pendingRateChange, isApplyingRate, confirmRateChange, dismissRateChange,
-    } = useJobUpdate(showToast);
+    } = useJobUpdate(showToast, {
+        onPartnerJobBlocked: ({field, value}) => {
+            setChangeRequestDialog({open: true, field, value: value == null ? '' : String(value)});
+        },
+    });
 
     // Photos
-    const {deliveryPhotos, pickupPhotos, imageOnlyDeliveryPhotos, imageOnlyPickupPhotos, isLoading: photosLoading} = usePodPhotos({
+    const {
+        deliveryPhotos,
+        pickupPhotos,
+        imageOnlyDeliveryPhotos,
+        imageOnlyPickupPhotos,
+        isLoading: photosLoading
+    } = usePodPhotos({
         job,
         isRecurringJob,
     });
@@ -268,6 +307,8 @@ export function JobDetails({config}: JobDetailsProps) {
         invalidateAllJobDetails: () => rqClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
         relatedJobs: sortedRelatedJobs,
         onStatusChange: config.onStatusChange,
+        onRequestPartnerChange: (field, initialValue) =>
+            setChangeRequestDialog({open: true, field, value: initialValue ?? ''}),
     });
 
     // Initialize the tab to show the originally-selected job. Only runs once per jobId change —
@@ -306,11 +347,11 @@ export function JobDetails({config}: JobDetailsProps) {
         return (
             <Box sx={rootStyles.loadingSkeleton}>
                 <Stack spacing={1.5}>
-                    <Skeleton variant="rectangular" height={44} sx={{borderRadius: 1}} />
-                    <Skeleton variant="rectangular" height={100} sx={{borderRadius: 1}} />
+                    <Skeleton variant="rectangular" height={44} sx={{borderRadius: 1}}/>
+                    <Skeleton variant="rectangular" height={100} sx={{borderRadius: 1}}/>
                     <Box sx={{display: 'flex', gap: 1.5}}>
-                        <Skeleton variant="rectangular" height={140} sx={{flex: 1, borderRadius: 1}} />
-                        <Skeleton variant="rectangular" height={140} sx={{flex: 1, borderRadius: 1}} />
+                        <Skeleton variant="rectangular" height={140} sx={{flex: 1, borderRadius: 1}}/>
+                        <Skeleton variant="rectangular" height={140} sx={{flex: 1, borderRadius: 1}}/>
                     </Box>
                 </Stack>
             </Box>
@@ -334,9 +375,14 @@ export function JobDetails({config}: JobDetailsProps) {
             {/* Main card */}
             <Paper elevation={0} sx={rootStyles.mainPaperPositioned}>
                 {/* Progress indicator */}
-                {(isLoading || isFetching || isUpdating) && <LinearProgress sx={rootStyles.progressBar} />}
+                {(isLoading || isFetching || isUpdating) && <LinearProgress sx={rootStyles.progressBar}/>}
 
-                <WarningBanner job={job} />
+                <WarningBanner job={job}/>
+
+                {/* Partner-job context banner — slim, dismissible (per-device).
+                    Explains the change-request workflow up-front so dispatchers
+                    don't discover gated fields by trying them. */}
+                {job.isPartnerJob && <PartnerJobBanner/>}
 
                 <RelatedJobTabs
                     sortedRelatedJobs={sortedRelatedJobs}
@@ -409,7 +455,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
                     {isEditMode && (
                         <CardVisibilityToggle label="Total Distance" fieldKey="totalMiles"
-                            isVisible={isFieldVisible('totalMiles')} onToggle={toggleField}/>
+                                              isVisible={isFieldVisible('totalMiles')} onToggle={toggleField}/>
                     )}
                     <TotalDistance
                         distance={job.distance}
@@ -419,7 +465,7 @@ export function JobDetails({config}: JobDetailsProps) {
 
                     {isEditMode && (
                         <CardVisibilityToggle label="Notes" fieldKey="notes"
-                            isVisible={isFieldVisible('notes')} onToggle={toggleField}/>
+                                              isVisible={isFieldVisible('notes')} onToggle={toggleField}/>
                     )}
                     <Collapse in={isFieldVisible('notes')} unmountOnExit>
                         <StickyNotes
@@ -464,12 +510,15 @@ export function JobDetails({config}: JobDetailsProps) {
                         <>
                             {isEditMode && (
                                 <CardVisibilityToggle label="Partner Change Requests" fieldKey="partnerChangeRequests"
-                                    isVisible={isFieldVisible('partnerChangeRequests')} onToggle={toggleField}/>
+                                                      isVisible={isFieldVisible('partnerChangeRequests')}
+                                                      onToggle={toggleField}/>
                             )}
                             <Collapse in={isFieldVisible('partnerChangeRequests')} unmountOnExit>
                                 <JobChangeRequestsForJob
                                     jobId={job.id}
                                     onChanged={refreshAndNotify}
+                                    onModifyRequest={({fieldName, requestedValue}) =>
+                                        setChangeRequestDialog({open: true, field: fieldName, value: requestedValue ?? ''})}
                                 />
                             </Collapse>
                         </>
@@ -520,7 +569,8 @@ export function JobDetails({config}: JobDetailsProps) {
             {/* Read Status Bar */}
             <Paper elevation={0} sx={rootStyles.readStatusBar} onClick={handleToggleReadStatus}>
                 <Chip
-                    icon={isRead ? <MarkEmailReadIcon sx={{fontSize: '16px !important'}} /> : <MarkEmailUnreadIcon sx={{fontSize: '16px !important'}} />}
+                    icon={isRead ? <MarkEmailReadIcon sx={{fontSize: '16px !important'}}/> :
+                        <MarkEmailUnreadIcon sx={{fontSize: '16px !important'}}/>}
                     label={isRead ? 'READ' : 'UNREAD'}
                     size="small"
                     color={isRead ? 'success' : 'default'}
@@ -588,6 +638,23 @@ export function JobDetails({config}: JobDetailsProps) {
                 initialValue={actions.textDialog.initialValue}
                 onSubmit={actions.handleTextDialogSubmit}
                 onCancel={actions.handleTextDialogCancel}
+            />
+
+            {/* Inter-tenant Job Change Request dialog — opened when the partner-job
+                gate rejects an inline field edit (or when a click handler knows the
+                edit will be gated, e.g. Pricing). The history panel above
+                (JobChangeRequestsForJob) reflects new rows after refreshAndNotify. */}
+            <JobChangeRequestDialog
+                open={changeRequestDialog.open}
+                jobId={job.id}
+                jobNo={job.jobNo}
+                preselectedFieldName={changeRequestDialog.field}
+                preInitialValue={changeRequestDialog.value}
+                onClose={() => setChangeRequestDialog({open: false})}
+                onSubmitted={() => {
+                    setChangeRequestDialog({open: false});
+                    void refreshAndNotify();
+                }}
             />
         </Box>
     );

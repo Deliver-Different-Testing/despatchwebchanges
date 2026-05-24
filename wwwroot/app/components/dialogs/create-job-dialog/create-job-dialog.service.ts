@@ -57,13 +57,13 @@ class CreateJobDialogService implements angular.IServiceProvider {
     }
 
     async showCreateJobDialog(_$event?: MouseEvent): Promise<number | undefined> {
+        await this.loadReactCreateJobDialog();
+
+        if (!window.ReactCreateJobDialog) {
+            throw new Error('React create job dialog not loaded');
+        }
+
         try {
-            await this.loadReactCreateJobDialog();
-
-            if (!window.ReactCreateJobDialog) {
-                throw new Error('React create job dialog not loaded');
-            }
-
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {

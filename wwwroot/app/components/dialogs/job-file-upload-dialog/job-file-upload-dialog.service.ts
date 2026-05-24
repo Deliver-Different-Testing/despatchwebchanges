@@ -45,13 +45,13 @@ class JobFileUploadDialogService implements angular.IServiceProvider {
     }
 
     async openJobFileUploadDialog(_$event: MouseEvent, job: IJob | IDispatchJob, uploadType: FileUploadType = FileUploadType.NORMAL) {
+        await this.loadReactDialog();
+
+        if (!window.ReactJobFileUploadDialog) {
+            throw new Error('React job file upload dialog not loaded');
+        }
+
         try {
-            await this.loadReactDialog();
-
-            if (!window.ReactJobFileUploadDialog) {
-                throw new Error('React job file upload dialog not loaded');
-            }
-
             const toastService = {
                 showToast: (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                     switch (type) {

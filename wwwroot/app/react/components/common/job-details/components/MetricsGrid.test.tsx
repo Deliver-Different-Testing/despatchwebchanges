@@ -4,16 +4,16 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
-import {ThemeProvider, createTheme} from '@mui/material/styles';
+import {screen, fireEvent} from '@testing-library/react';
 import {MetricsGrid} from './MetricsGrid';
 import {createMockJob} from '../__testUtils__/mockJob';
+import {renderWithProviders} from '../../../../__testUtils__';
 import dayjs from 'dayjs';
 
-const theme = createTheme();
-
+// MetricsGrid reads usePendingChangeForField (React Query), so tests need
+// both ThemeProvider AND QueryClientProvider — renderWithProviders bundles them.
 function renderWithTheme(ui: React.ReactElement) {
-    return render(<ThemeProvider theme={theme}>{ui}</ThemeProvider>);
+    return renderWithProviders(ui);
 }
 
 function createDefaultProps(overrides?: Record<string, any>) {

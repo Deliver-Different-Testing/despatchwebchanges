@@ -100,48 +100,46 @@ class JobDetailBridgeController implements angular.IController {
         // If currently loading, return the existing promise so callers wait
         if (this.loadPromise) return this.loadPromise;
 
-        this.loadPromise = this.doLoad();
+        this.loadPromise = this.doLoad().catch((error) => {
+            // Reset so next attempt can retry
+            this.loadPromise = null;
+            throw error;
+        });
         return this.loadPromise;
     }
 
     private async doLoad(): Promise<void> {
-        try {
-            // Load manifest
-            if (!this.manifest) {
-                try {
-                    const response = await this.$http.get<Record<string, string>>('dist/manifest.json');
-                    this.manifest = response.data;
-                } catch {
-                    console.warn('[JobDetailBridge] Failed to load manifest, using fallback names');
-                    this.manifest = {
-                        'vendor-react.js': 'vendor-react.js',
-                        'jobDetailsReact.js': 'jobDetailsReact.js',
-                    };
-                }
+        // Load manifest
+        if (!this.manifest) {
+            try {
+                const response = await this.$http.get<Record<string, string>>('dist/manifest.json');
+                this.manifest = response.data;
+            } catch {
+                console.warn('[JobDetailBridge] Failed to load manifest, using fallback names');
+                this.manifest = {
+                    'vendor-react.js': 'vendor-react.js',
+                    'jobDetailsReact.js': 'jobDetailsReact.js',
+                };
             }
+        }
 
-            const getAssetPath = (filename: string) =>
-                `dist/${this.manifest![filename] || filename}`;
+        const getAssetPath = (filename: string) =>
+            `dist/${this.manifest![filename] || filename}`;
 
-            // Ensure vendor-react is loaded (may already be loaded by parent page)
-            if (!window.React) {
-                console.log('[JobDetailBridge] Loading vendor-react...');
-                await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
-            }
+        // Ensure vendor-react is loaded (may already be loaded by parent page)
+        if (!window.React) {
+            console.log('[JobDetailBridge] Loading vendor-react...');
+            await this.$ocLazyLoad.load(getAssetPath('vendor-react.js'));
+        }
 
-            // Load the job details React module
-            console.log('[JobDetailBridge] Loading jobDetailsReact...');
-            await this.$ocLazyLoad.load(getAssetPath('jobDetailsReact.js'));
+        // Load the job details React module
+        console.log('[JobDetailBridge] Loading jobDetailsReact...');
+        await this.$ocLazyLoad.load(getAssetPath('jobDetailsReact.js'));
 
-            console.log('[JobDetailBridge] React job details loaded, ReactJobDetails available:', !!window.ReactJobDetails);
+        console.log('[JobDetailBridge] React job details loaded, ReactJobDetails available:', !!window.ReactJobDetails);
 
-            if (!window.ReactJobDetails) {
-                throw new Error('jobDetailsReact.js loaded but window.ReactJobDetails is not available');
-            }
-        } catch (error) {
-            // Reset so next attempt can retry
-            this.loadPromise = null;
-            throw error;
+        if (!window.ReactJobDetails) {
+            throw new Error('jobDetailsReact.js loaded but window.ReactJobDetails is not available');
         }
     }
 

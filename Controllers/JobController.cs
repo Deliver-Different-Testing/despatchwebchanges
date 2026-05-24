@@ -938,7 +938,7 @@ public class JobController(
         {
             foreach (var jobId in data.JobIds)
             {
-                var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+                var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
                 if (partnerGuard != null) return partnerGuard;
             }
 
@@ -959,7 +959,7 @@ public class JobController(
         {
             foreach (var jobId in data.JobIds)
             {
-                var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+                var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
                 if (partnerGuard != null) return partnerGuard;
             }
 
@@ -992,13 +992,14 @@ public class JobController(
             .Select(id => int.Parse(id.Trim()))
             .ToList();
 
-        // Auto-dispatch reassignment swaps the courier on each job. On a partner job
-        // (tenant A side) UcjbCourierId is the partner-pairing's placeholder courier;
-        // changing it locally would diverge from the partner's view of who owns the
-        // job. Block before mutating, matching Allocate/ReAllocate.
+        // Auto-dispatch reassignment swaps the courier on each job. On the *sender*
+        // side of a partner pairing UcjbCourierId is the pairing's placeholder
+        // courier; changing it locally would diverge from the partner's view of
+        // who owns the job. The receiver-side mirror has no JobPartnerDispatch row
+        // and falls through to a normal reassignment.
         foreach (var jobId in parsedIds)
         {
-            var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+            var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
             if (partnerGuard != null) return partnerGuard;
         }
 
@@ -1009,10 +1010,11 @@ public class JobController(
     [HttpPost]
     public async Task<IActionResult> SetFirstJob(int jobId, int courierId)
     {
-        // Set-first-job re-orders the courier's clear list. On a partner job that
-        // shouldn't be touched locally — the React context menu already hides this
-        // action for partner jobs; the backend now mirrors that contract.
-        var partnerGuard = await RejectIfPartnerJobAsync(jobId);
+        // Set-first-job re-orders the courier's clear list. On the *sender* side of
+        // a partner pairing the courier is a pairing placeholder, so reordering it
+        // would corrupt the partner-side view. The receiver side has a real local
+        // courier and may reorder freely.
+        var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
         if (partnerGuard != null) return partnerGuard;
 
         await jobCommandRepository.SetFirstJobAsync(jobId, courierId);
@@ -1024,7 +1026,10 @@ public class JobController(
     {
         try
         {
-            var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
+            // PartnerJobGate classifies Void as LocalOnly — each tenant owns its
+            // own copy's lifecycle. Block only the sender side, where voiding here
+            // would orphan the dispatched-out job from the partner's perspective.
+            var partnerGuard = await RejectIfOutboundPartnerJobAsync(request.JobId);
             if (partnerGuard != null) return partnerGuard;
 
             var isArchived = await jobQueryRepository.IsJobArchived(request.JobId);
@@ -2359,6 +2364,21 @@ public class JobController(
     {
         if (await jobQueryRepository.IsPartnerJobAsync(jobId))
             return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
+        return null;
+    }
+
+    // Narrower partner guard for endpoints that only need to protect the *sender*
+    // side of a partner pairing. A job is "outbound" iff this tenant has a
+    // JobPartnerDispatch row for it — the receiving tenant's mirror has the
+    // PartnerJobGuid but no dispatch row, so it slips past this check and can
+    // dispatch/void normally.
+    private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)
+    {
+        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId))
+            return BadRequest(new
+            {
+                message = "This job has been dispatched to a partner; manage it from the partner-pairing side."
+            });
         return null;
     }
 

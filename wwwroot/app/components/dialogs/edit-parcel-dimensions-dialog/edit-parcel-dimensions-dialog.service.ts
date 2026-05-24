@@ -54,13 +54,13 @@ class EditParcelDimensionsDialogService {
     async showJobDimensionsDialog($event: MouseEvent, job: IJob) {
         console.debug('EditParcelDimensionsDialogService: showJobDimensionsDialog called');
 
+        await this.loadReactDialog();
+
+        if (!window.ReactEditParcelDimensionsDialog) {
+            throw new Error('React edit parcel dimensions dialog not loaded');
+        }
+
         try {
-            await this.loadReactDialog();
-
-            if (!window.ReactEditParcelDimensionsDialog) {
-                throw new Error('React edit parcel dimensions dialog not loaded');
-            }
-
             await window.ReactEditParcelDimensionsDialog.showEditParcelDimensionsDialog({
                 parcels: job.parcelDimensions,
                 jobId: job.isBulkJob ? undefined : job.id,

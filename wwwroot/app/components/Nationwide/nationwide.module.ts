@@ -9,11 +9,8 @@ import DispatchExecutorService from "../../services/dispatch-executor.service";
 import {
     FeatureInDevelopmentDialogService
 } from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
-import RecoveryAgentManagementController
-    from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.controller";
-import RecoveryAgentManagementService
-    from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
+import '../../react/components/dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog-react.module';
 import angular from 'angular';
 
 const nationwideModule = angular.module('uDispatch.nationwide', [
@@ -40,11 +37,6 @@ nationwideModule
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
     .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
-    .service("recoveryAgentManagementService", RecoveryAgentManagementService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
-
-// Register controllers
-nationwideModule
-    .controller("recoveryAgentManagementController", RecoveryAgentManagementController);
 
 export default nationwideModule;

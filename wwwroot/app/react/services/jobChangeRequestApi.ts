@@ -53,6 +53,16 @@ export interface DecisionPayload {
     reason?: string;
 }
 
+/**
+ * Approver-inbox row — Pending request the local tenant must review,
+ * enriched with job context for the queue display.
+ */
+export interface JobChangeRequestInboxItem {
+    request: JobChangeRequestDto;
+    jobNo: string;
+    clientName?: string;
+}
+
 export class JobChangeRequestApiService {
     create(payload: CreateJobChangeRequestPayload): Promise<JobChangeRequestResult> {
         return apiClient.post<JobChangeRequestResult>('JobChangeRequest/Create', payload);
@@ -72,6 +82,10 @@ export class JobChangeRequestApiService {
 
     forJob(jobId: number): Promise<JobChangeRequestDto[]> {
         return apiClient.get<JobChangeRequestDto[]>('JobChangeRequest/ForJob', {jobId});
+    }
+
+    pendingForApproval(limit = 200): Promise<JobChangeRequestInboxItem[]> {
+        return apiClient.get<JobChangeRequestInboxItem[]>('JobChangeRequest/PendingForApproval', {limit});
     }
 }
 

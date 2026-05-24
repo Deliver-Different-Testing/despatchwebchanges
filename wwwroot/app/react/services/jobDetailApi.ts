@@ -99,16 +99,16 @@ export function updatePickupAddress(
     jobId: number,
     prebook: boolean,
     address: IAddressViewModel
-): Promise<void> {
-    return apiClient.post(getAddressEndpoint(prebook, 'pickup'), {jobId, address});
+): Promise<JobUpdateResponse> {
+    return apiClient.post<JobUpdateResponse>(getAddressEndpoint(prebook, 'pickup'), {jobId, address});
 }
 
 export function updateDeliveryAddress(
     jobId: number,
     prebook: boolean,
     address: IAddressViewModel
-): Promise<void> {
-    return apiClient.post(getAddressEndpoint(prebook, 'delivery'), {jobId, address});
+): Promise<JobUpdateResponse> {
+    return apiClient.post<JobUpdateResponse>(getAddressEndpoint(prebook, 'delivery'), {jobId, address});
 }
 
 // ── Pricing ─────────────────────────────────────────────────────────
@@ -208,7 +208,7 @@ export function allocateJob(courierId: number, jobIds: number[]): Promise<void> 
     return apiClient.post('job/Allocate', {courierId, jobIds});
 }
 
-export function getCourierById(courierId: number): Promise<{id: string; name: string}> {
+export function getCourierById(courierId: number): Promise<{ id: string; name: string }> {
     return apiClient.get('courier/GetCourier', {courierId});
 }
 

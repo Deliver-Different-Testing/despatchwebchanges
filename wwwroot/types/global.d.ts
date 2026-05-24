@@ -226,6 +226,9 @@ declare global {
         ReactAgentInfoDialog?: {
             open: (options: { agentId: number }) => Promise<void>;
         };
+        ReactRecoveryAgentManagementDialog?: {
+            open: (options: { jobId: number }) => Promise<void>;
+        };
         ReactAutoCompleteDialog?: {
             open: (
                 title: string,

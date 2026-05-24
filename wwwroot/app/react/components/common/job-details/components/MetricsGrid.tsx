@@ -13,6 +13,8 @@ import type {IJob} from '../JobDetails.types';
 import {getTimezoneAbbreviation} from '../../../../utils/dateUtils';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import JobInternalStatusEnum from '../../../../../enums/job-internal-status.enum';
+import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
+import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
 
 interface MetricsGridProps {
     job: IJob;
@@ -58,6 +60,16 @@ export const MetricsGrid = React.memo(({
     const defaultTz = getTimezoneAbbreviation(window.TimeZone || '');
 
     const isLocked = !!job.locked;
+
+    // Partner-job pending-change badges. The hook reads the shared
+    // ['jobChangeRequests', jobId] cache, so cards stay in sync with the
+    // history panel and refresh automatically when a request is filed /
+    // approved. Each call is filtered by JobChangeField name so the badge
+    // only appears on the card whose field is actually pending.
+    const pendingRate = usePendingChangeForField(job.id, 'PartnerAgreedRate');
+    const pendingBooked = usePendingChangeForField(job.id, ['BookedTime', 'Date']);
+    const pendingPuTime = usePendingChangeForField(job.id, 'PuTime');
+    const pendingDeliverBy = usePendingChangeForField(job.id, 'DeliverBy');
 
     const canEditFollowUp = !isLocked
         && job.internalStatusId !== JobInternalStatusEnum.NewJobs
@@ -118,6 +130,7 @@ export const MetricsGrid = React.memo(({
                     category="pricing"
                     filled
                     dense={dense}
+                    overlay={pendingRate && <PendingChangeBadge request={pendingRate}/>}
                 />
                 <MetricCard
                     label="Created"
@@ -135,6 +148,7 @@ export const MetricsGrid = React.memo(({
                     category="time"
                     filled
                     dense={dense}
+                    overlay={pendingBooked && <PendingChangeBadge request={pendingBooked}/>}
                 />
                 <MetricCard
                     label="PU Arrival"
@@ -153,11 +167,13 @@ export const MetricsGrid = React.memo(({
                     category="time"
                     filled
                     dense={dense}
+                    overlay={pendingPuTime && <PendingChangeBadge request={pendingPuTime}/>}
                 />
                 <MetricCard
                     label="Deliver By"
                     value={job.deliverByTime ? `${job._deliverByTimeStr} ${job._deliveryTimeZoneStr || delTz}` : '-'}
                     onClick={handleDeliverByClick}
+                    overlay={pendingDeliverBy && <PendingChangeBadge request={pendingDeliverBy}/>}
                     disabled={isLocked}
                     category="time"
                     filled

@@ -26,7 +26,9 @@ import {
 } from '../app-toolbar/ToolbarActions';
 import angular from 'angular';
 import {isAiEnabled} from '../../../../functions/aiSettings';
-import {openHubUrl} from '../../../services/navigationService';
+import {openHubUrl, openJobInSearch} from '../../../services/navigationService';
+import {ReactQueryProvider} from '../../../query';
+import {PartnerApprovalsBadge} from '../../../pages/partner-approvals/PartnerApprovalsBadge';
 
 // Toolbar Actions Configuration
 export interface ToolbarActionsConfig {
@@ -75,6 +77,13 @@ export interface ToolbarActionsConfig {
     // AI Assistant
     aiAssistant?: {
         onClick: (event: React.MouseEvent) => void;
+    };
+    // Partner approvals badge — global feed of pending inter-tenant change
+    // requests this user must review. Always shown when present; the badge
+    // hides its count when the inbox is empty.
+    partnerApprovals?: {
+        enabled: boolean;
+        onOpenJob?: (jobId: number, jobNo: string) => void;
     };
     // Custom children (for any other content)
     customContent?: React.ReactNode;
@@ -125,6 +134,22 @@ function buildToolbarChildren(): React.ReactNode {
                 unreadCount={toolbarActions.messages.unreadCount}
                 onClick={toolbarActions.messages.onClick}
             />
+        );
+    }
+
+    // Partner approvals badge — drawer-based inbox of pending change
+    // requests this user must approve. Wraps in ReactQueryProvider so it
+    // owns its own cache without depending on the host page also having
+    // a provider mounted (the App Shell renders before any page state).
+    if (toolbarActions.partnerApprovals?.enabled) {
+        const onOpenJob = toolbarActions.partnerApprovals.onOpenJob;
+        elements.push(
+            <ReactQueryProvider key="partnerApprovals">
+                <PartnerApprovalsBadge
+                    toolbarVariant
+                    onOpenJob={onOpenJob}
+                />
+            </ReactQueryProvider>
         );
     }
 

@@ -23,6 +23,9 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import Chip from '@mui/material/Chip';
 import type {IJob} from '../JobDetails.types';
+import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
+import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
+import type {JobChangeRequestDto} from '../../../../services/jobChangeRequestApi';
 
 type AddressVariant = 'pickup' | 'delivery';
 
@@ -50,6 +53,9 @@ interface AddressBlockProps {
     onEditPhone: () => void;
     locked?: boolean;
     dense: boolean;
+    pendingAddress?: JobChangeRequestDto | null;
+    pendingContact?: JobChangeRequestDto | null;
+    pendingPhone?: JobChangeRequestDto | null;
 }
 
 /* ── Styles ─────────────────────────────────────────────────────── */
@@ -175,6 +181,9 @@ function AddressBlock({
                           onEditPhone,
                           locked,
                           dense,
+                          pendingAddress,
+                          pendingContact,
+                          pendingPhone,
                       }: AddressBlockProps) {
     const isPu = variant === 'pickup';
 
@@ -226,46 +235,61 @@ function AddressBlock({
                     <Typography variant="body2" sx={{fontSize: '0.875rem', fontWeight: 500, lineHeight: 1.6}}>
                         {address?.fullAddress || '\u2014'}
                     </Typography>
+                    {pendingAddress && <PendingChangeBadge request={pendingAddress} variant="inline"/>}
                 </Box>
             </ButtonBase>
 
             {/* Contact cards */}
             <Box sx={{display: 'flex', flexDirection: 'column', gap: dense ? 0.5 : 1, px: dense ? 1 : 1.5, pb: dense ? 1 : 1.5}}>
-                <ContactCard
-                    icon={PersonIcon}
-                    label="Contact"
-                    value={contactName}
-                    onClick={onEditContact}
-                    locked={locked}
-                    dense={dense}
-                />
-                {contactPhone != null && (
+                <Box>
                     <ContactCard
-                        icon={PhoneIcon}
-                        label="Phone"
-                        value={contactPhone}
-                        onClick={onEditPhone}
+                        icon={PersonIcon}
+                        label="Contact"
+                        value={contactName}
+                        onClick={onEditContact}
                         locked={locked}
                         dense={dense}
-                    >
-                        {phoneSource && (
-                            <Chip label={phoneSource} size="small" variant="outlined"
-                                  sx={{height: 20, fontSize: '0.6875rem', ml: 0.5}}/>
+                    />
+                    {pendingContact && (
+                        <Box sx={{pl: dense ? 0.5 : 1}}>
+                            <PendingChangeBadge request={pendingContact} variant="inline"/>
+                        </Box>
+                    )}
+                </Box>
+                {contactPhone != null && (
+                    <Box>
+                        <ContactCard
+                            icon={PhoneIcon}
+                            label="Phone"
+                            value={contactPhone}
+                            onClick={onEditPhone}
+                            locked={locked}
+                            dense={dense}
+                        >
+                            {phoneSource && (
+                                <Chip label={phoneSource} size="small" variant="outlined"
+                                      sx={{height: 20, fontSize: '0.6875rem', ml: 0.5}}/>
+                            )}
+                            {contactPhone && (
+                                <Tooltip title={`Call ${contactPhone}`}>
+                                    <IconButton
+                                        size="small"
+                                        component="a"
+                                        href={`tel:${contactPhone}`}
+                                        onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                                        sx={{p: 0.25, ml: 'auto'}}
+                                    >
+                                        <CallIcon sx={{fontSize: 14, color: 'primary.main'}}/>
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                        </ContactCard>
+                        {pendingPhone && (
+                            <Box sx={{pl: dense ? 0.5 : 1}}>
+                                <PendingChangeBadge request={pendingPhone} variant="inline"/>
+                            </Box>
                         )}
-                        {contactPhone && (
-                            <Tooltip title={`Call ${contactPhone}`}>
-                                <IconButton
-                                    size="small"
-                                    component="a"
-                                    href={`tel:${contactPhone}`}
-                                    onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                                    sx={{p: 0.25, ml: 'auto'}}
-                                >
-                                    <CallIcon sx={{fontSize: 14, color: 'primary.main'}}/>
-                                </IconButton>
-                            </Tooltip>
-                        )}
-                    </ContactCard>
+                    </Box>
                 )}
             </Box>
         </Box>
@@ -293,6 +317,16 @@ export const AddressSection = React.memo(({
                                           }: AddressSectionProps) => {
     const addressIcon = job.isFlightAssigned ? FlightTakeoffIcon : PlaceIcon;
 
+    // Partner-job pending-change indicators for address + contact fields.
+    // Reads the shared change-request cache; returns null for non-partner
+    // jobs and when there's no Pending row.
+    const pendingPickupAddress = usePendingChangeForField(job.id, 'PickupAddress');
+    const pendingDeliveryAddress = usePendingChangeForField(job.id, 'DeliveryAddress');
+    const pendingFromContact = usePendingChangeForField(job.id, 'FromContactName');
+    const pendingFromContactPhone = usePendingChangeForField(job.id, 'FromContactPhone');
+    const pendingToContact = usePendingChangeForField(job.id, 'ToContactName');
+    const pendingToContactPhone = usePendingChangeForField(job.id, 'ToContactPhone');
+
     return (
         <Box sx={{
             display: 'flex',
@@ -313,6 +347,9 @@ export const AddressSection = React.memo(({
                 onEditPhone={onEditFromContactPhone}
                 locked={job.locked}
                 dense={dense}
+                pendingAddress={pendingPickupAddress}
+                pendingContact={pendingFromContact}
+                pendingPhone={pendingFromContactPhone}
             />
             <Box sx={flowArrowSx}>
                 <ArrowForwardIcon sx={{fontSize: 20, color: 'text.disabled', display: {xs: 'none', sm: 'block'}}}/>
@@ -330,6 +367,9 @@ export const AddressSection = React.memo(({
                 onEditPhone={onEditToContactPhone}
                 locked={job.locked}
                 dense={dense}
+                pendingAddress={pendingDeliveryAddress}
+                pendingContact={pendingToContact}
+                pendingPhone={pendingToContactPhone}
             />
         </Box>
     );

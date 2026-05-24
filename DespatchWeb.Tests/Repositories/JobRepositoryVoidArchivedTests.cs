@@ -84,10 +84,10 @@ public class JobRepositoryVoidArchivedTests
         // Arrange
         var allJobs = new List<TestArchivedJob>
         {
-            new() { Id = 1, ParentId = null },  // Parent archived job
-            new() { Id = 2, ParentId = 1 },     // Child 1
-            new() { Id = 3, ParentId = 1 },     // Child 2
-            new() { Id = 4, ParentId = 1 },     // Child 3
+            new() { Id = 1, ParentId = null }, // Parent archived job
+            new() { Id = 2, ParentId = 1 }, // Child 1
+            new() { Id = 3, ParentId = 1 }, // Child 2
+            new() { Id = 4, ParentId = 1 }, // Child 3
             new() { Id = 5, ParentId = null } // Unrelated archived job
         };
 
@@ -115,7 +115,7 @@ public class JobRepositoryVoidArchivedTests
         // Arrange
         var allJobs = new List<TestArchivedJob>
         {
-            new() { Id = 1, ParentId = null },  // Standalone archived job
+            new() { Id = 1, ParentId = null }, // Standalone archived job
             new() { Id = 2, ParentId = null } // Another standalone archived job
         };
 
@@ -140,8 +140,8 @@ public class JobRepositoryVoidArchivedTests
         // Arrange
         var allJobs = new List<TestArchivedJob>
         {
-            new() { Id = 1, ParentId = null },  // Parent archived job
-            new() { Id = 2, ParentId = 1 },     // Child 1 (target)
+            new() { Id = 1, ParentId = null }, // Parent archived job
+            new() { Id = 2, ParentId = 1 }, // Child 1 (target)
             new() { Id = 3, ParentId = 1 } // Child 2 (sibling)
         };
 
@@ -167,8 +167,8 @@ public class JobRepositoryVoidArchivedTests
         // Arrange
         var allJobs = new List<TestArchivedJob>
         {
-            new() { Id = 1, ParentId = null },  // Parent archived job
-            new() { Id = 2, ParentId = 1 },     // Child 1
+            new() { Id = 1, ParentId = null }, // Parent archived job
+            new() { Id = 2, ParentId = 1 }, // Child 1
             new() { Id = 3, ParentId = 1 } // Child 2
         };
 
@@ -194,9 +194,9 @@ public class JobRepositoryVoidArchivedTests
         // Arrange
         var allJobs = new List<TestArchivedJob>
         {
-            new() { Id = 1, ParentId = null },  // Parent archived job
-            new() { Id = 2, ParentId = 1 },     // Child 1 (target)
-            new() { Id = 3, ParentId = 1 },     // Child 2 (sibling)
+            new() { Id = 1, ParentId = null }, // Parent archived job
+            new() { Id = 2, ParentId = 1 }, // Child 1 (target)
+            new() { Id = 3, ParentId = 1 }, // Child 2 (sibling)
             new() { Id = 4, ParentId = 1 } // Child 3 (sibling)
         };
 
@@ -409,5 +409,4 @@ public class JobRepositoryVoidArchivedTests
         Assert.Single(result);
         Assert.Contains(2, result);
     }
-
 }

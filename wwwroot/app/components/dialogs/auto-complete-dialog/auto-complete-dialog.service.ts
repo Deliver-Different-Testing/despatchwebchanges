@@ -64,14 +64,13 @@ class AutoCompleteDialogService implements angular.IServiceProvider {
                                  minInputLength: number = 2): Promise<ISuggestion | undefined> {
         console.debug('AutoCompleteDialogService: showAutocompleteDialog called');
 
+        await this.loadReactAutoCompleteDialog();
+
+        if (!window.ReactAutoCompleteDialog) {
+            throw new Error('React auto complete dialog not loaded');
+        }
+
         try {
-            // Load the React dialog module on demand
-            await this.loadReactAutoCompleteDialog();
-
-            if (!window.ReactAutoCompleteDialog) {
-                throw new Error('React auto complete dialog not loaded');
-            }
-
             // Create search function that uses the provided URL
             const searchFn = async (searchTerm: string): Promise<ISuggestion[]> => {
                 return this.dispatchData.autocompleteSearch(searchTerm, url);

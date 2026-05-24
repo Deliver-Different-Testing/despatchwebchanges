@@ -2,22 +2,15 @@ import {
     IAgent,
     IAgentInfoDialog, IAirlineSuggestion,
     IAirportSuggestion,
-    IJobQueryParams, IJobSearchResult, IJobSearchResultDto,
-    ISuggestion
+    IJobQueryParams, IJobSearchResult, IJobSearchResultDto
 } from "../../interfaces/job.interface";
 import {
     AssignFlightToJobRequest,
     IFlightSearchResponseDto,
-    IFlightViewModelDto, IGetAgentOptionsResponse,
+    IGetAgentOptionsResponse,
     IGetFlightOptionsResponse
 } from "./nationwide.interfaces";
 import {DfrntPageViewModel} from "../../interfaces/dfrnt-page-view-model.interface";
-import {
-    AddAgentRecoveryRequest,
-    RecoveryAgentJobViewModel,
-    RemoveAgentRecoveryRequest,
-    UpdateAgentRecoveryRequest
-} from "../dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog.interfaces";
 import IFlightCargoProcessing, {
     IFlightCargoProcessingDto
 } from "../../interfaces/flight-cargo-processing.interface";
@@ -186,47 +179,6 @@ class NationwideService {
             }
         });
         return response.data;
-    }
-
-    async getAgentRecoveryJobs(jobId: number): Promise<RecoveryAgentJobViewModel> {
-        const response = await this.$http.get<RecoveryAgentJobViewModel>("nationwideJob/GetAgentRecoveryJobs", {
-            params: {
-                jobId,
-            }
-        });
-
-        return response.data;
-    }
-
-    async addAgentRecoveryJob(data: AddAgentRecoveryRequest): Promise<void> {
-        await this.$http.post("nationwideJob/AddAgentRecoveryJob", data);
-    }
-
-    async getAgentOptionsByAirport(airportId: number): Promise<ISuggestion[]> {
-        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetAgentOptionsByAirport", {
-            params: {
-                airportId,
-            }
-        });
-
-        return response.data;
-    }
-
-    async getAllActiveAirports(): Promise<ISuggestion[]> {
-        const response = await this.$http.get<ISuggestion[]>("nationwideJob/GetAllActiveAirports");
-        return response.data;
-    }
-
-    async updateAgentRecoveryJob(request: UpdateAgentRecoveryRequest): Promise<void> {
-        await this.$http.post('nationwideJob/UpdateAgentRecoveryJob', request);
-    }
-
-    async removeAgentRecoveryJob(recoveryId: number): Promise<void> {
-        const data: RemoveAgentRecoveryRequest = {
-            recoveryId
-        };
-
-        await this.$http.post(`nationwideJob/RemoveAgentRecoveryJob`, data);
     }
 
     async calculateCargoReadyTime(jobId: number, carrierFsCode: string, arrivalTime: Dayjs, timezone?: string): Promise<IFlightCargoProcessing> {

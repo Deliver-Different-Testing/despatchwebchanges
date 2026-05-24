@@ -53,9 +53,7 @@ import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {SendToPartnerDialog} from '../dialogs/send-to-partner-dialog';
-import {JobChangeRequestDialog} from '../dialogs/job-change-request-dialog';
 import {openJobInSearch} from '../../services/navigationService';
-import EditNoteIcon from '@mui/icons-material/EditNote';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
 
@@ -114,7 +112,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         partnerId: number;
         partnerName: string;
     }>({open: false, partnerId: 0, partnerName: ''});
-    const [jobChangeRequestDialogOpen, setJobChangeRequestDialogOpen] = useState(false);
 
     // Capture job reference for dialogs that outlive the context menu
     const dialogJobRef = useRef<DispatchJob | null>(null);
@@ -166,8 +163,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open
-        || jobChangeRequestDialogOpen;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -469,17 +465,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
-    const handleRequestChange = () => {
-        closeAll();
-        setJobChangeRequestDialogOpen(true);
-    };
-
-    const handleJobChangeRequestSubmitted = () => {
-        showToast(`Change request created for ${activeJob.jobNo}`, 'success');
-        setJobChangeRequestDialogOpen(false);
-        refresh();
-    };
-
     const handleMarkMissing = async () => {
         closeAll();
         try {
@@ -501,7 +486,14 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const isNationwideSpeed = activeJob.speedId === NationwideSpeedId;
     const notReprice = activeJob.internalStatusId !== INTERNAL_STATUS_REPRICE;
     const isPartnerJob = Boolean(activeJob.isPartnerJob);
+    // Outbound = *this* tenant sent the job to a partner (sentToPartnerName is
+    // populated from JobPartnerDispatch). Courier-slot actions and Void mutate
+    // local state that, on the sender side, is reserved for the partner pairing —
+    // so we keep blocking those. The receiver side has no JobPartnerDispatch row
+    // and behaves like a normal local job.
+    const isOutboundPartnerJob = isPartnerJob && Boolean(activeJob.sentToPartnerName);
     const partnerDisabledTooltip = 'This job is managed by a partner';
+    const outboundPartnerDisabledTooltip = 'This job has already been sent to a partner';
 
     return (
         <>
@@ -618,23 +610,15 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </MenuItem>
                 )}
 
-                {/* Request Change (partner jobs only — opens change-request dialog) */}
-                {isPartnerJob && (
-                    <MenuItem onClick={handleRequestChange}>
-                        <ListItemIcon><EditNoteIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>Request Change…</ListItemText>
-                    </MenuItem>
-                )}
-
                 {/* Send to DFRNT Partner (dispatch/jobsearch only) */}
                 {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && (
                     <Tooltip
-                        title={isPartnerJob ? partnerDisabledTooltip : activeJob.assignedCourier ? 'Restore job before sending to partner' : ''}
+                        title={isOutboundPartnerJob ? outboundPartnerDisabledTooltip : activeJob.assignedCourier ? 'Restore job before sending to partner' : ''}
                         placement="right"
                     >
                         <span>
                             <MenuItem
-                                disabled={Boolean(activeJob.assignedCourier) || isPartnerJob}
+                                disabled={Boolean(activeJob.assignedCourier) || isOutboundPartnerJob}
                                 onClick={(e) => setPartnerOptionsAnchor(e.currentTarget)}
                             >
                                 <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
@@ -646,9 +630,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 )}
 
                 {/* Void Job */}
-                <Tooltip title={isPartnerJob ? partnerDisabledTooltip : ''} placement="right">
+                <Tooltip title={isOutboundPartnerJob ? outboundPartnerDisabledTooltip : ''} placement="right">
                     <span>
-                        <MenuItem disabled={isPartnerJob} onClick={handleVoidJob}>
+                        <MenuItem disabled={isOutboundPartnerJob} onClick={handleVoidJob}>
                             <ListItemIcon><CancelIcon fontSize="small"/></ListItemIcon>
                             <ListItemText>Void Job</ListItemText>
                         </MenuItem>
@@ -674,7 +658,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 <Divider/>
 
                 {/* Set First Job */}
-                {!isPartnerJob && (
+                {!isOutboundPartnerJob && (
                     <MenuItem onClick={handleSetFirstJob}>
                         <ListItemIcon><FirstPageIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Set First Job</ListItemText>
@@ -682,7 +666,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 )}
 
                 {/* Re-Dispatch */}
-                {activeJob.assignedCourier && !isPartnerJob && (
+                {activeJob.assignedCourier && !isOutboundPartnerJob && (
                     <MenuItem onClick={handleRedispatch}>
                         <ListItemIcon><RedoIcon fontSize="small"/></ListItemIcon>
                         <ListItemText>Re-Dispatch</ListItemText>
@@ -830,14 +814,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 fetchRate={api.getPartnerRateForJob}
             />
 
-            {/* Job Change Request Dialog (inter-tenant change requests) */}
-            <JobChangeRequestDialog
-                open={jobChangeRequestDialogOpen}
-                jobId={activeJob.id}
-                jobNo={activeJob.jobNo}
-                onClose={() => setJobChangeRequestDialogOpen(false)}
-                onSubmitted={handleJobChangeRequestSubmitted}
-            />
         </>
     );
 };

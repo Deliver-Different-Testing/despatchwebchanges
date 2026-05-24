@@ -144,6 +144,61 @@ export interface FlightSearchResult {
     message?: string;
 }
 
+// Recovery Agent Management types
+
+export interface Suggestion {
+    id: number;
+    text: string;
+    selected?: boolean;
+}
+
+export interface RecoveryAddressViewModel {
+    fullAddress: string;
+}
+
+export interface RecoveryAgentViewModel {
+    recoveryId: number;
+    agentName: string;
+    airport: string;
+    primaryRecoveryAgent: boolean;
+    assignStatus: string;
+}
+
+export interface RecoveryJobViewModel {
+    jobId: number;
+    assignedAgent: Suggestion;
+    recoveryAgents: RecoveryAgentViewModel[];
+}
+
+export interface RecoveryAgentJobViewModel {
+    jobId: number;
+    jobNumber: string;
+    assignedAgent: Suggestion;
+    pickUpAddress: RecoveryAddressViewModel;
+    deliveryAddress: RecoveryAddressViewModel;
+    packageType: string;
+    priority: string;
+    lastKnownLocation: string;
+    customer: string;
+    recoveryJobs: RecoveryJobViewModel[];
+}
+
+export interface AddAgentRecoveryRequest {
+    jobId: number;
+    agentId: number;
+    airportId: number;
+    isPrimaryRecoveryAgent: boolean;
+}
+
+export interface UpdateAgentRecoveryRequest {
+    recoveryId: number;
+    isPrimaryRecoveryAgent: boolean;
+}
+
+export interface RemoveAgentRecoveryRequest {
+    recoveryId: number;
+}
+
 /**
  * Nationwide API Service Class
  * Handles all nationwide job-related API operations.
@@ -216,6 +271,55 @@ export class NationwideApiService {
             console.error('Error fetching scheduled flight options:', error);
             throw error;
         }
+    }
+
+    /**
+     * Get the recovery agent assignments for a job
+     */
+    async getAgentRecoveryJobs(jobId: number): Promise<RecoveryAgentJobViewModel> {
+        return apiClient.get<RecoveryAgentJobViewModel>(
+            'nationwideJob/GetAgentRecoveryJobs',
+            {jobId}
+        );
+    }
+
+    /**
+     * Get the active airports available for recovery assignment
+     */
+    async getAllActiveAirports(): Promise<Suggestion[]> {
+        return apiClient.get<Suggestion[]>('nationwideJob/GetAllActiveAirports');
+    }
+
+    /**
+     * Get the agents that operate out of a specific airport
+     */
+    async getAgentOptionsByAirport(airportId: number): Promise<Suggestion[]> {
+        return apiClient.get<Suggestion[]>(
+            'nationwideJob/GetAgentOptionsByAirport',
+            {airportId}
+        );
+    }
+
+    /**
+     * Assign a recovery agent to a job for a given airport
+     */
+    async addAgentRecoveryJob(request: AddAgentRecoveryRequest): Promise<void> {
+        await apiClient.post<void>('nationwideJob/AddAgentRecoveryJob', request);
+    }
+
+    /**
+     * Update an existing recovery agent assignment (e.g. promote to primary)
+     */
+    async updateAgentRecoveryJob(request: UpdateAgentRecoveryRequest): Promise<void> {
+        await apiClient.post<void>('nationwideJob/UpdateAgentRecoveryJob', request);
+    }
+
+    /**
+     * Remove a recovery agent assignment from a job
+     */
+    async removeAgentRecoveryJob(recoveryId: number): Promise<void> {
+        const request: RemoveAgentRecoveryRequest = {recoveryId};
+        await apiClient.post<void>('nationwideJob/RemoveAgentRecoveryJob', request);
     }
 
     /**

@@ -48,13 +48,11 @@ public class ConnectionStringManager(
         }
     }
 
-    public string GetConnectionStringFromMemoryCache(string tenantAppCacheKey)
-    {
-        return memoryCache.TryGetValue(tenantAppCacheKey, out string cached)
-               && !string.IsNullOrEmpty(cached)
+    public string GetConnectionStringFromMemoryCache(string tenantAppCacheKey) =>
+        memoryCache.TryGetValue(tenantAppCacheKey, out string cached)
+        && !string.IsNullOrEmpty(cached)
             ? cached
             : null;
-    }
 
     public async Task<string> GetConnectionStringAsync(string tenantAppCacheKey)
     {

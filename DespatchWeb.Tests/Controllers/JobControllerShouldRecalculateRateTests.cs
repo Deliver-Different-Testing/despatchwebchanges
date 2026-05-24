@@ -25,10 +25,7 @@ public class JobControllerShouldRecalculateRateTests
     [InlineData(JobProperty.TailLiftPu)]
     [InlineData(JobProperty.TailLiftDo)]
     [InlineData(JobProperty.DeliverToPrivateRes)]
-    public void ShouldRecalculateRate_RateAffectingProperty_ReturnsTrue(JobProperty property)
-    {
-        Assert.True(JobController.ShouldRecalculateRate(property));
-    }
+    public void ShouldRecalculateRate_RateAffectingProperty_ReturnsTrue(JobProperty property) => Assert.True(JobController.ShouldRecalculateRate(property));
 
     [Theory]
     [InlineData(JobProperty.ConNote)]
@@ -45,8 +42,5 @@ public class JobControllerShouldRecalculateRateTests
     [InlineData(JobProperty.Void)]
     [InlineData(JobProperty.Barcode)]
     [InlineData(JobProperty.CourierId)]
-    public void ShouldRecalculateRate_NonRateAffectingProperty_ReturnsFalse(JobProperty property)
-    {
-        Assert.False(JobController.ShouldRecalculateRate(property));
-    }
+    public void ShouldRecalculateRate_NonRateAffectingProperty_ReturnsFalse(JobProperty property) => Assert.False(JobController.ShouldRecalculateRate(property));
 }
