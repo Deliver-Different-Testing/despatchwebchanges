@@ -29,6 +29,13 @@ export interface EditParcelDimensionsDialogProps {
     bulkJobId?: number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    /**
+     * When true, the dialog acts as a value-capture step only — no POST to
+     * /job/UpdateJobPackages, no success toast — and resolves with the
+     * captured parcels so the caller can hand them off to the partner-job
+     * change-request dialog (Packages requires partner approval).
+     */
+    partnerMode?: boolean;
     onClose: () => void;
     onSubmit: (result: EditParcelDimensionsDialogResult) => void;
     showToast: ShowToastFn;
@@ -43,6 +50,7 @@ export interface EditParcelDimensionsDialogOptions {
     bulkJobId?: number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    partnerMode?: boolean;
 }
 
 /**

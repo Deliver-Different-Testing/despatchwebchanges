@@ -110,6 +110,8 @@ export interface IJob {
     childNotes: string;
     locked?: boolean;
     isPartnerJob?: boolean;
+    /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
+    partnerTenantName?: string | null;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -308,6 +310,8 @@ export interface IJobDto {
     childNotes: string;
     locked?: boolean;
     isPartnerJob?: boolean;
+    /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
+    partnerTenantName?: string | null;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;

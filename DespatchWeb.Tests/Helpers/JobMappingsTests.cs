@@ -2385,4 +2385,135 @@ public class JobMappingsTests
         Assert.Equal("Stop Item", pallet.Notes);
     }
 
+    [Fact]
+    public void JobMappingCore_PartnerTenantName_FromJobPartnerDispatch_WhenSenderSide()
+    {
+        // Sender side: the job carries a JobPartnerDispatch row that links to the
+        // pairing whose PartnerTenantName is the OTHER tenant's name.
+        var pairing = new IntMgrPartnerPairing
+        {
+            Id = 7,
+            PartnerTenantId = "200",
+            PartnerTenantName = "Acme Couriers",
+            PartnerBaseUrl = "https://peer.example.com",
+            Status = "Active",
+            OwnerTenantId = "100",
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            PartnerJobGuid = Guid.NewGuid(),
+            JobPartnerDispatch = new JobPartnerDispatch
+            {
+                JobId = 1,
+                PartnerPairingId = 7,
+                PartnerPairing = pairing
+            },
+            TucJobChangeRequests = new List<TucJobChangeRequest>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal("Acme Couriers", result.PartnerTenantName);
+    }
+
+    [Fact]
+    public void JobMappingCore_PartnerTenantName_FromMostRecentChangeRequest_WhenReceiverSide()
+    {
+        // Receiver side: no JobPartnerDispatch row, so the mapping falls back to
+        // the most recent change request's pairing. The "most recent" tie-break
+        // matters when multiple historical requests reference different pairings.
+        var olderPairing = new IntMgrPartnerPairing
+        {
+            Id = 5,
+            PartnerTenantId = "100",
+            PartnerTenantName = "Stale Pairing",
+            PartnerBaseUrl = "https://stale.example.com",
+            Status = "Revoked",
+            OwnerTenantId = "100",
+            CreatedAtUtc = DateTime.UtcNow.AddDays(-30),
+            UpdatedAtUtc = DateTime.UtcNow.AddDays(-30)
+        };
+        var currentPairing = new IntMgrPartnerPairing
+        {
+            Id = 9,
+            PartnerTenantId = "100",
+            PartnerTenantName = "Despatch Origin",
+            PartnerBaseUrl = "https://origin.example.com",
+            Status = "Active",
+            OwnerTenantId = "100",
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
+        };
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            PartnerJobGuid = Guid.NewGuid(),
+            JobPartnerDispatch = null,
+            TucJobChangeRequests = new List<TucJobChangeRequest>
+            {
+                new()
+                {
+                    UjcrId = 1, UjcrJobId = 1,
+                    UjcrFieldName = "Notes",
+                    UjcrRequestedAtUtc = DateTime.UtcNow.AddDays(-10),
+                    UjcrPairing = olderPairing,
+                    UjcrSourceRequestUuid = Guid.NewGuid()
+                },
+                new()
+                {
+                    UjcrId = 2, UjcrJobId = 1,
+                    UjcrFieldName = "Quantity",
+                    UjcrRequestedAtUtc = DateTime.UtcNow,
+                    UjcrPairing = currentPairing,
+                    UjcrSourceRequestUuid = Guid.NewGuid()
+                }
+            },
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Equal("Despatch Origin", result.PartnerTenantName);
+    }
+
+    [Fact]
+    public void JobMappingCore_PartnerTenantName_Null_WhenNoDispatchAndNoChangeRequests()
+    {
+        // Fresh receiver-side mirror with no change requests yet — UI falls back
+        // to the generic "the partner" wording on a null value.
+        var job = new TucJob
+        {
+            UcjbId = 1,
+            UcjbDate = new DateTime(2024, 6, 10),
+            UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
+            UcjbNumber = "JOB-001",
+            PartnerJobGuid = Guid.NewGuid(),
+            JobPartnerDispatch = null,
+            TucJobChangeRequests = new List<TucJobChangeRequest>(),
+            PricingBreakdownJobs = new List<PricingBreakdown>(),
+            TucJobItemJobs = new List<TucJobItem>(),
+            TucJobItemChildJobs = new List<TucJobItem>(),
+            TucJobNationwides = new List<TucJobNationwide>()
+        };
+
+        var result = JobMappings.JobMappingCore(false).Compile()(job);
+
+        Assert.Null(result.PartnerTenantName);
+    }
 }

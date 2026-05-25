@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {screen, waitFor} from '@testing-library/react';
+import {screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {JobChangeRequestsForJob} from './JobChangeRequestsForJob';
 import {renderWithProviders} from '../../__testUtils__';
@@ -74,20 +74,28 @@ describe('JobChangeRequestsForJob', () => {
         expect(screen.getByText(/extra package/)).toBeInTheDocument();
     });
 
-    it('renders the address payload as a one-line readable string instead of JSON', async () => {
+    it('renders an address row as side-by-side Current and Requested cards with multi-line addresses', async () => {
         mockApi.forJob.mockResolvedValueOnce([{
             ...baseRow,
             fieldName: 'PickupAddress',
             currentValue: JSON.stringify({addressLine1: '99 Old St', addressLine4: 'Auckland'}),
-            requestedValue: JSON.stringify({addressLine1: '123 New Rd', addressLine4: 'Wellington', fullAddress: '123 New Rd, Wellington'}),
+            requestedValue: JSON.stringify({addressLine1: '123 New Rd', addressLine4: 'Wellington'}),
         }]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
 
         await waitFor(() => expect(screen.getByText('Pickup Address')).toBeInTheDocument());
-        // Full address uses the fullAddress field when present.
-        expect(screen.getByText(/123 New Rd, Wellington/)).toBeInTheDocument();
-        // Old value falls back to joined lines.
-        expect(screen.getByText(/99 Old St/)).toBeInTheDocument();
+
+        // Two address blocks render side-by-side with overline labels.
+        const currentBlock = screen.getByLabelText('Current address');
+        const requestedBlock = screen.getByLabelText('Requested address');
+        expect(currentBlock).toBeInTheDocument();
+        expect(requestedBlock).toBeInTheDocument();
+
+        // Each line of the address renders as its own row inside the relevant card.
+        expect(within(currentBlock).getByText('99 Old St')).toBeInTheDocument();
+        expect(within(currentBlock).getByText('Auckland')).toBeInTheDocument();
+        expect(within(requestedBlock).getByText('123 New Rd')).toBeInTheDocument();
+        expect(within(requestedBlock).getByText('Wellington')).toBeInTheDocument();
     });
 
     it('renders the agreed rate value as currency', async () => {
@@ -227,6 +235,78 @@ describe('JobChangeRequestsForJob', () => {
         });
     });
 
+    describe('cancel own pending request', () => {
+        it('clicking Cancel opens an inline "Confirm cancel" prompt instead of firing immediately', async () => {
+            const user = userEvent.setup();
+            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
+            mockApi.forJob.mockResolvedValueOnce([localRow]);
+
+            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+            await waitFor(() => expect(screen.getByRole('button', {name: /^Cancel$/})).toBeInTheDocument());
+
+            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+
+            expect(screen.getByText(/Cancel this change request\?/)).toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /Confirm cancel/})).toBeInTheDocument();
+            // API not yet called — the click only opened the prompt.
+            expect(mockApi.cancel).not.toHaveBeenCalled();
+        });
+
+        it('Keep request returns to the row state without calling the API', async () => {
+            const user = userEvent.setup();
+            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
+            mockApi.forJob.mockResolvedValueOnce([localRow]);
+
+            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+            await waitFor(() => expect(screen.getByRole('button', {name: /^Cancel$/})).toBeInTheDocument());
+
+            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+            await user.click(screen.getByRole('button', {name: /Keep request/}));
+
+            expect(screen.queryByText(/Cancel this change request\?/)).not.toBeInTheDocument();
+            expect(screen.getByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
+            expect(mockApi.cancel).not.toHaveBeenCalled();
+        });
+
+        it('Confirm cancel calls the API, refetches, fires onChanged, and surfaces a success banner', async () => {
+            const user = userEvent.setup();
+            const onChanged = jest.fn();
+            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
+            mockApi.forJob.mockResolvedValueOnce([localRow]).mockResolvedValueOnce([
+                {...localRow, status: 'Cancelled'},
+            ]);
+            mockApi.cancel.mockResolvedValueOnce({success: true});
+
+            renderWithProviders(<JobChangeRequestsForJob jobId={42} onChanged={onChanged}/>);
+            await waitFor(() => expect(screen.getByRole('button', {name: /^Cancel$/})).toBeInTheDocument());
+
+            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+            await user.click(screen.getByRole('button', {name: /Confirm cancel/}));
+
+            await waitFor(() => {
+                expect(mockApi.cancel).toHaveBeenCalledWith({requestId: 1, rowVersion: undefined});
+            });
+            expect(onChanged).toHaveBeenCalled();
+            // Explicit visible feedback so the dispatcher knows the cancel landed.
+            await waitFor(() => expect(screen.getByText(/Change request cancelled/)).toBeInTheDocument());
+        });
+
+        it('surfaces an error message when the cancel API rejects', async () => {
+            const user = userEvent.setup();
+            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
+            mockApi.forJob.mockResolvedValueOnce([localRow]);
+            mockApi.cancel.mockRejectedValueOnce(new Error('Network down'));
+
+            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+            await waitFor(() => expect(screen.getByRole('button', {name: /^Cancel$/})).toBeInTheDocument());
+
+            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+            await user.click(screen.getByRole('button', {name: /Confirm cancel/}));
+
+            await waitFor(() => expect(screen.getByText(/Network down/)).toBeInTheDocument());
+        });
+    });
+
     describe('aging chips', () => {
         it('shows no aging chip for fresh requests (< 24h)', async () => {
             mockApi.forJob.mockResolvedValueOnce([rowAged(2)]);
@@ -267,5 +347,103 @@ describe('JobChangeRequestsForJob', () => {
         await waitFor(() => expect(screen.getByText('Applied')).toBeInTheDocument());
         expect(screen.queryByRole('button', {name: /Approve/})).not.toBeInTheDocument();
         expect(screen.queryByText(/Awaiting partner/)).not.toBeInTheDocument();
+    });
+
+    describe('timezone-aware date display', () => {
+        const isoAt = '2025-03-15T14:30:00+13:00';
+
+        it('appends the pickup timezone abbreviation to PuTime values', async () => {
+            mockApi.forJob.mockResolvedValueOnce([{
+                ...baseRow,
+                fieldName: 'PuTime',
+                currentValue: isoAt,
+                requestedValue: '2025-03-15T16:00:00+13:00',
+            }]);
+            renderWithProviders(
+                <JobChangeRequestsForJob
+                    jobId={42}
+                    pickUpTimezoneText="Pacific Standard Time"
+                    deliveryTimezoneText="Eastern Standard Time"
+                />,
+            );
+
+            await waitFor(() => expect(screen.getByText('Pickup Time')).toBeInTheDocument());
+            // Pickup-side TZ wins for PuTime — both Current and Requested chips
+            // carry the pacific abbreviation (PST in winter, PDT in summer).
+            const pacificChips = screen.getAllByText(/\(P[SD]T\)/);
+            expect(pacificChips.length).toBeGreaterThanOrEqual(2);
+            expect(screen.queryByText(/\(E[SD]T\)/)).not.toBeInTheDocument();
+        });
+
+        it('appends the delivery timezone abbreviation to DeliverBy values', async () => {
+            mockApi.forJob.mockResolvedValueOnce([{
+                ...baseRow,
+                fieldName: 'DeliverBy',
+                currentValue: isoAt,
+                requestedValue: '2025-03-15T16:00:00+13:00',
+            }]);
+            renderWithProviders(
+                <JobChangeRequestsForJob
+                    jobId={42}
+                    pickUpTimezoneText="Pacific Standard Time"
+                    deliveryTimezoneText="Eastern Standard Time"
+                />,
+            );
+
+            await waitFor(() => expect(screen.getByText('Deliver By')).toBeInTheDocument());
+            // Delivery-side TZ wins for DeliverBy — both chips carry the
+            // eastern abbreviation (EST in winter, EDT in summer).
+            const easternChips = screen.getAllByText(/\(E[SD]T\)/);
+            expect(easternChips.length).toBeGreaterThanOrEqual(2);
+            expect(screen.queryByText(/\(P[SD]T\)/)).not.toBeInTheDocument();
+        });
+
+        it('renders the requestedAt tooltip with a timezone abbreviation', async () => {
+            const user = userEvent.setup();
+            mockApi.forJob.mockResolvedValueOnce([baseRow]);
+            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+
+            await waitFor(() => expect(screen.getByText(/ago$/)).toBeInTheDocument());
+            await user.hover(screen.getByText(/ago$/));
+
+            // window.TimeZone = 'Europe/London' in setup.ts — abbreviation is
+            // runtime-dependent (GMT / BST / GMT+1). We only assert the slot
+            // is populated, not which spelling ICU picked.
+            const tip = await screen.findByRole('tooltip');
+            expect(tip.textContent).toMatch(/\([^)]+\)/);
+        });
+    });
+
+    describe('chip color coding', () => {
+        it('renders the origin label as a color-coded Chip (primary for local, secondary for partner)', async () => {
+            mockApi.forJob.mockResolvedValueOnce([
+                {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'},
+            ]);
+            const {unmount} = renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+            await waitFor(() => expect(screen.getByText('You requested')).toBeInTheDocument());
+            const localChip = screen.getByText('You requested').closest('.MuiChip-root');
+            expect(localChip).not.toBeNull();
+            expect(localChip!.className).toMatch(/MuiChip-colorPrimary/);
+            unmount();
+
+            mockApi.forJob.mockResolvedValueOnce([
+                {...baseRow, origin: 'Peer', approvalPartyType: 'OwnerTenant'},
+            ]);
+            renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="OwnerTenant"/>);
+            await waitFor(() => expect(screen.getByText('Partner requested')).toBeInTheDocument());
+            const partnerChip = screen.getByText('Partner requested').closest('.MuiChip-root');
+            expect(partnerChip).not.toBeNull();
+            expect(partnerChip!.className).toMatch(/MuiChip-colorSecondary/);
+        });
+
+        it('renders the "Awaiting partner" chip with the info color', async () => {
+            mockApi.forJob.mockResolvedValueOnce([baseRow]);
+            renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="PartnerTenant"/>);
+
+            await waitFor(() => expect(screen.getByText('Awaiting partner')).toBeInTheDocument());
+            const chip = screen.getByText('Awaiting partner').closest('.MuiChip-root');
+            expect(chip).not.toBeNull();
+            expect(chip!.className).toMatch(/MuiChip-colorInfo/);
+        });
     });
 });

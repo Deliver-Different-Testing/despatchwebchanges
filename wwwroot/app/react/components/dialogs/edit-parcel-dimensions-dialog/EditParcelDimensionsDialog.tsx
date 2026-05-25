@@ -124,6 +124,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
     bulkJobId,
     isUsCustomer,
     jobWeight,
+    partnerMode = false,
     onClose,
     onSubmit,
     showToast,
@@ -262,6 +263,16 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         try {
             const updatedParcels = groupsToParcels(groups, dimensionUnit);
 
+            // Partner mode: skip the direct API call and the success toast — the
+            // caller wires the captured parcels into the change-request dialog so
+            // the user can add a reason and the partner can approve. Bulk jobs
+            // never enter partner mode (they have no inter-tenant pairing).
+            if (partnerMode) {
+                const result: EditParcelDimensionsDialogResult = {parcels: updatedParcels, totalWeight: parcelTotal};
+                onSubmit(result);
+                return;
+            }
+
             if (jobId) {
                 await apiClient.post('job/UpdateJobPackages', {jobId, parcels: updatedParcels, weight: parcelTotal > 0 ? parcelTotal : undefined});
             } else if (bulkJobId) {
@@ -279,7 +290,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
         } finally {
             setIsLoading(false);
         }
-    }, [groups, dimensionUnit, jobId, bulkJobId, totalParcels, parcelTotal, showToast, onSubmit]);
+    }, [groups, dimensionUnit, jobId, bulkJobId, partnerMode, totalParcels, parcelTotal, showToast, onSubmit]);
 
     const numInput = {min: 0, step: 0.01};
 
@@ -527,7 +538,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     <Tooltip title={hasEmptyWeights ? 'All parcels must have a weight greater than 0' : weightMismatch ? 'Job weight must match parcel total before saving' : ''}>
                         <span>
                             <Button variant="contained" onClick={handleSubmit} disabled={hasEmptyWeights || weightMismatch}>
-                                Save
+                                {partnerMode ? 'Continue' : 'Save'}
                             </Button>
                         </span>
                     </Tooltip>

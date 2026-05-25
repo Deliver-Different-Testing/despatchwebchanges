@@ -4,7 +4,7 @@
  * Lets a dispatcher submit a change request against an inter-tenant partner job.
  * Auto-apply fields (Notes / ProgressNote / PodNote / references / tracking)
  * apply immediately on the local job; manual fields open a task on the
- * counterparty's dashboard and await approval.
+ * partner's dashboard and await approval.
  *
  * Each field gets a typed input matched to its semantic — currency for the
  * agreed rate, integer stepper for quantity, the live speed list for
@@ -68,6 +68,12 @@ export interface JobChangeRequestDialogProps {
      * read-only summary and only the reason textarea is editable.
      */
     lockedField?: boolean;
+    /**
+     * Name of the OTHER tenant on the partner pairing. When provided, copy
+     * substitutes the tenant name for the generic "partner" wording so the
+     * dispatcher sees exactly who will approve their change request.
+     */
+    partnerName?: string | null;
 }
 
 interface AddressDraft {
@@ -129,7 +135,9 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
     preselectedFieldName,
     preInitialValue,
     lockedField = false,
+    partnerName,
 }) => {
+    const partnerLabel = partnerName?.trim() || 'the partner';
     const [fieldName, setFieldName] = useState(preselectedFieldName ?? 'Notes');
     const [requestedValue, setRequestedValue] = useState(preInitialValue ?? '');
     const [addressDraft, setAddressDraft] = useState<AddressDraft>(() => parseAddressDraft(preInitialValue ?? ''));
@@ -208,7 +216,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             } else {
                 const status = result.request?.status === 'Applied'
                     ? 'Change applied'
-                    : 'Change request sent to partner';
+                    : `Change request sent to ${partnerLabel}`;
                 setSuccess(status);
                 onSubmitted?.(result);
             }
@@ -225,10 +233,10 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
     // the date and time"). Switches based on whether the field auto-applies,
     // requires partner approval, or is just collecting the reason.
     const subtitle = lockedField
-        ? 'Add a reason for the counterparty'
+        ? `Add a reason for ${partnerLabel}`
         : meta.mode === 'auto'
             ? 'Applies immediately to both sides'
-            : 'Requires partner approval before it applies';
+            : `Requires ${partnerLabel} to approve before it applies`;
 
     return (
         <Dialog
@@ -350,12 +358,12 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                         maxRows={5}
                         disabled={submitting}
                         autoFocus={lockedField}
-                        helperText="Visible to the counterparty during approval"
+                        helperText={`Visible to ${partnerLabel} during approval`}
                     />
 
                     {meta.commercial && (
                         <Alert severity="info" variant="outlined" sx={{py: 0.5}}>
-                            This change re-rates the job. The counterparty will see the new price when they approve.
+                            This change re-rates the job. {partnerName?.trim() ? partnerName.trim() : 'The partner'} will see the new price when they approve.
                         </Alert>
                     )}
 

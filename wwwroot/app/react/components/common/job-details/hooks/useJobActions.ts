@@ -768,14 +768,29 @@ export function useJobActions({
         if (!j) return;
         await ensureParcelDimensionsDialog();
         window.ReactEditParcelDimensionsDialog?.setToastService({showToast});
+        // Partner jobs route through the change-request dialog: the dimensions
+        // dialog captures the parcels (no API call, no success toast) and we
+        // forward them to the locked confirmation dialog so the user adds a
+        // reason and the partner can approve. Bulk jobs never have a partner
+        // pairing, so they keep the direct save path.
+        const partnerMode = Boolean(j.isPartnerJob && !j.isBulkJob && onRequestPartnerChange);
         const result = await window.ReactEditParcelDimensionsDialog?.showEditParcelDimensionsDialog({
             jobId: j.isBulkJob ? undefined : j.id,
             bulkJobId: j.isBulkJob ? j.id : undefined,
             parcels: j.parcelDimensions || [],
             isUsCustomer: isUsCustomer,
             jobWeight: j.weight,
+            partnerMode,
         });
         if (!result) return;
+        if (partnerMode && onRequestPartnerChange) {
+            const payload = JSON.stringify({
+                parcels: result.parcels,
+                weight: result.totalWeight > 0 ? result.totalWeight : undefined,
+            });
+            onRequestPartnerChange('Packages', payload, true);
+            return;
+        }
         await Promise.all([refreshAndNotify(), invalidateAllJobDetails()]);
         if (!j.isBulkJob) {
             const jobForRate = j.rootParentId
@@ -785,7 +800,7 @@ export function useJobActions({
                 await checkForRateChange(jobForRate);
             }
         }
-    }, [ensureParcelDimensionsDialog, isUsCustomer, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs]);
+    }, [ensureParcelDimensionsDialog, isUsCustomer, showToast, refreshAndNotify, checkForRateChange, invalidateAllJobDetails, relatedJobs, onRequestPartnerChange]);
 
     const handleEditRefA = useCallback(() => {
         const j = jobRef.current;

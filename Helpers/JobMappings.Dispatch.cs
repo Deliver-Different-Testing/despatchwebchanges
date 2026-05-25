@@ -139,6 +139,14 @@ public static partial class JobMappings
                 ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
                 : null,
 
+            PartnerTenantName = j.JobPartnerDispatch != null && j.JobPartnerDispatch.PartnerPairing != null
+                ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
+                : j.TucJobChangeRequests
+                    .Where(r => r.UjcrPairing != null && r.UjcrPairing.PartnerTenantName != null)
+                    .OrderByDescending(r => r.UjcrRequestedAtUtc)
+                    .Select(r => r.UjcrPairing.PartnerTenantName)
+                    .FirstOrDefault(),
+
             Locked = j.UcjbLocked ?? false,
             IsPartnerJob = j.PartnerJobGuid.HasValue,
 

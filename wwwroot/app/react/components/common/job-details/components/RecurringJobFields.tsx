@@ -11,7 +11,9 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
 import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import dayjs from 'dayjs';
 import {EditableField} from './EditableField';
 import type {IJob} from '../JobDetails.types';
 import {
@@ -23,6 +25,7 @@ import {
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {Frequency} from '../../../../../enums/frequency.enum';
 import {HolidayDeliveryOptions} from '../../../../../enums/holiday-delivery-options.enum';
+import {formatLongDate, getTimezoneAbbreviation} from '../../../../utils/dateUtils';
 
 interface RecurringJobFieldsProps {
     job: IJob;
@@ -40,6 +43,12 @@ const dayOptions = DaysOfWeekHelpers.allDays.map(day => ({
     value: day,
     label: DaysOfWeekHelpers.dayLabels[day],
 }));
+
+/** Saturday/Sunday selected chips render as `secondary` to call out
+ *  weekend scheduling at a glance — the rest of the week stays `primary`. */
+function isWeekend(day: DaysOfWeek): boolean {
+    return day === DaysOfWeek.Saturday || day === DaysOfWeek.Sunday;
+}
 
 const frequencyOptions = [
     {value: Frequency.None, label: 'None'},
@@ -77,6 +86,24 @@ export function RecurringJobFields({
         onDaysOfWeekChange(newDays);
     };
 
+    /** Schedule dates are anchored to the pickup side of the job (that's where
+     *  the recurring booking executes), so we hover-reveal the long-form date
+     *  with the pickup timezone abbreviation — no timezone for NZ tenants per
+     *  `getTimezoneAbbreviation`'s NZ rule. */
+    const pickupTz = job.pickUpTimeZone?.text ?? '';
+    const tzSuffix = (() => {
+        const abbr = getTimezoneAbbreviation(pickupTz);
+        return abbr ? ` ${abbr}` : '';
+    })();
+    const dateTooltip = (label: string, date: dayjs.Dayjs | undefined, displayValue: string | undefined): string => {
+        if (date && date.isValid()) return `${label}: ${formatLongDate(date)}${tzSuffix}`;
+        if (displayValue) return `${label}: ${displayValue}${tzSuffix}`;
+        return `${label}: not set`;
+    };
+    const firstDueDisplay = job.firstDue && dayjs.isDayjs(job.firstDue) && job.firstDue.isValid()
+        ? formatLongDate(job.firstDue)
+        : (job.firstDue ? String(job.firstDue) : undefined);
+
     return (
         <Box sx={cardContainerSx}>
             <Box sx={sectionToolbarSx}>
@@ -91,18 +118,22 @@ export function RecurringJobFields({
                     Days of Week
                 </Typography>
                 <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5}}>
-                    {dayOptions.map(day => (
-                        <Chip
-                            key={day.value}
-                            label={day.label}
-                            size="small"
-                            color={daysOfWeekArray.includes(day.value) ? 'primary' : 'default'}
-                            variant={daysOfWeekArray.includes(day.value) ? 'filled' : 'outlined'}
-                            onClick={() => toggleDay(day.value)}
-                            clickable
-                            sx={{fontSize: '0.75rem', fontWeight: 500}}
-                        />
-                    ))}
+                    {dayOptions.map(day => {
+                        const selected = daysOfWeekArray.includes(day.value);
+                        const selectedColor = isWeekend(day.value) ? 'secondary' : 'primary';
+                        return (
+                            <Chip
+                                key={day.value}
+                                label={day.label}
+                                size="small"
+                                color={selected ? selectedColor : 'default'}
+                                variant={selected ? 'filled' : 'outlined'}
+                                onClick={() => toggleDay(day.value)}
+                                clickable
+                                sx={{fontSize: '0.75rem', fontWeight: 500}}
+                            />
+                        );
+                    })}
                 </Box>
 
                 {/* Frequency & Holiday Options */}
@@ -140,19 +171,33 @@ export function RecurringJobFields({
                     </FormControl>
                 </Stack>
 
-                {/* Dates */}
-                <EditableField
-                    icon="event" label="First Due" value={job.firstDue ? String(job.firstDue) : undefined}
-                    onClick={onEditFirstDue} dense={dense}
-                />
-                <EditableField
-                    icon="event_busy" label="Stop Date" value={job._stopDateStr}
-                    onClick={onEditStopDate} dense={dense}
-                />
-                <EditableField
-                    icon="event_available" label="Restart Date" value={job._restartDateStr}
-                    onClick={onEditRestartDate} dense={dense}
-                />
+                {/* Dates — wrapped in Tooltips that always carry the pickup
+                    timezone abbreviation so dispatchers across regions know
+                    which calendar the schedule reads against. */}
+                <Tooltip title={dateTooltip('First Due', job.firstDue, firstDueDisplay)} placement="top-start" arrow>
+                    <Box>
+                        <EditableField
+                            icon="event" label="First Due" value={firstDueDisplay}
+                            onClick={onEditFirstDue} dense={dense}
+                        />
+                    </Box>
+                </Tooltip>
+                <Tooltip title={dateTooltip('Stop Date', job.stopDate, job._stopDateStr)} placement="top-start" arrow>
+                    <Box>
+                        <EditableField
+                            icon="event_busy" label="Stop Date" value={job._stopDateStr}
+                            onClick={onEditStopDate} dense={dense}
+                        />
+                    </Box>
+                </Tooltip>
+                <Tooltip title={dateTooltip('Restart Date', job.restartDate, job._restartDateStr)} placement="top-start" arrow>
+                    <Box>
+                        <EditableField
+                            icon="event_available" label="Restart Date" value={job._restartDateStr}
+                            onClick={onEditRestartDate} dense={dense}
+                        />
+                    </Box>
+                </Tooltip>
             </Box>
         </Box>
     );
