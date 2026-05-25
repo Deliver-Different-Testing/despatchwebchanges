@@ -33,6 +33,7 @@ import {useFieldVisibility} from './hooks/useFieldVisibility';
 import {useViewDensity} from './hooks/useViewDensity';
 import {usePodPhotos} from './hooks/usePodPhotos';
 import {useJobActions} from './hooks/useJobActions';
+import {useRouteList} from '../../../hooks/useRecurringJobsApi';
 
 import {WarningBanner} from './components/WarningBanner';
 import {RelatedJobTabs} from './components/RelatedJobTabs';
@@ -201,6 +202,13 @@ export function JobDetails({config}: JobDetailsProps) {
         isFetching,
         refetch,
     } = useJobDetail({jobId, isRecurringJob, isBulkJob});
+
+    // Recurring Routes list (only fetched for recurring jobs). Falls
+    // back to an empty array on error or non-medical tenants where the
+    // Routes table is absent — RecurringJobFields hides the dropdown
+    // when routes.length === 0.
+    const {data: routesData} = useRouteList({enabled: isRecurringJob});
+    const routes = routesData ?? [];
 
     const contactId = window.ContactID ?? 0;
     const {isEditMode, toggleEditMode, toggleField, resetToDefaults, isFieldVisible} = useFieldVisibility(contactId);
@@ -417,6 +425,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     dense={isDense}
                     viewDensityLabel={viewDensityLabel}
                     isEditMode={isEditMode}
+                    routes={routes}
                     onToggleDensity={toggleDensity}
                     onToggleEditMode={toggleEditMode}
                     onResetFieldVisibility={handleResetFieldVisibility}
@@ -425,6 +434,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     onPodSpreadsheet={actions.handlePodSpreadsheet}
                     onSendPodEmail={actions.handleSendPodEmail}
                     onLockToggle={actions.handleLockToggle}
+                    onRouteChange={actions.handleRouteChange}
                 />
 
                 {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)

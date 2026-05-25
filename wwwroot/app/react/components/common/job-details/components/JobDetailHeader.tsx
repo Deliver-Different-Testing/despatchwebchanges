@@ -13,6 +13,8 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
+import FormControl from '@mui/material/FormControl';
+import Select from '@mui/material/Select';
 import type {SxProps, Theme} from '@mui/material/styles';
 import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import DensityMediumIcon from '@mui/icons-material/DensityMedium';
@@ -27,12 +29,14 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import EmailIcon from '@mui/icons-material/Email';
 import ViewWeekIcon from '@mui/icons-material/ViewWeek';
 import type {IJob} from '../JobDetails.types';
+import type {RouteOption} from '../../../../interfaces/recurringJobs';
 
 interface JobDetailHeaderProps {
     job: IJob;
     dense?: boolean;
     viewDensityLabel: string;
     isEditMode: boolean;
+    routes: RouteOption[];
     onToggleDensity: () => void;
     onToggleEditMode: () => void;
     onResetFieldVisibility: () => void;
@@ -41,6 +45,7 @@ interface JobDetailHeaderProps {
     onPodSpreadsheet: () => void;
     onSendPodEmail: () => void;
     onLockToggle: () => void;
+    onRouteChange: (routeId: number | null) => void;
 }
 
 function getStatusColor(job: IJob): 'primary' | 'success' | 'error' | 'warning' | 'default' {
@@ -89,6 +94,7 @@ export function JobDetailHeader({
                                     dense,
                                     viewDensityLabel,
                                     isEditMode,
+                                    routes,
                                     onToggleDensity,
                                     onToggleEditMode,
                                     onResetFieldVisibility,
@@ -97,6 +103,7 @@ export function JobDetailHeader({
                                     onPodSpreadsheet,
                                     onSendPodEmail,
                                     onLockToggle,
+                                    onRouteChange,
                                 }: JobDetailHeaderProps) {
     const [podMenuAnchor, setPodMenuAnchor] = useState<HTMLElement | null>(null);
     const isDense = viewDensityLabel === 'Dense';
@@ -145,6 +152,41 @@ export function JobDetailHeader({
                         sx={{fontWeight: 600, fontSize: '0.75rem', height: 26, letterSpacing: '0.02em'}}
                     />
                 )}
+                {/* Recurring Route assignment (US medical-courier tenants).
+                    Compact Select sits to the left of the Lock icon, gated on
+                    job.preBook (recurring jobs only) + routes.length > 0 (only
+                    on tenants where the Routes table is populated). Empty value
+                    represents "None" — cascades through booking tree server-
+                    side via JobProperty.RouteId. */}
+                {job.preBook && routes.length > 0 && (
+                    <Tooltip title="Recurring Route — cascades to all associated legs">
+                        <FormControl size="small" sx={{minWidth: 180}}>
+                            <Select
+                                value={job.routeId ?? ''}
+                                displayEmpty
+                                aria-label="Recurring Route"
+                                onChange={(e) => {
+                                    const raw = e.target.value;
+                                    const v = raw === null || raw === undefined ? '' : String(raw);
+                                    onRouteChange(v === '' || v === '0' ? null : Number(v));
+                                }}
+                                sx={{
+                                    fontSize: '0.8125rem',
+                                    height: 30,
+                                    '& .MuiSelect-select': {py: 0.5},
+                                }}
+                            >
+                                <MenuItem value=""><em>No route</em></MenuItem>
+                                {routes.map(r => (
+                                    <MenuItem key={r.id} value={r.id}>
+                                        {r.text}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Tooltip>
+                )}
+
                 {/* Lock is a LocalOnly field per PartnerJobGate — each tenant owns its
                     own copy independently. Don't disable on partner jobs: the field-level
                     edit guards handle cross-tenant protection, and showing "Locked —

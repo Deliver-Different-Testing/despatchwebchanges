@@ -906,6 +906,18 @@ export function useJobActions({
         await refreshAndNotify();
     }, [updateField, refreshAndNotify]);
 
+    // Recurring Route assignment. null clears the assignment (operator
+    // picks "None" in the dropdown). Empty string lands on the C#
+    // RecurringJobRepository's null-check branch which sets RouteId to
+    // NULL via ExecuteUpdate, cascading through the booking tree.
+    const handleRouteChange = useCallback(async (routeId: number | null) => {
+        const j = jobRef.current;
+        if (!j) return;
+        const value = routeId === null || routeId === undefined ? '' : String(routeId);
+        await updateField({job: j, field: JobProperty.RouteId, value, isRecurring: j.preBook});
+        await refreshAndNotify();
+    }, [updateField, refreshAndNotify]);
+
     const handleHolidayOptionChange = useCallback(async (option: number) => {
         const j = jobRef.current;
         if (!j) return;
@@ -1080,6 +1092,7 @@ export function useJobActions({
         // Recurring
         handleDaysOfWeekChange,
         handleFrequencyChange,
+        handleRouteChange,
         handleHolidayOptionChange,
         handleEditFirstDue,
         handleEditStopDate,

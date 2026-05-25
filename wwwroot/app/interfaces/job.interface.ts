@@ -175,6 +175,9 @@ export interface IJob {
     daysOfWeek?: DaysOfWeek
     frequency?: Frequency;
     holidayDeliveryOption: HolidayDeliveryOptions,
+    // Recurring Route assignment. Null when not assigned to any route.
+    // Cascades through booking tree on update via JobProperty.RouteId.
+    routeId?: number | null;
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
     pickUpTimeZone: ISuggestion;

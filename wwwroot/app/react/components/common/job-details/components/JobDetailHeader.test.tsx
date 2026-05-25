@@ -21,6 +21,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         job: createMockJob(),
         viewDensityLabel: 'Normal',
         isEditMode: false,
+        routes: [],
         onToggleDensity: jest.fn(),
         onToggleEditMode: jest.fn(),
         onResetFieldVisibility: jest.fn(),
@@ -29,6 +30,7 @@ function createDefaultProps(overrides?: Record<string, any>) {
         onPodSpreadsheet: jest.fn(),
         onSendPodEmail: jest.fn(),
         onLockToggle: jest.fn(),
+        onRouteChange: jest.fn(),
         ...overrides,
     };
 }

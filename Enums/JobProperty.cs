@@ -63,5 +63,11 @@ public enum JobProperty
     CourierId,
     InactiveBy,
     PickupArrivalTime,
-    DeliveryArrivalTime
+    DeliveryArrivalTime,
+    // Recurring Route assignment — cascades through booking tree
+    // (parent + children + grandchildren) via RecurringJobRepository's
+    // ClientID-mirror branch. Appended (not inserted) so the integer
+    // ordinals of the existing members stay stable in case anything
+    // serializes the enum as int.
+    RouteId
 }
