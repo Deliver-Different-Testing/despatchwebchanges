@@ -35,13 +35,19 @@ import {alpha} from '@mui/material/styles';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from '@mui/icons-material/Edit';
+import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
 import {useJobChangeRequests} from './useJobChangeRequests';
 import {
     ageLevel,
-    formatChangeRequestValue,
+    datetimeFieldSide,
+    formatAddressLines,
+    formatChangeRequestValueWithTz,
+    formatRequestedAtTooltip,
     getFieldMeta,
     relativeAgeShort,
+    type JobChangeRequestCategory,
 } from './jobChangeRequestFormatting';
 
 export interface JobChangeRequestsForJobProps {
@@ -57,6 +63,10 @@ export interface JobChangeRequestsForJobProps {
      * <JobChangeRequestDialog/>.
      */
     onModifyRequest?: (args: {fieldName: string; requestedValue: string | null | undefined}) => void;
+    /** Pickup-side timezone text (e.g. "Pacific/Auckland") for datetime field display. Falls back to tenant TZ. */
+    pickUpTimezoneText?: string;
+    /** Delivery-side timezone text for `DeliverBy` field display. Falls back to tenant TZ. */
+    deliveryTimezoneText?: string;
 }
 
 type StatusColor = 'default' | 'warning' | 'success' | 'error' | 'info';
@@ -82,6 +92,8 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
     localPartyType = 'OwnerTenant',
     onChanged,
     onModifyRequest,
+    pickUpTimezoneText,
+    deliveryTimezoneText,
 }) => {
     const queryClient = useQueryClient();
     const {data: rows = [], isLoading, error: queryError} = useJobChangeRequests(jobId);
@@ -90,6 +102,12 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
     /** Row currently in "confirm reject — provide a reason" mode. */
     const [rejectingId, setRejectingId] = useState<number | null>(null);
     const [rejectReason, setRejectReason] = useState('');
+    /** Row currently in "confirm cancel — are you sure?" mode. */
+    const [cancellingId, setCancellingId] = useState<number | null>(null);
+    /** Most recently cancelled row, surfaced as an inline success banner so the
+     * user gets explicit feedback (the row stays in the list with a Cancelled
+     * chip, which on its own is too subtle for many dispatchers to notice). */
+    const [recentlyCancelledId, setRecentlyCancelledId] = useState<number | null>(null);
 
     const invalidate = useCallback(() => {
         return queryClient.invalidateQueries({queryKey: ['jobChangeRequests', jobId]});
@@ -127,10 +145,12 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
         }
     }, [rejectReason, invalidate, onChanged]);
 
-    const handleCancel = useCallback(async (row: JobChangeRequestDto) => {
+    const handleConfirmCancel = useCallback(async (row: JobChangeRequestDto) => {
         setActingOn(row.id);
         try {
             await jobChangeRequestApi.cancel({requestId: row.id, rowVersion: row.rowVersion});
+            setCancellingId(null);
+            setRecentlyCancelledId(row.id);
             await invalidate();
             onChanged?.();
         } catch (e) {
@@ -207,8 +227,15 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
                     onChangeRejectReason={setRejectReason}
                     onConfirmReject={handleConfirmReject}
                     onApprove={handleApprove}
-                    onCancel={handleCancel}
+                    onStartCancel={(id) => setCancellingId(id)}
+                    onAbortCancel={() => setCancellingId(null)}
+                    onConfirmCancel={handleConfirmCancel}
+                    cancellingId={cancellingId}
+                    recentlyCancelled={recentlyCancelledId === r.id}
+                    onDismissCancelled={() => setRecentlyCancelledId(null)}
                     onModify={onModifyRequest ? handleModify : undefined}
+                    pickUpTimezoneText={pickUpTimezoneText}
+                    deliveryTimezoneText={deliveryTimezoneText}
                 />
             ))}
         </Stack>
@@ -226,8 +253,34 @@ interface ChangeRequestCardProps {
     onChangeRejectReason: (value: string) => void;
     onConfirmReject: (row: JobChangeRequestDto) => void;
     onApprove: (row: JobChangeRequestDto) => void;
-    onCancel: (row: JobChangeRequestDto) => void;
+    cancellingId: number | null;
+    onStartCancel: (id: number) => void;
+    onAbortCancel: () => void;
+    onConfirmCancel: (row: JobChangeRequestDto) => void;
+    recentlyCancelled: boolean;
+    onDismissCancelled: () => void;
     onModify?: (row: JobChangeRequestDto) => void;
+    pickUpTimezoneText?: string;
+    deliveryTimezoneText?: string;
+}
+
+type ValueChipColor = 'default' | 'primary' | 'info';
+
+/**
+ * Per-category color for the small value chips that wrap non-address
+ * "current → requested" tokens. Keeps the visual language consistent with
+ * MetricCard accents on the job detail (datetime = primary, money = info).
+ */
+function valueChipColor(category: JobChangeRequestCategory): ValueChipColor {
+    switch (category) {
+        case 'datetime':
+            return 'primary';
+        case 'rate':
+        case 'commercial':
+            return 'info';
+        default:
+            return 'default';
+    }
 }
 
 function ChangeRequestCard({
@@ -241,33 +294,69 @@ function ChangeRequestCard({
     onChangeRejectReason,
     onConfirmReject,
     onApprove,
-    onCancel,
+    cancellingId,
+    onStartCancel,
+    onAbortCancel,
+    onConfirmCancel,
+    recentlyCancelled,
+    onDismissCancelled,
     onModify,
+    pickUpTimezoneText,
+    deliveryTimezoneText,
 }: ChangeRequestCardProps) {
     const meta = useMemo(() => getFieldMeta(row.fieldName), [row.fieldName]);
+    /** Tz for datetime-category rows: pickup side for everything except DeliverBy. */
+    const fieldTimezoneText = meta.category === 'datetime'
+        ? (datetimeFieldSide(row.fieldName) === 'delivery' ? deliveryTimezoneText : pickUpTimezoneText)
+        : undefined;
     const fromDisplay = useMemo(
-        () => formatChangeRequestValue(row.fieldName, row.currentValue),
-        [row.fieldName, row.currentValue],
+        () => formatChangeRequestValueWithTz(row.fieldName, row.currentValue, fieldTimezoneText),
+        [row.fieldName, row.currentValue, fieldTimezoneText],
     );
     const toDisplay = useMemo(
-        () => formatChangeRequestValue(row.fieldName, row.requestedValue),
-        [row.fieldName, row.requestedValue],
+        () => formatChangeRequestValueWithTz(row.fieldName, row.requestedValue, fieldTimezoneText),
+        [row.fieldName, row.requestedValue, fieldTimezoneText],
+    );
+    const fromLines = useMemo(
+        () => meta.category === 'address' ? formatAddressLines(row.currentValue) : [],
+        [meta.category, row.currentValue],
+    );
+    const toLines = useMemo(
+        () => meta.category === 'address' ? formatAddressLines(row.requestedValue) : [],
+        [meta.category, row.requestedValue],
+    );
+    const requestedAtTooltip = useMemo(
+        () => formatRequestedAtTooltip(row.requestedAt),
+        [row.requestedAt],
     );
     const canApprove = row.status === 'Pending' && row.approvalPartyType === localPartyType;
     const isOwnPending = row.status === 'Pending' && row.origin === 'Local';
     const isRejecting = rejectingId === row.id;
+    const isCancelling = cancellingId === row.id;
     const aging = row.status === 'Pending' ? ageLevel(row.requestedAt) : 'fresh';
+    const status = statusColor(row.status);
+    const isAddress = meta.category === 'address';
+    const chipColor = valueChipColor(meta.category);
+    /** Requested-side label color follows the row's lifecycle so the user can
+     *  see at a glance whether the value is still in flight (warning), already
+     *  approved (info), or live (success). */
+    const requestedAccent: 'warning' | 'success' | 'info' | 'error' | 'default' =
+        row.status === 'Pending' ? 'warning'
+            : row.status === 'Applied' ? 'success'
+            : row.status === 'Approved' ? 'info'
+            : (row.status === 'Rejected' || row.status === 'Cancelled') ? 'error'
+            : 'default';
 
     return (
         <Card variant="outlined" sx={(theme) => ({
             borderLeft: 3,
-            borderLeftColor: `${statusColor(row.status)}.main`,
+            borderLeftColor: `${status}.main`,
             bgcolor: row.status === 'Pending'
                 ? alpha(theme.palette.warning.main, 0.04)
                 : 'background.paper',
         })}>
             <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
-                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1, flexWrap: 'wrap'}}>
                     <Typography
                         component="span"
                         sx={{display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -282,7 +371,7 @@ function ChangeRequestCard({
                     <Chip
                         label={row.status}
                         size="small"
-                        color={statusColor(row.status)}
+                        color={status}
                         variant={row.status === 'Pending' ? 'filled' : 'outlined'}
                     />
                     {row.requiresCommercialRefresh && (
@@ -299,7 +388,7 @@ function ChangeRequestCard({
                                 variant="filled"
                             />
                         )}
-                        <Tooltip title={new Date(row.requestedAt).toLocaleString()}>
+                        <Tooltip title={requestedAtTooltip}>
                             <Typography variant="caption" color="text.secondary">
                                 {relativeAgeShort(row.requestedAt)} ago
                             </Typography>
@@ -307,21 +396,37 @@ function ChangeRequestCard({
                     </Box>
                 </Box>
 
-                <Box sx={{mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap'}}>
-                    <Typography variant="caption" color="text.secondary">From</Typography>
-                    <Typography component="span" sx={{fontFamily: 'monospace', fontSize: '0.85rem', wordBreak: 'break-word'}}>
-                        {fromDisplay}
-                    </Typography>
-                    <Typography component="span" sx={{color: 'text.secondary', mx: 0.5}}>→</Typography>
-                    <Typography component="span" sx={{fontFamily: 'monospace', fontWeight: 600, fontSize: '0.85rem', wordBreak: 'break-word'}}>
-                        {toDisplay}
-                    </Typography>
-                </Box>
+                {isAddress ? (
+                    <AddressDelta
+                        fromLines={fromLines}
+                        toLines={toLines}
+                        fromFallback={fromDisplay}
+                        toFallback={toDisplay}
+                        requestedAccent={requestedAccent}
+                    />
+                ) : (
+                    <ValueDelta
+                        fromDisplay={fromDisplay}
+                        toDisplay={toDisplay}
+                        chipColor={chipColor}
+                        requestedAccent={requestedAccent}
+                    />
+                )}
 
                 {row.reason && (
-                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 0.5}}>
+                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1, fontStyle: 'italic'}}>
                         “{row.reason}”
                     </Typography>
+                )}
+
+                {recentlyCancelled && (
+                    <Alert
+                        severity="success"
+                        onClose={onDismissCancelled}
+                        sx={{mt: 1, py: 0.25}}
+                    >
+                        Change request cancelled. {row.approvalPartyType === localPartyType ? '' : 'The partner has been notified.'}
+                    </Alert>
                 )}
 
                 {isRejecting ? (
@@ -358,12 +463,40 @@ function ChangeRequestCard({
                             </Button>
                         </Box>
                     </Box>
+                ) : isCancelling ? (
+                    <Box sx={{mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1}}>
+                        <Typography variant="body2" color="text.secondary">
+                            Cancel this change request? The partner will be notified the request was retracted.
+                        </Typography>
+                        <Box sx={{display: 'flex', gap: 1, justifyContent: 'flex-end'}}>
+                            <Button
+                                size="small"
+                                onClick={onAbortCancel}
+                                disabled={actingOn !== null}
+                            >
+                                Keep request
+                            </Button>
+                            <Button
+                                size="small"
+                                variant="contained"
+                                color="warning"
+                                onClick={() => onConfirmCancel(row)}
+                                disabled={actingOn !== null}
+                                startIcon={actingOn === row.id ? <CircularProgress size={14} color="inherit"/> : <CancelOutlinedIcon/>}
+                            >
+                                Confirm cancel
+                            </Button>
+                        </Box>
+                    </Box>
                 ) : (
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 1, flexWrap: 'wrap'}}>
-                        <Typography variant="caption" color="text.secondary">
-                            {row.origin === 'Local' ? 'You requested' : 'Partner requested'}
-                        </Typography>
-                        <Box sx={{ml: 'auto', display: 'flex', gap: 1}}>
+                        <Chip
+                            size="small"
+                            label={row.origin === 'Local' ? 'You requested' : 'Partner requested'}
+                            color={row.origin === 'Local' ? 'primary' : 'secondary'}
+                            variant={row.origin === 'Local' ? 'outlined' : 'filled'}
+                        />
+                        <Box sx={{ml: 'auto', display: 'flex', gap: 1, alignItems: 'center'}}>
                             {canApprove && (
                                 <>
                                     <Button
@@ -391,7 +524,9 @@ function ChangeRequestCard({
                                 <>
                                     <Chip
                                         size="small"
+                                        icon={<HourglassEmptyIcon/>}
                                         label="Awaiting partner"
+                                        color="info"
                                         variant="outlined"
                                     />
                                     {onModify && (
@@ -409,7 +544,7 @@ function ChangeRequestCard({
                                         size="small"
                                         variant="outlined"
                                         color="warning"
-                                        onClick={() => onCancel(row)}
+                                        onClick={() => onStartCancel(row.id)}
                                         disabled={actingOn !== null}
                                     >
                                         Cancel
@@ -417,12 +552,179 @@ function ChangeRequestCard({
                                 </>
                             )}
                             {row.status === 'Pending' && !canApprove && !isOwnPending && (
-                                <Chip size="small" label="Awaiting partner" variant="outlined"/>
+                                <Chip
+                                    size="small"
+                                    icon={<HourglassEmptyIcon/>}
+                                    label="Awaiting partner"
+                                    color="info"
+                                    variant="outlined"
+                                />
                             )}
                         </Box>
                     </Box>
                 )}
             </CardContent>
         </Card>
+    );
+}
+
+interface AddressDeltaProps {
+    fromLines: string[];
+    toLines: string[];
+    fromFallback: string;
+    toFallback: string;
+    requestedAccent: 'warning' | 'success' | 'info' | 'error' | 'default';
+}
+
+/**
+ * Side-by-side address comparison. Each side is its own outlined Card with
+ * an overline label, mirroring the AddressSection layout on the job detail.
+ * Collapses to a stacked layout on narrow screens with the arrow rotating
+ * to point downward.
+ */
+function AddressDelta({fromLines, toLines, fromFallback, toFallback, requestedAccent}: AddressDeltaProps) {
+    const renderLines = (lines: string[], fallback: string) => {
+        const display = lines.length > 0 ? lines : [fallback];
+        return display.map((line, idx) => (
+            <Typography
+                key={`${idx}-${line}`}
+                variant="body2"
+                sx={{lineHeight: 1.4, wordBreak: 'break-word'}}
+            >
+                {line}
+            </Typography>
+        ));
+    };
+
+    const requestedLabelColor = requestedAccent === 'default' ? 'text.secondary' : `${requestedAccent}.main`;
+
+    return (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: {xs: 'column', sm: 'row'},
+                alignItems: 'stretch',
+                gap: 1,
+                mb: 0.5,
+            }}
+        >
+            <Box
+                aria-label="Current address"
+                sx={{
+                    flex: 1,
+                    minWidth: 0,
+                    p: 1.25,
+                    border: 1,
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'background.paper',
+                }}
+            >
+                <Typography
+                    variant="overline"
+                    sx={{
+                        display: 'block',
+                        color: 'text.secondary',
+                        fontWeight: 600,
+                        letterSpacing: '0.06em',
+                        lineHeight: 1.4,
+                        mb: 0.5,
+                    }}
+                >
+                    Current
+                </Typography>
+                {renderLines(fromLines, fromFallback)}
+            </Box>
+            <Box
+                aria-hidden
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'text.secondary',
+                    fontSize: '1.1rem',
+                    px: {xs: 0, sm: 0.5},
+                    py: {xs: 0.25, sm: 0},
+                    transform: {xs: 'rotate(90deg)', sm: 'none'},
+                }}
+            >
+                →
+            </Box>
+            <Box
+                aria-label="Requested address"
+                sx={(theme) => ({
+                    flex: 1,
+                    minWidth: 0,
+                    p: 1.25,
+                    border: 1,
+                    borderColor: requestedAccent === 'default'
+                        ? 'divider'
+                        : alpha(theme.palette[requestedAccent].main, 0.5),
+                    borderRadius: 2,
+                    bgcolor: requestedAccent === 'default'
+                        ? 'background.paper'
+                        : alpha(theme.palette[requestedAccent].main, 0.06),
+                })}
+            >
+                <Typography
+                    variant="overline"
+                    sx={{
+                        display: 'block',
+                        color: requestedLabelColor,
+                        fontWeight: 600,
+                        letterSpacing: '0.06em',
+                        lineHeight: 1.4,
+                        mb: 0.5,
+                    }}
+                >
+                    Requested
+                </Typography>
+                {renderLines(toLines, toFallback)}
+            </Box>
+        </Box>
+    );
+}
+
+interface ValueDeltaProps {
+    fromDisplay: string;
+    toDisplay: string;
+    chipColor: ValueChipColor;
+    requestedAccent: 'warning' | 'success' | 'info' | 'error' | 'default';
+}
+
+/**
+ * Inline "current → requested" pair for short, atomic values (prices,
+ * dates, flags, refs). Each side is wrapped in a small MUI Chip so it
+ * reads as a first-class token instead of bare monospace text.
+ */
+function ValueDelta({fromDisplay, toDisplay, chipColor, requestedAccent}: ValueDeltaProps) {
+    /** Requested-side picks up the row's lifecycle accent (Pending = warning,
+     *  Applied = success, etc.) so the user can see at a glance whether the
+     *  proposed value is in flight or live. Pre-Pending the category color
+     *  drives the chip; once a decision is rendered we follow lifecycle. */
+    const requestedColor: ValueChipColor | 'warning' | 'success' | 'error' =
+        requestedAccent === 'default' ? chipColor : requestedAccent;
+    return (
+        <Box sx={{mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap'}}>
+            <Chip
+                size="small"
+                color={chipColor}
+                variant="outlined"
+                label={fromDisplay}
+                sx={{maxWidth: '100%', '& .MuiChip-label': {whiteSpace: 'normal'}}}
+            />
+            <Typography component="span" sx={{color: 'text.secondary'}}>→</Typography>
+            <Chip
+                size="small"
+                color={requestedColor}
+                variant="filled"
+                label={toDisplay}
+                sx={{
+                    maxWidth: '100%',
+                    fontWeight: 600,
+                    '& .MuiChip-label': {whiteSpace: 'normal'},
+                }}
+            />
+        </Box>
     );
 }

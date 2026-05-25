@@ -316,6 +316,42 @@ describe('JobChangeRequestDialog', () => {
         });
     });
 
+    describe('partner name substitution', () => {
+        it('uses the partner name in the subtitle and reason helper text', () => {
+            renderDialog({preselectedFieldName: 'Quantity', partnerName: 'Acme Couriers'});
+            // Subtitle in the header sits next to the job number.
+            expect(screen.getByText(/Requires Acme Couriers to approve/)).toBeInTheDocument();
+            // Reason field helper text.
+            expect(screen.getByText(/Visible to Acme Couriers during approval/)).toBeInTheDocument();
+        });
+
+        it('names the partner in the commercial re-rates alert', () => {
+            renderDialog({preselectedFieldName: 'PartnerAgreedRate', partnerName: 'Acme Couriers'});
+            expect(screen.getByText(/Acme Couriers will see the new price/)).toBeInTheDocument();
+        });
+
+        it('uses the partner name in the locked-field confirmation subtitle', () => {
+            renderDialog({
+                preselectedFieldName: 'PartnerAgreedRate',
+                preInitialValue: '185.50',
+                lockedField: true,
+                partnerName: 'Acme Couriers',
+            });
+            expect(screen.getByText(/Add a reason for Acme Couriers/)).toBeInTheDocument();
+        });
+
+        it('falls back to "the partner" when no name is supplied', () => {
+            renderDialog({preselectedFieldName: 'Quantity'});
+            expect(screen.getByText(/Requires the partner to approve/)).toBeInTheDocument();
+            expect(screen.getByText(/Visible to the partner during approval/)).toBeInTheDocument();
+        });
+
+        it('falls back to "the partner" when name is blank/whitespace', () => {
+            renderDialog({preselectedFieldName: 'Quantity', partnerName: '   '});
+            expect(screen.getByText(/Requires the partner to approve/)).toBeInTheDocument();
+        });
+    });
+
     it('surfaces backend error message', async () => {
         const user = userEvent.setup();
         mockCreate.mockResolvedValueOnce({

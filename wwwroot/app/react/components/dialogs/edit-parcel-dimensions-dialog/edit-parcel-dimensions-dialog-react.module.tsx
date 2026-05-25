@@ -27,6 +27,7 @@ interface DialogState {
     bulkJobId?: number;
     isUsCustomer: boolean;
     jobWeight?: number;
+    partnerMode?: boolean;
     resolve?: (result: EditParcelDimensionsDialogResult | null) => void;
 }
 
@@ -89,6 +90,7 @@ class EditParcelDimensionsDialogManager {
                         bulkJobId={this.dialogState.bulkJobId}
                         isUsCustomer={this.dialogState.isUsCustomer}
                         jobWeight={this.dialogState.jobWeight}
+                        partnerMode={this.dialogState.partnerMode}
                         onClose={handleClose}
                         onSubmit={handleSubmit}
                         showToast={this.toastService.showToast}
@@ -109,6 +111,7 @@ class EditParcelDimensionsDialogManager {
                 bulkJobId: options.bulkJobId,
                 isUsCustomer: options.isUsCustomer,
                 jobWeight: options.jobWeight,
+                partnerMode: options.partnerMode,
                 resolve,
             };
             this.renderDialog();

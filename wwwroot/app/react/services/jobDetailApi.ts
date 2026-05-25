@@ -43,7 +43,7 @@ export function getBulkJobDetail(bulkJobId: number, options?: RequestOptions): P
  * backend returns an empty 200 (all fields undefined). For partner jobs it returns
  * one of:
  *   - `{ applied: true, requestId }` — Auto field synced on both sides via change request.
- *   - `{ pending: true, requestId }` — Manual field queued for counterparty approval (202).
+ *   - `{ pending: true, requestId }` — Manual field queued for the partner's approval (202).
  *   - 400 with `{ message }` — field not supported on partner jobs in this version.
  */
 export interface JobUpdateResponse {

@@ -1,11 +1,12 @@
 /** @jest-environment jest-environment-jsdom */
 
 import React from 'react';
-import {screen, within} from '@testing-library/react';
+import {screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {EditParcelDimensionsDialog} from './EditParcelDimensionsDialog';
 import {renderWithTheme} from '../../../__testUtils__';
 import type {ParcelDimensions} from './types';
+import {apiClient} from '../../../services/apiClient';
 
 jest.mock('../../../services/apiClient', () => ({
     apiClient: {
@@ -13,6 +14,8 @@ jest.mock('../../../services/apiClient', () => ({
         post: jest.fn().mockResolvedValue({}),
     },
 }));
+
+const mockPost = apiClient.post as jest.Mock;
 
 const mockParcel = (overrides?: Partial<ParcelDimensions>): ParcelDimensions => ({
     itemName: 'Box',
@@ -208,5 +211,71 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         await user.type(weightInput, '0');
 
         expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
+    });
+});
+
+// ── Partner mode (Packages requires partner approval) ──────────────
+
+describe('EditParcelDimensionsDialog partnerMode', () => {
+    beforeEach(() => jest.clearAllMocks());
+
+    it('labels the action "Continue" instead of "Save"', () => {
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                parcels={[mockParcel({weight: 5})]}
+                partnerMode
+            />,
+        );
+        expect(screen.getByRole('button', {name: /continue/i})).toBeInTheDocument();
+        expect(screen.queryByRole('button', {name: /^save$/i})).not.toBeInTheDocument();
+    });
+
+    it('skips the UpdateJobPackages POST and resolves with captured parcels', async () => {
+        const user = userEvent.setup();
+        const onSubmit = jest.fn();
+        const showToast = jest.fn();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                parcels={[mockParcel({weight: 5})]}
+                partnerMode
+                onSubmit={onSubmit}
+                showToast={showToast}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /continue/i}));
+
+        await waitFor(() => expect(onSubmit).toHaveBeenCalledTimes(1));
+        const submitArg = onSubmit.mock.calls[0][0];
+        expect(submitArg.parcels).toHaveLength(1);
+        expect(submitArg.parcels[0]).toMatchObject({weight: 5, length: 10, depth: 5, height: 3});
+        expect(submitArg.totalWeight).toBe(5);
+
+        // No direct write, no success toast — those happen in the next dialog leg.
+        expect(mockPost).not.toHaveBeenCalledWith('job/UpdateJobPackages', expect.anything());
+        expect(showToast).not.toHaveBeenCalledWith(expect.stringMatching(/successfully updated/i), 'success');
+    });
+
+    it('non-partner mode still POSTs to UpdateJobPackages', async () => {
+        const user = userEvent.setup();
+        const onSubmit = jest.fn();
+        renderWithTheme(
+            <EditParcelDimensionsDialog
+                {...defaultProps}
+                parcels={[mockParcel({weight: 5})]}
+                onSubmit={onSubmit}
+            />,
+        );
+
+        await user.click(screen.getByRole('button', {name: /save/i}));
+
+        await waitFor(() =>
+            expect(mockPost).toHaveBeenCalledWith(
+                'job/UpdateJobPackages',
+                expect.objectContaining({jobId: 1}),
+            ),
+        );
     });
 });

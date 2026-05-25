@@ -403,7 +403,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 {/* Partner-job context banner — slim, dismissible (per-device).
                     Explains the change-request workflow up-front so dispatchers
                     don't discover gated fields by trying them. */}
-                {job.isPartnerJob && <PartnerJobBanner/>}
+                {job.isPartnerJob && <PartnerJobBanner partnerName={job.partnerTenantName ?? undefined}/>}
 
                 <RelatedJobTabs
                     sortedRelatedJobs={sortedRelatedJobs}
@@ -428,13 +428,13 @@ export function JobDetails({config}: JobDetailsProps) {
                 />
 
                 {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)
-                    queue for counterparty approval; notes / refs / contacts sync
+                    queue for the other tenant's approval; notes / refs / contacts sync
                     automatically; dispatch state (courier, status, lock) stays local. */}
                 {job.isPartnerJob && isEditMode && (
                     <Alert severity="info" sx={{mb: 1}}>
-                        Rated fields require partner approval before they apply. Notes and
-                        contact details sync automatically. See the change-request panel
-                        below for pending items.
+                        Rated fields require {job.partnerTenantName?.trim() || 'the partner'} to
+                        approve before they apply. Notes and contact details sync
+                        automatically. See the change-request panel below for pending items.
                     </Alert>
                 )}
 
@@ -537,6 +537,8 @@ export function JobDetails({config}: JobDetailsProps) {
                             <Collapse in={isFieldVisible('partnerChangeRequests')} unmountOnExit>
                                 <JobChangeRequestsForJob
                                     jobId={job.id}
+                                    pickUpTimezoneText={(job.pickUpTimeZone as {text?: string} | undefined)?.text}
+                                    deliveryTimezoneText={(job.deliveryTimeZone as {text?: string} | undefined)?.text}
                                     onChanged={refreshAndNotify}
                                     onModifyRequest={({fieldName, requestedValue}) =>
                                         setChangeRequestDialog({
@@ -677,6 +679,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 preselectedFieldName={changeRequestDialog.field}
                 preInitialValue={changeRequestDialog.value}
                 lockedField={changeRequestDialog.locked}
+                partnerName={job.partnerTenantName}
                 onClose={() => setChangeRequestDialog({open: false})}
                 onSubmitted={() => {
                     setChangeRequestDialog({open: false});

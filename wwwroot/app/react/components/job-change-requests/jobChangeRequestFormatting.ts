@@ -15,6 +15,14 @@
  */
 
 import {formatCurrency} from '../../utils/currencyUtils';
+import {
+    formatLongDateTime,
+    getIanaTimezone,
+    getTenantTimezone,
+    getTimezoneAbbreviation,
+    isUsCustomer,
+    parseDateFromApi,
+} from '../../utils/dateUtils';
 
 export type JobChangeRequestCategory =
     | 'note'
@@ -24,6 +32,7 @@ export type JobChangeRequestCategory =
     | 'address'
     | 'rate'
     | 'commercial'
+    | 'packages'
     | 'datetime'
     | 'flag';
 
@@ -159,7 +168,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     // Manual — contact fields (no commercial refresh)
     FromContactName: {
         label: 'Pickup Contact Name',
-        hint: 'Requires counterparty approval',
+        hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
         commercial: false,
@@ -167,7 +176,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     FromContactPhone: {
         label: 'Pickup Contact Phone',
-        hint: 'Requires counterparty approval',
+        hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
         commercial: false,
@@ -175,7 +184,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     ToContactName: {
         label: 'Delivery Contact Name',
-        hint: 'Requires counterparty approval',
+        hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
         commercial: false,
@@ -183,7 +192,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     ToContactPhone: {
         label: 'Delivery Contact Phone',
-        hint: 'Requires counterparty approval',
+        hint: 'Requires partner approval',
         category: 'contact',
         mode: 'manual',
         commercial: false,
@@ -193,7 +202,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     // Manual — commercial / operational
     PartnerAgreedRate: {
         label: 'Agreed Rate',
-        hint: 'Requires counterparty approval; locked after settlement',
+        hint: 'Requires partner approval; locked after settlement',
         category: 'rate',
         mode: 'manual',
         commercial: true,
@@ -201,7 +210,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     Quantity: {
         label: 'Quantity',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'commercial',
         mode: 'manual',
         commercial: true,
@@ -209,7 +218,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     Speed: {
         label: 'Service Speed',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'commercial',
         mode: 'manual',
         commercial: true,
@@ -217,7 +226,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     Date: {
         label: 'Date',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
         commercial: true,
@@ -225,7 +234,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     Time: {
         label: 'Time',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
         commercial: true,
@@ -233,7 +242,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     PuTime: {
         label: 'Pickup Time',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
         commercial: true,
@@ -241,7 +250,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     DeliverBy: {
         label: 'Deliver By',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
         commercial: true,
@@ -249,7 +258,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     BookedTime: {
         label: 'Booked Time',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'datetime',
         mode: 'manual',
         commercial: true,
@@ -257,7 +266,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     AcceptedJobTypeID: {
         label: 'Job Type',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'commercial',
         mode: 'manual',
         commercial: true,
@@ -265,7 +274,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     Direct: {
         label: 'Direct Flag',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'flag',
         mode: 'manual',
         commercial: true,
@@ -273,7 +282,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     DGClass: {
         label: 'Dangerous Goods Class',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'flag',
         mode: 'manual',
         commercial: true,
@@ -281,7 +290,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     DGDocumentation: {
         label: 'Dangerous Goods Documentation',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'flag',
         mode: 'manual',
         commercial: true,
@@ -289,15 +298,15 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     Packages: {
         label: 'Packages',
-        hint: 'Requires counterparty approval; re-rates on approval',
-        category: 'commercial',
+        hint: 'Requires partner approval; re-rates on approval',
+        category: 'packages',
         mode: 'manual',
         commercial: true,
         glyph: '📦',
     },
     PickupAddress: {
         label: 'Pickup Address',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'address',
         mode: 'manual',
         commercial: true,
@@ -305,7 +314,7 @@ export const FIELD_META: Record<string, JobChangeRequestFieldMeta> = {
     },
     DeliveryAddress: {
         label: 'Delivery Address',
-        hint: 'Requires counterparty approval; re-rates on approval',
+        hint: 'Requires partner approval; re-rates on approval',
         category: 'address',
         mode: 'manual',
         commercial: true,
@@ -320,7 +329,7 @@ export function getFieldMeta(fieldName: string): JobChangeRequestFieldMeta {
     // Fall back gracefully so a backend-added field doesn't render as garbage.
     return {
         label: fieldName.replace(/([a-z])([A-Z])/g, '$1 $2'),
-        hint: 'Requires counterparty approval',
+        hint: 'Requires partner approval',
         category: 'flag',
         mode: 'manual',
         commercial: false,
@@ -338,6 +347,20 @@ export function getFieldMeta(fieldName: string): JobChangeRequestFieldMeta {
  * them with the proper display name before calling this when they can.
  */
 export function formatChangeRequestValue(fieldName: string, value: string | null | undefined): string {
+    return formatChangeRequestValueWithTz(fieldName, value);
+}
+
+/**
+ * Same as {@link formatChangeRequestValue} but accepts a timezone-text for
+ * datetime-category fields so the rendered value carries its TZ context
+ * (e.g. `15/Mar/2025 14:30 (NZDT)`). Other categories pass through. Falls
+ * back to the tenant timezone when no value is provided.
+ */
+export function formatChangeRequestValueWithTz(
+    fieldName: string,
+    value: string | null | undefined,
+    timezoneText?: string,
+): string {
     if (value == null || value === '') return '—';
     const meta = getFieldMeta(fieldName);
     switch (meta.category) {
@@ -346,12 +369,42 @@ export function formatChangeRequestValue(fieldName: string, value: string | null
         case 'rate':
             return formatRateValue(value);
         case 'datetime':
-            return formatDateTimeValue(value);
+            return formatDateTimeValue(value, timezoneText);
         case 'flag':
             return formatFlagValue(value);
+        case 'packages':
+            return formatPackagesBlob(value);
         default:
             return value;
     }
+}
+
+/**
+ * Which side of the job a datetime field belongs to. `DeliverBy` is the
+ * delivery-side deadline; everything else (pickup time, booked/ready time,
+ * the generic `Date`/`Time` fields) lives on the pickup side, matching
+ * the existing JobDetails handlers (e.g. `handleReadyClick` uses
+ * `j.pickUpTimeZone`).
+ */
+export type JobTimezoneSide = 'pickup' | 'delivery';
+
+export function datetimeFieldSide(fieldName: string): JobTimezoneSide {
+    return fieldName === 'DeliverBy' ? 'delivery' : 'pickup';
+}
+
+/**
+ * Format the `requestedAt` audit timestamp for the hover tooltip on the
+ * relative-age caption. Always renders in the tenant timezone with the
+ * abbreviation so dispatchers across regions see a consistent reference.
+ */
+export function formatRequestedAtTooltip(isoDate: string): string {
+    const parsed = parseDateFromApi(isoDate);
+    if (!parsed.isValid()) return isoDate;
+    const tz = getTenantTimezone();
+    const inZone = parsed.tz(getIanaTimezone(tz));
+    const formatted = formatLongDateTime(inZone);
+    const abbrev = getTimezoneAbbreviation(tz);
+    return abbrev ? `${formatted} ${abbrev}` : formatted;
 }
 
 /**
@@ -384,22 +437,82 @@ function formatAddressBlob(value: string): string {
     }
 }
 
+/**
+ * Multi-line form of {@link formatAddressBlob} for side-by-side address
+ * comparisons in the pending-changes card. Prefers the addressLine1..8 slots
+ * when present (they already represent rows), and only falls back to
+ * splitting `fullAddress` on commas/newlines when no per-line data exists.
+ */
+export function formatAddressLines(value: string | null | undefined): string[] {
+    if (value == null || value === '') return [];
+    try {
+        const parsed = JSON.parse(value) as AddressLike;
+        const lines = [
+            parsed.addressLine1, parsed.addressLine2, parsed.addressLine3, parsed.addressLine4,
+            parsed.addressLine5, parsed.addressLine6, parsed.addressLine7, parsed.addressLine8,
+        ].filter((line): line is string => !!line && line.trim().length > 0);
+        if (lines.length > 0) return lines;
+        if (parsed.fullAddress?.trim()) {
+            return parsed.fullAddress.split(/\r?\n|,\s*/).map(s => s.trim()).filter(Boolean);
+        }
+        return [];
+    } catch {
+        return [value];
+    }
+}
+
 function formatRateValue(value: string): string {
     const num = Number(value);
     if (Number.isFinite(num)) return formatCurrency(num);
     return value;
 }
 
-function formatDateTimeValue(value: string): string {
-    const parsed = new Date(value);
-    if (Number.isNaN(parsed.getTime())) return value;
-    return parsed.toLocaleString();
+/**
+ * Format a datetime-category value, optionally projected into a specific
+ * timezone. The timezone abbreviation (e.g. "(PST)") is appended so the
+ * dispatcher knows which side of the country the time refers to. New
+ * Zealand tenants get no suffix per `getTimezoneAbbreviation`'s NZ rule.
+ */
+function formatDateTimeValue(value: string, timezoneText?: string): string {
+    const parsed = parseDateFromApi(value);
+    if (!parsed.isValid()) return value;
+    const tz = timezoneText && timezoneText.trim() ? timezoneText : getTenantTimezone();
+    const inZone = parsed.tz(getIanaTimezone(tz));
+    const formatted = formatLongDateTime(inZone);
+    const abbrev = getTimezoneAbbreviation(tz);
+    return abbrev ? `${formatted} ${abbrev}` : formatted;
 }
 
 function formatFlagValue(value: string): string {
     if (value === 'true' || value === '1') return 'On';
     if (value === 'false' || value === '0') return 'Off';
     return value;
+}
+
+/**
+ * The backend stores the Packages change-request payload as the JSON
+ * serialised by EditParcelDimensionsDialog: `{ parcels: ParcelDimensions[],
+ * weight?: number }`. We collapse it to a single tidy line so it fits in the
+ * locked summary card, the history panel rows, and pending-change badges.
+ */
+interface PackagesLike {
+    parcels?: Array<{itemName?: string; weight?: number}>;
+    weight?: number;
+}
+
+function formatPackagesBlob(value: string): string {
+    try {
+        const parsed = JSON.parse(value) as PackagesLike;
+        const count = parsed.parcels?.length ?? 0;
+        const parcelLabel = `${count} parcel${count === 1 ? '' : 's'}`;
+        if (parsed.weight != null && Number.isFinite(parsed.weight) && parsed.weight > 0) {
+            const unit = isUsCustomer() ? 'lbs' : 'kg';
+            return `${parcelLabel} · ${parsed.weight} ${unit}`;
+        }
+        return parcelLabel;
+    } catch {
+        return value;
+    }
 }
 
 /**

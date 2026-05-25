@@ -1029,4 +1029,101 @@ describe('useJobActions — partner-job gating (no local save)', () => {
         );
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
     });
+
+    it('handleEditDimensions on a partner job opens the parcel dialog in partnerMode and forwards the captured value to onRequestPartnerChange', async () => {
+        const capturedParcels = [
+            {itemName: 'Box', weight: 5, length: 10, depth: 5, height: 3, dimensions: '10 × 5 × 3 cm'},
+        ];
+        const showDialogMock = jest.fn().mockResolvedValue({
+            parcels: capturedParcels,
+            totalWeight: 5,
+        });
+        (window as any).ReactEditParcelDimensionsDialog = {
+            setToastService: jest.fn(),
+            showEditParcelDimensionsDialog: showDialogMock,
+        };
+
+        const job = createMockJob({
+            isPartnerJob: true,
+            parcelDimensions: capturedParcels,
+            weight: 5,
+        });
+        const {result, mockOnRequestPartnerChange, mockRefreshAndNotify} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleEditDimensions();
+        });
+
+        // Dialog must be opened in partner mode so it skips its own POST.
+        expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
+            partnerMode: true,
+            jobId: job.id,
+        }));
+
+        // Captured value is JSON-serialised into the Packages payload shape.
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledTimes(1);
+        const [field, payload, locked] = mockOnRequestPartnerChange.mock.calls[0];
+        expect(field).toBe('Packages');
+        expect(locked).toBe(true);
+        const parsed = JSON.parse(payload);
+        expect(parsed.parcels).toEqual(capturedParcels);
+        expect(parsed.weight).toBe(5);
+
+        // No local refresh — the change request lives or dies on the partner's approval.
+        expect(mockRefreshAndNotify).not.toHaveBeenCalled();
+
+        delete (window as any).ReactEditParcelDimensionsDialog;
+    });
+
+    it('handleEditDimensions on a non-partner job opens the dialog normally and refreshes after save', async () => {
+        const showDialogMock = jest.fn().mockResolvedValue({
+            parcels: [{itemName: 'Box', weight: 5, dimensions: '10 × 5 × 3 cm'}],
+            totalWeight: 5,
+        });
+        (window as any).ReactEditParcelDimensionsDialog = {
+            setToastService: jest.fn(),
+            showEditParcelDimensionsDialog: showDialogMock,
+        };
+
+        const job = createMockJob({isPartnerJob: false, parcelDimensions: []});
+        const {result, mockOnRequestPartnerChange, mockRefreshAndNotify} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleEditDimensions();
+        });
+
+        expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
+            partnerMode: false,
+        }));
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+        expect(mockRefreshAndNotify).toHaveBeenCalled();
+
+        delete (window as any).ReactEditParcelDimensionsDialog;
+    });
+
+    it('handleEditDimensions on a partner bulk job stays on the direct path (bulk jobs have no partner pairing)', async () => {
+        const showDialogMock = jest.fn().mockResolvedValue({
+            parcels: [{itemName: 'Box', weight: 5, dimensions: '10 × 5 × 3 cm'}],
+            totalWeight: 5,
+        });
+        (window as any).ReactEditParcelDimensionsDialog = {
+            setToastService: jest.fn(),
+            showEditParcelDimensionsDialog: showDialogMock,
+        };
+
+        const job = createMockJob({isPartnerJob: true, isBulkJob: true, parcelDimensions: []});
+        const {result, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleEditDimensions();
+        });
+
+        expect(showDialogMock).toHaveBeenCalledWith(expect.objectContaining({
+            partnerMode: false,
+            bulkJobId: job.id,
+        }));
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+
+        delete (window as any).ReactEditParcelDimensionsDialog;
+    });
 });
