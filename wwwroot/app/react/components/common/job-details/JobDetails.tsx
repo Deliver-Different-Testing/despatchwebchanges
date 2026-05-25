@@ -229,10 +229,18 @@ export function JobDetails({config}: JobDetailsProps) {
     // a click handler short-circuits because it knows the field is gated (via
     // useJobActions.onRequestPartnerChange). Carries the preselected field and
     // any value the user already supplied so the dialog opens primed.
+    //
+    // `locked` is set when the dialog is the second leg of an "edit then
+    // confirm" flow — i.e. the user already entered the new value via the
+    // main edit dialog, so the field + value render as a read-only summary
+    // and only the reason textarea is editable. Modifying an existing pending
+    // request from the history panel leaves `locked` false so the dispatcher
+    // can still adjust the proposed value.
     const [changeRequestDialog, setChangeRequestDialog] = useState<{
         open: boolean;
         field?: string;
-        value?: string
+        value?: string;
+        locked?: boolean;
     }>({open: false});
 
     // Update mutations
@@ -241,7 +249,15 @@ export function JobDetails({config}: JobDetailsProps) {
         checkForRateChange, pendingRateChange, isApplyingRate, confirmRateChange, dismissRateChange,
     } = useJobUpdate(showToast, {
         onPartnerJobBlocked: ({field, value}) => {
-            setChangeRequestDialog({open: true, field, value: value == null ? '' : String(value)});
+            // The user already entered this value via the main edit dialog
+            // (which the backend then rejected). Lock the field + value so
+            // they only need to add a reason in the confirmation dialog.
+            setChangeRequestDialog({
+                open: true,
+                field,
+                value: value == null ? '' : String(value),
+                locked: true,
+            });
         },
     });
 
@@ -307,8 +323,13 @@ export function JobDetails({config}: JobDetailsProps) {
         invalidateAllJobDetails: () => rqClient.invalidateQueries({queryKey: ['jobs', 'detail']}),
         relatedJobs: sortedRelatedJobs,
         onStatusChange: config.onStatusChange,
-        onRequestPartnerChange: (field, initialValue) =>
-            setChangeRequestDialog({open: true, field, value: initialValue ?? ''}),
+        onRequestPartnerChange: (field, initialValue, locked) =>
+            setChangeRequestDialog({
+                open: true,
+                field,
+                value: initialValue ?? '',
+                locked: locked ?? false,
+            }),
     });
 
     // Initialize the tab to show the originally-selected job. Only runs once per jobId change —
@@ -518,7 +539,12 @@ export function JobDetails({config}: JobDetailsProps) {
                                     jobId={job.id}
                                     onChanged={refreshAndNotify}
                                     onModifyRequest={({fieldName, requestedValue}) =>
-                                        setChangeRequestDialog({open: true, field: fieldName, value: requestedValue ?? ''})}
+                                        setChangeRequestDialog({
+                                            open: true,
+                                            field: fieldName,
+                                            value: requestedValue ?? '',
+                                            locked: false,
+                                        })}
                                 />
                             </Collapse>
                         </>
@@ -650,6 +676,7 @@ export function JobDetails({config}: JobDetailsProps) {
                 jobNo={job.jobNo}
                 preselectedFieldName={changeRequestDialog.field}
                 preInitialValue={changeRequestDialog.value}
+                lockedField={changeRequestDialog.locked}
                 onClose={() => setChangeRequestDialog({open: false})}
                 onSubmitted={() => {
                     setChangeRequestDialog({open: false});

@@ -6,6 +6,7 @@
  */
 
 import {useState, useCallback, useRef} from 'react';
+import type {Dayjs} from 'dayjs';
 import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetails.types';
 import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
@@ -35,6 +36,59 @@ interface TextDialogState {
     field: string;
     okLabel?: string;
     onSubmitExtra?: () => void;
+}
+
+/**
+ * Partner-job gate. Maps a JobProperty / field key the user is editing locally
+ * to the JobChangeField string used by the inter-tenant change-request
+ * workflow, plus a serialiser that converts the dialog's chosen value into
+ * the string payload the change-request dialog can pre-populate from.
+ *
+ * When a partner job is detected, the affected save path forwards the
+ * captured value to `onRequestPartnerChange` instead of calling `updateField`
+ * (or `updateAddress`), so the change is only ever persisted when the
+ * counterparty approves the change request — never speculatively on the
+ * caller side. Address and datetime fields need extra context (timezone /
+ * structured payload), so they handle their own routing inline rather than
+ * going through this map.
+ */
+const PARTNER_GATE_SIMPLE: Record<string, {
+    changeRequestField: string;
+    serialise: (value: unknown) => string;
+}> = {
+    [JobProperty.Amount]: {changeRequestField: 'PartnerAgreedRate', serialise: v => String(v ?? '').trim()},
+    [JobProperty.SpeedID]: {changeRequestField: 'Speed', serialise: v => String(v ?? '')},
+    [JobProperty.Items]: {changeRequestField: 'Quantity', serialise: v => String(v ?? '')},
+    [JobProperty.AcceptedJobTypeID]: {changeRequestField: 'AcceptedJobTypeID', serialise: v => String(v ?? '')},
+    [JobProperty.DGClass]: {changeRequestField: 'DGClass', serialise: v => String(v ?? '')},
+    [JobProperty.Direct]: {changeRequestField: 'Direct', serialise: v => v ? 'true' : 'false'},
+    [JobProperty.FromContactName]: {changeRequestField: 'FromContactName', serialise: v => String(v ?? '')},
+    [JobProperty.FromContactPhone]: {changeRequestField: 'FromContactPhone', serialise: v => String(v ?? '')},
+    [JobProperty.ToContactName]: {changeRequestField: 'ToContactName', serialise: v => String(v ?? '')},
+    [JobProperty.ToContactPhone]: {changeRequestField: 'ToContactPhone', serialise: v => String(v ?? '')},
+};
+
+/** Datetime fields gated for partner jobs — handled inline so the timezone from the picker survives. */
+const PARTNER_GATED_DATETIME_FIELDS = new Set<string>([
+    JobProperty.Date,
+    JobProperty.PuTime,
+    JobProperty.DeliverBy,
+    JobProperty.BookedTime,
+]);
+
+/** Serialise an AddressViewModel into the JSON payload the change-request dialog expects. */
+function serialisePartnerAddress(addr: IAddressViewModel): string {
+    return JSON.stringify({
+        addressLine1: addr.addressLine1 ?? '',
+        addressLine2: addr.addressLine2 ?? '',
+        addressLine3: addr.addressLine3 ?? '',
+        addressLine4: addr.addressLine4 ?? '',
+        addressLine5: addr.addressLine5 ?? '',
+        addressLine6: addr.addressLine6 ?? '',
+        addressLine7: addr.addressLine7 ?? '',
+        addressLine8: addr.addressLine8 ?? '',
+        fullAddress: addr.fullAddress ?? '',
+    });
 }
 
 const emptyTextDialog: TextDialogState = {
@@ -67,8 +121,12 @@ interface UseJobActionsOptions {
      * by the partner-job gate (e.g. Pricing). The field name must match a
      * value in JobChangeRequestDialog.FIELD_OPTIONS — typically one of
      * 'PartnerAgreedRate', 'Quantity', 'Speed'.
+     *
+     * Pass `locked` when the new value was already captured via the main
+     * edit dialog so the change-request dialog renders the field + value as
+     * a read-only summary and the user only fills in the reason.
      */
-    onRequestPartnerChange?: (field: string, initialValue?: string) => void;
+    onRequestPartnerChange?: (field: string, initialValue?: string, locked?: boolean) => void;
 }
 
 export function useJobActions({
@@ -106,6 +164,25 @@ export function useJobActions({
     // Assigned synchronously (not via useEffect) so it's never one render behind.
     const jobRef = useRef(job);
     jobRef.current = job;
+
+    // ── Partner-job gating ────────────────────────────────────────
+    //
+    // Every save path that could mutate a manual-approval field on a partner
+    // job funnels through `tryRoutePartnerEdit`. When the job is a partner
+    // job AND the field has a change-request mapping, we hand the captured
+    // value (already collected via the main edit dialog) to the locked
+    // confirmation dialog and bail out before reaching `updateField` /
+    // `updateAddress`. Nothing is persisted locally — the value only takes
+    // effect after the counterparty approves the change request.
+
+    const tryRoutePartnerEdit = useCallback((field: string, value: unknown): boolean => {
+        const j = jobRef.current;
+        if (!j?.isPartnerJob || !onRequestPartnerChange) return false;
+        const gate = PARTNER_GATE_SIMPLE[field];
+        if (!gate) return false;
+        onRequestPartnerChange(gate.changeRequestField, gate.serialise(value), true);
+        return true;
+    }, [onRequestPartnerChange]);
 
     // ── Text Dialog ────────────────────────────────────────────────
 
@@ -167,13 +244,16 @@ export function useJobActions({
         if (asyncResolve) {
             // Promise-based flow: resolve with value, caller handles save
             asyncResolve(value);
-        } else {
-            // State-based flow: save field directly (existing behavior)
-            await updateField({job: j, field: dialog.field, value, isRecurring: j.preBook});
-            dialog.onSubmitExtra?.();
-            await refreshAndNotify();
+            return;
         }
-    }, [updateField, refreshAndNotify]);
+        // Partner-job manual fields never persist locally — route the
+        // captured value to the locked change-request dialog instead.
+        if (tryRoutePartnerEdit(dialog.field, value)) return;
+        // State-based flow: save field directly (existing behavior)
+        await updateField({job: j, field: dialog.field, value, isRecurring: j.preBook});
+        dialog.onSubmitExtra?.();
+        await refreshAndNotify();
+    }, [updateField, refreshAndNotify, tryRoutePartnerEdit]);
 
     const handleTextDialogCancel = useCallback(() => {
         const asyncResolve = textDialogResolveRef.current;
@@ -197,6 +277,15 @@ export function useJobActions({
             defaultTimeZone: timezone as any,
         });
         if (!result) return;
+        // Partner-job rated datetimes (Date / PuTime / DeliverBy / BookedTime)
+        // never persist locally — forward to the locked change-request dialog
+        // with the chosen value serialised to an offset-aware ISO string so
+        // the counterparty sees the exact moment requested.
+        if (j.isPartnerJob && onRequestPartnerChange && PARTNER_GATED_DATETIME_FIELDS.has(result.fieldName)) {
+            const serialised = formatDateForApi(result.value as Dayjs, result.timezone);
+            onRequestPartnerChange(result.fieldName, serialised, true);
+            return;
+        }
         if (j.isBulkJob) {
             const {updateBulkJobDetail} = await import('../../../../services/jobDetailApi');
             await updateBulkJobDetail(j.id, result.fieldName, result.value, result.timezone);
@@ -206,7 +295,7 @@ export function useJobActions({
         }
         showToast(`${j.jobNo} updated`, 'success');
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, showToast, refreshAndNotify]);
+    }, [ensureDateTimeDialog, showToast, refreshAndNotify, onRequestPartnerChange]);
 
     const editDate = useCallback(async (field: string, title: string, dateTime?: unknown, timezone?: unknown) => {
         const j = jobRef.current;
@@ -219,9 +308,16 @@ export function useJobActions({
             defaultTimeZone: timezone as any,
         });
         if (!result) return;
+        // Partner-job rated dates route through the locked change-request
+        // dialog instead of persisting locally.
+        if (j.isPartnerJob && onRequestPartnerChange && PARTNER_GATED_DATETIME_FIELDS.has(result.fieldName)) {
+            const serialised = formatDateForApi(result.value as Dayjs, result.timezone);
+            onRequestPartnerChange(result.fieldName, serialised, true);
+            return;
+        }
         await updateField({job: j, field: result.fieldName, value: result.value, isRecurring: j.preBook, timezone: result.timezone});
         await refreshAndNotify();
-    }, [ensureDateTimeDialog, updateField, refreshAndNotify]);
+    }, [ensureDateTimeDialog, updateField, refreshAndNotify, onRequestPartnerChange]);
 
     const showSelectDialog = useCallback(async (
         items: Array<{id: number; text: string}>,
@@ -244,6 +340,12 @@ export function useJobActions({
         });
         if (!result) return;
 
+        // Partner-job manual fields (e.g. Speed, DG Class, Job Type) never
+        // persist locally. The DG documentation side-effect drops off here —
+        // a follow-up change request would need to be filed separately if
+        // the counterparty wants both at once.
+        if (tryRoutePartnerEdit(fieldName, result.value)) return;
+
         if (fieldName === JobProperty.DGClass && result.checkboxValue !== undefined) {
             await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
             if (j.dgDocumentation !== result.checkboxValue) {
@@ -253,7 +355,7 @@ export function useJobActions({
             await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
         }
         await refreshAndNotify();
-    }, [ensureSelectDialog, updateField, refreshAndNotify]);
+    }, [ensureSelectDialog, updateField, refreshAndNotify, tryRoutePartnerEdit]);
 
     const showAutocompleteDialog = useCallback(async (
         url: string,
@@ -287,9 +389,18 @@ export function useJobActions({
         const existing = isDelivery ? j.deliveryAddress : j.pickupAddress;
         const result = await window.ReactEditAddressDialog?.open(existing as any, undefined, undefined, undefined, isUsCustomer);
         if (!result) return;
+        // Partner-job address edits never write locally — forward the captured
+        // address (as the JSON shape the change-request dialog expects) to
+        // the locked confirmation dialog. Only an approved change request
+        // mutates the address on either side.
+        if (j.isPartnerJob && onRequestPartnerChange) {
+            const changeField = isDelivery ? 'DeliveryAddress' : 'PickupAddress';
+            onRequestPartnerChange(changeField, serialisePartnerAddress(result as IAddressViewModel), true);
+            return;
+        }
         await updateAddress({job: j, address: result as any, isDelivery});
         await refreshAndNotify();
-    }, [isUsCustomer, ensureAddressDialog, updateAddress, refreshAndNotify]);
+    }, [isUsCustomer, ensureAddressDialog, updateAddress, refreshAndNotify, onRequestPartnerChange]);
 
     const handleEditPickupAddress = useCallback(() => handleEditAddress(false), [handleEditAddress]);
     const handleEditDeliveryAddress = useCallback(() => handleEditAddress(true), [handleEditAddress]);
@@ -323,15 +434,19 @@ export function useJobActions({
     const handleToggleProperty = useCallback(async (property: string, currentValue: boolean) => {
         const j = jobRef.current;
         if (!j) return;
+        const newValue = !currentValue;
+        // Partner-job-gated toggles (e.g. Direct) never persist locally — route
+        // the desired new state to the locked change-request dialog.
+        if (tryRoutePartnerEdit(property, newValue)) return;
         const updates: Promise<unknown>[] = [
-            updateField({job: j, field: property, value: !currentValue, isRecurring: j.preBook}),
+            updateField({job: j, field: property, value: newValue, isRecurring: j.preBook}),
         ];
-        if (property === JobProperty.Reprice && !currentValue) {
+        if (property === JobProperty.Reprice && newValue) {
             updates.push(updateField({job: j, field: JobProperty.InternalStatusID, value: 4, isRecurring: j.preBook}));
         }
         await Promise.all(updates);
         await refreshAndNotify();
-    }, [updateField, refreshAndNotify]);
+    }, [updateField, refreshAndNotify, tryRoutePartnerEdit]);
 
     const handleVoidClick = useCallback(async () => {
         const j = jobRef.current;
@@ -545,12 +660,23 @@ export function useJobActions({
         // Partner-side mirrors don't carry the owner's customer breakdown. The only
         // commercially-meaningful field here is PartnerAgreedRate, which is set when
         // the job is dispatched and can only change through a Manual change request.
+        // Capture the new rate via the regular edit dialog first, then open the
+        // change-request dialog with the field + value locked so the user only
+        // adds a reason for the counterparty.
         if (j.isPartnerJob) {
-            if (onRequestPartnerChange) {
-                onRequestPartnerChange('PartnerAgreedRate');
-            } else {
+            if (!onRequestPartnerChange) {
                 showToast(`${j.jobNo} is managed by a partner. Use Request Change to negotiate the agreed rate.`, 'info');
+                return;
             }
+            const newRate = await openTextDialogAsync(
+                'New agreed rate',
+                'Agreed rate...',
+                'PartnerAgreedRate',
+                '',
+                'Continue',
+            );
+            if (newRate === null || newRate.trim() === '') return;
+            onRequestPartnerChange('PartnerAgreedRate', newRate.trim(), true);
             return;
         }
         const breakdowns = await getPriceBreakdowns(j.id, j.preBook, j.isArchived);
@@ -571,7 +697,7 @@ export function useJobActions({
             await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived);
         }
         await refreshAndNotify();
-    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange]);
+    }, [isUsCustomer, ensureSimplePriceEditDialog, ensurePriceBreakdownDialog, showToast, refreshAndNotify, onRequestPartnerChange, openTextDialogAsync]);
 
     const handleStatusClick = useCallback(async () => {
         const j = jobRef.current;

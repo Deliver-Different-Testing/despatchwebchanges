@@ -31,9 +31,10 @@ import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import CloseIcon from '@mui/icons-material/Close';
 import SendIcon from '@mui/icons-material/Send';
+import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import {jobChangeRequestApi, type JobChangeRequestResult} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
-import {FIELD_META, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
+import {FIELD_META, formatChangeRequestValue, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
 
 /**
@@ -60,6 +61,13 @@ export interface JobChangeRequestDialogProps {
     preselectedFieldName?: string;
     /** Value to pre-fill in the requested-value input when the dialog opens. */
     preInitialValue?: string;
+    /**
+     * When true, the dialog is the second leg of a "main edit dialog → confirm"
+     * flow: the user already chose the field and entered the new value via the
+     * regular edit dialog, so the picker and value input are rendered as a
+     * read-only summary and only the reason textarea is editable.
+     */
+    lockedField?: boolean;
 }
 
 interface AddressDraft {
@@ -120,6 +128,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
     onSubmitted,
     preselectedFieldName,
     preInitialValue,
+    lockedField = false,
 }) => {
     const [fieldName, setFieldName] = useState(preselectedFieldName ?? 'Notes');
     const [requestedValue, setRequestedValue] = useState(preInitialValue ?? '');
@@ -211,49 +220,127 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
         }
     }, [fieldName, submitValue, meta.category, reason, jobId, onSubmitted]);
 
+    // Short instructional subtitle that mirrors the pattern used by sibling
+    // dialogs (SelectDialog: "Select an option…", EditDateTimeDialog: "Update
+    // the date and time"). Switches based on whether the field auto-applies,
+    // requires partner approval, or is just collecting the reason.
+    const subtitle = lockedField
+        ? 'Add a reason for the counterparty'
+        : meta.mode === 'auto'
+            ? 'Applies immediately to both sides'
+            : 'Requires partner approval before it applies';
+
     return (
-        <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-            <Box sx={{display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', px: 3, pt: 2}}>
-                <Box>
-                    <Typography variant="overline" color="text.secondary" sx={{letterSpacing: 1}}>
-                        Job {jobNo}
+        <Dialog
+            open={open}
+            onClose={handleClose}
+            maxWidth="sm"
+            fullWidth
+            disableEnforceFocus
+            slotProps={{
+                paper: {
+                    elevation: 24,
+                    sx: {
+                        borderRadius: 2,
+                        overflow: 'hidden',
+                        minWidth: 480,
+                        maxWidth: 600,
+                    },
+                },
+            }}
+        >
+            {/* Header */}
+            <Box
+                sx={(theme) => ({
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: 'white',
+                    px: 3,
+                    py: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                })}
+            >
+                <Box
+                    sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 1.5,
+                        bgcolor: 'rgba(255,255,255,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <SyncAltIcon sx={{fontSize: 24}}/>
+                </Box>
+                <Box sx={{flex: 1, minWidth: 0}}>
+                    <Typography variant="h6" fontWeight={600} noWrap>
+                        {lockedField ? `Confirm ${meta.label} change` : `Request change to ${meta.label}`}
                     </Typography>
-                    <Typography variant="h6">
-                        <Box component="span" sx={{mr: 1}}>{meta.glyph}</Box>
-                        Request change to {meta.label}
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
+                        Job {jobNo} · {subtitle}
                     </Typography>
                 </Box>
-                <IconButton onClick={handleClose} size="small" disabled={submitting}>
+                <IconButton
+                    onClick={handleClose}
+                    disabled={submitting}
+                    sx={{
+                        color: 'white',
+                        '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
+                    }}
+                >
                     <CloseIcon/>
                 </IconButton>
             </Box>
 
-            <DialogContent>
-                <Stack spacing={2}>
-                    <FieldPicker
-                        value={fieldName}
-                        onChange={value => {
-                            setFieldName(value);
-                            setRequestedValue('');
-                            setAddressDraft(EMPTY_ADDRESS);
-                        }}
-                        disabled={submitting}
-                        meta={meta}
-                    />
+            {/* Content */}
+            <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
+                <Box
+                    sx={{
+                        p: 3,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                        // Surface the form controls against the muted content
+                        // background — matches SelectDialog / EditDateTimeDialog.
+                        '& .MuiOutlinedInput-root': {bgcolor: 'white'},
+                    }}
+                >
+                    {lockedField ? (
+                        <LockedFieldSummary
+                            fieldName={fieldName}
+                            meta={meta}
+                            value={submitValue}
+                        />
+                    ) : (
+                        <>
+                            <FieldPicker
+                                value={fieldName}
+                                onChange={value => {
+                                    setFieldName(value);
+                                    setRequestedValue('');
+                                    setAddressDraft(EMPTY_ADDRESS);
+                                }}
+                                disabled={submitting}
+                                meta={meta}
+                            />
 
-                    <FieldValueInput
-                        fieldName={fieldName}
-                        meta={meta}
-                        textValue={requestedValue}
-                        onTextChange={setRequestedValue}
-                        addressValue={addressDraft}
-                        onAddressChange={setAddressDraft}
-                        speedList={speedList}
-                        disabled={submitting}
-                    />
+                            <FieldValueInput
+                                fieldName={fieldName}
+                                meta={meta}
+                                textValue={requestedValue}
+                                onTextChange={setRequestedValue}
+                                addressValue={addressDraft}
+                                onAddressChange={setAddressDraft}
+                                speedList={speedList}
+                                disabled={submitting}
+                            />
+                        </>
+                    )}
 
                     <TextField
-                        label="Reason (optional)"
+                        label={lockedField ? 'Reason' : 'Reason (optional)'}
                         value={reason}
                         onChange={e => setReason(e.target.value)}
                         size="small"
@@ -262,6 +349,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                         minRows={2}
                         maxRows={5}
                         disabled={submitting}
+                        autoFocus={lockedField}
                         helperText="Visible to the counterparty during approval"
                     />
 
@@ -273,16 +361,34 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
 
                     {error && <Alert severity="error">{error}</Alert>}
                     {success && <Alert severity="success">{success}</Alert>}
-                </Stack>
+                </Box>
             </DialogContent>
 
-            <DialogActions sx={{px: 3, pb: 2}}>
-                <Button onClick={handleClose} disabled={submitting}>Cancel</Button>
+            {/* Actions */}
+            <DialogActions
+                sx={(theme) => ({
+                    px: 3,
+                    py: 2,
+                    bgcolor: 'white',
+                    borderTop: `1px solid ${theme.palette.divider}`,
+                    gap: 1,
+                })}
+            >
                 <Button
-                    variant="contained"
-                    onClick={handleSubmit}
+                    onClick={handleClose}
+                    variant="outlined"
                     disabled={submitting}
-                    startIcon={submitting ? <CircularProgress size={16}/> : <SendIcon/>}
+                    sx={{minWidth: 100}}
+                >
+                    Cancel
+                </Button>
+                <Button
+                    onClick={handleSubmit}
+                    variant="contained"
+                    color="primary"
+                    disabled={submitting}
+                    startIcon={submitting ? <CircularProgress size={16} color="inherit"/> : <SendIcon/>}
+                    sx={{minWidth: 100}}
                 >
                     {submitting ? 'Sending…' : meta.mode === 'auto' ? 'Apply' : 'Submit'}
                 </Button>
@@ -292,6 +398,56 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
 };
 
 // ── Sub-components ───────────────────────────────────────────────────
+
+interface LockedFieldSummaryProps {
+    fieldName: string;
+    meta: JobChangeRequestFieldMeta;
+    value: string;
+}
+
+/**
+ * Read-only summary card rendered when the dialog is the second leg of an
+ * "edit then confirm" flow — the user already entered the new value via the
+ * main edit dialog, so we display the chosen field + value as a static
+ * summary instead of an editable picker / input pair. The only thing they
+ * still control is the reason textarea below this block.
+ */
+function LockedFieldSummary({fieldName, meta, value}: LockedFieldSummaryProps) {
+    const displayValue = formatChangeRequestValue(fieldName, value) || '—';
+    return (
+        <Box
+            sx={theme => ({
+                px: 2,
+                py: 1.5,
+                borderRadius: 1,
+                border: `1px solid ${theme.palette.divider}`,
+                bgcolor: 'action.hover',
+            })}
+        >
+            <Typography variant="overline" color="text.secondary" sx={{letterSpacing: 1, lineHeight: 1}}>
+                Field
+            </Typography>
+            <Typography variant="body2" sx={{mb: 1, mt: 0.25}}>
+                <Box component="span" sx={{display: 'inline-block', minWidth: 20, textAlign: 'center', mr: 1}}>
+                    {meta.glyph}
+                </Box>
+                {meta.label}
+            </Typography>
+            <Typography variant="overline" color="text.secondary" sx={{letterSpacing: 1, lineHeight: 1}}>
+                New value
+            </Typography>
+            <Typography
+                variant="body2"
+                sx={{mt: 0.25, whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}
+            >
+                {displayValue}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+                {meta.hint}
+            </Typography>
+        </Box>
+    );
+}
 
 interface FieldPickerProps {
     value: string;

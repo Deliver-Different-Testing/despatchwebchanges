@@ -254,6 +254,68 @@ describe('JobChangeRequestDialog', () => {
         });
     });
 
+    describe('lockedField mode (second leg of edit → confirm flow)', () => {
+        it('renders the field + value as a read-only summary instead of the picker / input', () => {
+            renderDialog({
+                preselectedFieldName: 'PartnerAgreedRate',
+                preInitialValue: '185.50',
+                lockedField: true,
+            });
+
+            // The field combobox and numeric value input must NOT be present.
+            expect(screen.queryByLabelText(/Field/i)).not.toBeInTheDocument();
+            expect(screen.queryByRole('spinbutton', {name: /Agreed rate/i})).not.toBeInTheDocument();
+
+            // The header switches to confirmation copy.
+            expect(screen.getByRole('heading', {name: /Confirm Agreed Rate change/})).toBeInTheDocument();
+
+            // The summary surfaces the new value formatted as currency.
+            expect(screen.getByText(/\$185\.50/)).toBeInTheDocument();
+        });
+
+        it('keeps the reason textarea editable and submits with the locked value', async () => {
+            const user = userEvent.setup();
+            mockCreate.mockResolvedValueOnce({
+                success: true,
+                request: {status: 'Pending'},
+            });
+            renderDialog({
+                preselectedFieldName: 'PartnerAgreedRate',
+                preInitialValue: '185.50',
+                lockedField: true,
+            });
+
+            const reasonField = screen.getByLabelText(/Reason/);
+            await user.type(reasonField, 'Customer requested a rate review after holiday surcharge');
+
+            await user.click(screen.getByRole('button', {name: /Submit/}));
+
+            await waitFor(() => {
+                expect(mockCreate).toHaveBeenCalledWith({
+                    jobId: 42,
+                    fieldName: 'PartnerAgreedRate',
+                    requestedValue: '185.50',
+                    reason: 'Customer requested a rate review after holiday surcharge',
+                });
+            });
+        });
+
+        it('renders addresses as a parsed single-line summary', () => {
+            renderDialog({
+                preselectedFieldName: 'PickupAddress',
+                preInitialValue: JSON.stringify({
+                    addressLine1: '99 Lambton Quay',
+                    addressLine4: 'Wellington',
+                    fullAddress: '99 Lambton Quay, Wellington',
+                }),
+                lockedField: true,
+            });
+
+            expect(screen.queryByLabelText(/Address line 1/i)).not.toBeInTheDocument();
+            expect(screen.getByText(/99 Lambton Quay, Wellington/)).toBeInTheDocument();
+        });
+    });
+
     it('surfaces backend error message', async () => {
         const user = userEvent.setup();
         mockCreate.mockResolvedValueOnce({

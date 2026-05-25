@@ -656,7 +656,7 @@ describe('useJobActions — handleVoidClick', () => {
 });
 
 describe('useJobActions — handlePricingClick on a partner job', () => {
-    it('invokes onRequestPartnerChange with PartnerAgreedRate and skips the legacy toast', async () => {
+    it('captures the new rate via the main edit dialog, then opens the change-request dialog with the field + value locked', async () => {
         const mockShowToast = jest.fn();
         const mockOnRequestPartnerChange = jest.fn();
         const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
@@ -681,12 +681,63 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
             }),
         );
 
+        // Step 1 — clicking Pricing opens the main edit dialog to capture a new rate.
+        let pendingPricingClick: Promise<void> | undefined;
         await act(async () => {
-            await result.current.handlePricingClick();
+            pendingPricingClick = result.current.handlePricingClick();
+        });
+        expect(result.current.textDialog.open).toBe(true);
+        expect(result.current.textDialog.field).toBe('PartnerAgreedRate');
+        // Change-request dialog must not have been opened yet — we still need a value.
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+
+        // Step 2 — submitting the rate forwards to the change-request dialog with
+        // the field + value LOCKED so the user only fills in the reason.
+        await act(async () => {
+            await result.current.handleTextDialogSubmit('185.50');
+            await pendingPricingClick;
         });
 
-        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('PartnerAgreedRate');
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('PartnerAgreedRate', '185.50', true);
         // Legacy "managed by partner" toast must NOT fire — the dialog is the new path.
+        expect(mockShowToast).not.toHaveBeenCalled();
+    });
+
+    it('aborts cleanly when the dispatcher cancels the rate dialog', async () => {
+        const mockShowToast = jest.fn();
+        const mockOnRequestPartnerChange = jest.fn();
+        const job = createMockJob({isPartnerJob: true, isInvoiced: false, isArchived: false});
+
+        const {result} = renderHook(() =>
+            useJobActions({
+                job,
+                isRecurringJob: false,
+                isUsCustomer: false,
+                showToast: mockShowToast,
+                updateField: jest.fn().mockResolvedValue(undefined),
+                updateAddress: jest.fn().mockResolvedValue(undefined),
+                updatePod: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                refreshAndNotify: jest.fn().mockResolvedValue(undefined),
+                invalidateJobLists: jest.fn().mockResolvedValue([]),
+                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+                relatedJobs: [],
+                onRequestPartnerChange: mockOnRequestPartnerChange,
+            }),
+        );
+
+        let pendingPricingClick: Promise<void> | undefined;
+        await act(async () => {
+            pendingPricingClick = result.current.handlePricingClick();
+        });
+        await act(async () => {
+            result.current.handleTextDialogCancel();
+            await pendingPricingClick;
+        });
+
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
         expect(mockShowToast).not.toHaveBeenCalled();
     });
 
@@ -721,5 +772,261 @@ describe('useJobActions — handlePricingClick on a partner job', () => {
             expect.stringMatching(/managed by a partner/),
             'info',
         );
+    });
+});
+
+describe('useJobActions — partner-job gating (no local save)', () => {
+    /** Spin up a hook with onRequestPartnerChange wired in. */
+    function setupPartnerHook(job: ReturnType<typeof createMockJob>) {
+        const mockShowToast = jest.fn();
+        const mockUpdateField = jest.fn().mockResolvedValue(undefined);
+        const mockUpdateAddress = jest.fn().mockResolvedValue(undefined);
+        const mockRefreshAndNotify = jest.fn().mockResolvedValue(undefined);
+        const mockOnRequestPartnerChange = jest.fn();
+
+        const {result} = renderHook(() =>
+            useJobActions({
+                job,
+                isRecurringJob: false,
+                isUsCustomer: false,
+                showToast: mockShowToast,
+                updateField: mockUpdateField,
+                updateAddress: mockUpdateAddress,
+                updatePod: jest.fn().mockResolvedValue(undefined),
+                dispatchJob: jest.fn().mockResolvedValue(undefined),
+                refreshAndNotify: mockRefreshAndNotify,
+                invalidateJobLists: jest.fn().mockResolvedValue([]),
+                invalidatePhotos: jest.fn().mockResolvedValue(undefined),
+                checkForRateChange: jest.fn().mockResolvedValue(undefined),
+                invalidateAllJobDetails: jest.fn().mockResolvedValue(undefined),
+                relatedJobs: [],
+                onRequestPartnerChange: mockOnRequestPartnerChange,
+            }),
+        );
+
+        return {result, mockShowToast, mockUpdateField, mockUpdateAddress, mockRefreshAndNotify, mockOnRequestPartnerChange};
+    }
+
+    afterEach(() => {
+        delete (window as any).ReactEditDateTimeDialog;
+        delete (window as any).ReactEditAddressDialog;
+        delete (window as any).ReactSelectDialog;
+        jest.restoreAllMocks();
+    });
+
+    it('handleSpeedClick on a partner job routes to change-request locked and skips updateField', async () => {
+        const {getSpeedList} = require('../../../../services/jobDetailApi');
+        (getSpeedList as jest.Mock).mockResolvedValue([
+            {id: 1, text: 'Standard'},
+            {id: 2, text: 'Express'},
+        ]);
+        (window as any).ReactSelectDialog = {
+            showSelectDialog: jest.fn().mockResolvedValue({value: 2, fieldName: JobProperty.SpeedID}),
+        };
+
+        const job = createMockJob({isPartnerJob: true, speedName: 'Standard'});
+        const {result, mockUpdateField, mockOnRequestPartnerChange, mockRefreshAndNotify} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleSpeedClick();
+        });
+
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('Speed', '2', true);
+        expect(mockUpdateField).not.toHaveBeenCalled();
+        expect(mockRefreshAndNotify).not.toHaveBeenCalled();
+    });
+
+    it('handleSpeedClick on a non-partner job still saves via updateField', async () => {
+        const {getSpeedList} = require('../../../../services/jobDetailApi');
+        (getSpeedList as jest.Mock).mockResolvedValue([
+            {id: 1, text: 'Standard'},
+            {id: 2, text: 'Express'},
+        ]);
+        (window as any).ReactSelectDialog = {
+            showSelectDialog: jest.fn().mockResolvedValue({value: 2, fieldName: JobProperty.SpeedID}),
+        };
+
+        const job = createMockJob({isPartnerJob: false, speedName: 'Standard'});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleSpeedClick();
+        });
+
+        expect(mockUpdateField).toHaveBeenCalledWith(
+            expect.objectContaining({field: JobProperty.SpeedID, value: 2}),
+        );
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+    });
+
+    it('handleEditFromContact on a partner job routes the submitted text to change-request locked', async () => {
+        const job = createMockJob({isPartnerJob: true, fromContactName: 'Alice'});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            result.current.handleEditFromContact();
+        });
+        expect(result.current.textDialog.open).toBe(true);
+        expect(result.current.textDialog.field).toBe(JobProperty.FromContactName);
+
+        await act(async () => {
+            await result.current.handleTextDialogSubmit('Alice Updated');
+        });
+
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('FromContactName', 'Alice Updated', true);
+        expect(mockUpdateField).not.toHaveBeenCalled();
+    });
+
+    it('handleEditFromContact on a non-partner job still saves via updateField', async () => {
+        const job = createMockJob({isPartnerJob: false, fromContactName: 'Alice'});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            result.current.handleEditFromContact();
+        });
+        await act(async () => {
+            await result.current.handleTextDialogSubmit('Alice Updated');
+        });
+
+        expect(mockUpdateField).toHaveBeenCalledWith(
+            expect.objectContaining({field: JobProperty.FromContactName, value: 'Alice Updated'}),
+        );
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+    });
+
+    it('handleEditPickupAddress on a partner job routes a JSON-encoded address and skips updateAddress', async () => {
+        const pickedAddress = {
+            addressLine1: '99 Lambton Quay',
+            addressLine2: '',
+            addressLine3: 'Te Aro',
+            addressLine4: 'Wellington',
+            addressLine5: '',
+            addressLine6: '6011',
+            addressLine7: 'New Zealand',
+            addressLine8: '',
+            fullAddress: '99 Lambton Quay, Te Aro, Wellington 6011',
+        };
+        (window as any).ReactEditAddressDialog = {
+            open: jest.fn().mockResolvedValue(pickedAddress),
+        };
+
+        const job = createMockJob({isPartnerJob: true, pickupAddress: {}, deliveryAddress: {}});
+        const {result, mockUpdateAddress, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleEditPickupAddress();
+        });
+
+        expect(mockUpdateAddress).not.toHaveBeenCalled();
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith(
+            'PickupAddress',
+            expect.any(String),
+            true,
+        );
+        const payload = JSON.parse(mockOnRequestPartnerChange.mock.calls[0][1]);
+        expect(payload.addressLine1).toBe('99 Lambton Quay');
+        expect(payload.addressLine4).toBe('Wellington');
+        expect(payload.fullAddress).toBe('99 Lambton Quay, Te Aro, Wellington 6011');
+    });
+
+    it('handleEditDeliveryAddress on a partner job uses the DeliveryAddress field name', async () => {
+        (window as any).ReactEditAddressDialog = {
+            open: jest.fn().mockResolvedValue({
+                addressLine1: '1 Quay St',
+                addressLine2: '', addressLine3: '', addressLine4: 'Auckland',
+                addressLine5: '', addressLine6: '', addressLine7: '', addressLine8: '',
+                fullAddress: '1 Quay St, Auckland',
+            }),
+        };
+
+        const job = createMockJob({isPartnerJob: true, pickupAddress: {}, deliveryAddress: {}});
+        const {result, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleEditDeliveryAddress();
+        });
+
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith(
+            'DeliveryAddress',
+            expect.any(String),
+            true,
+        );
+    });
+
+    it('editDateAndTime on a partner job serialises the picked datetime and routes to change-request locked', async () => {
+        const dialogValue = dayjs('2026-04-15T09:00:00');
+        (window as any).ReactEditDateTimeDialog = {
+            showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
+                value: dialogValue,
+                fieldName: JobProperty.PuTime,
+                timezone: 'Pacific/Auckland',
+            }),
+        };
+
+        const job = createMockJob({isPartnerJob: true});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.editDateAndTime(JobProperty.PuTime, 'Pickup Time');
+        });
+
+        expect(mockUpdateField).not.toHaveBeenCalled();
+        // formatDateForApi is mocked at the top of this file to return a canned
+        // offset-aware ISO string — the point of the test is that the handler
+        // calls it (not bypasses it) before routing.
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith(
+            'PuTime',
+            '2026-03-23T11:45:00+13:00',
+            true,
+        );
+    });
+
+    it('editDateAndTime on a partner job for non-gated fields (e.g. CompletedTime) still saves locally', async () => {
+        const dialogValue = dayjs('2026-04-15T09:00:00');
+        (window as any).ReactEditDateTimeDialog = {
+            showEditDateAndTimeDialog: jest.fn().mockResolvedValue({
+                value: dialogValue,
+                fieldName: JobProperty.CompletedTime,
+                timezone: 'Pacific/Auckland',
+            }),
+        };
+        const {updateJobDetail} = require('../../../../services/jobDetailApi');
+        (updateJobDetail as jest.Mock).mockClear();
+
+        const job = createMockJob({isPartnerJob: true});
+        const {result, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.editDateAndTime(JobProperty.CompletedTime, 'POD Time');
+        });
+
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+        expect(updateJobDetail).toHaveBeenCalled();
+    });
+
+    it('handleToggleProperty for Direct on a partner job routes to change-request and skips updateField', async () => {
+        const job = createMockJob({isPartnerJob: true});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleToggleProperty(JobProperty.Direct, false);
+        });
+
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('Direct', 'true', true);
+        expect(mockUpdateField).not.toHaveBeenCalled();
+    });
+
+    it('handleToggleProperty for a non-gated toggle (e.g. Active) on a partner job still saves locally', async () => {
+        const job = createMockJob({isPartnerJob: true});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleToggleProperty(JobProperty.Active, false);
+        });
+
+        expect(mockUpdateField).toHaveBeenCalledWith(
+            expect.objectContaining({field: JobProperty.Active, value: true}),
+        );
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
     });
 });
