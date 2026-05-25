@@ -37,6 +37,12 @@ export interface JobChangeRequestResult {
     success: boolean;
     message?: string;
     request?: JobChangeRequestDto;
+    /**
+     * Populated when the local row was saved but the IM enqueue/forward step
+     * failed. The local state is consistent; the cross-tenant relay needs a
+     * retry. The UI surfaces this as a non-blocking warning.
+     */
+    peerForwardWarning?: string;
 }
 
 export interface CreateJobChangeRequestPayload {

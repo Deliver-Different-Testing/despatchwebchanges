@@ -135,7 +135,20 @@ public sealed class JobChangeRequestService(
             field.ToString(), currentValue, request.RequestedValue, request.Reason,
             decision.Mode.ToString(), decision.RequiresCommercialRefresh, ct);
         if (!forward.Success)
-            Log.Warning("Peer forward for change request {SourceUuid} failed: {Message}", sourceUuid, forward.Message);
+        {
+            // Error tier, not warning: the two tenants are now out of sync until a retry
+            // succeeds. Surface a non-blocking warning in the response so the originating
+            // UI can tell the user the partner side did not receive the request.
+            Log.Error(
+                "Peer forward for change request {SourceUuid} (PartnerJobGuid={PartnerJobGuid}) failed: {Message}",
+                sourceUuid, job.PartnerJobGuid, forward.Message);
+            return new JobChangeRequestResult
+            {
+                Success = true,
+                Request = ToDto(row),
+                PeerForwardWarning = forward.Message ?? "Partner notification failed"
+            };
+        }
 
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
@@ -266,16 +279,21 @@ public sealed class JobChangeRequestService(
         var forward = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
             "Approved", request.Reason, ct);
         if (!forward.Success)
-            Log.Warning("Peer decision forward for {SourceUuid} failed: {Message}", row.UjcrSourceRequestUuid,
-                forward.Message);
+            Log.Error("Peer decision forward (Approved) for {SourceUuid} failed: {Message}",
+                row.UjcrSourceRequestUuid, forward.Message);
 
         var applied = await partnerClient.ForwardAppliedAsync(pairingId, row.UjcrSourceRequestUuid,
             row.UjcrNewCommercialAmount, ct);
         if (!applied.Success)
-            Log.Warning("Peer applied forward for {SourceUuid} failed: {Message}", row.UjcrSourceRequestUuid,
+            Log.Error("Peer applied forward for {SourceUuid} failed: {Message}", row.UjcrSourceRequestUuid,
                 applied.Message);
 
-        return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        var warning = !forward.Success
+            ? forward.Message ?? "Partner notification failed"
+            : !applied.Success
+                ? applied.Message ?? "Partner apply notification failed"
+                : null;
+        return new JobChangeRequestResult { Success = true, Request = ToDto(row), PeerForwardWarning = warning };
     }
 
     public async Task<JobChangeRequestResult> RejectAsync(int id, RejectJobChangeRequestRequest request,
@@ -330,10 +348,15 @@ public sealed class JobChangeRequestService(
         var forward = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
             "Rejected", request.Reason, ct);
         if (!forward.Success)
-            Log.Warning("Peer decision forward for {SourceUuid} failed: {Message}", row.UjcrSourceRequestUuid,
-                forward.Message);
+            Log.Error("Peer decision forward (Rejected) for {SourceUuid} failed: {Message}",
+                row.UjcrSourceRequestUuid, forward.Message);
 
-        return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        return new JobChangeRequestResult
+        {
+            Success = true,
+            Request = ToDto(row),
+            PeerForwardWarning = forward.Success ? null : forward.Message ?? "Partner notification failed"
+        };
     }
 
     public async Task<JobChangeRequestResult> CancelAsync(int id, CancelJobChangeRequestRequest request,
@@ -379,10 +402,15 @@ public sealed class JobChangeRequestService(
         var forward = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
             "Cancelled", request.Reason, ct);
         if (!forward.Success)
-            Log.Warning("Peer cancellation forward for {SourceUuid} failed: {Message}", row.UjcrSourceRequestUuid,
-                forward.Message);
+            Log.Error("Peer cancellation forward for {SourceUuid} failed: {Message}",
+                row.UjcrSourceRequestUuid, forward.Message);
 
-        return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        return new JobChangeRequestResult
+        {
+            Success = true,
+            Request = ToDto(row),
+            PeerForwardWarning = forward.Success ? null : forward.Message ?? "Partner notification failed"
+        };
     }
 
     public async Task<JobChangeRequestResult> RecordPeerCreateAsync(PeerInboundChangeRequestPayload payload,
@@ -399,8 +427,32 @@ public sealed class JobChangeRequestService(
             .Where(j => j.PartnerJobGuid == payload.PartnerJobGuid)
             .Select(j => new { j.UcjbId, j.UcjbStatus })
             .FirstOrDefaultAsync(ct);
-        if (mirror is null) return new JobChangeRequestResult
+        if (mirror is null)
+        {
+            // Without DB access in production, the next failure must produce its own evidence
+            // for whether the local tenant has zero partner jobs (config/dispatch broken) or
+            // many but not this specific one (data loss specific to this job). Pull a small
+            // sample of recent partner GUIDs so the CloudWatch log line is self-diagnosing.
+            var recent = await ctx.TucJobs
+                .AsNoTracking()
+                .Where(j => j.PartnerJobGuid.HasValue)
+                .OrderByDescending(j => j.UcjbId)
+                .Take(10)
+                .Select(j => new { j.UcjbId, j.PartnerJobGuid })
+                .ToListAsync(ct);
+            var recentGuids = string.Join(",", recent.Select(r => $"{r.UcjbId}={r.PartnerJobGuid}"));
+
+            Log.Error(
+                "PeerInbound mirror lookup failed: PartnerJobGuid={PartnerJobGuid}, " +
+                "SourceRequestUuid={SourceRequestUuid}, FieldName={FieldName}, " +
+                "PartnerTenantId={PartnerTenantId}. Local partner-job count: {PartnerJobCount}, " +
+                "recent partner GUIDs: {RecentGuids}",
+                payload.PartnerJobGuid, payload.SourceRequestUuid, payload.FieldName,
+                payload.PartnerTenantId, recent.Count, recentGuids);
+
+            return new JobChangeRequestResult
                 { Success = false, Message = $"No mirror job for PartnerJobGuid {payload.PartnerJobGuid}" };
+        }
 
         // Pairing resolution order on the peer-inbound path:
         //   1) explicit PairingId in the payload (rarely useful — the peer IM's pairing.Id

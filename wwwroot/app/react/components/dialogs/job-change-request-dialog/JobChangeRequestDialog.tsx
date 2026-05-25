@@ -145,6 +145,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [peerWarning, setPeerWarning] = useState('');
     const [speedList, setSpeedList] = useState<ISuggestion[] | null>(null);
 
     const meta = useMemo(() => getFieldMeta(fieldName), [fieldName]);
@@ -161,6 +162,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             setReason('');
             setError('');
             setSuccess('');
+            setPeerWarning('');
             setSubmitting(false);
         }
         wasOpenRef.current = open;
@@ -203,6 +205,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
         }
         setError('');
         setSuccess('');
+        setPeerWarning('');
         setSubmitting(true);
         try {
             const result = await jobChangeRequestApi.create({
@@ -218,6 +221,9 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                     ? 'Change applied'
                     : `Change request sent to ${partnerLabel}`;
                 setSuccess(status);
+                if (result.peerForwardWarning) {
+                    setPeerWarning(result.peerForwardWarning);
+                }
                 onSubmitted?.(result);
             }
         } catch (e) {
@@ -369,6 +375,11 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
 
                     {error && <Alert severity="error">{error}</Alert>}
                     {success && <Alert severity="success">{success}</Alert>}
+                    {peerWarning && (
+                        <Alert severity="warning">
+                            Saved locally, but {partnerLabel} was not notified ({peerWarning}). Please retry or contact support.
+                        </Alert>
+                    )}
                 </Box>
             </DialogContent>
 
