@@ -378,6 +378,9 @@ export interface IJobDto {
     daysOfWeek?: number;
     frequency?: number;
     holidayDeliveryOption: number;
+    // Recurring Route assignment from JobRecurringMapping. Null when
+    // unassigned. dtoMappings maps this to IJob.routeId.
+    routeId?: number | null;
     pickUpWindowMins?: number;
     deliverByWindowMins?: number;
     pickUpTimeZone: ISuggestion;

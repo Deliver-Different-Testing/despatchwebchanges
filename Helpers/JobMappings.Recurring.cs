@@ -209,6 +209,10 @@ public static partial class JobMappings
             DaysOfWeek = j.UcbkDaysInt,
             Frequency = j.UcbkFrequency ?? 0,
             HolidayDeliveryOption = j.HolidayDeliveryOption,
+            // Recurring Route assignment. Drives the Route dropdown in
+            // the React detail panel's JobDetailHeader so the current
+            // selection pre-populates rather than reading "No route".
+            RouteId = j.RouteId,
 
             PickUpWindowMins = j.PickUpWindowMins,
             DeliverByWindowMins = j.DeliverByWindowMins,

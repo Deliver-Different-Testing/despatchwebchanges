@@ -109,7 +109,8 @@ public class RecurringJobRepository(
                     JobProperty.Amount or JobProperty.AcceptedJobTypeID or
                     JobProperty.DeliverBy or JobProperty.BookedTime or
                     JobProperty.StopDate or JobProperty.RestartDate or
-                    JobProperty.CourierId or JobProperty.InactiveBy
+                    JobProperty.CourierId or JobProperty.InactiveBy or
+                    JobProperty.RouteId
                     => await UpdateSimplePropertyAsync(jobId, property, value),
 
                 // Parent + children updates (no note)
