@@ -15,4 +15,10 @@ public sealed class JobRecurringViewModel : JobViewModel
     public int Frequency { get; init; }
 
     public int HolidayDeliveryOption { get; init; }
+
+    // Recurring Route assignment. Null when not assigned to any route.
+    // Consumed by the React detail panel's Route dropdown in
+    // JobDetailHeader so the current selection pre-populates instead of
+    // defaulting to "No route".
+    public int? RouteId { get; init; }
 }

@@ -137,6 +137,10 @@ function transformJobDTO(dto: IJobDto, isUsCustomer: boolean): IJob {
         daysOfWeek: dto.daysOfWeek,
         frequency: dto.frequency,
         holidayDeliveryOption: dto.holidayDeliveryOption,
+        // Recurring Route assignment — pre-populates the Route dropdown
+        // in JobDetailHeader so an already-assigned route is shown
+        // rather than defaulting to "No route".
+        routeId: dto.routeId,
 
         readTrackerInfo: dto.readTrackerInfo ? {
             ...dto.readTrackerInfo,

@@ -157,34 +157,33 @@ export function JobDetailHeader({
                     job.preBook (recurring jobs only) + routes.length > 0 (only
                     on tenants where the Routes table is populated). Empty value
                     represents "None" — cascades through booking tree server-
-                    side via JobProperty.RouteId. */}
+                    side via JobProperty.RouteId. No Tooltip wrapper: it
+                    overlaid the open dropdown menu and obscured options. */}
                 {job.preBook && routes.length > 0 && (
-                    <Tooltip title="Recurring Route — cascades to all associated legs">
-                        <FormControl size="small" sx={{minWidth: 180}}>
-                            <Select
-                                value={job.routeId ?? ''}
-                                displayEmpty
-                                aria-label="Recurring Route"
-                                onChange={(e) => {
-                                    const raw = e.target.value;
-                                    const v = raw === null || raw === undefined ? '' : String(raw);
-                                    onRouteChange(v === '' || v === '0' ? null : Number(v));
-                                }}
-                                sx={{
-                                    fontSize: '0.8125rem',
-                                    height: 30,
-                                    '& .MuiSelect-select': {py: 0.5},
-                                }}
-                            >
-                                <MenuItem value=""><em>No route</em></MenuItem>
-                                {routes.map(r => (
-                                    <MenuItem key={r.id} value={r.id}>
-                                        {r.text}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </Tooltip>
+                    <FormControl size="small" sx={{minWidth: 180}}>
+                        <Select
+                            value={job.routeId ?? ''}
+                            displayEmpty
+                            aria-label="Recurring Route — cascades to all associated legs"
+                            onChange={(e) => {
+                                const raw = e.target.value;
+                                const v = raw === null || raw === undefined ? '' : String(raw);
+                                onRouteChange(v === '' || v === '0' ? null : Number(v));
+                            }}
+                            sx={{
+                                fontSize: '0.8125rem',
+                                height: 30,
+                                '& .MuiSelect-select': {py: 0.5},
+                            }}
+                        >
+                            <MenuItem value=""><em>No route</em></MenuItem>
+                            {routes.map(r => (
+                                <MenuItem key={r.id} value={r.id}>
+                                    {r.text}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
                 )}
 
                 {/* Lock is a LocalOnly field per PartnerJobGate — each tenant owns its
