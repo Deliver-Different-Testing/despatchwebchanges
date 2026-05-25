@@ -306,6 +306,24 @@ public class RecurringJobRepository(
                         .SetProperty(j => j.UcbkClientCode, code));
                 break;
 
+            case JobProperty.RouteId:
+                // Recurring Route assignment cascades through the booking
+                // tree the same way ClientID does — parent + children +
+                // grandchildren all flip in one ExecuteUpdate. Empty
+                // string or "0" clears the assignment (the operator picks
+                // "None" in the dropdown to remove a booking from a
+                // route). uspPrebookSet reads tucJobBooking.RouteId on
+                // the next nightly run to stamp the right courier from
+                // Dispatch_RouteRoster onto the materialised tucJob rows.
+                int? routeIdValue = string.IsNullOrWhiteSpace(value) || value == "0"
+                    ? null
+                    : ParseValue<int>(value, property);
+
+                await Context.TucJobBookings.Where(j =>
+                        j.UcbkId == jobId || j.BookingParentId == jobId || j.ParentId == jobId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.RouteId, routeIdValue));
+                break;
+
             case JobProperty.Pedal:
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkCbd, ParseValue<bool>(value, property)));

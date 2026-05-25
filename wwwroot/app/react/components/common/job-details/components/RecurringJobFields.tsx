@@ -27,6 +27,9 @@ import {Frequency} from '../../../../../enums/frequency.enum';
 import {HolidayDeliveryOptions} from '../../../../../enums/holiday-delivery-options.enum';
 import {formatLongDate, getTimezoneAbbreviation} from '../../../../utils/dateUtils';
 
+// Route assignment moved to JobDetailHeader (sits before the Lock icon
+// on the job-number line) per 2026-05-26 UX feedback. RecurringJobFields
+// now owns just frequency / days / holiday / dates.
 interface RecurringJobFieldsProps {
     job: IJob;
     daysOfWeekArray: DaysOfWeek[];

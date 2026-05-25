@@ -59,4 +59,8 @@ export enum JobProperty {
     NotifiedType = 'NotifiedType',
     AcceptedType = 'AcceptedType',
     UndeliverableLocationID = 'UndeliverableLocationID',
+    // Recurring Route assignment — cascades through booking tree
+    // (parent + children + grandchildren) via RecurringJobRepository's
+    // ClientID-mirror branch. Backend serializes as 'RouteId'.
+    RouteId = 'RouteId',
 }
