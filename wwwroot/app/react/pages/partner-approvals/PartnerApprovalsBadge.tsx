@@ -100,7 +100,16 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
                 anchor="right"
                 open={open}
                 onClose={() => setOpen(false)}
-                slotProps={{paper: {sx: {width: {xs: '100%', sm: 460}}}}}
+                slotProps={{
+                    paper: {
+                        elevation: 24,
+                        sx: {
+                            width: {xs: '100%', sm: 460},
+                            bgcolor: 'background.default',
+                            overflow: 'hidden',
+                        },
+                    },
+                }}
             >
                 <Box sx={{height: '100%', display: 'flex', flexDirection: 'column'}}>
                     <PartnerApprovalsInbox

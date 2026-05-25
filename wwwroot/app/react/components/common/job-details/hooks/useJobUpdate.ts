@@ -47,14 +47,29 @@ const RERATE_FIELDS = new Set<string>([
  * (mirrors DespatchWeb.Enums.JobChangeField on the backend, and the closed
  * set rendered by JobChangeRequestDialog.FIELD_OPTIONS).
  *
- * When an inline edit of one of these fields fails on a partner job, we
- * surface the change-request dialog preselected with the mapped field
- * instead of just toasting "managed by partner".
+ * Primary path: `useJobActions.tryRoutePartnerEdit` intercepts partner-job
+ * edits at the dialog-submit boundary so `updateField` is never called for a
+ * gated field. This map is the DEFENSIVE BACKSTOP: if a code path slips
+ * through and `updateField` runs, the backend rejects with 400 and we use
+ * this lookup to surface the change-request dialog (locked, pre-populated)
+ * instead of an opaque toast. Keep these two lists in lock-step.
  */
 export const PARTNER_CHANGE_REQUEST_FIELD_MAP: Record<string, string> = {
     [JobProperty.Amount]: 'PartnerAgreedRate',
     [JobProperty.SpeedID]: 'Speed',
     [JobProperty.Items]: 'Quantity',
+    [JobProperty.AcceptedJobTypeID]: 'AcceptedJobTypeID',
+    [JobProperty.DGClass]: 'DGClass',
+    [JobProperty.DGDocumentation]: 'DGDocumentation',
+    [JobProperty.Direct]: 'Direct',
+    [JobProperty.FromContactName]: 'FromContactName',
+    [JobProperty.FromContactPhone]: 'FromContactPhone',
+    [JobProperty.ToContactName]: 'ToContactName',
+    [JobProperty.ToContactPhone]: 'ToContactPhone',
+    [JobProperty.Date]: 'Date',
+    [JobProperty.PuTime]: 'PuTime',
+    [JobProperty.DeliverBy]: 'DeliverBy',
+    [JobProperty.BookedTime]: 'BookedTime',
 };
 
 export interface PendingRateChange {

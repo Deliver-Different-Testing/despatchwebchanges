@@ -102,50 +102,78 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
         }
     }, [rejectReason, invalidate]);
 
-    if (isLoading) {
-        return (
-            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6}}>
-                <CircularProgress size={20} sx={{mr: 1.5}}/>
-                <Typography variant="body2" color="text.secondary">Loading approvals…</Typography>
-            </Box>
-        );
-    }
+    // Header subtitle adapts to current load state, queue size, and whether
+    // a background refetch is in flight — same pattern the sibling dialogs
+    // use to give the user one line of "what's happening here" context.
+    const subtitle = isLoading
+        ? 'Loading partner change requests…'
+        : items.length === 0
+            ? 'All clear · nothing to review'
+            : `${items.length} change request${items.length === 1 ? '' : 's'} awaiting your decision${isFetching ? ' · refreshing…' : ''}`;
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0}}>
-            {/* Sticky header bar */}
-            <Box sx={(theme) => ({
-                position: 'sticky',
-                top: 0,
-                zIndex: 1,
-                bgcolor: 'background.paper',
-                borderBottom: 1,
-                borderColor: 'divider',
-                px: 2,
-                py: 1.5,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
-            })}>
-                <HandshakeIcon color="info"/>
-                <Box sx={{flex: 1}}>
-                    <Typography variant="subtitle1" sx={{lineHeight: 1.2, fontWeight: 600}}>
+        <Box sx={{display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, bgcolor: 'background.default'}}>
+            {/* Gradient header — mirrors the dialog / SideNav pattern so the
+                drawer reads as a first-class surface in the app shell rather
+                than a bolted-on panel. */}
+            <Box
+                sx={(theme) => ({
+                    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                    color: 'white',
+                    px: 3,
+                    py: 2,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    flexShrink: 0,
+                })}
+            >
+                <Box
+                    sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 1.5,
+                        bgcolor: 'rgba(255,255,255,0.15)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                    }}
+                >
+                    <HandshakeIcon sx={{fontSize: 24}}/>
+                </Box>
+                <Box sx={{flex: 1, minWidth: 0}}>
+                    <Typography variant="h6" fontWeight={600} noWrap>
                         Partner Approvals
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                        {items.length === 0 ? 'All clear' : `${items.length} pending`}
-                        {isFetching && ' · refreshing…'}
+                    <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}} noWrap>
+                        {subtitle}
                     </Typography>
                 </Box>
                 <Tooltip title="Refresh now">
-                    <IconButton onClick={() => refetch()} size="small">
-                        <RefreshIcon fontSize="small"/>
-                    </IconButton>
+                    <span>
+                        <IconButton
+                            onClick={() => refetch()}
+                            disabled={isFetching}
+                            sx={{
+                                color: 'white',
+                                '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
+                                '&.Mui-disabled': {color: 'rgba(255,255,255,0.4)'},
+                            }}
+                        >
+                            <RefreshIcon/>
+                        </IconButton>
+                    </span>
                 </Tooltip>
             </Box>
 
-            {/* Scrollable list */}
+            {/* Scrollable list area */}
             <Box sx={{flex: 1, overflow: 'auto', p: 2}}>
+                {isLoading && (
+                    <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6}}>
+                        <CircularProgress size={20} sx={{mr: 1.5}}/>
+                        <Typography variant="body2" color="text.secondary">Loading approvals…</Typography>
+                    </Box>
+                )}
                 {actionError && (
                     <Alert severity="error" sx={{mb: 2}} onClose={() => setActionError('')}>
                         {actionError}
@@ -157,9 +185,9 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                     </Alert>
                 )}
 
-                {items.length === 0 && !error ? (
+                {!isLoading && items.length === 0 && !error ? (
                     <EmptyState/>
-                ) : (
+                ) : !isLoading ? (
                     <Stack spacing={3}>
                         {grouped.map(group => (
                             <Box key={group.key}>
@@ -191,7 +219,7 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                             </Box>
                         ))}
                     </Stack>
-                )}
+                ) : null}
             </Box>
         </Box>
     );
