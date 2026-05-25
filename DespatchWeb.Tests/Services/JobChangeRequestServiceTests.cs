@@ -246,6 +246,46 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task CreateLocalAsync_surfaces_warning_when_peer_forward_fails_but_keeps_local_row()
+    {
+        await SeedJobAsync();
+        await SeedPairingAsync();
+        await SeedEventTypesAsync();
+
+        // Re-stub: peer forward fails after the local row is already saved. The caller
+        // must still see Success=true (local state is consistent) but PeerForwardWarning
+        // must surface the IM-side error so the dialog can warn the user.
+        _partnerClient
+            .ForwardCreateAsync(Arg.Any<int>(), Arg.Any<Guid>(), Arg.Any<Guid>(),
+                Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<string?>(),
+                Arg.Any<string>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+            .Returns(new PartnerForwardResult
+                { Success = false, Message = "Integration Manager returned 503" });
+
+        var service = CreateService();
+
+        var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "5",
+            Reason = "client added a package"
+        }, CancellationToken.None);
+
+        Assert.True(result.Success);
+        Assert.Equal("Integration Manager returned 503", result.PeerForwardWarning);
+        Assert.NotNull(result.Request);
+        Assert.Equal("Pending", result.Request!.Status);
+
+        // Local row must still be saved despite the peer-forward failure.
+        await using var ctx = CreateContext();
+        var savedRow = await ctx.TucJobChangeRequests
+            .SingleOrDefaultAsync(r => r.UjcrSourceRequestUuid == result.Request.SourceRequestUuid);
+        Assert.NotNull(savedRow);
+        Assert.Equal(JobChangeRequestStatus.Pending, savedRow!.UjcrStatus);
+    }
+
+    [Fact]
     public async Task CreateLocalAsync_rejects_duplicate_pending_request_for_same_field()
     {
         await SeedJobAsync();
