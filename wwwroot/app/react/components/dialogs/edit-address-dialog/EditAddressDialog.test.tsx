@@ -59,6 +59,20 @@ function renderWithProviders(props: EditAddressDialogProps) {
     );
 }
 
+// MUI <Select> renders the trigger as a div[role="combobox"] (vs MUI Autocomplete's
+// input[role="combobox"]). The State Select has no explicit labelId, so we locate
+// it by walking up from its visible "State *" label to the enclosing FormControl
+// and then querying the combobox role within that subtree.
+function getStateSelect(): HTMLElement {
+    const label = screen.getAllByText('State *').find((el) => el.tagName === 'LABEL');
+    if (!label) throw new Error('State * label not found');
+    const formControl = label.closest('.MuiFormControl-root');
+    if (!formControl) throw new Error('FormControl not found for State select');
+    const combobox = formControl.querySelector('[role="combobox"]');
+    if (!combobox) throw new Error('combobox not found within State FormControl');
+    return combobox as HTMLElement;
+}
+
 // Default props factory
 function createDefaultProps(overrides?: Partial<EditAddressDialogProps>): EditAddressDialogProps {
     return {
@@ -895,6 +909,57 @@ describe('EditAddressDialog', () => {
             renderWithProviders(props);
 
             expect(screen.queryAllByText('State *')).toHaveLength(0);
+        });
+
+        // Regression tests for the bug where the State dropdown was left blank when
+        // the loaded address carried a full state name (e.g. "New York") rather than
+        // its abbreviation. The Select MenuItems are keyed by abbreviation, so the
+        // init path must normalise either form to the abbreviation.
+        it('populates the State dropdown when only stateAbbreviation is set', () => {
+            const props = createDefaultProps({addressDetails: existingAddress});
+            renderWithProviders(props);
+
+            const stateSelect = getStateSelect();
+            expect(stateSelect).toHaveTextContent('New York');
+        });
+
+        it('populates the State dropdown when addressLine6 holds the full state name', () => {
+            const fullNameAddress: EditAddressDialogViewModel = {
+                ...existingAddress,
+                addressLine6: 'New York',
+                stateAbbreviation: undefined,
+            };
+            const props = createDefaultProps({addressDetails: fullNameAddress});
+            renderWithProviders(props);
+
+            const stateSelect = getStateSelect();
+            expect(stateSelect).toHaveTextContent('New York');
+        });
+
+        it('populates the State dropdown when stateAbbreviation itself is a full name', () => {
+            const mismatchedAddress: EditAddressDialogViewModel = {
+                ...existingAddress,
+                addressLine6: 'NY',
+                stateAbbreviation: 'New York',
+            };
+            const props = createDefaultProps({addressDetails: mismatchedAddress});
+            renderWithProviders(props);
+
+            const stateSelect = getStateSelect();
+            expect(stateSelect).toHaveTextContent('New York');
+        });
+
+        it('handles multi-word state names in addressLine6', () => {
+            const ncAddress: EditAddressDialogViewModel = {
+                ...existingAddress,
+                addressLine6: 'North Carolina',
+                stateAbbreviation: undefined,
+            };
+            const props = createDefaultProps({addressDetails: ncAddress});
+            renderWithProviders(props);
+
+            const stateSelect = getStateSelect();
+            expect(stateSelect).toHaveTextContent('North Carolina');
         });
     });
 

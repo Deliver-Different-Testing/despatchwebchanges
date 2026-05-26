@@ -103,6 +103,8 @@ public partial class TucAgent
 
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
+    public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
+
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyNewAgents { get; set; } = new List<JobDeliveryJourney>();
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneyOldAgents { get; set; } = new List<JobDeliveryJourney>();

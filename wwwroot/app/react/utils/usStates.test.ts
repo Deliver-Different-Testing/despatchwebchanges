@@ -2,7 +2,12 @@
  * US States Utility Tests
  */
 
-import {US_STATES, getStateByAbbreviation, getStateNameByAbbreviation} from './usStates';
+import {
+    US_STATES,
+    getStateByAbbreviation,
+    getStateNameByAbbreviation,
+    normalizeToStateAbbreviation,
+} from './usStates';
 
 describe('usStates', () => {
     describe('US_STATES', () => {
@@ -60,6 +65,47 @@ describe('usStates', () => {
 
         it('should return empty string for empty input', () => {
             expect(getStateNameByAbbreviation('')).toBe('');
+        });
+    });
+
+    describe('normalizeToStateAbbreviation', () => {
+        it('returns the abbreviation unchanged for an exact abbreviation', () => {
+            expect(normalizeToStateAbbreviation('NY')).toBe('NY');
+        });
+
+        it('uppercases a lowercase abbreviation', () => {
+            expect(normalizeToStateAbbreviation('ca')).toBe('CA');
+        });
+
+        it('converts a full state name to its abbreviation', () => {
+            expect(normalizeToStateAbbreviation('New York')).toBe('NY');
+        });
+
+        it('matches full state names case-insensitively', () => {
+            expect(normalizeToStateAbbreviation('new york')).toBe('NY');
+            expect(normalizeToStateAbbreviation('CALIFORNIA')).toBe('CA');
+        });
+
+        it('handles multi-word state names', () => {
+            expect(normalizeToStateAbbreviation('North Carolina')).toBe('NC');
+            expect(normalizeToStateAbbreviation('West Virginia')).toBe('WV');
+        });
+
+        it('trims surrounding whitespace', () => {
+            expect(normalizeToStateAbbreviation('  NY  ')).toBe('NY');
+            expect(normalizeToStateAbbreviation('  New York  ')).toBe('NY');
+        });
+
+        it('returns empty string for unknown values', () => {
+            expect(normalizeToStateAbbreviation('XX')).toBe('');
+            expect(normalizeToStateAbbreviation('Auckland')).toBe('');
+        });
+
+        it('returns empty string for empty / null / undefined input', () => {
+            expect(normalizeToStateAbbreviation('')).toBe('');
+            expect(normalizeToStateAbbreviation('   ')).toBe('');
+            expect(normalizeToStateAbbreviation(null)).toBe('');
+            expect(normalizeToStateAbbreviation(undefined)).toBe('');
         });
     });
 });

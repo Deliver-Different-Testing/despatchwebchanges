@@ -489,6 +489,8 @@ public partial class TucJob
 
     public decimal? NpCourierPayment { get; set; }
 
+    public int? RouteId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }

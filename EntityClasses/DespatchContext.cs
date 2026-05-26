@@ -983,6 +983,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.KeyId, "IX_IntMgrPartnerPairing_KeyId");
 
+            entity.HasIndex(e => e.LinkedAgentId, "IX_IntMgrPartnerPairing_LinkedAgentId");
+
             entity.HasIndex(e => e.PartnerTenantId, "IX_IntMgrPartnerPairing_PartnerTenantId");
 
             entity.Property(e => e.CreatedAtUtc)
@@ -1012,6 +1014,10 @@ public partial class DespatchContext : DbContext
             entity.HasOne(d => d.Client).WithMany(p => p.IntMgrPartnerPairings)
                 .HasForeignKey(d => d.ClientId)
                 .HasConstraintName("FK_IntMgrPartnerPairing_tucClient");
+
+            entity.HasOne(d => d.LinkedAgent).WithMany(p => p.IntMgrPartnerPairings)
+                .HasForeignKey(d => d.LinkedAgentId)
+                .HasConstraintName("FK_IntMgrPartnerPairing_tucAgents");
         });
 
         modelBuilder.Entity<JobAccessorialCharge>(entity =>
@@ -5581,6 +5587,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.NpAgentId, "IX_tucJob_NpAgentId");
 
             entity.HasIndex(e => e.PartnerJobGuid, "IX_tucJob_PartnerJobGuid");
+
+            entity.HasIndex(e => new { e.RouteId, e.UcjbDate }, "IX_tucJob_RouteId_ucjbDate");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
 

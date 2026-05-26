@@ -71,3 +71,23 @@ export function getStateNameByAbbreviation(abbr: string): string {
 export function getStateByName(name: string): StateInfo | undefined {
     return US_STATES.find(s => s.name.toLowerCase() === name.toLowerCase());
 }
+
+/**
+ * Normalise a raw state string (abbreviation, full name, mixed case, with or
+ * without surrounding whitespace) to its canonical 2-letter abbreviation.
+ * Returns '' for unknown or empty input so it can be safely fed straight into
+ * a controlled <Select> whose options are keyed by abbreviation.
+ */
+export function normalizeToStateAbbreviation(value: string | null | undefined): string {
+    if (!value) return '';
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+
+    const byAbbr = getStateByAbbreviation(trimmed.toUpperCase());
+    if (byAbbr) return byAbbr.abbreviation;
+
+    const byName = getStateByName(trimmed);
+    if (byName) return byName.abbreviation;
+
+    return '';
+}
