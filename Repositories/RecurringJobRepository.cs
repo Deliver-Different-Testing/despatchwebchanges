@@ -110,7 +110,8 @@ public class RecurringJobRepository(
                     JobProperty.DeliverBy or JobProperty.BookedTime or
                     JobProperty.StopDate or JobProperty.RestartDate or
                     JobProperty.CourierId or JobProperty.InactiveBy or
-                    JobProperty.RouteId
+                    JobProperty.RouteId or
+                    JobProperty.AgentId or JobProperty.NpAgentId
                     => await UpdateSimplePropertyAsync(jobId, property, value),
 
                 // Parent + children updates (no note)
@@ -437,6 +438,49 @@ public class RecurringJobRepository(
             case JobProperty.InactiveBy:
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkInActiveBy, ParseValue<int>(value, property)));
+                break;
+
+            case JobProperty.AgentId:
+                // Single-row write — mirrors the CourierId pattern above.
+                // Empty / "0" clears the assignment (operator picks "None" to
+                // remove an agent).
+                //
+                // DESIGN NOTE (2026-05-26): RunViewer's matching path also
+                // stamps tucJob.UcjbStatus / UcjbDispDate / UcjbDispTime
+                // (per Steve's HANDOVER-ASSIGN-BACKEND §A). That stamp DOES
+                // NOT belong here — at the booking-template layer the
+                // dispatch lifecycle is meaningless (the template is intent,
+                // not a dispatched job). The lifecycle stamp happens when
+                // the Monitor materialises the booking into tucJob via
+                // UTL_stpJobBooking_InsertJob / _InsertSchedule, which now
+                // also carry AgentId + NpAgentId across thanks to migrations
+                // 20260526160000/_160100. So the cascade only writes the
+                // booking-side column; the Monitor handles the rest.
+                int? agentIdValue = string.IsNullOrWhiteSpace(value) || value == "0"
+                    ? null
+                    : ParseValue<int>(value, property);
+
+                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(j => j.AgentId, agentIdValue));
+                break;
+
+            case JobProperty.NpAgentId:
+                // Network Partner branch writes BOTH AgentId AND NpAgentId
+                // to the same UcagId — the NP IS an agent, same TucAgent row.
+                // Mirrors the materialised-job convention. Unassigning clears
+                // both columns together so the row doesn't end up with an
+                // agent stuck on it after the NP is removed.
+                //
+                // Same DESIGN NOTE as JobProperty.AgentId above re: no
+                // lifecycle stamp at the booking layer.
+                int? npAgentIdValue = string.IsNullOrWhiteSpace(value) || value == "0"
+                    ? null
+                    : ParseValue<int>(value, property);
+
+                await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.AgentId, npAgentIdValue)
+                        .SetProperty(j => j.NpAgentId, npAgentIdValue));
                 break;
 
             default:

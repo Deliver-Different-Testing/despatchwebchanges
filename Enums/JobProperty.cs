@@ -69,5 +69,14 @@ public enum JobProperty
     // ClientID-mirror branch. Appended (not inserted) so the integer
     // ordinals of the existing members stay stable in case anything
     // serializes the enum as int.
-    RouteId
+    RouteId,
+
+    // 3-way Assign picker target columns (Steve 2026-05-26,
+    // HANDOVER-KEVIN-2026-05-26.md). Single-row write on tucJobBooking
+    // mirroring the existing CourierId pattern. NpAgentId case writes
+    // BOTH AgentId AND NpAgentId — the NP IS an agent (same TucAgent
+    // row), and the existing tucJob-side convention populates both
+    // columns together.
+    AgentId,
+    NpAgentId
 }

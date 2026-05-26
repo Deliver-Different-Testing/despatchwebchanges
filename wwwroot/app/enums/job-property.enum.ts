@@ -63,4 +63,10 @@ export enum JobProperty {
     // (parent + children + grandchildren) via RecurringJobRepository's
     // ClientID-mirror branch. Backend serializes as 'RouteId'.
     RouteId = 'RouteId',
+    // 3-way Assign picker (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md).
+    // Single-row write on tucJobBooking. NpAgentId case writes BOTH
+    // AgentId AND NpAgentId — handled server-side in
+    // RecurringJobRepository.UpdateSimplePropertyAsync.
+    AgentId = 'AgentId',
+    NpAgentId = 'NpAgentId',
 }

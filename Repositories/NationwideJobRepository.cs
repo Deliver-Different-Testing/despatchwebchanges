@@ -543,11 +543,23 @@ public class NationwideJobRepository(
         await SaveNoteAsync(jobId, "Job restored", true);
     }
 
-    public async Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm)
+    public async Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(
+        string searchTerm,
+        bool? isNetworkPartner = null)
     {
         var query = Context.TucAgents.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(searchTerm)) query = query.Where(a => a.UcagName.Contains(searchTerm));
+
+        // 3-way Assign Route picker (HANDOVER-KEVIN-2026-05-26.md):
+        //   null  → all agents (existing Nationwide behaviour, untouched)
+        //   false → regular agents only (Agent radio)
+        //   true  → Network Partners only (NP radio)
+        if (isNetworkPartner.HasValue)
+        {
+            var npFlag = isNetworkPartner.Value;
+            query = query.Where(a => a.IsNetworkPartner == npFlag);
+        }
 
         var agents = await query
             .Select(a => new Suggestion

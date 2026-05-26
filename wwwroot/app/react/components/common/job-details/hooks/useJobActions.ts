@@ -27,6 +27,11 @@ import {
     getPodReportUrl,
     getPodSpreadsheetUrl,
 } from '../../../../services/jobDetailApi';
+// 3-way Assign picker — needs apiClient for the per-type agent/NP search
+// callbacks (autocompleteSearch only handles single-param ?searchTerm= calls;
+// the agent endpoint also takes ?isNetworkPartner=true|false).
+import {apiClient} from '../../../../services/apiClient';
+import type {ISuggestion} from '../../../../../interfaces/job.interface';
 
 interface TextDialogState {
     open: boolean;
@@ -616,7 +621,61 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         if (isRecurringJob) {
-            await showAutocompleteDialog('/courier/AllActiveSearch', 'Search courier...', JobProperty.CourierID, 'Courier', j.assignedCourier, false);
+            // 3-way Assign Route picker (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md).
+            // Same modal as the legacy courier-only picker — adds a Type radio
+            // row above the dropdown so the operator can choose Courier / Agent
+            // / NP without leaving the modal. Save behaviour writes to the
+            // matching JobProperty on tucJobBooking (CourierId / AgentId /
+            // NpAgentId — the NP case writes BOTH AgentId AND NpAgentId
+            // server-side in RecurringJobRepository.UpdateSimplePropertyAsync).
+            await ensureAutoCompleteDialog();
+            const result = await window.ReactAutoCompleteDialog?.openWithTypes(
+                'Assign',
+                [
+                    {
+                        value: 'Courier',
+                        label: 'Courier',
+                        placeholder: 'Search courier...',
+                        onSearch: (s) => autocompleteSearch(s, '/courier/AllActiveSearch'),
+                    },
+                    {
+                        value: 'Agent',
+                        label: 'Agent',
+                        placeholder: 'Search agent...',
+                        onSearch: (s) =>
+                            apiClient.get<ISuggestion[]>('/NationwideJob/GetAllAgentsSearch', {
+                                searchTerm: s,
+                                isNetworkPartner: false,
+                            }),
+                    },
+                    {
+                        value: 'NP',
+                        label: 'NP',
+                        placeholder: 'Search Network Partner...',
+                        onSearch: (s) =>
+                            apiClient.get<ISuggestion[]>('/NationwideJob/GetAllAgentsSearch', {
+                                searchTerm: s,
+                                isNetworkPartner: true,
+                            }),
+                    },
+                ],
+                {
+                    existingItem: j.assignedCourier,
+                    initialTypeValue: 'Courier',
+                },
+            );
+            if (!result) return;
+
+            // Route to the right JobProperty based on which radio the operator
+            // picked. The bridge always returns selectedType when openWithTypes
+            // was used; fall back to Courier defensively.
+            const targetField =
+                result.selectedType === 'Agent' ? JobProperty.AgentId :
+                result.selectedType === 'NP' ? JobProperty.NpAgentId :
+                JobProperty.CourierID;
+
+            await updateField({job: j, field: targetField, value: result.item.id, isRecurring: j.preBook});
+            await refreshAndNotify();
         } else {
             await ensureAutoCompleteDialog();
             const result = await window.ReactAutoCompleteDialog?.open(
@@ -628,7 +687,7 @@ export function useJobActions({
             await dispatchJob({job: j, courierId: result.item.id});
             await refreshAndNotify();
         }
-    }, [isRecurringJob, ensureAutoCompleteDialog, showAutocompleteDialog, dispatchJob, refreshAndNotify]);
+    }, [isRecurringJob, ensureAutoCompleteDialog, dispatchJob, updateField, refreshAndNotify]);
 
     const handleEditPodName = useCallback(async () => {
         const j = jobRef.current;

@@ -19,6 +19,8 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import CloseIcon from '@mui/icons-material/Close';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
@@ -31,6 +33,25 @@ export interface Suggestion {
     selected?: boolean;
 }
 
+/**
+ * 3-way Assign picker — per-type config for the radio row + filtered dropdown.
+ * When AutoCompleteDialog receives a non-empty `typeOptions` prop, it renders
+ * a radio row above the Autocomplete and routes the search callback through
+ * the active option. Submit emits the chosen option's `value` alongside the
+ * picked item so the caller knows which target column to write.
+ * Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md.
+ */
+export interface AssignTypeOption {
+    /** Discriminator returned via onSubmit so the caller routes to the right field. */
+    value: string;
+    /** Radio label rendered to the operator. */
+    label: string;
+    /** Placeholder shown inside the search box when this option is active. */
+    placeholder: string;
+    /** Per-type search backend. Replaces the dialog-level onSearch when active. */
+    onSearch: (searchTerm: string) => Promise<Suggestion[]>;
+}
+
 export interface AutoCompleteDialogProps {
     open: boolean;
     title: string;
@@ -39,8 +60,12 @@ export interface AutoCompleteDialogProps {
     existingItem?: Suggestion;
     showRerateOption?: boolean;
     minInputLength?: number;
+    /** When non-empty, renders the Type radio row above the dropdown. */
+    typeOptions?: AssignTypeOption[];
+    /** Initial radio selection (defaults to the first typeOption when omitted). */
+    initialTypeValue?: string;
     onClose: () => void;
-    onSubmit: (item: Suggestion, shouldRerate: boolean) => void;
+    onSubmit: (item: Suggestion, shouldRerate: boolean, selectedType?: string) => void;
     onSearch: (searchTerm: string) => Promise<Suggestion[]>;
 }
 
@@ -51,15 +76,32 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
     existingItem,
     showRerateOption = false,
     minInputLength = 1,
+    typeOptions,
+    initialTypeValue,
     onClose,
     onSubmit,
     onSearch,
 }) => {
+    const hasTypeOptions = !!(typeOptions && typeOptions.length > 0);
+    const defaultTypeValue = initialTypeValue ?? typeOptions?.[0]?.value ?? '';
+
     const [inputValue, setInputValue] = useState('');
     const [selectedItem, setSelectedItem] = useState<Suggestion | null>(existingItem ?? null);
     const [options, setOptions] = useState<Suggestion[]>([]);
     const [loading, setLoading] = useState(false);
     const [shouldRerate, setShouldRerate] = useState(false);
+    const [selectedType, setSelectedType] = useState<string>(defaultTypeValue);
+
+    // Resolve the active search function — when typeOptions is supplied the
+    // radio determines which backend the dropdown queries. The dialog-level
+    // onSearch is the fallback for non-typed callers (e.g. Client picker).
+    const activeSearchFn = hasTypeOptions
+        ? (typeOptions!.find((t) => t.value === selectedType)?.onSearch ?? onSearch)
+        : onSearch;
+
+    const activePlaceholder = hasTypeOptions
+        ? (typeOptions!.find((t) => t.value === selectedType)?.placeholder ?? placeholder)
+        : placeholder;
 
     // Reset state when dialog opens
     useEffect(() => {
@@ -68,8 +110,20 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
             setInputValue(existingItem?.text ?? '');
             setOptions([]);
             setShouldRerate(false);
+            setSelectedType(defaultTypeValue);
         }
-    }, [open, existingItem]);
+    }, [open, existingItem, defaultTypeValue]);
+
+    // Radio change — clear the prior selection so an operator can't accidentally
+    // submit a courier id against the agent column or vice versa. The Autocomplete's
+    // value/inputValue refresh too. Re-run the active search if the box still has
+    // text in it so the new list populates without an extra keystroke.
+    const handleTypeChange = useCallback((newType: string) => {
+        setSelectedType(newType);
+        setSelectedItem(null);
+        setInputValue('');
+        setOptions([]);
+    }, []);
 
     // Debounced search
     const handleSearch = useCallback(async (searchTerm: string) => {
@@ -80,7 +134,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
 
         setLoading(true);
         try {
-            const results = await onSearch(searchTerm);
+            const results = await activeSearchFn(searchTerm);
             setOptions(results);
         } catch (error) {
             console.error('Search failed:', error);
@@ -88,7 +142,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
         } finally {
             setLoading(false);
         }
-    }, [onSearch, minInputLength]);
+    }, [activeSearchFn, minInputLength]);
 
     // Debounce the search
     useEffect(() => {
@@ -103,7 +157,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
 
     const handleSubmit = () => {
         if (selectedItem) {
-            onSubmit(selectedItem, shouldRerate);
+            onSubmit(selectedItem, shouldRerate, hasTypeOptions ? selectedType : undefined);
         }
     };
 
@@ -178,6 +232,31 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                         bgcolor: 'white',
                     })}
                 >
+                    {/* Type radio — only renders when typeOptions is supplied.
+                        Steve 2026-05-26: "Add a radio button row above the
+                        existing dropdown" for the 3-way Assign picker. */}
+                    {hasTypeOptions && (
+                        <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 2}}>
+                            <Typography variant="body2" fontWeight={600} sx={{color: 'text.secondary'}}>
+                                Type:
+                            </Typography>
+                            <RadioGroup
+                                row
+                                value={selectedType}
+                                onChange={(e) => handleTypeChange(e.target.value)}
+                            >
+                                {typeOptions!.map((opt) => (
+                                    <FormControlLabel
+                                        key={opt.value}
+                                        value={opt.value}
+                                        control={<Radio size="small" />}
+                                        label={opt.label}
+                                    />
+                                ))}
+                            </RadioGroup>
+                        </Box>
+                    )}
+
                     <Autocomplete
                         fullWidth
                         autoHighlight
@@ -212,7 +291,7 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                             <TextField
                                 {...params}
                                 autoFocus
-                                placeholder={placeholder}
+                                placeholder={activePlaceholder}
                                 variant="outlined"
                                 slotProps={{
                                     input: {
