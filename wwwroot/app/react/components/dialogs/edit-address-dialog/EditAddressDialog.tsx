@@ -40,7 +40,7 @@ import {
 } from '../../../interfaces';
 import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi';
 import {addressApi} from '../../../services/addressApi';
-import {US_STATES} from '../../../utils/usStates';
+import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import type {ShowToastFn} from '../../../services/toastService';
 
 /**
@@ -248,7 +248,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             setAddressLine8(addressDetails.addressLine8 || '');
             setLatitude(addressDetails.latitude);
             setLongitude(addressDetails.longitude);
-            setStateAbbreviation(addressDetails.stateAbbreviation || addressDetails.addressLine6 || '');
+            setStateAbbreviation(
+                normalizeToStateAbbreviation(addressDetails.stateAbbreviation || addressDetails.addressLine6),
+            );
             setAddressSearchText(addressDetails.fullAddress || '');
 
             // Shipment details

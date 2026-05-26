@@ -509,6 +509,8 @@ public partial class TucJobArchive
 
     public decimal? NpCourierPayment { get; set; }
 
+    public int? RouteId { get; set; }
+
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
 
     public virtual TucAgent Agent { get; set; }
