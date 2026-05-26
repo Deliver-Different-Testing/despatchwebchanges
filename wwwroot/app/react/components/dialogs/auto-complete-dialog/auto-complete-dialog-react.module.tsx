@@ -3,13 +3,19 @@
  *
  * Entry point for the React-based Auto Complete Dialog.
  * Exposes a global function to open the dialog from AngularJS.
+ *
+ * Also exposes `openWithTypes` for the 3-way Assign Route picker
+ * (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md) — same modal,
+ * adds a Type radio row above the dropdown, returns the selected
+ * radio value alongside the picked item so the caller routes the
+ * write to the right column.
  */
 
 import React from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import {AutoCompleteDialog, Suggestion} from './AutoCompleteDialog';
+import {AutoCompleteDialog, AssignTypeOption, Suggestion} from './AutoCompleteDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 
@@ -17,6 +23,8 @@ import {ReactQueryProvider} from '../../../query';
 export interface AutoCompleteResult {
     item: Suggestion;
     shouldRerate: boolean;
+    /** Populated only when the dialog was opened via openWithTypes. */
+    selectedType?: string;
 }
 
 // State management for the dialog
@@ -29,6 +37,8 @@ interface DialogState {
     showRerateOption: boolean;
     minInputLength: number;
     searchFn: ((searchTerm: string) => Promise<Suggestion[]>) | null;
+    typeOptions?: AssignTypeOption[];
+    initialTypeValue?: string;
     resolve?: (value: AutoCompleteResult | null) => void;
 }
 
@@ -57,9 +67,9 @@ function renderDialog(): void {
         renderDialog();
     };
 
-    const handleSubmit = (item: Suggestion, shouldRerate: boolean) => {
+    const handleSubmit = (item: Suggestion, shouldRerate: boolean, selectedType?: string) => {
         dialogState.open = false;
-        dialogState.resolve?.({item, shouldRerate});
+        dialogState.resolve?.({item, shouldRerate, selectedType});
         dialogState.resolve = undefined;
         renderDialog();
     };
@@ -84,6 +94,8 @@ function renderDialog(): void {
                     existingItem={dialogState.existingItem}
                     showRerateOption={dialogState.showRerateOption}
                     minInputLength={dialogState.minInputLength}
+                    typeOptions={dialogState.typeOptions}
+                    initialTypeValue={dialogState.initialTypeValue}
                     onClose={handleClose}
                     onSubmit={handleSubmit}
                     onSearch={handleSearch}
@@ -138,6 +150,57 @@ export function openAutoCompleteDialog(
             showRerateOption,
             minInputLength,
             searchFn,
+            typeOptions: undefined,
+            initialTypeValue: undefined,
+            resolve,
+        };
+        renderDialog();
+    });
+}
+
+/**
+ * Opens the auto complete dialog with a Type radio row (Courier / Agent / NP).
+ *
+ * Same modal as openAutoCompleteDialog but adds a radio above the dropdown.
+ * The radio determines which search backend the dropdown queries; the resolved
+ * result carries `selectedType` so the caller routes the write to the right
+ * target column (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md).
+ *
+ * The dialog-level `searchFn` here is the FALLBACK — under normal radio
+ * operation each AssignTypeOption supplies its own `onSearch`.
+ */
+export function openAutoCompleteDialogWithTypes(
+    title: string,
+    typeOptions: AssignTypeOption[],
+    options?: {
+        existingItem?: Suggestion;
+        initialTypeValue?: string;
+        showRerateOption?: boolean;
+        minInputLength?: number;
+        itemIcon?: string;
+    }
+): Promise<AutoCompleteResult | null> {
+    initializeDialogRoot();
+
+    if (!typeOptions || typeOptions.length === 0) {
+        throw new Error('openAutoCompleteDialogWithTypes requires at least one typeOption.');
+    }
+
+    return new Promise((resolve) => {
+        dialogState = {
+            open: true,
+            title,
+            // Placeholder is per-type — the dialog reads it from the active
+            // AssignTypeOption. Pass empty string as the dialog-level default.
+            placeholder: '',
+            itemIcon: options?.itemIcon ?? 'topic',
+            existingItem: options?.existingItem,
+            showRerateOption: options?.showRerateOption ?? false,
+            minInputLength: options?.minInputLength ?? 2,
+            // Fallback when no AssignTypeOption matches — returns empty list.
+            searchFn: async () => [],
+            typeOptions,
+            initialTypeValue: options?.initialTypeValue ?? typeOptions[0].value,
             resolve,
         };
         renderDialog();
@@ -147,6 +210,7 @@ export function openAutoCompleteDialog(
 // Expose globally for AngularJS access
 window.ReactAutoCompleteDialog = {
     open: openAutoCompleteDialog,
+    openWithTypes: openAutoCompleteDialogWithTypes,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

@@ -26,7 +26,7 @@ public interface INationwideJobRepository
     Task SendAgentRequestMessageAsync(int agentId, int jobId);
     Task<IReadOnlyList<AirportSuggestion>> GetNearbyAirportsAsync(int jobId, bool usePickup = true);
     Task RestoreNationwideJobAsync(int jobId);
-    Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm);
+    Task<IReadOnlyList<Suggestion>> GetAllAgentOptionsBySearchAsync(string searchTerm, bool? isNetworkPartner = null);
     Task<IReadOnlyList<string>> GetFlightWebhookIdByJobIdAsync(int jobId);
     Task<AgentInfoDialogViewModel> GetAgentInfoForDialogAsync(int agentId);
 

@@ -238,7 +238,29 @@ declare global {
                 showRerateOption?: boolean,
                 itemIcon?: string,
                 minInputLength?: number
-            ) => Promise<{ item: Suggestion; shouldRerate: boolean } | null>;
+            ) => Promise<{ item: Suggestion; shouldRerate: boolean; selectedType?: string } | null>;
+            /**
+             * 3-way Assign picker variant (Steve 2026-05-26,
+             * HANDOVER-KEVIN-2026-05-26.md). Renders a Type radio row above
+             * the dropdown. Resolves with the picked item plus the selected
+             * radio value so the caller routes the write to the right column.
+             */
+            openWithTypes: (
+                title: string,
+                typeOptions: Array<{
+                    value: string;
+                    label: string;
+                    placeholder: string;
+                    onSearch: (searchTerm: string) => Promise<Suggestion[]>;
+                }>,
+                options?: {
+                    existingItem?: Suggestion;
+                    initialTypeValue?: string;
+                    showRerateOption?: boolean;
+                    minInputLength?: number;
+                    itemIcon?: string;
+                }
+            ) => Promise<{ item: Suggestion; shouldRerate: boolean; selectedType?: string } | null>;
         };
         ReactComposeEmailDialog?: {
             open: (selectedCouriers: DriverEmail[]) => Promise<GroupEmailData | null>;

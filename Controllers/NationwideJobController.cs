@@ -373,11 +373,16 @@ public class NationwideJobController(
         }
     }
 
-    public async Task<IActionResult> GetAllAgentsSearch(string searchTerm)
+    // isNetworkPartner: null = all agents (existing behaviour, no break for
+    // the Nationwide flow), false = regular agents only, true = NPs only.
+    // The 3-way Assign Route picker (HANDOVER-KEVIN-2026-05-26.md) passes
+    // false for the "Agent" radio and true for the "NP" radio so the same
+    // endpoint can drive both filtered lists.
+    public async Task<IActionResult> GetAllAgentsSearch(string searchTerm, bool? isNetworkPartner = null)
     {
         try
         {
-            var agents = await repository.GetAllAgentOptionsBySearchAsync(searchTerm);
+            var agents = await repository.GetAllAgentOptionsBySearchAsync(searchTerm, isNetworkPartner);
             return Json(agents);
         }
         catch (Exception e)

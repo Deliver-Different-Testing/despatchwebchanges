@@ -186,7 +186,10 @@ describe('AutoCompleteDialog', () => {
 
             await user.click(screen.getByRole('button', {name: /save/i}));
 
-            expect(onSubmit).toHaveBeenCalledWith(existingItem, false);
+            // Third arg is `selectedType` — undefined when typeOptions isn't
+            // supplied (i.e. legacy open() flow, no 3-way picker). Added
+            // 2026-05-26 to support the Assign Route / Agent / NP radio.
+            expect(onSubmit).toHaveBeenCalledWith(existingItem, false, undefined);
         });
 
         it('calls onSubmit with shouldRerate true when checkbox is checked', async () => {
@@ -199,7 +202,7 @@ describe('AutoCompleteDialog', () => {
             await user.click(screen.getByLabelText(/re-rate job/i));
             await user.click(screen.getByRole('button', {name: /save/i}));
 
-            expect(onSubmit).toHaveBeenCalledWith(existingItem, true);
+            expect(onSubmit).toHaveBeenCalledWith(existingItem, true, undefined);
         });
 
         it('does not call onSubmit when no item is selected', () => {
