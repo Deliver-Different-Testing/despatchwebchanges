@@ -24,7 +24,7 @@ public static class DistanceCalculator
             EarthRadiusInMiles
         );
 
-        return Math.Round(distance, 2);
+        return Math.Round(distance, 2, MidpointRounding.AwayFromZero);
     }
 
     private static double CalculateHaversineDistance(

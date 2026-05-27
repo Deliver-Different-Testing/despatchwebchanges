@@ -413,9 +413,15 @@ public sealed partial class DeliveryJourneyService(
     private static string BuildAgentTag(string oldAgent, string newAgent)
     {
         if (!string.IsNullOrEmpty(newAgent) && !string.IsNullOrEmpty(oldAgent))
+        {
             return $"Agent: {oldAgent} → {newAgent}";
+        }
+
         if (!string.IsNullOrEmpty(newAgent))
+        {
             return $"Agent: {newAgent}";
+        }
+
         return !string.IsNullOrEmpty(oldAgent) ? $"Removed Agent: {oldAgent}" : null;
     }
 
@@ -425,9 +431,15 @@ public sealed partial class DeliveryJourneyService(
     private static string BuildCourierTag(string oldCourier, string newCourier)
     {
         if (!string.IsNullOrEmpty(newCourier) && !string.IsNullOrEmpty(oldCourier))
+        {
             return $"Courier: {oldCourier} → {newCourier}";
+        }
+
         if (!string.IsNullOrEmpty(newCourier))
+        {
             return $"Courier: {newCourier}";
+        }
+
         return !string.IsNullOrEmpty(oldCourier) ? $"Removed Courier: {oldCourier}" : null;
     }
 
@@ -437,7 +449,10 @@ public sealed partial class DeliveryJourneyService(
     private static string BuildStatusTag(string oldStatus, string newStatus)
     {
         if (!string.IsNullOrEmpty(newStatus) && !string.IsNullOrEmpty(oldStatus))
+        {
             return $"Status: {oldStatus} → {newStatus}";
+        }
+
         return !string.IsNullOrEmpty(newStatus) ? $"Status: {newStatus}" : null;
     }
 
@@ -446,14 +461,23 @@ public sealed partial class DeliveryJourneyService(
     /// </summary>
     private static string BuildFieldTag(string fieldName, string oldValue, string newValue)
     {
-        if (string.IsNullOrEmpty(fieldName)) return null;
+        if (string.IsNullOrEmpty(fieldName))
+        {
+            return null;
+        }
 
         var formattedName = FormatFieldName(fieldName);
         if (!string.IsNullOrEmpty(oldValue) && !string.IsNullOrEmpty(newValue))
+        {
             return
                 $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → {FormatFieldValue(fieldName, newValue)}";
+        }
+
         if (!string.IsNullOrEmpty(newValue))
+        {
             return $"{formattedName}: {FormatFieldValue(fieldName, newValue)}";
+        }
+
         return !string.IsNullOrEmpty(oldValue)
             ? $"{formattedName}: {FormatFieldValue(fieldName, oldValue)} → (cleared)"
             : null;
@@ -525,35 +549,57 @@ public sealed partial class DeliveryJourneyService(
         foreach (var dto in updates)
         {
             if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
+            {
                 descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
+            }
 
             if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
+            {
                 descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
+            }
             else if (!string.IsNullOrEmpty(dto.NewCourierName))
+            {
                 descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
+            }
             else if (!string.IsNullOrEmpty(dto.OldCourierName))
+            {
                 descriptions.Add($"Removed from courier: {dto.OldCourierName}");
+            }
 
             if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
+            {
                 descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
+            }
             else if (!string.IsNullOrEmpty(dto.NewAgentName))
+            {
                 descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
+            }
             else if (!string.IsNullOrEmpty(dto.OldAgentName))
+            {
                 descriptions.Add($"Removed from agent: {dto.OldAgentName}");
+            }
 
             if (!string.IsNullOrEmpty(dto.FieldName))
             {
                 var fieldDesc = FormatFieldName(dto.FieldName);
                 if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
+                {
                     descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
+                }
                 else if (!string.IsNullOrEmpty(dto.NewValue))
+                {
                     descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
+                }
                 else if (!string.IsNullOrEmpty(dto.OldValue))
+                {
                     descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
+                }
             }
 
             if (!string.IsNullOrEmpty(dto.Comments))
+            {
                 descriptions.Add(dto.Comments);
+            }
         }
 
         return string.Join("; ", descriptions.Distinct());
@@ -569,35 +615,57 @@ public sealed partial class DeliveryJourneyService(
         foreach (var dto in updates)
         {
             if (!string.IsNullOrEmpty(dto.OldJobStatusName) && !string.IsNullOrEmpty(dto.NewJobStatusName))
+            {
                 descriptions.Add($"Status: {dto.OldJobStatusName} → {dto.NewJobStatusName}");
+            }
 
             if (!string.IsNullOrEmpty(dto.OldCourierName) && !string.IsNullOrEmpty(dto.NewCourierName))
+            {
                 descriptions.Add($"Courier: {dto.OldCourierName} → {dto.NewCourierName}");
+            }
             else if (!string.IsNullOrEmpty(dto.NewCourierName))
+            {
                 descriptions.Add($"Assigned to courier: {dto.NewCourierName}");
+            }
             else if (!string.IsNullOrEmpty(dto.OldCourierName))
+            {
                 descriptions.Add($"Removed from courier: {dto.OldCourierName}");
+            }
 
             if (!string.IsNullOrEmpty(dto.OldAgentName) && !string.IsNullOrEmpty(dto.NewAgentName))
+            {
                 descriptions.Add($"Agent: {dto.OldAgentName} → {dto.NewAgentName}");
+            }
             else if (!string.IsNullOrEmpty(dto.NewAgentName))
+            {
                 descriptions.Add($"Assigned to agent: {dto.NewAgentName}");
+            }
             else if (!string.IsNullOrEmpty(dto.OldAgentName))
+            {
                 descriptions.Add($"Removed from agent: {dto.OldAgentName}");
+            }
 
             if (!string.IsNullOrEmpty(dto.FieldName))
             {
                 var fieldDesc = FormatFieldName(dto.FieldName);
                 if (!string.IsNullOrEmpty(dto.OldValue) && !string.IsNullOrEmpty(dto.NewValue))
+                {
                     descriptions.Add($"{fieldDesc}: {dto.OldValue} → {dto.NewValue}");
+                }
                 else if (!string.IsNullOrEmpty(dto.NewValue))
+                {
                     descriptions.Add($"{fieldDesc} set to: {dto.NewValue}");
+                }
                 else if (!string.IsNullOrEmpty(dto.OldValue))
+                {
                     descriptions.Add($"{fieldDesc} cleared (was: {dto.OldValue})");
+                }
             }
 
             if (!string.IsNullOrEmpty(dto.Comments))
+            {
                 descriptions.Add(dto.Comments);
+            }
         }
 
         return string.Join("; ", descriptions.Distinct());
@@ -623,7 +691,10 @@ public sealed partial class DeliveryJourneyService(
     /// </summary>
     internal static string GetIconForFieldName(string fieldName)
     {
-        if (string.IsNullOrEmpty(fieldName)) return "edit_note";
+        if (string.IsNullOrEmpty(fieldName))
+        {
+            return "edit_note";
+        }
 
         return fieldName switch
         {
@@ -675,7 +746,10 @@ public sealed partial class DeliveryJourneyService(
     /// </summary>
     internal static string FormatFieldName(string fieldName)
     {
-        if (string.IsNullOrEmpty(fieldName)) return fieldName;
+        if (string.IsNullOrEmpty(fieldName))
+        {
+            return fieldName;
+        }
 
         return fieldName switch
         {
@@ -775,7 +849,9 @@ public sealed partial class DeliveryJourneyService(
     {
         var cleanName = fieldName;
         if (cleanName.StartsWith("ucjb", StringComparison.OrdinalIgnoreCase))
+        {
             cleanName = cleanName[4..];
+        }
 
         var result = TitleCaseRegex().Replace(cleanName, " $1");
         return char.ToUpper(result[0]) + result[1..];
@@ -786,11 +862,16 @@ public sealed partial class DeliveryJourneyService(
     /// </summary>
     internal static string FormatFieldValue(string fieldName, string value)
     {
-        if (string.IsNullOrEmpty(value)) return value;
+        if (string.IsNullOrEmpty(value))
+        {
+            return value;
+        }
 
         if (value.Equals("True", StringComparison.OrdinalIgnoreCase) ||
             value.Equals("False", StringComparison.OrdinalIgnoreCase))
+        {
             return value.Equals("True", StringComparison.OrdinalIgnoreCase) ? "Yes" : "No";
+        }
 
         switch (fieldName)
         {
@@ -807,7 +888,9 @@ public sealed partial class DeliveryJourneyService(
         }
 
         if (value.Length > 50)
+        {
             return value[..47] + "...";
+        }
 
         return value;
     }

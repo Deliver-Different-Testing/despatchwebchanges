@@ -22,7 +22,9 @@ public partial class JobRepository
     {
         // Try to use ExecuteUpdateAsync for simple single-field updates (no entity loading required)
         if (await TryExecuteDirectBulkUpdateAsync(bulkJobId, property, value))
+        {
             return;
+        }
 
         // Fall back to entity-based updates for complex cases requiring includes or business logic
         await UpdateBulkJobWithEntityAsync(bulkJobId, property, value);
@@ -32,7 +34,9 @@ public partial class JobRepository
     {
         // Try to use ExecuteUpdateAsync for simple single-field updates (no entity loading required)
         if (await TryExecuteDirectUpdateAsync(jobId, property, value))
+        {
             return;
+        }
 
         // Fall back to entity-based updates for complex cases requiring includes or business logic
         await UpdateTucJobWithEntityAsync(jobId, property, value);
@@ -239,7 +243,9 @@ public partial class JobRepository
         }
 
         if (rowsAffected == 0)
+        {
             throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
+        }
 
         Log.Debug("ExecuteUpdateAsync: Updated {Property} for job {JobId}", property, jobId);
         return true;
@@ -268,8 +274,15 @@ public partial class JobRepository
         switch (property)
         {
             case JobProperty.ConNote:
-                if (job.ParentId != null) job.Parent.Connote = value;
-                else job.Connote = value;
+                if (job.ParentId != null)
+                {
+                    job.Parent.Connote = value;
+                }
+                else
+                {
+                    job.Connote = value;
+                }
+
                 break;
             case JobProperty.AirportOnly:
                 var airportOnly = bool.Parse(value);
@@ -280,7 +293,11 @@ public partial class JobRepository
                 break;
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                if (voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                if (voidJob)
+                {
+                    throw new ApplicationException("Voiding a job is not allowed here");
+                }
+
                 job.UcjbVoid = false;
                 break;
             case JobProperty.SpeedID:
@@ -288,21 +305,27 @@ public partial class JobRepository
                 break;
             case JobProperty.Weight:
                 if (!double.TryParse(value?.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var weight))
+                {
                     throw new ArgumentException($"Invalid weight value: '{value}'", nameof(value));
+                }
 
                 if (job.Parent != null)
                 {
                     job.Parent.UcjbWeight = weight;
                     if (job.Parent.InverseParent.Count != 0)
+                    {
                         foreach (var siblingJob in job.Parent.InverseParent)
                             siblingJob.UcjbWeight = weight;
+                    }
                 }
                 else
                 {
                     job.UcjbWeight = weight;
                     if (job.InverseParent != null && job.InverseParent.Count != 0)
+                    {
                         foreach (var childJob in job.InverseParent)
                             childJob.UcjbWeight = weight;
+                    }
                 }
 
                 break;
@@ -337,7 +360,9 @@ public partial class JobRepository
                 job.UcjbStatus = newStatus;
 
                 if (newStatus == (int)JobStatus.PickedUp)
+                {
                     job.PickUpTime = _infoService.GetCurrentTimeFromTimeZone(job.PickupTimeZone);
+                }
 
                 break;
             case JobProperty.UndeliverableLocationID:
@@ -382,15 +407,27 @@ public partial class JobRepository
 
                 break;
             case JobProperty.TailLiftPu:
-                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                if (job.TucJobItemJobs == null)
+                {
+                    throw new NullReferenceException("TucJobItemJobs is null");
+                }
+
                 foreach (var item in job.TucJobItemJobs) item.Pu = bool.Parse(value);
                 break;
             case JobProperty.TailLiftDo:
-                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                if (job.TucJobItemJobs == null)
+                {
+                    throw new NullReferenceException("TucJobItemJobs is null");
+                }
+
                 foreach (var item in job.TucJobItemJobs) item.Do = bool.Parse(value);
                 break;
             case JobProperty.DeliverToPrivateRes:
-                if (job.TucJobItemJobs == null) throw new NullReferenceException("TucJobItemJobs is null");
+                if (job.TucJobItemJobs == null)
+                {
+                    throw new NullReferenceException("TucJobItemJobs is null");
+                }
+
                 foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
                 break;
             default:
@@ -420,7 +457,9 @@ public partial class JobRepository
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && job.UndeliverableLocation?.Message != null)
+        {
             await JobUpdateAddNoteAsync(jobId, true, job.UndeliverableLocation.Message);
+        }
     }
 
     private async Task UpdateTucJobArchiveAsync(int jobId, JobProperty property, string value)
@@ -455,7 +494,11 @@ public partial class JobRepository
                 break;
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
-                if (voidJob) throw new ApplicationException("Voiding a job is not allowed here");
+                if (voidJob)
+                {
+                    throw new ApplicationException("Voiding a job is not allowed here");
+                }
+
                 archive.UcjbVoid = false;
                 break;
             case JobProperty.SpeedID:
@@ -467,15 +510,19 @@ public partial class JobRepository
                 {
                     archive.Parent.UcjbWeight = weight;
                     if (archive.InverseParent.Count != 0)
+                    {
                         foreach (var siblingJob in archive.InverseParent)
                             siblingJob.UcjbWeight = weight;
+                    }
                 }
                 else
                 {
                     archive.UcjbWeight = weight;
                     if (archive.InverseParent.Count != 0)
+                    {
                         foreach (var childJob in archive.InverseParent)
                             childJob.UcjbWeight = weight;
+                    }
                 }
 
                 break;
@@ -529,11 +576,15 @@ public partial class JobRepository
                         (int)InternalJobStatus.Reprice
                     }.Contains(internalStatusId)
                 )
+                {
                     archive.FollowupTime = _clock.TenantNow.AddMinutes(
                         archive.InternalStatusNavigation.DefaultMinutes ?? 0
                     );
+                }
                 else
+                {
                     archive.FollowupTime = null;
+                }
 
                 archive.UcjbStatus = internalStatusId switch
                 {
@@ -679,7 +730,9 @@ public partial class JobRepository
 
         // Add additional notes for undeliverable location
         if (property == JobProperty.UndeliverableLocationID && archive.UndeliverableLocation?.Message != null)
+        {
             await JobUpdateAddNoteAsync(jobId, false, archive.UndeliverableLocation.Message);
+        }
 
         await Context.SaveChangesAsync();
     }
@@ -805,7 +858,9 @@ public partial class JobRepository
         }
 
         if (rowsAffected == 0)
+        {
             throw new ArgumentException($"Bulk job with ID {bulkJobId} not found", nameof(bulkJobId));
+        }
 
         Log.Debug("ExecuteUpdateAsync: Updated {Property} for bulk job {BulkJobId}", property, bulkJobId);
         return true;

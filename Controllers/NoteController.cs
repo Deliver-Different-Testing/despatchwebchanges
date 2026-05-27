@@ -70,11 +70,17 @@ public class NoteController(
             ArgumentNullException.ThrowIfNull(noteViewModel);
 
             if (noteViewModel.JobBookingId.HasValue)
+            {
                 await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+            }
             else if (noteViewModel.BulkJobId.HasValue)
+            {
                 await noteRepository.SaveBulkNoteAsync(noteViewModel);
+            }
             else
+            {
                 await noteRepository.SaveNoteAsync(noteViewModel);
+            }
 
             return Ok();
         }
@@ -116,7 +122,9 @@ public class NoteController(
                 // Bulk notes live in TblBulkJobNotes, not TucNotes
                 var existingBulkNote = await noteRepository.GetBulkNoteByIdAsync(noteViewModel.NoteId);
                 if (existingBulkNote == null)
+                {
                     return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+                }
 
                 await noteRepository.SaveBulkNoteAsync(noteViewModel);
             }
@@ -125,12 +133,18 @@ public class NoteController(
                 // Check if a note exists in TucNotes / TucNoteArchives
                 var existingNote = await noteRepository.GetNoteByIdAsync(noteViewModel.NoteId);
                 if (existingNote == null)
+                {
                     return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+                }
 
                 if (noteViewModel.JobBookingId.HasValue)
+                {
                     await recurringJobRepository.SaveRecurringJobNote(noteViewModel);
+                }
                 else
+                {
                     await noteRepository.SaveNoteAsync(noteViewModel);
+                }
             }
 
             return Ok();
@@ -153,7 +167,9 @@ public class NoteController(
             // Check if a bulk note exists (query TblBulkJobNotes, not TucNotes)
             var existingNote = await noteRepository.GetBulkNoteByIdAsync(noteViewModel.NoteId);
             if (existingNote == null)
+            {
                 return NotFound($"Note with ID {noteViewModel.NoteId} not found.");
+            }
 
             await noteRepository.SaveBulkNoteAsync(noteViewModel);
 
@@ -192,7 +208,9 @@ public class NoteController(
         try
         {
             if (!Enum.TryParse<NoteHistorySource>(noteSource, ignoreCase: true, out var source))
+            {
                 return BadRequest($"Invalid noteSource: {noteSource}");
+            }
 
             var history = await noteRepository.GetNoteHistoryAsync(noteId, source);
             return Json(history);

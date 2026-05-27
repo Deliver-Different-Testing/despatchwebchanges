@@ -25,9 +25,14 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(request.FieldName))
+        {
             return new JobChangeRequestResult { Success = false, Message = "FieldName is required" };
+        }
+
         if (!Enum.TryParse<JobChangeField>(request.FieldName, ignoreCase: true, out var field))
+        {
             return new JobChangeRequestResult { Success = false, Message = $"Unknown field '{request.FieldName}'" };
+        }
 
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
 
@@ -36,22 +41,34 @@ public sealed class JobChangeRequestService(
             .Where(j => j.UcjbId == request.JobId)
             .FirstOrDefaultAsync(ct);
 
-        if (job is null) return new JobChangeRequestResult { Success = false, Message = $"Job {request.JobId} not found" };
-        if (!job.PartnerJobGuid.HasValue) return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
+        if (job is null)
+        {
+            return new JobChangeRequestResult { Success = false, Message = $"Job {request.JobId} not found" };
+        }
+
+        if (!job.PartnerJobGuid.HasValue)
+        {
+            return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
+        }
 
         var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, request.PairingId, partnerTenantId: null, ct);
-        if (pairing is null) return new JobChangeRequestResult { Success = false, Message = pairingError };
+        if (pairing is null)
+        {
+            return new JobChangeRequestResult { Success = false, Message = pairingError };
+        }
 
         if (await ctx.TucJobChangeRequests
                 .AnyAsync(r => r.UjcrJobId == request.JobId
                                && r.UjcrFieldName == field.ToString()
                                && (r.UjcrStatus == JobChangeRequestStatus.Pending
                                    || r.UjcrStatus == JobChangeRequestStatus.Approved), ct))
+        {
             return new JobChangeRequestResult
             {
                 Success = false,
                 Message = $"A pending request for '{field}' already exists on this job"
             };
+        }
 
         var stage = MapLifecycleStage(job.UcjbStatus);
         // Local-vs-counterparty is decided by comparing the current tenant against the
@@ -65,11 +82,14 @@ public sealed class JobChangeRequestService(
                            || string.Equals(localTenantId, pairing.OwnerTenantId, StringComparison.Ordinal);
         var requestingPartyType = isLocalOwner ? "OwnerTenant" : "PartnerTenant";
         var decision = policyService.Evaluate(field, requestingPartyType, stage);
-        if (!decision.Allowed) return new JobChangeRequestResult
+        if (!decision.Allowed)
+        {
+            return new JobChangeRequestResult
             {
                 Success = false,
                 Message = $"Change to '{field}' is prohibited at stage '{stage}' (rule {decision.RuleCode})"
             };
+        }
 
         var currentValue = request.CurrentValue ?? SnapshotCurrentValue(field, job);
 
@@ -123,7 +143,9 @@ public sealed class JobChangeRequestService(
             await ctx.TucJobChangeRequests.AddAsync(row, ct);
 
             if (decision.Mode == JobChangeApprovalMode.Auto)
+            {
                 await ApplyFieldChangeAsync(ctx, request.JobId, field, request.RequestedValue, ct);
+            }
 
             await ctx.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -159,27 +181,36 @@ public sealed class JobChangeRequestService(
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
+        {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
+        }
+
         if (row.UjcrStatus != JobChangeRequestStatus.Pending)
+        {
             return new JobChangeRequestResult
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot approve" };
+        }
 
         // Reject rows whose field name doesn't map to any v1 enum value rather than
         // silently flipping to Applied without mutating the job. Peer-create writes the
         // payload's FieldName verbatim, so a peer running ahead of us on the field-set
         // can land an unknown name here — explicit refusal beats silent no-op.
         if (!Enum.TryParse<JobChangeField>(row.UjcrFieldName, out var field))
+        {
             return new JobChangeRequestResult
             {
                 Success = false,
                 Message = $"Field '{row.UjcrFieldName}' is not supported in this version"
             };
+        }
 
         // Stamp the client's rowversion onto EF's original-values so SaveChangesAsync below
         // performs the concurrency check at the DB level (UPDATE … WHERE rowversion = @orig)
         // and throws DbUpdateConcurrencyException if another writer beat us to it.
         if (request.RowVersion is not null)
+        {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
+        }
 
         // Commercial refresh is the only step that can fail with a recoverable "no rate"
         // outcome. Run it FIRST — before any column mutation — so a refresh failure leaves
@@ -252,7 +283,9 @@ public sealed class JobChangeRequestService(
             }
 
             if (row.UjcrTucEventId is { } eventId)
+            {
                 await CloseEventAsync(ctx, eventId, "Partner Change Approved", ct);
+            }
 
             try
             {
@@ -271,22 +304,31 @@ public sealed class JobChangeRequestService(
         });
 
         if (concurrencyConflict)
+        {
             return new JobChangeRequestResult
                 { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
+        }
 
         if (row.UjcrPairingId is not { } pairingId)
+        {
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        }
+
         var forward = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
             "Approved", request.Reason, ct);
         if (!forward.Success)
+        {
             Log.Error("Peer decision forward (Approved) for {SourceUuid} failed: {Message}",
                 row.UjcrSourceRequestUuid, forward.Message);
+        }
 
         var applied = await partnerClient.ForwardAppliedAsync(pairingId, row.UjcrSourceRequestUuid,
             row.UjcrNewCommercialAmount, ct);
         if (!applied.Success)
+        {
             Log.Error("Peer applied forward for {SourceUuid} failed: {Message}", row.UjcrSourceRequestUuid,
                 applied.Message);
+        }
 
         var warning = !forward.Success
             ? forward.Message ?? "Partner notification failed"
@@ -302,20 +344,30 @@ public sealed class JobChangeRequestService(
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
+        {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending) return new JobChangeRequestResult
+        }
+
+        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
+        {
+            return new JobChangeRequestResult
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot reject" };
+        }
 
         if (request.RowVersion is not null)
+        {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
+        }
 
         row.UjcrStatus = JobChangeRequestStatus.Rejected;
         row.UjcrRejectedByStaffId = CurrentStaffIdOrNull();
         row.UjcrRespondedAtUtc = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
             row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason)
                 ? request.Reason
                 : $"{row.UjcrReason}\n--\n{request.Reason}";
+        }
 
         var concurrencyConflict = false;
         var strategy = ctx.Database.CreateExecutionStrategy();
@@ -324,7 +376,9 @@ public sealed class JobChangeRequestService(
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
             if (row.UjcrTucEventId is { } eventId)
+            {
                 await CloseEventAsync(ctx, eventId, "Partner Change Rejected", ct);
+            }
 
             try
             {
@@ -340,16 +394,23 @@ public sealed class JobChangeRequestService(
         });
 
         if (concurrencyConflict)
+        {
             return new JobChangeRequestResult
                 { Success = false, Message = "Request has been modified by someone else; refresh and retry" };
+        }
 
         if (row.UjcrPairingId is not { } pairingId)
+        {
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        }
+
         var forward = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
             "Rejected", request.Reason, ct);
         if (!forward.Success)
+        {
             Log.Error("Peer decision forward (Rejected) for {SourceUuid} failed: {Message}",
                 row.UjcrSourceRequestUuid, forward.Message);
+        }
 
         return new JobChangeRequestResult
         {
@@ -364,28 +425,43 @@ public sealed class JobChangeRequestService(
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
-        if (row is null) return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
-        if (row.UjcrStatus != JobChangeRequestStatus.Pending) return new JobChangeRequestResult
+        if (row is null)
+        {
+            return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
+        }
+
+        if (row.UjcrStatus != JobChangeRequestStatus.Pending)
+        {
+            return new JobChangeRequestResult
                 { Success = false, Message = $"Request is in status '{row.UjcrStatus}', cannot cancel" };
+        }
 
         // Only the originator can retract — peer-side rows are rejected via RejectAsync.
         // This keeps the semantic clean: Cancelled = "the requester took it back".
         if (!string.Equals(row.UjcrOrigin, "Local", StringComparison.Ordinal))
+        {
             return new JobChangeRequestResult
                 { Success = false, Message = "Only the originator can cancel a change request" };
+        }
 
         if (request.RowVersion is not null)
+        {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
+        }
 
         row.UjcrStatus = JobChangeRequestStatus.Cancelled;
         row.UjcrRespondedAtUtc = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(request.Reason))
+        {
             row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason)
                 ? request.Reason
                 : $"{row.UjcrReason}\n--\n{request.Reason}";
+        }
 
         if (row.UjcrTucEventId is { } eventId)
+        {
             await CloseEventAsync(ctx, eventId, "Partner Change Cancelled", ct);
+        }
 
         try
         {
@@ -398,12 +474,17 @@ public sealed class JobChangeRequestService(
         }
 
         if (row.UjcrPairingId is not { } pairingId)
+        {
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        }
+
         var forward = await partnerClient.ForwardDecisionAsync(pairingId, row.UjcrSourceRequestUuid,
             "Cancelled", request.Reason, ct);
         if (!forward.Success)
+        {
             Log.Error("Peer cancellation forward for {SourceUuid} failed: {Message}",
                 row.UjcrSourceRequestUuid, forward.Message);
+        }
 
         return new JobChangeRequestResult
         {
@@ -421,7 +502,9 @@ public sealed class JobChangeRequestService(
         var existing = await ctx.TucJobChangeRequests
             .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == payload.SourceRequestUuid, ct);
         if (existing is not null)
+        {
             return new JobChangeRequestResult { Success = true, Request = ToDto(existing) };
+        }
 
         var mirror = await ctx.TucJobs
             .Where(j => j.PartnerJobGuid == payload.PartnerJobGuid)
@@ -463,7 +546,10 @@ public sealed class JobChangeRequestService(
         // Multiple active pairings with no disambiguator → fail loudly.
         var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, payload.PairingId,
             payload.PartnerTenantId, ct);
-        if (pairing is null) return new JobChangeRequestResult { Success = false, Message = pairingError };
+        if (pairing is null)
+        {
+            return new JobChangeRequestResult { Success = false, Message = pairingError };
+        }
 
         // Re-evaluate the policy against OUR local mirror's lifecycle stage. The originator
         // already checked their side, but our stage may have advanced (e.g., we've moved to
@@ -475,12 +561,14 @@ public sealed class JobChangeRequestService(
             var localStage = MapLifecycleStage(mirror.UcjbStatus);
             var localDecision = policyService.Evaluate(peerField, "PartnerTenant", localStage);
             if (!localDecision.Allowed)
+            {
                 return new JobChangeRequestResult
                 {
                     Success = false,
                     Message =
                         $"Change to '{payload.FieldName}' is prohibited on our side at stage '{localStage}' (rule {localDecision.RuleCode})"
                 };
+            }
         }
 
         // Mirror the local CreateLocalAsync duplicate guard: refuse a second Pending/Approved
@@ -492,11 +580,13 @@ public sealed class JobChangeRequestService(
                                && r.UjcrFieldName == payload.FieldName
                                && (r.UjcrStatus == JobChangeRequestStatus.Pending
                                    || r.UjcrStatus == JobChangeRequestStatus.Approved), ct))
+        {
             return new JobChangeRequestResult
             {
                 Success = false,
                 Message = $"A pending request for '{payload.FieldName}' already exists on this job"
             };
+        }
 
         var row = new TucJobChangeRequest
         {
@@ -551,7 +641,9 @@ public sealed class JobChangeRequestService(
         var row = await ctx.TucJobChangeRequests
             .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid, ct);
         if (row is null)
+        {
             return new JobChangeRequestResult { Success = false, Message = $"No request for SourceUuid {sourceUuid}" };
+        }
 
         // Terminal statuses short-circuit so a replayed inbound is idempotent. Approved
         // is non-terminal — the originator may still be waiting on the Applied event to
@@ -559,18 +651,24 @@ public sealed class JobChangeRequestService(
         if (row.UjcrStatus is JobChangeRequestStatus.Applied
             or JobChangeRequestStatus.Rejected
             or JobChangeRequestStatus.Cancelled)
+        {
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        }
 
         var (newStatus, eventTypeName) = ResolvePeerDecisionTransition(payload.Outcome);
         row.UjcrStatus = newStatus;
         row.UjcrRespondedAtUtc = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(payload.Reason))
+        {
             row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason)
                 ? payload.Reason
                 : $"{row.UjcrReason}\n--\n{payload.Reason}";
+        }
 
         if (row.UjcrTucEventId is { } eventId)
+        {
             await CloseEventAsync(ctx, eventId, eventTypeName, ct);
+        }
 
         await ctx.SaveChangesAsync(ct);
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
@@ -579,7 +677,10 @@ public sealed class JobChangeRequestService(
     private static (string Status, string EventTypeName) ResolvePeerDecisionTransition(string outcome)
     {
         if (outcome.Equals(JobChangeRequestStatus.Approved, StringComparison.OrdinalIgnoreCase))
+        {
             return (JobChangeRequestStatus.Approved, "Partner Change Approved");
+        }
+
         return outcome.Equals(JobChangeRequestStatus.Cancelled, StringComparison.OrdinalIgnoreCase)
             ? (JobChangeRequestStatus.Cancelled, "Partner Change Cancelled")
             : (JobChangeRequestStatus.Rejected, "Partner Change Rejected");
@@ -592,7 +693,9 @@ public sealed class JobChangeRequestService(
         var row = await ctx.TucJobChangeRequests
             .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid, ct);
         if (row is null)
+        {
             return new JobChangeRequestResult { Success = false, Message = $"No request for SourceUuid {sourceUuid}" };
+        }
 
         // Terminal short-circuit. Crucially includes Cancelled — if the originator
         // canceled after the peer applied, the late Applied event must not silently
@@ -600,7 +703,9 @@ public sealed class JobChangeRequestService(
         if (row.UjcrStatus is JobChangeRequestStatus.Applied
             or JobChangeRequestStatus.Cancelled
             or JobChangeRequestStatus.Rejected)
+        {
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        }
 
         row.UjcrStatus = JobChangeRequestStatus.Applied;
         row.UjcrAppliedAtUtc = DateTime.UtcNow;
@@ -628,10 +733,14 @@ public sealed class JobChangeRequestService(
 
             if (Enum.TryParse<JobChangeField>(row.UjcrFieldName, out var field)
                 && field != JobChangeField.PartnerAgreedRate)
+            {
                 await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
+            }
 
             if (row.UjcrTucEventId is { } eventId)
+            {
                 await CloseEventAsync(ctx, eventId, "Partner Change Applied", ct);
+            }
 
             await ctx.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
@@ -704,15 +813,24 @@ public sealed class JobChangeRequestService(
                 break;
             case JobChangeField.Quantity:
                 if (short.TryParse(requestedValue, out var qty))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, qty), ct);
+                }
+
                 break;
             case JobChangeField.Speed:
                 if (int.TryParse(requestedValue, out var speedId))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbSpeed, speedId), ct);
+                }
+
                 break;
             case JobChangeField.PartnerAgreedRate:
                 if (decimal.TryParse(requestedValue, NumberStyles.Any, CultureInfo.InvariantCulture, out var rate))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, rate), ct);
+                }
+
                 break;
 
             // Auto — customer-visible non-rated. Mirror the truncation / parsing rules used by
@@ -732,7 +850,10 @@ public sealed class JobChangeRequestService(
                 break;
             case JobChangeField.Attention:
                 if (bool.TryParse(requestedValue, out var attention))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbAttention, attention), ct);
+                }
+
                 break;
             case JobChangeField.FromContactName:
                 await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, Truncate(requestedValue, 100)), ct);
@@ -754,7 +875,10 @@ public sealed class JobChangeRequestService(
                 break;
             case JobChangeField.TrackingMethod:
                 if (int.TryParse(requestedValue, out var trackingMethod))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMethod, trackingMethod), ct);
+                }
+
                 break;
             case JobChangeField.Barcode:
                 await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Barcode, Truncate(requestedValue, 20)), ct);
@@ -774,45 +898,72 @@ public sealed class JobChangeRequestService(
             case JobChangeField.Date:
                 if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeLocal, out var date))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbDate, date.DateTime), ct);
+                }
+
                 break;
             case JobChangeField.Time:
                 if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeLocal, out var time))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbTime, time.DateTime), ct);
+                }
+
                 break;
             case JobChangeField.PuTime:
                 if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeLocal, out var puTime))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickUpTime, puTime.DateTime), ct);
+                }
+
                 break;
             case JobChangeField.DeliverBy:
                 if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeLocal, out var deliverBy))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverByTime, deliverBy.DateTime), ct);
+                }
+
                 break;
             case JobChangeField.BookedTime:
                 if (DateTimeOffset.TryParse(requestedValue, CultureInfo.InvariantCulture,
                         DateTimeStyles.AssumeLocal, out var booked))
+                {
                     await q.ExecuteUpdateAsync(s => s
                         .SetProperty(j => j.UcjbDate, booked.DateTime)
                         .SetProperty(j => j.UcjbTime, booked.DateTime), ct);
+                }
+
                 break;
             case JobChangeField.AcceptedJobTypeID:
                 if (short.TryParse(requestedValue, out var acceptedJobType))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.AcceptedJobTypeId, acceptedJobType), ct);
+                }
+
                 break;
             case JobChangeField.Direct:
                 if (bool.TryParse(requestedValue, out var direct))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Direct, direct), ct);
+                }
+
                 break;
             case JobChangeField.DGClass:
                 if (int.TryParse(requestedValue, out var dgClass))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgclass, dgClass), ct);
+                }
+
                 break;
             case JobChangeField.DGDocumentation:
                 if (bool.TryParse(requestedValue, out var dgDoc))
+                {
                     await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.Dgdocument, dgDoc), ct);
+                }
+
                 break;
 
             // Compound fields: RequestedValue is a JSON-encoded payload. We deserialise
@@ -838,24 +989,46 @@ public sealed class JobChangeRequestService(
 
     private async Task ApplyPackagesAsync(int jobId, string? requestedValue)
     {
-        if (string.IsNullOrWhiteSpace(requestedValue)) return;
+        if (string.IsNullOrWhiteSpace(requestedValue))
+        {
+            return;
+        }
+
         var payload = JsonSerializer.Deserialize<UpdateJobPackagesPayload>(requestedValue, CompoundPayloadJsonOptions);
-        if (payload?.Parcels is null) return;
+        if (payload?.Parcels is null)
+        {
+            return;
+        }
+
         await jobCommandRepository.UpdatePackagesForJobAsync(jobId, payload.Parcels);
         if (payload.Weight is > 0)
+        {
             await jobCommandRepository.UpdateJobWeightAsync(jobId, payload.Weight.Value);
+        }
     }
 
     private async Task ApplyAddressAsync(int jobId, string? requestedValue, bool isDelivery)
     {
-        if (string.IsNullOrWhiteSpace(requestedValue)) return;
+        if (string.IsNullOrWhiteSpace(requestedValue))
+        {
+            return;
+        }
+
         var address = JsonSerializer.Deserialize<AddressViewModel>(requestedValue, CompoundPayloadJsonOptions);
-        if (address is null) return;
+        if (address is null)
+        {
+            return;
+        }
+
         var request = new UpdateAddressRequest { JobId = jobId, Address = address };
         if (isDelivery)
+        {
             await jobCommandRepository.UpdateDeliveryAddressAsync(request);
+        }
         else
+        {
             await jobCommandRepository.UpdatePickupAddressAsync(request);
+        }
     }
 
     // Wire payload for JobChangeField.Packages. Mirrors UpdateJobPackagesRequest minus
@@ -874,7 +1047,10 @@ public sealed class JobChangeRequestService(
     private static async Task AppendNoteAsync(DespatchContext ctx, int jobId, string label,
         string? requestedValue, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(requestedValue)) return;
+        if (string.IsNullOrWhiteSpace(requestedValue))
+        {
+            return;
+        }
 
         var existing = await ctx.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -940,9 +1116,15 @@ public sealed class JobChangeRequestService(
                 .Where(p => p.Id == pairingId)
                 .FirstOrDefaultAsync(ct);
             if (explicitMatch is null)
+            {
                 return (null, $"Partner pairing {pairingId} not found");
+            }
+
             if (explicitMatch.Status != "Active")
+            {
                 return (null, $"Partner pairing {pairingId} is not active");
+            }
+
             return (explicitMatch, null);
         }
 
@@ -1036,7 +1218,11 @@ public sealed class JobChangeRequestService(
         string? reason)
     {
         var notes = $"{fieldName}: '{currentValue ?? "(empty)"}' → '{requestedValue ?? "(empty)"}'";
-        if (!string.IsNullOrWhiteSpace(reason)) notes += $". {reason}";
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            notes += $". {reason}";
+        }
+
         return notes.Length > 1000 ? notes[..1000] : notes;
     }
 

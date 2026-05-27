@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useJobActions Hook Tests — Guided POD Collection (markJobAsDone) Flow
  */

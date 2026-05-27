@@ -78,9 +78,13 @@ public class CourierRepository(
                 .TagWith("TruckCourierStatus - Step 1: Courier Data")
                 .FirstOrDefaultAsync();
 
-            if (courierData == null) return null;
+            if (courierData == null)
+            {
+                return null;
+            }
 
             if (courierData.UccrVehicle != truckVehicleName)
+            {
                 return new TruckCourierStatusViewModel
                 {
                     CourierId = courierData.UccrId,
@@ -94,6 +98,7 @@ public class CourierRepository(
                     AvailablePallets = null,
                     AvailablePalletCapacity = null
                 };
+            }
 
             var jobItemsAggregate = await Context.TucJobs
                 .Where(j => j.UcjbCourierId == courierId &&
@@ -251,11 +256,13 @@ public class CourierRepository(
 
             // Filter for DG-certified couriers if dgOnly is true
             if (dgOnly)
+            {
                 query = query.Where(c =>
                     c.UccrDangerousGoods == 1
                     && c.DglicenseExpiry != null
                     && c.DglicenseExpiry >= now.AddDays(-1)
                 );
+            }
 
             // Filter for logged-in couriers if loggedInOnly is true
             if (loggedInOnly)
@@ -334,7 +341,10 @@ public class CourierRepository(
         DateTimeOffset? endDate = null,
         CancellationToken cancellationToken = default)
     {
-        if (despatchViewIds.Count == 0) return new ClearListViewModel();
+        if (despatchViewIds.Count == 0)
+        {
+            return new ClearListViewModel();
+        }
 
         try
         {
@@ -354,7 +364,10 @@ public class CourierRepository(
             await Task.WhenAll(clearListsTask, courierDataTask);
 
             var clearLists = clearListsTask.Result;
-            if (clearLists.Count == 0) return new ClearListViewModel();
+            if (clearLists.Count == 0)
+            {
+                return new ClearListViewModel();
+            }
 
             var allCourierData = courierDataTask.Result;
             var clearListAreaIds = clearLists.Select(cl => cl.ClearListAreaId).ToList();
@@ -401,7 +414,11 @@ public class CourierRepository(
             var displayOrderDict = displayOrders.ToDictionary(d => d.CourierId);
             foreach (var courier in allCourierData)
             {
-                if (!displayOrderDict.TryGetValue(courier.UccrId, out var order)) continue;
+                if (!displayOrderDict.TryGetValue(courier.UccrId, out var order))
+                {
+                    continue;
+                }
+
                 courier.DisplayOrder = order.Status;
                 courier.OrderTime = order.OrderTime;
             }
@@ -423,7 +440,9 @@ public class CourierRepository(
 
                 // If a courier has no jobs in the filtered range, move them to the "no jobs" section (3/purple)
                 if (courier.JobCount == 0 && courier.DisplayOrder is 1 or 5)
+                {
                     courier.DisplayOrder = 3;
+                }
             }
 
             var jobsByCourier = allJobs
@@ -526,7 +545,9 @@ public class CourierRepository(
                         if (polygonChannel.MatchingId == null ||
                             !couriersByPolygon.TryGetValue(polygonChannel.MatchingId.Value,
                                 out var couriersWithPolygon))
+                        {
                             continue;
+                        }
 
                         // Filter to only couriers whose channel matches the area's channel
                         var matchingCouriers = couriersWithPolygon
@@ -590,7 +611,9 @@ public class CourierRepository(
                     assignedAreas.Add(area.Name);
 
                 if (columnAreas.Count != 0)
+                {
                     columns.Add(new ClearListColumn { Areas = columnAreas });
+                }
             }
 
             var unassignedAreas = areas
@@ -599,11 +622,13 @@ public class CourierRepository(
                 .ToList();
 
             if (unassignedAreas.Count == 0)
+            {
                 return new ClearListViewModel
                 {
                     Areas = areas,
                     Columns = columns
                 };
+            }
 
             if (columns.Count != 0)
             {
@@ -727,7 +752,9 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Type))
         {
@@ -874,7 +901,10 @@ public class CourierRepository(
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
             var dayValue = GetDayOfWeekAsInt(request.Day);
-            if (dayValue != 0) query = query.Where(c => c.WeekDay == dayValue);
+            if (dayValue != 0)
+            {
+                query = query.Where(c => c.WeekDay == dayValue);
+            }
         }
 
         var totalActiveDrivers = await query
@@ -983,7 +1013,9 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
@@ -998,6 +1030,7 @@ public class CourierRepository(
         var totalCount = await query.CountAsync();
 
         if (totalCount == 0)
+        {
             return new TodayActiveDriversPaginatedResponse
             {
                 Items = new List<TodayActiveDriversViewModel>(),
@@ -1008,6 +1041,7 @@ public class CourierRepository(
                 TotalDriversActiveToday = 0,
                 AverageSessionTime = 0.0
             };
+        }
 
         // Compute aggregates in SQL instead of materializing all rows
         var totalActiveDrivers = await query.CountAsync(c => c.CourierLogInOut.LogOutTime == null);
@@ -1061,6 +1095,7 @@ public class CourierRepository(
             .ToListAsync();
 
         if (couriers.Count == 0)
+        {
             return new TodayActiveDriversPaginatedResponse
             {
                 Items = new List<TodayActiveDriversViewModel>(),
@@ -1071,6 +1106,7 @@ public class CourierRepository(
                 TotalDriversActiveToday = totalActiveDrivers,
                 AverageSessionTime = averageSessionTime
             };
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -1204,6 +1240,7 @@ public class CourierRepository(
 
         // Early return if pagination beyond data
         if (couriers.Count == 0)
+        {
             return new CourierDailyEarningsPaginatedResponse
             {
                 Items = new List<CourierDailyEarningsViewModel>(),
@@ -1215,6 +1252,7 @@ public class CourierRepository(
                 TotalActiveDrivers = totalCount,
                 TotalDeliveriesToday = totalDeliveriesToday
             };
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -1408,8 +1446,15 @@ public class CourierRepository(
     {
         try
         {
-            if (!request.StartTime.HasValue) throw new ArgumentNullException(nameof(request), "StartTime is required");
-            if (!request.EndTime.HasValue) throw new ArgumentNullException(nameof(request), "EndTime is required");
+            if (!request.StartTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "StartTime is required");
+            }
+
+            if (!request.EndTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "EndTime is required");
+            }
 
             // Delete the original schedule group in a single query
             await Context.TblAfterhoursCouriers
@@ -1445,8 +1490,15 @@ public class CourierRepository(
     {
         try
         {
-            if (!request.StartTime.HasValue) throw new ArgumentNullException(nameof(request), "StartTime is required");
-            if (!request.EndTime.HasValue) throw new ArgumentNullException(nameof(request), "EndTime is required");
+            if (!request.StartTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "StartTime is required");
+            }
+
+            if (!request.EndTime.HasValue)
+            {
+                throw new ArgumentNullException(nameof(request), "EndTime is required");
+            }
 
             // Add records for each day in batch
             var schedules = request.Days.Select(GetDayOfWeekAsInt).Select(dayOfWeek => new TblAfterhoursCourier
@@ -1533,7 +1585,10 @@ public class CourierRepository(
             .TagWith("GetDriverWorkOverview - Step 1: Active Drivers")
             .ToListAsync();
 
-        if (drivers.Count == 0) return [];
+        if (drivers.Count == 0)
+        {
+            return [];
+        }
 
         var driverIds = drivers.Select(d => d.UccrId).ToList();
 
@@ -1651,7 +1706,10 @@ public class CourierRepository(
             })
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (courier == null) return null;
+        if (courier == null)
+        {
+            return null;
+        }
 
         // Get polygon name and suburbs
         string polygonName = null;
@@ -1718,7 +1776,7 @@ public class CourierRepository(
             GpsLatitude = courier.GpsLatitude,
             GpsLongitude = courier.GpsLongitude,
             GpsTimestamp = courier.GpsCreated,
-            GpsAgeMinutes = gpsAge.HasValue ? Math.Round(gpsAge.Value, 1) : null,
+            GpsAgeMinutes = gpsAge.HasValue ? Math.Round(gpsAge.Value, 1, MidpointRounding.AwayFromZero) : null,
             AssignedClearListAreaId = courier.AssignedAreaId,
             AssignedClearListAreaName = courier.AssignedAreaName,
             AssignedStatus = courier.AssignedStatus,
@@ -1772,7 +1830,10 @@ public class CourierRepository(
                 .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
                 .ToListAsync(cancellationToken);
 
-            if (courierData.Count == 0) return [];
+            if (courierData.Count == 0)
+            {
+                return [];
+            }
 
             var courierIds = courierData.Select(c => c.UccrId).ToList();
 
@@ -1868,7 +1929,10 @@ public class CourierRepository(
                 .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
                 .ToListAsync(cancellationToken);
 
-            if (courierData.Count == 0) return [];
+            if (courierData.Count == 0)
+            {
+                return [];
+            }
 
             var courierIds = courierData.Select(c => c.UccrId).ToList();
 
@@ -1937,7 +2001,10 @@ public class CourierRepository(
         var today = clock.TenantToday;
         var results = await Context.GetActiveCouriersAsync(today);
 
-        if (!includeJobCount || results.Count == 0) return results;
+        if (!includeJobCount || results.Count == 0)
+        {
+            return results;
+        }
 
         var courierIds = results.Select(c => c.CourierId).ToList();
 
@@ -1986,24 +2053,32 @@ public class CourierRepository(
                         if (isUsTenant)
                         {
                             if (job.DeliveryLatitude.HasValue && job.DeliveryLongitude.HasValue)
+                            {
                                 coordinateLookup.TryGetValue(
                                     (job.DeliveryLatitude.Value, job.DeliveryLongitude.Value),
                                     out areaOptions);
+                            }
                         }
                         else
                         {
                             if (job.ToSuburbId.HasValue)
+                            {
                                 suburbLookup.TryGetValue(job.ToSuburbId.Value, out areaOptions);
+                            }
                         }
 
                         if (areaOptions == null)
+                        {
                             return "O";
+                        }
 
                         var matchingSameChannel = areaOptions
                             .FirstOrDefault(sca => sca.ChannelId == courier.UccrChannelId);
 
                         if (matchingSameChannel != null)
+                        {
                             return matchingSameChannel.Code;
+                        }
 
                         var matchingDifferentChannel = areaOptions
                             .FirstOrDefault(sca => sca.ChannelId != courier.UccrChannelId);
@@ -2023,12 +2098,26 @@ public class CourierRepository(
 
             // Build courier code with indicators
             var codeBuilder = courier.Code;
-            if (courier.SendJobsViaSms) codeBuilder += "#";
+            if (courier.SendJobsViaSms)
+            {
+                codeBuilder += "#";
+            }
+
             if (courier.GpsCreated.HasValue &&
                 (currentDate - courier.GpsCreated.Value).TotalMinutes > 3)
+            {
                 codeBuilder += "*";
-            if (!courier.AutoDespatch) codeBuilder += "^";
-            if (courier.UccrVehicle == "Truck") codeBuilder += "T";
+            }
+
+            if (!courier.AutoDespatch)
+            {
+                codeBuilder += "^";
+            }
+
+            if (courier.UccrVehicle == "Truck")
+            {
+                codeBuilder += "T";
+            }
 
             clearListResults.Add(new ClearListResult
             {
@@ -2220,7 +2309,9 @@ public class CourierRepository(
         CancellationToken cancellationToken = default)
     {
         if (allSuburbIds.Count == 0)
+        {
             return [];
+        }
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var suburbClearListAreas = await context.TblPolygonSuburbs
@@ -2259,7 +2350,9 @@ public class CourierRepository(
             CancellationToken cancellationToken = default)
     {
         if (coordinates.Count == 0)
+        {
             return [];
+        }
 
         await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
         var latitudes = coordinates.Select(c => c.lat).Distinct().ToList();
@@ -2305,7 +2398,9 @@ public class CourierRepository(
         bool hasAreaFilters, CancellationToken cancellationToken = default)
     {
         if (!hasAreaFilters)
+        {
             return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        }
 
         const string cacheKey = "ClearList:AreaRemainingCounts";
 
@@ -2333,7 +2428,10 @@ public class CourierRepository(
         int displayOrder
     )
     {
-        if (data == null) return [];
+        if (data == null)
+        {
+            return [];
+        }
 
         return data
             .Where(c => c.DisplayOrder == displayOrder)
@@ -2383,15 +2481,27 @@ public class CourierRepository(
 
     private static string GetComplianceStatus(DateTime now, DateTime? expiryDate)
     {
-        if (!expiryDate.HasValue) return "Not Set";
-        if (now >= expiryDate.Value) return "Expired";
+        if (!expiryDate.HasValue)
+        {
+            return "Not Set";
+        }
+
+        if (now >= expiryDate.Value)
+        {
+            return "Expired";
+        }
+
         var daysUntilExpiry = (expiryDate.Value - now).TotalDays;
         return daysUntilExpiry <= 30 ? "Expiring Soon" : "Valid";
     }
 
     private static string CalculateDaysUntilExpiry(DateTime now, DateTime? expiryDate)
     {
-        if (!expiryDate.HasValue) return "N/A";
+        if (!expiryDate.HasValue)
+        {
+            return "N/A";
+        }
+
         var days = (int)Math.Ceiling((expiryDate.Value - now).TotalDays);
         return days < 0 ? $"{Math.Abs(days)} days overdue" : $"{days} days";
     }
@@ -2403,7 +2513,10 @@ public class CourierRepository(
         var endTimeOnly = endTime.TimeOfDay;
 
         // If end time is earlier than start time, assume it's the next day
-        if (endTimeOnly < startTimeOnly) endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
+        if (endTimeOnly < startTimeOnly)
+        {
+            endTimeOnly = endTimeOnly.Add(TimeSpan.FromDays(1));
+        }
 
         var duration = endTimeOnly - startTimeOnly;
         return (int)duration.TotalHours + "h " + duration.Minutes + "m";
@@ -2411,7 +2524,10 @@ public class CourierRepository(
 
     private static string CourierActiveDuration(DateTime loginTime, DateTime? logoutTime)
     {
-        if (!logoutTime.HasValue) return "Currently Active";
+        if (!logoutTime.HasValue)
+        {
+            return "Currently Active";
+        }
 
         var duration = logoutTime.Value - loginTime;
 
@@ -2438,7 +2554,9 @@ public class CourierRepository(
     private static string MapVehicleTypeToAbbreviation(string vehicleType)
     {
         if (string.IsNullOrEmpty(vehicleType))
+        {
             return null;
+        }
 
         return vehicleType switch
         {
@@ -2471,7 +2589,9 @@ public class CourierRepository(
         lines.Add($"Driver {code}'s GPS places them in polygon {gpsPolygonId} ({suburbList}).");
 
         if (gpsAge is > 3)
+        {
             lines.Add($"WARNING: GPS is {gpsAge:F0} minutes old — location may be stale.");
+        }
 
         if (allMappings.Count == 0)
         {
@@ -2495,8 +2615,10 @@ public class CourierRepository(
         }
 
         if (assignedAreaName != null)
+        {
             lines.Add(
                 $"Admin assigned this driver to \"{assignedAreaName}\" via TblClearListAreaOrder (this controls the row position, not which area column they appear in).");
+        }
 
         return string.Join(" ", lines);
     }
@@ -2521,15 +2643,19 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Status))
+        {
             query = request.Status.ToLower() switch
             {
                 "active" => query.Where(c => c.CourierLogInOut.LogOutTime == null),
                 "inactive" => query.Where(c => c.CourierLogInOut.LogOutTime != null),
                 _ => query
             };
+        }
 
         var couriers = await query
             .OrderBy(c => c.UccrName).ThenBy(c => c.UccrSurname)
@@ -2547,7 +2673,10 @@ public class CourierRepository(
             .TagWith("GetTodayActiveDriversForExport")
             .ToListAsync();
 
-        if (couriers.Count == 0) return [];
+        if (couriers.Count == 0)
+        {
+            return [];
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 
@@ -2593,7 +2722,9 @@ public class CourierRepository(
         }
 
         if (request.Fleet != 0)
+        {
             query = query.Where(c => c.CourierFleetId == request.Fleet);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.Type))
         {
@@ -2679,7 +2810,10 @@ public class CourierRepository(
             && !request.Day.Equals("all", StringComparison.CurrentCultureIgnoreCase))
         {
             var dayValue = GetDayOfWeekAsInt(request.Day);
-            if (dayValue != 0) query = query.Where(c => c.WeekDay == dayValue);
+            if (dayValue != 0)
+            {
+                query = query.Where(c => c.WeekDay == dayValue);
+            }
         }
 
         var groupedData = await query
@@ -2777,7 +2911,10 @@ public class CourierRepository(
             .TagWith("GetCourierDailyEarningsForExport")
             .ToListAsync();
 
-        if (couriers.Count == 0) return [];
+        if (couriers.Count == 0)
+        {
+            return [];
+        }
 
         var courierIds = couriers.Select(c => c.UccrId).ToList();
 

@@ -30,11 +30,15 @@ public sealed class ClearListEnvelopeService(
         bool includeCouriers = false)
     {
         if (clearListAreaId <= 0)
+        {
             throw new ArgumentException("Invalid clearListAreaId", nameof(clearListAreaId));
+        }
 
         if (!Enum.IsDefined(country))
+        {
             throw new ArgumentException("Invalid country", nameof(country));
-        
+        }
+
         return country switch
         {
             Country.Nz => await GetClearListEnvelopeNzAsync(clearListAreaId, includeCouriers),
@@ -53,8 +57,10 @@ public sealed class ClearListEnvelopeService(
         var query = GetClearListAreaBoundariesQuery(clearListAreaId);
 
         if (!includeCouriers)
+        {
             return await CalculateEnvelopeAsync(query);
-            
+        }
+
         var courierLocationsQuery = GetCourierLocationsQueryUs(clearListAreaId);
         var unassignedJobLocationsQuery = GetUnassignedJobLocationsQueryUs(clearListAreaId);
 
@@ -75,8 +81,10 @@ public sealed class ClearListEnvelopeService(
         var query = GetAreaPolygonsQueryNz(clearListAreaId);
 
         if (!includeCouriers)
+        {
             return await CalculateEnvelopeAsync(query);
-            
+        }
+
         var courierLocationsQuery = GetCourierLocationsQueryNz(clearListAreaId);
         var unassignedJobsQuery = GetUnassignedJobLocationsQueryNz(clearListAreaId);
 

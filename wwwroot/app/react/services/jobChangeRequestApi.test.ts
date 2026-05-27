@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Job Change Request API Service Tests
  */

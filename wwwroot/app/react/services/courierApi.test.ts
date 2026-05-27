@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Courier API Service Tests
  */

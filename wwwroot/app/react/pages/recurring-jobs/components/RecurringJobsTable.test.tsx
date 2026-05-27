@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * RecurringJobsTable Component Tests
  * Optimised: read-only tests consolidated to reduce render count.

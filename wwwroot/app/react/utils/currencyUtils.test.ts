@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import {formatCurrency, formatCurrencyOrDash} from './currencyUtils';
 
 beforeEach(() => {

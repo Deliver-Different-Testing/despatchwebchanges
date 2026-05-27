@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * JobChangeRequestDialog Tests
  *
@@ -83,7 +82,8 @@ describe('JobChangeRequestDialog', () => {
         });
         renderDialog();
         // Default field is Notes — the value input is "New notes".
-        await user.type(screen.getByLabelText(/New notes/i), 'Please leave at reception');
+        await user.click(screen.getByLabelText(/New notes/i));
+        await user.paste('Please leave at reception');
         await user.click(screen.getByRole('button', {name: /Apply/}));
         await waitFor(() => {
             expect(mockCreate).toHaveBeenCalledWith({
@@ -118,9 +118,8 @@ describe('JobChangeRequestDialog', () => {
         });
         renderDialog({preselectedFieldName: 'PartnerAgreedRate'});
         const input = screen.getByRole('spinbutton', {name: /Agreed rate/i});
-        // userEvent.type on a number input in jsdom doesn't handle the decimal
-        // point reliably — use a whole number; the field accepts both at runtime.
-        await user.type(input, '185');
+        await user.click(input);
+        await user.paste('185');
         await user.click(screen.getByRole('button', {name: /Submit/}));
         await waitFor(() => {
             expect(mockCreate).toHaveBeenCalledWith({
@@ -151,10 +150,14 @@ describe('JobChangeRequestDialog', () => {
             });
             renderDialog({preselectedFieldName: 'PickupAddress'});
 
-            await user.type(screen.getByLabelText(/Address line 1/i), '123 Cuba St');
-            await user.type(screen.getByLabelText(/Suburb/i), 'Te Aro');
-            await user.type(screen.getByLabelText(/City/i), 'Wellington');
-            await user.type(screen.getByLabelText(/Postcode/i), '6011');
+            await user.click(screen.getByLabelText(/Address line 1/i));
+            await user.paste('123 Cuba St');
+            await user.click(screen.getByLabelText(/Suburb/i));
+            await user.paste('Te Aro');
+            await user.click(screen.getByLabelText(/City/i));
+            await user.paste('Wellington');
+            await user.click(screen.getByLabelText(/Postcode/i));
+            await user.paste('6011');
 
             await user.click(screen.getByRole('button', {name: /Submit/}));
 
@@ -286,7 +289,8 @@ describe('JobChangeRequestDialog', () => {
             });
 
             const reasonField = screen.getByLabelText(/Reason/);
-            await user.type(reasonField, 'Customer requested a rate review after holiday surcharge');
+            await user.click(reasonField);
+            await user.paste('Customer requested a rate review after holiday surcharge');
 
             await user.click(screen.getByRole('button', {name: /Submit/}));
 
@@ -359,7 +363,8 @@ describe('JobChangeRequestDialog', () => {
             message: 'A pending request for Notes already exists',
         });
         renderDialog();
-        await user.type(screen.getByLabelText(/New notes/i), 'x');
+        await user.click(screen.getByLabelText(/New notes/i));
+        await user.paste('x');
         await user.click(screen.getByRole('button', {name: /Apply/}));
         await waitFor(() => {
             expect(screen.getByText(/already exists/)).toBeInTheDocument();

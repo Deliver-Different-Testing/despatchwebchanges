@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * SendToPartnerDialog Tests
  */
@@ -29,6 +28,24 @@ const noRateResponse: PartnerRateForJobResponse = {
     rateCardRate: null,
     liveQuotes: [],
     source: 'none',
+};
+
+const percentageResponse: PartnerRateForJobResponse = {
+    rateCardRate: null,
+    liveQuotes: [],
+    source: 'percentage',
+    percentageOfClientCharge: 60,
+    derivedRate: 60.00,  // UcjbAmount 100 × 60% = 60
+};
+
+const costPlusResponse: PartnerRateForJobResponse = {
+    rateCardRate: null,
+    liveQuotes: [
+        {serviceCode: 'STD', serviceName: 'Standard', totalCharge: 80.00, currency: 'NZD', transitDays: 2},
+    ],
+    source: 'cost_plus',
+    marginPercent: 25,
+    derivedRevenue: 100.00,  // 80 × (1 + 25%) = 100
 };
 
 function renderDialog(overrides: Partial<SendToPartnerDialogProps> = {}) {
@@ -124,7 +141,7 @@ describe('SendToPartnerDialog', () => {
 
         const input = screen.getByLabelText(/Agreed Rate/);
         await user.clear(input);
-        await user.type(input, '120.50');
+        await user.paste('120.50');
 
         await user.click(screen.getByRole('button', {name: /Confirm & Send/}));
 
@@ -142,7 +159,8 @@ describe('SendToPartnerDialog', () => {
         });
 
         const input = screen.getByLabelText(/Agreed Rate/);
-        await user.type(input, '0');
+        await user.click(input);
+        await user.paste('0');
 
         const confirmButton = screen.getByRole('button', {name: /Confirm & Send/});
         expect(confirmButton).toBeDisabled();
@@ -164,6 +182,51 @@ describe('SendToPartnerDialog', () => {
         await user.click(screen.getByRole('button', {name: /Cancel/}));
 
         expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it('shows the percentage hint and pre-fills with the derived rate (Mode 2)', async () => {
+        renderDialog({
+            fetchRate: jest.fn().mockResolvedValue(percentageResponse),
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Percentage/)).toBeInTheDocument();
+            expect(screen.getByText(/60% of the job amount/)).toBeInTheDocument();
+        });
+
+        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        expect(input.value).toBe('60.00');
+        expect(screen.getByText(/substitutes this rate at dispatch/i)).toBeInTheDocument();
+    });
+
+    it('shows the cost-plus hint and pre-fills with the partner quote (Mode 3)', async () => {
+        renderDialog({
+            fetchRate: jest.fn().mockResolvedValue(costPlusResponse),
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/Cost Plus/)).toBeInTheDocument();
+            expect(screen.getByText(/margin 25%/)).toBeInTheDocument();
+        });
+
+        const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
+        expect(input.value).toBe('80.00');
+        expect(screen.getByText(/rewrite the job amount/i)).toBeInTheDocument();
+    });
+
+    it('renders the server message verbatim when source is none', async () => {
+        renderDialog({
+            fetchRate: jest.fn().mockResolvedValue({
+                rateCardRate: null,
+                liveQuotes: [],
+                source: 'none',
+                message: 'No active service mapping for this pairing and job type (JobTypeId=42)',
+            } satisfies PartnerRateForJobResponse),
+        });
+
+        await waitFor(() => {
+            expect(screen.getByText(/No active service mapping/)).toBeInTheDocument();
+        });
     });
 
     it('shows the server error message below the rate input without flagging the rate field', async () => {

@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Config API Service Tests
  */

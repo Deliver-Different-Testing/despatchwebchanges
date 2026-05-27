@@ -52,7 +52,11 @@ public class CourierRepositoryLoggedInFilterTests
         }
 
         // Filter for logged-in couriers if loggedInOnly is true
-        if (!loggedInOnly) return query.OrderBy(c => c.Code).ToList();
+        if (!loggedInOnly)
+        {
+            return query.OrderBy(c => c.Code).ToList();
+        }
+
         var today = currentTenantTime.Date;
         query = query.Where(c =>
             c.LogInOutRecord != null &&

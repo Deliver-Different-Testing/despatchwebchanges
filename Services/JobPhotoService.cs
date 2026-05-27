@@ -30,8 +30,11 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Delivery);
     
         // Add defensive check
-        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
-        
+        if (s3Objects != null && s3Objects.Count != 0)
+        {
+            return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
+        }
+
         // No data
         Log.Debug("No delivery photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
@@ -52,8 +55,11 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         var s3Objects = await SearchFilesByPatternAsync(bucketName, key, year, month, JobPhotoType.Pickup);
     
         // Add defensive check
-        if (s3Objects != null && s3Objects.Count != 0) return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
-        
+        if (s3Objects != null && s3Objects.Count != 0)
+        {
+            return await GetPhotoInfoFromS3ObjectsAsync(s3Objects, bucketName);
+        }
+
         // No data
         Log.Debug("No pickup photos found for job {JobId} in {Year}/{Month:D2}", jobId, year, month);
         return [];
@@ -76,7 +82,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         string podDescription = null)
     {
         if (file == null || file.Length == 0)
+        {
             return new AwsUploadResult { Success = false, ErrorMessage = "No file was uploaded" };
+        }
 
         try
         {
@@ -114,7 +122,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
             // Add metadata properly using the metadata dictionary
             if (isPod && !string.IsNullOrEmpty(podDescription))
+            {
                 putRequest.Metadata.Add("pod-description", podDescription);
+            }
 
             Log.Debug("Uploading {Type} file for job {JobId} to S3 path: {Key}",
                 isPod ? $"{photoType} POD photo" : $"{photoType} signature", jobId, key);
@@ -278,7 +288,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
 
         // Validate file size (10MB max)
         if (file.Length > 10 * 1024 * 1024)
+        {
             return new AwsUploadResult { Success = false, ErrorMessage = "File size exceeds the limit of 10MB." };
+        }
 
         try
         {
@@ -337,7 +349,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
     public async Task<AwsFileDownloadResult> DownloadFileAsync(string key)
     {
         if (string.IsNullOrEmpty(key))
+        {
             return new AwsFileDownloadResult { Success = false, ErrorMessage = "File key is required" };
+        }
 
         try
         {
@@ -347,7 +361,9 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             using var response = await s3Client.GetObjectAsync(request);
 
             if (response.HttpStatusCode != HttpStatusCode.OK)
+            {
                 return new AwsFileDownloadResult { Success = false, ErrorMessage = $"File {key} not found." };
+            }
 
             var originalFileName = response.Metadata["FileName"];
             var contentType = response.Headers.ContentType;
@@ -439,8 +455,11 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                 response = await s3Client.ListObjectsV2Async(request);
                 
                 var objects = response?.S3Objects;
-                if (objects is { Count: > 0 }) allResults.AddRange(objects);
-            
+                if (objects is { Count: > 0 })
+                {
+                    allResults.AddRange(objects);
+                }
+
                 request.ContinuationToken = response?.NextContinuationToken;
             } while (response?.IsTruncated ?? false);
         }
@@ -497,9 +516,15 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
                     var response = await s3Client.ListObjectsV2Async(request);
                 
                     var objects = response?.S3Objects;
-                    if (objects is { Count: > 0 }) allResults.AddRange(objects);
+                    if (objects is { Count: > 0 })
+                    {
+                        allResults.AddRange(objects);
+                    }
 
-                    if (allResults.Count > 0) break;
+                    if (allResults.Count > 0)
+                    {
+                        break;
+                    }
                 }
             }
         }
@@ -541,7 +566,10 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         
             // Fix: Add defensive null checking
             var objects = response?.S3Objects;
-            if (objects is { Count: > 0 }) allResults.AddRange(objects);
+            if (objects is { Count: > 0 })
+            {
+                allResults.AddRange(objects);
+            }
         }
         catch (Exception e)
         {

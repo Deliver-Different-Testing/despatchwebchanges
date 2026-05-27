@@ -19,26 +19,38 @@ public static partial class AiInputGuard
     public static string Validate(AiChatRequest request)
     {
         if (request?.Messages == null || request.Messages.Count == 0)
+        {
             return "At least one message is required.";
+        }
 
         if (request.Messages.Count > MaxConversationMessages)
+        {
             return $"Conversation exceeds the maximum of {MaxConversationMessages} messages. Please start a new conversation.";
+        }
 
         // The last message must be from the user
         var lastMessage = request.Messages[^1];
         if (lastMessage.Role != "user")
+        {
             return "The last message must be from the user.";
+        }
 
         foreach (var message in request.Messages)
         {
             if (string.IsNullOrWhiteSpace(message.Role) || !AllowedRoles.Contains(message.Role))
+            {
                 return $"Invalid message role: '{message.Role}'. Allowed roles: user, assistant.";
+            }
 
             if (string.IsNullOrWhiteSpace(message.Content))
+            {
                 return "Message content cannot be empty.";
+            }
 
             if (message.Content.Length > MaxMessageLength)
+            {
                 return $"Message exceeds the maximum length of {MaxMessageLength} characters.";
+            }
         }
 
         // Check the user's latest message for injection attempts
@@ -55,7 +67,9 @@ public static partial class AiInputGuard
 
         // Detect attempts to override system instructions
         if (SystemOverridePattern().IsMatch(lower))
+        {
             return true;
+        }
 
         // Detect attempts to reveal system prompt
         return RevealPromptPattern().IsMatch(lower) ||

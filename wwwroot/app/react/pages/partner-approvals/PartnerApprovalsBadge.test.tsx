@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * PartnerApprovalsBadge Tests
  */
@@ -64,21 +63,21 @@ describe('PartnerApprovalsBadge', () => {
             makeItem(3, 3),
         ]);
         renderWithProviders(<PartnerApprovalsBadge/>);
-        await waitFor(() => expect(screen.getByText('3')).toBeInTheDocument());
+        expect(await screen.findByText('3')).toBeInTheDocument();
     });
 
     it('caps the displayed count at 99+', async () => {
         const many = Array.from({length: 120}, (_, i) => makeItem(1, i + 1));
         mockApi.pendingForApproval.mockResolvedValueOnce(many);
         renderWithProviders(<PartnerApprovalsBadge/>);
-        await waitFor(() => expect(screen.getByText(/99\+/)).toBeInTheDocument());
+        expect(await screen.findByText(/99\+/)).toBeInTheDocument();
     });
 
     it('clicking the badge opens the drawer with the inbox', async () => {
         const user = userEvent.setup();
         mockApi.pendingForApproval.mockResolvedValue([makeItem(1, 1)]);
         renderWithProviders(<PartnerApprovalsBadge/>);
-        await waitFor(() => expect(screen.getByText('1')).toBeInTheDocument());
+        expect(await screen.findByText('1')).toBeInTheDocument();
 
         await user.click(screen.getByRole('button', {name: /Open partner approvals/i}));
 

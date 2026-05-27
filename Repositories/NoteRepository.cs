@@ -71,7 +71,9 @@ public class NoteRepository(
 
         var result = activeNote ?? archivedNote;
         if (result != null)
+        {
             UpdateNoteDate(result, tenantTimeZone);
+        }
 
         return result;
     }
@@ -95,7 +97,9 @@ public class NoteRepository(
             .FirstOrDefaultAsync();
 
         if (result != null)
+        {
             UpdateNoteDate(result, tenantTimeZone);
+        }
 
         return result;
     }
@@ -103,28 +107,41 @@ public class NoteRepository(
     public async Task SaveNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
+        if (!viewModel.JobId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(viewModel));
+        }
 
         var staffId = infoService.GetStaffId();
         var currentTime = clock.TenantNow;
 
         if (viewModel.NoteId == 0)
+        {
             await CreateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
+        }
         else
+        {
             await UpdateNoteAsync(viewModel, staffId, currentTime, cancellationToken);
+        }
     }
 
     public async Task SaveBulkNoteAsync(TucNoteViewModel viewModel, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(viewModel);
-        if (!viewModel.BulkJobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
+        if (!viewModel.BulkJobId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(viewModel));
+        }
 
         ArgumentException.ThrowIfNullOrWhiteSpace(viewModel.NoteText);
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.TucNoteTypes.AnyAsync(nt => nt.NoteTypeId == viewModel.NoteTypeId,
             cancellationToken: cancellationToken);
-        if (!noteTypeExists) viewModel.NoteTypeId = (int)NoteType.InternalNote;
+        if (!noteTypeExists)
+        {
+            viewModel.NoteTypeId = (int)NoteType.InternalNote;
+        }
 
         var staffId = infoService.GetStaffId();
         var currentTime = clock.TenantNow;
@@ -252,9 +269,11 @@ public class NoteRepository(
 
         Dictionary<int, string> noteTypes = [];
         if (noteTypeIds.Count > 0)
+        {
             noteTypes = await Context.TucNoteTypes
                 .Where(nt => noteTypeIds.Contains(nt.NoteTypeId))
                 .ToDictionaryAsync(nt => nt.NoteTypeId, nt => nt.NoteTypeName);
+        }
 
         // Join note type names and convert UTC to tenant timezone
         return history.Select(h => new NoteHistoryViewModel
@@ -298,7 +317,9 @@ public class NoteRepository(
     private async Task<int> GetEffectiveJobId(int jobId, bool isArchived)
     {
         if (isArchived)
+        {
             return await Context.GetEffectiveArchiveJobIdAsync(jobId);
+        }
 
         return await Context.GetEffectiveJobIdAsync(jobId);
     }
@@ -349,7 +370,11 @@ public class NoteRepository(
         }
         else
         {
-            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
+            if (!viewModel.JobId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(viewModel));
+            }
+
             // Use the effective job ID (parent if exists) so the note is found by
             // GetActiveNotesByJobIdAsync which also resolves to the parent.
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
@@ -368,10 +393,12 @@ public class NoteRepository(
 
         // Also update UcjbNotes so the note syncs to the device (only for active jobs, not prebooks)
         if (!isPrebook && viewModel.JobId.HasValue)
+        {
             await Context.TucJobs
                 .Where(j => j.UcjbId == viewModel.JobId.Value)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(j => j.UcjbNotes, viewModel.NoteText), cancellationToken);
+        }
     }
 
     private async Task UpdateNoteAsync(TucNoteViewModel viewModel, int staffId, DateTime currentTime,
@@ -433,7 +460,10 @@ public class NoteRepository(
         }
         else
         {
-            if (!viewModel.JobId.HasValue) throw new ArgumentNullException(nameof(viewModel));
+            if (!viewModel.JobId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(viewModel));
+            }
 
             var effectiveJobId = await GetEffectiveJobId(viewModel.JobId.Value, false);
             activeNote.JobId = effectiveJobId;
@@ -546,6 +576,8 @@ public class NoteRepository(
     {
         note.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.CreatedDate, tenantTimeZone);
         if (note.UpdatedDate.HasValue)
+        {
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
+        }
     }
 }

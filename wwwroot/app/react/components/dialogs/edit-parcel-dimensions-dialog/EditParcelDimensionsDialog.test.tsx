@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 
 import React from 'react';
 import {screen, waitFor, within} from '@testing-library/react';
@@ -82,7 +81,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
 
         const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
-        await user.type(nameInput, 'Changed');
+        await user.paste('Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -96,7 +95,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
 
         const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
-        await user.type(nameInput, 'Changed');
+        await user.paste('Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -112,7 +111,7 @@ describe('EditParcelDimensionsDialog discard changes confirmation', () => {
 
         const nameInput = screen.getByPlaceholderText('Name');
         await user.clear(nameInput);
-        await user.type(nameInput, 'Changed');
+        await user.paste('Changed');
 
         await user.click(screen.getByRole('button', {name: /cancel/i}));
 
@@ -195,7 +194,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         const weightInputs = screen.getAllByPlaceholderText('—');
         const weightInput = weightInputs[weightInputs.length - 1];
         await user.clear(weightInput);
-        await user.type(weightInput, '10');
+        await user.paste('10');
 
         expect(screen.getByRole('button', {name: /save/i})).not.toBeDisabled();
         expect(screen.queryByText(/all parcels must have a weight greater than 0/i)).not.toBeInTheDocument();
@@ -208,7 +207,7 @@ describe('EditParcelDimensionsDialog weight validation', () => {
         const weightInputs = screen.getAllByPlaceholderText('—');
         const weightInput = weightInputs[weightInputs.length - 1];
         await user.clear(weightInput);
-        await user.type(weightInput, '0');
+        await user.paste('0');
 
         expect(screen.getByRole('button', {name: /save/i})).toBeDisabled();
     });

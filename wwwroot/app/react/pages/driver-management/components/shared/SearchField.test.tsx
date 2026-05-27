@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import React from 'react';
 import {fireEvent, render, screen, act} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';

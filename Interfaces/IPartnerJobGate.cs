@@ -31,6 +31,17 @@ public interface IPartnerJobGate
     /// </summary>
     Task<PartnerJobGateResult> EvaluateAsync(int jobId, JobProperty property, string? requestedValue,
         CancellationToken ct);
+
+    /// <summary>
+    /// Evaluate whether a partner-inbound job is allowed to be allocated to a courier.
+    /// When A dispatched with <c>PricingMode == "Agreed"</c>, B's operator must accept
+    /// the rate first; until then the gate blocks the allocate action.
+    /// Returns <see cref="PartnerJobGateResult.NotPartner"/> for non-partner-inbound jobs
+    /// AND for partner-inbound jobs whose pricing mode isn't gated (Mode 2/3 / legacy);
+    /// <see cref="PartnerJobGateResult.Blocked"/> with a message when acceptance is
+    /// pending or has been rejected.
+    /// </summary>
+    Task<PartnerJobGateResult> EvaluateAllocateAsync(int jobId, CancellationToken ct);
 }
 
 public abstract record PartnerJobGateResult

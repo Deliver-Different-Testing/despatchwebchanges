@@ -5,7 +5,6 @@ using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Services.JobApi;
-using DespatchWeb.Tests.Helpers;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Services.JobApi;
@@ -22,10 +21,10 @@ public class DespatchApiClientTests : IDisposable
 
     public DespatchApiClientTests()
     {
-        _originalJwtSecretKey = Environment.GetEnvironmentVariable("JWTSecretKey");
-        _originalClaimsKey = Environment.GetEnvironmentVariable("ClaimsKey");
-        _originalIssuer = Environment.GetEnvironmentVariable("Issuer");
-        _originalAudience = Environment.GetEnvironmentVariable("Audience");
+        _originalJwtSecretKey = Environment.GetEnvironmentVariable("JWTSecretKey") ?? string.Empty;
+        _originalClaimsKey = Environment.GetEnvironmentVariable("ClaimsKey") ?? string.Empty;
+        _originalIssuer = Environment.GetEnvironmentVariable("Issuer") ?? string.Empty;
+        _originalAudience = Environment.GetEnvironmentVariable("Audience") ?? string.Empty;
 
         Environment.SetEnvironmentVariable("JWTSecretKey", new string('k', 32));
         Environment.SetEnvironmentVariable("ClaimsKey", Convert.ToBase64String(new byte[32]));
@@ -54,7 +53,7 @@ public class DespatchApiClientTests : IDisposable
         Packages = [new PackageDto { Cubic = 0, Kg = 0, Units = 1 }]
     };
 
-    private static StringContent JsonBody(object payload, JsonSerializerOptions opts = null) =>
+    private static StringContent JsonBody(object payload, JsonSerializerOptions? opts = null) =>
         new(JsonSerializer.Serialize(payload, opts), Encoding.UTF8, "application/json");
 
     [Fact]

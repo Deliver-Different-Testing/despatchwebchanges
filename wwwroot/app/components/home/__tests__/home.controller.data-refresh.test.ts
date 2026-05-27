@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * HomeController — Data Loading, View Modes & UI State
  *

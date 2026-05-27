@@ -44,6 +44,7 @@ public class RecurringJobRepository(
         var totalCount = await query.CountAsync();
 
         if (totalCount == 0)
+        {
             return new PaginatedResponse<PrebookListViewModel>
             {
                 Items = [],
@@ -51,6 +52,7 @@ public class RecurringJobRepository(
                 Page = request.Page,
                 Pages = 0
             };
+        }
 
         query = ApplyRecurringJobSort(query, request.Order, request.OrderDirection, applyDefaultSort: false);
 
@@ -135,7 +137,9 @@ public class RecurringJobRepository(
             };
 
             if (!string.IsNullOrEmpty(noteText))
+            {
                 await CreateNewRecurringJobNote(jobId, noteText, false);
+            }
         }
         catch (Exception e)
         {
@@ -164,13 +168,20 @@ public class RecurringJobRepository(
     public async Task SaveRecurringJobNote(TucNoteViewModel note)
     {
         ArgumentNullException.ThrowIfNull(note);
-        if (!note.JobBookingId.HasValue) throw new ArgumentNullException(nameof(note));
+        if (!note.JobBookingId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(note));
+        }
 
         if (note.NoteId == 0)
+        {
             await CreateNewRecurringJobNote(note.JobBookingId.Value, note.NoteText, note.IsImportant,
                 (NoteType)note.NoteTypeId);
+        }
         else
+        {
             await UpdateRecurringJobNote(note.NoteId, note.NoteText, note.IsImportant, (NoteType)note.NoteTypeId);
+        }
     }
 
     public async Task UpdateBookingDeliveryAddressAsync(UpdateAddressRequest request)
@@ -188,7 +199,10 @@ public class RecurringJobRepository(
 
             // Update parent job and last child job (if exists)
             var idsToUpdate = new List<int> { request.JobId };
-            if (lastChildId.HasValue) idsToUpdate.Add(lastChildId.Value);
+            if (lastChildId.HasValue)
+            {
+                idsToUpdate.Add(lastChildId.Value);
+            }
 
             var rowsAffected = await Context.TucJobBookings
                 .Where(jb => idsToUpdate.Contains(jb.UcbkId))
@@ -205,7 +219,9 @@ public class RecurringJobRepository(
                     .SetProperty(jb => jb.DeliveryAddressLine8, address.AddressLine8));
 
             if (rowsAffected == 0)
+            {
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request));
+            }
         }
         catch (Exception ex)
         {
@@ -231,7 +247,10 @@ public class RecurringJobRepository(
 
             // Update parent job and first child job (if exists)
             var idsToUpdate = new List<int> { request.JobId };
-            if (firstChildId.HasValue) idsToUpdate.Add(firstChildId.Value);
+            if (firstChildId.HasValue)
+            {
+                idsToUpdate.Add(firstChildId.Value);
+            }
 
             var rowsAffected = await Context.TucJobBookings
                 .Where(jb => idsToUpdate.Contains(jb.UcbkId))
@@ -248,7 +267,9 @@ public class RecurringJobRepository(
                     .SetProperty(jb => jb.PickupAddressLine8, address.AddressLine8));
 
             if (rowsAffected == 0)
+            {
                 throw new ArgumentException($"Job with ID {request.JobId} not found", nameof(request));
+            }
         }
         catch (Exception ex)
         {
@@ -273,7 +294,10 @@ public class RecurringJobRepository(
             .Select(JobMappings.ToPrebookListViewModel)
             .ToListAsync();
 
-        if (items.Count == 0) return items;
+        if (items.Count == 0)
+        {
+            return items;
+        }
 
         ApplyPrebookTimezoneConversion(items);
 
@@ -668,7 +692,11 @@ public class RecurringJobRepository(
     private static List<int> BuildIdList(int parentId, int? childId)
     {
         var ids = new List<int> { parentId };
-        if (childId.HasValue) ids.Add(childId.Value);
+        if (childId.HasValue)
+        {
+            ids.Add(childId.Value);
+        }
+
         return ids;
     }
 
@@ -679,18 +707,24 @@ public class RecurringJobRepository(
         foreach (var item in items)
         {
             if (item.Booked > SqlMinDate)
+            {
                 item.Booked = TimeZoneHelper.SetDateTimeWithTimeZone(item.Booked.DateTime, tenantTimeZone);
+            }
 
             if (item.NextDueTime.HasValue && item.NextDueTime.Value > SqlMinDate)
+            {
                 item.NextDueTime =
                     TimeZoneHelper.SetDateTimeWithTimeZone(item.NextDueTime.Value.DateTime, tenantTimeZone);
+            }
         }
     }
 
     private static T ParseValue<T>(string value, JobProperty property) where T : IParsable<T>
     {
         if (T.TryParse(value, null, out var result))
+        {
             return result;
+        }
 
         throw new ArgumentException($"Invalid value '{value}' for property {property}. Expected type: {typeof(T).Name}.", nameof(value));
     }
@@ -704,7 +738,10 @@ public class RecurringJobRepository(
             .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
-        if (isUsTenant) query = query.Where(j => !j.BookingParentId.HasValue || j.BookingParentId == j.UcbkId);
+        if (isUsTenant)
+        {
+            query = query.Where(j => !j.BookingParentId.HasValue || j.BookingParentId == j.UcbkId);
+        }
 
         if (!string.IsNullOrWhiteSpace(request.SearchText))
         {
@@ -756,19 +793,27 @@ public class RecurringJobRepository(
 
         // Apply Speed filter
         if (request.SpeedId.HasValue)
+        {
             query = query.Where(j => j.UcbkSpeed == request.SpeedId.Value);
+        }
 
         // Apply Courier filter
         if (request.CourierId.HasValue)
+        {
             query = query.Where(j => j.CourierId == request.CourierId.Value);
+        }
 
         // Apply Days of Week filter (bitwise match - job must run on at least one of the selected days)
         if (request.DaysOfWeek is > 0)
+        {
             query = query.Where(j => (j.UcbkDaysInt & request.DaysOfWeek.Value) != 0);
+        }
 
         // Apply Recurring Route filter
         if (request.RouteId.HasValue)
+        {
             query = query.Where(j => j.RouteId == request.RouteId.Value);
+        }
 
         return query;
     }

@@ -39,6 +39,7 @@ import {WarningBanner} from './components/WarningBanner';
 import {RelatedJobTabs} from './components/RelatedJobTabs';
 import {JobDetailHeader} from './components/JobDetailHeader';
 import {MetricsGrid} from './components/MetricsGrid';
+import {RateAcceptanceBanner} from './components/RateAcceptanceBanner';
 import {AddressSection} from './components/AddressSection';
 import {TotalDistance} from './components/TotalDistance';
 import {FlightInformation} from './components/FlightInformation';
@@ -447,6 +448,10 @@ export function JobDetails({config}: JobDetailsProps) {
                         automatically. See the change-request panel below for pending items.
                     </Alert>
                 )}
+
+                {/* Mode 1 rate-acceptance gate. Renders nothing when the gate is open
+                    (Modes 2/3 / Accepted) or this isn't a partner-inbound job. */}
+                {job.isPartnerJob && <RateAcceptanceBanner jobId={job.id}/>}
 
                 {/* Metrics Grid */}
                 <Box sx={rootStyles.metricsWrapper}>

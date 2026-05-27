@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import {overviewApi} from './overviewApi';
 import {apiClient} from './apiClient';
 

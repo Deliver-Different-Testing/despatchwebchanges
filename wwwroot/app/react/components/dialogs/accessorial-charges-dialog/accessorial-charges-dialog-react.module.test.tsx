@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Accessorial Charges Dialog React Module Tests
  *

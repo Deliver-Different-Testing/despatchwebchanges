@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Accessorial Charges API Service Tests
  */

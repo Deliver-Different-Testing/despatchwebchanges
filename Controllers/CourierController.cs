@@ -25,7 +25,9 @@ public class CourierController(
         try
         {
             if (despatchViewIds == null || despatchViewIds.Count == 0)
+            {
                 despatchViewIds = [49];
+            }
 
             var result = await courierRepository.GetClearListsAsync(despatchViewIds, startDate, endDate);
 

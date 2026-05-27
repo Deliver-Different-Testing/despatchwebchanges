@@ -41,8 +41,10 @@ public class NationwideJobRepository(
         var hasExistingFlight = await Context.TucJobNationwides.AnyAsync(
             n => n.UcnwJobId == requestData.JobId, cancellationToken);
         if (hasExistingFlight)
+        {
             throw new InvalidOperationException(
                 $"Job {requestData.JobId} already has a flight assigned");
+        }
 
         var isUsCustomer = _infoService.IsUsTenant();
 
@@ -87,13 +89,17 @@ public class NationwideJobRepository(
 
                 var departureAirportId = requestData.FromAirportId ?? job.FromAirportId;
                 if (!departureAirportId.HasValue)
+                {
                     throw new InvalidOperationException(
                         "Departure airport ID is required but was not set on the job or request.");
+                }
 
                 var arrivalAirportId = requestData.ToAirportId ?? job.ToAirportId;
                 if (!arrivalAirportId.HasValue)
+                {
                     throw new InvalidOperationException(
                         "Arrival airport ID is required but was not set on the job or request.");
+                }
 
                 var airports = await GetAirportAddressInfosAsync(
                     [departureAirportId.Value, arrivalAirportId.Value]);
@@ -216,7 +222,10 @@ public class NationwideJobRepository(
                 : new { Latitude = j.DeliveryLatitude, Longitude = j.DeliveryLongitude })
             .FirstOrDefaultAsync();
 
-        if (jobCoords?.Latitude == null || jobCoords.Longitude == null) return [];
+        if (jobCoords?.Latitude == null || jobCoords.Longitude == null)
+        {
+            return [];
+        }
 
         var jobLatitude = jobCoords.Latitude.Value;
         var jobLongitude = jobCoords.Longitude.Value;
@@ -383,12 +392,14 @@ public class NationwideJobRepository(
         CancellationToken cancellationToken = default)
     {
         if (!isInternal && string.IsNullOrEmpty(clientIds))
+        {
             return new JobSearchResult
             {
                 Jobs = [],
                 TotalCount = 0,
                 HasMore = false
             };
+        }
 
         return await DespatchQry(
             AppPage.Domestic,
@@ -490,7 +501,9 @@ public class NationwideJobRepository(
         // First, verify the job exists
         var jobExists = await Context.TucJobs.AnyAsync(j => j.UcjbId == jobId);
         if (!jobExists)
+        {
             throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
+        }
 
         await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
@@ -549,7 +562,10 @@ public class NationwideJobRepository(
     {
         var query = Context.TucAgents.AsQueryable();
 
-        if (!string.IsNullOrWhiteSpace(searchTerm)) query = query.Where(a => a.UcagName.Contains(searchTerm));
+        if (!string.IsNullOrWhiteSpace(searchTerm))
+        {
+            query = query.Where(a => a.UcagName.Contains(searchTerm));
+        }
 
         // 3-way Assign Route picker (HANDOVER-KEVIN-2026-05-26.md):
         //   null  → all agents (existing Nationwide behaviour, untouched)
@@ -866,7 +882,9 @@ public class NationwideJobRepository(
             .FirstOrDefaultAsync();
 
         if (cargoData == null)
+        {
             return null;
+        }
 
         // Get the arrival airport timezone, default to tenant timezone if not available
         TimeZoneInfo arrivalTimeZone;
@@ -920,7 +938,9 @@ public class NationwideJobRepository(
     public async Task<bool> CanAssignAgentToJobAsync(int agentJobId)
     {
         if (Debugger.IsAttached)
+        {
             return true;
+        }
 
         var result = await Context.TucJobs
             .Where(j => j.UcjbId == agentJobId)
@@ -1230,7 +1250,11 @@ public class NationwideJobRepository(
         await Context.AddAsync(primaryFlightRecord);
 
         // Add connection flight legs if there are multiple segments
-        if (segments.Count <= 1) return primaryFlightRecord;
+        if (segments.Count <= 1)
+        {
+            return primaryFlightRecord;
+        }
+
         Log.Information("Processing {ConnectionCount} connection flights for PrimaryFlight: {PrimaryFlightNumber}",
             segments.Count - 1, primaryFlightNumber);
 
@@ -1263,8 +1287,15 @@ public class NationwideJobRepository(
         var lookup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var tz in timeZones)
         {
-            if (!string.IsNullOrEmpty(tz.Name)) lookup.TryAdd(tz.Name, tz.Id);
-            if (!string.IsNullOrEmpty(tz.Code)) lookup.TryAdd(tz.Code, tz.Id);
+            if (!string.IsNullOrEmpty(tz.Name))
+            {
+                lookup.TryAdd(tz.Name, tz.Id);
+            }
+
+            if (!string.IsNullOrEmpty(tz.Code))
+            {
+                lookup.TryAdd(tz.Code, tz.Id);
+            }
         }
 
         return lookup;
@@ -1324,14 +1355,23 @@ public class NationwideJobRepository(
             })
             .FirstOrDefaultAsync();
 
-        if (jobDetail == null) return null;
+        if (jobDetail == null)
+        {
+            return null;
+        }
 
         // If airport already assigned, return immediately
-        if (jobDetail.AirPortId != null) return jobDetail;
+        if (jobDetail.AirPortId != null)
+        {
+            return jobDetail;
+        }
 
         // Otherwise try to find nearest airport
         var nearbyAirports = await GetNearbyAirportsAsync(jobId);
-        if (nearbyAirports.Count == 0) return jobDetail;
+        if (nearbyAirports.Count == 0)
+        {
+            return jobDetail;
+        }
 
         var nearestAirportId = nearbyAirports[0].Id;
         Log.Information("Using nearest airport {AirportId} for job {JobId}", nearestAirportId, jobId);

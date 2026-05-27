@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Pricing Breakdown API Service Tests
  */

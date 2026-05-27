@@ -296,7 +296,9 @@ public sealed class JobReportService(
 
         var parsedData = await ParseBulkPriceFileAsync(file);
         if (parsedData.Count > 0)
+        {
             await jobCommandRepository.UpdateManualPriceAsync(parsedData);
+        }
     }
 
     /// <summary>
@@ -341,10 +343,15 @@ public sealed class JobReportService(
 
     private static string FormatAddress(AddressViewModel addr)
     {
-        if (addr == null) return string.Empty;
+        if (addr == null)
+        {
+            return string.Empty;
+        }
 
         if (!string.IsNullOrEmpty(addr.FullAddress))
+        {
             return FormatCsvField(addr.FullAddress);
+        }
 
         var addressLines = new[]
         {
@@ -373,11 +380,15 @@ public sealed class JobReportService(
     private static void ValidateUploadedFile(IFormFile file)
     {
         if (file == null || string.IsNullOrWhiteSpace(file.FileName))
+        {
             throw new ArgumentException("No file provided.", nameof(file));
+        }
 
         var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
         if (!ValidFileExtensions.Contains(fileExtension))
+        {
             throw new ArgumentException("Invalid file format. Please upload an Excel (.xls, .xlsx) or CSV file.", nameof(file));
+        }
     }
 
     /// <summary>
@@ -385,10 +396,16 @@ public sealed class JobReportService(
     /// </summary>
     private static string FormatCsvField(object value)
     {
-        if (value == null) return string.Empty;
+        if (value == null)
+        {
+            return string.Empty;
+        }
 
         var str = value.ToString();
-        if (string.IsNullOrEmpty(str)) return string.Empty;
+        if (string.IsNullOrEmpty(str))
+        {
+            return string.Empty;
+        }
 
         var escaped = str.Replace("\"", "\"\"").Replace("\n", "\\n").Replace("\r", string.Empty);
 
@@ -402,13 +419,18 @@ public sealed class JobReportService(
     /// </summary>
     private static string SanitizeFilename(string filename)
     {
-        if (string.IsNullOrEmpty(filename)) return "Unknown";
+        if (string.IsNullOrEmpty(filename))
+        {
+            return "Unknown";
+        }
 
         var invalidChars = new HashSet<char>(Path.GetInvalidFileNameChars());
         var sanitized = new string(filename.Where(c => !invalidChars.Contains(c)).ToArray());
 
         if (sanitized.Length > 50)
+        {
             sanitized = sanitized[..50];
+        }
 
         return string.IsNullOrWhiteSpace(sanitized) ? "Unknown" : sanitized;
     }

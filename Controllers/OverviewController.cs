@@ -17,7 +17,9 @@ public class OverviewController(IJobQueryRepository jobRepository, ICourierRepos
         {
             // Validate status group
             if (!Enum.IsDefined(typeof(JobStatusGroup), parameters.StatusGroup))
+            {
                 return BadRequest($"Invalid status group: {parameters.StatusGroup}");
+            }
 
             var statusEnum = (JobStatusGroup)parameters.StatusGroup;
 

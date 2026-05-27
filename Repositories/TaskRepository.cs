@@ -34,7 +34,10 @@ public class TaskRepository(
             .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
                      || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
-        if (filters != null) query = ApplyFilters(query, filters);
+        if (filters != null)
+        {
+            query = ApplyFilters(query, filters);
+        }
 
         query = ApplyOrdering(query, filters, today.DateTime);
 
@@ -86,7 +89,9 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
+                {
                     throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
 
                 // Only create audit record if value actually changed
                 if (existingEvent.UcevClosed != closed)
@@ -131,7 +136,9 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
+                {
                     throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
 
                 if (existingEvent.UcevDueTime != dueTime.DateTime)
                 {
@@ -175,7 +182,9 @@ public class TaskRepository(
                     .FirstOrDefaultAsync();
 
                 if (existingEvent == null)
+                {
                     throw new ArgumentException($"Event with ID {eventId} not found.", nameof(eventId));
+                }
 
                 if (existingEvent.UcevStaffIdin != staffId)
                 {
@@ -269,7 +278,10 @@ public class TaskRepository(
         var dispatcherName = await dispatcherTask;
 
         ArgumentNullException.ThrowIfNull(job);
-        if (!job.UcjbClientId.HasValue) throw new ArgumentNullException(nameof(job));
+        if (!job.UcjbClientId.HasValue)
+        {
+            throw new ArgumentNullException(nameof(job));
+        }
 
         // Batch create all events
         var events = eventGroupViewModels.Select(eventGroup => new TucEvent
@@ -385,7 +397,10 @@ public class TaskRepository(
                  !e.UcevClosed)
             );
 
-        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy)) return query;
+        if (filters == null || string.IsNullOrWhiteSpace(filters.OrderBy))
+        {
+            return query;
+        }
 
         var isDescending = string.Equals(filters.OrderDirection, "desc", StringComparison.OrdinalIgnoreCase);
 
@@ -433,30 +448,45 @@ public class TaskRepository(
         }
 
         if (filters.JobId.HasValue)
+        {
             query = query.Where(e => e.UcevJobId == filters.JobId.Value
                                      || e.UcevJob.ParentId == filters.JobId.Value
                                      || e.UcevJob.Parent.InverseParent.Any(j => j.UcjbId == filters.JobId.Value));
+        }
 
         if (filters.ShowCompleted is false)
+        {
             query = query.Where(e => e.UcevClosed == filters.ShowCompleted);
+        }
 
         // Filter by CourierId if provided
         if (filters.CourierId.HasValue)
+        {
             query = query.Where(e => e.UcevCourierId == filters.CourierId.Value);
+        }
 
         // Filter by EventTypeId if provided
         if (filters.EventTypeId.HasValue)
+        {
             query = query.Where(e => (int)e.UcevType == filters.EventTypeId);
+        }
 
         // Filter by staffId
         if (filters.StaffId.HasValue && filters.StaffId.Value != -1)
+        {
             query = query.Where(e => Equals((int)e.UcevStaffIdin, filters.StaffId.Value) || e.UcevStaffIdin == null);
+        }
 
         if (filters.StaffId is -1)
+        {
             query = query.Where(e => e.UcevStaffIdin == null);
+        }
 
         // Filter by SearchText if provided
-        if (string.IsNullOrWhiteSpace(filters.SearchText)) return query;
+        if (string.IsNullOrWhiteSpace(filters.SearchText))
+        {
+            return query;
+        }
 
         var searchPattern = $"%{filters.SearchText}%";
         query = query.Where(e =>
@@ -515,6 +545,7 @@ public class TaskRepository(
 
             var automaticResponse = false;
             if (jobContactInfo?.ContactJobType != null)
+            {
                 automaticResponse = type switch
                 {
                     (int)EventType.LatePickUp => AutoResponseTypes.Contains(jobContactInfo.ContactJobType.PickupType),
@@ -522,6 +553,7 @@ public class TaskRepository(
                         jobContactInfo.ContactJobType.DeliveryType),
                     _ => false
                 };
+            }
 
             // Set fields for automatic response
             if (automaticResponse)

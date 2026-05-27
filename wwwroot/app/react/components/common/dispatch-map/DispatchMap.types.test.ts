@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * DispatchMap Types and Constants Tests
  *

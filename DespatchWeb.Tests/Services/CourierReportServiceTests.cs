@@ -26,7 +26,10 @@ public class CourierReportServiceTests
         var text = Encoding.UTF8.GetString(bytes);
         // Strip UTF-8 BOM if present
         if (text.Length > 0 && text[0] == '\uFEFF')
+        {
             text = text[1..];
+        }
+
         return text;
     }
 

@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 
 import React from 'react';
 import {fireEvent, screen} from '@testing-library/react';

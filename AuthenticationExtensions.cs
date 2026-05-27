@@ -19,13 +19,17 @@ public static class AuthenticationExtensions
         {
             var jwtSecretKey = Environment.GetEnvironmentVariable("JWTSecretKey");
             if (string.IsNullOrEmpty(jwtSecretKey))
+            {
                 throw new InvalidOperationException(
                     "JWTSecretKey environment variable is not set. Cannot create secure tokens.");
+            }
 
             var keyBytes = Encoding.UTF8.GetBytes(jwtSecretKey);
             if (keyBytes.Length < MinimumKeyLengthBytes)
+            {
                 throw new InvalidOperationException(
                     $"JWTSecretKey must be at least {MinimumKeyLengthBytes} bytes (256 bits) for secure token signing.");
+            }
 
             var symmetricSecurityKey = new SymmetricSecurityKey(keyBytes);
 

@@ -131,11 +131,13 @@ public sealed class AiSummarizationService(
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
 
         if (notes == null || notes.Count == 0)
+        {
             return new AiSummaryResponse
             {
                 Summary = "No notes found for this job.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("Summarize the following job notes:");
@@ -176,11 +178,13 @@ public sealed class AiSummarizationService(
         var events = await taskRepository.GetAllTasksAsync(filters);
 
         if (events == null || events.Count == 0)
+        {
             return new AiSummaryResponse
             {
                 Summary = "No events found for this job.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("Summarize the following job event history:");
@@ -221,11 +225,13 @@ public sealed class AiSummarizationService(
         var tasks = await taskRepository.GetAllTasksAsync(filters);
 
         if (tasks == null || tasks.Count == 0)
+        {
             return new AiSummaryResponse
             {
                 Summary = "No open tasks found. The task dashboard is clear.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var now = DateTimeOffset.UtcNow;
         var sb = new StringBuilder();
@@ -239,10 +245,23 @@ public sealed class AiSummarizationService(
         var upcomingCount = 0;
         foreach (var task in ordered)
         {
-            if (task.Closed) continue;
-            if (task.DueDate < now) overdueCount++;
-            else if (task.DueDate.Date == now.Date) dueTodayCount++;
-            else upcomingCount++;
+            if (task.Closed)
+            {
+                continue;
+            }
+
+            if (task.DueDate < now)
+            {
+                overdueCount++;
+            }
+            else if (task.DueDate.Date == now.Date)
+            {
+                dueTodayCount++;
+            }
+            else
+            {
+                upcomingCount++;
+            }
         }
 
         sb.AppendLine($"Overdue: {overdueCount}, Due today: {dueTodayCount}, Upcoming: {upcomingCount}");
@@ -277,13 +296,33 @@ public sealed class AiSummarizationService(
             sb.AppendLine($"Job Number: {job.JobNo}");
             sb.AppendLine($"Status: {job.Status}");
             sb.AppendLine($"Speed: {job.SpeedName}");
-            if (job.Booked.HasValue) sb.AppendLine($"Booked: {job.Booked:yyyy-MM-dd HH:mm}");
-            if (job.DispatchTime.HasValue) sb.AppendLine($"Dispatched: {job.DispatchTime:yyyy-MM-dd HH:mm}");
-            if (job.PuTime.HasValue) sb.AppendLine($"Picked up: {job.PuTime:yyyy-MM-dd HH:mm}");
-            if (job.CompletedTime.HasValue) sb.AppendLine($"Completed: {job.CompletedTime:yyyy-MM-dd HH:mm}");
+            if (job.Booked.HasValue)
+            {
+                sb.AppendLine($"Booked: {job.Booked:yyyy-MM-dd HH:mm}");
+            }
+
+            if (job.DispatchTime.HasValue)
+            {
+                sb.AppendLine($"Dispatched: {job.DispatchTime:yyyy-MM-dd HH:mm}");
+            }
+
+            if (job.PuTime.HasValue)
+            {
+                sb.AppendLine($"Picked up: {job.PuTime:yyyy-MM-dd HH:mm}");
+            }
+
+            if (job.CompletedTime.HasValue)
+            {
+                sb.AppendLine($"Completed: {job.CompletedTime:yyyy-MM-dd HH:mm}");
+            }
+
             sb.AppendLine($"From: {AiDataSanitizer.Sanitize(job.From ?? "")}");
             sb.AppendLine($"To: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
-            if (!string.IsNullOrEmpty(job.Courier)) sb.AppendLine($"Courier: {job.Courier}");
+            if (!string.IsNullOrEmpty(job.Courier))
+            {
+                sb.AppendLine($"Courier: {job.Courier}");
+            }
+
             sb.AppendLine();
         }
 
@@ -312,11 +351,13 @@ public sealed class AiSummarizationService(
         }
 
         if (job == null && (notes == null || notes.Count == 0) && (events == null || events.Count == 0))
+        {
             return new AiSummaryResponse
             {
                 Summary = "No data found for this job.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         return await SendSummarizationRequestAsync(JobSummarySystemPrompt, sb.ToString(), ct);
     }
@@ -343,11 +384,13 @@ public sealed class AiSummarizationService(
         var items = await courierRepository.GetCourierComplianceForExportAsync(request);
 
         if (items is not { Count: > 0 })
+        {
             return new AiSummaryResponse
             {
                 Summary = "No compliance records found.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var now = DateTimeOffset.UtcNow;
         var weekCutoff = now.AddDays(7);
@@ -357,10 +400,23 @@ public sealed class AiSummarizationService(
         var expiringMonth = new List<CourierComplianceViewModel>();
         foreach (var i in items)
         {
-            if (!i.ExpiryDate.HasValue) continue;
-            if (i.ExpiryDate.Value < now) expired.Add(i);
-            else if (i.ExpiryDate.Value < weekCutoff) expiringWeek.Add(i);
-            else if (i.ExpiryDate.Value < monthCutoff) expiringMonth.Add(i);
+            if (!i.ExpiryDate.HasValue)
+            {
+                continue;
+            }
+
+            if (i.ExpiryDate.Value < now)
+            {
+                expired.Add(i);
+            }
+            else if (i.ExpiryDate.Value < weekCutoff)
+            {
+                expiringWeek.Add(i);
+            }
+            else if (i.ExpiryDate.Value < monthCutoff)
+            {
+                expiringMonth.Add(i);
+            }
         }
 
         var sb = new StringBuilder();
@@ -376,17 +432,26 @@ public sealed class AiSummarizationService(
             foreach (var item in expired.Take(20))
                 sb.AppendLine(
                     $"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
-            if (expired.Count > 20) sb.AppendLine($"  ... and {expired.Count - 20} more");
+            if (expired.Count > 20)
+            {
+                sb.AppendLine($"  ... and {expired.Count - 20} more");
+            }
+
             sb.AppendLine();
         }
 
         if (expiringWeek.Count <= 0)
+        {
             return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
+        }
 
         sb.AppendLine("Expiring within 7 DAYS:");
         foreach (var item in expiringWeek.Take(10))
             sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expires {item.ExpiryDate:yyyy-MM-dd}");
-        if (expiringWeek.Count > 10) sb.AppendLine($"  ... and {expiringWeek.Count - 10} more");
+        if (expiringWeek.Count > 10)
+        {
+            sb.AppendLine($"  ... and {expiringWeek.Count - 10} more");
+        }
 
         return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
     }
@@ -396,11 +461,13 @@ public sealed class AiSummarizationService(
         var lateInfo = await jobRepository.GetJobForLateCallAsync(jobId);
 
         if (lateInfo == null)
+        {
             return new AiSummaryResponse
             {
                 Summary = "No late alert data found for this job.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var eventFilters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
         var events = await taskRepository.GetAllTasksAsync(eventFilters);
@@ -417,7 +484,9 @@ public sealed class AiSummarizationService(
         sb.AppendLine($"Late delivery alert threshold: {lateInfo.AlertLateDelivery} mins");
 
         if (events is not { Count: > 0 })
+        {
             return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
+        }
 
         sb.AppendLine();
         sb.AppendLine("Recent events:");
@@ -434,11 +503,13 @@ public sealed class AiSummarizationService(
     {
         var job = await jobRepository.GetSingleJobById(jobId);
         if (job == null)
+        {
             return new AiCourierSuggestionResponse
             {
                 Summary = "Job not found.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var potentialCouriers = await courierRepository.GetPotentialCouriersAsync(jobId);
         var driverOverview = await courierRepository.GetDriverWorkOverviewAsync();
@@ -448,7 +519,11 @@ public sealed class AiSummarizationService(
         sb.AppendLine($"Speed: {job.SpeedName}");
         sb.AppendLine($"Pickup: {AiDataSanitizer.Sanitize(job.From ?? "")}");
         sb.AppendLine($"Delivery: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
-        if (job.Weight.HasValue) sb.AppendLine($"Weight: {job.Weight}kg");
+        if (job.Weight.HasValue)
+        {
+            sb.AppendLine($"Weight: {job.Weight}kg");
+        }
+
         sb.AppendLine();
 
         if (potentialCouriers is { Count: > 0 })
@@ -466,11 +541,13 @@ public sealed class AiSummarizationService(
         }
 
         if (potentialCouriers.Count == 0 && driverOverview.Count == 0)
+        {
             return new AiCourierSuggestionResponse
             {
                 Summary = "No courier data available for suggestions.",
                 Usage = new AiUsageInfo()
             };
+        }
 
         var summaryResult = await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
 

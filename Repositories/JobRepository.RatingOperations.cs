@@ -117,7 +117,7 @@ public partial class JobRepository
     /// <summary>
     /// Updates the rate amount for an NZ urgent job in the appropriate table based on job type.
     /// </summary>
-    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string? pricingBreakdown = null)
+    public async Task UpdateUrgentJobRateAsync(int jobId, decimal rate, JobType jobType, string pricingBreakdown = null)
     {
         try
         {
@@ -132,7 +132,7 @@ public partial class JobRepository
                 _ => null
             };
 
-            if (previousRate.HasValue && previousRate.Value == rate)
+            if (previousRate == rate)
             {
                 Log.Information("Price is unchanged. Not updating job {JobId}", jobId);
                 return;
@@ -149,7 +149,10 @@ public partial class JobRepository
                 _ => 0
             };
 
-            if (rowsUpdated == 0) throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            if (rowsUpdated == 0)
+            {
+                throw new KeyNotFoundException($"Job with ID {jobId} not found");
+            }
 
             if (!string.IsNullOrEmpty(pricingBreakdown))
             {
@@ -217,7 +220,11 @@ public partial class JobRepository
                         {
                             // API format is "ChargeName=Amount" — extract name before the '='
                             var chargeName = line.Contains('=') ? line[..line.IndexOf('=')].Trim() : line.Trim();
-                            if (!childJobLookup.TryGetValue(chargeName, out var childJobId)) return line;
+                            if (!childJobLookup.TryGetValue(chargeName, out var childJobId))
+                            {
+                                return line;
+                            }
+
                             return line.Count(c => c == '~') switch
                             {
                                 0 => $"{line}~0~{childJobId}",

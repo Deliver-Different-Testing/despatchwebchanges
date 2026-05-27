@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Dispatch Executor API Service Tests
  */

@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * useJobUpdate Hook Tests
  */

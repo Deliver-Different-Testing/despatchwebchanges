@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * AI Assistant API Service Tests
  *

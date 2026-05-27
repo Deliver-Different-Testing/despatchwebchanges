@@ -318,6 +318,7 @@ public class AiAssistantServiceTests
             {
                 callCount++;
                 if (callCount == 1)
+                {
                     return new AiClientResponse
                     {
                         ToolCalls =
@@ -332,6 +333,7 @@ public class AiAssistantServiceTests
                         InputTokens = 100,
                         OutputTokens = 20
                     };
+                }
 
                 return new AiClientResponse
                 {

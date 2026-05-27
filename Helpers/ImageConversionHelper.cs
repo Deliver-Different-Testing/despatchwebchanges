@@ -18,7 +18,10 @@ public static class ImageConversionHelper
     {
         using var image = new MagickImage(imageBytes);
 
-        if (image.Width > MaxDisplayWidth) image.Resize(MaxDisplayWidth, 0);
+        if (image.Width > MaxDisplayWidth)
+        {
+            image.Resize(MaxDisplayWidth, 0);
+        }
 
         image.Quality = JpegQuality;
         image.Format = MagickFormat.Jpeg;
