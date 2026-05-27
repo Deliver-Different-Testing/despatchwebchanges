@@ -61,6 +61,8 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<PricingBreakdownArchive> PricingBreakdownArchives { get; set; }
 
+    public virtual DbSet<Route> Routes { get; set; }
+
     public virtual DbSet<TblAfterHour> TblAfterHours { get; set; }
 
     public virtual DbSet<TblAfterhoursCourier> TblAfterhoursCouriers { get; set; }
@@ -1314,6 +1316,32 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.JobId).HasColumnName("JobID");
             entity.Property(e => e.PrebookJobId).HasColumnName("PrebookJobID");
             entity.Property(e => e.Total).HasColumnType("decimal(18, 4)");
+        });
+
+        modelBuilder.Entity<Route>(entity =>
+        {
+            entity.HasIndex(e => new { e.Active, e.Name }, "IX_Routes_Active");
+
+            entity.Property(e => e.Area)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasDefaultValue("", "DF_Routes_Area");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getutcdate())", "DF_Routes_CreatedAt")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .IsRequired()
+                .HasMaxLength(100)
+                .HasDefaultValue("system", "DF_Routes_CreatedBy");
+            entity.Property(e => e.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
+            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.DefaultCourier).WithMany(p => p.Routes)
+                .HasForeignKey(d => d.DefaultCourierId)
+                .HasConstraintName("FK_Routes_tucCourier");
         });
 
         modelBuilder.Entity<TblAfterHour>(entity =>
@@ -5984,6 +6012,10 @@ public partial class DespatchContext : DbContext
                 .HasForeignKey(d => d.PickupTimeZoneId)
                 .HasConstraintName("FK__tucJob__PickupTi__48A680A3");
 
+            entity.HasOne(d => d.Route).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.RouteId)
+                .HasConstraintName("FK_tucJob_Routes");
+
             entity.HasOne(d => d.Source).WithMany(p => p.TucJobs)
                 .HasForeignKey(d => d.SourceId)
                 .HasConstraintName("FK_tucJob_Source");
@@ -6523,6 +6555,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => new { e.ShopId, e.ShopRef1, e.ShopRef2, e.ShopRef3, e.ShopRef4, e.ShopRef5 }, "IX_Shop");
 
             entity.HasIndex(e => new { e.UcbkId, e.ParentId }, "IX_TucJobBookings_Lookup").HasFillFactor(90);
+
+            entity.HasIndex(e => e.AgentId, "IX_tucJobBooking_AgentId");
 
             entity.HasIndex(e => e.FromAirportId, "IX_tucJobBooking_FromAirportID");
 

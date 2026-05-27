@@ -120,26 +120,10 @@ public sealed class JobChangeRequestService(
             UjcrAppliedByStaffId = decision.Mode == JobChangeApprovalMode.Auto ? staffId : null
         };
 
-        var eventTypeId = await ResolveEventTypeIdAsync(ctx,
-            decision.Mode == JobChangeApprovalMode.Auto ? "Partner Change Applied" : "Partner Change Request", ct);
-        var tucEvent = new TucEvent
-        {
-            UcevJobId = request.JobId,
-            UcevType = eventTypeId,
-            UcevDate = DateTime.UtcNow,
-            UcevNotes = BuildEventNotes(field.ToString(), currentValue, request.RequestedValue, request.Reason),
-            UcevClosed = decision.Mode == JobChangeApprovalMode.Auto,
-            UcevDueTime = DateTime.UtcNow.AddHours(24),
-            UcevDescription = $"Partner change: {field}"
-        };
-
         var strategy = ctx.Database.CreateExecutionStrategy();
         await strategy.ExecuteAsync(async () =>
         {
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
-            await ctx.TucEvents.AddAsync(tucEvent, ct);
-            await ctx.SaveChangesAsync(ct);
-            row.UjcrTucEventId = tucEvent.UcevId;
             await ctx.TucJobChangeRequests.AddAsync(row, ct);
 
             if (decision.Mode == JobChangeApprovalMode.Auto)
@@ -282,11 +266,6 @@ public sealed class JobChangeRequestService(
                     .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerAgreedRate, refreshedAmount), ct);
             }
 
-            if (row.UjcrTucEventId is { } eventId)
-            {
-                await CloseEventAsync(ctx, eventId, "Partner Change Approved", ct);
-            }
-
             try
             {
                 await ctx.SaveChangesAsync(ct);
@@ -375,11 +354,6 @@ public sealed class JobChangeRequestService(
         {
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
-            if (row.UjcrTucEventId is { } eventId)
-            {
-                await CloseEventAsync(ctx, eventId, "Partner Change Rejected", ct);
-            }
-
             try
             {
                 await ctx.SaveChangesAsync(ct);
@@ -456,11 +430,6 @@ public sealed class JobChangeRequestService(
             row.UjcrReason = string.IsNullOrEmpty(row.UjcrReason)
                 ? request.Reason
                 : $"{row.UjcrReason}\n--\n{request.Reason}";
-        }
-
-        if (row.UjcrTucEventId is { } eventId)
-        {
-            await CloseEventAsync(ctx, eventId, "Partner Change Cancelled", ct);
         }
 
         try
@@ -606,30 +575,8 @@ public sealed class JobChangeRequestService(
             UjcrRequestedAtUtc = DateTime.UtcNow
         };
 
-        var eventTypeId = await ResolveEventTypeIdAsync(ctx, "Partner Change Request", ct);
-        var tucEvent = new TucEvent
-        {
-            UcevJobId = mirror.UcjbId,
-            UcevType = eventTypeId,
-            UcevDate = DateTime.UtcNow,
-            UcevNotes =
-                BuildEventNotes(payload.FieldName, payload.CurrentValue, payload.RequestedValue, payload.Reason),
-            UcevClosed = false,
-            UcevDueTime = DateTime.UtcNow.AddHours(24),
-            UcevDescription = $"Partner change: {payload.FieldName}"
-        };
-
-        var strategy = ctx.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
-        {
-            await using var tx = await ctx.Database.BeginTransactionAsync(ct);
-            await ctx.TucEvents.AddAsync(tucEvent, ct);
-            await ctx.SaveChangesAsync(ct);
-            row.UjcrTucEventId = tucEvent.UcevId;
-            await ctx.TucJobChangeRequests.AddAsync(row, ct);
-            await ctx.SaveChangesAsync(ct);
-            await tx.CommitAsync(ct);
-        });
+        await ctx.TucJobChangeRequests.AddAsync(row, ct);
+        await ctx.SaveChangesAsync(ct);
 
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
@@ -655,8 +602,7 @@ public sealed class JobChangeRequestService(
             return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
         }
 
-        var (newStatus, eventTypeName) = ResolvePeerDecisionTransition(payload.Outcome);
-        row.UjcrStatus = newStatus;
+        row.UjcrStatus = ResolvePeerDecisionStatus(payload.Outcome);
         row.UjcrRespondedAtUtc = DateTime.UtcNow;
         if (!string.IsNullOrWhiteSpace(payload.Reason))
         {
@@ -665,25 +611,20 @@ public sealed class JobChangeRequestService(
                 : $"{row.UjcrReason}\n--\n{payload.Reason}";
         }
 
-        if (row.UjcrTucEventId is { } eventId)
-        {
-            await CloseEventAsync(ctx, eventId, eventTypeName, ct);
-        }
-
         await ctx.SaveChangesAsync(ct);
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
-    private static (string Status, string EventTypeName) ResolvePeerDecisionTransition(string outcome)
+    private static string ResolvePeerDecisionStatus(string outcome)
     {
         if (outcome.Equals(JobChangeRequestStatus.Approved, StringComparison.OrdinalIgnoreCase))
         {
-            return (JobChangeRequestStatus.Approved, "Partner Change Approved");
+            return JobChangeRequestStatus.Approved;
         }
 
         return outcome.Equals(JobChangeRequestStatus.Cancelled, StringComparison.OrdinalIgnoreCase)
-            ? (JobChangeRequestStatus.Cancelled, "Partner Change Cancelled")
-            : (JobChangeRequestStatus.Rejected, "Partner Change Rejected");
+            ? JobChangeRequestStatus.Cancelled
+            : JobChangeRequestStatus.Rejected;
     }
 
     public async Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid,
@@ -737,11 +678,6 @@ public sealed class JobChangeRequestService(
                 await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
             }
 
-            if (row.UjcrTucEventId is { } eventId)
-            {
-                await CloseEventAsync(ctx, eventId, "Partner Change Applied", ct);
-            }
-
             await ctx.SaveChangesAsync(ct);
             await tx.CommitAsync(ct);
         });
@@ -791,7 +727,7 @@ public sealed class JobChangeRequestService(
             {
                 Request = ToDto(x.Row),
                 JobNo = x.JobNo ?? string.Empty,
-                ClientName = x.ClientName,
+                ClientName = x.ClientName
             })
             .ToList();
     }
@@ -1064,23 +1000,6 @@ public sealed class JobChangeRequestService(
             .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbNotes, combined), ct);
     }
 
-    private static async Task<int?> ResolveEventTypeIdAsync(DespatchContext ctx, string name, CancellationToken ct) =>
-        await ctx.TucEventTypes
-            .AsNoTracking()
-            .Where(t => t.UcetName == name)
-            .Select(t => (int?)t.UcetId)
-            .FirstOrDefaultAsync(ct);
-
-    private static async Task CloseEventAsync(DespatchContext ctx, int eventId, string newTypeName,
-        CancellationToken ct)
-    {
-        var newTypeId = await ResolveEventTypeIdAsync(ctx, newTypeName, ct);
-        await ctx.TucEvents.Where(e => e.UcevId == eventId)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(e => e.UcevClosed, true)
-                .SetProperty(e => e.UcevType, newTypeId), ct);
-    }
-
     // Returns the current staff ID for audit columns, or null when no real staff
     // context is available (background jobs, peer-inbound paths, or transient claims
     // failures). Writing null is more honest than writing 0 — the audit clearly says
@@ -1211,19 +1130,35 @@ public sealed class JobChangeRequestService(
             JobChangeField.DGClass => job.Dgclass?.ToString(CultureInfo.InvariantCulture),
             JobChangeField.DGDocumentation => job.Dgdocument?.ToString(),
 
+            JobChangeField.PickupAddress => SnapshotAddress(
+                job.PickupAddressLine1, job.PickupAddressLine2, job.PickupAddressLine3, job.PickupAddressLine4,
+                job.PickupAddressLine5, job.PickupAddressLine6, job.PickupAddressLine7, job.PickupAddressLine8),
+            JobChangeField.DeliveryAddress => SnapshotAddress(
+                job.DeliveryAddressLine1, job.DeliveryAddressLine2, job.DeliveryAddressLine3, job.DeliveryAddressLine4,
+                job.DeliveryAddressLine5, job.DeliveryAddressLine6, job.DeliveryAddressLine7, job.DeliveryAddressLine8),
+
             _ => null
         };
 
-    private static string BuildEventNotes(string fieldName, string? currentValue, string? requestedValue,
-        string? reason)
+    // Serialise the address columns into the same camelCase JSON shape the
+    // dialog sends as RequestedValue, so the per-job history panel can run
+    // its addressLine1..8 parser over the snapshot and render lines instead
+    // of "—". Returns null when every line is empty rather than emitting an
+    // empty-shaped JSON blob.
+    private static string? SnapshotAddress(string? l1, string? l2, string? l3, string? l4,
+        string? l5, string? l6, string? l7, string? l8)
     {
-        var notes = $"{fieldName}: '{currentValue ?? "(empty)"}' → '{requestedValue ?? "(empty)"}'";
-        if (!string.IsNullOrWhiteSpace(reason))
+        if (string.IsNullOrWhiteSpace(l1) && string.IsNullOrWhiteSpace(l2)
+            && string.IsNullOrWhiteSpace(l3) && string.IsNullOrWhiteSpace(l4)
+            && string.IsNullOrWhiteSpace(l5) && string.IsNullOrWhiteSpace(l6)
+            && string.IsNullOrWhiteSpace(l7) && string.IsNullOrWhiteSpace(l8))
         {
-            notes += $". {reason}";
+            return null;
         }
 
-        return notes.Length > 1000 ? notes[..1000] : notes;
+        var address = new AddressViewModel(l1 ?? string.Empty, l2 ?? string.Empty, l3 ?? string.Empty,
+            l4 ?? string.Empty, l5 ?? string.Empty, l6 ?? string.Empty, l7 ?? string.Empty, l8 ?? string.Empty);
+        return JsonSerializer.Serialize(address, CompoundPayloadJsonOptions);
     }
 
     private static JobChangeRequestDto ToDto(TucJobChangeRequest r) => new()

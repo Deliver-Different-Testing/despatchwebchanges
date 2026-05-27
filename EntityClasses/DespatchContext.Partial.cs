@@ -9,13 +9,6 @@ namespace DespatchWeb.EntityClasses;
 
 public partial class DespatchContext
 {
-    /// <summary>
-    /// Recurring Routes — named clusters of zipcodes visited by rostered drivers.
-    /// Table created by app-configurator (database/032-create-routes-and-roster.sql);
-    /// referenced from tucJobBooking.RouteId via the Routes feature.
-    /// </summary>
-    public virtual DbSet<Route> Routes { get; set; }
-
     // Compiled queries
     private static readonly Func<DespatchContext, int, Task<bool>> IsLiveJobCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int jobId) =>
@@ -265,29 +258,6 @@ public partial class DespatchContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder)
     {
-        // Recurring Routes table (created in app-configurator: 032-create-routes-and-roster.sql).
-        modelBuilder.Entity<Route>(entity =>
-        {
-            entity.HasKey(e => e.RouteId);
-            entity.ToTable("Routes");
-
-            entity.Property(e => e.Name).HasMaxLength(100).IsRequired();
-            entity.Property(e => e.Area).HasMaxLength(100);
-            entity.Property(e => e.CreatedBy).HasMaxLength(100);
-            entity.Property(e => e.UpdatedBy).HasMaxLength(100);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
-
-            entity.HasOne(d => d.DefaultCourier)
-                .WithMany()
-                .HasForeignKey(d => d.DefaultCourierId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasIndex(e => new { e.Active, e.Name });
-        });
-
-        // Wire tucJobBooking.RouteId → Routes.RouteId (column added by
-        // dbmigrationsv2/20260519104500_AddRouteIdToTucJobBookingForRecurringRoutes.sql).
         modelBuilder.Entity<TucJobBooking>(entity =>
         {
             entity.HasOne(d => d.Route)
@@ -296,9 +266,6 @@ public partial class DespatchContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // TblJob is a keyless view - can only configure relationships where TblJob is dependent
-        // Navigation properties for Nationwide, PricingBreakdowns, Parent/Children require
-        // manual subqueries in LINQ since keyless entities can't be principals
         modelBuilder.Entity<TblJob>(entity =>
         {
             entity.HasOne(d => d.Client)
