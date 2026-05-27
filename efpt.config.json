@@ -103,6 +103,10 @@
          "ObjectType": 0
       },
       {
+         "Name": "[dbo].[Routes]",
+         "ObjectType": 0
+      },
+      {
          "Name": "[dbo].[tblAfterHours]",
          "ObjectType": 0
       },
@@ -499,19 +503,11 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DD_stpBulkScheduleJob_Insert]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DD_stpGetAgentDistanceRate]",
          "ObjectType": 1
       },
       {
          "Name": "[dbo].[DD_stpGetCarrierFlightRate]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[DD_stpJob_Excelerator_Insert]",
          "ObjectType": 1
       },
       {
@@ -543,10 +539,6 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[DESWEB_stpUpdateSplitJobMeetingAddress]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[DESWEB_stpVoidPrebookJob]",
          "ObjectType": 1
       },
@@ -559,23 +551,11 @@
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[MAP_stpCourierGPS_LastPositionToday]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[NET_stpJob_Insert_JobNumber]",
          "ObjectType": 1
       },
       {
-         "Name": "[dbo].[REP_qryPerformance_Summary_PerformanceSpend]",
-         "ObjectType": 1
-      },
-      {
          "Name": "[dbo].[sp_AddJobAccessorial]",
-         "ObjectType": 1
-      },
-      {
-         "Name": "[dbo].[sp_RateJob2]",
          "ObjectType": 1
       },
       {

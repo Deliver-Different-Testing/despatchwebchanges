@@ -190,11 +190,10 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CreateLocalAsync_auto_field_applies_immediately_and_closes_event()
+    public async Task CreateLocalAsync_auto_field_applies_immediately()
     {
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -212,17 +211,13 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         await using var ctx = CreateContext();
         var job = ctx.TucJobs.Single(j => j.UcjbId == 1);
         Assert.Equal("Please leave at reception", job.UcjbNotes);
-
-        var ev = ctx.TucEvents.Single(e => e.UcevId == result.Request.TucEventId);
-        Assert.True(ev.UcevClosed);
     }
 
     [Fact]
-    public async Task CreateLocalAsync_manual_field_opens_event_and_forwards_to_peer()
+    public async Task CreateLocalAsync_manual_field_creates_pending_and_forwards_to_peer()
     {
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -237,10 +232,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.Equal("Pending", result.Request!.Status);
         Assert.Equal("Manual", result.Request.ApprovalMode);
         Assert.Equal("PartnerTenant", result.Request.ApprovalPartyType);
-
-        await using var ctx = CreateContext();
-        var ev = ctx.TucEvents.Single(e => e.UcevId == result.Request.TucEventId);
-        Assert.False(ev.UcevClosed);
 
         await _partnerClient.Received(1).ForwardCreateAsync(
             Arg.Any<int>(),
@@ -260,8 +251,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
         // Re-stub: peer forward fails after the local row is already saved. The caller
         // must still see Success=true (local state is consistent) but PeerForwardWarning
         // must surface the IM-side error so the dialog can warn the user.
@@ -290,7 +279,8 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // Local row must still be saved despite the peer-forward failure.
         await using var ctx = CreateContext();
         var savedRow = await ctx.TucJobChangeRequests
-            .SingleOrDefaultAsync(r => r.UjcrSourceRequestUuid == result.Request.SourceRequestUuid, cancellationToken: TestContext.Current.CancellationToken);
+            .SingleOrDefaultAsync(r => r.UjcrSourceRequestUuid == result.Request.SourceRequestUuid,
+                cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedRow);
         Assert.Equal(JobChangeRequestStatus.Pending, savedRow.UjcrStatus);
     }
@@ -300,7 +290,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var first = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -327,7 +316,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
         _sendToPartner.GetRateForJobAsync(pairingId, 1)
             .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 200m });
 
@@ -362,7 +350,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
         _sendToPartner.GetRateForJobAsync(pairingId, 1)
             .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 200m });
 
@@ -392,7 +379,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
         _sendToPartner.GetRateForJobAsync(pairingId, 1)
             .Returns(new PartnerRateForJobResponse { Source = "rate-card", RateCardRate = 200m });
 
@@ -416,11 +402,77 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task ApproveAsync_applies_field_change_and_closes_event()
+    public async Task CreateLocalAsync_pickup_address_snapshots_current_address_as_camelCase_json()
+    {
+        await SeedJobAsync(pickupLine1: "10 Old Pickup St", pickupLine2: "Auckland CBD");
+        await SeedPairingAsync();
+        var newAddress = JsonSerializer.Serialize(new AddressViewModel { AddressLine1 = "99 New Pickup Rd" });
+
+        var service = CreateService();
+        var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.PickupAddress),
+            RequestedValue = newAddress
+        }, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Request!.CurrentValue);
+
+        // The history panel parses with camelCase keys (addressLine1..8), so the snapshot
+        // must use Web defaults — otherwise the UI falls back to "—".
+        using var doc = JsonDocument.Parse(result.Request!.CurrentValue!);
+        Assert.Equal("10 Old Pickup St", doc.RootElement.GetProperty("addressLine1").GetString());
+        Assert.Equal("Auckland CBD", doc.RootElement.GetProperty("addressLine2").GetString());
+    }
+
+    [Fact]
+    public async Task CreateLocalAsync_delivery_address_snapshots_current_address()
+    {
+        await SeedJobAsync(deliveryLine1: "5 Old Drop Ln", deliveryLine2: "Wellington");
+        await SeedPairingAsync();
+        var newAddress = JsonSerializer.Serialize(new AddressViewModel { AddressLine1 = "12 New Drop Pl" });
+
+        var service = CreateService();
+        var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.DeliveryAddress),
+            RequestedValue = newAddress
+        }, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Request!.CurrentValue);
+
+        using var doc = JsonDocument.Parse(result.Request!.CurrentValue!);
+        Assert.Equal("5 Old Drop Ln", doc.RootElement.GetProperty("addressLine1").GetString());
+        Assert.Equal("Wellington", doc.RootElement.GetProperty("addressLine2").GetString());
+    }
+
+    [Fact]
+    public async Task CreateLocalAsync_address_snapshot_is_null_when_all_lines_empty()
+    {
+        await SeedJobAsync();
+        await SeedPairingAsync();
+        var newAddress = JsonSerializer.Serialize(new AddressViewModel { AddressLine1 = "First time address" });
+
+        var service = CreateService();
+        var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.PickupAddress),
+            RequestedValue = newAddress
+        }, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Null(result.Request!.CurrentValue);
+    }
+
+    [Fact]
+    public async Task ApproveAsync_applies_field_change()
     {
         await SeedJobAsync();
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
 
         // Quantity carries RequiresCommercialRefresh=true; ApproveAsync now fetches the
         // rate-card first and aborts if it returns no rate. Stub a successful response so
@@ -448,9 +500,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         var job = ctx.TucJobs.Single(j => j.UcjbId == 1);
         Assert.Equal((short)7, job.UcjbQty);
 
-        var ev = ctx.TucEvents.Single(e => e.UcevId == pending.Request.TucEventId);
-        Assert.True(ev.UcevClosed);
-
         await _partnerClient.Received(1).ForwardDecisionAsync(
             Arg.Any<int>(), pending.Request.SourceRequestUuid, "Approved",
             Arg.Any<string?>(), Arg.Any<CancellationToken>());
@@ -461,7 +510,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync(initialQty: 3);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -488,7 +536,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
         var sourceUuid = Guid.NewGuid();
         var payload = new PeerInboundChangeRequestPayload
@@ -516,7 +563,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync(initialAgreedRate: 100m);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
         var sourceUuid = Guid.NewGuid();
         var payload = new PeerInboundChangeRequestPayload
@@ -557,7 +603,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         await SeedJobAsync();
         await SeedPairingAsync(partnerTenantId: "200");
         await SeedPairingAsync(partnerTenantId: "300");
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -577,7 +622,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         await SeedJobAsync();
         var firstId = await SeedPairingAsync(partnerTenantId: "200");
         var secondId = await SeedPairingAsync(partnerTenantId: "300");
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -598,7 +642,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         var revokedId = await SeedPairingAsync(status: "Revoked");
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -620,7 +663,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // so old/new always ended up identical. This test would fail under the old code.
         await SeedJobAsync(initialAgreedRate: 100m);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -648,7 +690,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync(initialAgreedRate: 100m);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
         var sourceUuid = Guid.NewGuid();
         await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
@@ -678,8 +719,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // and the DB enforces the check at UPDATE time.
         await SeedJobAsync();
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
         // Approval now fetches the rate-card BEFORE the concurrency check; without a stub
         // it would bail out with "Could not re-rate" and never reach the rowversion path.
         _sendToPartner.GetRateForJobAsync(pairingId, 1)
@@ -712,8 +751,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // pathological jobs from returning thousands of historical requests to the UI.
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
         await using (var ctx = CreateContext())
         {
             for (var i = 0; i < 150; i++)
@@ -745,7 +782,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync(); // existing notes "original notes"
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -768,7 +804,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync(initialNotes: null);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -793,7 +828,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // rather than silently mark the row Applied without touching the job.
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var pairing = await GetSinglePairingIdAsync();
 
         await using (var ctx = CreateContext())
@@ -838,8 +872,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // refreshed amount to both tucJob.PartnerAgreedRate and the request row.
         await SeedJobAsync(initialAgreedRate: 100m);
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
         _sendToPartner
             .GetRateForJobAsync(pairingId, 1)
             .Returns(new PartnerRateForJobResponse { RateCardRate = 137.50m, Source = "rate-card" });
@@ -881,8 +913,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // rate card would override what the dispatcher and counterparty already agreed.
         await SeedJobAsync(initialAgreedRate: 100m);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
         var service = CreateService();
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
         {
@@ -907,8 +937,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // commercial amount. Both the field and the price must land on the local job.
         await SeedJobAsync(initialQty: 3, initialAgreedRate: 100m);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
-
         var service = CreateService();
         var sourceUuid = Guid.NewGuid();
         await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
@@ -940,7 +968,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     {
         await SeedJobAsync();
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -957,10 +984,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.True(cancelled.Success, cancelled.Message);
         Assert.Equal("Cancelled", cancelled.Request!.Status);
 
-        await using var ctx = CreateContext();
-        var ev = ctx.TucEvents.Single(e => e.UcevId == pending.Request.TucEventId);
-        Assert.True(ev.UcevClosed);
-
         await _partnerClient.Received(1).ForwardDecisionAsync(
             pairingId, pending.Request.SourceRequestUuid, "Cancelled",
             Arg.Any<string?>(), Arg.Any<CancellationToken>());
@@ -973,7 +996,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // RejectAsync, never cancelled — Cancelled means "the requester took it back."
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var peer = await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
@@ -998,7 +1020,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // The peer-side row gets marked Cancelled when the originator retracts upstream.
         await SeedJobAsync();
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var sourceUuid = Guid.NewGuid();
@@ -1025,7 +1046,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // the local tucJob. Idempotent return, no field change.
         await SeedJobAsync(initialQty: 3);
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         // Local-originated, cancelled.
@@ -1057,7 +1077,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         await SeedJobAsync();
         var firstId = await SeedPairingAsync(partnerTenantId: "200");
         var secondId = await SeedPairingAsync(partnerTenantId: "300");
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var result = await service.RecordPeerCreateAsync(new PeerInboundChangeRequestPayload
@@ -1087,7 +1106,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // GIVEN a pending Manual change that requires commercial refresh
         await SeedJobAsync(initialQty: 3, initialAgreedRate: 100m);
         var pairingId = await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -1120,43 +1138,11 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CancelAsync_writes_partner_change_cancelled_event_type()
-    {
-        await SeedJobAsync();
-        await SeedPairingAsync();
-        await SeedEventTypesAsync();
-        var service = CreateService();
-
-        var pending = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
-        {
-            JobId = 1,
-            FieldName = nameof(JobChangeField.Quantity),
-            RequestedValue = "7"
-        }, CancellationToken.None);
-        Assert.True(pending.Success);
-
-        var result = await service.CancelAsync(pending.Request!.Id,
-            new CancelJobChangeRequestRequest { RequestId = pending.Request.Id, Reason = "changed mind" },
-            CancellationToken.None);
-        Assert.True(result.Success);
-
-        await using var ctx = CreateContext();
-        var cancelledTypeId = ctx.TucEventTypes
-            .Where(t => t.UcetName == "Partner Change Cancelled")
-            .Select(t => (int?)t.UcetId)
-            .Single();
-        var ev = ctx.TucEvents.Single(e => e.UcevId == pending.Request.TucEventId);
-        Assert.Equal(cancelledTypeId, ev.UcevType);
-        Assert.True(ev.UcevClosed);
-    }
-
-    [Fact]
     public async Task RecordPeerCreateAsync_rejects_duplicate_pending_for_same_field()
     {
         await SeedJobAsync();
         var partnerJobGuid = (await GetPartnerJobGuidAsync(1))!.Value;
         await SeedPairingAsync();
-        await SeedEventTypesAsync();
         var service = CreateService();
 
         // First peer-inbound: lands cleanly.
@@ -1186,7 +1172,9 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     private async Task SeedJobAsync(short initialQty = 3, decimal? initialAgreedRate = null,
-        bool unsetPartnerJobGuid = false, string? initialNotes = "original notes")
+        bool unsetPartnerJobGuid = false, string? initialNotes = "original notes",
+        string? pickupLine1 = null, string? pickupLine2 = null,
+        string? deliveryLine1 = null, string? deliveryLine2 = null)
     {
         await using var ctx = CreateContext();
         ctx.TucJobs.Add(new TucJob
@@ -1197,7 +1185,11 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             UcjbQty = initialQty,
             UcjbNotes = initialNotes,
             PartnerJobGuid = unsetPartnerJobGuid ? null : Guid.NewGuid(),
-            PartnerAgreedRate = initialAgreedRate
+            PartnerAgreedRate = initialAgreedRate,
+            PickupAddressLine1 = pickupLine1,
+            PickupAddressLine2 = pickupLine2,
+            DeliveryAddressLine1 = deliveryLine1,
+            DeliveryAddressLine2 = deliveryLine2
         });
         await ctx.SaveChangesAsync();
     }
@@ -1218,19 +1210,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         ctx.IntMgrPartnerPairings.Add(pairing);
         await ctx.SaveChangesAsync();
         return pairing.Id;
-    }
-
-    private async Task SeedEventTypesAsync()
-    {
-        await using var ctx = CreateContext();
-        foreach (var name in new[]
-                 {
-                     "Partner Change Request", "Partner Change Approved",
-                     "Partner Change Rejected", "Partner Change Applied",
-                     "Partner Change Cancelled"
-                 })
-            ctx.TucEventTypes.Add(new TucEventType { UcetGroup = "PT", UcetName = name });
-        await ctx.SaveChangesAsync();
     }
 
     private async Task<Guid?> GetPartnerJobGuidAsync(int jobId)

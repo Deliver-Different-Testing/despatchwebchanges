@@ -45,6 +45,31 @@ function rowAged(hours: number, overrides: Partial<JobChangeRequestDto> = {}): J
     };
 }
 
+/** A locally-originated pending row the current tenant owns — i.e. one it can Modify or Cancel. */
+const localPendingRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
+
+type PanelProps = Partial<React.ComponentProps<typeof JobChangeRequestsForJob>>;
+
+/**
+ * Renders the panel and clicks the named action button (e.g. Cancel, Reject)
+ * to open its inline prompt/input. Queue any `forJob` / `cancel` / `reject`
+ * mocks (and pass `onChanged` etc. via `props`) before calling — the render
+ * happens here. Returns the userEvent instance for follow-up interactions.
+ */
+async function renderAndClick(buttonName: RegExp, props: PanelProps = {}): Promise<ReturnType<typeof userEvent.setup>> {
+    const user = userEvent.setup();
+    renderWithProviders(<JobChangeRequestsForJob jobId={42} {...props}/>);
+    expect(await screen.findByRole('button', {name: buttonName})).toBeInTheDocument();
+    await user.click(screen.getByRole('button', {name: buttonName}));
+    return user;
+}
+
+/** Opens the inline "Confirm cancel" prompt for a cancelable row. */
+const openCancelPrompt = (props: PanelProps = {}) => renderAndClick(/^Cancel$/, props);
+
+/** Opens the inline rejection-reason input for an approvable row. */
+const openRejectInput = (props: PanelProps = {}) => renderAndClick(/^Reject$/, props);
+
 describe('JobChangeRequestsForJob', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -154,12 +179,8 @@ describe('JobChangeRequestsForJob', () => {
 
     describe('reject with reason', () => {
         it('clicking Reject opens an inline reason input instead of firing immediately', async () => {
-            const user = userEvent.setup();
             mockApi.forJob.mockResolvedValueOnce([baseRow]);
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByRole('button', {name: /^Reject$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Reject$/}));
+            await openRejectInput();
 
             expect(screen.getByLabelText(/Reason for rejection/i)).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Confirm reject/})).toBeInTheDocument();
@@ -168,16 +189,12 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('Confirm reject submits the reason and refetches', async () => {
-            const user = userEvent.setup();
             mockApi.forJob.mockResolvedValueOnce([baseRow]).mockResolvedValueOnce([
                 {...baseRow, status: 'Rejected'},
             ]);
             mockApi.reject.mockResolvedValueOnce({success: true});
 
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByRole('button', {name: /^Reject$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Reject$/}));
+            const user = await openRejectInput();
             await user.click(screen.getByLabelText(/Reason for rejection/i));
             await user.paste('rate too low');
             await user.click(screen.getByRole('button', {name: /Confirm reject/}));
@@ -192,13 +209,9 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('Back returns to the row state without calling the API', async () => {
-            const user = userEvent.setup();
             mockApi.forJob.mockResolvedValueOnce([baseRow]);
 
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByRole('button', {name: /^Reject$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Reject$/}));
+            const user = await openRejectInput();
             await user.click(screen.getByRole('button', {name: /^Back$/}));
 
             expect(screen.queryByLabelText(/Reason for rejection/i)).not.toBeInTheDocument();
@@ -211,8 +224,7 @@ describe('JobChangeRequestsForJob', () => {
         it('cancels the existing row and invokes onModifyRequest with the field + value', async () => {
             const user = userEvent.setup();
             const onModifyRequest = jest.fn();
-            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
-            mockApi.forJob.mockResolvedValueOnce([localRow]).mockResolvedValueOnce([]);
+            mockApi.forJob.mockResolvedValueOnce([localPendingRow]).mockResolvedValueOnce([]);
             mockApi.cancel.mockResolvedValueOnce({success: true});
 
             renderWithProviders(<JobChangeRequestsForJob jobId={42} onModifyRequest={onModifyRequest}/>);
@@ -227,8 +239,7 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('does not show the Modify button when onModifyRequest is not supplied', async () => {
-            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
-            mockApi.forJob.mockResolvedValueOnce([localRow]);
+            mockApi.forJob.mockResolvedValueOnce([localPendingRow]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
             expect(await screen.findByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
             expect(screen.queryByRole('button', {name: /Modify/})).not.toBeInTheDocument();
@@ -237,14 +248,8 @@ describe('JobChangeRequestsForJob', () => {
 
     describe('cancel own pending request', () => {
         it('clicking Cancel opens an inline "Confirm cancel" prompt instead of firing immediately', async () => {
-            const user = userEvent.setup();
-            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
-            mockApi.forJob.mockResolvedValueOnce([localRow]);
-
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+            mockApi.forJob.mockResolvedValueOnce([localPendingRow]);
+            await openCancelPrompt();
 
             expect(screen.getByText(/Cancel this change request\?/)).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /Confirm cancel/})).toBeInTheDocument();
@@ -253,14 +258,9 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('Keep request returns to the row state without calling the API', async () => {
-            const user = userEvent.setup();
-            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
-            mockApi.forJob.mockResolvedValueOnce([localRow]);
+            mockApi.forJob.mockResolvedValueOnce([localPendingRow]);
+            const user = await openCancelPrompt();
 
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
             await user.click(screen.getByRole('button', {name: /Keep request/}));
 
             expect(screen.queryByText(/Cancel this change request\?/)).not.toBeInTheDocument();
@@ -269,18 +269,13 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('Confirm cancel calls the API, refetches, fires onChanged, and surfaces a success banner', async () => {
-            const user = userEvent.setup();
             const onChanged = jest.fn();
-            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
-            mockApi.forJob.mockResolvedValueOnce([localRow]).mockResolvedValueOnce([
-                {...localRow, status: 'Cancelled'},
+            mockApi.forJob.mockResolvedValueOnce([localPendingRow]).mockResolvedValueOnce([
+                {...localPendingRow, status: 'Cancelled'},
             ]);
             mockApi.cancel.mockResolvedValueOnce({success: true});
 
-            renderWithProviders(<JobChangeRequestsForJob jobId={42} onChanged={onChanged}/>);
-            expect(await screen.findByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+            const user = await openCancelPrompt({onChanged});
             await user.click(screen.getByRole('button', {name: /Confirm cancel/}));
 
             await waitFor(() => {
@@ -292,15 +287,10 @@ describe('JobChangeRequestsForJob', () => {
         });
 
         it('surfaces an error message when the cancel API rejects', async () => {
-            const user = userEvent.setup();
-            const localRow: JobChangeRequestDto = {...baseRow, origin: 'Local', approvalPartyType: 'PartnerTenant'};
-            mockApi.forJob.mockResolvedValueOnce([localRow]);
+            mockApi.forJob.mockResolvedValueOnce([localPendingRow]);
             mockApi.cancel.mockRejectedValueOnce(new Error('Network down'));
 
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByRole('button', {name: /^Cancel$/})).toBeInTheDocument();
-
-            await user.click(screen.getByRole('button', {name: /^Cancel$/}));
+            const user = await openCancelPrompt();
             await user.click(screen.getByRole('button', {name: /Confirm cancel/}));
 
             expect(await screen.findByText(/Network down/)).toBeInTheDocument();
@@ -308,33 +298,57 @@ describe('JobChangeRequestsForJob', () => {
     });
 
     describe('aging chips', () => {
-        it('shows no aging chip for fresh requests (< 24h)', async () => {
-            mockApi.forJob.mockResolvedValueOnce([rowAged(2)]);
+        // Nothing under the 72h "Overdue" threshold renders an aging chip — the
+        // amber "Review soon" (24–72h) tier was removed, so fresh and stale rows
+        // both show no chip.
+        it.each<[string, number]>([
+            ['fresh requests (< 24h)', 2],
+            ['requests aged 24h–72h (former "Review soon" tier)', 48],
+        ])('shows no aging chip for %s', async (_label, hours) => {
+            mockApi.forJob.mockResolvedValueOnce([rowAged(hours)]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
             expect(await screen.findByText('Quantity')).toBeInTheDocument();
-            expect(screen.queryByText(/Review soon/)).not.toBeInTheDocument();
-            expect(screen.queryByText(/Overdue/)).not.toBeInTheDocument();
-        });
-
-        it('shows "Review soon" for requests aged 24h–72h', async () => {
-            mockApi.forJob.mockResolvedValueOnce([rowAged(48)]);
-            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
-            expect(await screen.findByText('Quantity')).toBeInTheDocument();
-            expect(screen.getByText(/Review soon/)).toBeInTheDocument();
+            expect(screen.queryByText('Review soon')).not.toBeInTheDocument();
+            expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
         });
 
         it('shows "Overdue" for requests aged > 72h', async () => {
             mockApi.forJob.mockResolvedValueOnce([rowAged(100)]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
             expect(await screen.findByText('Quantity')).toBeInTheDocument();
-            expect(screen.getByText(/Overdue/)).toBeInTheDocument();
+            expect(screen.getByText('Overdue')).toBeInTheDocument();
         });
 
         it('omits aging chips on non-Pending rows', async () => {
             mockApi.forJob.mockResolvedValueOnce([{...rowAged(100), status: 'Applied'}]);
             renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
             expect(await screen.findByText('Applied')).toBeInTheDocument();
-            expect(screen.queryByText(/Overdue/)).not.toBeInTheDocument();
+            expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('reason callout', () => {
+        it('renders the reason in a labelled callout (no surrounding quote characters)', async () => {
+            mockApi.forJob.mockResolvedValueOnce([
+                {...baseRow, reason: 'Customer needs same-day delivery'},
+            ]);
+            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+
+            // The "REASON" label is uppercased via CSS, so the DOM text is "Reason".
+            expect(await screen.findByText('Reason')).toBeInTheDocument();
+            const body = screen.getByText('Customer needs same-day delivery');
+            expect(body).toBeInTheDocument();
+            // The old treatment wrapped the reason in literal “smart quotes” — ensure that's gone.
+            expect(body.textContent).toBe('Customer needs same-day delivery');
+        });
+
+        it('renders no reason callout when the row has no reason', async () => {
+            mockApi.forJob.mockResolvedValueOnce([
+                {...baseRow, reason: undefined},
+            ]);
+            renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
+            expect(await screen.findByText('Quantity')).toBeInTheDocument();
+            expect(screen.queryByText('Reason')).not.toBeInTheDocument();
         });
     });
 

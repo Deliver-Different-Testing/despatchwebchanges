@@ -531,6 +531,8 @@ public partial class TucJob
 
     public virtual ICollection<PricingBreakdown> PricingBreakdownJobs { get; set; } = new List<PricingBreakdown>();
 
+    public virtual Route Route { get; set; }
+
     public virtual TucSource Source { get; set; }
 
     public virtual TblAirport ToAirport { get; set; }

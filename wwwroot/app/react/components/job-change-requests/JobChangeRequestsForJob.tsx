@@ -32,11 +32,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import {alpha} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from '@mui/icons-material/Edit';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import FormatQuoteIcon from '@mui/icons-material/FormatQuote';
 import {jobChangeRequestApi, type JobChangeRequestDto} from '../../services/jobChangeRequestApi';
 import {useJobChangeRequests} from './useJobChangeRequests';
 import {
@@ -86,6 +88,19 @@ const statusColor = (status: string): StatusColor => {
             return 'default';
     }
 };
+
+/**
+ * Shared treatment for the small status/label chips (status, origin, awaiting,
+ * overdue). Uppercasing is done in CSS — the label string stays natural case so
+ * the DOM text content (and `getByText(...)` queries / screen readers) is intact.
+ * Value-content chips deliberately do NOT use this, so prices/dates/addresses
+ * stay readable.
+ */
+const labelChipSx = {
+    textTransform: 'uppercase',
+    fontWeight: 600,
+    letterSpacing: '0.04em',
+} satisfies SxProps<Theme>;
 
 export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = ({
     jobId,
@@ -372,20 +387,17 @@ function ChangeRequestCard({
                         label={row.status}
                         size="small"
                         color={status}
-                        variant={row.status === 'Pending' ? 'filled' : 'outlined'}
+                        variant="filled"
+                        sx={labelChipSx}
                     />
-                    {row.requiresCommercialRefresh && (
-                        <Tooltip title="Triggers a price re-rate when applied">
-                            <Chip size="small" label="re-rates" color="warning" variant="outlined"/>
-                        </Tooltip>
-                    )}
                     <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 0.5}}>
-                        {row.status === 'Pending' && aging !== 'fresh' && (
+                        {row.status === 'Pending' && aging === 'overdue' && (
                             <Chip
                                 size="small"
-                                color={aging === 'overdue' ? 'error' : 'warning'}
-                                label={aging === 'overdue' ? 'Overdue' : 'Review soon'}
+                                color="error"
+                                label="Overdue"
                                 variant="filled"
+                                sx={labelChipSx}
                             />
                         )}
                         <Tooltip title={requestedAtTooltip}>
@@ -414,9 +426,24 @@ function ChangeRequestCard({
                 )}
 
                 {row.reason && (
-                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1, fontStyle: 'italic'}}>
-                        “{row.reason}”
-                    </Typography>
+                    <Box sx={{
+                        mt: 1.5, p: 1.5,
+                        border: '1.5px solid', borderColor: 'grey.200', borderRadius: 2, bgcolor: 'grey.50',
+                        display: 'flex', gap: 1, alignItems: 'flex-start',
+                    }}>
+                        <FormatQuoteIcon sx={{fontSize: 18, color: 'text.disabled', transform: 'scaleX(-1)', mt: '1px'}}/>
+                        <Box sx={{minWidth: 0}}>
+                            <Typography sx={{
+                                fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+                                letterSpacing: '0.08em', color: 'text.secondary', mb: 0.25,
+                            }}>
+                                Reason
+                            </Typography>
+                            <Typography variant="body2" sx={{color: 'text.primary', whiteSpace: 'pre-wrap', wordBreak: 'break-word'}}>
+                                {row.reason}
+                            </Typography>
+                        </Box>
+                    </Box>
                 )}
 
                 {recentlyCancelled && (
@@ -494,7 +521,8 @@ function ChangeRequestCard({
                             size="small"
                             label={row.origin === 'Local' ? 'You requested' : 'Partner requested'}
                             color={row.origin === 'Local' ? 'primary' : 'secondary'}
-                            variant={row.origin === 'Local' ? 'outlined' : 'filled'}
+                            variant="filled"
+                            sx={labelChipSx}
                         />
                         <Box sx={{ml: 'auto', display: 'flex', gap: 1, alignItems: 'center'}}>
                             {canApprove && (
@@ -527,7 +555,8 @@ function ChangeRequestCard({
                                         icon={<HourglassEmptyIcon/>}
                                         label="Awaiting partner"
                                         color="info"
-                                        variant="outlined"
+                                        variant="filled"
+                                        sx={labelChipSx}
                                     />
                                     {onModify && (
                                         <Button
@@ -557,7 +586,8 @@ function ChangeRequestCard({
                                     icon={<HourglassEmptyIcon/>}
                                     label="Awaiting partner"
                                     color="info"
-                                    variant="outlined"
+                                    variant="filled"
+                                    sx={labelChipSx}
                                 />
                             )}
                         </Box>
@@ -708,8 +738,8 @@ function ValueDelta({fromDisplay, toDisplay, chipColor, requestedAccent}: ValueD
         <Box sx={{mb: 0.5, display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap'}}>
             <Chip
                 size="small"
-                color={chipColor}
-                variant="outlined"
+                color="default"
+                variant="filled"
                 label={fromDisplay}
                 sx={{maxWidth: '100%', '& .MuiChip-label': {whiteSpace: 'normal'}}}
             />

@@ -287,6 +287,8 @@ public partial class TucCourier
 
     public virtual TblBulkRegion Region { get; set; }
 
+    public virtual ICollection<Route> Routes { get; set; } = new List<Route>();
+
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
     public virtual ICollection<TblAfterhoursCourier> TblAfterhoursCouriers { get; set; } = new List<TblAfterhoursCourier>();
