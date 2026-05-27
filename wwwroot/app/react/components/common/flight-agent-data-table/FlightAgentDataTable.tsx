@@ -24,6 +24,7 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import type {SxProps, Theme} from '@mui/material';
 import dayjs from 'dayjs';
 import AddIcon from '@mui/icons-material/Add';
 import CheckIcon from '@mui/icons-material/Check';
@@ -94,7 +95,7 @@ const compactCellSx = {
     px: 1,
     fontSize: '0.75rem',
     lineHeight: 1.3,
-};
+} satisfies SxProps<Theme>;
 
 const compactHeaderSx = {
     py: 0.5,
@@ -102,7 +103,7 @@ const compactHeaderSx = {
     fontSize: '0.7rem',
     fontWeight: 600,
     whiteSpace: 'nowrap',
-};
+} satisfies SxProps<Theme>;
 
 const compactHeaderActionSx = {...compactHeaderSx, width: 'auto', textAlign: 'right', pr: 0.5};
 const compactCellActionSx = {...compactCellSx, width: 'auto', textAlign: 'right', pr: 0.5};

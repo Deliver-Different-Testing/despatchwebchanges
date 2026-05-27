@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using System.Net.Http.Json;
 using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
@@ -32,8 +31,10 @@ public sealed class DespatchApiClient(
         var body = await response.Content.ReadAsStringAsync(ct);
 
         if (response.IsSuccessStatusCode)
+        {
             return JsonSerializer.Deserialize<JobResponseDto>(body, JsonOptions)
                    ?? new JobResponseDto { Error = new ErrorDto { Message = "Empty response from api" } };
+        }
 
         Log.Error("api BookPickup failed: {StatusCode} {Body}", response.StatusCode, body);
         return new JobResponseDto { Error = new ErrorDto { Message = body } };
@@ -55,7 +56,10 @@ public sealed class DespatchApiClient(
         var request = new HttpRequestMessage(method, new Uri(baseUrlResolver.Resolve(), path));
         request.Headers.Add("Authorization", $"Bearer {requestToken}");
 
-        if (body is not null) request.Content = JsonContent.Create(body);
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
 
         return await httpClient.SendAsync(request, ct);
     }

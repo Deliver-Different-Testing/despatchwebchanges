@@ -36,19 +36,42 @@ public sealed class RateJobService(
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
           
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
-            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            if (!jobDetails.ClientId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            }
+
+            if (!jobDetails.FromId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
+            }
+
+            if (!jobDetails.ToId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
+            }
+
+            if (!jobDetails.SpeedId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            }
+
+            if (!jobDetails.SizeId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            }
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
             if (rateResult is { Rate: > 0 })
+            {
                 await jobCommandRepository.UpdateUrgentJobRateAsync(jobDetails.JobId, rateResult.Rate, jobDetails.JobType, rateResult.Description);
+            }
             else
+            {
                 Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                     jobDetails.JobId,
                     rateResult?.Rate ?? 0);
+            }
         }
         catch (Exception ex)
         {
@@ -67,9 +90,20 @@ public sealed class RateJobService(
         try
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            if (!jobDetails.SpeedId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            }
+
+            if (!jobDetails.ClientId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            }
+
+            if (!jobDetails.SizeId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            }
 
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(
@@ -139,14 +173,36 @@ public sealed class RateJobService(
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
 
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            if (!jobDetails.FromId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
-            if (!jobDetails.ToId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            if (!jobDetails.ClientId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            }
+
+            if (!jobDetails.FromId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "FromId is required.");
+            }
+
+            if (!jobDetails.ToId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ToId is required.");
+            }
+
+            if (!jobDetails.SpeedId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            }
+
+            if (!jobDetails.SizeId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            }
 
             var rateResult = await RateUrgentJobAsync(jobDetails);
-            if (rateResult is { Rate: > 0 }) return rateResult;
+            if (rateResult is { Rate: > 0 })
+            {
+                return rateResult;
+            }
 
             Log.Warning("Job rating failed or returned invalid rate for JobId: {JobId}. Rate: {Rate}",
                 jobDetails.JobId,
@@ -173,9 +229,20 @@ public sealed class RateJobService(
         {
             ArgumentNullException.ThrowIfNull(jobDetails);
             
-            if (!jobDetails.SpeedId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
-            if (!jobDetails.ClientId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
-            if (!jobDetails.SizeId.HasValue) throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            if (!jobDetails.SpeedId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SpeedId is required.");
+            }
+
+            if (!jobDetails.ClientId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "ClientId is required.");
+            }
+
+            if (!jobDetails.SizeId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(jobDetails), "SizeId is required.");
+            }
 
             // Get distances and airport info
             var distanceResult = await CalculateJobRateUsAsync(
@@ -247,7 +314,10 @@ public sealed class RateJobService(
     {
         // Parse the file using JobReportService
         var parsedData = await jobReportService.ParseBulkPriceFileAsync(file);
-        if (parsedData.Count == 0) return new BulkPricePreviewResponse();
+        if (parsedData.Count == 0)
+        {
+            return new BulkPricePreviewResponse();
+        }
 
         // Get current amounts for all jobs before update
         var jobIds = parsedData.Select(d => d.Id).Distinct().ToList();
@@ -277,7 +347,9 @@ public sealed class RateJobService(
                 foreach (var data in parsedData)
                 {
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                    {
                         continue;
+                    }
 
                     var oldAmount = jobInfo.Amount;
                     var newAmount = oldAmount;
@@ -288,7 +360,9 @@ public sealed class RateJobService(
                         // Get the new amount after recalculation
                         var updatedAmounts = await jobQueryRepository.GetJobCurrentAmountsAsync([data.Id]);
                         if (updatedAmounts.TryGetValue(data.Id, out var updated))
+                        {
                             newAmount = updated.Amount;
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -319,7 +393,9 @@ public sealed class RateJobService(
                 foreach (var data in parsedData)
                 {
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                    {
                         continue;
+                    }
 
                     var oldAmount = jobInfo.Amount;
                     var baseAmount = data.RawBaseAmount ?? 0;
@@ -401,7 +477,9 @@ public sealed class RateJobService(
                 foreach (var data in parsedData)
                 {
                     if (!currentAmounts.TryGetValue(data.Id, out var jobInfo))
+                    {
                         continue;
+                    }
 
                     var oldAmount = jobInfo.Amount;
                     var newAmount = data.Amount ?? oldAmount;
@@ -428,6 +506,7 @@ public sealed class RateJobService(
         // Handle Void field for all pricing modes - apply void status regardless of pricing mode selected
         var jobsToVoid = parsedData.Where(d => d.Void == true).Select(d => d.Id).ToList();
         if (jobsToVoid.Count <= 0)
+        {
             return new BulkPricePreviewResponse
             {
                 Rows = resultRows,
@@ -435,6 +514,7 @@ public sealed class RateJobService(
                 TotalOldAmount = totalOldAmount,
                 TotalNewAmount = totalNewAmount
             };
+        }
 
         await jobCommandRepository.UpdateJobVoidStatusAsync(jobsToVoid);
         Log.Information("Voided {Count} jobs via bulk upload", jobsToVoid.Count);
@@ -534,7 +614,9 @@ public sealed class RateJobService(
         decimal? toLongitude)
     {
         if (!AreValidCoordinates(fromLatitude, fromLongitude, toLatitude, toLongitude))
+        {
             return 0;
+        }
 
         var fromLatLng = $"{fromLatitude},{fromLongitude}";
         var toLatLng = $"{toLatitude},{toLongitude}";
@@ -604,13 +686,15 @@ public sealed class RateJobService(
     private static double CalculateMilesFromRoute(HereMapRouteResponseV8 routeResponse)
     {
         if (routeResponse?.Routes == null || routeResponse.Routes.Count == 0)
+        {
             return 0;
+        }
 
         var totalMeters = routeResponse.Routes[0].Sections
             .Where(s => s.Transport.Mode == "car")
             .Sum(s => s.Summary.Length);
 
-        return Math.Round(totalMeters / 1609.344);
+        return Math.Round(totalMeters / 1609.344, MidpointRounding.AwayFromZero);
     }
 
     /// <summary>
@@ -742,7 +826,10 @@ public sealed class RateJobService(
     /// <returns>A collection of UrgentPackageObjects, or empty if packages is null/empty.</returns>
     private static IEnumerable<UrgentPackageObject> MapPackages(IReadOnlyList<PackageDetailsDto> packages)
     {
-        if (packages == null || packages.Count == 0) return new List<UrgentPackageObject>();
+        if (packages == null || packages.Count == 0)
+        {
+            return new List<UrgentPackageObject>();
+        }
 
         return packages.Select(p => new UrgentPackageObject
         {

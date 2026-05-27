@@ -175,7 +175,11 @@ public sealed class AddAgentRecoveryJobService(
         while (number <= 999) // Reasonable upper limit, adjust as needed
         {
             var newJobNumber = $"{baseJobNumber}R{number}";
-            if (!await queryRepository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
+            if (!await queryRepository.JobNumberExistsAsync(newJobNumber))
+            {
+                return newJobNumber;
+            }
+
             number++;
         }
 

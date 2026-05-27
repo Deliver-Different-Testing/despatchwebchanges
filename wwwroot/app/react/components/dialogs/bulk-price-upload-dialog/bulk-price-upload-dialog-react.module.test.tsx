@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Bulk Price Upload Dialog React Module Tests
  *

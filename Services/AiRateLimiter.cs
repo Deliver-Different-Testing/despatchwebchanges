@@ -29,8 +29,11 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
         // Check per-tenant limit
         var tenantKey = $"ai_rate:tenant:{tenantId}:{windowKey}";
         var tenantCount = await IncrementCounterAsync(tenantKey);
-        if (tenantCount <= _settings.RateLimitPerTenantPerMinute) return true;
-       
+        if (tenantCount <= _settings.RateLimitPerTenantPerMinute)
+        {
+            return true;
+        }
+
         Log.Warning("AI rate limit exceeded for tenant {TenantId}: {Count}/{Limit}",
             tenantId, tenantCount, _settings.RateLimitPerTenantPerMinute);
         return false;
@@ -48,7 +51,10 @@ public sealed class AiRateLimiter(IDistributedCache cache, IOptions<AnthropicSet
     {
         var existing = await cache.GetStringAsync(key);
         var count = 1;
-        if (existing != null && int.TryParse(existing, out var parsed)) count = parsed + 1;
+        if (existing != null && int.TryParse(existing, out var parsed))
+        {
+            count = parsed + 1;
+        }
 
         await cache.SetStringAsync(key, count.ToString(), new DistributedCacheEntryOptions
         {

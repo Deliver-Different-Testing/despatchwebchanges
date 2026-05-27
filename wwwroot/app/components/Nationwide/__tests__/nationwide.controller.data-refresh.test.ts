@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import './nationwide.controller.test-setup';
 import {ControllerClass, createController, makeJob, setupWindowMocks, JobDataType} from './nationwide.controller.test-helpers';
 

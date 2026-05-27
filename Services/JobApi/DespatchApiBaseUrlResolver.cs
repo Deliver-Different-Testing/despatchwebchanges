@@ -34,10 +34,14 @@ public sealed class DespatchApiBaseUrlResolver(
 
         var fallback = options.Value?.BaseUrl;
         if (string.IsNullOrWhiteSpace(fallback))
+        {
             fallback = Environment.GetEnvironmentVariable("WebAPIUrl");
+        }
 
         if (!string.IsNullOrWhiteSpace(fallback))
+        {
             return new Uri(fallback.TrimEnd('/') + "/");
+        }
 
         throw new InvalidOperationException(
             "Cannot resolve Despatch API base URL: inbound request host has no parent domain "

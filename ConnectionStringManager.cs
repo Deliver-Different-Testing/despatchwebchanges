@@ -19,7 +19,10 @@ public class ConnectionStringManager(
 
     public async Task SetConnectionStringAsync(string tenantAppCacheKey, string connectionString)
     {
-        if (string.IsNullOrEmpty(connectionString)) throw new ArgumentNullException(nameof(connectionString));
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new ArgumentNullException(nameof(connectionString));
+        }
 
         // Always set in memory cache first (fast, reliable)
         SetMemoryCache(tenantAppCacheKey, connectionString);
@@ -97,7 +100,9 @@ public class ConnectionStringManager(
 
                 // Key doesn't exist in cache - no point retrying
                 if (attempt == 1)
+                {
                     Log.Debug("Connection string not found in distributed cache for {CacheKey}", tenantAppCacheKey);
+                }
 
                 return null;
             }

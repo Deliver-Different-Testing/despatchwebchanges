@@ -32,7 +32,9 @@ public static class TimeZoneHelper
     private static TimeZoneInfo GetTimeZoneInfo(string timeZone)
     {
         if (string.IsNullOrWhiteSpace(timeZone))
+        {
             throw new ArgumentException("Time zone cannot be null or empty.", nameof(timeZone));
+        }
 
         if (TimeZoneInfo.TryFindSystemTimeZoneById(timeZone, out var tz))
         {

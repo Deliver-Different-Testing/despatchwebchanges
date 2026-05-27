@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * SearchCriteriaPanel Component Tests
  *
@@ -100,7 +99,8 @@ describe('SearchCriteriaPanel', () => {
 
         // Job ID
         const jobIdInput = screen.getByPlaceholderText('Enter job ID');
-        await user.type(jobIdInput, '123');
+        await user.click(jobIdInput);
+        await user.paste('123');
         expect(props.onCriteriaChange).toHaveBeenCalledWith('jobId', 123);
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(jobIdInput);
@@ -109,7 +109,8 @@ describe('SearchCriteriaPanel', () => {
         // Bulk Job ID
         (props.onCriteriaChange as jest.Mock).mockClear();
         const bulkJobIdInput = screen.getByPlaceholderText('Enter bulk job ID');
-        await user.type(bulkJobIdInput, '456');
+        await user.click(bulkJobIdInput);
+        await user.paste('456');
         expect(props.onCriteriaChange).toHaveBeenCalledWith('bulkJobId', 456);
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(bulkJobIdInput);
@@ -118,7 +119,8 @@ describe('SearchCriteriaPanel', () => {
         // Job Number
         (props.onCriteriaChange as jest.Mock).mockClear();
         const jobNoInput = screen.getByPlaceholderText('Enter job number');
-        await user.type(jobNoInput, 'JOB-001');
+        await user.click(jobNoInput);
+        await user.paste('JOB-001');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('job', 'JOB-001');
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(jobNoInput);
@@ -127,7 +129,8 @@ describe('SearchCriteriaPanel', () => {
         // General Search
         (props.onCriteriaChange as jest.Mock).mockClear();
         const wildInput = screen.getByPlaceholderText('Address, name, reference...');
-        await user.type(wildInput, 'test query');
+        await user.click(wildInput);
+        await user.paste('test query');
         expect(props.onCriteriaChange).toHaveBeenLastCalledWith('wild', 'test query');
         (props.onCriteriaChange as jest.Mock).mockClear();
         await user.clear(wildInput);
@@ -274,7 +277,8 @@ describe('SearchCriteriaPanel', () => {
         expect(bulkJobIdInput).toBeEnabled();
 
         // Type in Job ID — Bulk Job ID becomes disabled
-        await user.type(jobIdInput, '5');
+        await user.click(jobIdInput);
+        await user.paste('5');
         expect(bulkJobIdInput).toBeDisabled();
         expect(jobIdInput).toBeEnabled();
 
@@ -283,7 +287,8 @@ describe('SearchCriteriaPanel', () => {
         expect(bulkJobIdInput).toBeEnabled();
 
         // Type in Bulk Job ID — Job ID becomes disabled
-        await user.type(bulkJobIdInput, '99');
+        await user.click(bulkJobIdInput);
+        await user.paste('99');
         expect(jobIdInput).toBeDisabled();
         expect(bulkJobIdInput).toBeEnabled();
     });

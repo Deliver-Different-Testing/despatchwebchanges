@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * CreateJobDialog Component Tests
  */
@@ -215,14 +214,12 @@ describe('CreateJobDialog', () => {
     });
 
     describe('State Reset', () => {
-        it('resets form fields when dialog is reopened', async () => {
-            const user = userEvent.setup();
+        it('resets form fields when dialog is reopened', () => {
             const props = createMockProps();
             const {rerender} = renderWithAllProviders(<CreateJobDialog {...props} />);
 
             const chargeInput = screen.getByLabelText(/charge amount/i);
-            await user.click(chargeInput);
-            await user.paste('50');
+            fireEvent.change(chargeInput, {target: {value: '50'}});
             expect(chargeInput).toHaveValue(50);
 
             // Close and reopen
@@ -280,19 +277,15 @@ describe('CreateJobDialog', () => {
 
         /**
          * Helper to select an option in an MUI Autocomplete by typing and picking from the dropdown.
-         * MUI renders the listbox in a portal that gets aria-hidden inside dialogs,
-         * so we query with `hidden: true`.
+         * Uses fireEvent.focus instead of user.click — the slow pointer-event pipeline
+         * (pointerover → pointerdown → mousedown → focus → click) burns ~3s per call in CI,
+         * and we only need focus since selection is done via keyboard.
          */
-        async function selectAutocomplete(
-            user: ReturnType<typeof userEvent.setup>,
-            input: HTMLElement,
-            typeText: string,
-        ) {
-            await user.click(input);
+        function selectAutocomplete(input: HTMLElement, typeText: string) {
+            fireEvent.focus(input);
             if (typeText) {
                 fireEvent.change(input, {target: {value: typeText}});
             }
-            // Use keyboard to select first option
             fireEvent.keyDown(input, {key: 'ArrowDown'});
             fireEvent.keyDown(input, {key: 'Enter'});
         }
@@ -319,15 +312,15 @@ describe('CreateJobDialog', () => {
             renderWithAllProviders(<CreateJobDialog {...props} />);
 
             // Fill all required fields
-            await selectAutocomplete(user, screen.getByLabelText(/client/i), 'Test');
+            selectAutocomplete(screen.getByLabelText(/client/i), 'Test');
             fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
-            await selectAutocomplete(user, screen.getByLabelText(/from address/i), '123');
-            await selectAutocomplete(user, screen.getByLabelText(/to address/i), '123');
+            selectAutocomplete(screen.getByLabelText(/from address/i), '123');
+            selectAutocomplete(screen.getByLabelText(/to address/i), '123');
             fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
             fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
             fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
-            await selectAutocomplete(user, screen.getByLabelText(/vehicle/i), 'Car');
-            await selectAutocomplete(user, screen.getByLabelText(/speed/i), 'Sta');
+            selectAutocomplete(screen.getByLabelText(/vehicle/i), 'Car');
+            selectAutocomplete(screen.getByLabelText(/speed/i), 'Sta');
 
             // Submit
             await user.click(screen.getByRole('button', {name: /create job/i}));

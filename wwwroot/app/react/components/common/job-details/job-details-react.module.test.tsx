@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 
 const mockRender = jest.fn();
 const mockUnmount = jest.fn();

@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Notes API Service Tests
  */

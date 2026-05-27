@@ -26,7 +26,10 @@ public class JobRepositoryClientUpdateTests
         job.ClientCode = newClientCode;
 
         // If this is a parent job, update all child jobs to the same client
-        if (job.Children.Count == 0) return;
+        if (job.Children.Count == 0)
+        {
+            return;
+        }
 
         foreach (var childJob in job.Children)
         {

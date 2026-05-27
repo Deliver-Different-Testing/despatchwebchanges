@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for FilterPanel React component
  * Optimised: read-only tests consolidated to reduce render count.

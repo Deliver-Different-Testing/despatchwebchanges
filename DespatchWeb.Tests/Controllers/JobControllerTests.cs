@@ -241,7 +241,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<JobCoordinateModel> coordinates) Assert.Equal(2, coordinates.Count);
+        if (jsonResult.Value is List<JobCoordinateModel> coordinates)
+        {
+            Assert.Equal(2, coordinates.Count);
+        }
     }
 
     [Fact]
@@ -811,7 +814,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<S3PhotoInfo> photos) Assert.Equal(2, photos.Count);
+        if (jsonResult.Value is List<S3PhotoInfo> photos)
+        {
+            Assert.Equal(2, photos.Count);
+        }
     }
 
     [Fact]
@@ -837,7 +843,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<S3PhotoInfo> photos) Assert.Single(photos);
+        if (jsonResult.Value is List<S3PhotoInfo> photos)
+        {
+            Assert.Single(photos);
+        }
     }
 
     [Fact]
@@ -1562,7 +1571,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> speeds) Assert.Equal(3, speeds.Count);
+        if (jsonResult.Value is List<Suggestion> speeds)
+        {
+            Assert.Equal(3, speeds.Count);
+        }
     }
 
     [Fact]
@@ -1586,7 +1598,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> speeds) Assert.Single((IEnumerable)speeds);
+        if (jsonResult.Value is List<Suggestion> speeds)
+        {
+            Assert.Single((IEnumerable)speeds);
+        }
     }
 
     [Fact]
@@ -1611,7 +1626,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> contacts) Assert.Equal(2, contacts.Count);
+        if (jsonResult.Value is List<Suggestion> contacts)
+        {
+            Assert.Equal(2, contacts.Count);
+        }
     }
 
     [Fact]
@@ -1635,7 +1653,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Lookup> locations) Assert.Equal(2, locations.Count);
+        if (jsonResult.Value is List<Lookup> locations)
+        {
+            Assert.Equal(2, locations.Count);
+        }
     }
 
     [Fact]
@@ -1659,7 +1680,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<UndeliverableLocation> locations) Assert.Equal(2, locations.Count);
+        if (jsonResult.Value is List<UndeliverableLocation> locations)
+        {
+            Assert.Equal(2, locations.Count);
+        }
     }
 
     [Fact]
@@ -1684,7 +1708,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> statuses) Assert.Equal(3, statuses.Count);
+        if (jsonResult.Value is List<Suggestion> statuses)
+        {
+            Assert.Equal(3, statuses.Count);
+        }
     }
 
     [Fact]
@@ -1708,7 +1735,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<InternalStatus> statuses) Assert.Equal(2, statuses.Count);
+        if (jsonResult.Value is List<InternalStatus> statuses)
+        {
+            Assert.Equal(2, statuses.Count);
+        }
     }
 
     [Fact]
@@ -1733,7 +1763,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<Suggestion> eventTypes) Assert.Equal(3, eventTypes.Count);
+        if (jsonResult.Value is List<Suggestion> eventTypes)
+        {
+            Assert.Equal(3, eventTypes.Count);
+        }
     }
 
     [Fact]
@@ -2077,7 +2110,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<OkObjectResult>(result);
         var okResult = (OkObjectResult)result;
-        if (okResult.Value is List<S3FileInfo> files) Assert.Equal(2, files.Count);
+        if (okResult.Value is List<S3FileInfo> files)
+        {
+            Assert.Equal(2, files.Count);
+        }
     }
 
     [Fact]
@@ -2334,7 +2370,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<MultiSuggestion> jobs) Assert.Equal(2, jobs.Count);
+        if (jsonResult.Value is List<MultiSuggestion> jobs)
+        {
+            Assert.Equal(2, jobs.Count);
+        }
     }
 
     [Fact]
@@ -2359,7 +2398,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<MultiSuggestion> jobs) Assert.Equal(2, jobs.Count);
+        if (jsonResult.Value is List<MultiSuggestion> jobs)
+        {
+            Assert.Equal(2, jobs.Count);
+        }
     }
 
     [Fact]
@@ -2617,7 +2659,10 @@ public class JobControllerTests : IDisposable
         var jsonResult = (JsonResult)result;
         var journey = jsonResult.Value as List<DeliveryJourneyViewModel>;
         Assert.Single(journey!);
-        if (journey != null) Assert.Equal(jobId, journey[0].JobId);
+        if (journey != null)
+        {
+            Assert.Equal(jobId, journey[0].JobId);
+        }
     }
 
     [Fact]
@@ -2641,7 +2686,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<TimeZoneSuggestion> timeZones) Assert.Equal(2, timeZones.Count);
+        if (jsonResult.Value is List<TimeZoneSuggestion> timeZones)
+        {
+            Assert.Equal(2, timeZones.Count);
+        }
     }
 
     [Fact]
@@ -2991,7 +3039,10 @@ public class JobControllerTests : IDisposable
         // Assert
         Assert.IsType<JsonResult>(result);
         var jsonResult = (JsonResult)result;
-        if (jsonResult.Value is List<ScanDetailResult> results) Assert.Single((IEnumerable)results);
+        if (jsonResult.Value is List<ScanDetailResult> results)
+        {
+            Assert.Single((IEnumerable)results);
+        }
     }
 
     private static DispatchJobViewModel CreateTestDispatchJob(int id, string jobNumber) =>

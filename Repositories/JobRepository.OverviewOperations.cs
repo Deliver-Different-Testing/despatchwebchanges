@@ -52,17 +52,23 @@ public partial class JobRepository
 
         // Apply region filter if provided
         if (parameters.Regions.Count > 0)
+        {
             query = query.Where(j =>
                 j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
             );
+        }
 
         // Apply speed filter if provided
         if (parameters.Speeds.Count > 0)
+        {
             query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
+        }
 
         // Apply courier filter if provided
         if (parameters.Couriers.Count > 0)
+        {
             query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
+        }
 
         // Apply search filter if provided
         if (!string.IsNullOrWhiteSpace(parameters.Search))
@@ -88,9 +94,14 @@ public partial class JobRepository
 
         // Apply date range filter
         if (parameters.StartDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate >= parameters.StartDate);
+        }
+
         if (parameters.EndDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate <= parameters.EndDate);
+        }
 
         query = ApplySorting(query, parameters.OrderBy, parameters.OrderDirection);
 
@@ -243,23 +254,34 @@ public partial class JobRepository
 
         // Apply date range filter using range comparisons to allow index usage
         if (parameters.StartDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate >= parameters.StartDate.Value.Date);
+        }
+
         if (parameters.EndDate.HasValue)
+        {
             query = query.Where(j => j.UcjbDate < parameters.EndDate.Value.Date.AddDays(1));
+        }
 
         // Apply region filter if provided
         if (parameters.Regions.Count > 0)
+        {
             query = query.Where(j =>
                 j.TblBulkJobs.Any(b => parameters.Regions.Contains(b.Region.BulkRegionId))
             );
+        }
 
         // Apply speed filter if provided
         if (parameters.Speeds.Count > 0)
+        {
             query = query.Where(j => parameters.Speeds.Contains(j.UcjbSpeedNavigation.UcjtId));
+        }
 
         // Apply courier filter if provided
         if (parameters.Couriers.Count > 0)
+        {
             query = query.Where(j => parameters.Couriers.Contains(j.UcjbCourier.UccrId));
+        }
 
         // Order by nullable column directly — EF Core handles null ordering in SQL
         query = query.OrderBy(j => j.PickUpTime);
@@ -304,7 +326,10 @@ public partial class JobRepository
             .TagWith("GetOpenJobs - Step 1: Job Data")
             .ToListAsync();
 
-        if (jobDtos.Count == 0) return new List<OpenJobResponse>();
+        if (jobDtos.Count == 0)
+        {
+            return new List<OpenJobResponse>();
+        }
 
         var courierIds = jobDtos
             .Where(j => j.CourierId.HasValue)
@@ -473,11 +498,16 @@ public partial class JobRepository
     private static DateTimeOffset? CalculateDeliveryTime(OpenJobDto dto, string tenantTimeZone)
     {
         if (dto.DeliveryTime.HasValue)
+        {
             return TimeZoneHelper.SetDateTimeWithTimeZone(dto.DeliveryTime.Value,
                 dto.DeliveryTimeZone ?? tenantTimeZone);
+        }
+
         if (dto.PickupTime.HasValue && dto.SpeedMinutes.HasValue)
+        {
             return TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value.AddMinutes(dto.SpeedMinutes.Value),
                 dto.PickupTimeZone ?? tenantTimeZone);
+        }
 
         return dto.PickupTime.HasValue
             ? TimeZoneHelper.SetDateTimeWithTimeZone(dto.PickupTime.Value, dto.PickupTimeZone ?? tenantTimeZone)

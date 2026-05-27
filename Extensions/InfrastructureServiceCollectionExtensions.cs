@@ -33,7 +33,10 @@ public static class InfrastructureServiceCollectionExtensions
     private static AWSCredentials LoadSsoCredentials(string profile)
     {
         var chain = new CredentialProfileStoreChain();
-        if (chain.TryGetAWSCredentials(profile, out var credentials)) return credentials;
+        if (chain.TryGetAWSCredentials(profile, out var credentials))
+        {
+            return credentials;
+        }
         // If the SSO credentials are not found, use FallbackCredentialsFactory to get credentials
 #pragma warning disable CS0618 // Type or member is obsolete
         credentials = FallbackCredentialsFactory.GetCredentials();

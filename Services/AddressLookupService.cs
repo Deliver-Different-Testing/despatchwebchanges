@@ -26,7 +26,10 @@ public sealed class AddressLookupService(
     /// <returns>A list of matching location results with address labels and coordinates.</returns>
     public async Task<IReadOnlyList<HereMapsLocationResult>> AutocompleteAddressSearchAsync(string text)
     {
-        if (string.IsNullOrWhiteSpace(text) || text.Length < 3) return [];
+        if (string.IsNullOrWhiteSpace(text) || text.Length < 3)
+        {
+            return [];
+        }
 
         try
         {
@@ -55,9 +58,15 @@ public sealed class AddressLookupService(
             return result?.Items?.Where(item =>
             {
                 if (item?.Address?.Label == null || string.IsNullOrWhiteSpace(item.Address.Label))
+                {
                     return false;
+                }
 
-                if (string.IsNullOrEmpty(item.ResultType)) return true;
+                if (string.IsNullOrEmpty(item.ResultType))
+                {
+                    return true;
+                }
+
                 var excludedTypes = StringArray;
                 return !excludedTypes.Contains(item.ResultType);
             }).ToList() ?? [];

@@ -17,7 +17,10 @@ public static partial class JobMappings
         IDbContextFactory<DespatchContext> contextFactory,
         ITenantInfoService infoService)
     {
-        if (jobs.Count == 0) return;
+        if (jobs.Count == 0)
+        {
+            return;
+        }
 
         // Only flight info needs batch loading for child jobs that inherit from parents
         await using var flightContext = await contextFactory.CreateDbContextAsync();
@@ -39,7 +42,10 @@ public static partial class JobMappings
         IDbContextFactory<DespatchContext> contextFactory,
         ITenantInfoService infoService)
     {
-        if (jobs.Count == 0) return;
+        if (jobs.Count == 0)
+        {
+            return;
+        }
 
         // Only flight info needs batch loading for child jobs that inherit from parents
         await using var flightContext = await contextFactory.CreateDbContextAsync();
@@ -75,7 +81,10 @@ public static partial class JobMappings
 
     private static void ApplyTimezoneToJobDates(List<JobViewModel> jobs, string tenantTimeZone)
     {
-        if (string.IsNullOrEmpty(tenantTimeZone)) return;
+        if (string.IsNullOrEmpty(tenantTimeZone))
+        {
+            return;
+        }
 
         var timeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(tenantTimeZone);
         foreach (var job in jobs.Where(job => job.CreatedDate.HasValue))
@@ -93,7 +102,10 @@ public static partial class JobMappings
         var flightJobsNeedingData = jobs
             .Where(j => j.IsFlightJob && !j.IsFlightAssigned)
             .ToList();
-        if (flightJobsNeedingData.Count == 0) return;
+        if (flightJobsNeedingData.Count == 0)
+        {
+            return;
+        }
 
         // Get effective job IDs (use ParentId for child jobs, own I'd for root/archived jobs)
         var effectiveJobIds = flightJobsNeedingData
@@ -119,7 +131,9 @@ public static partial class JobMappings
         {
             var effectiveJobId = job.ParentId ?? job.Id;
             if (!segmentsGroupedByJob.TryGetValue(effectiveJobId, out var segments) || segments.Count == 0)
+            {
                 continue;
+            }
 
             var departureTimeZone = segments[0].DepartureAirportTimeZoneNavigation?.Name
                                     ?? segments[0].DepartureAirportTimeZone;

@@ -256,7 +256,7 @@ function getRowSx(
         fontSize: densityMode === 'ultra-dense' ? '0.75rem' : '0.8125rem',
         borderBottom: '1px solid',
         borderColor: 'divider',
-    };
+    } satisfies SxProps<Theme>;
 
     const sx: Record<string, any> = {
         cursor: 'pointer',

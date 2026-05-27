@@ -32,7 +32,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         _appKey = Environment.GetEnvironmentVariable("FlightStatusApiAppKey");
 
         // Fallback to launchSettings.json if environment variables not set
-        if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey)) (_appId, _appKey) = LoadCredentialsFromLaunchSettings();
+        if (string.IsNullOrEmpty(_appId) || string.IsNullOrEmpty(_appKey))
+        {
+            (_appId, _appKey) = LoadCredentialsFromLaunchSettings();
+        }
 
         _hasCredentials = !string.IsNullOrEmpty(_appId) && !string.IsNullOrEmpty(_appKey);
 
@@ -70,18 +73,28 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
                     {
                         foreach (var profile in profiles.EnumerateObject())
                         {
-                            if (!profile.Value.TryGetProperty("environmentVariables", out var envVars)) continue;
+                            if (!profile.Value.TryGetProperty("environmentVariables", out var envVars))
+                            {
+                                continue;
+                            }
 
                             string? appId = null;
                             string? appKey = null;
 
                             if (envVars.TryGetProperty("FlightStatusApiAppId", out var appIdProp))
+                            {
                                 appId = appIdProp.GetString();
+                            }
+
                             if (envVars.TryGetProperty("FlightStatusApiAppKey", out var appKeyProp))
+                            {
                                 appKey = appKeyProp.GetString();
+                            }
 
                             if (!string.IsNullOrEmpty(appId) && !string.IsNullOrEmpty(appKey))
+                            {
                                 return (appId, appKey);
+                            }
                         }
                     }
                 }
@@ -272,8 +285,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         // Each connection should include at least one AA-operated flight
         // (connections may include legs operated by regional partners like SkyWest/OO)
         if (result.Connections != null)
+        {
             foreach (var connection in result.Connections) 
                 Assert.Contains(connection.ScheduledFlight, f => f.CarrierFsCode == airline);
+        }
     }
 
     [Fact]
@@ -419,7 +434,11 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
                 var segmentCount = connection.ScheduledFlight?.Count ?? 0;
                 TestContext.Current.TestOutputHelper?.WriteLine($"  Connection with {segmentCount} segment(s), elapsed time: {connection.ElapsedTime} mins");
 
-                if (connection.ScheduledFlight == null) continue;
+                if (connection.ScheduledFlight == null)
+                {
+                    continue;
+                }
+
                 foreach (var segment in connection.ScheduledFlight)
                     TestContext.Current.TestOutputHelper?.WriteLine($"    {segment.CarrierFsCode}{segment.FlightNumber}: " +
                                                                     $"{segment.DepartureAirportFsCode} -> {segment.ArrivalAirportFsCode}");
@@ -486,7 +505,9 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         var tasks = new List<Task<HttpResponseMessage>>();
         for (var i = 0; i < 3; i++)
             if (_httpClient != null)
+            {
                 tasks.Add(_httpClient.GetAsync(url, TestContext.Current.CancellationToken));
+            }
 
         var responses = await Task.WhenAll(tasks);
 

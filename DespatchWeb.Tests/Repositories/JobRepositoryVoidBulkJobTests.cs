@@ -31,7 +31,9 @@ public class JobRepositoryVoidBulkJobTests
     {
         var job = allJobs.FirstOrDefault(j => j.BulkJobId == bulkJobId);
         if (job == null)
+        {
             return [];
+        }
 
         List<int> relatedJobIds;
         if (job.ParentBulkJobId.HasValue)
@@ -77,7 +79,9 @@ public class JobRepositoryVoidBulkJobTests
     private static List<int> DetermineBulkJobsToVoid(VoidBulkJobRequest data, List<TestBulkJob> allJobs)
     {
         if (data.SelectedJobIds is { Count: > 0 })
+        {
             return data.SelectedJobIds;
+        }
 
         return data.VoidSingleJobOnly
             ? GetBulkJobWithChildren(data.BulkJobId, allJobs)

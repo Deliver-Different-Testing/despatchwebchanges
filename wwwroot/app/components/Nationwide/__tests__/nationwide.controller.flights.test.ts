@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import './nationwide.controller.test-setup';
 import {ControllerClass, createController, makeFlightJob, setupWindowMocks} from './nationwide.controller.test-helpers';
 import dayjs from 'dayjs';

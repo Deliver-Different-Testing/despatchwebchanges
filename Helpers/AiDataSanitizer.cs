@@ -12,7 +12,10 @@ public static partial class AiDataSanitizer
 
     public static string Sanitize(string input)
     {
-        if (string.IsNullOrEmpty(input)) return input;
+        if (string.IsNullOrEmpty(input))
+        {
+            return input;
+        }
 
         var result = PhonePattern().Replace(input, "[PHONE]");
         result = EmailPattern().Replace(result, "[EMAIL]");

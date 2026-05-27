@@ -27,7 +27,11 @@ public class NationwideJobController(
         {
             var clientIds = await RetrieveAndFormatClientIds();
 
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            if (!data.IsInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            }
+
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
@@ -50,7 +54,11 @@ public class NationwideJobController(
         {
             var clientIds = await RetrieveAndFormatClientIds();
 
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            if (!data.IsInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            }
+
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
@@ -73,7 +81,11 @@ public class NationwideJobController(
         {
             var clientIds = await RetrieveAndFormatClientIds();
 
-            if (!data.IsInternal) await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            if (!data.IsInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(data.Cid, clientIds);
+            }
+
             var isUsTenant = infoService.IsUsTenant();
 
             var result = await repository.NationwideJobListAsync(data, data.IsInternal, isUsTenant, clientIds,
@@ -218,7 +230,10 @@ public class NationwideJobController(
                     segment.DepartureTime,
                     segment.DepartureAirportFsCode) ?? string.Empty;
 
-                if (!string.IsNullOrEmpty(webhookId)) webhookIds.Add(webhookId);
+                if (!string.IsNullOrEmpty(webhookId))
+                {
+                    webhookIds.Add(webhookId);
+                }
             }
 
             return webhookIds;
@@ -239,7 +254,9 @@ public class NationwideJobController(
             var webhookIds = await repository.GetFlightWebhookIdByJobIdAsync(jobId);
 
             if (webhookIds.Count == 0)
+            {
                 return Json(new { active = false });
+            }
 
             // Check all webhook rules in parallel
             var tasks = webhookIds.Select(flightService.IsFlightRuleActiveAsync);
@@ -261,7 +278,10 @@ public class NationwideJobController(
         try
         {
             var agents = await repository.GetAgentsAsync(jobId);
-            if (agents.Count != 0) return Json(agents);
+            if (agents.Count != 0)
+            {
+                return Json(agents);
+            }
 
             Log.Information("No agents found for job {JobId}", jobId);
             return Json(new List<AgentViewModel>());
@@ -281,7 +301,9 @@ public class NationwideJobController(
         try
         {
             if (jobRequestModel?.AgentId == null || jobRequestModel.JobId == null)
+            {
                 return BadRequest("Oops, no agent data was provided. Unable to assign to job.");
+            }
 
             await repository.AddAgentToJobAsync(jobRequestModel.AgentId.Value, jobRequestModel.JobId.Value,
                 jobRequestModel.IncludeStopJobs ?? false);
@@ -319,8 +341,15 @@ public class NationwideJobController(
         try
         {
             ArgumentNullException.ThrowIfNull(data);
-            if (!data.AgentId.HasValue) throw new ArgumentNullException(nameof(data));
-            if (!data.JobId.HasValue) throw new ArgumentNullException(nameof(data));
+            if (!data.AgentId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
+
+            if (!data.JobId.HasValue)
+            {
+                throw new ArgumentNullException(nameof(data));
+            }
 
             await repository.SendAgentRequestMessageAsync(data.AgentId.Value, data.JobId.Value);
             return Ok();

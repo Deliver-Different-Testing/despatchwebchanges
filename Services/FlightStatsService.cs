@@ -62,9 +62,14 @@ public sealed class FlightStatsService(
         var arrivalAirport = airports.FirstOrDefault(x => x.AirportId == arrivalAirportId);
 
         if (departureAirport is null)
+        {
             throw new ArgumentException($"Departure airport with ID {departureAirportId} not found in active airports", nameof(departureAirportId));
+        }
+
         if (arrivalAirport is null)
+        {
             throw new ArgumentException($"Arrival airport with ID {arrivalAirportId} not found in active airports", nameof(arrivalAirportId));
+        }
 
         var activeAirlineCodes = await repository.GetActiveAirlineCodesAsync();
         Log.Information("Found {Count} active airline codes: [{Codes}]",
@@ -91,7 +96,9 @@ public sealed class FlightStatsService(
         {
             var selectedAirline = await repository.GetAirlineCodeByIdAsync(airlineId.Value);
             if (string.IsNullOrEmpty(selectedAirline))
+            {
                 throw new ArgumentException($"Airline with ID {airlineId} not found", nameof(airlineId));
+            }
 
             Log.Debug("Filtering FlightWebhooks by specific airline: {Carrier}", selectedAirline);
             query["includeAirlines"] = selectedAirline;
@@ -107,7 +114,10 @@ public sealed class FlightStatsService(
             Log.Warning("No active airline codes found - flight search will not filter by airline");
         }
 
-        if (!string.IsNullOrEmpty(codeType)) query["codeType"] = codeType;
+        if (!string.IsNullOrEmpty(codeType))
+        {
+            query["codeType"] = codeType;
+        }
 
         if (extendedOptions != null && extendedOptions.Count != 0)
         {
@@ -149,7 +159,10 @@ public sealed class FlightStatsService(
 
         // Pre-filter connections to avoid processing unnecessary data
         var connections = flightStatusResponse.Connections;
-        if (connections is null) return [];
+        if (connections is null)
+        {
+            return [];
+        }
 
         // Build O(1) lookup dictionaries from appendix data to avoid repeated O(n) scans
         var airportLookup = (flightStatusResponse.Appendix?.Airports ?? []).ToDictionary(a => a.Fs);
@@ -364,7 +377,10 @@ public sealed class FlightStatsService(
     /// <param name="webhookId">The ID of the flight rule/webhook to delete.</param>
     public async Task DeleteFlightRuleById(string webhookId)
     {
-        if (string.IsNullOrEmpty(webhookId)) return;
+        if (string.IsNullOrEmpty(webhookId))
+        {
+            return;
+        }
 
         var relativeUrl =
             $"json/delete/{webhookId}";
@@ -387,7 +403,9 @@ public sealed class FlightStatsService(
 
         Log.Debug("FlightService StatusCode: {ResponseStatusCode}", response.StatusCode);
         if (!response.IsSuccessStatusCode)
+        {
             throw new Exception($"Failed to disconnect alert alert: {response.ReasonPhrase}");
+        }
     }
 
     /// <summary>
@@ -397,7 +415,10 @@ public sealed class FlightStatsService(
     /// <returns>True if the rule exists and is active; false otherwise.</returns>
     public async Task<bool> IsFlightRuleActiveAsync(string webhookId)
     {
-        if (string.IsNullOrEmpty(webhookId)) return false;
+        if (string.IsNullOrEmpty(webhookId))
+        {
+            return false;
+        }
 
         var query = HttpUtility.ParseQueryString(string.Empty);
         query["appId"] = _appId;
@@ -425,7 +446,11 @@ public sealed class FlightStatsService(
             var content = await response.Content.ReadAsStringAsync();
             var alertResponse = JsonSerializer.Deserialize<CreateAlertResponse>(content, CaseInsensitiveJsonOptions);
 
-            if (alertResponse?.Error?.ErrorId == null) return alertResponse?.Rule?.Id != null;
+            if (alertResponse?.Error?.ErrorId == null)
+            {
+                return alertResponse?.Rule?.Id != null;
+            }
+
             Log.Warning("Flight rule {WebhookId} returned error: {Error}", webhookId, alertResponse.Error.ErrorMessage);
             return false;
         }
@@ -448,18 +473,26 @@ public sealed class FlightStatsService(
     internal static (string carrierCode, string flightNumber) SplitFlightCode(string completeFlightNumber)
     {
         if (string.IsNullOrEmpty(completeFlightNumber))
+        {
             return (completeFlightNumber, null);
+        }
 
         var firstDigitIndex = -1;
         for (var i = 0; i < completeFlightNumber.Length; i++)
         {
-            if (!char.IsDigit(completeFlightNumber[i])) continue;
+            if (!char.IsDigit(completeFlightNumber[i]))
+            {
+                continue;
+            }
+
             firstDigitIndex = i;
             break;
         }
 
         if (firstDigitIndex <= 0)
+        {
             return (completeFlightNumber, null);
+        }
 
         return (completeFlightNumber[..firstDigitIndex], completeFlightNumber[firstDigitIndex..]);
     }
@@ -479,10 +512,16 @@ public sealed class FlightStatsService(
     {
         // If arrival time is earlier than departure time, it means the flight goes overnight
         if (arrivalTime.TimeOfDay < departureTime.TimeOfDay)
+        {
             return arrivalTime.AddDays(1);
+        }
 
         // For multi-day flights, ensure the arrival date is at least the departure date
-        if (arrivalTime.Date >= departureTime.Date) return arrivalTime;
+        if (arrivalTime.Date >= departureTime.Date)
+        {
+            return arrivalTime;
+        }
+
         var daysDifference = (departureTime.Date - arrivalTime.Date).Days;
         return arrivalTime.AddDays(daysDifference);
     }
@@ -494,7 +533,9 @@ public sealed class FlightStatsService(
     {
         // Parse the datetime string
         if (!DateTime.TryParse(flightDateTime, out var localDateTime))
+        {
             throw new ArgumentException($"Invalid datetime format: {flightDateTime}", nameof(flightDateTime));
+        }
 
         // Get the timezone for the airport
         TimeZoneInfo airportTimeZone;
@@ -529,10 +570,14 @@ public sealed class FlightStatsService(
         DateTime effectiveStartTime;
         if (departureDateTime.HasValue && departureDateTime.Value.DateTime >= currentTenantTime)
             // Requested departure is in the future, use it
+        {
             effectiveStartTime = departureDateTime.Value.DateTime;
+        }
         else
             // No departure specified, or it's in the past, use current time
+        {
             effectiveStartTime = currentTenantTime;
+        }
 
         return effectiveStartTime.AddMinutes(flightBuffer);
     }

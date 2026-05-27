@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Tests for the overview-react module (mount/unmount/refresh lifecycle).
  *

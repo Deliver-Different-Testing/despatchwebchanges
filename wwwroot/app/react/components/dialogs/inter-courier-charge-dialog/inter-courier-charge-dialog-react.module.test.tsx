@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * Inter-Courier Charge Dialog React Module Tests
  *

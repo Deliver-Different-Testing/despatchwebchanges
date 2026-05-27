@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * PalletSection Component Tests
  */

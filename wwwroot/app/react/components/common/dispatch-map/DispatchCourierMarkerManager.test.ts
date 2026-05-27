@@ -1,6 +1,3 @@
-/**
- * @jest-environment jsdom
- */
 
 /**
  * DispatchCourierMarkerManager Tests

@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * InterCourierChargeDialog Component Tests
  */
@@ -50,11 +49,13 @@ const createMockProps = (overrides?: Partial<InterCourierChargeDialogProps>) =>
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-async function fillAutocomplete(user: ReturnType<typeof userEvent.setup>, label: string, searchText: string, optionText: string) {
+async function fillAutocomplete(label: string, searchText: string, optionText: string) {
     const input = screen.getByLabelText(new RegExp(label, 'i'));
-    await user.click(input);
-    await user.clear(input);
-    await user.type(input, searchText);
+    // fireEvent.focus + fireEvent.change skips the slow user-event pointer pipeline
+    // (~3s per user.click in CI). MUI Autocomplete responds to focus + input value
+    // changes the same way as user.click + user.paste, but synchronously.
+    fireEvent.focus(input);
+    fireEvent.change(input, {target: {value: searchText}});
 
     // Flush the 300ms debounce timer so the search fires
     await act(async () => {
@@ -62,24 +63,19 @@ async function fillAutocomplete(user: ReturnType<typeof userEvent.setup>, label:
     });
 
     const option = await screen.findByText(optionText);
-    await user.click(option);
+    fireEvent.click(option);
 }
 
-async function fillForm(user: ReturnType<typeof userEvent.setup>) {
+async function fillForm() {
     mockSearchActiveCouriers.mockResolvedValue(courierSuggestions);
     mockSearchActiveClients.mockResolvedValue(clientSuggestions);
 
-    await fillAutocomplete(user, 'From Courier', 'Courier', 'Courier Alpha');
-    await fillAutocomplete(user, 'To Courier', 'Courier', 'Courier Beta');
-    await fillAutocomplete(user, 'Client', 'Client', 'Client One');
+    await fillAutocomplete('From Courier', 'Courier', 'Courier Alpha');
+    await fillAutocomplete('To Courier', 'Courier', 'Courier Beta');
+    await fillAutocomplete('Client', 'Client', 'Client One');
 
-    const referenceInput = screen.getByLabelText(/reference/i);
-    await user.click(referenceInput);
-    await user.type(referenceInput, 'REF-123');
-
-    const zonesInput = screen.getByLabelText(/zones/i);
-    await user.click(zonesInput);
-    await user.type(zonesInput, '3');
+    fireEvent.change(screen.getByLabelText(/reference/i), {target: {value: 'REF-123'}});
+    fireEvent.change(screen.getByLabelText(/zones/i), {target: {value: '3'}});
 }
 
 // ── Tests ──────────────────────────────────────────────────────────
@@ -202,7 +198,7 @@ describe('InterCourierChargeDialog', () => {
 
             const zonesInput = screen.getByLabelText(/zones/i);
             await user.click(zonesInput);
-            await user.type(zonesInput, '3');
+            await user.paste('3');
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
             expect(amountInput.value).toBe('21');
@@ -214,7 +210,7 @@ describe('InterCourierChargeDialog', () => {
 
             const zonesInput = screen.getByLabelText(/zones/i);
             await user.click(zonesInput);
-            await user.type(zonesInput, '5');
+            await user.paste('5');
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
             expect(amountInput.value).toBe('35');
@@ -229,7 +225,7 @@ describe('InterCourierChargeDialog', () => {
 
             const amountInput = screen.getByLabelText(/amount/i) as HTMLInputElement;
             await user.click(amountInput);
-            await user.type(amountInput, '99.5');
+            await user.paste('99.5');
 
             expect(amountInput.value).toBe('99.5');
         });
@@ -266,7 +262,7 @@ describe('InterCourierChargeDialog', () => {
             const showToast = jest.fn();
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
-            await fillForm(user);
+            await fillForm();
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
 
@@ -294,7 +290,7 @@ describe('InterCourierChargeDialog', () => {
             mockCreateInterCourierCharge.mockRejectedValueOnce(new Error('Server error'));
             renderWithTheme(<InterCourierChargeDialog {...createMockProps({onClose, showToast})} />);
 
-            await fillForm(user);
+            await fillForm();
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
 
@@ -319,7 +315,8 @@ describe('InterCourierChargeDialog', () => {
 
             // Type into reference field
             const referenceInput = screen.getByLabelText(/reference/i);
-            await user.type(referenceInput, 'REF-TEST');
+            await user.click(referenceInput);
+            await user.paste('REF-TEST');
             expect(referenceInput).toHaveValue('REF-TEST');
 
             // Close and reopen
@@ -342,7 +339,7 @@ describe('InterCourierChargeDialog', () => {
             );
             renderWithTheme(<InterCourierChargeDialog {...createMockProps()} />);
 
-            await fillForm(user);
+            await fillForm();
 
             await user.click(screen.getByRole('button', {name: /add charge/i}));
 

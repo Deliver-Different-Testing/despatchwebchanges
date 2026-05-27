@@ -44,7 +44,9 @@ public sealed class JobApiClient(
         }
 
         if (response.Error is { Message: var transportMsg } && !string.IsNullOrEmpty(transportMsg))
+        {
             throw new InvalidOperationException($"Job API call failed: {Snippet(transportMsg)}");
+        }
 
         if (response.Errors is { Count: > 0 })
         {
@@ -124,7 +126,9 @@ public sealed class JobApiClient(
     private static AddressDto MapAddress(AddressViewModel address)
     {
         if (address is null)
+        {
             return new AddressDto { City = string.Empty };
+        }
 
         return new AddressDto
         {
@@ -144,7 +148,11 @@ public sealed class JobApiClient(
 
     private static string Snippet(string body)
     {
-        if (string.IsNullOrEmpty(body)) return string.Empty;
+        if (string.IsNullOrEmpty(body))
+        {
+            return string.Empty;
+        }
+
         return body.Length > 200 ? body[..200] + "…" : body;
     }
 

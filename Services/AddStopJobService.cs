@@ -43,7 +43,9 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
             var stopInput = BuildStopJobInputModel(job, newStopJobNumber, request, extras);
             var stopResult = await commandRepository.CreateMinimalTucJobAsync(stopInput);
             if (!stopResult.Success || !stopResult.JobId.HasValue)
+            {
                 throw new InvalidOperationException($"Failed to create stop job: {stopResult.Message}");
+            }
 
             // Load created job to update remaining fields
             var newStopJob = await queryRepository.GetByIdAsync<TucJob>(stopResult.JobId.Value);
@@ -303,7 +305,10 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
         {
             var newJobNumber = baseJobNumber + letter;
 
-            if (!await queryRepository.JobNumberExistsAsync(newJobNumber)) return newJobNumber;
+            if (!await queryRepository.JobNumberExistsAsync(newJobNumber))
+            {
+                return newJobNumber;
+            }
 
             letter++;
         }
@@ -442,9 +447,13 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
         };
 
         if (isRecurring)
+        {
             breakdown.PrebookJobId = stopJobId;
+        }
         else
+        {
             breakdown.JobId = stopJobId;
+        }
 
         return breakdown;
     }
@@ -455,7 +464,10 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
     private async Task CreateAndAddPackagesToJob(int effectiveJobId, int stopJobId, ShipmentDetails extras)
     {
         var quantity = extras.Quantity ?? 0;
-        if (quantity <= 0) return;
+        if (quantity <= 0)
+        {
+            return;
+        }
 
         var parcels = new List<TucJobItem>();
         for (var x = 1; x < quantity + 1; x++)

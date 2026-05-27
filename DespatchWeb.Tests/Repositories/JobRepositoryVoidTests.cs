@@ -40,7 +40,9 @@ public class JobRepositoryVoidTests
     {
         var job = allJobs.FirstOrDefault(j => j.Id == jobId);
         if (job == null)
+        {
             return [];
+        }
 
         List<int> relatedJobIds;
         if (job.ParentId.HasValue)
@@ -71,7 +73,9 @@ public class JobRepositoryVoidTests
     private static List<int> DetermineJobsToVoid(VoidJobRequest data, List<TestJob> allJobs)
     {
         if (data.SelectedJobIds is { Count: > 0 })
+        {
             return data.SelectedJobIds;
+        }
 
         return data.VoidSingleJobOnly
             ? GetJobWithChildren(data.JobId, allJobs)

@@ -1,5 +1,6 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
 using NSubstitute;
@@ -10,8 +11,10 @@ public class PartnerJobGateTests
 {
     private readonly IJobQueryRepository _jobQueryRepository = Substitute.For<IJobQueryRepository>();
     private readonly IJobChangeRequestService _changeRequestService = Substitute.For<IJobChangeRequestService>();
+    private readonly ISendToPartnerService _sendToPartnerService = Substitute.For<ISendToPartnerService>();
 
-    private PartnerJobGate CreateGate() => new(_jobQueryRepository, _changeRequestService);
+    private PartnerJobGate CreateGate() =>
+        new(_jobQueryRepository, _changeRequestService, _sendToPartnerService);
 
     [Fact]
     public async Task NonPartnerJob_ReturnsNotPartner_AndDoesNotCallChangeRequestService()
@@ -149,5 +152,59 @@ public class PartnerJobGateTests
                 r.RequestedValue == "100" &&
                 r.Reason == "rate bump"),
             Arg.Any<CancellationToken>());
+    }
+
+    // ── EvaluateAllocateAsync — Mode 1 rate-acceptance gate ────────────────
+
+    [Fact]
+    public async Task EvaluateAllocateAsync_IMReturnsNull_ReturnsNotPartner()
+    {
+        _sendToPartnerService.GetInboundJobAcceptanceStateAsync(1)
+            .Returns((PartnerInboundJobAcceptanceStateResponse?)null);
+
+        var result = await CreateGate().EvaluateAllocateAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<PartnerJobGateResult.NotPartner>(result);
+    }
+
+    [Theory]
+    [InlineData("Allowed")]
+    [InlineData("Accepted")]
+    public async Task EvaluateAllocateAsync_OpenStates_ReturnsNotPartner(string status)
+    {
+        _sendToPartnerService.GetInboundJobAcceptanceStateAsync(1)
+            .Returns(new PartnerInboundJobAcceptanceStateResponse { Status = status });
+
+        var result = await CreateGate().EvaluateAllocateAsync(1, TestContext.Current.CancellationToken);
+
+        Assert.IsType<PartnerJobGateResult.NotPartner>(result);
+    }
+
+    [Fact]
+    public async Task EvaluateAllocateAsync_PendingAcceptance_ReturnsBlocked()
+    {
+        _sendToPartnerService.GetInboundJobAcceptanceStateAsync(1)
+            .Returns(new PartnerInboundJobAcceptanceStateResponse { Status = "PendingAcceptance" });
+
+        var result = await CreateGate().EvaluateAllocateAsync(1, TestContext.Current.CancellationToken);
+
+        var blocked = Assert.IsType<PartnerJobGateResult.Blocked>(result);
+        Assert.Contains("not been accepted", blocked.Message);
+    }
+
+    [Fact]
+    public async Task EvaluateAllocateAsync_Rejected_ReturnsBlockedWithReason()
+    {
+        _sendToPartnerService.GetInboundJobAcceptanceStateAsync(1)
+            .Returns(new PartnerInboundJobAcceptanceStateResponse
+            {
+                Status = "Rejected",
+                RejectionReason = "Customer cancelled"
+            });
+
+        var result = await CreateGate().EvaluateAllocateAsync(1, TestContext.Current.CancellationToken);
+
+        var blocked = Assert.IsType<PartnerJobGateResult.Blocked>(result);
+        Assert.Contains("Customer cancelled", blocked.Message);
     }
 }

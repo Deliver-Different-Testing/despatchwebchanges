@@ -21,7 +21,10 @@ public sealed class DispatchJobService(IJobCommandRepository jobRepository, ICou
         ArgumentNullException.ThrowIfNull(jobIds);
         ArgumentOutOfRangeException.ThrowIfZero(courierId);
 
-        if (jobIds.Count == 0) throw new ArgumentException("Job list cannot be empty", nameof(jobIds));
+        if (jobIds.Count == 0)
+        {
+            throw new ArgumentException("Job list cannot be empty", nameof(jobIds));
+        }
 
         await DispatchJobsInternalAsync(jobIds, courierId);
     }
@@ -43,18 +46,26 @@ public sealed class DispatchJobService(IJobCommandRepository jobRepository, ICou
             await jobRepository.AssignCourierToChildJobsAsync(jobIds, InternalJobStatus.AwaitingPod);
 
             if (jobIds.Count == 1)
+            {
                 Log.Debug("Successfully dispatched job {JobId} to courier {CourierId}", jobIds[0], courierId);
+            }
             else
+            {
                 Log.Debug("Successfully dispatched {JobCount} jobs to courier {CourierId}: {JobIds}",
                     jobIds.Count, courierId, string.Join(", ", jobIds));
+            }
         }
         catch (Exception e)
         {
             if (jobIds.Count == 1)
+            {
                 Log.Error(e, "Error dispatching job {JobId} to courier {CourierId}", jobIds[0], courierId);
+            }
             else
+            {
                 Log.Error(e, "Error dispatching {JobCount} jobs to courier {CourierId}: {JobIds}",
                     jobIds.Count, courierId, string.Join(", ", jobIds));
+            }
 
             throw;
         }

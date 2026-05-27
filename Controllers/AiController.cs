@@ -34,17 +34,23 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var validationError = AiInputGuard.Validate(request);
             if (validationError != null)
+            {
                 return BadRequest(validationError);
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone(); // using timezone as tenant identifier
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var messages = request.Messages
                 .Select(m => new AiMessage { Role = m.Role, Content = m.Content })
@@ -146,13 +152,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SummarizeJobNotesAsync(jobId, ct);
 
@@ -178,13 +188,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SummarizeJobEventsAsync(jobId, ct);
 
@@ -210,13 +224,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SummarizeTaskDashboardAsync(ct);
 
@@ -242,13 +260,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SummarizeJobAsync(jobId, ct);
 
@@ -274,13 +296,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SummarizeOperationsAsync(ct);
 
@@ -306,13 +332,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SummarizeComplianceAsync(ct);
 
@@ -338,13 +368,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.AnalyzeLateAlertAsync(jobId, ct);
 
@@ -370,13 +404,17 @@ public class AiController(
         try
         {
             if (!settings.Value.EnableAiFeatures)
+            {
                 return StatusCode(503, "AI features are not enabled");
+            }
 
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
             if (!await rateLimiter.TryAcquireAsync(staffId, tenantId))
+            {
                 return StatusCode(429, "Rate limit exceeded. Please try again in a moment.");
+            }
 
             var response = await summarizationService.SuggestCouriersAsync(jobId, ct);
 

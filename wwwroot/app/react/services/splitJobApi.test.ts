@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * Split Job API Service Tests
  */

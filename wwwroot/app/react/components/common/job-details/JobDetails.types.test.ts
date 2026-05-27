@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * JobDetails.types utility function tests
  */

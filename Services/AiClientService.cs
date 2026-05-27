@@ -33,14 +33,18 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         foreach (var block in response.Content)
         {
             if (block.TryPickText(out var textBlock))
+            {
                 result.TextContent = (result.TextContent ?? string.Empty) + textBlock.Text;
+            }
             else if (block.TryPickToolUse(out var toolUse))
+            {
                 result.ToolCalls.Add(new AiToolCall
                 {
                     ToolUseId = toolUse.ID,
                     ToolName = toolUse.Name,
                     ArgumentsJson = JsonSerializer.Serialize(toolUse.Input)
                 });
+            }
         }
 
         return result;
@@ -56,8 +60,15 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
 
         await foreach (var rawEvent in _client.Messages.CreateStreaming(messageParams, ct))
         {
-            if (!rawEvent.TryPickContentBlockDelta(out var delta)) continue;
-            if (delta.Delta.TryPickText(out var textDelta)) yield return textDelta.Text;
+            if (!rawEvent.TryPickContentBlockDelta(out var delta))
+            {
+                continue;
+            }
+
+            if (delta.Delta.TryPickText(out var textDelta))
+            {
+                yield return textDelta.Text;
+            }
         }
     }
 
@@ -99,7 +110,11 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         using var doc = JsonDocument.Parse(inputSchemaJson);
         var result = new Dictionary<string, JsonElement>();
 
-        if (!doc.RootElement.TryGetProperty("properties", out var props)) return result;
+        if (!doc.RootElement.TryGetProperty("properties", out var props))
+        {
+            return result;
+        }
+
         foreach (var prop in props.EnumerateObject()) result[prop.Name] = prop.Value.Clone();
 
         return result;
@@ -110,7 +125,9 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         using var doc = JsonDocument.Parse(inputSchemaJson);
         if (doc.RootElement.TryGetProperty("required", out var req) &&
             req.ValueKind == JsonValueKind.Array)
+        {
             return req.EnumerateArray().Select(e => e.GetString()).ToArray();
+        }
 
         return [];
     }

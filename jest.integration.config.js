@@ -60,6 +60,11 @@ const config = {
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
 
+    reporters: [
+        'default',
+        ['jest-slow-test-reporter', { numTests: 15, warnOnSlowerThan: 1000, color: true }],
+    ],
+
     // Integration tests need longer timeouts
     testTimeout: 30000,
 };

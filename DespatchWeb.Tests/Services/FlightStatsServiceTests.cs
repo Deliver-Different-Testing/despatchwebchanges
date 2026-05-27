@@ -432,6 +432,7 @@ public class FlightStatsServiceTests
         var airports = new List<GetAirportsDto>();
 
         if (departureAirportExists)
+        {
             airports.Add(new GetAirportsDto
             {
                 AirportId = 1,
@@ -439,8 +440,10 @@ public class FlightStatsServiceTests
                 FlightBufferMinutes = 60,
                 Timezone = "Pacific/Auckland"
             });
+        }
 
         if (arrivalAirportExists)
+        {
             airports.Add(new GetAirportsDto
             {
                 AirportId = 2,
@@ -448,6 +451,7 @@ public class FlightStatsServiceTests
                 FlightBufferMinutes = 60,
                 Timezone = "Australia/Sydney"
             });
+        }
 
         _nationwideJobRepositoryMock.GetAllActiveAirportsAsync()
             .Returns(airports);

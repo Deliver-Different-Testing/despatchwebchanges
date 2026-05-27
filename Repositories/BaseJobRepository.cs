@@ -74,12 +74,14 @@ public partial class BaseJobRepository(
         {
             var query = await BuildBaseQueryAsync(selectedViewIds, isUsTenant);
             if (query == null)
+            {
                 return new JobSearchResult
                 {
                     Jobs = [],
                     TotalCount = 0,
                     HasMore = false
                 };
+            }
 
             ClearListEnvelopeViewModel clearListEnvelope = null;
             var isNeedsDispatchFilter = false;
@@ -104,10 +106,14 @@ public partial class BaseJobRepository(
             {
                 case AppPage.Dispatch:
                     if (queryParams.DateCutoff.HasValue)
+                    {
                         query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+                    }
 
                     if (queryParams.StartDate.HasValue)
+                    {
                         query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+                    }
 
                     query = ApplyEndDateFilter(query, queryParams.EndDate, queryParams.UseTime);
 
@@ -179,7 +185,11 @@ public partial class BaseJobRepository(
 
             foreach (var child in allJobs.Where(j => !j.IsParentOrSingle && j.ParentId.HasValue))
             {
-                if (!parentJobMap.TryGetValue(child.ParentId!.Value, out var parent)) continue;
+                if (!parentJobMap.TryGetValue(child.ParentId!.Value, out var parent))
+                {
+                    continue;
+                }
+
                 parent.Children ??= [];
                 parent.Children.Add(child);
             }
@@ -225,7 +235,9 @@ public partial class BaseJobRepository(
         var jobIdsQuery = await GetFilteredJobIdsQueryAsync(selectedViewIds, isUsTenant);
 
         if (!isUsTenant && (selectedViewIds == null || selectedViewIds.Count == 0))
+        {
             return Context.TucJobs.Where(j => false);
+        }
 
         var query = from job in Context.TucJobs
             join id in jobIdsQuery on job.UcjbId equals id
@@ -238,7 +250,10 @@ public partial class BaseJobRepository(
     {
         if (selectedViewIds == null || selectedViewIds.Count == 0)
         {
-            if (!isUsTenant) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+            if (!isUsTenant)
+            {
+                return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+            }
 
             return Context.DeswebQryDespatchJobViewFilters
                 .Select(x => x.UcjbId)
@@ -250,7 +265,10 @@ public partial class BaseJobRepository(
             .Select(dv => dv.WhereCondition)
             .ToListAsync();
 
-        if (viewFilters.Count == 0) return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+        if (viewFilters.Count == 0)
+        {
+            return Context.TucJobs.Where(j => false).Select(j => j.UcjbId);
+        }
 
         // Validate each filter to prevent SQL injection
         foreach (var filter in viewFilters.Where(filter => !IsValidWhereCondition(filter)))
@@ -282,7 +300,10 @@ public partial class BaseJobRepository(
 
     private async Task EnrichJobsWithCollections(List<DispatchJobViewModel> jobs)
     {
-        if (jobs.Count == 0) return;
+        if (jobs.Count == 0)
+        {
+            return;
+        }
 
         var jobIds = jobs.Select(j => j.Id).ToList();
         var parentIds = jobs.Where(j => j.ParentId.HasValue)
@@ -320,12 +341,16 @@ public partial class BaseJobRepository(
         // Apply related jobs
         foreach (var job in jobs.Where(j => j.ParentId.HasValue))
             if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
+            {
                 job.RelatedJobs = related;
+            }
 
         // Apply flights
         foreach (var job in jobs)
             if (flightsDict.TryGetValue(job.Id, out var flight))
+            {
                 job.AssignedFlight = flight;
+            }
     }
 
 
@@ -356,7 +381,10 @@ public partial class BaseJobRepository(
 
     private static IQueryable<TucJob> ApplySearchTextFilter(IQueryable<TucJob> query, string searchText)
     {
-        if (string.IsNullOrWhiteSpace(searchText)) return query;
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            return query;
+        }
 
         var search = searchText.Trim().ToLower();
         return query.Where(j =>
@@ -395,16 +423,21 @@ public partial class BaseJobRepository(
         bool pickupOnlyFilter = false
     )
     {
-        if (clearListEnvelope == null) return query;
+        if (clearListEnvelope == null)
+        {
+            return query;
+        }
 
         if (pickupOnlyFilter)
             // Filter by pickup location only (jobs FROM this area) - for needs-dispatch
+        {
             return query.Where(j =>
                 j.PickUpLatitude >= clearListEnvelope.MinimumLatitude
                 && j.PickUpLatitude <= clearListEnvelope.MaximumLatitude
                 && j.PickUpLongitude >= clearListEnvelope.MinimumLongitude
                 && j.PickUpLongitude <= clearListEnvelope.MaximumLongitude
             );
+        }
 
         // Filter by pickup OR delivery location (jobs FROM or TO this area) - for all other categories
         return query.Where(j =>
@@ -432,9 +465,14 @@ public partial class BaseJobRepository(
     {
         // Filter dates
         if (queryParams.StartDate != null)
+        {
             query = query.Where(j => j.UcjbDate.Date >= queryParams.StartDate.Value.Date);
+        }
+
         if (queryParams.DateCutoff != null)
+        {
             query = query.Where(j => j.UcjbDate.Date <= queryParams.DateCutoff.Value.Date);
+        }
 
         query = ApplyEndDateFilter(query, queryParams.DateCutoff, queryParams.UseTime);
 
@@ -460,7 +498,10 @@ public partial class BaseJobRepository(
         query = query.Where(j => !j.UcjbComplTime.HasValue);
 
         // Apply client viewFilters for non-internal users
-        if (isInternal || string.IsNullOrEmpty(clientIds)) return query;
+        if (isInternal || string.IsNullOrEmpty(clientIds))
+        {
+            return query;
+        }
 
         var clientIdList = clientIds.Split(',')
             .Select(id => int.TryParse(id.Trim(), out var parsed) ? parsed : (int?)null)
@@ -478,9 +519,14 @@ public partial class BaseJobRepository(
         bool useTime)
     {
         if (!endDate.HasValue)
+        {
             return query;
+        }
 
-        if (!useTime) return query.Where(j => j.UcjbDate.Date <= endDate.Value.Date);
+        if (!useTime)
+        {
+            return query.Where(j => j.UcjbDate.Date <= endDate.Value.Date);
+        }
 
         // Compare full datetime by checking date first, then time
         var filterDate = endDate.Value.Date;
@@ -544,7 +590,10 @@ public partial class BaseJobRepository(
 
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
-        if (!noteTypeExists) noteType = NoteType.InternalNote;
+        if (!noteTypeExists)
+        {
+            noteType = NoteType.InternalNote;
+        }
 
         var staffId = infoService.GetStaffId();
         var currentTime = clock.TenantNow;
@@ -564,7 +613,11 @@ public partial class BaseJobRepository(
     {
         // If a note type is not found, default to the internal note
         var noteTypeExists = await Context.ConfirmNoteTypeExistsAsync(noteType);
-        if (!noteTypeExists) noteType = NoteType.InternalNote;
+        if (!noteTypeExists)
+        {
+            noteType = NoteType.InternalNote;
+        }
+
         return noteType;
     }
 
@@ -661,7 +714,11 @@ public partial class BaseJobRepository(
 
             await Context.TucNotes.AddAsync(newNote);
 
-            if (!saveChanges) return;
+            if (!saveChanges)
+            {
+                return;
+            }
+
             await Context.SaveChangesAsync();
         }
         catch (Exception e)
@@ -690,13 +747,19 @@ public partial class BaseJobRepository(
         try
         {
             ArgumentNullException.ThrowIfNull(job);
-            if (!job.Booked.HasValue) throw new ArgumentException("Booked date is required.", nameof(job));
+            if (!job.Booked.HasValue)
+            {
+                throw new ArgumentException("Booked date is required.", nameof(job));
+            }
 
             var jobDateTime = job.Booked.Value;
 
             if (job.SpeedId == economySpeedId)
             {
-                if (!ecoDeliveryTime.HasValue) throw new ArgumentNullException(nameof(ecoDeliveryTime));
+                if (!ecoDeliveryTime.HasValue)
+                {
+                    throw new ArgumentNullException(nameof(ecoDeliveryTime));
+                }
 
                 var targetDateTime = new DateTime(
                     job.Booked.Value.Year,
@@ -707,14 +770,17 @@ public partial class BaseJobRepository(
                     ecoDeliveryTime.Value.Second
                 );
 
-                return Math.Round((targetDateTime - currentTenantTime).TotalMinutes);
+                return Math.Round((targetDateTime - currentTenantTime).TotalMinutes, MidpointRounding.AwayFromZero);
             }
 
-            if (!job.JobTypeMins.HasValue) return null;
+            if (!job.JobTypeMins.HasValue)
+            {
+                return null;
+            }
 
             var minutesToAdd = job.JobTypeMins.Value;
             var standardDeliveryDateTime = jobDateTime.AddMinutes(minutesToAdd);
-            return Math.Round((standardDeliveryDateTime - currentTenantTime).TotalMinutes);
+            return Math.Round((standardDeliveryDateTime - currentTenantTime).TotalMinutes, MidpointRounding.AwayFromZero);
         }
         catch (Exception e)
         {
@@ -786,7 +852,10 @@ public partial class BaseJobRepository(
                         .SetProperty(e => e.UpdatedDate, currentTime)
                     );
 
-                if (rowsAffected == 0) throw new Exception($"Existing note under {noteId} not found");
+                if (rowsAffected == 0)
+                {
+                    throw new Exception($"Existing note under {noteId} not found");
+                }
 
                 if (currentNote != null)
                 {
@@ -821,7 +890,9 @@ public partial class BaseJobRepository(
     protected async Task<(int? economySpeedId, DateTime? ecoDeliveryTime)> GetEconomySpeedAndDeliveryTimeAsync()
     {
         if (_economyCache.HasValue)
+        {
             return _economyCache.Value;
+        }
 
         var economySpeedId = await Context.GetEconomySpeedIdAsync();
         var ecoDeliveryTime = await Context.GetEcoDeliveryTimeAsync();
@@ -839,7 +910,9 @@ public partial class BaseJobRepository(
     {
         note.CreatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.CreatedDate, tenantTimeZone);
         if (note.UpdatedDate.HasValue)
+        {
             note.UpdatedDate = TimeZoneHelper.SetDateTimeWithTimeZone(note.UpdatedDate.Value, tenantTimeZone);
+        }
     }
 
     protected async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
@@ -853,7 +926,10 @@ public partial class BaseJobRepository(
                 .Select(j => j.BulkParentId ?? j.BulkJobId)
                 .FirstOrDefaultAsync();
 
-            if (parentBulkJobId == 0) return [];
+            if (parentBulkJobId == 0)
+            {
+                return [];
+            }
 
             return await Context.TblBulkJobs
                 .Where(j => j.BulkJobId == parentBulkJobId || j.BulkParentId == parentBulkJobId)

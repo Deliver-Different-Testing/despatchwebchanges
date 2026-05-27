@@ -1,7 +1,9 @@
 /** @type {import('jest').Config} */
 const config = {
     clearMocks: true,
-    testEnvironment: 'node',
+    // Default to jsdom — most React tests need it. Pure-Node tests opt out
+    // with `/** @jest-environment node */` at the top of the file.
+    testEnvironment: 'jest-environment-jsdom',
     roots: ['<rootDir>/wwwroot'],
     testMatch: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
@@ -63,8 +65,10 @@ const config = {
     cacheDirectory: '<rootDir>/.jest-cache',
     verbose: false,
 
-    // Reduce memory usage and improve GC
-    workerIdleMemoryLimit: '512MB',
+    reporters: [
+        'default',
+        ['jest-slow-test-reporter', { numTests: 15, warnOnSlowerThan: 300, color: true }],
+    ],
 
     // Fail fast on hung tests (type-check CI job catches real issues)
     testTimeout: 15000,

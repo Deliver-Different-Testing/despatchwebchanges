@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * CourierMapPage Types and Constants Tests
  *

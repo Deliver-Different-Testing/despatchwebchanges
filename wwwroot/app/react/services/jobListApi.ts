@@ -152,11 +152,59 @@ export interface PartnerRateQuote {
 export interface PartnerRateForJobResponse {
     rateCardRate: number | null;
     liveQuotes: PartnerRateQuote[];
-    source: 'rate_card' | 'live_quote' | 'none';
+    /**
+     * Which rate-resolution strategy IM used:
+     *   'none'        — no mapping / not enough data; operator types from scratch
+     *   'rate_card'   — legacy pre-negotiated rate (currently dormant)
+     *   'live_quote'  — Mode 1 with a live partner quote (pick from liveQuotes)
+     *   'percentage'  — Mode 2; rate will be A.UcjbAmount × percentageOfClientCharge
+     *   'cost_plus'   — Mode 3; rate is partner-quoted, A.UcjbAmount is rewritten
+     *                   to cost × (1 + marginPercent)
+     */
+    source: 'rate_card' | 'live_quote' | 'none' | 'percentage' | 'cost_plus';
+    /** Mode 2: percentage IM will apply to UcjbAmount. */
+    percentageOfClientCharge?: number | null;
+    /** Mode 3: margin IM will apply on top of the partner quote. */
+    marginPercent?: number | null;
+    /** Mode 2: the rate IM will send to the partner (= UcjbAmount × pct). */
+    derivedRate?: number | null;
+    /** Mode 3: the UcjbAmount IM will stamp on A's local job (= cost × (1 + margin)). */
+    derivedRevenue?: number | null;
+    /** Optional human-readable hint or error explanation. */
+    message?: string | null;
 }
 
 export async function getPartnerRateForJob(pairingId: number, jobId: number): Promise<PartnerRateForJobResponse> {
     return apiClient.post<PartnerRateForJobResponse>('job/GetPartnerRateForJob', {pairingId, jobId});
+}
+
+// ─── Mode 1 rate-acceptance gate (B side) ───────────────────────────────────
+
+export interface PartnerInboundJobAcceptanceState {
+    /** "Allowed" | "PendingAcceptance" | "Accepted" | "Rejected". */
+    status: 'Allowed' | 'PendingAcceptance' | 'Accepted' | 'Rejected';
+    proposedAgreedRate: number | null;
+    rejectionReason: string | null;
+    actionedAtUtc: string | null;
+    partnerJobGuid: string | null;
+}
+
+export interface PartnerInboundJobActionResponse {
+    success: boolean;
+    errorMessage: string | null;
+    newState: PartnerInboundJobAcceptanceState | null;
+}
+
+export async function getPartnerInboundRateAcceptance(jobId: number): Promise<PartnerInboundJobAcceptanceState> {
+    return apiClient.get<PartnerInboundJobAcceptanceState>(`job/GetPartnerInboundRateAcceptance/${jobId}`);
+}
+
+export async function acceptPartnerRate(jobId: number): Promise<PartnerInboundJobActionResponse> {
+    return apiClient.post<PartnerInboundJobActionResponse>('job/AcceptPartnerRate', {jobId});
+}
+
+export async function rejectPartnerRate(jobId: number, reason: string): Promise<PartnerInboundJobActionResponse> {
+    return apiClient.post<PartnerInboundJobActionResponse>('job/RejectPartnerRate', {jobId, reason});
 }
 
 // ── Aggregate Export ─────────────────────────────────────────────────

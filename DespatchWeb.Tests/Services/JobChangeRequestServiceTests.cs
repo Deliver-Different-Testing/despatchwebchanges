@@ -115,16 +115,26 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         private static void FillEmptyRowVersions(DbContext? context)
         {
-            if (context is null) return;
+            if (context is null)
+            {
+                return;
+            }
+
             foreach (var entry in context.ChangeTracker.Entries())
             {
-                if (entry.State != EntityState.Added) continue;
+                if (entry.State != EntityState.Added)
+                {
+                    continue;
+                }
+
                 foreach (PropertyEntry prop in entry.Properties)
                 {
                     if (prop.Metadata.IsConcurrencyToken
                         && prop.Metadata.ClrType == typeof(byte[])
                         && prop.CurrentValue is null)
+                    {
                         prop.CurrentValue = new byte[] { 0, 0, 0, 0, 0, 0, 0, 1 };
+                    }
                 }
             }
         }
@@ -280,9 +290,9 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // Local row must still be saved despite the peer-forward failure.
         await using var ctx = CreateContext();
         var savedRow = await ctx.TucJobChangeRequests
-            .SingleOrDefaultAsync(r => r.UjcrSourceRequestUuid == result.Request.SourceRequestUuid);
+            .SingleOrDefaultAsync(r => r.UjcrSourceRequestUuid == result.Request.SourceRequestUuid, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(savedRow);
-        Assert.Equal(JobChangeRequestStatus.Pending, savedRow!.UjcrStatus);
+        Assert.Equal(JobChangeRequestStatus.Pending, savedRow.UjcrStatus);
     }
 
     [Fact]

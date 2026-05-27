@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 import {openJobDetail, openJobInSearch} from './navigationService';
 
 describe('navigationService', () => {

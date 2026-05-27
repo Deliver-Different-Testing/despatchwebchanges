@@ -107,11 +107,17 @@ public sealed class PodReportService(
     {
         lock (InitLock)
             if (_questPdfInitialized)
+            {
                 return;
+            }
 
         lock (InitLock)
         {
-            if (_questPdfInitialized) return;
+            if (_questPdfInitialized)
+            {
+                return;
+            }
+
             Settings.License = LicenseType.Community;
             _questPdfInitialized = true;
         }
@@ -123,7 +129,9 @@ public sealed class PodReportService(
         var tenantClaim = user?.Claims.FirstOrDefault(c => c.Type == "CurrentTenantID")?.Value;
 
         if (string.IsNullOrEmpty(tenantClaim) || !int.TryParse(tenantClaim, out var tenantId))
+        {
             throw new InvalidOperationException("Unable to determine tenant ID from user claims");
+        }
 
         return tenantId;
     }
@@ -173,7 +181,10 @@ public sealed class PodReportService(
 
     internal static List<PodItem> MapItems(List<ParcelDimensions>? parcels)
     {
-        if (parcels == null || parcels.Count == 0) return [];
+        if (parcels == null || parcels.Count == 0)
+        {
+            return [];
+        }
 
         return parcels.Select(p => new PodItem
         {
@@ -186,7 +197,9 @@ public sealed class PodReportService(
     internal static List<PhotoCategory> MapPhotoCategories(List<S3PhotoInfo> photos)
     {
         if (photos.Count == 0)
+        {
             return [];
+        }
 
         var podPhotos = photos
             .Where(p => !string.IsNullOrEmpty(p.Data))
@@ -198,7 +211,9 @@ public sealed class PodReportService(
             .ToList();
 
         if (podPhotos.Count == 0)
+        {
             return [];
+        }
 
         return
         [

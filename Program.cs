@@ -210,6 +210,9 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"])) Log.Warning("S3BucketMars environment variable is not set");
+if (string.IsNullOrEmpty(builder.Configuration["S3BucketMars"]))
+{
+    Log.Warning("S3BucketMars environment variable is not set");
+}
 
 app.Run();

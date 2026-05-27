@@ -1,3 +1,4 @@
+/** @jest-environment node */
 /**
  * vendor-core dayjs plugin contract test.
  *

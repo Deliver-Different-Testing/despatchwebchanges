@@ -52,6 +52,7 @@ public sealed class AiAssistantService(
             totalOutputTokens += response.OutputTokens;
 
             if (!response.HasToolUse)
+            {
                 return new AiChatResponse
                 {
                     Message = response.TextContent ?? string.Empty,
@@ -61,6 +62,7 @@ public sealed class AiAssistantService(
                         OutputTokens = totalOutputTokens
                     }
                 };
+            }
 
             // Build assistant message with tool use
             var toolCallsSummary = string.Join("\n", response.ToolCalls.Select(tc =>
@@ -126,7 +128,7 @@ public sealed class AiAssistantService(
     private async Task<string> BuildSystemPromptAsync()
     {
         var staffInfo = await tenantInfo.GetStaffInfoAsync();
-        var staffName = staffInfo?.Text ?? "Operator";
+        var staffName = staffInfo.Text ?? "Operator";
         var timezone = tenantInfo.GetTenantTimeZone();
         var currentTime = clock.TenantNow;
         var isUs = tenantInfo.IsUsTenant();

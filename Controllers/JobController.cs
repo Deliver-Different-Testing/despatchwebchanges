@@ -52,7 +52,10 @@ public class JobController(
         try
         {
             var isUsTenant = infoService.IsUsTenant();
-            if (!isInternal) await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
+            if (!isInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(cid, clientIds);
+            }
 
             var result = await jobQueryRepository.JobListAsync(
                 queryParams,
@@ -112,7 +115,11 @@ public class JobController(
                 despatchViewIds
             );
 
-            if (!isInternal) await clientAccessValidator.ValidateClientAccessAsync(0, clientIds);
+            if (!isInternal)
+            {
+                await clientAccessValidator.ValidateClientAccessAsync(0, clientIds);
+            }
+
             var result = await jobQueryRepository.GetJobCoordinatesAsync(despatchViewIds);
 
             Log.Information(
@@ -148,7 +155,9 @@ public class JobController(
             var isUsTenant = infoService.IsUsTenant();
 
             if (!isInternal)
+            {
                 await clientAccessValidator.ValidateClientAccessAsync(staffId, clientIds);
+            }
 
             // Get jobs
             var jobs = await jobQueryRepository.JobListAsync(
@@ -192,20 +201,30 @@ public class JobController(
         try
         {
             if (!ModelState.IsValid)
+            {
                 return BadRequest(ModelState);
+            }
 
             var jobId = breakdown.ChildJobId ?? breakdown.PrebookJobId;
-            if (!jobId.HasValue) throw new ArgumentException(
+            if (!jobId.HasValue)
+            {
+                throw new ArgumentException(
                     "ChildJobId or PrebookJobId must be provided",
                     nameof(breakdown));
+            }
 
             var partnerGuard = await RejectIfAnyPartnerJobAsync(breakdown.JobId, breakdown.ChildJobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
 
             // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to modify price breakdowns");
+            }
 
             // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(jobId.Value);
@@ -246,17 +265,24 @@ public class JobController(
         {
             var jobId = breakdown.JobId ?? breakdown.PrebookJobId;
             if (!jobId.HasValue)
+            {
                 throw new ArgumentException(
                     "JobId or PrebookJobId must be provided",
                     nameof(breakdown));
+            }
 
             var partnerGuard = await RejectIfAnyPartnerJobAsync(breakdown.JobId, breakdown.ChildJobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
 
             // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to modify price breakdowns");
+            }
 
             // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(jobId.Value);
@@ -296,12 +322,17 @@ public class JobController(
         try
         {
             var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
 
             // Permission check: user must have breakdown permission
             if (!await pricingPermissionService.CanModifyPriceBreakdownAsync())
+            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to modify price breakdowns");
+            }
 
             // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(request.JobId);
@@ -366,6 +397,7 @@ public class JobController(
         string podDescription = null)
     {
         if (Debugger.IsAttached)
+        {
             return Json(new
             {
                 success = true,
@@ -377,12 +409,16 @@ public class JobController(
                 isPOD = true,
                 podDescription
             });
+        }
 
         try
         {
             var result = await jobPhotoService.UploadJobPhotoOrSignatureAsync(
                 jobId, file, JobPhotoType.Delivery, isPod, podDescription);
-            if (!result.Success) return BadRequest(result.ErrorMessage);
+            if (!result.Success)
+            {
+                return BadRequest(result.ErrorMessage);
+            }
 
             return Json(new
             {
@@ -408,12 +444,18 @@ public class JobController(
     [HttpDelete]
     public async Task<IActionResult> DeleteJobDeliveryPhotoOrSignature(int jobId, string key)
     {
-        if (Debugger.IsAttached) return Json(new { success = true, message = "File deleted successfully" });
+        if (Debugger.IsAttached)
+        {
+            return Json(new { success = true, message = "File deleted successfully" });
+        }
 
         try
         {
             var success = await jobPhotoService.DeleteJobPhotoOrSignatureAsync(jobId, key);
-            if (!success) return BadRequest("Failed to delete file or file key is required");
+            if (!success)
+            {
+                return BadRequest("Failed to delete file or file key is required");
+            }
 
             return Json(new { success = true, message = "File deleted successfully" });
         }
@@ -658,7 +700,9 @@ public class JobController(
         try
         {
             if (request.Recipients == null || request.Recipients.Count == 0)
+            {
                 return BadRequest("At least one recipient is required.");
+            }
 
             // Flatten any semicolon/comma-separated entries into individual addresses
             var allRecipients = request.Recipients
@@ -669,20 +713,28 @@ public class JobController(
                 .ToList();
 
             if (allRecipients.Count == 0)
+            {
                 return BadRequest("No valid recipients provided.");
+            }
 
             // Validate each recipient is a well-formed email address
             var validRecipients = new List<string>();
             foreach (var recipient in allRecipients)
             {
                 if (MailAddress.TryCreate(recipient, out _))
+                {
                     validRecipients.Add(recipient);
+                }
                 else
+                {
                     Log.Warning("Skipping invalid email address '{Address}' for job {JobId}", recipient, request.JobId);
+                }
             }
 
             if (validRecipients.Count == 0)
+            {
                 return BadRequest("No valid email addresses provided.");
+            }
 
             await podReportService.QueuePodEmailAsync(request.JobId, validRecipients, request.Subject, request.Body);
 
@@ -728,13 +780,17 @@ public class JobController(
 
             // Permission check: user must have bulk update permission
             if (!await pricingPermissionService.CanBulkUpdatePricesAsync())
+            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to perform bulk price updates");
+            }
 
             // Permission check: user must have permission for the specific pricing mode
             if (!await pricingPermissionService.CanUsePricingModeAsync(pricingMode))
+            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     $"You do not have permission to use the '{pricingMode}' pricing mode");
+            }
 
             var result = await rateJobService.ApplyBulkPriceUpdateAsync(file, pricingMode);
             return Ok(result);
@@ -882,8 +938,10 @@ public class JobController(
 
         // Don't create an event if AlertLatePickup is negative
         if (alertLatePickup < 0)
+        {
             return new LateStatusResult
                 { ShouldCreateEvent = false, EventType = latePickupStatus, LateTime = lateTime };
+        }
 
         var maxAutoLate = await jobQueryRepository.MaxAutoLatePickupAlertAsync();
         var shouldCreateEvent = minutes < maxAutoLate
@@ -905,8 +963,10 @@ public class JobController(
 
         // Don't create event if AlertLateDelivery is negative
         if (alertLateDelivery < 0)
+        {
             return new LateStatusResult
                 { ShouldCreateEvent = false, EventType = lateDeliveryStatus, LateTime = adjustedLateTime };
+        }
 
         var maxAutoLateDelAlert = await jobQueryRepository.MaxAutoLateDeliveryAlertAsync();
         var shouldCreateEvent = minutes < maxAutoLateDelAlert || adjustedLateTime > alertLateDelivery;
@@ -939,7 +999,16 @@ public class JobController(
             foreach (var jobId in data.JobIds)
             {
                 var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
-                if (partnerGuard != null) return partnerGuard;
+                if (partnerGuard != null)
+                {
+                    return partnerGuard;
+                }
+
+                var acceptanceGuard = await RejectIfRateNotAcceptedAsync(jobId);
+                if (acceptanceGuard != null)
+                {
+                    return acceptanceGuard;
+                }
             }
 
             await dispatchJobService.DispatchJobsToCourierAsync(data.JobIds, data.CourierId);
@@ -960,7 +1029,16 @@ public class JobController(
             foreach (var jobId in data.JobIds)
             {
                 var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
-                if (partnerGuard != null) return partnerGuard;
+                if (partnerGuard != null)
+                {
+                    return partnerGuard;
+                }
+
+                var acceptanceGuard = await RejectIfRateNotAcceptedAsync(jobId);
+                if (acceptanceGuard != null)
+                {
+                    return acceptanceGuard;
+                }
             }
 
             await jobCommandRepository.ReDispatchSelectedJobsAsync(data.JobIds);
@@ -1000,7 +1078,10 @@ public class JobController(
         foreach (var jobId in parsedIds)
         {
             var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
         }
 
         await jobCommandRepository.ReAssignSelectedJobsAsync(parsedIds);
@@ -1015,7 +1096,10 @@ public class JobController(
         // would corrupt the partner-side view. The receiver side has a real local
         // courier and may reorder freely.
         var partnerGuard = await RejectIfOutboundPartnerJobAsync(jobId);
-        if (partnerGuard != null) return partnerGuard;
+        if (partnerGuard != null)
+        {
+            return partnerGuard;
+        }
 
         await jobCommandRepository.SetFirstJobAsync(jobId, courierId);
         return Ok();
@@ -1030,7 +1114,10 @@ public class JobController(
             // own copy's lifecycle. Block only the sender side, where voiding here
             // would orphan the dispatched-out job from the partner's perspective.
             var partnerGuard = await RejectIfOutboundPartnerJobAsync(request.JobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
 
             var isArchived = await jobQueryRepository.IsJobArchived(request.JobId);
 
@@ -1051,10 +1138,16 @@ public class JobController(
             await jobCommandRepository.VoidJobAsync(request);
 
             // Rerate the parent job if a child was voided but the parent was not
-            if (!parentId.HasValue || isParentBeingVoided) return Ok();
+            if (!parentId.HasValue || isParentBeingVoided)
+            {
+                return Ok();
+            }
 
             // Don't re-rate if debugging
-            if (Debugger.IsAttached) return Ok();
+            if (Debugger.IsAttached)
+            {
+                return Ok();
+            }
 
             try
             {
@@ -1063,13 +1156,17 @@ public class JobController(
                 {
                     var jobDetails = await jobQueryRepository.GetJobDetailsForRatingAsync(parentId.Value);
                     if (!jobDetails.IsManuallyRated)
+                    {
                         await rateJobService.RateJobUsAsync(jobDetails);
+                    }
                 }
                 else
                 {
                     var jobDetails = await jobQueryRepository.GetJobDetailsForRatingNzAsync(parentId.Value, false);
                     if (!jobDetails.IsManuallyRated)
+                    {
                         await rateJobService.RateJobNzAsync(jobDetails);
+                    }
                 }
             }
             catch (Exception ex)
@@ -1180,7 +1277,10 @@ public class JobController(
         try
         {
             var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
 
             var staffInfo = await infoService.GetStaffInfoAsync();
             var staffName = staffInfo.Text;
@@ -1303,7 +1403,11 @@ public class JobController(
 
         var response = await httpClient.PostAsync("activity", content);
 
-        if (response.StatusCode == HttpStatusCode.OK) return Ok();
+        if (response.StatusCode == HttpStatusCode.OK)
+        {
+            return Ok();
+        }
+
         var responseContent = await response.Content.ReadAsStringAsync();
         var e = new ApplicationException(
             $"Exsalerate Activity Failed {responseContent} {Environment.NewLine} CurrentBody= {body}"
@@ -1392,24 +1496,36 @@ public class JobController(
             await recurringJobRepository.UpdateRecurringJobAsync(jobId, field, value);
 
             // Skip re-reate if debugging
-            if (Debugger.IsAttached) return Ok();
+            if (Debugger.IsAttached)
+            {
+                return Ok();
+            }
 
             // Recalculate the job
             var shouldRecalculateRate = ShouldRecalculateRate(field);
-            if (!shouldRecalculateRate) return Ok();
+            if (!shouldRecalculateRate)
+            {
+                return Ok();
+            }
 
             var isUsTenant = infoService.IsUsTenant();
             if (isUsTenant)
             {
                 var jobDetails = await jobQueryRepository.GetJobBookingDetailsForRatingAsync(jobId);
-                if (jobDetails.IsManuallyRated) return Ok();
+                if (jobDetails.IsManuallyRated)
+                {
+                    return Ok();
+                }
 
                 await rateJobService.RateJobUsAsync(jobDetails);
             }
             else
             {
                 var jobDetails = await jobQueryRepository.GetJobBookingDetailsForRatingNzAsync(jobId);
-                if (jobDetails.IsManuallyRated) return Ok();
+                if (jobDetails.IsManuallyRated)
+                {
+                    return Ok();
+                }
 
                 await rateJobService.RateJobNzAsync(jobDetails);
             }
@@ -1466,7 +1582,10 @@ public class JobController(
             return StatusCode(500, e.Message + e.InnerException?.Message);
         }
 
-        if (!ShouldRecalculateRate(field)) return Ok();
+        if (!ShouldRecalculateRate(field))
+        {
+            return Ok();
+        }
 
         // Propagate field update and re-rate split children (best effort)
         try
@@ -1548,10 +1667,12 @@ public class JobController(
 
             //Check if jobId is valid before continuing
             if (jobId == 0)
+            {
                 return StatusCode(
                     StatusCodes.Status500InternalServerError,
                     "Created Job Id is null"
                 );
+            }
 
             return Json(jobId);
         }
@@ -1601,11 +1722,14 @@ public class JobController(
     )
     {
         if (itemsModel != null)
+        {
             await jobCommandRepository.AddClientsItemToJobAsync(
                 jobId,
                 itemsModel.ServiceIds,
                 itemsModel.TotalCost
             );
+        }
+
         return Ok();
     }
 
@@ -1613,7 +1737,10 @@ public class JobController(
     {
         var selectedJob = await jobQueryRepository.GetSingleJobById(jobId);
 
-        if (selectedJob == null) return NotFound();
+        if (selectedJob == null)
+        {
+            return NotFound();
+        }
 
         var att = new Attachment(
             new MemoryStream(selectedJob.PodPhoto),
@@ -1649,9 +1776,15 @@ public class JobController(
         message.To.Add(toAddress);
         message.Headers.Add("Message-ID", $"<{Guid.NewGuid()}@DFRNT.com>");
 
-        if (attachment != null) message.Attachments.Add(attachment);
+        if (attachment != null)
+        {
+            message.Attachments.Add(attachment);
+        }
 
-        if (!string.IsNullOrEmpty(replyTo)) message.ReplyToList.Add(new MailAddress(replyTo));
+        if (!string.IsNullOrEmpty(replyTo))
+        {
+            message.ReplyToList.Add(new MailAddress(replyTo));
+        }
 
         using var smtp = new SmtpClient();
         smtp.Host = Environment.GetEnvironmentVariable("SMTPServer");
@@ -1711,7 +1844,11 @@ public class JobController(
     {
         if (Debugger.IsAttached)
         {
-            if (request?.File == null) return BadRequest("No file uploaded");
+            if (request?.File == null)
+            {
+                return BadRequest("No file uploaded");
+            }
+
             return Ok(new
             {
                 message = "File uploaded successfully",
@@ -1725,11 +1862,17 @@ public class JobController(
 
         try
         {
-            if (request?.File == null) return BadRequest("No file uploaded");
+            if (request?.File == null)
+            {
+                return BadRequest("No file uploaded");
+            }
 
             var result = await jobPhotoService.UploadJobAttachmentAsync(request.JobId, request.File);
 
-            if (!result.Success) return BadRequest(result.ErrorMessage);
+            if (!result.Success)
+            {
+                return BadRequest(result.ErrorMessage);
+            }
 
             return Ok(new
             {
@@ -1765,9 +1908,11 @@ public class JobController(
             var result = await jobPhotoService.DownloadFileAsync(key);
 
             if (!result.Success)
+            {
                 return result.ErrorMessage.Contains("not found")
                     ? NotFound(result.ErrorMessage)
                     : StatusCode(500, result.ErrorMessage);
+            }
 
             return File(result.FileBytes, result.ContentType, result.FileName);
         }
@@ -1781,7 +1926,10 @@ public class JobController(
 
     public async Task<IActionResult> DeleteFile(string key)
     {
-        if (Debugger.IsAttached) return Ok(new { message = "File deleted successfully" });
+        if (Debugger.IsAttached)
+        {
+            return Ok(new { message = "File deleted successfully" });
+        }
 
         try
         {
@@ -1872,11 +2020,17 @@ public class JobController(
                 CompoundPayloadJsonOptions);
             var gateResult = await partnerJobGate.EvaluateAsync(
                 request.JobId, JobChangeField.Packages, payload, reason: null, ct);
-            if (TryHandleGateResult(gateResult, out var earlyResponse)) return earlyResponse;
+            if (TryHandleGateResult(gateResult, out var earlyResponse))
+            {
+                return earlyResponse;
+            }
 
             await jobCommandRepository.UpdatePackagesForJobAsync(request.JobId, request.Parcels);
             if (request.Weight is > 0)
+            {
                 await jobCommandRepository.UpdateJobWeightAsync(request.JobId, request.Weight.Value);
+            }
+
             return Ok();
         }
         catch (Exception ex)
@@ -1956,7 +2110,10 @@ public class JobController(
         var payload = JsonSerializer.Serialize(request.Address, CompoundPayloadJsonOptions);
         var gateResult = await partnerJobGate.EvaluateAsync(
             request.JobId, JobChangeField.DeliveryAddress, payload, reason: null, ct);
-        if (TryHandleGateResult(gateResult, out var earlyResponse)) return earlyResponse;
+        if (TryHandleGateResult(gateResult, out var earlyResponse))
+        {
+            return earlyResponse;
+        }
 
         return await UpdateAddressAsync(
             request,
@@ -1971,7 +2128,10 @@ public class JobController(
         var payload = JsonSerializer.Serialize(request.Address, CompoundPayloadJsonOptions);
         var gateResult = await partnerJobGate.EvaluateAsync(
             request.JobId, JobChangeField.PickupAddress, payload, reason: null, ct);
-        if (TryHandleGateResult(gateResult, out var earlyResponse)) return earlyResponse;
+        if (TryHandleGateResult(gateResult, out var earlyResponse))
+        {
+            return earlyResponse;
+        }
 
         return await UpdateAddressAsync(
             request,
@@ -1984,7 +2144,10 @@ public class JobController(
     public async Task<IActionResult> UpdateBookingPickupAddress([FromBody] UpdateAddressRequest request)
     {
         var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-        if (partnerGuard != null) return partnerGuard;
+        if (partnerGuard != null)
+        {
+            return partnerGuard;
+        }
 
         return await UpdateAddressAsync(
             request,
@@ -1997,7 +2160,10 @@ public class JobController(
     public async Task<IActionResult> UpdateBookingDeliveryAddress([FromBody] UpdateAddressRequest request)
     {
         var partnerGuard = await RejectIfPartnerJobAsync(request.JobId);
-        if (partnerGuard != null) return partnerGuard;
+        if (partnerGuard != null)
+        {
+            return partnerGuard;
+        }
 
         return await UpdateAddressAsync(
             request,
@@ -2117,7 +2283,10 @@ public class JobController(
         try
         {
             var partnerGuard = await RejectIfPartnerJobAsync(jobId);
-            if (partnerGuard != null) return partnerGuard;
+            if (partnerGuard != null)
+            {
+                return partnerGuard;
+            }
 
             var applied = await jobCommandRepository.ApplyWebQtyUpdateAsync(jobId);
             return applied ? Ok() : NotFound("No pending web qty update found for this job.");
@@ -2168,7 +2337,9 @@ public class JobController(
         {
             // Permission check: user must have modified prices permission
             if (!await pricingPermissionService.CanModifyPricesAsync())
+            {
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to modify job prices");
+            }
 
             // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(data.JobId);
@@ -2196,7 +2367,9 @@ public class JobController(
         {
             // Permission check: user must have base amount permission
             if (!await pricingPermissionService.CanUsePricingModeAsync("base"))
+            {
                 return StatusCode(StatusCodes.Status403Forbidden, "You do not have permission to set base amounts");
+            }
 
             // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(data.JobId);
@@ -2225,8 +2398,10 @@ public class JobController(
         {
             // Permission check: user must have recalculated permission
             if (!await pricingPermissionService.CanUsePricingModeAsync("recalculate"))
+            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     "You do not have permission to recalculate job prices");
+            }
 
             // Job access validation
             await pricingPermissionService.ValidateJobAccessAsync(jobId);
@@ -2360,10 +2535,52 @@ public class JobController(
         }
     }
 
+    [HttpGet("{jobId:int}")]
+    public async Task<IActionResult> GetPartnerInboundRateAcceptance(int jobId)
+    {
+        var state = await sendToPartnerService.GetInboundJobAcceptanceStateAsync(jobId);
+        return state is null
+            ? Json(new PartnerInboundJobAcceptanceStateResponse { Status = "Allowed" })
+            : Json(state);
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AcceptPartnerRate([FromBody] AcceptPartnerRateRequest request)
+    {
+        try
+        {
+            var result = await sendToPartnerService.AcceptInboundJobAsync(request.JobId);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error accepting partner rate for job {JobId}", request.JobId);
+            return Json(new PartnerInboundJobActionResponse { Success = false, ErrorMessage = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> RejectPartnerRate([FromBody] RejectPartnerRateRequest request)
+    {
+        try
+        {
+            var result = await sendToPartnerService.RejectInboundJobAsync(request.JobId, request.Reason);
+            return Json(result);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error rejecting partner rate for job {JobId}", request.JobId);
+            return Json(new PartnerInboundJobActionResponse { Success = false, ErrorMessage = ex.Message });
+        }
+    }
+
     private async Task<IActionResult> RejectIfPartnerJobAsync(int jobId)
     {
         if (await jobQueryRepository.IsPartnerJobAsync(jobId))
+        {
             return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
+        }
+
         return null;
     }
 
@@ -2375,11 +2592,22 @@ public class JobController(
     private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)
     {
         if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId))
+        {
             return BadRequest(new
             {
                 message = "This job has been dispatched to a partner; manage it from the partner-pairing side."
             });
+        }
+
         return null;
+    }
+
+    private async Task<IActionResult> RejectIfRateNotAcceptedAsync(int jobId)
+    {
+        var gate = await partnerJobGate.EvaluateAllocateAsync(jobId, CancellationToken.None);
+        return gate is PartnerJobGateResult.Blocked blocked
+            ? BadRequest(new { message = blocked.Message })
+            : null;
     }
 
     private async Task<IActionResult> RejectIfAnyPartnerJobAsync(params int?[] jobIds)
@@ -2387,7 +2615,9 @@ public class JobController(
         foreach (var id in jobIds)
         {
             if (id is { } jobId && await jobQueryRepository.IsPartnerJobAsync(jobId))
+            {
                 return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
+            }
         }
         return null;
     }

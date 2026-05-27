@@ -1,5 +1,4 @@
 using DespatchWeb.Models.Dto;
-using DespatchWeb.Services.JobApi;
 
 namespace DespatchWeb.Interfaces;
 

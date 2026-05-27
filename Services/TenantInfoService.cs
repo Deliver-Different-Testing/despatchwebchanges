@@ -44,7 +44,11 @@ public sealed class TenantInfoService(
     /// </summary>
     private TimeZoneInfo GetTimeZoneInfo()
     {
-        if (_cachedTimeZoneInfo != null) return _cachedTimeZoneInfo;
+        if (_cachedTimeZoneInfo != null)
+        {
+            return _cachedTimeZoneInfo;
+        }
+
         var timeZone = GetTimeZone();
         _cachedTimeZoneInfo = TimeZoneInfo.FindSystemTimeZoneById(timeZone ?? "UTC");
         return _cachedTimeZoneInfo;
@@ -55,7 +59,11 @@ public sealed class TenantInfoService(
     /// </summary>
     private CultureInfo GetCultureInfo()
     {
-        if (_cachedCultureInfo != null) return _cachedCultureInfo;
+        if (_cachedCultureInfo != null)
+        {
+            return _cachedCultureInfo;
+        }
+
         var countryCode = GetCountryCode();
         var cultureCode = countryCode switch
         {
@@ -86,7 +94,11 @@ public sealed class TenantInfoService(
     /// <returns>The current time in the specified timezone.</returns>
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
-        if (timeZone is null) return GetCurrentTenantTime();
+        if (timeZone is null)
+        {
+            return GetCurrentTenantTime();
+        }
+
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
@@ -104,7 +116,10 @@ public sealed class TenantInfoService(
     /// <returns>A culture-specific formatted date string, or empty if null.</returns>
     public string FormatDateForTenant(DateTime? dateTime)
     {
-        if (!dateTime.HasValue) return string.Empty;
+        if (!dateTime.HasValue)
+        {
+            return string.Empty;
+        }
 
         var culture = GetCultureInfo();
         return dateTime.Value.ToString("g", culture);
@@ -117,7 +132,11 @@ public sealed class TenantInfoService(
     /// <returns>The staff ID, or 0 if not found.</returns>
     public int GetStaffId()
     {
-        if (_cachedStaffId.HasValue) return _cachedStaffId.Value;
+        if (_cachedStaffId.HasValue)
+        {
+            return _cachedStaffId.Value;
+        }
+
         var staffIdString = contextAccessor.HttpContext?.User.Claims
             .FirstOrDefault(x => x.Type == "StaffID")?.Value;
         _cachedStaffId = int.Parse(staffIdString ?? "0");
@@ -134,7 +153,11 @@ public sealed class TenantInfoService(
     /// <returns>The contact ID, or 0 if not found.</returns>
     public int GetContactId()
     {
-        if (_cachedContactId.HasValue) return _cachedContactId.Value;
+        if (_cachedContactId.HasValue)
+        {
+            return _cachedContactId.Value;
+        }
+
         var contactId = contextAccessor.HttpContext?.User.Claims
             .FirstOrDefault(x => x.Type == "ContactID")?.Value;
         _cachedContactId = int.Parse(contactId ?? "0");

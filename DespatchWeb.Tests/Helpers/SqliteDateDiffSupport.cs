@@ -20,7 +20,11 @@ public static class SqliteDateDiffSupport
     public static void RegisterDateDiffMinute(this SqliteConnection connection) =>
         connection.CreateFunction("datediff_minute", (string? start, string? end) =>
         {
-            if (start == null || end == null) return null;
+            if (start == null || end == null)
+            {
+                return null;
+            }
+
             return (int?)(DateTime.Parse(end) - DateTime.Parse(start)).TotalMinutes;
         });
 
@@ -73,7 +77,9 @@ internal class DateDiffTranslator : IMethodCallTranslator
         IDiagnosticsLogger<DbLoggerCategory.Query> logger)
     {
         if (!SupportedMethods.Contains(method))
+        {
             return null;
+        }
 
         // arguments[0] = DbFunctions (ignored), [1] = startDate, [2] = endDate
         return new SqlFunctionExpression(

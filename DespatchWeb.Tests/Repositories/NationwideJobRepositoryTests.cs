@@ -1720,7 +1720,9 @@ public class NationwideJobRepositoryTests : IAsyncDisposable
             .FirstOrDefault(e => e.Entity.UcjbId == 102)?.Entity;
 
         if (trackedDeliveryJob != null)
+        {
             Assert.Equal(expectedStartTime.DateTime, trackedDeliveryJob.UcjbTime);
+        }
     }
 
     [Fact]

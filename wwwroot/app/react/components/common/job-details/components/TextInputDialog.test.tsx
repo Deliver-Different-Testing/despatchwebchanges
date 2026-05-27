@@ -1,4 +1,3 @@
-/** @jest-environment jest-environment-jsdom */
 /**
  * TextInputDialog Component Tests
  */
@@ -66,7 +65,7 @@ describe('TextInputDialog', () => {
 
         const input = screen.getByDisplayValue('REF-001');
         await user.clear(input);
-        await user.type(input, 'NEW-REF');
+        await user.paste('NEW-REF');
 
         await user.click(screen.getByRole('button', {name: 'Save'}));
         expect(defaultProps.onSubmit).toHaveBeenCalledWith('NEW-REF');

@@ -56,7 +56,9 @@ public class SplitJobService(
 
                 var hasFlightAssigned = await context.TucJobNationwides.AnyAsync(n => n.UcnwJobId == jobId, ct);
                 if (hasFlightAssigned)
+                {
                     throw new InvalidOperationException($"Job {jobId} has flights assigned and cannot be split");
+                }
 
                 var parentJobCourierId = await GetParentJobCourierIdAsync(context, ct);
 
@@ -80,7 +82,11 @@ public class SplitJobService(
                 // Update parent job
                 job.JobRelationshipTypeId = parentRelTypeId;
                 job.UcjbCourierId = parentJobCourierId;
-                if (!job.ParentId.HasValue || job.ParentId == job.UcjbId) job.ParentId = jobId;
+                if (!job.ParentId.HasValue || job.ParentId == job.UcjbId)
+                {
+                    job.ParentId = jobId;
+                }
+
                 job.RootParentId ??= jobId;
                 job.InformationParentId ??= job.RootParentId;
                 job.DisplayInDespatch = false;
@@ -218,8 +224,15 @@ public class SplitJobService(
             })
             .FirstOrDefaultAsync(ct);
 
-        if (parentInfo is null) return;
-        if (parentInfo.JobRelationshipTypeId != (int)JobRelationshipTypes.SplitParent) return;
+        if (parentInfo is null)
+        {
+            return;
+        }
+
+        if (parentInfo.JobRelationshipTypeId != (int)JobRelationshipTypes.SplitParent)
+        {
+            return;
+        }
 
         var rootParentId = parentInfo.RootParentId ?? parentJobId;
 
@@ -229,7 +242,10 @@ public class SplitJobService(
             .Select(j => j.UcjbId)
             .ToListAsync(ct);
 
-        if (childJobIds.Count == 0) return;
+        if (childJobIds.Count == 0)
+        {
+            return;
+        }
 
         // Propagate the field update to each child job
         foreach (var childId in childJobIds)
@@ -472,12 +488,12 @@ public class SplitJobService(
                 else if (totalRate == 0m)
                 {
                     // All rates are 0: distribute evenly
-                    amount = Math.Round(parentAmount / rates.Count, 2);
+                    amount = Math.Round(parentAmount / rates.Count, 2, MidpointRounding.AwayFromZero);
                 }
                 else
                 {
                     var percentage = rates[i].Rate / totalRate;
-                    amount = Math.Round(percentage * parentAmount, 2);
+                    amount = Math.Round(percentage * parentAmount, 2, MidpointRounding.AwayFromZero);
                 }
 
                 runningTotal += amount;
