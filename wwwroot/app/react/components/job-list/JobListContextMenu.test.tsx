@@ -27,13 +27,24 @@ jest.mock('../dialogs/add-event-dialog', () => ({
 jest.mock('../dialogs/event-group-dialog', () => ({
     openEventGroupDialog: jest.fn().mockResolvedValue(true),
 }));
-// Stub the send-to-partner dialog so we can drive `onConfirm` directly from a test
-// without going through the dialog's rate-fetching flow (covered by its own test file).
-jest.mock('../dialogs/send-to-partner-dialog', () => ({
-    SendToPartnerDialog: jest.fn(({open, onConfirm}: {open: boolean; onConfirm: (rate: number) => Promise<void>}) =>
+// Stub the universal dispatch dialog so tests can drive the two confirm callbacks
+// directly without going through the dialog's internal radio/dropdown/rate flow
+// (the dialog's own behaviour is covered by DispatchDialog.test.tsx).
+jest.mock('../dialogs/dispatch-dialog', () => ({
+    DispatchDialog: jest.fn(({open, initialType, onDispatchCourier, onSendToPartner}: {
+        open: boolean;
+        initialType: string;
+        onDispatchCourier: (type: 'Courier' | 'Agent' | 'NP', destination: {id: number; text: string}) => Promise<void>;
+        onSendToPartner: (partner: {id: number; text: string}, rate: number) => Promise<void>;
+    }) =>
         open ? (
-            <div data-testid="send-to-partner-dialog">
-                <button onClick={() => onConfirm(100)}>Stub Confirm</button>
+            <div data-testid="dispatch-dialog" data-initial-type={initialType}>
+                <button onClick={() => onDispatchCourier('Courier', {id: 99, text: 'Stub Courier'})}>
+                    Stub Dispatch Courier
+                </button>
+                <button onClick={() => onSendToPartner({id: 7, text: 'PartnerCo'}, 100)}>
+                    Stub Send To Partner
+                </button>
             </div>
         ) : null,
     ),
@@ -429,7 +440,7 @@ describe('JobListContextMenu', () => {
             expect(props.onRefresh).toHaveBeenCalled();
         });
 
-        it('Re-Dispatch calls reAllocateJobs with courierId and jobId', async () => {
+        it('Re-Dispatch opens the universal dispatch dialog with Courier pre-selected', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({assignedCourier: {id: 5, text: 'Courier A'}}),
@@ -438,14 +449,13 @@ describe('JobListContextMenu', () => {
 
             await user.click(screen.getByText('Re-Dispatch'));
 
-            await waitFor(() => {
-                expect(mockedApi.reAllocateJobs).toHaveBeenCalledWith(5, [1]);
-            });
-            expect(props.showToast).toHaveBeenCalledWith('Job J001 re-dispatched successfully', 'success');
-            expect(props.onRefresh).toHaveBeenCalled();
+            const dialog = await screen.findByTestId('dispatch-dialog');
+            expect(dialog).toHaveAttribute('data-initial-type', 'Courier');
+            // Re-Dispatch alone shouldn't call the API — the dialog confirmation does.
+            expect(mockedApi.reAllocateJobs).not.toHaveBeenCalled();
         });
 
-        it('Re-Dispatch invalidates job detail cache so detail panel refreshes', async () => {
+        it('Re-Dispatch confirm invalidates job detail cache so detail panel refreshes', async () => {
             const {queryClient: qc} = await import('../../query/queryClient');
             const invalidateSpy = jest.spyOn(qc, 'invalidateQueries');
             const user = userEvent.setup();
@@ -455,6 +465,7 @@ describe('JobListContextMenu', () => {
             renderWithTheme(<JobListContextMenu {...props} />);
 
             await user.click(screen.getByText('Re-Dispatch'));
+            await user.click(await screen.findByText('Stub Dispatch Courier'));
 
             await waitFor(() => {
                 expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['jobs']});
@@ -929,6 +940,17 @@ describe('JobListContextMenu', () => {
     // ── 7b. Send to Partner — post-confirm side effects ─────────────────
 
     describe('Send to Partner (post-confirm)', () => {
+        it('opens the dispatch dialog with DFRNT Partner pre-selected', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps();
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Send to DFRNT Partner'));
+
+            const dialog = await screen.findByTestId('dispatch-dialog');
+            expect(dialog).toHaveAttribute('data-initial-type', 'DfrntPartner');
+        });
+
         it('copies the job number, surfaces an Open toast action, and opens the job in search when clicked', async () => {
             const user = userEvent.setup();
             const writeTextMock = jest.fn().mockResolvedValue(undefined);
@@ -937,7 +959,6 @@ describe('JobListContextMenu', () => {
                 configurable: true,
             });
 
-            mockedApi.getActivePartnerOptions.mockResolvedValue([{id: 7, text: 'PartnerCo'}]);
             mockedApi.sendToPartner.mockResolvedValue({
                 success: true,
                 trackingNumber: 'TRK-555',
@@ -950,10 +971,7 @@ describe('JobListContextMenu', () => {
             renderWithTheme(<JobListContextMenu {...props} />);
 
             await user.click(screen.getByText('Send to DFRNT Partner'));
-            const partnerItem = await screen.findByText('PartnerCo');
-            await user.click(partnerItem);
-
-            await user.click(await screen.findByText('Stub Confirm'));
+            await user.click(await screen.findByText('Stub Send To Partner'));
 
             await waitFor(() => {
                 expect(mockedApi.sendToPartner).toHaveBeenCalledWith(42, 7, 100);
@@ -974,6 +992,51 @@ describe('JobListContextMenu', () => {
             const action = toastCall?.[2] as {label: string; onClick: () => void};
             action.onClick();
             expect(mockedOpenJobInSearch).toHaveBeenCalledWith(42);
+        });
+    });
+
+    // ── 7c. Re-Dispatch via dispatch dialog ─────────────────────────────
+
+    describe('Re-Dispatch (universal dialog)', () => {
+        it('opens the dispatch dialog and re-allocates when a courier is picked', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps({
+                job: createMockJob({
+                    id: 11,
+                    jobNo: 'J011',
+                    assignedCourier: {id: 50, text: 'ABC Couriers'},
+                }),
+            });
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Re-Dispatch'));
+            const dialog = await screen.findByTestId('dispatch-dialog');
+            expect(dialog).toHaveAttribute('data-initial-type', 'Courier');
+
+            await user.click(screen.getByText('Stub Dispatch Courier'));
+
+            await waitFor(() => {
+                expect(mockedApi.reAllocateJobs).toHaveBeenCalledWith(99, [11]);
+            });
+        });
+
+        it('allocates (not reallocates) when the job has no courier yet', async () => {
+            const user = userEvent.setup();
+            const props = createDefaultProps({
+                job: createMockJob({id: 22, jobNo: 'J022'}),
+            });
+            mockedApi.allocateJobs.mockResolvedValue(undefined);
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Send to DFRNT Partner'));
+
+            // Switch the dialog stub to Courier dispatch using the same Stub button.
+            await user.click(screen.getByText('Stub Dispatch Courier'));
+
+            await waitFor(() => {
+                expect(mockedApi.allocateJobs).toHaveBeenCalledWith(99, [22]);
+            });
+            expect(mockedApi.reAllocateJobs).not.toHaveBeenCalled();
         });
     });
 

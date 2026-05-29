@@ -28,6 +28,36 @@ interface RoutingParameters {
 }
 
 /**
+ * Remove a HERE Maps object from a Map or Group, swallowing the SDK's
+ * IllegalOperationError if the object is no longer a child of the (root) group.
+ * Use this whenever a removeObject call could race with disposal or with a
+ * pending async callback that already cleared the object.
+ */
+export function safeRemoveObject(target: any, obj: any): void {
+    if (!target || !obj) return;
+    try {
+        target.removeObject(obj);
+    } catch (e) {
+        console.warn('[HereMap] removeObject failed, ignoring:', e);
+    }
+}
+
+/**
+ * Batched variant of safeRemoveObject. Falls back to per-object removal if
+ * the batch call throws (so one stale object doesn't drop the whole batch).
+ */
+export function safeRemoveObjects(target: any, objs: any[] | null | undefined): void {
+    if (!target || !objs?.length) return;
+    try {
+        target.removeObjects(objs);
+    } catch {
+        // Fall back to per-object removal so a single stale entry doesn't
+        // abort the batch — and so the wider error gets logged once per object
+        objs.forEach((o) => safeRemoveObject(target, o));
+    }
+}
+
+/**
  * Initialize HERE Maps platform with API key
  */
 export function initPlatform(credentials: HereMapCredentials): any {
@@ -213,7 +243,7 @@ export function addExtraMarker(
  */
 export function removeExtraMarkers(extraMarkers: any[], map: any): any[] {
     extraMarkers.forEach((marker) => {
-        map.removeObject(marker);
+        safeRemoveObject(map, marker);
     });
     return [];
 }
@@ -229,7 +259,7 @@ export function removeObjectById(id: string, map: any): void {
 
     map.getObjects().forEach((object: any) => {
         if (object.id === id) {
-            map.removeObject(object);
+            safeRemoveObject(map, object);
         }
     });
 }
@@ -413,7 +443,7 @@ function handleRouteViewport(
         group.addObjects([group1, group2]);
 
         map.getViewModel().setLookAtData({bounds: group.getBoundingBox()});
-        group.removeObjects([group1, group2]);
+        safeRemoveObjects(group, [group1, group2]);
     } else {
         map.getViewModel().setLookAtData({bounds: routeLine.getBoundingBox()});
     }
@@ -430,6 +460,12 @@ function handleRoutingError(error: any): void {
 
 /**
  * Draw a route line between two points
+ *
+ * `signal` lets the caller cancel a still-in-flight routing request so the
+ * async result callback doesn't add polylines/markers onto a map that's
+ * already been cleared for a different job. Without it, switching jobs
+ * faster than HERE can resolve a route leaves stale polylines on the map
+ * that subsequent clearMap calls fail to remove (IllegalOperationError).
  */
 export function drawRouteLine(
     fromLat: number,
@@ -442,7 +478,8 @@ export function drawRouteLine(
     platform: any,
     flight: boolean,
     preserveView?: boolean,
-    onRouteDrawn?: (routeLine: any) => void
+    onRouteDrawn?: (routeLine: any) => void,
+    signal?: AbortSignal
 ): void {
     const routingParameters: RoutingParameters = {
         routingMode: 'fast',
@@ -453,6 +490,7 @@ export function drawRouteLine(
     };
 
     const onResult = (result: any): void => {
+        if (signal?.aborted) return;
         if (result.routes.length) {
             result.routes[0].sections.forEach((section: any) => {
                 if (flight) {
@@ -494,6 +532,9 @@ export function drawRouteLine(
 
 /**
  * Add an extra route line for child jobs
+ *
+ * `signal` cancels the async result callback if the caller has moved on to
+ * a different job — same rationale as drawRouteLine above.
  */
 export function addExtraRouteLine(
     fromLat: number,
@@ -508,7 +549,8 @@ export function addExtraRouteLine(
     platform: any,
     isScopedJob?: boolean,
     preserveView?: boolean,
-    onRouteAdded?: (routeLine: any, index: number) => void
+    onRouteAdded?: (routeLine: any, index: number) => void,
+    signal?: AbortSignal
 ): void {
     const routingParameters: RoutingParameters = {
         routingMode: 'fast',
@@ -519,6 +561,7 @@ export function addExtraRouteLine(
     };
 
     const onResult = (result: any): void => {
+        if (signal?.aborted) return;
         if (result.routes.length) {
             result.routes[0].sections.forEach((section: any) => {
                 const routeId = 'route' + index;

@@ -36,6 +36,16 @@ export function useHereMap({
     const routeLineRef = useRef<any>(null);
     const extraRouteLinesRef = useRef<any[]>([]);
 
+    // Mirrors mapInstance state so the unmount-cleanup effect (which uses
+    // `[]` deps to run exactly once) can see the current value rather than
+    // closing over the initial null
+    const mapInstanceRef = useRef<MapInstance | null>(null);
+
+    // AbortController bumped on every showJobOnMap call so in-flight HERE
+    // routing callbacks bail out instead of adding stale polylines to a map
+    // that's already been cleared for the new job
+    const routingControllerRef = useRef<AbortController | null>(null);
+
     // Track previous values for change detection
     const prevConfigRef = useRef<HereMapConfig | undefined>(undefined);
     const prevCredentialsRef = useRef<HereMapCredentials | undefined>(undefined);
@@ -100,6 +110,12 @@ export function useHereMap({
 
     /**
      * Clear all markers from the map
+     *
+     * Each marker is cleared independently so single-address jobs (which
+     * never set toMarker) don't leak a stale fromMarker into the next job's
+     * map state. Uses safeRemoveObject so a marker that's already detached
+     * (e.g. by map disposal racing this call) logs a warning instead of
+     * throwing IllegalOperationError and bringing down the React tree.
      */
     const clearAllMarkers = useCallback(() => {
         if (!mapInstance?.map) return;
@@ -112,19 +128,19 @@ export function useHereMap({
             );
         }
 
-        // Clear from/to markers
-        if (fromMarkerRef.current && toMarkerRef.current) {
-            mapInstance.map.removeObjects([
-                fromMarkerRef.current,
-                toMarkerRef.current,
-            ]);
+        // Clear from/to markers independently
+        if (fromMarkerRef.current) {
+            utils.safeRemoveObject(mapInstance.map, fromMarkerRef.current);
             fromMarkerRef.current = null;
+        }
+        if (toMarkerRef.current) {
+            utils.safeRemoveObject(mapInstance.map, toMarkerRef.current);
             toMarkerRef.current = null;
         }
 
         // Clear courier marker
         if (courierMarkerRef.current) {
-            mapInstance.map.removeObject(courierMarkerRef.current);
+            utils.safeRemoveObject(mapInstance.map, courierMarkerRef.current);
             courierMarkerRef.current = null;
         }
     }, [mapInstance]);
@@ -339,7 +355,8 @@ export function useHereMap({
         (
             job: IHereMapJob,
             scopedJob: IHereMapChildJob | null | undefined,
-            preserveView: boolean
+            preserveView: boolean,
+            signal?: AbortSignal
         ) => {
             if (!mapInstance?.map || !platform) return;
 
@@ -371,7 +388,9 @@ export function useHereMap({
                             (scopedJob
                                 ? childJob.id === scopedJob.id
                                 : null) ?? false,
-                            preserveView
+                            preserveView,
+                            undefined,
+                            signal
                         );
                     }
                 }
@@ -384,7 +403,7 @@ export function useHereMap({
      * Handle a simple job without child jobs
      */
     const handleSimpleJob = useCallback(
-        (job: IHereMapJob, preserveView: boolean) => {
+        (job: IHereMapJob, preserveView: boolean, signal?: AbortSignal) => {
             if (!mapInstance?.map || !platform) return;
 
             utils.drawRouteLine(
@@ -400,7 +419,8 @@ export function useHereMap({
                 preserveView,
                 (routeLine) => {
                     routeLineRef.current = routeLine;
-                }
+                },
+                signal
             );
         },
         [mapInstance, platform]
@@ -410,7 +430,7 @@ export function useHereMap({
      * Handle multi-address job
      */
     const handleMultiAddressJob = useCallback(
-        (job: IHereMapJob, preserveView: boolean) => {
+        (job: IHereMapJob, preserveView: boolean, signal?: AbortSignal) => {
             if (!job.childJobs) return;
 
             const scopedJob =
@@ -419,9 +439,9 @@ export function useHereMap({
                     : null;
 
             if (job.childJobs.length > 0) {
-                handleChildJobs(job, scopedJob, preserveView);
+                handleChildJobs(job, scopedJob, preserveView, signal);
             } else {
-                handleSimpleJob(job, preserveView);
+                handleSimpleJob(job, preserveView, signal);
             }
         },
         [config?.selectedJobIndex, getScopedJob, handleChildJobs, handleSimpleJob]
@@ -446,6 +466,14 @@ export function useHereMap({
                 return;
             }
 
+            // Cancel any routing requests still in flight from the previous
+            // job — without this, their async callbacks would add polylines
+            // to a map we're about to repopulate, leaving orphan objects
+            // that later removeObject calls can't find
+            routingControllerRef.current?.abort();
+            routingControllerRef.current = new AbortController();
+            const signal = routingControllerRef.current.signal;
+
             try {
                 // Clear existing map elements
                 clearMap();
@@ -460,7 +488,7 @@ export function useHereMap({
                 if (isSingleAddr) {
                     handleSingleAddressJob(job, preserveView);
                 } else {
-                    handleMultiAddressJob(job, preserveView);
+                    handleMultiAddressJob(job, preserveView, signal);
                 }
 
                 // Auto-zoom if not preserving view
@@ -726,13 +754,44 @@ export function useHereMap({
         };
     }, [mapInstance]);
 
+    // Effect: Keep mapInstanceRef in sync so the unmount-cleanup effect can
+    // see the latest map (its `[]`-deps closure would otherwise capture null)
+    useEffect(() => {
+        mapInstanceRef.current = mapInstance;
+    }, [mapInstance]);
+
     // Effect: Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (mapInstance?.map) {
+            // Abort any pending routing so its async callbacks don't run
+            // against a disposed map
+            routingControllerRef.current?.abort();
+
+            const inst = mapInstanceRef.current;
+            if (inst?.map) {
                 try {
-                    clearMap();
-                    mapInstance.map.dispose();
+                    // Inline minimal cleanup using the ref — calling the
+                    // stateful clearMap callback here would close over the
+                    // initial-mount value of mapInstance (which is null)
+                    if (fromMarkerRef.current) {
+                        utils.safeRemoveObject(inst.map, fromMarkerRef.current);
+                        fromMarkerRef.current = null;
+                    }
+                    if (toMarkerRef.current) {
+                        utils.safeRemoveObject(inst.map, toMarkerRef.current);
+                        toMarkerRef.current = null;
+                    }
+                    if (courierMarkerRef.current) {
+                        utils.safeRemoveObject(inst.map, courierMarkerRef.current);
+                        courierMarkerRef.current = null;
+                    }
+                    if (extraMarkersRef.current.length > 0) {
+                        extraMarkersRef.current = utils.removeExtraMarkers(
+                            extraMarkersRef.current,
+                            inst.map
+                        );
+                    }
+                    inst.map.dispose();
                 } catch {
                     // Ignore disposal errors during cleanup
                 }

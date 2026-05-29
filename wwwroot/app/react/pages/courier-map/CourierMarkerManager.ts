@@ -20,6 +20,7 @@ import {
     MARKER_LABEL_MAX_LENGTH,
     POSITION_THRESHOLD,
 } from './CourierMapPage.types';
+import {safeRemoveObject, safeRemoveObjects} from '../../components/common/here-map/hereMapUtils';
 
 declare const H: any;
 
@@ -62,7 +63,7 @@ export class CourierMarkerManager {
                 this.courierMarkers.delete(id);
             });
             if (markersToRemove.length > 0) {
-                this.markerGroup.removeObjects(markersToRemove);
+                safeRemoveObjects(this.markerGroup, markersToRemove);
             }
         }
 
@@ -163,9 +164,7 @@ export class CourierMarkerManager {
      * Clean up resources
      */
     dispose(): void {
-        if (this.map && this.markerGroup) {
-            this.map.removeObject(this.markerGroup);
-        }
+        safeRemoveObject(this.map, this.markerGroup);
         this.courierMarkers.clear();
         this.iconCache.clear();
     }

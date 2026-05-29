@@ -1,0 +1,390 @@
+/**
+ * DispatchDialog tests
+ *
+ * Covers the universal dispatch dialog's radio-switching behaviour, DFRNT
+ * Partner disable rule + tooltip, confirm callbacks for both courier and
+ * partner paths, and bulk-mode subtitle.
+ */
+
+import React from 'react';
+import {screen, waitFor, within} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import {DispatchDialog} from './DispatchDialog';
+import type {DispatchDialogProps, DispatchMode} from './types';
+import {renderWithTheme} from '../../../__testUtils__';
+import type {PartnerRateForJobResponse, EventGroupItem} from '../../../services/jobListApi';
+import type {ISuggestion} from '../../../../interfaces/job.interface';
+
+// ── Mocks ─────────────────────────────────────────────────────────────
+
+const mockCourierResults: ISuggestion[] = [
+    {id: 101, text: 'ABC Couriers'},
+    {id: 102, text: 'XYZ Logistics'},
+];
+
+const mockAgentResults: ISuggestion[] = [
+    {id: 201, text: 'AgentOne'},
+];
+
+const mockNpResults: ISuggestion[] = [
+    {id: 301, text: 'NetworkPartnerCo'},
+];
+
+jest.mock('../../../services/jobDetailApi', () => ({
+    autocompleteSearch: jest.fn(),
+}));
+
+jest.mock('../../../services/apiClient', () => ({
+    apiClient: {
+        get: jest.fn(),
+    },
+}));
+
+import {autocompleteSearch} from '../../../services/jobDetailApi';
+import {apiClient} from '../../../services/apiClient';
+
+const mockedAutocompleteSearch = autocompleteSearch as jest.Mock;
+const mockedApiClientGet = apiClient.get as jest.Mock;
+
+const rateCardResponse: PartnerRateForJobResponse = {
+    rateCardRate: 85.00,
+    liveQuotes: [],
+    source: 'rate_card',
+};
+
+const mockPartners: EventGroupItem[] = [
+    {id: 7, text: 'PartnerCo'},
+    {id: 8, text: 'OtherPartner'},
+];
+
+// ── Helpers ───────────────────────────────────────────────────────────
+
+const singleStandardMode: DispatchMode = {
+    kind: 'single',
+    jobId: 42,
+    jobNo: 'J042',
+    flags: {isArchived: false, isBulkJob: false, preBook: false},
+};
+
+function makeProps(overrides: Partial<DispatchDialogProps> = {}): DispatchDialogProps {
+    return {
+        open: true,
+        mode: singleStandardMode,
+        onClose: jest.fn(),
+        onDispatchCourier: jest.fn().mockResolvedValue(undefined),
+        onSendToPartner: jest.fn().mockResolvedValue(undefined),
+        fetchRate: jest.fn().mockResolvedValue(rateCardResponse),
+        getPartnerOptions: jest.fn().mockResolvedValue(mockPartners),
+        ...overrides,
+    };
+}
+
+beforeEach(() => {
+    mockedAutocompleteSearch.mockReset();
+    mockedApiClientGet.mockReset();
+    mockedAutocompleteSearch.mockResolvedValue(mockCourierResults);
+    mockedApiClientGet.mockImplementation((_url: string, params: {isNetworkPartner: boolean}) => {
+        return Promise.resolve(params.isNetworkPartner ? mockNpResults : mockAgentResults);
+    });
+});
+
+// ── Tests ─────────────────────────────────────────────────────────────
+
+describe('DispatchDialog', () => {
+    describe('Layout & basic rendering', () => {
+        it('renders the four Type radios', () => {
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            expect(screen.getByRole('radio', {name: /Courier/})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /Agent/})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /^NP$/})).toBeInTheDocument();
+            expect(screen.getByRole('radio', {name: /DFRNT Partner/})).toBeInTheDocument();
+        });
+
+        it('shows the single-job subtitle as "Job {jobNo}"', () => {
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            expect(screen.getByText(/Job J042/)).toBeInTheDocument();
+        });
+
+        it('shows the bulk subtitle as "{N} jobs selected"', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        mode: {
+                            kind: 'bulk',
+                            jobs: [
+                                {id: 1, jobNo: 'J001'},
+                                {id: 2, jobNo: 'J002'},
+                                {id: 3, jobNo: 'J003'},
+                            ],
+                        },
+                    })}
+                />,
+            );
+            expect(screen.getByText(/3 jobs selected/)).toBeInTheDocument();
+        });
+
+        it('shows a singular subtitle when the bulk selection has one job', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({mode: {kind: 'bulk', jobs: [{id: 1, jobNo: 'J001'}]}})}
+                />,
+            );
+            expect(screen.getByText(/1 job selected/)).toBeInTheDocument();
+        });
+
+        it('honours initialType when DFRNT Partner is enabled', () => {
+            renderWithTheme(<DispatchDialog {...makeProps({initialType: 'DfrntPartner'})} />);
+            expect(screen.getByRole('radio', {name: /DFRNT Partner/})).toBeChecked();
+        });
+
+        it('falls back to Courier when initialType is DFRNT Partner but the radio is disabled', () => {
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({
+                        initialType: 'DfrntPartner',
+                        mode: {kind: 'recurring', jobId: 1, jobNo: 'R001'},
+                    })}
+                />,
+            );
+            expect(screen.getByRole('radio', {name: /Courier/})).toBeChecked();
+        });
+    });
+
+    describe('DFRNT Partner disable rule', () => {
+        const cases: Array<{label: string; mode: DispatchMode; tooltip: RegExp}> = [
+            {
+                label: 'bulk mode',
+                mode: {kind: 'bulk', jobs: [{id: 1, jobNo: 'J001'}, {id: 2, jobNo: 'J002'}]},
+                tooltip: /bulk dispatch/i,
+            },
+            {
+                label: 'recurring mode',
+                mode: {kind: 'recurring', jobId: 1, jobNo: 'R001'},
+                tooltip: /recurring jobs/i,
+            },
+            {
+                label: 'archived single job',
+                mode: {
+                    kind: 'single',
+                    jobId: 1,
+                    jobNo: 'J001',
+                    flags: {isArchived: true, isBulkJob: false, preBook: false},
+                },
+                tooltip: /archived jobs/i,
+            },
+            {
+                label: 'bulk-flag single job',
+                mode: {
+                    kind: 'single',
+                    jobId: 1,
+                    jobNo: 'J001',
+                    flags: {isArchived: false, isBulkJob: true, preBook: false},
+                },
+                tooltip: /bulk jobs/i,
+            },
+            {
+                label: 'prebook (recurring) single job',
+                mode: {
+                    kind: 'single',
+                    jobId: 1,
+                    jobNo: 'J001',
+                    flags: {isArchived: false, isBulkJob: false, preBook: true},
+                },
+                tooltip: /recurring jobs/i,
+            },
+        ];
+
+        for (const {label, mode, tooltip} of cases) {
+            it(`disables DFRNT Partner with the right tooltip for ${label}`, async () => {
+                const user = userEvent.setup();
+                renderWithTheme(<DispatchDialog {...makeProps({mode})} />);
+                const dfrntRadio = screen.getByRole('radio', {name: /DFRNT Partner/});
+                expect(dfrntRadio).toBeDisabled();
+
+                // Tooltip wrapper is a sibling span — hover the label text to fire the tooltip.
+                const labelEl = screen.getByText('DFRNT Partner');
+                await user.hover(labelEl);
+                await waitFor(() => {
+                    expect(screen.getByRole('tooltip')).toHaveTextContent(tooltip);
+                });
+            });
+        }
+
+        it('enables DFRNT Partner for a standard non-archived non-bulk non-prebook tucJob', () => {
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            expect(screen.getByRole('radio', {name: /DFRNT Partner/})).not.toBeDisabled();
+        });
+    });
+
+    describe('Destination panels', () => {
+        it('shows the Courier autocomplete by default and fires the courier search backend', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            const search = screen.getByPlaceholderText(/Search courier/);
+            await user.type(search, 'ABC');
+
+            await waitFor(() => {
+                expect(mockedAutocompleteSearch).toHaveBeenCalledWith('ABC', '/courier/AllActiveSearch');
+            });
+        });
+
+        it('switches to the Agent search backend when the Agent radio is selected', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            await user.click(screen.getByRole('radio', {name: /Agent/}));
+            const search = screen.getByPlaceholderText(/Search agent/);
+            await user.type(search, 'One');
+
+            await waitFor(() => {
+                expect(mockedApiClientGet).toHaveBeenCalledWith(
+                    '/NationwideJob/GetAllAgentsSearch',
+                    expect.objectContaining({searchTerm: 'One', isNetworkPartner: false}),
+                );
+            });
+        });
+
+        it('switches to the NP search backend when the NP radio is selected', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            await user.click(screen.getByRole('radio', {name: /^NP$/}));
+            const search = screen.getByPlaceholderText(/Search Network Partner/);
+            await user.type(search, 'Net');
+
+            await waitFor(() => {
+                expect(mockedApiClientGet).toHaveBeenCalledWith(
+                    '/NationwideJob/GetAllAgentsSearch',
+                    expect.objectContaining({searchTerm: 'Net', isNetworkPartner: true}),
+                );
+            });
+        });
+
+        it('switching radio clears the previous destination so we never submit the wrong column', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(
+                <DispatchDialog
+                    {...makeProps({existingDestination: {id: 50, text: 'ABC Couriers'}})}
+                />,
+            );
+
+            const search = screen.getByPlaceholderText(/Search courier/) as HTMLInputElement;
+            expect(search.value).toBe('ABC Couriers');
+
+            await user.click(screen.getByRole('radio', {name: /Agent/}));
+            const newSearch = screen.getByPlaceholderText(/Search agent/) as HTMLInputElement;
+            expect(newSearch.value).toBe('');
+        });
+
+        it('shows the partner select + lazy-loads partners when DFRNT Partner is selected', async () => {
+            const user = userEvent.setup();
+            const getPartnerOptions = jest.fn().mockResolvedValue(mockPartners);
+            renderWithTheme(<DispatchDialog {...makeProps({getPartnerOptions})} />);
+
+            await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+
+            await waitFor(() => {
+                expect(getPartnerOptions).toHaveBeenCalled();
+            });
+            // Exact string label disambiguates from the "DFRNT Partner" radio label.
+            expect(screen.getByLabelText('Partner')).toBeInTheDocument();
+        });
+    });
+
+    describe('Confirm callbacks', () => {
+        it('calls onDispatchCourier with the picked courier when Confirm is clicked', async () => {
+            const user = userEvent.setup();
+            const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
+            renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+
+            const search = screen.getByPlaceholderText(/Search courier/);
+            await user.type(search, 'ABC');
+            // Wait for results to populate the listbox, then pick one.
+            const option = await screen.findByRole('option', {name: /ABC Couriers/});
+            await user.click(option);
+
+            await user.click(screen.getByRole('button', {name: /Dispatch/}));
+
+            await waitFor(() => {
+                expect(onDispatchCourier).toHaveBeenCalledWith('Courier', {id: 101, text: 'ABC Couriers'});
+            });
+        });
+
+        it('Confirm button stays disabled until a destination is picked', async () => {
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            const confirm = screen.getByRole('button', {name: /Dispatch/});
+            expect(confirm).toBeDisabled();
+        });
+
+        it('surfaces an error from onDispatchCourier inline without closing the dialog', async () => {
+            const user = userEvent.setup();
+            const onDispatchCourier = jest.fn().mockRejectedValue(new Error('server-side failure'));
+            renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
+
+            const search = screen.getByPlaceholderText(/Search courier/);
+            await user.type(search, 'ABC');
+            const option = await screen.findByRole('option', {name: /ABC Couriers/});
+            await user.click(option);
+
+            await user.click(screen.getByRole('button', {name: /Dispatch/}));
+
+            expect(await screen.findByText(/server-side failure/)).toBeInTheDocument();
+            // Dialog is still open.
+            expect(screen.getByRole('dialog')).toBeInTheDocument();
+        });
+
+        it('calls onSendToPartner with partner + rate when DFRNT Partner Confirm is clicked', async () => {
+            const user = userEvent.setup();
+            const onSendToPartner = jest.fn().mockResolvedValue(undefined);
+            renderWithTheme(<DispatchDialog {...makeProps({onSendToPartner})} />);
+
+            await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+
+            // Wait for the partner dropdown to load.
+            await waitFor(() => expect(screen.getByLabelText('Partner')).toBeInTheDocument());
+
+            // Open the Select and choose PartnerCo.
+            const select = screen.getByLabelText('Partner');
+            await user.click(select);
+            const partnerOption = await screen.findByRole('option', {name: 'PartnerCo'});
+            await user.click(partnerOption);
+
+            // Wait for the rate panel to load + pre-fill the Agreed Rate input.
+            const rateInput = await screen.findByLabelText(/Agreed Rate/) as HTMLInputElement;
+            await waitFor(() => expect(rateInput.value).toBe('85.00'));
+
+            await user.click(screen.getByRole('button', {name: /Send to Partner/}));
+
+            await waitFor(() => {
+                expect(onSendToPartner).toHaveBeenCalledWith({id: 7, text: 'PartnerCo'}, 85);
+            });
+        });
+
+        it('Cancel button calls onClose', async () => {
+            const user = userEvent.setup();
+            const onClose = jest.fn();
+            renderWithTheme(<DispatchDialog {...makeProps({onClose})} />);
+
+            await user.click(screen.getByRole('button', {name: /Cancel/}));
+            expect(onClose).toHaveBeenCalled();
+        });
+    });
+
+    describe('Confirm button label', () => {
+        it('reads "Dispatch" for Courier / Agent / NP radios', () => {
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+            expect(screen.getByRole('button', {name: /^Dispatch$/})).toBeInTheDocument();
+        });
+
+        it('reads "Send to Partner" when the DFRNT Partner radio is selected', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            await user.click(screen.getByRole('radio', {name: /DFRNT Partner/}));
+            // The footer button label is the disabled state until a partner is picked.
+            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /Send to Partner/})).toBeInTheDocument();
+        });
+    });
+});

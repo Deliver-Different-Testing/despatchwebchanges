@@ -5,7 +5,7 @@
  * Follows the app's standard toolbar pattern (44px minHeight, divider border).
  */
 
-import React, {useCallback, useRef, useEffect, useState} from 'react';
+import React, {useCallback, useRef, useEffect} from 'react';
 import Box from '@mui/material/Box';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
@@ -17,9 +17,6 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Switch from '@mui/material/Switch';
 import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
-import Popover from '@mui/material/Popover';
-import Autocomplete from '@mui/material/Autocomplete';
-import CircularProgress from '@mui/material/CircularProgress';
 import SearchIcon from '@mui/icons-material/Search';
 import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import ViewListIcon from '@mui/icons-material/ViewList';
@@ -33,14 +30,6 @@ import MarkEmailUnreadIcon from '@mui/icons-material/MarkEmailUnread';
 import type {SxProps, Theme} from '@mui/material';
 import type {JobCategory, DensityMode} from '../../interfaces/dispatchJob';
 import {AppPage} from '../../interfaces/dispatchJob';
-import SendIcon from '@mui/icons-material/Send';
-import {searchActiveCouriersExtended} from '../../services/courierApi';
-import {getActivePartnerOptions} from '../../services/jobListApi';
-
-interface CourierOption {
-    id: number;
-    text: string;
-}
 
 interface JobListToolbarProps {
     selectedCategory: JobCategory;
@@ -55,11 +44,11 @@ interface JobListToolbarProps {
     appPage?: AppPage | number;
     selectedCount?: number;
     onClearSelection?: () => void;
-    onBulkDispatch?: (courierId: number, courierName: string) => void;
+    /** Opens the universal dispatch dialog in bulk mode. */
+    onBulkDispatchClick?: () => void;
     onBulkRestore?: () => void;
     onBulkMarkRead?: () => void;
     onBulkMarkUnread?: () => void;
-    onBulkSendToPartner?: (partnerId: number, partnerName: string) => void;
     hideLoggedInSwitch?: boolean;
 }
 
@@ -141,29 +130,19 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
     appPage,
     selectedCount = 0,
     onClearSelection,
-    onBulkDispatch,
+    onBulkDispatchClick,
     onBulkRestore,
     onBulkMarkRead,
     onBulkMarkUnread,
-    onBulkSendToPartner,
     hideLoggedInSwitch,
 }) => {
     const allowDispatch = appPage === AppPage.Dispatch || appPage === AppPage.JobSearch;
     const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const localInputRef = useRef(searchQuery);
 
-    // Dispatch popover state
-    const [dispatchAnchor, setDispatchAnchor] = useState<HTMLElement | null>(null);
-    const [courierOptions, setCourierOptions] = useState<CourierOption[]>([]);
-    const [courierLoading, setCourierLoading] = useState(false);
-    const courierDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const courierAbortRef = useRef<AbortController | null>(null);
-
     useEffect(() => {
         return () => {
             if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-            if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
-            if (courierAbortRef.current) courierAbortRef.current.abort();
         };
     }, []);
 
@@ -198,62 +177,6 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
         [onDensityModeChange],
     );
 
-    const handleCourierSearch = useCallback((_event: React.SyntheticEvent, value: string) => {
-        if (courierDebounceRef.current) clearTimeout(courierDebounceRef.current);
-        if (courierAbortRef.current) courierAbortRef.current.abort();
-
-        setCourierLoading(true);
-        courierDebounceRef.current = setTimeout(async () => {
-            const controller = new AbortController();
-            courierAbortRef.current = controller;
-            try {
-                const results = await searchActiveCouriersExtended(value, {
-                    loggedInOnly: loggedInCouriersOnly || undefined,
-                    signal: controller.signal,
-                });
-                setCourierOptions(results.map(r => ({id: r.id, text: r.text})));
-            } catch (err: any) {
-                if (err?.name !== 'AbortError') setCourierOptions([]);
-            } finally {
-                setCourierLoading(false);
-            }
-        }, 300);
-    }, [loggedInCouriersOnly]);
-
-    const handleCourierSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
-        if (value && onBulkDispatch) {
-            onBulkDispatch(value.id, value.text);
-        }
-        setDispatchAnchor(null);
-        setCourierOptions([]);
-    }, [onBulkDispatch]);
-
-    // Partner popover state
-    const [partnerAnchor, setPartnerAnchor] = useState<HTMLElement | null>(null);
-    const [partnerOptions, setPartnerOptions] = useState<CourierOption[]>([]);
-    const [partnerLoading, setPartnerLoading] = useState(false);
-
-    const handlePartnerPopoverOpen = useCallback(async (e: React.MouseEvent<HTMLElement>) => {
-        setPartnerAnchor(e.currentTarget);
-        if (partnerOptions.length > 0) return;
-        setPartnerLoading(true);
-        try {
-            const options = await getActivePartnerOptions();
-            setPartnerOptions(options.map(o => ({id: o.id, text: o.text})));
-        } catch {
-            setPartnerOptions([]);
-        } finally {
-            setPartnerLoading(false);
-        }
-    }, [partnerOptions.length]);
-
-    const handlePartnerSelect = useCallback((_event: React.SyntheticEvent, value: CourierOption | null) => {
-        if (value && onBulkSendToPartner) {
-            onBulkSendToPartner(value.id, value.text);
-        }
-        setPartnerAnchor(null);
-    }, [onBulkSendToPartner]);
-
     // Selection action bar
     if (selectedCount > 0) {
         return (
@@ -276,105 +199,14 @@ export const JobListToolbar: React.FC<JobListToolbarProps> = ({
                 </Typography>
 
                 {allowDispatch && (
-                    <>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<LocalShippingIcon/>}
-                            onClick={(e) => setDispatchAnchor(e.currentTarget)}
-                        >
-                            Dispatch
-                        </Button>
-                        <Popover
-                            open={Boolean(dispatchAnchor)}
-                            anchorEl={dispatchAnchor}
-                            onClose={() => {
-                                setDispatchAnchor(null);
-                                setCourierOptions([]);
-                            }}
-                            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
-                        >
-                            <Box sx={{p: 2, width: 300}}>
-                                <Autocomplete
-                                    autoFocus
-                                    openOnFocus
-                                    size="small"
-                                    options={courierOptions}
-                                    getOptionLabel={(o) => o.text}
-                                    loading={courierLoading}
-                                    onInputChange={handleCourierSearch}
-                                    onChange={handleCourierSelect}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Search courier..."
-                                            autoFocus
-                                            slotProps={{
-                                                input: {
-                                                    ...params.InputProps,
-                                                    endAdornment: (
-                                                        <>
-                                                            {courierLoading ? <CircularProgress size={18}/> : null}
-                                                            {params.InputProps.endAdornment}
-                                                        </>
-                                                    ),
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Box>
-                        </Popover>
-                    </>
-                )}
-
-                {allowDispatch && (
-                    <>
-                        <Button
-                            size="small"
-                            variant="outlined"
-                            startIcon={<SendIcon/>}
-                            onClick={handlePartnerPopoverOpen}
-                        >
-                            Send to DFRNT Partner
-                        </Button>
-                        <Popover
-                            open={Boolean(partnerAnchor)}
-                            anchorEl={partnerAnchor}
-                            onClose={() => setPartnerAnchor(null)}
-                            anchorOrigin={{vertical: 'bottom', horizontal: 'left'}}
-                        >
-                            <Box sx={{p: 2, width: 300}}>
-                                <Autocomplete
-                                    autoFocus
-                                    openOnFocus
-                                    size="small"
-                                    options={partnerOptions}
-                                    getOptionLabel={(o) => o.text}
-                                    loading={partnerLoading}
-                                    onChange={handlePartnerSelect}
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            label="Select partner..."
-                                            autoFocus
-                                            slotProps={{
-                                                input: {
-                                                    ...params.InputProps,
-                                                    endAdornment: (
-                                                        <>
-                                                            {partnerLoading ? <CircularProgress size={18}/> : null}
-                                                            {params.InputProps.endAdornment}
-                                                        </>
-                                                    ),
-                                                },
-                                            }}
-                                        />
-                                    )}
-                                />
-                            </Box>
-                        </Popover>
-                    </>
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<LocalShippingIcon/>}
+                        onClick={onBulkDispatchClick}
+                    >
+                        Dispatch
+                    </Button>
                 )}
 
                 {allowDispatch && (

@@ -14,6 +14,7 @@ import {
     MAX_JOBS_TO_DISPLAY,
 } from './DispatchMap.types';
 import {AddressType} from '../../../../enums/address-type.enum';
+import {safeRemoveObject} from '../here-map/hereMapUtils';
 
 declare const H: any;
 
@@ -473,9 +474,7 @@ export class JobMarkerManager {
     dispose(): void {
         this.hideTooltip();
         this.clearMarkers();
-        if (this.map && this.markerGroup) {
-            this.map.removeObject(this.markerGroup);
-        }
+        safeRemoveObject(this.map, this.markerGroup);
         // Remove tooltip element from DOM
         if (this.tooltipElement && this.tooltipElement.parentNode) {
             this.tooltipElement.parentNode.removeChild(this.tooltipElement);

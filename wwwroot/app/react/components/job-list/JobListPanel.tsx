@@ -24,12 +24,20 @@ import {JobListTable} from './JobListTable';
 import {JobListContextMenu} from './JobListContextMenu';
 import {JobListFooter} from './JobListFooter';
 import type {AddressViewModel} from '../../interfaces/address';
-import {allocateJobs, bulkUpdateReadStatus, restoreJobs, updateJobReadStatus} from '../../services/jobListApi';
+import {
+    allocateJobs,
+    bulkUpdateReadStatus,
+    restoreJobs,
+    updateJobReadStatus,
+    getActivePartnerOptions,
+    getPartnerRateForJob,
+} from '../../services/jobListApi';
 import {useJobListData} from '../../hooks/useJobListData';
 import {useMultiSelect} from '../../hooks/useMultiSelect';
 import {isDelivered, isUrgent, JOB_STATUS, needsDispatch} from './jobListHelpers';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import {getNoteTypes} from '../../services/notesApi';
+import {DispatchDialog} from '../dialogs/dispatch-dialog';
 
 // ── Constants ────────────────────────────────────────────────────────
 
@@ -666,17 +674,28 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 
-    const handleBulkSendToPartner = useCallback(async (_partnerId: number, _partnerName: string) => {
-        // Bulk partner dispatch requires per-job rate confirmation via the SendToPartnerDialog.
-        // A shared-rate bulk dialog can be added later if needed.
-        showToast('Partner dispatch requires rate confirmation — please dispatch jobs individually via right-click', 'info');
-    }, [showToast]);
+    // Bulk dispatch dialog state. The universal DispatchDialog is rendered at the
+    // panel level so the toolbar's "Dispatch" button just toggles open=true.
+    const [bulkDispatchOpen, setBulkDispatchOpen] = useState(false);
+    const handleBulkDispatchClick = useCallback(() => {
+        if (multiSelect.selectCount > 0) setBulkDispatchOpen(true);
+    }, [multiSelect.selectCount]);
 
-    const handleBulkDispatch = useCallback(async (courierId: number, courierName: string) => {
+    const handleBulkDispatchCourier = useCallback(async (
+        type: 'Courier' | 'Agent' | 'NP',
+        destination: {id: number; text: string},
+    ) => {
+        if (type !== 'Courier') {
+            // Bulk Agent / NP allocation isn't wired server-side. The dialog still
+            // allows the radio (it's a single dialog for all modes) but submission
+            // surfaces an error rather than silently failing.
+            throw new Error(`${type} dispatch is not yet supported for bulk selections.`);
+        }
         const ids = [...multiSelect.selectedIds];
         try {
-            await allocateJobs(courierId, ids);
-            showToast(`${ids.length} job(s) dispatched to ${courierName}`, 'success');
+            await allocateJobs(destination.id, ids);
+            showToast(`${ids.length} job(s) dispatched to ${destination.text}`, 'success');
+            setBulkDispatchOpen(false);
             multiSelect.clear();
             await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
             if (fetchConfig) {
@@ -684,10 +703,18 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
             } else if (onRefresh) {
                 onRefresh();
             }
-        } catch {
-            showToast('Failed to dispatch jobs', 'error');
+        } catch (err) {
+            // Re-throw so the dialog surfaces the error inline.
+            const message = err instanceof Error ? err.message : 'Failed to dispatch jobs';
+            throw new Error(message);
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
+
+    // Bulk DFRNT Partner is disabled in the dialog (per-job rates required),
+    // so this should never fire — but the dialog still needs the prop.
+    const handleBulkSendToPartner = useCallback(async () => {
+        throw new Error('DFRNT Partner is not available for bulk dispatch.');
+    }, []);
 
     const handleJobDispatch = useCallback(async (
         job: DispatchJob,
@@ -765,11 +792,10 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 appPage={appPage}
                 selectedCount={multiSelect.selectCount}
                 onClearSelection={multiSelect.clear}
-                onBulkDispatch={handleBulkDispatch}
+                onBulkDispatchClick={handleBulkDispatchClick}
                 onBulkRestore={handleBulkRestore}
                 onBulkMarkRead={handleBulkMarkRead}
                 onBulkMarkUnread={handleBulkMarkUnread}
-                onBulkSendToPartner={handleBulkSendToPartner}
                 hideLoggedInSwitch={hideLoggedInSwitch}
             />
             <JobListTable
@@ -809,6 +835,22 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
                 onRefresh={handleRefresh}
                 onAddStop={onAddStop}
                 isUsCustomer={isUsCustomer}
+            />
+            {/* Bulk dispatch dialog — opened by the toolbar's "Dispatch" button. */}
+            <DispatchDialog
+                open={bulkDispatchOpen}
+                mode={{
+                    kind: 'bulk',
+                    jobs: visibleJobs
+                        .filter(j => multiSelect.selectedIds.has(j.id))
+                        .map(j => ({id: j.id, jobNo: j.jobNo})),
+                }}
+                initialType="Courier"
+                onClose={() => setBulkDispatchOpen(false)}
+                onDispatchCourier={handleBulkDispatchCourier}
+                onSendToPartner={handleBulkSendToPartner}
+                fetchRate={getPartnerRateForJob}
+                getPartnerOptions={getActivePartnerOptions}
             />
         </Box>
     );

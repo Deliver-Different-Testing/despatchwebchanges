@@ -200,6 +200,12 @@ const defaultActions = {
     handleEditFirstDue: jest.fn(),
     handleEditStopDate: jest.fn(),
     handleEditRestartDate: jest.fn(),
+
+    // Universal Dispatch Dialog wiring — JobDetails reads these to render the dialog.
+    dispatchDialog: {open: false, initialType: 'Courier' as const},
+    closeDispatchDialog: jest.fn(),
+    dispatchDialogConfirmCourier: jest.fn().mockResolvedValue(undefined),
+    dispatchDialogConfirmPartner: jest.fn().mockResolvedValue(undefined),
 };
 
 function setupDefaultMocks(overrides?: {

@@ -6,6 +6,7 @@
 
 import type {CourierMarkerData, IAvailableCourierPosition} from './DispatchMap.types';
 import {COURIER_LABEL_COLORS, ICON_CACHE_LIMIT, MARKER_COLORS, POSITION_THRESHOLD,} from './DispatchMap.types';
+import {safeRemoveObject, safeRemoveObjects} from '../here-map/hereMapUtils';
 
 declare const H: any;
 
@@ -143,7 +144,7 @@ export class DispatchCourierMarkerManager {
                 this.courierMarkers.delete(id);
             });
             if (markersToRemove.length > 0) {
-                this.markerGroup.removeObjects(markersToRemove);
+                safeRemoveObjects(this.markerGroup, markersToRemove);
             }
         }
 
@@ -444,9 +445,7 @@ export class DispatchCourierMarkerManager {
             this.markerGroup.removeEventListener('pointerenter', this.handlePointerEnter, true);
             this.markerGroup.removeEventListener('pointerleave', this.handlePointerLeave, true);
         }
-        if (this.map && this.markerGroup) {
-            this.map.removeObject(this.markerGroup);
-        }
+        safeRemoveObject(this.map, this.markerGroup);
         // Remove tooltip element from DOM
         if (this.tooltipElement && this.tooltipElement.parentNode) {
             this.tooltipElement.parentNode.removeChild(this.tooltipElement);
