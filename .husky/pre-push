@@ -1,7 +1,7 @@
 echo "Running tests before push..."
 
-# Run .NET tests
-dotnet test --no-build --verbosity minimal
+# Run .NET tests (skip [Trait("Category","Integration")] which hit external APIs).
+dotnet test --no-build --verbosity minimal -- --filter-not-trait "Category=Integration"
 if [ $? -ne 0 ]; then
     echo ".NET tests failed. Push aborted."
     exit 1
