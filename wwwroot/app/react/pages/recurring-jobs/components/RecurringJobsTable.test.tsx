@@ -55,6 +55,7 @@ const defaultProps: RecurringJobsTableProps = {
     sort: {column: 'booked', direction: 'asc'},
     selectedJobId: null,
     isUsCustomer: false,
+    isActiveTab: true,
     onPageChange: jest.fn(),
     onPageSizeChange: jest.fn(),
     onSortChange: jest.fn(),

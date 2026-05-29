@@ -1266,6 +1266,57 @@ public partial class JobRepository(
         await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, staffInfo.Text, staffInfo.Id);
     }
 
+    /// <summary>
+    /// Reactivates a previously voided prebook/recurring job, restoring
+    /// child rows as well so the template resumes producing future jobs.
+    /// Mirrors the cascade rules of DESWEB_stpVoidPrebookJob /
+    /// DES_stpJobBooking_AutoVoidChildJobs in reverse.
+    /// </summary>
+    /// <param name="jobId">The prebook job ID to reactivate.</param>
+    public async Task ReactivatePrebookJobAsync(int jobId)
+    {
+        var parent = await Context.TucJobBookings
+            .Where(j => j.UcbkId == jobId)
+            .Select(j => new { j.UcbkId, j.BookingParentId, j.JobRelationshipTypeId })
+            .SingleOrDefaultAsync();
+
+        if (parent is null) return;
+
+        await Context.TucJobBookings
+            .Where(j => j.UcbkId == parent.UcbkId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcbkActive, true)
+                .SetProperty(j => j.UcbkDone, false)
+                .SetProperty(j => j.UcbkInActiveBy, (int?)null)
+                .SetProperty(j => j.UcbkInActiveDate, (DateTime?)null)
+                .SetProperty(j => j.UcbkUpdateBy, "DE"));
+
+        var isParent = parent.BookingParentId == null || parent.BookingParentId == parent.UcbkId;
+        if (isParent)
+        {
+            await Context.TucJobBookings
+                .Where(j => j.BookingParentId == parent.UcbkId && j.UcbkId != parent.UcbkId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcbkActive, true)
+                    .SetProperty(j => j.UcbkDone, false)
+                    .SetProperty(j => j.UcbkInActiveBy, (int?)null)
+                    .SetProperty(j => j.UcbkInActiveDate, (DateTime?)null)
+                    .SetProperty(j => j.UcbkUpdateBy, "DE"));
+        }
+
+        if (parent.JobRelationshipTypeId == 10)
+        {
+            await Context.TucJobBookings
+                .Where(j => j.RefJobId == parent.UcbkId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcbkActive, true)
+                    .SetProperty(j => j.UcbkDone, false)
+                    .SetProperty(j => j.UcbkInActiveBy, (int?)null)
+                    .SetProperty(j => j.UcbkInActiveDate, (DateTime?)null)
+                    .SetProperty(j => j.UcbkUpdateBy, "DE"));
+        }
+    }
+
 
     /// <summary>
     /// Updates the delivery address for a job (active or archived).

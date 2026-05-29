@@ -22,6 +22,7 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
+import RestoreFromTrashIcon from '@mui/icons-material/RestoreFromTrash';
 import type {Dayjs} from 'dayjs';
 import {AddressViewModel, PrebookListModel, RecurringJobColumn, RecurringJobSort,} from '../../../interfaces';
 
@@ -34,6 +35,7 @@ export interface RecurringJobsTableProps {
     sort: RecurringJobSort;
     selectedJobId: number | null;
     isUsCustomer: boolean;
+    isActiveTab: boolean;
     onPageChange: (page: number) => void;
     onPageSizeChange: (pageSize: number) => void;
     onSortChange: (sort: RecurringJobSort) => void;
@@ -109,6 +111,7 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                                                                           sort,
                                                                           selectedJobId,
                                                                           isUsCustomer,
+                                                                          isActiveTab,
                                                                           onPageChange,
                                                                           onPageSizeChange,
                                                                           onSortChange,
@@ -227,7 +230,7 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                 );
             case 'actions':
                 return (
-                    <Tooltip title="Inactivate job">
+                    <Tooltip title={isActiveTab ? 'Inactivate job' : 'Reactivate job'}>
                         <IconButton
                             size="small"
                             onClick={(e) => {
@@ -236,10 +239,12 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                             }}
                             sx={{
                                 color: 'text.secondary',
-                                '&:hover': {color: 'error.main'},
+                                '&:hover': {color: isActiveTab ? 'error.main' : 'success.main'},
                             }}
                         >
-                            <DeleteIcon fontSize="small"/>
+                            {isActiveTab
+                                ? <DeleteIcon fontSize="small"/>
+                                : <RestoreFromTrashIcon fontSize="small"/>}
                         </IconButton>
                     </Tooltip>
                 );

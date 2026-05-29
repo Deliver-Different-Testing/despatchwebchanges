@@ -6,6 +6,7 @@
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
@@ -21,6 +22,7 @@ import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
+import {queryKeys} from '../../query/queryClient';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
@@ -67,6 +69,13 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
 
     // Fetch data
     const {data, isLoading, refetch} = useRecurringJobsList(query);
+    const queryClient = useQueryClient();
+
+    const isActiveTab = query.active;
+
+    const refreshAllRecurringJobsLists = useCallback(async () => {
+        await queryClient.invalidateQueries({queryKey: queryKeys.recurringJobs.all});
+    }, [queryClient]);
 
     // Register refresh callback for AngularJS to call
     useEffect(() => {
@@ -153,19 +162,25 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
 
         setIsVoiding(true);
         try {
-            await recurringJobsApi.voidPrebookJob(jobToVoid.id);
-            showToast('The recurring job has been successfully inactivated.', 'success');
+            if (isActiveTab) {
+                await recurringJobsApi.voidPrebookJob(jobToVoid.id);
+                showToast('The recurring job has been successfully inactivated.', 'success');
+            } else {
+                await recurringJobsApi.reactivatePrebookJob(jobToVoid.id);
+                showToast('The recurring job has been successfully reactivated.', 'success');
+            }
             setVoidDialogOpen(false);
             setJobToVoid(null);
             setSelectedJobId(null);
-            await refetch();
+            await refreshAllRecurringJobsLists();
         } catch (error) {
-            console.error('Error inactivating recurring job:', error);
-            showToast('An error occurred while inactivating the recurring job. Please try again.', 'error');
+            const action = isActiveTab ? 'inactivating' : 'reactivating';
+            console.error(`Error ${action} recurring job:`, error);
+            showToast(`An error occurred while ${action} the recurring job. Please try again.`, 'error');
         } finally {
             setIsVoiding(false);
         }
-    }, [jobToVoid, refetch, showToast]);
+    }, [jobToVoid, isActiveTab, refreshAllRecurringJobsLists, showToast]);
 
     const handleVoidCancel = useCallback(() => {
         setVoidDialogOpen(false);
@@ -277,6 +292,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                             sort={sort}
                             selectedJobId={selectedJobId}
                             isUsCustomer={isUsCustomer}
+                            isActiveTab={isActiveTab}
                             onPageChange={handlePageChange}
                             onPageSizeChange={handlePageSizeChange}
                             onSortChange={handleSortChange}
@@ -334,17 +350,21 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 onAddDeliveryStop={handleAddDeliveryStop}
             />
 
-            {/* Void Confirmation Dialog */}
+            {/* Void / Reactivate Confirmation Dialog */}
             <Dialog
                 open={voidDialogOpen}
                 onClose={handleVoidCancel}
                 maxWidth="xs"
                 fullWidth
             >
-                <DialogTitle>Inactivate Recurring Job</DialogTitle>
+                <DialogTitle>
+                    {isActiveTab ? 'Inactivate Recurring Job' : 'Reactivate Recurring Job'}
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        This will inactivate this recurring job. Please confirm that you wish to do this?
+                        {isActiveTab
+                            ? 'This will inactivate this recurring job. Please confirm that you wish to do this?'
+                            : 'This will reactivate this recurring job. Please confirm that you wish to do this?'}
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
@@ -353,12 +373,14 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     </Button>
                     <Button
                         onClick={handleVoidConfirm}
-                        color="error"
+                        color={isActiveTab ? 'error' : 'success'}
                         variant="contained"
                         disabled={isVoiding}
                         startIcon={isVoiding ? <CircularProgress size={16} color="inherit"/> : undefined}
                     >
-                        {isVoiding ? 'Inactivating...' : 'Yes'}
+                        {isVoiding
+                            ? (isActiveTab ? 'Inactivating...' : 'Reactivating...')
+                            : 'Yes'}
                     </Button>
                 </DialogActions>
             </Dialog>

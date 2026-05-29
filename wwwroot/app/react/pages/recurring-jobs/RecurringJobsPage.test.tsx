@@ -36,6 +36,7 @@ jest.mock('../../hooks/useCourierApi', () => ({
 jest.mock('../../services/recurringJobsApi', () => ({
     recurringJobsApi: {
         voidPrebookJob: jest.fn(),
+        reactivatePrebookJob: jest.fn(),
         exportToCsv: jest.fn(),
     },
 }));
@@ -61,10 +62,10 @@ const createTestQueryClient = () =>
         },
     });
 
-const renderWithProviders = (props: RecurringJobsPageProps) => {
-    const queryClient = createTestQueryClient();
+const renderWithProviders = (props: RecurringJobsPageProps, queryClient?: QueryClient) => {
+    const client = queryClient ?? createTestQueryClient();
     return render(
-        <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={client}>
             <ThemeProvider theme={theme}>
                 <RecurringJobsPage {...props} />
             </ThemeProvider>
@@ -271,7 +272,7 @@ describe('RecurringJobsPage', () => {
     });
 
     // ── Void job: confirm with Yes ──────────────────────────────────
-    it('calls API and shows toast when void is confirmed', async () => {
+    it('calls API, shows toast, and invalidates both tabs when void is confirmed', async () => {
         const showToast = jest.fn();
         const refetch = jest.fn();
         const jobs = [createMockJob(1)];
@@ -281,8 +282,12 @@ describe('RecurringJobsPage', () => {
             error: null,
             refetch,
         } as any);
+        mockRecurringJobsApi.voidPrebookJob.mockResolvedValue(undefined);
 
-        renderWithProviders(createDefaultProps({showToast}));
+        const queryClient = createTestQueryClient();
+        const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
+
+        renderWithProviders(createDefaultProps({showToast}), queryClient);
 
         const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
         fireEvent.click(deleteButton);
@@ -300,7 +305,7 @@ describe('RecurringJobsPage', () => {
             );
         });
 
-        expect(refetch).toHaveBeenCalled();
+        expect(invalidateSpy).toHaveBeenCalledWith({queryKey: ['recurringJobs']});
     });
 
     // ── Search ──────────────────────────────────────────────────────

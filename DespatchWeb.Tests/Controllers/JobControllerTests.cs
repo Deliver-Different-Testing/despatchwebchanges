@@ -979,6 +979,7 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         const int jobId = 1;
+        var request = new VoidPrebookJobRequest { JobId = jobId };
 
         _jobCommandRepositoryMock.VoidPrebookJobAsync(jobId)
             .Returns(Task.CompletedTask);
@@ -986,7 +987,7 @@ public class JobControllerTests : IDisposable
         var controller = CreateController();
 
         // Act
-        var result = await controller.VoidPrebookJob(jobId);
+        var result = await controller.VoidPrebookJob(request);
 
         // Assert
         Assert.IsType<OkResult>(result);

@@ -58,6 +58,14 @@ export const recurringJobsApi = {
     },
 
     /**
+     * Reactivate a previously voided recurring job
+     * @param jobId - ID of the job to reactivate
+     */
+    reactivatePrebookJob: async (jobId: number): Promise<void> => {
+        await apiClient.post('job/ReactivatePrebookJob', {jobId});
+    },
+
+    /**
      * Export recurring jobs to CSV
      * Downloads the file directly via blob
      * @param query - Query parameters to filter exported jobs

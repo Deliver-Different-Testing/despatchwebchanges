@@ -12,6 +12,16 @@ public sealed class VoidBulkJobRequest : VoidJobBaseRequest
     public List<int> SelectedJobIds { get; init; }
 }
 
+public sealed class VoidPrebookJobRequest
+{
+    public int JobId { get; init; }
+}
+
+public sealed class ReactivatePrebookJobRequest
+{
+    public int JobId { get; init; }
+}
+
 public class VoidJobBaseRequest
 {
     public bool VoidSingleJobOnly { get; init; }
