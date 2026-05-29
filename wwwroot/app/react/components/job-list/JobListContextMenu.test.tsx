@@ -27,9 +27,6 @@ jest.mock('../dialogs/add-event-dialog', () => ({
 jest.mock('../dialogs/event-group-dialog', () => ({
     openEventGroupDialog: jest.fn().mockResolvedValue(true),
 }));
-jest.mock('../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn().mockReturnValue(false),
-}));
 // Stub the send-to-partner dialog so we can drive `onConfirm` directly from a test
 // without going through the dialog's rate-fetching flow (covered by its own test file).
 jest.mock('../dialogs/send-to-partner-dialog', () => ({
@@ -51,14 +48,12 @@ import * as api from '../../services/jobListApi';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
-import {isAiEnabled} from '../../../functions/aiSettings';
 import {openJobInSearch} from '../../services/navigationService';
 
 const mockedApi = api as jest.Mocked<typeof api>;
 const mockedExecuteSplitJobFlow = executeSplitJobFlow as jest.Mock;
 const mockedOpenAddEventDialog = openAddEventDialog as jest.Mock;
 const mockedOpenEventGroupDialog = openEventGroupDialog as jest.Mock;
-const mockedIsAiEnabled = isAiEnabled as jest.Mock;
 const mockedOpenJobInSearch = openJobInSearch as jest.Mock;
 
 // ── Mock Data Factory ─────────────────────────────────────────────────
@@ -140,7 +135,6 @@ beforeEach(() => {
     mockedApi.setFirstJob.mockResolvedValue(undefined);
     mockedApi.lateCall.mockResolvedValue(undefined);
 
-    mockedIsAiEnabled.mockReturnValue(false);
     mockedExecuteSplitJobFlow.mockResolvedValue(undefined);
     mockedOpenAddEventDialog.mockResolvedValue(true);
     mockedOpenEventGroupDialog.mockResolvedValue(true);
@@ -149,14 +143,12 @@ beforeEach(() => {
     (window as any).ReactPriceBreakdownDialog = {open: jest.fn().mockResolvedValue(undefined)};
     (window as any).ReactVoidJobConfirmationDialog = {open: jest.fn().mockResolvedValue({success: true})};
     (window as any).ReactSwapPodsDialog = {open: jest.fn().mockResolvedValue(true)};
-    (window as any).ReactAiAssistant = {analyzeLateAlert: jest.fn().mockResolvedValue({summary: 'AI analysis'})};
 });
 
 afterEach(() => {
     delete (window as any).ReactPriceBreakdownDialog;
     delete (window as any).ReactVoidJobConfirmationDialog;
     delete (window as any).ReactSwapPodsDialog;
-    delete (window as any).ReactAiAssistant;
 });
 
 // Reset the module-level eventGroupsCache between tests by re-requiring
@@ -206,9 +198,6 @@ describe('JobListContextMenu', () => {
             // does not show Add Stop when not an agent job (default job has isAgentJob: false)
             expect(screen.queryByText('Add Pickup Stop')).not.toBeInTheDocument();
             expect(screen.queryByText('Add Delivery Stop')).not.toBeInTheDocument();
-
-            // does not show AI Late Alert when isAiEnabled returns false (default mock returns false)
-            expect(screen.queryByText('AI Late Alert Analysis (Beta)')).not.toBeInTheDocument();
         });
 
         it('shows "Mark as Read" when hasBeenRead is false', () => {
@@ -303,12 +292,6 @@ describe('JobListContextMenu', () => {
                 job: createMockJob({isAgentJob: true, toAirportId: 5, fromAirportId: undefined}),
             })} />);
             expect(screen.getByText('Add Pickup Stop')).toBeInTheDocument();
-        });
-
-        it('shows AI Late Alert only when isAiEnabled returns true', () => {
-            mockedIsAiEnabled.mockReturnValue(true);
-            renderWithTheme(<JobListContextMenu {...createDefaultProps({appPage: AppPageEnum.Dispatch})} />);
-            expect(screen.getByText('AI Late Alert Analysis (Beta)')).toBeInTheDocument();
         });
 
         it('shows Reprice Job for nationwide speed + not reprice + not preBook', () => {

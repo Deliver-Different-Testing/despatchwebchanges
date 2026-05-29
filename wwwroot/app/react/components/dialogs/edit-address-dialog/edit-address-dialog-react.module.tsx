@@ -15,6 +15,7 @@ import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {EditAddressDialogViewModel} from '../../../interfaces';
 import type {ShowToastFn, ToastService} from '../../../services/toastService';
+import {AddressType} from '../../../../enums/address-type.enum';
 
 // State management for the dialog
 interface DialogState {
@@ -24,6 +25,7 @@ interface DialogState {
     submitLabel: string;
     showContactInfo: boolean;
     isUsTenant: boolean;
+    addressType?: AddressType;
     toastService: ToastService | null;
     resolve?: (value: EditAddressDialogViewModel | null) => void;
 }
@@ -83,6 +85,7 @@ function renderDialog(): void {
                     submitLabel={dialogState.submitLabel}
                     showContactInfo={dialogState.showContactInfo}
                     isUsTenant={dialogState.isUsTenant}
+                    addressType={dialogState.addressType}
                     onClose={handleClose}
                     onSave={handleSave}
                     showToast={handleShowToast}
@@ -113,6 +116,7 @@ function initializeDialogRoot(): void {
  * @param showContactInfo - Whether to show shipment details card
  * @param isUsTenant - Whether this is a US tenant (affects address format)
  * @param toastService - Toast service for showing notifications (optional)
+ * @param addressType - 'pickup' or 'delivery'; controls the map pin colour
  * @returns Promise that resolves with the updated address, or null if canceled
  */
 export function openEditAddressDialog(
@@ -121,7 +125,8 @@ export function openEditAddressDialog(
     submitLabel: string = 'Save',
     showContactInfo: boolean = false,
     isUsTenant: boolean = false,
-    toastService?: ToastService
+    toastService?: ToastService,
+    addressType?: AddressType,
 ): Promise<EditAddressDialogViewModel | null> {
     initializeDialogRoot();
 
@@ -133,6 +138,7 @@ export function openEditAddressDialog(
             submitLabel,
             showContactInfo,
             isUsTenant,
+            addressType,
             toastService: toastService ?? null,
             resolve,
         };

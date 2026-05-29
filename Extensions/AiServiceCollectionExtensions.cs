@@ -16,7 +16,6 @@ public static class AiServiceCollectionExtensions
 
         services.AddSingleton<IAiClientService, AiClientService>();
         services.AddSingleton<IAiRateLimiter, AiRateLimiter>();
-        services.AddScoped<IAiAssistantService, AiAssistantService>();
         services.AddScoped<IAiSummarizationService, AiSummarizationService>();
     }
 }

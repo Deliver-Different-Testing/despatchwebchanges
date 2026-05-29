@@ -46,12 +46,6 @@ jest.mock('../dialogs/event-group-dialog', () => ({
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn().mockResolvedValue([]),
 }));
-jest.mock('../../services/aiAssistantApi', () => ({
-    suggestCouriers: jest.fn().mockResolvedValue({couriers: [], summary: '', usage: {inputTokens: 0, outputTokens: 0}}),
-}));
-jest.mock('../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn().mockReturnValue(false),
-}));
 jest.mock('../../utils/dateUtils', () => ({
     formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
     formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),

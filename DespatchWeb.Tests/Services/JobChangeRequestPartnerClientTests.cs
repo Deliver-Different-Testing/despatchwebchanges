@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using DespatchWeb.Services;
+using DespatchWeb.Tests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Hosting;
@@ -15,6 +16,7 @@ namespace DespatchWeb.Tests.Services;
 /// the two services share the same JWT minting and proxy-fallback header contract with the
 /// Integration Manager. Drift between them is a regression risk.
 /// </summary>
+[Collection(JwtEnvironmentCollection.Name)]
 public class JobChangeRequestPartnerClientTests : IDisposable
 {
     private readonly FakeHttpMessageHandler _httpHandler = new();

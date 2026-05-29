@@ -42,6 +42,13 @@ import {useAddressSearch, useHereMapsApiKey} from '../../../hooks/useAddressApi'
 import {addressApi} from '../../../services/addressApi';
 import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import type {ShowToastFn} from '../../../services/toastService';
+import {MapZoomViewControls} from '../../common/dispatch-map';
+import {AddressType} from '../../../../enums/address-type.enum';
+
+// Match the pickup/delivery flag colors used on the other maps so the pin
+// inherits the same visual language as the job-detail headers.
+const PICKUP_MARKER_ICON_URL = 'https://img.icons8.com/ios-filled/50/2196f3/marker.png';
+const DELIVERY_MARKER_ICON_URL = 'https://img.icons8.com/ios-filled/50/4caf50/marker.png';
 
 /**
  * Minimal HERE Maps type definitions for the SDK objects used in this component.
@@ -74,6 +81,12 @@ export interface EditAddressDialogProps {
     submitLabel: string;
     showContactInfo: boolean;
     isUsTenant: boolean;
+    /**
+     * Which leg of the job this address belongs to. Drives the map pin
+     * colour — blue for pickup, green for delivery. Defaults to pickup
+     * when unspecified.
+     */
+    addressType?: AddressType;
     onClose: () => void;
     onSave: (address: EditAddressDialogViewModel) => void;
     showToast: ShowToastFn;
@@ -93,10 +106,14 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     submitLabel,
     showContactInfo,
     isUsTenant,
+    addressType = AddressType.Pickup,
     onClose,
     onSave,
     showToast,
 }) => {
+    const markerIconUrl = addressType === AddressType.Delivery
+        ? DELIVERY_MARKER_ICON_URL
+        : PICKUP_MARKER_ICON_URL;
     // Form state - address fields
     const [addressLine1, setAddressLine1] = useState('');
     const [addressLine2, setAddressLine2] = useState('');
@@ -134,6 +151,12 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     const platformRef = useRef<unknown>(null);
     const markerRef = useRef<unknown>(null);
     const handleMapClickRef = useRef<(lat: number, lng: number) => Promise<void>>(undefined);
+    // MapZoomViewControls needs live map/platform/defaultLayers references;
+    // ref-only storage wouldn't trigger the overlay to render once the SDK
+    // finishes initialising, so we mirror them into state.
+    const [mapInstance, setMapInstance] = useState<unknown>(null);
+    const [platformInstance, setPlatformInstance] = useState<unknown>(null);
+    const [defaultLayers, setDefaultLayers] = useState<unknown>(null);
 
     // React Query hooks
     const {data: addressOptions = [], isFetching: isSearchingAddresses} = useAddressSearch(
@@ -181,13 +204,15 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 }
             );
 
-            // Add map behaviors (pan, zoom)
+            // Add map behaviors (pan, zoom). Don't add HERE's native UI here —
+            // the React MapZoomViewControls overlay below replaces it so the
+            // controls match the other maps in the app.
             new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
 
-            // Add UI controls
-            H.ui.UI.createDefault(map, defaultLayers);
-
             mapInstanceRef.current = map;
+            setMapInstance(map);
+            setPlatformInstance(platform);
+            setDefaultLayers(defaultLayers);
 
             // Dialog transition is already complete so container has final dimensions
             map.getViewPort().resize();
@@ -231,6 +256,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 platformRef.current = null;
                 markerRef.current = null;
             }
+            setMapInstance(null);
+            setPlatformInstance(null);
+            setDefaultLayers(null);
             setDialogFullyOpen(false);
         }
     }, [open]);
@@ -307,15 +335,16 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             mapInstanceRef.current.removeObject(markerRef.current);
         }
 
-        // Create new marker
-        const marker = new H.map.Marker({lat, lng});
+        // Coloured pin matching the pickup/delivery palette on the other maps.
+        const icon = new H.map.Icon(markerIconUrl, {size: {w: 50, h: 50}});
+        const marker = new H.map.Marker({lat, lng}, {icon});
         mapInstanceRef.current.addObject(marker);
         markerRef.current = marker;
 
         // Center map on marker
         mapInstanceRef.current.setCenter({lat, lng});
         mapInstanceRef.current.setZoom(SELECTED_ZOOM);
-    }, []);
+    }, [markerIconUrl]);
 
     // Map HERE Maps lookup response to form fields
     const handleAddressFieldsFromLookup = useCallback((location: HereMapsLookupResponse) => {
@@ -999,15 +1028,26 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     </Box>
 
                     <Box
-                        ref={mapContainerRef}
                         sx={{
+                            position: 'relative',
                             width: '100%',
                             height: 300,
                             borderRadius: 1,
                             overflow: 'hidden',
                             bgcolor: 'grey.100',
                         }}
-                    />
+                    >
+                        <Box ref={mapContainerRef} sx={{width: '100%', height: '100%'}} />
+                        {mapInstance ? (
+                            <MapZoomViewControls
+                                map={mapInstance}
+                                platform={platformInstance}
+                                defaultLayers={defaultLayers}
+                                showTraffic={false}
+                                showIncidents={false}
+                            />
+                        ) : null}
+                    </Box>
                 </Paper>
             </DialogContent>
 

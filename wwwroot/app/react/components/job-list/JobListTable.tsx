@@ -40,7 +40,6 @@ import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import BoltIcon from '@mui/icons-material/Bolt';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
@@ -51,8 +50,6 @@ import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispa
 import {AppPage} from '../../interfaces/dispatchJob';
 import type {CourierSuggestion} from '../../interfaces/afterhours';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
-import {suggestCouriers} from '../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../functions/aiSettings';
 import dayjs from 'dayjs';
 import {
     formatMins,
@@ -769,7 +766,6 @@ JobRow.displayName = 'JobRow';
 interface CourierOption {
     id: number;
     text: string;
-    isAiSuggestion?: boolean;
 }
 
 interface CourierCellProps {
@@ -791,7 +787,6 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
     const [searchText, setSearchText] = useState('');
     const [options, setOptions] = useState<CourierOption[]>([]);
     const [loading, setLoading] = useState(false);
-    const aiSuggestionsRef = useRef<CourierOption[] | null>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const abortRef = useRef<AbortController | null>(null);
 
@@ -803,32 +798,12 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         };
     }, []);
 
-    const fetchAiSuggestions = useCallback(async () => {
-        if (aiSuggestionsRef.current !== null) return; // Already fetched
-        if (!isAiEnabled()) return;
-        try {
-            const response = await suggestCouriers(job.id);
-            const mapped: CourierOption[] = response.couriers.map((c) => ({
-                id: c.courierId,
-                text: `${c.code} - ${c.firstName}`,
-                isAiSuggestion: true,
-            }));
-            aiSuggestionsRef.current = mapped;
-            // If search is still empty, show AI suggestions
-            setOptions(mapped);
-        } catch {
-            aiSuggestionsRef.current = [];
-        }
-    }, [job.id]);
-
     const handleAssignClick = useCallback((e: React.MouseEvent) => {
         e.stopPropagation(); // Don't trigger row click
         setShowSearch(true);
         setSearchText('');
-        setOptions(aiSuggestionsRef.current || []);
-        // Fire-and-forget AI suggestion fetch
-        return fetchAiSuggestions();
-    }, [fetchAiSuggestions]);
+        setOptions([]);
+    }, []);
 
     const handleSearchChange = useCallback((_event: React.SyntheticEvent, value: string) => {
         setSearchText(value);
@@ -838,8 +813,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
         if (abortRef.current) abortRef.current.abort();
 
         if (!value.trim()) {
-            // Empty search → show AI suggestions only
-            setOptions(aiSuggestionsRef.current || []);
+            setOptions([]);
             setLoading(false);
             return;
         }
@@ -865,19 +839,7 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                     });
                 }
 
-                // Prepend matching AI suggestions before regular results
-                const aiSuggestions = aiSuggestionsRef.current || [];
-                const matchingAi = aiSuggestions.filter((ai) =>
-                    ai.text.toLowerCase().includes(value.toLowerCase())
-                );
-                const regularIds = new Set(filtered.map((r) => r.id));
-                const uniqueAi = matchingAi.filter((ai) => !regularIds.has(ai.id));
-
-                const combined: CourierOption[] = [
-                    ...uniqueAi,
-                    ...filtered.map((r) => ({...r, isAiSuggestion: false})),
-                ];
-                setOptions(combined);
+                setOptions(filtered.map((r) => ({id: r.id, text: r.text})));
             } catch (err: any) {
                 if (err?.name !== 'AbortError') {
                     setOptions([]);
@@ -973,12 +935,8 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                 renderOption={(props, option) => (
                     <li {...props} key={option.id}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0}}>
-                            {option.isAiSuggestion
-                                ? <Tooltip title="AI Suggested"><AutoAwesomeIcon
-                                    sx={{fontSize: 16, color: 'warning.main', flexShrink: 0}}/></Tooltip>
-                                : <Tooltip title="Search Result"><PersonSearchIcon
-                                    sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/></Tooltip>
-                            }
+                            <Tooltip title="Search Result"><PersonSearchIcon
+                                sx={{fontSize: 16, color: 'text.secondary', flexShrink: 0}}/></Tooltip>
                             <Typography variant="body2" noWrap sx={{fontSize: '0.8125rem'}}>
                                 {option.text}
                             </Typography>

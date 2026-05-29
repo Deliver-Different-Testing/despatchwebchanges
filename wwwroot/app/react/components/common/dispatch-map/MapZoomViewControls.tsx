@@ -33,6 +33,9 @@ interface MapZoomViewControlsProps {
     map: any | null;
     platform: any | null;
     defaultLayers: any | null;
+    showTraffic?: boolean;
+    showIncidents?: boolean;
+    showViewPicker?: boolean;
 }
 
 const VIEW_OPTIONS: ReadonlyArray<{value: ViewType; label: string; icon: React.ReactNode}> = [
@@ -87,7 +90,14 @@ function getTrafficIncidentsLayer(defaultLayers: any, platform: any): any | null
     }
 }
 
-export function MapZoomViewControls({map, platform, defaultLayers}: MapZoomViewControlsProps) {
+export function MapZoomViewControls({
+    map,
+    platform,
+    defaultLayers,
+    showTraffic = true,
+    showIncidents = true,
+    showViewPicker = true,
+}: MapZoomViewControlsProps) {
     const [viewMenuAnchor, setViewMenuAnchor] = useState<HTMLElement | null>(null);
     const [activeView, setActiveView] = useState<ViewType>('roadmap');
     const [trafficEnabled, setTrafficEnabled] = useState(false);
@@ -181,43 +191,55 @@ export function MapZoomViewControls({map, platform, defaultLayers}: MapZoomViewC
                         <RemoveIcon sx={{fontSize: ICON_SIZE}}/>
                     </IconButton>
                 </Tooltip>
-                <Divider/>
-                <Tooltip title={trafficEnabled ? 'Hide traffic conditions' : 'Show traffic conditions'} placement="left">
-                    <IconButton
-                        size="small"
-                        onClick={handleToggleTraffic}
-                        color={trafficEnabled ? 'primary' : 'default'}
-                        aria-label="Toggle traffic conditions"
-                        data-active={trafficEnabled}
-                        sx={{borderRadius: 0, p: 0.75}}
-                    >
-                        <TrafficIcon sx={{fontSize: ICON_SIZE}}/>
-                    </IconButton>
-                </Tooltip>
-                <Divider/>
-                <Tooltip title={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'} placement="left">
-                    <IconButton
-                        size="small"
-                        onClick={handleToggleIncidents}
-                        color={incidentsEnabled ? 'primary' : 'default'}
-                        aria-label="Toggle traffic incidents"
-                        data-active={incidentsEnabled}
-                        sx={{borderRadius: 0, p: 0.75}}
-                    >
-                        <ReportProblemIcon sx={{fontSize: ICON_SIZE}}/>
-                    </IconButton>
-                </Tooltip>
-                <Divider/>
-                <Tooltip title="Choose view" placement="left">
-                    <IconButton
-                        size="small"
-                        onClick={(e) => setViewMenuAnchor(e.currentTarget)}
-                        aria-label="Choose view"
-                        sx={{borderRadius: 0, p: 0.75}}
-                    >
-                        <LayersIcon sx={{fontSize: ICON_SIZE}}/>
-                    </IconButton>
-                </Tooltip>
+                {showTraffic && (
+                    <>
+                        <Divider/>
+                        <Tooltip title={trafficEnabled ? 'Hide traffic conditions' : 'Show traffic conditions'} placement="left">
+                            <IconButton
+                                size="small"
+                                onClick={handleToggleTraffic}
+                                color={trafficEnabled ? 'primary' : 'default'}
+                                aria-label="Toggle traffic conditions"
+                                data-active={trafficEnabled}
+                                sx={{borderRadius: 0, p: 0.75}}
+                            >
+                                <TrafficIcon sx={{fontSize: ICON_SIZE}}/>
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                )}
+                {showIncidents && (
+                    <>
+                        <Divider/>
+                        <Tooltip title={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'} placement="left">
+                            <IconButton
+                                size="small"
+                                onClick={handleToggleIncidents}
+                                color={incidentsEnabled ? 'primary' : 'default'}
+                                aria-label="Toggle traffic incidents"
+                                data-active={incidentsEnabled}
+                                sx={{borderRadius: 0, p: 0.75}}
+                            >
+                                <ReportProblemIcon sx={{fontSize: ICON_SIZE}}/>
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                )}
+                {showViewPicker && (
+                    <>
+                        <Divider/>
+                        <Tooltip title="Choose view" placement="left">
+                            <IconButton
+                                size="small"
+                                onClick={(e) => setViewMenuAnchor(e.currentTarget)}
+                                aria-label="Choose view"
+                                sx={{borderRadius: 0, p: 0.75}}
+                            >
+                                <LayersIcon sx={{fontSize: ICON_SIZE}}/>
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                )}
             </Paper>
             <Menu
                 anchorEl={viewMenuAnchor}

@@ -281,8 +281,8 @@ describe('MAP_CONSTANTS', () => {
 
 describe('MARKER_ICONS', () => {
     it('has expected icon URLs', () => {
-        expect(MARKER_ICONS.FROM).toContain('39e75f'); // Green for pickup
-        expect(MARKER_ICONS.TO).toContain('ff6863'); // Red for delivery
+        expect(MARKER_ICONS.FROM).toContain('2196f3'); // Blue for pickup (US primary.main)
+        expect(MARKER_ICONS.TO).toContain('4caf50'); // Green for delivery (success.main)
         expect(MARKER_ICONS.EXTRA).toContain('000000'); // Black for extra markers
     });
 });

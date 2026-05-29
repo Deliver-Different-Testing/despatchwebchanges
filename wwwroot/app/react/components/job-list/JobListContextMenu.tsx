@@ -29,7 +29,6 @@ import PersonRemoveIcon from '@mui/icons-material/PersonRemove';
 import PinDropIcon from '@mui/icons-material/PinDrop';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import PriceCheckIcon from '@mui/icons-material/PriceCheck';
 import AddIcon from '@mui/icons-material/Add';
 import EventIcon from '@mui/icons-material/Event';
@@ -48,7 +47,6 @@ import type {AppPage, DispatchJob} from '../../interfaces/dispatchJob';
 import type {ShowToastFn} from '../../services/toastService';
 import * as api from '../../services/jobListApi';
 import {queryClient, queryKeys} from '../../query/queryClient';
-import {isAiEnabled} from '../../../functions/aiSettings';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
@@ -255,28 +253,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             refresh();
         } catch {
             showToast(`Error applying late ${lateType}`, 'error');
-        }
-    };
-
-    const handleAiLateAlert = async () => {
-        closeAll();
-        try {
-            showToast('Analyzing late alert...', 'info');
-            // Lazy load AI assistant
-            if (!(window as any).ReactAiAssistant) return;
-            const response = await (window as any).ReactAiAssistant.analyzeLateAlert(activeJob.id);
-            if (response?.summary) {
-                setConfirmDialogConfig({
-                    title: `AI Late Alert Analysis (Beta) - ${activeJob.jobNo}`,
-                    message: response.summary,
-                    onConfirm: async () => {},
-                });
-                setConfirmDialogOpen(true);
-            } else {
-                showToast('No analysis data returned', 'warning');
-            }
-        } catch (error) {
-            showToast(error instanceof Error ? error.message : 'Failed to analyze late alert', 'error');
         }
     };
 
@@ -566,14 +542,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         </span>
                     </Tooltip>,
                 ]}
-
-                {/* AI Late Alert Analysis */}
-                {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && isAiEnabled() && (
-                    <MenuItem onClick={handleAiLateAlert}>
-                        <ListItemIcon><AutoAwesomeIcon fontSize="small"/></ListItemIcon>
-                        <ListItemText>AI Late Alert Analysis (Beta)</ListItemText>
-                    </MenuItem>
-                )}
 
                 {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && <Divider/>}
 

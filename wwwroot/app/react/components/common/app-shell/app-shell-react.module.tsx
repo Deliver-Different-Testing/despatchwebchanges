@@ -19,13 +19,11 @@ import {
     LayoutsMenu,
     DateFilterMenu,
     ActionsMenu,
-    AiAssistantButton,
     View,
     Layout,
     DateFilterData,
 } from '../app-toolbar/ToolbarActions';
 import angular from 'angular';
-import {isAiEnabled} from '../../../../functions/aiSettings';
 import {openHubUrl, openJobInSearch} from '../../../services/navigationService';
 import {ReactQueryProvider} from '../../../query';
 import {PartnerApprovalsBadge} from '../../../pages/partner-approvals/PartnerApprovalsBadge';
@@ -73,10 +71,6 @@ export interface ToolbarActionsConfig {
     actionsMenu?: {
         onCreateNewJob: (event: React.MouseEvent) => void;
         onInterCourierCharge: (event: React.MouseEvent) => void;
-    };
-    // AI Assistant
-    aiAssistant?: {
-        onClick: (event: React.MouseEvent) => void;
     };
     // Partner approvals badge — global feed of pending inter-tenant change
     // requests this user must review. Always shown when present; the badge
@@ -150,16 +144,6 @@ function buildToolbarChildren(): React.ReactNode {
                     onOpenJob={onOpenJob}
                 />
             </ReactQueryProvider>
-        );
-    }
-
-    // AI Assistant button
-    if (toolbarActions.aiAssistant && isAiEnabled()) {
-        elements.push(
-            <AiAssistantButton
-                key="aiAssistant"
-                onClick={toolbarActions.aiAssistant.onClick}
-            />
         );
     }
 

@@ -6,6 +6,7 @@
 
 import type { IDispatchMapItem } from '../../../../interfaces/job.interface';
 import type { IAvailableCourierPosition } from '../../../../interfaces/courier.interface';
+import type { AddressType } from '../../../../enums/address-type.enum';
 import React from "react";
 
 // Re-export for convenience
@@ -70,7 +71,7 @@ export interface MapControlButtonsProps {
 export interface JobMarkerData {
     marker: any; // H.map.Marker
     jobId: number;
-    type: 'pickup' | 'delivery';
+    type: AddressType;
     isCurrentJob: boolean;
 }
 
@@ -127,13 +128,15 @@ export const DEFAULT_MAP_ZOOM = 12;
 export const MAX_AUTO_ZOOM = 16;
 
 /**
- * Marker icon colors
+ * Marker icon colors. Pickup uses blue (US theme primary.main) and delivery
+ * uses green (success.main) on every map, regardless of the user's theme;
+ * OTHER_* are the dark variants used to distinguish non-current jobs.
  */
 export const MARKER_COLORS = {
-    PICKUP: '#4CAF50',
-    DELIVERY: '#F44336',
-    OTHER_PICKUP: '#3F51B5',
-    OTHER_DELIVERY: '#FF5722',
+    PICKUP: '#2196F3',
+    DELIVERY: '#4CAF50',
+    OTHER_PICKUP: '#1976D2',
+    OTHER_DELIVERY: '#388E3C',
     COURIER_FLAG: '#1E88E5',
     COURIER_FLAG_LARGE: '#1565C0',
 } as const;

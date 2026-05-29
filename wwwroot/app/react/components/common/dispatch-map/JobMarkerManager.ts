@@ -13,6 +13,7 @@ import {
     MAX_AUTO_ZOOM,
     MAX_JOBS_TO_DISPLAY,
 } from './DispatchMap.types';
+import {AddressType} from '../../../../enums/address-type.enum';
 
 declare const H: any;
 
@@ -225,7 +226,7 @@ export class JobMarkerManager {
         this.markers.push({
             marker,
             jobId: job.jobId,
-            type: 'pickup',
+            type: AddressType.Pickup,
             isCurrentJob,
         });
     }
@@ -253,7 +254,7 @@ export class JobMarkerManager {
         this.markers.push({
             marker,
             jobId: job.jobId,
-            type: 'delivery',
+            type: AddressType.Delivery,
             isCurrentJob,
         });
     }

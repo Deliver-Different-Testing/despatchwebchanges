@@ -11,6 +11,7 @@ import type {IJob, IAddressViewModel, UpdatePodDetailsRequest} from '../JobDetai
 import {JOB_TYPE_OPTIONS, TRACKING_OPTIONS, NOTIFY_OPTIONS, ACCEPTED_OPTIONS} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
+import {AddressType} from '../../../../../enums/address-type.enum';
 import {useDialogLoader} from './useDialogLoader';
 import {formatDateForApi} from '../../../../utils/dateUtils';
 import {getPriceBreakdowns} from '../../../../services/pricingBreakdownApi';
@@ -392,7 +393,15 @@ export function useJobActions({
         if (!j) return;
         await ensureAddressDialog();
         const existing = isDelivery ? j.deliveryAddress : j.pickupAddress;
-        const result = await window.ReactEditAddressDialog?.open(existing as any, undefined, undefined, undefined, isUsCustomer);
+        const result = await window.ReactEditAddressDialog?.open(
+            existing as any,
+            undefined,
+            undefined,
+            undefined,
+            isUsCustomer,
+            undefined,
+            isDelivery ? AddressType.Delivery : AddressType.Pickup,
+        );
         if (!result) return;
         // Partner-job address edits never write locally — forward the captured
         // address (as the JSON shape the change-request dialog expects) to
