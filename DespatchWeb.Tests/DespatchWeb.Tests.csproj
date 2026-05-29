@@ -4,6 +4,11 @@
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- Route `dotnet test` through Microsoft.Testing.Platform so xunit.v3
+         tests are discovered. VSTest does not ship a discoverer for xunit.v3,
+         so without these the pre-push hook reports "No test is available". -->
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
 
   <ItemGroup>
