@@ -1,8 +1,7 @@
 /**
  * Recurring Jobs Page Component
  *
- * React component for the recurring jobs list panel.
- * The job detail widget is rendered by AngularJS in the route template.
+ * React component for the recurring jobs list panel and job-details panel.
  */
 
 import React, {useCallback, useEffect, useState} from 'react';
@@ -312,6 +311,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     </Toolbar>
                     <Box sx={{flex: 1, overflow: 'auto'}}>
                         <JobDetails
+                            key={selectedJobId ?? 'none'}
                             config={{
                                 jobId: selectedJobId ?? undefined,
                                 isRecurringJob: true,

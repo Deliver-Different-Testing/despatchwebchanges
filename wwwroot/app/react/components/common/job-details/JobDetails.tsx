@@ -48,6 +48,8 @@ import {JobFieldsSection} from './components/JobFieldsSection';
 import {ToggleProperties} from './components/ToggleProperties';
 import {PalletSection} from './components/PalletSection';
 import {TextInputDialog} from './components/TextInputDialog';
+import {DispatchDialog, type DispatchMode} from '../../dialogs/dispatch-dialog';
+import {getActivePartnerOptions, getPartnerRateForJob} from '../../../services/jobListApi';
 import {StickyNotes} from '../../common/sticky-notes/StickyNotes';
 import {JobChangeRequestsForJob} from '../../job-change-requests/JobChangeRequestsForJob';
 import {JobChangeRequestDialog} from '../../dialogs/job-change-request-dialog/JobChangeRequestDialog';
@@ -700,6 +702,33 @@ export function JobDetails({config}: JobDetailsProps) {
                     setChangeRequestDialog({open: false});
                     void refreshAndNotify();
                 }}
+            />
+
+            {/* Universal Dispatch Dialog — replaces the legacy AutoCompleteDialog
+                courier picker. Same dialog handles Courier / Agent / NP / DFRNT
+                Partner dispatch; isRecurringJob switches it into recurring mode
+                which disables the DFRNT Partner radio. */}
+            <DispatchDialog
+                open={actions.dispatchDialog.open}
+                mode={(isRecurringJob
+                    ? {kind: 'recurring' as const, jobId: job.id, jobNo: job.jobNo}
+                    : {
+                        kind: 'single' as const,
+                        jobId: job.id,
+                        jobNo: job.jobNo,
+                        flags: {
+                            isArchived: Boolean(job.isArchived),
+                            isBulkJob: Boolean(job.isBulkJob),
+                            preBook: Boolean(job.preBook),
+                        },
+                    }) satisfies DispatchMode}
+                initialType={actions.dispatchDialog.initialType}
+                existingDestination={job.assignedCourier}
+                onClose={actions.closeDispatchDialog}
+                onDispatchCourier={actions.dispatchDialogConfirmCourier}
+                onSendToPartner={actions.dispatchDialogConfirmPartner}
+                fetchRate={getPartnerRateForJob}
+                getPartnerOptions={getActivePartnerOptions}
             />
         </Box>
     );

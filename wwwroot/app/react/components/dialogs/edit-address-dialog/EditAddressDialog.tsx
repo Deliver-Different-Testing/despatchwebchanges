@@ -43,6 +43,7 @@ import {addressApi} from '../../../services/addressApi';
 import {US_STATES, normalizeToStateAbbreviation} from '../../../utils/usStates';
 import type {ShowToastFn} from '../../../services/toastService';
 import {MapZoomViewControls} from '../../common/dispatch-map';
+import {safeRemoveObject} from '../../common/here-map/hereMapUtils';
 import {AddressType} from '../../../../enums/address-type.enum';
 
 // Match the pickup/delivery flag colors used on the other maps so the pin
@@ -332,10 +333,10 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 
         // Remove existing marker
         if (markerRef.current) {
-            mapInstanceRef.current.removeObject(markerRef.current);
+            safeRemoveObject(mapInstanceRef.current, markerRef.current);
         }
 
-        // Coloured pin matching the pickup/delivery palette on the other maps.
+        // Colored pin matching the pickup/delivery palette on the other maps.
         const icon = new H.map.Icon(markerIconUrl, {size: {w: 50, h: 50}});
         const marker = new H.map.Marker({lat, lng}, {icon});
         mapInstanceRef.current.addObject(marker);

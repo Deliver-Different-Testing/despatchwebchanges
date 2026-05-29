@@ -50,7 +50,7 @@ import {queryClient, queryKeys} from '../../query/queryClient';
 import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
-import {SendToPartnerDialog} from '../dialogs/send-to-partner-dialog';
+import {DispatchDialog, type DispatchType} from '../dialogs/dispatch-dialog';
 import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
@@ -78,10 +78,6 @@ interface JobListContextMenuProps {
 let eventGroupsCache: api.EventGroupItem[] = [];
 let eventGroupsLoading = false;
 
-// Static cache for partner options
-let partnerOptionsCache: api.EventGroupItem[] = [];
-let partnerOptionsLoading = false;
-
 export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     job,
     position,
@@ -103,13 +99,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     const [splitJobLoading, setSplitJobLoading] = useState(false);
     const [eventGroups, setEventGroups] = useState<api.EventGroupItem[]>(eventGroupsCache);
     const [eventGroupsAnchor, setEventGroupsAnchor] = useState<HTMLElement | null>(null);
-    const [partnerOptions, setPartnerOptions] = useState<api.EventGroupItem[]>(partnerOptionsCache);
-    const [partnerOptionsAnchor, setPartnerOptionsAnchor] = useState<HTMLElement | null>(null);
-    const [sendToPartnerDialog, setSendToPartnerDialog] = useState<{
+    const [dispatchDialog, setDispatchDialog] = useState<{
         open: boolean;
-        partnerId: number;
-        partnerName: string;
-    }>({open: false, partnerId: 0, partnerName: ''});
+        initialType: DispatchType;
+    }>({open: false, initialType: 'Courier'});
 
     // Capture job reference for dialogs that outlive the context menu
     const dialogJobRef = useRef<DispatchJob | null>(null);
@@ -134,34 +127,16 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             });
     }, []);
 
-    // Preload partner options
-    useEffect(() => {
-        if (partnerOptionsCache.length > 0 || partnerOptionsLoading) return;
-        partnerOptionsLoading = true;
-        api.getActivePartnerOptions()
-            .then((options) => {
-                partnerOptionsCache = options;
-                setPartnerOptions(options);
-            })
-            .catch(() => {
-                partnerOptionsCache = [];
-            })
-            .finally(() => {
-                partnerOptionsLoading = false;
-            });
-    }, []);
-
     const closeAll = useCallback(() => {
         onClose();
         setEventGroupsAnchor(null);
-        setPartnerOptionsAnchor(null);
     }, [onClose]);
 
     const refresh = useCallback(() => {
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || sendToPartnerDialog.open;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || dispatchDialog.open;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -296,40 +271,69 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         }
     };
 
-    const handleSendToPartner = (partnerId: number, partnerName: string) => {
-        setPartnerOptionsAnchor(null);
+    const openDispatchDialog = (initialType: DispatchType) => {
         closeAll();
-        setSendToPartnerDialog({open: true, partnerId, partnerName});
+        setDispatchDialog({open: true, initialType});
     };
 
-    const handleSendToPartnerConfirm = async (agreedRate: number) => {
-        const {partnerId, partnerName} = sendToPartnerDialog;
+    const handleDispatchDialogConfirmCourier = async (
+        type: 'Courier' | 'Agent' | 'NP',
+        destination: {id: number; text: string},
+    ) => {
+        // Single-job dispatch from the context menu. If the job already has a
+        // courier assigned, treat the action as a re-dispatch so the server
+        // releases the previous courier; otherwise allocate fresh.
+        const targetJob = activeJob;
+        if (type !== 'Courier') {
+            // Agent / NP from the context menu isn't wired server-side for ad-hoc
+            // dispatch yet — surface that clearly instead of failing silently.
+            throw new Error(`${type} dispatch is not yet wired from the job list — use the job-details panel.`);
+        }
+        try {
+            if (targetJob.assignedCourier?.id) {
+                await api.reAllocateJobs(destination.id, [targetJob.id]);
+            } else {
+                await api.allocateJobs(destination.id, [targetJob.id]);
+            }
+            showToast(`Job ${targetJob.jobNo} dispatched to ${destination.text}`, 'success');
+            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
+            setDispatchDialog((s) => ({...s, open: false}));
+            refresh();
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Error dispatching job';
+            throw new Error(message);
+        }
+    };
+
+    const handleDispatchDialogConfirmPartner = async (
+        partner: {id: number; text: string},
+        agreedRate: number,
+    ) => {
         const sentJobId = activeJob.id;
         const sentJobNo = activeJob.jobNo;
-        const result = await api.sendToPartner(sentJobId, partnerId, agreedRate);
-        if (result.success) {
-            setSendToPartnerDialog(prev => ({...prev, open: false}));
-            try {
-                await navigator.clipboard.writeText(sentJobNo);
-            } catch {
-                const textarea = document.createElement('textarea');
-                textarea.value = sentJobNo;
-                textarea.style.position = 'fixed';
-                textarea.style.opacity = '0';
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            }
-            showToast(
-                `Job ${sentJobNo} sent to ${partnerName} — tracking: ${result.trackingNumber} (job number copied)`,
-                'success',
-                {label: 'Open', onClick: () => openJobInSearch(sentJobId)},
-            );
-            refresh();
-        } else {
+        const result = await api.sendToPartner(sentJobId, partner.id, agreedRate);
+        if (!result.success) {
             throw new Error(result.message || 'Failed to send job to partner');
         }
+        setDispatchDialog((s) => ({...s, open: false}));
+        try {
+            await navigator.clipboard.writeText(sentJobNo);
+        } catch {
+            const textarea = document.createElement('textarea');
+            textarea.value = sentJobNo;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        showToast(
+            `Job ${sentJobNo} sent to ${partner.text} — tracking: ${result.trackingNumber} (job number copied)`,
+            'success',
+            {label: 'Open', onClick: () => openJobInSearch(sentJobId)},
+        );
+        refresh();
     };
 
     const handleSendToLive = () => {
@@ -418,17 +422,11 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         setConfirmDialogOpen(true);
     };
 
-    const handleRedispatch = async () => {
-        closeAll();
-        if (!activeJob.assignedCourier?.id) return;
-        try {
-            await api.reAllocateJobs(activeJob.assignedCourier.id, [activeJob.id]);
-            showToast(`Job ${activeJob.jobNo} re-dispatched successfully`, 'success');
-            await queryClient.invalidateQueries({queryKey: queryKeys.jobs.all});
-            refresh();
-        } catch {
-            showToast('Error re-dispatching job', 'error');
-        }
+    const handleRedispatch = () => {
+        // Opens the universal dispatch dialog so the operator can pick any
+        // destination (or keep the existing courier). Replaces the previous
+        // straight re-allocate so dispatchers can switch destination types.
+        openDispatchDialog('Courier');
     };
 
     const handleRestore = async () => {
@@ -578,7 +576,8 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </MenuItem>
                 )}
 
-                {/* Send to DFRNT Partner (dispatch/jobsearch only) */}
+                {/* Send to DFRNT Partner (dispatch/jobsearch only) — opens the
+                    universal dispatch dialog with the DFRNT Partner radio pre-selected. */}
                 {(appPage === AppPageDispatch || appPage === AppPageJobSearch) && (
                     <Tooltip
                         title={isOutboundPartnerJob ? outboundPartnerDisabledTooltip : activeJob.assignedCourier ? 'Restore job before sending to partner' : ''}
@@ -587,11 +586,10 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                         <span>
                             <MenuItem
                                 disabled={Boolean(activeJob.assignedCourier) || isOutboundPartnerJob}
-                                onClick={(e) => setPartnerOptionsAnchor(e.currentTarget)}
+                                onClick={() => openDispatchDialog('DfrntPartner')}
                             >
                                 <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
                                 <ListItemText>Send to DFRNT Partner</ListItemText>
-                                <ChevronRightIcon fontSize="small" sx={{ml: 1, color: 'text.disabled'}}/>
                             </MenuItem>
                         </span>
                     </Tooltip>
@@ -677,29 +675,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 )}
             </Menu>
 
-            {/* Partner Options Submenu */}
-            <Menu
-                open={Boolean(partnerOptionsAnchor)}
-                anchorEl={partnerOptionsAnchor}
-                onClose={() => setPartnerOptionsAnchor(null)}
-                anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                transformOrigin={{vertical: 'top', horizontal: 'left'}}
-            >
-                {partnerOptions.length === 0 ? (
-                    <MenuItem disabled>
-                        <ListItemText>
-                            <Typography variant="body2" color="text.secondary">No active partners</Typography>
-                        </ListItemText>
-                    </MenuItem>
-                ) : (
-                    partnerOptions.map((partner) => (
-                        <MenuItem key={partner.id} onClick={() => handleSendToPartner(partner.id, partner.text)}>
-                            <ListItemText>{partner.text}</ListItemText>
-                        </MenuItem>
-                    ))
-                )}
-            </Menu>
-
             {/* Late Call Dialog */}
             <Dialog open={lateDialogOpen} onClose={() => setLateDialogOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>Late {lateType === 'pickup' ? 'Pickup' : 'Delivery'}</DialogTitle>
@@ -770,16 +745,26 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 </DialogContent>
             </Dialog>
 
-            {/* Send to Partner Dialog */}
-            <SendToPartnerDialog
-                open={sendToPartnerDialog.open}
-                partnerId={sendToPartnerDialog.partnerId}
-                partnerName={sendToPartnerDialog.partnerName}
-                jobId={activeJob.id}
-                jobNo={activeJob.jobNo}
-                onClose={() => setSendToPartnerDialog(prev => ({...prev, open: false}))}
-                onConfirm={handleSendToPartnerConfirm}
+            {/* Universal Dispatch Dialog */}
+            <DispatchDialog
+                open={dispatchDialog.open}
+                mode={{
+                    kind: 'single',
+                    jobId: activeJob.id,
+                    jobNo: activeJob.jobNo,
+                    flags: {
+                        isArchived: Boolean(activeJob.isArchived),
+                        isBulkJob: Boolean(activeJob.isBulkJob),
+                        preBook: Boolean(activeJob.preBook),
+                    },
+                }}
+                initialType={dispatchDialog.initialType}
+                existingDestination={activeJob.assignedCourier}
+                onClose={() => setDispatchDialog((s) => ({...s, open: false}))}
+                onDispatchCourier={handleDispatchDialogConfirmCourier}
+                onSendToPartner={handleDispatchDialogConfirmPartner}
                 fetchRate={api.getPartnerRateForJob}
+                getPartnerOptions={api.getActivePartnerOptions}
             />
 
         </>

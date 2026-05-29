@@ -28,10 +28,12 @@ import {
     getPodReportUrl,
     getPodSpreadsheetUrl,
 } from '../../../../services/jobDetailApi';
-// 3-way Assign picker — needs apiClient for the per-type agent/NP search
-// callbacks (autocompleteSearch only handles single-param ?searchTerm= calls;
-// the agent endpoint also takes ?isNetworkPartner=true|false).
-import {apiClient} from '../../../../services/apiClient';
+import {
+    sendToPartner,
+    getActivePartnerOptions,
+    getPartnerRateForJob,
+} from '../../../../services/jobListApi';
+import type {DispatchType} from '../../../dialogs/dispatch-dialog';
 import type {ISuggestion} from '../../../../../interfaces/job.interface';
 
 interface TextDialogState {
@@ -165,6 +167,16 @@ export function useJobActions({
         ensureSendPodDialog,
         ensureJobFileUploadDialog,
     } = useDialogLoader();
+
+    // Universal dispatch dialog state. JobDetails renders the dialog inline and
+    // wires its callbacks back through `dispatchDialogConfirmCourier` /
+    // `dispatchDialogConfirmPartner`.
+    const [dispatchDialog, setDispatchDialog] = useState<{open: boolean; initialType: DispatchType}>(
+        {open: false, initialType: 'Courier'},
+    );
+    const closeDispatchDialog = useCallback(() => {
+        setDispatchDialog((s) => ({...s, open: false}));
+    }, []);
 
     // Stable ref for job so callbacks don't recreate on every job change.
     // Assigned synchronously (not via useEffect) so it's never one render behind.
@@ -626,77 +638,64 @@ export function useJobActions({
 
     // ── Field-Specific Handlers ────────────────────────────────────
 
-    const handleCourierClick = useCallback(async () => {
+    const handleCourierClick = useCallback(() => {
+        // Opens the universal DispatchDialog. JobDetails owns the render —
+        // we just toggle state and supply the confirm callbacks below.
+        setDispatchDialog({open: true, initialType: 'Courier'});
+    }, []);
+
+    // Confirm: Courier / Agent / NP picked in the dispatch dialog. Routes the
+    // write to the right server path:
+    //   - Recurring tucJobBooking → updateField on CourierID / AgentId / NpAgentId
+    //   - Non-recurring tucJob, type=Courier → dispatchJob (allocateJobs API)
+    //   - Non-recurring tucJob, type=Agent/NP → updateField (server decides whether
+    //     it's wired; errors surface in the dialog's submitError).
+    const dispatchDialogConfirmCourier = useCallback(async (
+        type: 'Courier' | 'Agent' | 'NP',
+        destination: ISuggestion,
+    ) => {
         const j = jobRef.current;
         if (!j) return;
-        if (isRecurringJob) {
-            // 3-way Assign Route picker (Steve 2026-05-26, HANDOVER-KEVIN-2026-05-26.md).
-            // Same modal as the legacy courier-only picker — adds a Type radio
-            // row above the dropdown so the operator can choose Courier / Agent
-            // / NP without leaving the modal. Save behaviour writes to the
-            // matching JobProperty on tucJobBooking (CourierId / AgentId /
-            // NpAgentId — the NP case writes BOTH AgentId AND NpAgentId
-            // server-side in RecurringJobRepository.UpdateSimplePropertyAsync).
-            await ensureAutoCompleteDialog();
-            const result = await window.ReactAutoCompleteDialog?.openWithTypes(
-                'Assign',
-                [
-                    {
-                        value: 'Courier',
-                        label: 'Courier',
-                        placeholder: 'Search courier...',
-                        onSearch: (s) => autocompleteSearch(s, '/courier/AllActiveSearch'),
-                    },
-                    {
-                        value: 'Agent',
-                        label: 'Agent',
-                        placeholder: 'Search agent...',
-                        onSearch: (s) =>
-                            apiClient.get<ISuggestion[]>('/NationwideJob/GetAllAgentsSearch', {
-                                searchTerm: s,
-                                isNetworkPartner: false,
-                            }),
-                    },
-                    {
-                        value: 'NP',
-                        label: 'NP',
-                        placeholder: 'Search Network Partner...',
-                        onSearch: (s) =>
-                            apiClient.get<ISuggestion[]>('/NationwideJob/GetAllAgentsSearch', {
-                                searchTerm: s,
-                                isNetworkPartner: true,
-                            }),
-                    },
-                ],
-                {
-                    existingItem: j.assignedCourier,
-                    initialTypeValue: 'Courier',
-                },
-            );
-            if (!result) return;
+        const targetField =
+            type === 'Agent' ? JobProperty.AgentId :
+            type === 'NP' ? JobProperty.NpAgentId :
+            JobProperty.CourierID;
 
-            // Route to the right JobProperty based on which radio the operator
-            // picked. The bridge always returns selectedType when openWithTypes
-            // was used; fall back to Courier defensively.
-            const targetField =
-                result.selectedType === 'Agent' ? JobProperty.AgentId :
-                result.selectedType === 'NP' ? JobProperty.NpAgentId :
-                JobProperty.CourierID;
-
-            await updateField({job: j, field: targetField, value: result.item.id, isRecurring: j.preBook});
+        try {
+            if (!isRecurringJob && type === 'Courier') {
+                await dispatchJob({job: j, courierId: destination.id});
+            } else {
+                await updateField({job: j, field: targetField, value: destination.id, isRecurring: j.preBook});
+            }
             await refreshAndNotify();
-        } else {
-            await ensureAutoCompleteDialog();
-            const result = await window.ReactAutoCompleteDialog?.open(
-                'Courier',
-                'Start typing to search courier...',
-                (s: string) => autocompleteSearch(s, '/courier/AllActiveSearch'),
-            );
-            if (!result) return;
-            await dispatchJob({job: j, courierId: result.item.id});
-            await refreshAndNotify();
+            setDispatchDialog((s) => ({...s, open: false}));
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Dispatch failed';
+            throw new Error(message);
         }
-    }, [isRecurringJob, ensureAutoCompleteDialog, dispatchJob, updateField, refreshAndNotify]);
+    }, [isRecurringJob, dispatchJob, updateField, refreshAndNotify]);
+
+    // Confirm: DFRNT Partner picked in the dispatch dialog. Sends the job to the
+    // partner with the agreed rate. Recurring + bulk + archived jobs disable
+    // this radio at the dialog level — this callback only fires for standard
+    // active non-archived tucJobs.
+    const dispatchDialogConfirmPartner = useCallback(async (
+        partner: ISuggestion,
+        agreedRate: number,
+    ) => {
+        const j = jobRef.current;
+        if (!j) return;
+        const result = await sendToPartner(j.id, partner.id, agreedRate);
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to send job to partner');
+        }
+        showToast(
+            `Job ${j.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`,
+            'success',
+        );
+        setDispatchDialog((s) => ({...s, open: false}));
+        await refreshAndNotify();
+    }, [showToast, refreshAndNotify]);
 
     const handleEditPodName = useCallback(async () => {
         const j = jobRef.current;
@@ -1190,5 +1189,12 @@ export function useJobActions({
         // Pallet CRUD
         handleNewPallet,
         handleEditPallet,
+
+        // Universal dispatch dialog — JobDetails renders the dialog and wires
+        // these callbacks back to the hook so this hook still owns dispatch logic.
+        dispatchDialog,
+        closeDispatchDialog,
+        dispatchDialogConfirmCourier,
+        dispatchDialogConfirmPartner,
     };
 }
