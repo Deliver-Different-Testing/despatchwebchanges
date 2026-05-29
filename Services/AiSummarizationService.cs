@@ -99,33 +99,6 @@ public sealed class AiSummarizationService(
          - Keep it concise — skip severity groups that have no items
          """;
 
-    private string LateAlertSystemPrompt =>
-        $"""
-         You are a dispatch late-alert analyst for {RegionContext}.
-         Analyze a late-flagged job and provide a situation assessment.
-         Write in clear, professional language suitable for busy dispatchers.
-
-         Structure your response as:
-         - **Situation** — How late the job is and remaining SLA window, with key times in **bold**
-         - **Recommendation** — A decisive action: **Monitor**, **Contact Courier**, **Reassign**, or **Escalate**
-
-         Be brief (2-3 sentences total). Consider pickup/delivery times and minutes remaining.
-         """;
-
-    private string CourierSuggestionSystemPrompt =>
-        $"""
-         You are a courier assignment advisor for {RegionContext}.
-         Given a job's details and available couriers with their workload,
-         rank the top 3-5 best couriers for this job.
-         Write in clear, professional language suitable for busy dispatchers.
-
-         Format rules:
-         - Start with a **Top Pick** summary line (e.g. "**Top Pick:** **John Smith** — lowest workload, good vehicle match")
-         - Then a numbered list with **bold courier names** and brief reasoning for each
-         - Consider: current job count (prefer lower), vehicle type match, driver status, and availability
-         - Keep each entry to one sentence
-         """;
-
     public async Task<AiSummaryResponse> SummarizeJobNotesAsync(int jobId, CancellationToken ct = default)
     {
         var notes = await noteRepository.GetNotesByJobIdAsync(jobId);
@@ -243,13 +216,8 @@ public sealed class AiSummarizationService(
         var overdueCount = 0;
         var dueTodayCount = 0;
         var upcomingCount = 0;
-        foreach (var task in ordered)
+        foreach (var task in ordered.Where(task => !task.Closed))
         {
-            if (task.Closed)
-            {
-                continue;
-            }
-
             if (task.DueDate < now)
             {
                 overdueCount++;
@@ -454,119 +422,6 @@ public sealed class AiSummarizationService(
         }
 
         return await SendSummarizationRequestAsync(ComplianceSystemPrompt, sb.ToString(), ct);
-    }
-
-    public async Task<AiSummaryResponse> AnalyzeLateAlertAsync(int jobId, CancellationToken ct = default)
-    {
-        var lateInfo = await jobRepository.GetJobForLateCallAsync(jobId);
-
-        if (lateInfo == null)
-        {
-            return new AiSummaryResponse
-            {
-                Summary = "No late alert data found for this job.",
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var eventFilters = new TaskTableFiltersRequest { JobId = jobId, ShowCompleted = true };
-        var events = await taskRepository.GetAllTasksAsync(eventFilters);
-
-        var sb = new StringBuilder();
-        sb.AppendLine($"Analyze this late alert for Job #{jobId}:");
-        sb.AppendLine($"Job time: {lateInfo.JobTime:yyyy-MM-dd HH:mm}");
-        sb.AppendLine($"Booked speed: {lateInfo.BookedSpeed}");
-        sb.AppendLine($"Notified speed: {lateInfo.NotifiedSpeed}");
-        sb.AppendLine($"Minutes remaining: {lateInfo.MinutesRemaining}");
-        sb.AppendLine($"Pickup time allowed: {lateInfo.PickupTime} mins");
-        sb.AppendLine($"Delivery time allowed: {lateInfo.DeliveryTime} mins");
-        sb.AppendLine($"Late pickup alert threshold: {lateInfo.AlertLatePickup} mins");
-        sb.AppendLine($"Late delivery alert threshold: {lateInfo.AlertLateDelivery} mins");
-
-        if (events is not { Count: > 0 })
-        {
-            return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
-        }
-
-        sb.AppendLine();
-        sb.AppendLine("Recent events:");
-        foreach (var evt in events.OrderByDescending(e => e.DueDate).Take(5))
-        {
-            var sanitized = AiDataSanitizer.Sanitize(evt.Description ?? evt.Title);
-            sb.AppendLine($"  [{evt.DueDate:HH:mm}] {evt.EventType} - {sanitized}");
-        }
-
-        return await SendSummarizationRequestAsync(LateAlertSystemPrompt, sb.ToString(), ct);
-    }
-
-    public async Task<AiCourierSuggestionResponse> SuggestCouriersAsync(int jobId, CancellationToken ct = default)
-    {
-        var job = await jobRepository.GetSingleJobById(jobId);
-        if (job == null)
-        {
-            return new AiCourierSuggestionResponse
-            {
-                Summary = "Job not found.",
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var potentialCouriers = await courierRepository.GetPotentialCouriersAsync(jobId);
-        var driverOverview = await courierRepository.GetDriverWorkOverviewAsync();
-
-        var sb = new StringBuilder();
-        sb.AppendLine($"Suggest the best couriers for Job #{job.JobNo}:");
-        sb.AppendLine($"Speed: {job.SpeedName}");
-        sb.AppendLine($"Pickup: {AiDataSanitizer.Sanitize(job.From ?? "")}");
-        sb.AppendLine($"Delivery: {AiDataSanitizer.Sanitize(job.ToAddress ?? "")}");
-        if (job.Weight.HasValue)
-        {
-            sb.AppendLine($"Weight: {job.Weight}kg");
-        }
-
-        sb.AppendLine();
-
-        if (potentialCouriers is { Count: > 0 })
-        {
-            sb.AppendLine("Potential couriers (from system matching):");
-            foreach (var c in potentialCouriers.Take(10)) sb.AppendLine($"  - {c.FirstName} ({c.Code}): {c.Reason}");
-            sb.AppendLine();
-        }
-
-        if (driverOverview is { Count: > 0 })
-        {
-            sb.AppendLine("Driver workload overview:");
-            foreach (var d in driverOverview.Take(15))
-                sb.AppendLine($"  - {d.Name}: {d.VehicleType}, {d.JobCount} active jobs, Status: {d.DriverStatusText}");
-        }
-
-        if (potentialCouriers.Count == 0 && driverOverview.Count == 0)
-        {
-            return new AiCourierSuggestionResponse
-            {
-                Summary = "No courier data available for suggestions.",
-                Usage = new AiUsageInfo()
-            };
-        }
-
-        var summaryResult = await SendSummarizationRequestAsync(CourierSuggestionSystemPrompt, sb.ToString(), ct);
-
-        var courierList = potentialCouriers
-            .Take(10)
-            .Select(c => new SuggestedCourier
-            {
-                CourierId = c.CourierId,
-                Code = c.Code,
-                FirstName = c.FirstName
-            })
-            .ToList();
-
-        return new AiCourierSuggestionResponse
-        {
-            Summary = summaryResult.Summary,
-            Usage = summaryResult.Usage,
-            Couriers = courierList
-        };
     }
 
     private async Task<AiSummaryResponse> SendSummarizationRequestAsync(string systemPrompt, string userMessage,

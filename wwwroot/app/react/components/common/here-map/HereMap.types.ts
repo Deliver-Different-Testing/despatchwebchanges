@@ -104,8 +104,8 @@ export const DEFAULT_MAP_CONFIG: HereMapConfig = {
 };
 
 export const MARKER_ICONS = {
-    FROM: 'https://img.icons8.com/ios-filled/50/39e75f/marker.png',
-    TO: 'https://img.icons8.com/ios-filled/50/ff6863/marker.png',
+    FROM: 'https://img.icons8.com/ios-filled/50/2196f3/marker.png',
+    TO: 'https://img.icons8.com/ios-filled/50/4caf50/marker.png',
     EXTRA: 'https://img.icons8.com/ios-filled/50/000000/marker.png',
 } as const;
 

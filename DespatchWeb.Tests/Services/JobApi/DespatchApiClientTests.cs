@@ -5,10 +5,12 @@ using System.Text.Json;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Dto;
 using DespatchWeb.Services.JobApi;
+using DespatchWeb.Tests.Infrastructure;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Services.JobApi;
 
+[Collection(JwtEnvironmentCollection.Name)]
 public class DespatchApiClientTests : IDisposable
 {
     private readonly FakeHttpMessageHandler _httpHandler = new();

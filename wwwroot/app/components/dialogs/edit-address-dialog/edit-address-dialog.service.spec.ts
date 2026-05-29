@@ -232,6 +232,7 @@ describe('EditAddressDialogService', () => {
                 false,            // default showContactInfo
                 false,            // isUsTenant
                 expect.any(Object), // toastService
+                undefined,        // addressType
             );
         });
 
@@ -253,6 +254,7 @@ describe('EditAddressDialogService', () => {
                 true,
                 false,
                 expect.any(Object),
+                undefined,
             );
         });
 
@@ -273,6 +275,7 @@ describe('EditAddressDialogService', () => {
                 false,
                 true,  // isUsTenant
                 expect.any(Object),
+                undefined,
             );
         });
 

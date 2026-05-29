@@ -20,6 +20,7 @@ import {
     POSITION_THRESHOLD,
     PREFERENCE_KEYS,
 } from './DispatchMap.types';
+import {AddressType} from '../../../../enums/address-type.enum';
 
 describe('DispatchMap Constants', () => {
     describe('COURIER_REFRESH_INTERVAL_MS', () => {
@@ -75,20 +76,20 @@ describe('DispatchMap Constants', () => {
     });
 
     describe('MARKER_COLORS', () => {
-        it('should have PICKUP color', () => {
-            expect(MARKER_COLORS.PICKUP).toBe('#4CAF50');
+        it('should have PICKUP color (matches pickup header primary.main)', () => {
+            expect(MARKER_COLORS.PICKUP).toBe('#2196F3');
         });
 
-        it('should have DELIVERY color', () => {
-            expect(MARKER_COLORS.DELIVERY).toBe('#F44336');
+        it('should have DELIVERY color (matches delivery header success.main)', () => {
+            expect(MARKER_COLORS.DELIVERY).toBe('#4CAF50');
         });
 
-        it('should have OTHER_PICKUP color', () => {
-            expect(MARKER_COLORS.OTHER_PICKUP).toBe('#3F51B5');
+        it('should have OTHER_PICKUP color (primary.dark)', () => {
+            expect(MARKER_COLORS.OTHER_PICKUP).toBe('#1976D2');
         });
 
-        it('should have OTHER_DELIVERY color', () => {
-            expect(MARKER_COLORS.OTHER_DELIVERY).toBe('#FF5722');
+        it('should have OTHER_DELIVERY color (success.dark)', () => {
+            expect(MARKER_COLORS.OTHER_DELIVERY).toBe('#388E3C');
         });
 
         it('should have COURIER_FLAG color', () => {
@@ -278,12 +279,12 @@ describe('DispatchMap Type Definitions', () => {
             const markerData: JobMarkerData = {
                 marker: {},
                 jobId: 123,
-                type: 'pickup',
+                type: AddressType.Pickup,
                 isCurrentJob: true,
             };
 
             expect(markerData.jobId).toBe(123);
-            expect(markerData.type).toBe('pickup');
+            expect(markerData.type).toBe(AddressType.Pickup);
             expect(markerData.isCurrentJob).toBe(true);
         });
 
@@ -291,11 +292,11 @@ describe('DispatchMap Type Definitions', () => {
             const markerData: JobMarkerData = {
                 marker: {},
                 jobId: 456,
-                type: 'delivery',
+                type: AddressType.Delivery,
                 isCurrentJob: false,
             };
 
-            expect(markerData.type).toBe('delivery');
+            expect(markerData.type).toBe(AddressType.Delivery);
         });
     });
 

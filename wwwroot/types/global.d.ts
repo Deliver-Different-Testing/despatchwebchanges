@@ -50,6 +50,9 @@ import type {IFlightViewModel} from '../app/components/Nationwide/nationwide.int
 // App shell types
 import type {ToolbarActionsConfig} from '../app/react/components/common/app-shell/app-shell-react.module';
 
+// Shared enums
+import type {AddressType} from '../app/enums/address-type.enum';
+
 
 /** Typed interface for a React page module with specific config */
 interface ReactPageModule<TConfig> {
@@ -284,7 +287,8 @@ declare global {
                 submitLabel?: string,
                 showContactInfo?: boolean,
                 isUsTenant?: boolean,
-                toastService?: ToastService
+                toastService?: ToastService,
+                addressType?: AddressType
             ) => Promise<EditAddressDialogViewModel | null>;
         };
         ReactEditAfterhoursDialog?: {
@@ -342,17 +346,6 @@ declare global {
 
         // ── Lazy-loaded React utility modules ────────────────────────────
         ReactAiAssistant?: {
-            open: (options?: { toastService?: ToastService }) => Promise<void>;
-            summarizeNotes: (jobId: number) => Promise<{ summary: string }>;
-            summarizeJob: (jobId: number) => Promise<{ summary: string }>;
-            analyzeLateAlert: (jobId: number) => Promise<{ summary: string }>;
-            suggestCouriers: (jobId: number) => Promise<unknown>;
-            showCourierSuggestions: (
-                jobId: number,
-                jobNo: string,
-                onAssign: (courierId: number) => Promise<void>,
-                onRefresh?: () => void
-            ) => Promise<void>;
             renderSummaryPanel: (container: HTMLElement, jobId: number) => void;
             renderOperationsInsightsPanel: (container: HTMLElement) => void;
             unmountSummaryPanel: (container: HTMLElement) => void;

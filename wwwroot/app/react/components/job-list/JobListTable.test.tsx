@@ -13,17 +13,9 @@ import type {DensityMode, DispatchJob, JobListSort} from '../../interfaces/dispa
 import {AppPage} from '../../interfaces/dispatchJob';
 import dayjs from 'dayjs';
 import {searchActiveCouriersExtended} from '../../services/courierApi';
-import {suggestCouriers} from '../../services/aiAssistantApi';
-import {isAiEnabled} from '../../../functions/aiSettings';
 
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn(),
-}));
-jest.mock('../../services/aiAssistantApi', () => ({
-    suggestCouriers: jest.fn(),
-}));
-jest.mock('../../../functions/aiSettings', () => ({
-    isAiEnabled: jest.fn().mockReturnValue(false),
 }));
 // Mock @tanstack/react-virtual so rows render in jsdom (zero-height containers)
 jest.mock('@tanstack/react-virtual', () => ({
@@ -51,8 +43,6 @@ jest.mock('../../utils/dateUtils', () => ({
 }));
 
 const mockedSearch = searchActiveCouriersExtended as jest.Mock;
-const mockedSuggestCouriers = suggestCouriers as jest.Mock;
-const mockedIsAiEnabled = isAiEnabled as jest.Mock;
 
 function createMockDispatchJob(overrides?: Partial<DispatchJob>): DispatchJob {
     return {
@@ -119,8 +109,6 @@ function createDefaultProps(overrides?: Partial<React.ComponentProps<typeof JobL
 describe('JobListTable', () => {
     beforeEach(() => {
         mockedSearch.mockResolvedValue([]);
-        mockedSuggestCouriers.mockResolvedValue({couriers: [], summary: '', usage: {inputTokens: 0, outputTokens: 0}});
-        mockedIsAiEnabled.mockReturnValue(false);
     });
 
     it('renders "No jobs to display" when jobs array is empty', () => {
@@ -361,40 +349,6 @@ describe('JobListTable', () => {
             await user.click(option);
 
             expect(props.onJobDispatch).toHaveBeenCalledWith(expect.objectContaining({id: 1}), 42, '101 - John Smith');
-        });
-    });
-
-    // ── CourierCell — AI Suggestions ─────────────────────────────────
-    describe('CourierCell — AI Suggestions', () => {
-        it('fetches and displays AI suggestions when enabled', async () => {
-            const user = userEvent.setup();
-            mockedIsAiEnabled.mockReturnValue(true);
-            mockedSuggestCouriers.mockResolvedValue({
-                couriers: [{courierId: 99, code: 'AI01', firstName: 'AI Courier'}],
-                summary: '',
-                usage: {inputTokens: 0, outputTokens: 0},
-            });
-
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
-
-            await user.click(screen.getByText('Assign'));
-
-            await waitFor(() => {
-                expect(mockedSuggestCouriers).toHaveBeenCalledWith(1);
-            });
-            expect(await screen.findByText('AI01 - AI Courier')).toBeInTheDocument();
-        });
-
-        it('does not fetch AI suggestions when disabled', async () => {
-            const user = userEvent.setup();
-            mockedIsAiEnabled.mockReturnValue(false);
-
-            renderWithTheme(<JobListTable {...createDefaultProps()}/>);
-            await user.click(screen.getByText('Assign'));
-
-            await waitFor(() => {
-                expect(mockedSuggestCouriers).not.toHaveBeenCalled();
-            });
         });
     });
 

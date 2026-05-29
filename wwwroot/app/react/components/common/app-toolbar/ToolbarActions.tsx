@@ -19,7 +19,6 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import DeleteIcon from '@mui/icons-material/Delete';
 import GridViewIcon from '@mui/icons-material/GridView';
@@ -354,21 +353,6 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                 })}
             </Menu>
         </>
-    );
-};
-
-// AI Assistant Button
-export interface AiAssistantButtonProps {
-    onClick: (event: React.MouseEvent) => void;
-}
-
-export const AiAssistantButton: React.FC<AiAssistantButtonProps> = ({onClick}) => {
-    return (
-        <Tooltip title="AI Assistant (Beta)">
-            <IconButton color="inherit" onClick={onClick} sx={toolbarIconButtonSx}>
-                <AutoAwesomeIcon sx={{fontSize: 22}}/>
-            </IconButton>
-        </Tooltip>
     );
 };
 

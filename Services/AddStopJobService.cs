@@ -11,7 +11,11 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for creating additional stop jobs (extra pickups or deliveries) as child jobs linked to parent jobs.
 /// </summary>
-public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobCommandRepository commandRepository, ITenantInfoService infoService, ITenantClock clock) : IAddStopJobService
+public sealed class AddStopJobService(
+    IJobQueryRepository queryRepository,
+    IJobCommandRepository commandRepository,
+    ITenantInfoService infoService,
+    ITenantClock clock) : IAddStopJobService
 {
     private const decimal ExtraStopAmount = 20m;
     private const decimal ExtraStopCourierPayment = 10m;
@@ -57,10 +61,12 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
             newStopJob.UcjbContact = job.UcjbContact;
             newStopJob.UcjbChargeType = job.UcjbChargeType;
             newStopJob.UcjbFrom = job.UcjbFrom;
-            newStopJob.UcjbFromAddr = AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcjbFromAddr);
+            newStopJob.UcjbFromAddr =
+                AddressFormatter.GetSafeAddress(request.PickUpAddress?.FullAddress, job.UcjbFromAddr);
             newStopJob.UcjbTo = AirportSuburbId;
             newStopJob.UcjbToSpecial = null;
-            newStopJob.UcjbToAddr = AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr);
+            newStopJob.UcjbToAddr =
+                AddressFormatter.GetSafeAddress(request.DeliveryAddress?.FullAddress, job.UcjbFromAddr);
             newStopJob.UcjbSize = job.UcjbSize;
             newStopJob.UcjbCbd = false;
             newStopJob.UcjbKm = 0;
@@ -135,7 +141,7 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
 
             // Save packages
             await CreateAndAddPackagesToJob(job.ParentId ?? job.UcjbId, newStopJob.UcjbId, extras);
-            
+
             var staffId = infoService.GetStaffId();
             var currentDate = clock.TenantNow;
 
@@ -457,7 +463,7 @@ public sealed class AddStopJobService(IJobQueryRepository queryRepository, IJobC
 
         return breakdown;
     }
-    
+
     /// <summary>
     /// Creates package entities for the stop job based on the shipment details quantity.
     /// </summary>

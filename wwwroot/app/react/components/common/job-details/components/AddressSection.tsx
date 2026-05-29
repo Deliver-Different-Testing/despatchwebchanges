@@ -26,8 +26,7 @@ import type {IJob} from '../JobDetails.types';
 import {usePendingChangeForField} from '../../../job-change-requests/useJobChangeRequests';
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
 import type {JobChangeRequestDto} from '../../../../services/jobChangeRequestApi';
-
-type AddressVariant = 'pickup' | 'delivery';
+import {AddressType} from '../../../../../enums/address-type.enum';
 
 interface AddressSectionProps {
     job: IJob;
@@ -42,7 +41,7 @@ interface AddressSectionProps {
 
 interface AddressBlockProps {
     title: string;
-    variant: AddressVariant;
+    variant: AddressType;
     icon: React.ComponentType<SvgIconProps>;
     address?: { fullAddress?: string };
     contactName?: string;
@@ -185,7 +184,7 @@ function AddressBlock({
                           pendingContact,
                           pendingPhone,
                       }: AddressBlockProps) {
-    const isPu = variant === 'pickup';
+    const isPu = variant === AddressType.Pickup;
 
     const toolbarBg = isPu
         ? 'linear-gradient(135deg, var(--pickup-color) 0%, var(--pickup-color-dark) 100%)'
@@ -336,7 +335,7 @@ export const AddressSection = React.memo(({
         }}>
             <AddressBlock
                 title="Pickup"
-                variant="pickup"
+                variant={AddressType.Pickup}
                 icon={addressIcon}
                 address={job.pickupAddress}
                 contactName={job.fromContactName}
@@ -357,7 +356,7 @@ export const AddressSection = React.memo(({
             </Box>
             <AddressBlock
                 title="Delivery"
-                variant="delivery"
+                variant={AddressType.Delivery}
                 icon={addressIcon}
                 address={job.deliveryAddress}
                 contactName={job.deliverToContact}

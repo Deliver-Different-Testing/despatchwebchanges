@@ -10,6 +10,7 @@ import DispatchCoreService from "./dispatch-core.service";
 import {EditAddressDialogService} from "../components/dialogs/edit-address-dialog/edit-address-dialog.service";
 import ToastrService from "./toastr.service";
 import JobSuffix from "../enums/job-suffix.enum";
+import {AddressType} from "../enums/address-type.enum";
 
 jest.mock('angular', () => ({
     default: {
@@ -200,7 +201,7 @@ describe('addNewStop', () => {
         await service.addNewStop(job, mockEvent);
 
         expect(editAddressDialogService.openEditAddressDialog).toHaveBeenCalledWith(
-            expect.any(Object), mockEvent, "Add Pick Up Stop", "Add Stop", true);
+            expect.any(Object), mockEvent, "Add Pick Up Stop", "Add Stop", true, AddressType.Pickup);
     });
 
     it('passes $event to dialog for delivery stop', async () => {
@@ -213,7 +214,7 @@ describe('addNewStop', () => {
         await service.addNewStop(job, mockEvent);
 
         expect(editAddressDialogService.openEditAddressDialog).toHaveBeenCalledWith(
-            expect.any(Object), mockEvent, "Add Delivery Stop", "Add Stop", true);
+            expect.any(Object), mockEvent, "Add Delivery Stop", "Add Stop", true, AddressType.Delivery);
     });
 });
 
@@ -291,7 +292,7 @@ describe('addRecurringJobStop', () => {
         await service.addRecurringJobStop(job, true);
 
         expect(editAddressDialogService.openEditAddressDialog).toHaveBeenCalledWith(
-            expect.any(Object), undefined, "Add Pick Up Stop", "Add Stop", true);
+            expect.any(Object), undefined, "Add Pick Up Stop", "Add Stop", true, AddressType.Pickup);
     });
 
     it('opens dialog with "Add Delivery Stop" title when isPickup is false', async () => {
@@ -303,6 +304,6 @@ describe('addRecurringJobStop', () => {
         await service.addRecurringJobStop(job, false);
 
         expect(editAddressDialogService.openEditAddressDialog).toHaveBeenCalledWith(
-            expect.any(Object), undefined, "Add Delivery Stop", "Add Stop", true);
+            expect.any(Object), undefined, "Add Delivery Stop", "Add Stop", true, AddressType.Delivery);
     });
 });

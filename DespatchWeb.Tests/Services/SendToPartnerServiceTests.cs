@@ -6,6 +6,7 @@ using DespatchWeb.EntityClasses;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Services;
+using DespatchWeb.Tests.Infrastructure;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,7 @@ namespace DespatchWeb.Tests.Services;
 /// Unit tests for SendToPartnerService - verifies HTTP error handling so failures surface
 /// a specific reason instead of bubbling exceptions to the controller's generic catch-all.
 /// </summary>
+[Collection(JwtEnvironmentCollection.Name)]
 public class SendToPartnerServiceTests : IDisposable
 {
     private readonly FakeHttpMessageHandler _httpHandler = new();

@@ -2,6 +2,7 @@ import {IAddressViewModel, IEditAddressDialogViewModel} from "../../../interface
 import {EditAddressDialogViewModel} from "../../../react/interfaces";
 import ToastrService from "../../../services/toastr.service";
 import {IAppConfig} from "../../../interfaces/app-config.interface";
+import {AddressType} from "../../../enums/address-type.enum";
 import angular from 'angular';
 
 export class EditAddressDialogService implements angular.IServiceProvider {
@@ -116,7 +117,8 @@ export class EditAddressDialogService implements angular.IServiceProvider {
         _$event?: MouseEvent,
         title: string = 'Edit Address',
         submitLabel: string = 'Save',
-        showContactInfo: boolean = false
+        showContactInfo: boolean = false,
+        addressType?: AddressType,
     ): Promise<IEditAddressDialogViewModel | undefined> {
         console.debug('EditAddressDialogService: Opening dialog for address:', addressDetails);
 
@@ -155,7 +157,8 @@ export class EditAddressDialogService implements angular.IServiceProvider {
                 submitLabel,
                 showContactInfo,
                 this.isUsTenant,
-                toastService
+                toastService,
+                addressType,
             );
 
             console.debug('EditAddressDialogService: Dialog resolved with:', result);
