@@ -598,8 +598,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     [Fact]
     public async Task CreateLocalAsync_errors_when_multiple_active_pairings_and_no_pairingId_provided()
     {
-        // Pre-fix: silently picked the first Active pairing — non-deterministic in
-        // multi-pairing tenants. New behaviour: refuse and ask the caller to disambiguate.
         await SeedJobAsync();
         await SeedPairingAsync(partnerTenantId: "200");
         await SeedPairingAsync(partnerTenantId: "300");
@@ -654,6 +652,48 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
 
         Assert.False(result.Success);
         Assert.Contains("not active", result.Message);
+    }
+
+    [Fact]
+    public async Task CreateLocalAsync_uses_pairing_from_JobPartnerDispatch_when_tenant_has_multiple_active_pairings()
+    {
+        await SeedJobAsync();
+        var firstId = await SeedPairingAsync(partnerTenantId: "200");
+        var secondId = await SeedPairingAsync(partnerTenantId: "300");
+        await SeedJobPartnerDispatchAsync(jobId: 1, pairingId: secondId);
+        var service = CreateService();
+
+        var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "5"
+        }, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(secondId, result.Request!.PairingId);
+        Assert.NotEqual(firstId, result.Request.PairingId);
+    }
+
+    [Fact]
+    public async Task CreateLocalAsync_explicit_pairingId_wins_over_JobPartnerDispatch()
+    {
+        await SeedJobAsync();
+        var firstId = await SeedPairingAsync(partnerTenantId: "200");
+        var secondId = await SeedPairingAsync(partnerTenantId: "300");
+        await SeedJobPartnerDispatchAsync(jobId: 1, pairingId: firstId);
+        var service = CreateService();
+
+        var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
+        {
+            JobId = 1,
+            FieldName = nameof(JobChangeField.Quantity),
+            RequestedValue = "5",
+            PairingId = secondId
+        }, CancellationToken.None);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(secondId, result.Request!.PairingId);
     }
 
     [Fact]
@@ -1210,6 +1250,17 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         ctx.IntMgrPartnerPairings.Add(pairing);
         await ctx.SaveChangesAsync();
         return pairing.Id;
+    }
+
+    private async Task SeedJobPartnerDispatchAsync(int jobId, int pairingId)
+    {
+        await using var ctx = CreateContext();
+        ctx.JobPartnerDispatches.Add(new JobPartnerDispatch
+        {
+            JobId = jobId,
+            PartnerPairingId = pairingId
+        });
+        await ctx.SaveChangesAsync();
     }
 
     private async Task<Guid?> GetPartnerJobGuidAsync(int jobId)

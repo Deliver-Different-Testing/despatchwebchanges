@@ -18,10 +18,8 @@ import {
     cardContainerSx,
     cardContentSx,
     cardNotesContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
 } from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 
 interface AgentInformationProps {
     agent: IAgent;
@@ -62,17 +60,12 @@ function AgentDetailRow({icon: IconComp, value}: {icon: React.ComponentType<any>
     );
 }
 
-export const AgentInformation = React.memo(function AgentInformation({agent}: AgentInformationProps) {
+export const AgentInformation = React.memo(({agent}: AgentInformationProps) => {
     if (!agent) return null;
 
     return (
         <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <SupportAgentIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Agent Information
-                </Typography>
-            </Box>
+            <SectionHeader icon={SupportAgentIcon} title="Agent Information" />
             <Box sx={cardContentSx}>
                 {/* Agent name + ranking/rate chips */}
                 <Box sx={styles.nameRow}>

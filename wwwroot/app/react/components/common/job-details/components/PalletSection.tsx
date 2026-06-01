@@ -5,7 +5,6 @@
 
 import React from 'react';
 import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
 import Table from '@mui/material/Table';
 import TableHead from '@mui/material/TableHead';
 import TableBody from '@mui/material/TableBody';
@@ -14,12 +13,8 @@ import TableCell from '@mui/material/TableCell';
 import Chip from '@mui/material/Chip';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import type {IPalletInfo} from '../JobDetails.types';
-import {
-    cardContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
-} from '../JobDetails.styles';
+import {cardContainerSx} from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 
 interface PalletSectionProps {
     pallets: IPalletInfo[];
@@ -46,16 +41,11 @@ export const PalletSection = React.memo(function PalletSection({pallets, isUsCus
 
     return (
         <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <ViewListIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Pallet Information
-                </Typography>
-                <Typography variant="caption" color="text.disabled" sx={{ml: 0.5}}>
-                    ({pallets.length})
-                </Typography>
-                <Box sx={{flex: 1}} />
-            </Box>
+            <SectionHeader
+                icon={ViewListIcon}
+                title="Pallet Information"
+                subtitle={`${pallets.length} ${pallets.length === 1 ? 'pallet' : 'pallets'}`}
+            />
             <Table size="small">
                 <TableHead>
                     <TableRow>

@@ -28,7 +28,7 @@ describe('PalletSection', () => {
         renderWithTheme(<PalletSection pallets={pallets} isUsCustomer={false} />);
 
         expect(screen.getByText('Pallet Information')).toBeInTheDocument();
-        expect(screen.getByText('(1)')).toBeInTheDocument();
+        expect(screen.getByText('1 pallet')).toBeInTheDocument();
         expect(screen.getByText('120 x 80 x 100')).toBeInTheDocument();
         expect(screen.getByText('Fragile')).toBeInTheDocument();
     });
@@ -113,6 +113,6 @@ describe('PalletSection', () => {
         expect(screen.getByText('First')).toBeInTheDocument();
         expect(screen.getByText('Second')).toBeInTheDocument();
         expect(screen.getByText('Third')).toBeInTheDocument();
-        expect(screen.getByText('(3)')).toBeInTheDocument();
+        expect(screen.getByText('3 pallets')).toBeInTheDocument();
     });
 });

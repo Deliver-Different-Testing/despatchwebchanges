@@ -120,7 +120,7 @@ const createMockTasks = (): Task[] => [
         id: 2,
         title: 'Future email reminder',
         description: 'Send reminder email',
-        dueDate: dayjs().add(1, 'day'), // Future task (todo)
+        dueDate: dayjs().add(1, 'day'),
         closed: false,
         assignee: {id: 6, text: 'Jane Smith'},
         jobId: 101,
@@ -224,7 +224,7 @@ describe('TaskDashboardPage', () => {
     // ── Skeleton loading state ──────────────────────────────────────
     it('renders skeleton loading state while fetching tasks', async () => {
         mockTasksApi.getAllTasks.mockImplementation(
-            () => new Promise((resolve) => setTimeout(() => resolve([]), 500))
+            () => new Promise(() => {})
         );
 
         const props = createDefaultProps();
@@ -294,7 +294,6 @@ describe('TaskDashboardPage', () => {
         expect(await screen.findByText('Overdue follow up call')).toBeInTheDocument();
         expect(screen.getByText('Tasks (2)')).toBeInTheDocument();
 
-        // Click Todo → only future tasks
         await user.click(screen.getByRole('button', {name: /TODO:/}));
         expect(await screen.findByText('Future email reminder')).toBeInTheDocument();
         expect(screen.queryByText('Overdue follow up call')).not.toBeInTheDocument();

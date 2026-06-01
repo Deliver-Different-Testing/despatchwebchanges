@@ -326,6 +326,7 @@
   </ItemGroup>
   <ItemGroup>
     <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
+    <TypeScriptCompile Include="wwwroot\app\interfaces\task-item-config.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\app-shell\app-shell.types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\common\pod-photo-viewer\pod-photo-viewer.types.ts" />
@@ -383,7 +384,6 @@
     <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
     <TypeScriptCompile Include="wwwroot\app\enums\podPhotoType.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\task-item-config.ts" />
     <TypeScriptCompile Include="wwwroot\app\filters.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
     <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />

@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {act, screen, waitFor, within} from '@testing-library/react';
+import {act, fireEvent, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {renderWithProviders} from '../../__testUtils__';
 import {JobListPanel} from './JobListPanel';
@@ -260,8 +260,26 @@ describe('JobListPanel', () => {
     });
 
     describe('Search Filtering', () => {
+        // Fake timers fast-forward the 200ms debounce in JobListPanel without real
+        // wall-clock waits. fireEvent (instead of user-event) keeps the input update
+        // synchronous so flushDebounce just has to advance the debounce timer.
+        beforeEach(() => {
+            jest.useFakeTimers();
+        });
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        const typeAndFlush = async (input: HTMLElement, value: string) => {
+            // Two stacked debounces: JobListToolbar (300ms) → onSearchChange →
+            // JobListPanel useEffect (200ms) → debouncedSearchQuery → filter.
+            // Advance past the first to let the second be scheduled, then past the second.
+            await act(async () => { fireEvent.change(input, {target: {value}}); });
+            await act(async () => { await jest.advanceTimersByTimeAsync(300); });
+            await act(async () => { await jest.advanceTimersByTimeAsync(200); });
+        };
+
         it('filters jobs by job number, client, and courier, and calls onSearchChange', async () => {
-            const user = userEvent.setup();
             const onSearchChange = jest.fn();
             const jobs = [
                 createMockDispatchJob({
@@ -274,34 +292,24 @@ describe('JobListPanel', () => {
 
             const searchInput = screen.getByPlaceholderText('Search jobs...');
 
-            // Filter by job number (longer timeout for 200ms debounce on slow CI)
-            await user.click(searchInput);
-            await user.paste('ALPHA');
-            await waitFor(() => {
-                expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
-                expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
-            }, {timeout: 3000});
+            // Filter by job number
+            await typeAndFlush(searchInput, 'ALPHA');
+            expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
+            expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
             expect(onSearchChange).toHaveBeenCalledWith('ALPHA');
 
             // Clear and filter by client
-            await user.clear(searchInput);
-            await user.paste('gadget');
-            await waitFor(() => {
-                expect(screen.getByText('BETA-002')).toBeInTheDocument();
-                expect(screen.queryByText('ALPHA-001')).not.toBeInTheDocument();
-            }, {timeout: 3000});
+            await typeAndFlush(searchInput, 'gadget');
+            expect(screen.getByText('BETA-002')).toBeInTheDocument();
+            expect(screen.queryByText('ALPHA-001')).not.toBeInTheDocument();
 
             // Clear and filter by courier
-            await user.clear(searchInput);
-            await user.paste('Mike');
-            await waitFor(() => {
-                expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
-                expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
-            }, {timeout: 3000});
+            await typeAndFlush(searchInput, 'Mike');
+            expect(screen.getByText('ALPHA-001')).toBeInTheDocument();
+            expect(screen.queryByText('BETA-002')).not.toBeInTheDocument();
         });
 
         it('filters by address fields', async () => {
-            const user = userEvent.setup();
             const jobs = [
                 createMockDispatchJob({
                     id: 1, jobNo: 'ADDR-001',
@@ -315,16 +323,12 @@ describe('JobListPanel', () => {
             renderAndPushJobs(jobs);
 
             const searchInput = screen.getByPlaceholderText('Search jobs...');
-            await user.click(searchInput);
-            await user.paste('wellington');
-            await waitFor(() => {
-                expect(screen.getByText('ADDR-001')).toBeInTheDocument();
-                expect(screen.queryByText('ADDR-002')).not.toBeInTheDocument();
-            }, {timeout: 3000});
+            await typeAndFlush(searchInput, 'wellington');
+            expect(screen.getByText('ADDR-001')).toBeInTheDocument();
+            expect(screen.queryByText('ADDR-002')).not.toBeInTheDocument();
         });
 
         it('handles null/undefined fields without errors', async () => {
-            const user = userEvent.setup();
             const jobs = [
                 createMockDispatchJob({
                     id: 1, jobNo: 'NULL-001',
@@ -338,17 +342,12 @@ describe('JobListPanel', () => {
             renderAndPushJobs(jobs);
 
             const searchInput = screen.getByPlaceholderText('Search jobs...');
-            await user.click(searchInput);
-            await user.paste('anything');
-            await waitFor(() => {
-                expect(screen.queryByText('NULL-001')).not.toBeInTheDocument();
-            }, {timeout: 3000});
+            await typeAndFlush(searchInput, 'anything');
+            expect(screen.queryByText('NULL-001')).not.toBeInTheDocument();
 
             // Clear search — job should reappear
-            await user.clear(searchInput);
-            await waitFor(() => {
-                expect(screen.getByText('NULL-001')).toBeInTheDocument();
-            }, {timeout: 3000});
+            await typeAndFlush(searchInput, '');
+            expect(screen.getByText('NULL-001')).toBeInTheDocument();
         });
     });
 

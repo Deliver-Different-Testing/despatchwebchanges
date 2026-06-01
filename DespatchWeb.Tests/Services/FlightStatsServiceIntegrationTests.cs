@@ -286,8 +286,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         // (connections may include legs operated by regional partners like SkyWest/OO)
         if (result.Connections != null)
         {
-            foreach (var connection in result.Connections) 
+            foreach (var connection in result.Connections)
+            {
                 Assert.Contains(connection.ScheduledFlight, f => f.CarrierFsCode == airline);
+            }
         }
     }
 
@@ -440,8 +442,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
                 }
 
                 foreach (var segment in connection.ScheduledFlight)
+                {
                     TestContext.Current.TestOutputHelper?.WriteLine($"    {segment.CarrierFsCode}{segment.FlightNumber}: " +
                                                                     $"{segment.DepartureAirportFsCode} -> {segment.ArrivalAirportFsCode}");
+                }
             }
         }
     }
@@ -512,7 +516,10 @@ public class FlightStatsServiceIntegrationTests : IAsyncDisposable
         var responses = await Task.WhenAll(tasks);
 
         // Assert - All should succeed (API should handle reasonable request rates)
-        foreach (var response in responses) TestContext.Current.TestOutputHelper?.WriteLine($"Response: {response.StatusCode}");
+        foreach (var response in responses)
+        {
+            TestContext.Current.TestOutputHelper?.WriteLine($"Response: {response.StatusCode}");
+        }
 
         var successCount = responses.Count(r => r.IsSuccessStatusCode);
         Assert.True(successCount > 0, "At least some requests should succeed");

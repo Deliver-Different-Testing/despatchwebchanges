@@ -10,7 +10,7 @@
 
 import type {SxProps, Theme} from '@mui/material/styles';
 
-/* ── Card container (info-sections, photos, etc.) ─────────────────── */
+/* ── Card container (Option B — bordered card + gradient header) ──── */
 
 export const cardContainerSx: SxProps<Theme> = {
     bgcolor: 'background.paper',
@@ -20,7 +20,9 @@ export const cardContainerSx: SxProps<Theme> = {
     borderColor: 'divider',
 };
 
-/* ── Section toolbar (md-toolbar equivalent) ──────────────────────── */
+/* ── Section toolbar (legacy 40px grey bar — superseded by SectionHeader)
+ *  Still exported for any non-job-details callers; new code should use
+ *  the SectionHeader component instead. */
 
 export const sectionToolbarSx: SxProps<Theme> = {
     display: 'flex',

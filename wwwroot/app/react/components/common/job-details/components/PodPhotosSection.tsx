@@ -19,12 +19,8 @@ import Tooltip from '@mui/material/Tooltip';
 import {isImageFile, isPdfFile} from '../JobDetails.types';
 import type {PodPhoto} from '../JobDetails.types';
 import {downloadFile} from '../../../../services/jobDetailApi';
-import {
-    cardContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
-} from '../JobDetails.styles';
+import {cardContainerSx} from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 
 const cardContainerLoadingSx = {...cardContainerSx as object, p: 1.5};
 const cardContainerPickupSx = {...cardContainerSx as object, mt: 1};
@@ -251,31 +247,30 @@ export function PodPhotosSection({
         <>
             {/* Delivery Photos */}
             <Box sx={cardContainerSx}>
-                <Box sx={sectionToolbarSx}>
-                    <PhotoCameraIcon sx={sectionToolbarIconSx} />
-                    <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                        Delivery Photos
-                    </Typography>
-                    <Typography variant="caption" color="text.disabled" sx={{ml: 0.5}}>
-                        ({deliveryPhotos.length})
-                    </Typography>
-                    <Box sx={{flex: 1}} />
-                    {onUploadPhotos && (
-                        <Tooltip title="Upload POD Photos">
-                            <IconButton size="small" onClick={onUploadPhotos}>
-                                <UploadIcon sx={{fontSize: 18}} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    {onSendPod && (
-                        <Tooltip title="Send POD">
-                            <IconButton size="small" onClick={onSendPod}>
-                                <SendIcon sx={{fontSize: 18}} />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                </Box>
-                <Box sx={{p: 1.5}}>
+                <SectionHeader
+                    icon={PhotoCameraIcon}
+                    title="Delivery Photos"
+                    subtitle={`${deliveryPhotos.length} ${deliveryPhotos.length === 1 ? 'photo' : 'photos'}`}
+                    endAction={
+                        <>
+                            {onUploadPhotos && (
+                                <Tooltip title="Upload POD Photos">
+                                    <IconButton size="small" onClick={onUploadPhotos}>
+                                        <UploadIcon sx={{fontSize: 18}} />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                            {onSendPod && (
+                                <Tooltip title="Send POD">
+                                    <IconButton size="small" onClick={onSendPod}>
+                                        <SendIcon sx={{fontSize: 18}} />
+                                    </IconButton>
+                                </Tooltip>
+                            )}
+                        </>
+                    }
+                />
+                <Box sx={{p: 2}}>
                     <PhotoGrid
                         title="Delivery"
                         photos={deliveryPhotos}
@@ -288,16 +283,12 @@ export function PodPhotosSection({
             {/* Pickup Photos */}
             {pickupPhotos.length > 0 && (
                 <Box sx={cardContainerPickupSx}>
-                    <Box sx={sectionToolbarSx}>
-                        <PhotoCameraIcon sx={sectionToolbarIconSx} />
-                        <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                            Pickup Photos
-                        </Typography>
-                        <Typography variant="caption" color="text.disabled" sx={{ml: 0.5}}>
-                            ({pickupPhotos.length})
-                        </Typography>
-                    </Box>
-                    <Box sx={{p: 1.5}}>
+                    <SectionHeader
+                        icon={PhotoCameraIcon}
+                        title="Pickup Photos"
+                        subtitle={`${pickupPhotos.length} ${pickupPhotos.length === 1 ? 'photo' : 'photos'}`}
+                    />
+                    <Box sx={{p: 2}}>
                         <PhotoGrid
                             title="Pickup"
                             photos={pickupPhotos}

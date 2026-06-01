@@ -27,6 +27,8 @@ import {usePendingChangeForField} from '../../../job-change-requests/useJobChang
 import {PendingChangeBadge} from '../../../job-change-requests/PendingChangeBadge';
 import type {JobChangeRequestDto} from '../../../../services/jobChangeRequestApi';
 import {AddressType} from '../../../../../enums/address-type.enum';
+import {SectionHeader} from './SectionHeader';
+import {cardContainerSx} from '../JobDetails.styles';
 
 interface AddressSectionProps {
     job: IJob;
@@ -60,13 +62,9 @@ interface AddressBlockProps {
 /* ── Styles ─────────────────────────────────────────────────────── */
 
 const blockSx: SxProps<Theme> = {
+    ...cardContainerSx as object,
     flex: 1,
-    bgcolor: 'background.paper',
-    borderRadius: 2,
-    overflow: 'hidden',
-    border: 1,
-    borderColor: 'divider',
-    transition: (theme) => `all ${theme.transitions.duration.short}ms ease`,
+    transition: (theme) => `border-color ${theme.transitions.duration.short}ms ease`,
     '&:hover': {
         borderColor: 'grey.400',
     },
@@ -186,40 +184,19 @@ function AddressBlock({
                       }: AddressBlockProps) {
     const isPu = variant === AddressType.Pickup;
 
-    const toolbarBg = isPu
-        ? 'linear-gradient(135deg, var(--pickup-color) 0%, var(--pickup-color-dark) 100%)'
-        : 'linear-gradient(135deg, var(--delivery-color) 0%, var(--delivery-color-dark) 100%)';
-
     return (
         <Box
             sx={{
                 ...blockSx as object,
                 ...(locked ? {opacity: 0.7, pointerEvents: 'none' as const} : {}),
-                // CSS custom properties for toolbar gradient
-                '--pickup-color': (theme: Theme) => theme.palette.primary.main,
-                '--pickup-color-dark': (theme: Theme) => theme.palette.primary.dark,
-                '--delivery-color': (theme: Theme) => theme.palette.success.main,
-                '--delivery-color-dark': (theme: Theme) => theme.palette.success.dark,
             } as SxProps<Theme>}
         >
-            {/* Coloured toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1,
-                    px: dense ? 1 : 1.5,
-                    height: dense ? 32 : 40,
-                    minHeight: dense ? 32 : 40,
-                    background: toolbarBg,
-                    color: 'common.white',
-                }}
-            >
-                <IconComponent sx={{fontSize: 18, color: 'common.white'}}/>
-                <Typography variant="subtitle2" sx={{fontSize: '0.8125rem', fontWeight: 600, color: 'inherit'}}>
-                    {title}
-                </Typography>
-            </Box>
+            <SectionHeader
+                icon={IconComponent}
+                title={title}
+                dense={dense}
+                variant={isPu ? 'pickup' : 'delivery'}
+            />
 
             {/* Address display */}
             <ButtonBase

@@ -21,7 +21,9 @@ public sealed class AccessorialChargeService(
         var userName = staffInfo?.Text ?? "Unknown";
 
         foreach (var charge in charges)
+        {
             await repository.AddChargeAsync(jobId, charge, userName);
+        }
     }
 
     public async Task<JobAccessorialChargeDto> UpdateChargeAsync(int jobAccessorialChargeId,

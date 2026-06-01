@@ -569,7 +569,10 @@ public class NoteRepository(
 
     private static void UpdateNoteDate(IReadOnlyList<TucNoteViewModel> notes, string tenantTimeZone)
     {
-        foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
+        foreach (var note in notes)
+        {
+            UpdateNoteDate(note, tenantTimeZone);
+        }
     }
 
     private static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)

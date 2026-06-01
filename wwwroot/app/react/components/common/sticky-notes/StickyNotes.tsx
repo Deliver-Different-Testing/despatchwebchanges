@@ -16,15 +16,15 @@ import ListItemText from '@mui/material/ListItemText';
 import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
+import StickyNote2Icon from '@mui/icons-material/StickyNote2';
 import {useQuery, useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from '../../../query/queryClient';
 import {StickyNotesProps} from './StickyNotes.interfaces';
 import {JobNote, NoteType} from '../../../interfaces';
 import {notesApi} from '../../../services/notesApi';
 import {openNoteManagementDialog} from '../../dialogs/note-management-dialog/note-management-dialog-react.module';
-import {cardContainerSx, sectionToolbarSx, sectionToolbarTitleSx} from '../../common/job-details/JobDetails.styles';
-
-const stickyNoteTitleSx = {...sectionToolbarTitleSx as object, flex: 1};
+import {cardContainerSx} from '../../common/job-details/JobDetails.styles';
+import {SectionHeader} from '../job-details/components/SectionHeader';
 
 /**
  * Get note type color based on type name and importance
@@ -186,90 +186,83 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
 
     return (
         <Box sx={cardContainerSx}>
-            {/* Header Toolbar */}
-            <Box sx={sectionToolbarSx}>
-                <span className="material-symbols-outlined" style={{fontSize: 18, color: 'rgba(0,0,0,0.6)'}}>note</span>
-                <Typography sx={stickyNoteTitleSx}>
-                    Notes
-                    {isFilterActive && (
-                        <Typography component="span" variant="caption" color="text.secondary" sx={{ml: 0.5, fontWeight: 400}}>
-                            - {getCategoryName()}
+            <SectionHeader
+                icon={StickyNote2Icon}
+                title="Notes"
+                subtitle={isFilterActive ? `- ${getCategoryName()}` : undefined}
+                endAction={
+                    <>
+                        <Tooltip title="Filter by Category">
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={(e) => setMenuAnchorEl(e.currentTarget)}
+                                    disabled={categoriesLoading}
+                                    sx={{color: 'inherit'}}
+                                >
+                                    {categoriesLoading ? (
+                                        <Box sx={{width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                            <LinearProgress sx={{width: 18}} />
+                                        </Box>
+                                    ) : (
+                                        <span className="material-symbols-outlined" style={{fontSize: 18}}>
+                                            {isFilterActive ? 'filter_alt' : 'category'}
+                                        </span>
+                                    )}
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                        <Tooltip title="Add Note">
+                            <IconButton size="small" onClick={handleAddNote} sx={{color: 'inherit'}}>
+                                <span className="material-symbols-outlined" style={{fontSize: 18}}>note_add</span>
+                            </IconButton>
+                        </Tooltip>
+                    </>
+                }
+            />
+
+            {/* Category Menu */}
+            <Menu
+                anchorEl={menuAnchorEl}
+                open={Boolean(menuAnchorEl)}
+                onClose={() => setMenuAnchorEl(null)}
+            >
+                {noteCategories.length === 0 ? (
+                    <MenuItem disabled>
+                        <Typography variant="body2">No note categories available.</Typography>
+                    </MenuItem>
+                ) : ([
+                    <MenuItem
+                        key="all"
+                        onClick={() => handleFilterByCategory('all')}
+                        selected={selectedCategory === 'all'}
+                    >
+                        <ListItemIcon>
+                            <span className="material-symbols-outlined">topic</span>
+                        </ListItemIcon>
+                        <ListItemText>All Categories</ListItemText>
+                        <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
+                            ({notes.length})
                         </Typography>
-                    )}
-                </Typography>
-
-                {/* Category Filter Button */}
-                <Tooltip title="Filter by Category">
-                    <span>
-                        <IconButton
-                            size="small"
-                            onClick={(e) => setMenuAnchorEl(e.currentTarget)}
-                            disabled={categoriesLoading}
-                            sx={{color: 'text.secondary'}}
-                        >
-                            {categoriesLoading ? (
-                                <Box sx={{width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-                                    <LinearProgress sx={{width: 18}} />
-                                </Box>
-                            ) : (
-                                <span className="material-symbols-outlined" style={{fontSize: 18}}>
-                                    {isFilterActive ? 'filter_alt' : 'category'}
-                                </span>
-                            )}
-                        </IconButton>
-                    </span>
-                </Tooltip>
-
-                {/* Category Menu */}
-                <Menu
-                    anchorEl={menuAnchorEl}
-                    open={Boolean(menuAnchorEl)}
-                    onClose={() => setMenuAnchorEl(null)}
-                >
-                    {noteCategories.length === 0 ? (
-                        <MenuItem disabled>
-                            <Typography variant="body2">No note categories available.</Typography>
-                        </MenuItem>
-                    ) : ([
+                    </MenuItem>,
+                    <Divider key="divider" />,
+                    ...noteCategories.map(category => (
                         <MenuItem
-                            key="all"
-                            onClick={() => handleFilterByCategory('all')}
-                            selected={selectedCategory === 'all'}
+                            key={category.id}
+                            onClick={() => handleFilterByCategory(category)}
+                            selected={selectedCategory === category.id?.toString()}
                         >
                             <ListItemIcon>
                                 <span className="material-symbols-outlined">topic</span>
                             </ListItemIcon>
-                            <ListItemText>All Categories</ListItemText>
+                            <ListItemText>{category.text}</ListItemText>
                             <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                ({notes.length})
+                                ({categoryNoteCounts.get(category.id!) ?? 0})
                             </Typography>
-                        </MenuItem>,
-                        <Divider key="divider" />,
-                        ...noteCategories.map(category => (
-                            <MenuItem
-                                key={category.id}
-                                onClick={() => handleFilterByCategory(category)}
-                                selected={selectedCategory === category.id?.toString()}
-                            >
-                                <ListItemIcon>
-                                    <span className="material-symbols-outlined">topic</span>
-                                </ListItemIcon>
-                                <ListItemText>{category.text}</ListItemText>
-                                <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
-                                    ({categoryNoteCounts.get(category.id!) ?? 0})
-                                </Typography>
-                            </MenuItem>
-                        )),
-                    ])}
-                </Menu>
-
-                {/* Add Note Button */}
-                <Tooltip title="Add Note">
-                    <IconButton size="small" onClick={handleAddNote} sx={{color: 'text.secondary'}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 18}}>note_add</span>
-                    </IconButton>
-                </Tooltip>
-            </Box>
+                        </MenuItem>
+                    )),
+                ])}
+            </Menu>
 
             {/* Loading Indicator */}
             {loading && <LinearProgress sx={{height: 2}} />}

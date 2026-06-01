@@ -67,8 +67,8 @@ import utc from "dayjs/plugin/utc";
 import {HereMapConfig} from "../../interfaces/hereMapCredentials.interfaces";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import {setAiEnabled} from "../../functions/aiSettings";
-import ITaskItemConfig from "../../enums/task-item-config";
 import angular from 'angular';
+import ITaskItemConfig from "../../interfaces/task-item-config";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

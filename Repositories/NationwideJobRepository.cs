@@ -796,7 +796,10 @@ public class NationwideJobRepository(
                                  ra.IsPrimary)
                     .ToListAsync();
 
-                foreach (var agent in otherPrimaryAgents) agent.IsPrimary = false;
+                foreach (var agent in otherPrimaryAgents)
+                {
+                    agent.IsPrimary = false;
+                }
 
                 // Also check recovery jobs where the parent job is the main job
                 var childJobPrimaryAgents = await Context.JobRecoveryAgents
@@ -807,7 +810,10 @@ public class NationwideJobRepository(
                                  ra.IsPrimary)
                     .ToListAsync();
 
-                foreach (var agent in childJobPrimaryAgents) agent.IsPrimary = false;
+                foreach (var agent in childJobPrimaryAgents)
+                {
+                    agent.IsPrimary = false;
+                }
             }
         }
 

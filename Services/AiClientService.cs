@@ -115,7 +115,10 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
             return result;
         }
 
-        foreach (var prop in props.EnumerateObject()) result[prop.Name] = prop.Value.Clone();
+        foreach (var prop in props.EnumerateObject())
+        {
+            result[prop.Name] = prop.Value.Clone();
+        }
 
         return result;
     }
