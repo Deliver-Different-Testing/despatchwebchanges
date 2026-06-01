@@ -50,8 +50,14 @@ public sealed class JobChangeRequestService(
         {
             return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
         }
+        
+        var pairingIdFromDispatch = request.PairingId ?? await ctx.JobPartnerDispatches
+            .AsNoTracking()
+            .Where(d => d.JobId == request.JobId)
+            .Select(d => (int?)d.PartnerPairingId)
+            .FirstOrDefaultAsync(ct);
 
-        var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, request.PairingId, partnerTenantId: null, ct);
+        var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, pairingIdFromDispatch, partnerTenantId: null, ct);
         if (pairing is null)
         {
             return new JobChangeRequestResult { Success = false, Message = pairingError };
@@ -71,12 +77,7 @@ public sealed class JobChangeRequestService(
         }
 
         var stage = MapLifecycleStage(job.UcjbStatus);
-        // Local-vs-counterparty is decided by comparing the current tenant against the
-        // pairing's OwnerTenantId — the side that originally created the job is the owner
-        // on BOTH tenants' copies of the pairing row, so this works symmetrically.
-        // Falling back to OwnerTenant when the tenant claim is unavailable (background
-        // jobs, service-account paths, tests without a mocked tenant) preserves the
-        // prior hardcoded behaviour rather than mis-routing approvals.
+   
         var localTenantId = tenantInfo.GetCurrentTenantId();
         var isLocalOwner = string.IsNullOrEmpty(localTenantId)
                            || string.Equals(localTenantId, pairing.OwnerTenantId, StringComparison.Ordinal);
@@ -140,23 +141,18 @@ public sealed class JobChangeRequestService(
         var forward = await partnerClient.ForwardCreateAsync(pairing.Id, job.PartnerJobGuid.Value, sourceUuid,
             field.ToString(), currentValue, request.RequestedValue, request.Reason,
             decision.Mode.ToString(), decision.RequiresCommercialRefresh, ct);
-        if (!forward.Success)
+        if (forward.Success) return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        
+        Log.Error(
+            "Peer forward for change request {SourceUuid} (PartnerJobGuid={PartnerJobGuid}) failed: {Message}",
+            sourceUuid, job.PartnerJobGuid, forward.Message);
+        return new JobChangeRequestResult
         {
-            // Error tier, not warning: the two tenants are now out of sync until a retry
-            // succeeds. Surface a non-blocking warning in the response so the originating
-            // UI can tell the user the partner side did not receive the request.
-            Log.Error(
-                "Peer forward for change request {SourceUuid} (PartnerJobGuid={PartnerJobGuid}) failed: {Message}",
-                sourceUuid, job.PartnerJobGuid, forward.Message);
-            return new JobChangeRequestResult
-            {
-                Success = true,
-                Request = ToDto(row),
-                PeerForwardWarning = forward.Message ?? "Partner notification failed"
-            };
-        }
+            Success = true,
+            Request = ToDto(row),
+            PeerForwardWarning = forward.Message ?? "Partner notification failed"
+        };
 
-        return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
     public async Task<JobChangeRequestResult> ApproveAsync(int id, ApproveJobChangeRequestRequest request,
@@ -187,20 +183,12 @@ public sealed class JobChangeRequestService(
                 Message = $"Field '{row.UjcrFieldName}' is not supported in this version"
             };
         }
-
-        // Stamp the client's rowversion onto EF's original-values so SaveChangesAsync below
-        // performs the concurrency check at the DB level (UPDATE … WHERE rowversion = @orig)
-        // and throws DbUpdateConcurrencyException if another writer beat us to it.
+        
         if (request.RowVersion is not null)
         {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
         }
-
-        // Commercial refresh is the only step that can fail with a recoverable "no rate"
-        // outcome. Run it FIRST — before any column mutation — so a refresh failure leaves
-        // the row Pending and the job untouched. ApplyFieldChangeAsync uses ExecuteUpdateAsync
-        // which writes immediately (not through change tracking), so deferring the rate-card
-        // probe would leave a half-applied state on failure.
+        
         decimal? refreshedAmount = null;
         decimal? oldAmountForRefresh = null;
         var needsRefresh = row.UjcrRequiresCommercialRefresh
@@ -255,9 +243,7 @@ public sealed class JobChangeRequestService(
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
             await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
-
-            // Commercial refresh: apply the rate we successfully fetched at the top of the
-            // method. The fetch can't fail here — we'd have already returned BadRequest.
+            
             if (needsRefresh)
             {
                 row.UjcrOldCommercialAmount = oldAmountForRefresh;
@@ -272,9 +258,6 @@ public sealed class JobChangeRequestService(
             }
             catch (DbUpdateConcurrencyException)
             {
-                // Tx auto-rolls back on dispose; skip commit and surface the conflict
-                // outside the strategy. The execution strategy will not retry this — its
-                // ShouldRetryOn predicate only matches transient SqlException codes.
                 concurrencyConflict = true;
                 return;
             }
@@ -506,13 +489,6 @@ public sealed class JobChangeRequestService(
                 { Success = false, Message = $"No mirror job for PartnerJobGuid {payload.PartnerJobGuid}" };
         }
 
-        // Pairing resolution order on the peer-inbound path:
-        //   1) explicit PairingId in the payload (rarely useful — the peer IM's pairing.Id
-        //      and our local pairing.Id are independent values, but we honor it if set);
-        //   2) lookup by PartnerTenantId, which the peer IM stamps from its signature
-        //      filter — this is the common path and is signature-authoritative;
-        //   3) single-active-pairing fallback for legacy or self-contained tenants.
-        // Multiple active pairings with no disambiguator → fail loudly.
         var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, payload.PairingId,
             payload.PartnerTenantId, ct);
         if (pairing is null)
@@ -658,9 +634,8 @@ public sealed class JobChangeRequestService(
 
             if (payload.NewCommercialAmount.HasValue)
             {
-                // Capture the current rate before ExecuteUpdateAsync overwrites it. One scoped
-                // query + one update — the prior version did the read after the write, so old
-                // and new always ended up identical on rate changes.
+                // Capture the current rate before ExecuteUpdateAsync overwrites it —
+                // reading after would silently produce identical old/new amounts.
                 row.UjcrOldCommercialAmount = await ctx.TucJobs
                     .Where(j => j.UcjbId == row.UjcrJobId)
                     .Select(j => j.PartnerAgreedRate)
@@ -685,9 +660,6 @@ public sealed class JobChangeRequestService(
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
-    // Hard cap on the per-job request history we hand back. The list is for a UI panel,
-    // so 100 most-recent is plenty; pathological jobs with thousands of edits won't blow
-    // up the response or drag down the page render.
     private const int ListForJobMaxRows = 100;
 
     public async Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct)
@@ -1018,13 +990,9 @@ public sealed class JobChangeRequestService(
         }
     }
 
-    // Resolve the pairing to record on a change-request row. Order:
-    //   1) explicit pairingId (verified Active)
-    //   2) PartnerTenantId match (signature-authoritative when set by the peer IM)
-    //   3) single-active fallback
-    // The previous implementation silently picked the first Active pairing — for tenants
-    // with >1 partner this routed messages to the wrong peer non-deterministically. Now
-    // multi-active without a disambiguator errors loudly.
+    // PartnerTenantId is signature-authoritative when the peer IM sets it. Tenants
+    // with multiple active pairings and no disambiguator error loudly rather than
+    // silently routing to whichever Active row comes back first.
     private static async Task<(IntMgrPartnerPairing? Pairing, string? Error)> ResolveActivePairingAsync(
         DespatchContext ctx, int? requestedPairingId, string? partnerTenantId, CancellationToken ct)
     {

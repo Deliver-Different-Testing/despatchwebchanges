@@ -17,12 +17,14 @@ import ListItemText from '@mui/material/ListItemText';
 import IconButton from '@mui/material/IconButton';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import TuneIcon from '@mui/icons-material/Tune';
 import type {IJob} from '../JobDetails.types';
 import {JobProperty} from '../../../../../enums/job-property.enum';
 import {cardContainerSx} from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 
-const toggleSx = {...cardContainerSx as object, bgcolor: 'grey.50', px: 2, py: 1.5};
-const toggleDenseSx = {...cardContainerSx as object, bgcolor: 'grey.50', px: 1.5, py: 0.75};
+const togglesBodySx = {px: 2, py: 1.5} as const;
+const togglesBodyDenseSx = {px: 1.5, py: 0.75} as const;
 
 interface TogglePropertiesProps {
     job: IJob;
@@ -120,7 +122,9 @@ export const ToggleProperties = React.memo(({
 
     return (
         <Collapse in={isFieldVisible('checkboxes')} unmountOnExit>
-            <Box sx={dense ? toggleDenseSx : toggleSx}>
+            <Box sx={cardContainerSx}>
+                <SectionHeader icon={TuneIcon} title="Job Properties" dense={dense} />
+                <Box sx={dense ? togglesBodyDenseSx : togglesBodySx}>
                 <Box sx={{display: 'flex', flexWrap: 'wrap', gap: dense ? 0.25 : 0.5, justifyContent: 'center'}}>
                     <PropertyCheckbox
                         label="Truck" checked={!!job.truck} dense={dense}
@@ -197,6 +201,7 @@ export const ToggleProperties = React.memo(({
                         />
                     </Box>
                 </Collapse>
+                </Box>
             </Box>
         </Collapse>
     );

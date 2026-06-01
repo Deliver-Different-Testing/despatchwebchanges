@@ -398,8 +398,11 @@ public sealed class AiSummarizationService(
         {
             sb.AppendLine("EXPIRED items:");
             foreach (var item in expired.Take(20))
+            {
                 sb.AppendLine(
                     $"  - {item.Name} ({item.Code}): {item.ComplianceType} expired {item.ExpiryDate:yyyy-MM-dd}");
+            }
+
             if (expired.Count > 20)
             {
                 sb.AppendLine($"  ... and {expired.Count - 20} more");
@@ -415,7 +418,10 @@ public sealed class AiSummarizationService(
 
         sb.AppendLine("Expiring within 7 DAYS:");
         foreach (var item in expiringWeek.Take(10))
+        {
             sb.AppendLine($"  - {item.Name} ({item.Code}): {item.ComplianceType} expires {item.ExpiryDate:yyyy-MM-dd}");
+        }
+
         if (expiringWeek.Count > 10)
         {
             sb.AppendLine($"  ... and {expiringWeek.Count - 10} more");

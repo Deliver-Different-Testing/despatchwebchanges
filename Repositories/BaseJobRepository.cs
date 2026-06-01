@@ -340,17 +340,21 @@ public partial class BaseJobRepository(
 
         // Apply related jobs
         foreach (var job in jobs.Where(j => j.ParentId.HasValue))
+        {
             if (job.ParentId != null && relatedJobsDict.TryGetValue(job.ParentId.Value, out var related))
             {
                 job.RelatedJobs = related;
             }
+        }
 
         // Apply flights
         foreach (var job in jobs)
+        {
             if (flightsDict.TryGetValue(job.Id, out var flight))
             {
                 job.AssignedFlight = flight;
             }
+        }
     }
 
 
@@ -903,7 +907,10 @@ public partial class BaseJobRepository(
 
     protected static void UpdateNoteDate(List<TucNoteViewModel> notes, string tenantTimeZone)
     {
-        foreach (var note in notes) UpdateNoteDate(note, tenantTimeZone);
+        foreach (var note in notes)
+        {
+            UpdateNoteDate(note, tenantTimeZone);
+        }
     }
 
     private static void UpdateNoteDate(TucNoteViewModel note, string tenantTimeZone)

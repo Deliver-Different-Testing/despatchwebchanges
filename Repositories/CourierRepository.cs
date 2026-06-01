@@ -608,7 +608,9 @@ public class CourierRepository(
                     .ToList();
 
                 foreach (var area in columnAreas)
+                {
                     assignedAreas.Add(area.Name);
+                }
 
                 if (columnAreas.Count != 0)
                 {
@@ -2023,7 +2025,9 @@ public class CourierRepository(
 
         // Update job counts in memory
         foreach (var result in results)
+        {
             result.JobCount = jobCountDict.GetValueOrDefault(result.CourierId, 0);
+        }
 
         return results;
     }

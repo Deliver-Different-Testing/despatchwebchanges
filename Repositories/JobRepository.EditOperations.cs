@@ -315,7 +315,9 @@ public partial class JobRepository
                     if (job.Parent.InverseParent.Count != 0)
                     {
                         foreach (var siblingJob in job.Parent.InverseParent)
+                        {
                             siblingJob.UcjbWeight = weight;
+                        }
                     }
                 }
                 else
@@ -324,7 +326,9 @@ public partial class JobRepository
                     if (job.InverseParent != null && job.InverseParent.Count != 0)
                     {
                         foreach (var childJob in job.InverseParent)
+                        {
                             childJob.UcjbWeight = weight;
+                        }
                     }
                 }
 
@@ -412,7 +416,11 @@ public partial class JobRepository
                     throw new NullReferenceException("TucJobItemJobs is null");
                 }
 
-                foreach (var item in job.TucJobItemJobs) item.Pu = bool.Parse(value);
+                foreach (var item in job.TucJobItemJobs)
+                {
+                    item.Pu = bool.Parse(value);
+                }
+
                 break;
             case JobProperty.TailLiftDo:
                 if (job.TucJobItemJobs == null)
@@ -420,7 +428,11 @@ public partial class JobRepository
                     throw new NullReferenceException("TucJobItemJobs is null");
                 }
 
-                foreach (var item in job.TucJobItemJobs) item.Do = bool.Parse(value);
+                foreach (var item in job.TucJobItemJobs)
+                {
+                    item.Do = bool.Parse(value);
+                }
+
                 break;
             case JobProperty.DeliverToPrivateRes:
                 if (job.TucJobItemJobs == null)
@@ -428,7 +440,11 @@ public partial class JobRepository
                     throw new NullReferenceException("TucJobItemJobs is null");
                 }
 
-                foreach (var item in job.TucJobItemJobs) item.PrivateRes = bool.Parse(value);
+                foreach (var item in job.TucJobItemJobs)
+                {
+                    item.PrivateRes = bool.Parse(value);
+                }
+
                 break;
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
@@ -512,7 +528,9 @@ public partial class JobRepository
                     if (archive.InverseParent.Count != 0)
                     {
                         foreach (var siblingJob in archive.InverseParent)
+                        {
                             siblingJob.UcjbWeight = weight;
+                        }
                     }
                 }
                 else
@@ -521,7 +539,9 @@ public partial class JobRepository
                     if (archive.InverseParent.Count != 0)
                     {
                         foreach (var childJob in archive.InverseParent)
+                        {
                             childJob.UcjbWeight = weight;
+                        }
                     }
                 }
 

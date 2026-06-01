@@ -1,7 +1,7 @@
 import IDfrntStateParams from "./interfaces/DfrntStateParams.interface";
 import angular from 'angular';
 import type {ErrorType} from './react/pages/error-page/ErrorPage';
-import {openJobDetail, openJobInSearch} from './react/services/navigationService';
+import {openJobInSearch} from './react/services/navigationService';
 
 class RouterConfig {
     constructor(
@@ -221,7 +221,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'jobAddStopService', 'APP_CONFIG',
-                function(
+                function (
                     $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
@@ -301,7 +301,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
-                function(
+                function (
                     $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
@@ -375,7 +375,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
-                function(
+                function (
                     $scope: angular.IScope & {
                         layouts: { name: string }[];
                         currentLayoutName: string;
@@ -479,8 +479,8 @@ class RouterConfig {
             ],
         });
         return this;
-    }   
-    
+    }
+
     private configureDriverManagementState(): this {
         this.$stateProvider.state("driverManagement", {
             url: "/driverManagement",
@@ -514,7 +514,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'toastrService', 'APP_CONFIG',
-                function(
+                function (
                     $scope: angular.IScope,
                     toastrService: {
                         showSuccessToast: (m: string) => void;
@@ -526,10 +526,18 @@ class RouterConfig {
                 ) {
                     const showToast = (message: string, type: 'success' | 'warning' | 'error' | 'info') => {
                         switch (type) {
-                            case 'success': toastrService.showSuccessToast(message); break;
-                            case 'warning': toastrService.showWarningToast(message); break;
-                            case 'error': toastrService.showErrorToast(message); break;
-                            case 'info': toastrService.showInfoToast(message); break;
+                            case 'success':
+                                toastrService.showSuccessToast(message);
+                                break;
+                            case 'warning':
+                                toastrService.showWarningToast(message);
+                                break;
+                            case 'error':
+                                toastrService.showErrorToast(message);
+                                break;
+                            case 'info':
+                                toastrService.showInfoToast(message);
+                                break;
                         }
                     };
 
@@ -587,7 +595,7 @@ class RouterConfig {
                 }]
             },
             controller: ['$scope', 'APP_CONFIG', 'hereMapsApiKey',
-                function(
+                function (
                     $scope: angular.IScope,
                     appConfig: {
                         US_Customer: boolean;
@@ -598,8 +606,8 @@ class RouterConfig {
                 ) {
                     const isUsCustomer = appConfig?.US_Customer ?? false;
                     const mapCenter = isUsCustomer
-                        ? appConfig?.US_Coordinates_Center ?? { lat: 39.8097343, lng: -98.5556199 }
-                        : appConfig?.NZ_Coordinates_Center ?? { lat: -41.2865, lng: 174.7762 };
+                        ? appConfig?.US_Coordinates_Center ?? {lat: 39.8097343, lng: -98.5556199}
+                        : appConfig?.NZ_Coordinates_Center ?? {lat: -41.2865, lng: 174.7762};
 
                     window.ReactCourierMap!.mount('react-courier-map', {
                         isUsCustomer,
@@ -626,7 +634,7 @@ class RouterConfig {
                         const response = await $http.get<Record<string, string>>('dist/manifest.json');
                         return response.data;
                     } catch {
-                        return { 'vendor-react.js': 'vendor-react.js', 'errorPageReact.js': 'errorPageReact.js' };
+                        return {'vendor-react.js': 'vendor-react.js', 'errorPageReact.js': 'errorPageReact.js'};
                     }
                 }],
                 loadModule: ['$ocLazyLoad', 'manifest', async ($ocLazyLoad: oc.ILazyLoad, manifest: Record<string, string>) => {
@@ -635,7 +643,7 @@ class RouterConfig {
                     return $ocLazyLoad.load(getAssetPath('errorPageReact.js'));
                 }]
             },
-            controller: ['$scope', '$state', function($scope: angular.IScope, $state: angular.ui.IStateService) {
+            controller: ['$scope', '$state', function ($scope: angular.IScope, $state: angular.ui.IStateService) {
                 const containerId = `react-error-page-${errorType}`;
                 window.ReactErrorPage!.mount(containerId, {
                     errorType,

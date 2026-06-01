@@ -42,9 +42,10 @@ describe('RecurringJobFields', () => {
         expect(container.firstChild).toBeNull();
     });
 
-    it('renders section title', () => {
+    it('renders both card titles', () => {
         renderWithTheme(<RecurringJobFields {...createDefaultProps()} />);
-        expect(screen.getByText('Recurring Job Settings')).toBeInTheDocument();
+        expect(screen.getByText('Recurring Schedule')).toBeInTheDocument();
+        expect(screen.getByText('Schedule Dates')).toBeInTheDocument();
     });
 
     it('renders day-of-week chips with correct selection state and weekend coloring', () => {

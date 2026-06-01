@@ -319,9 +319,9 @@ describe('useHereMap', () => {
 
     describe('Loading State Calculation', () => {
         it('isLoading is true when API key is being fetched', () => {
-            // Make API call take longer
+            // Keep the promise pending so loading state stays true
             (configApi.getHereMapsKey as jest.Mock).mockImplementation(
-                () => new Promise((resolve) => setTimeout(() => resolve('key'), 1000))
+                () => new Promise(() => {})
             );
 
             const { result } = renderHook(() => useHereMap(), {

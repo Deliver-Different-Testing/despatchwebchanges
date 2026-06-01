@@ -1,35 +1,39 @@
 /**
- * RecurringJobFields - Days of week, frequency, holiday delivery, dates
+ * RecurringJobFields - Material 3 elevated cards for recurring schedule + dates.
+ *
+ * Card 1: Days of week, frequency, holiday rule.
+ * Card 2: First Due, Stop Date, Restart Date (anchored to pickup timezone).
  */
 
 import React from 'react';
 import Box from '@mui/material/Box';
+import Stack from '@mui/material/Stack';
+import Divider from '@mui/material/Divider';
 import Typography from '@mui/material/Typography';
 import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import InputLabel from '@mui/material/InputLabel';
-import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
+import ListItemButton from '@mui/material/ListItemButton';
 import RepeatIcon from '@mui/icons-material/Repeat';
+import EventIcon from '@mui/icons-material/Event';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import {alpha} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material/styles';
+import type {SvgIconProps} from '@mui/material/SvgIcon';
 import dayjs from 'dayjs';
-import {EditableField} from './EditableField';
 import type {IJob} from '../JobDetails.types';
-import {
-    cardContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
-} from '../JobDetails.styles';
+import {cardContainerSx} from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 import {DaysOfWeek, DaysOfWeekHelpers} from '../../../../../enums/days-of-week.enum';
 import {Frequency} from '../../../../../enums/frequency.enum';
 import {HolidayDeliveryOptions} from '../../../../../enums/holiday-delivery-options.enum';
 import {formatLongDate, getTimezoneAbbreviation} from '../../../../utils/dateUtils';
 
-// Route assignment moved to JobDetailHeader (sits before the Lock icon
-// on the job-number line) per 2026-05-26 UX feedback. RecurringJobFields
-// now owns just frequency / days / holiday / dates.
 interface RecurringJobFieldsProps {
     job: IJob;
     daysOfWeekArray: DaysOfWeek[];
@@ -69,6 +73,58 @@ const holidayOptions = [
     {value: HolidayDeliveryOptions.DeliverNextDay, label: 'Deliver Next Day'},
 ];
 
+const captionSx = {
+    display: 'block',
+    fontSize: '0.6875rem',
+    fontWeight: 600,
+    color: 'text.secondary',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    mb: 1,
+} satisfies SxProps<Theme>;
+
+const dateAvatarSx = (theme: Theme) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: '50%',
+    flexShrink: 0,
+    bgcolor: alpha(theme.palette.primary.main, 0.08),
+    color: theme.palette.primary.main,
+});
+
+const dateLabelSx = {
+    fontSize: '0.75rem',
+    color: 'text.secondary',
+    lineHeight: 1.3,
+} satisfies SxProps<Theme>;
+
+const dateValueSetSx = {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: 'text.primary',
+    lineHeight: 1.4,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+} satisfies SxProps<Theme>;
+
+const dateValueUnsetSx = {
+    ...dateValueSetSx,
+    fontWeight: 400,
+    color: 'text.disabled',
+} satisfies SxProps<Theme>;
+
+const dateRowSx = (dense: boolean): SxProps<Theme> => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: 2,
+    px: dense ? 2 : 2.5,
+    py: dense ? 1.25 : 1.75,
+});
+
 export function RecurringJobFields({
     job,
     daysOfWeekArray,
@@ -94,10 +150,8 @@ export function RecurringJobFields({
      *  with the pickup timezone abbreviation — no timezone for NZ tenants per
      *  `getTimezoneAbbreviation`'s NZ rule. */
     const pickupTz = job.pickUpTimeZone?.text ?? '';
-    const tzSuffix = (() => {
-        const abbr = getTimezoneAbbreviation(pickupTz);
-        return abbr ? ` ${abbr}` : '';
-    })();
+    const tzAbbr = getTimezoneAbbreviation(pickupTz);
+    const tzSuffix = tzAbbr ? ` ${tzAbbr}` : '';
     const dateTooltip = (label: string, date: dayjs.Dayjs | undefined, displayValue: string | undefined): string => {
         if (date && date.isValid()) return `${label}: ${formatLongDate(date)}${tzSuffix}`;
         if (displayValue) return `${label}: ${displayValue}${tzSuffix}`;
@@ -107,101 +161,113 @@ export function RecurringJobFields({
         ? formatLongDate(job.firstDue)
         : (job.firstDue ? String(job.firstDue) : undefined);
 
+    const dateRows: Array<{
+        label: string;
+        value: string | undefined;
+        Icon: React.ComponentType<SvgIconProps>;
+        onClick: () => void;
+        tooltipDate: dayjs.Dayjs | undefined;
+    }> = [
+        {label: 'First Due', value: firstDueDisplay, Icon: EventIcon, onClick: onEditFirstDue, tooltipDate: job.firstDue},
+        {label: 'Stop Date', value: job._stopDateStr, Icon: EventBusyIcon, onClick: onEditStopDate, tooltipDate: job.stopDate},
+        {label: 'Restart Date', value: job._restartDateStr, Icon: EventAvailableIcon, onClick: onEditRestartDate, tooltipDate: job.restartDate},
+    ];
+
+    const innerDividerMx = dense ? 2 : 2.5;
+    const bodyPx = dense ? 2 : 2.5;
+    const bodyPy = dense ? 1.5 : 2;
+
     return (
-        <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <RepeatIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Recurring Job Settings
-                </Typography>
-            </Box>
-            <Box sx={{p: 1.5}}>
-                {/* Days of Week */}
-                <Typography variant="caption" color="text.secondary" sx={{mb: 0.75, display: 'block', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.625rem'}}>
-                    Days of Week
-                </Typography>
-                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.5}}>
-                    {dayOptions.map(day => {
-                        const selected = daysOfWeekArray.includes(day.value);
-                        const selectedColor = isWeekend(day.value) ? 'secondary' : 'primary';
-                        return (
-                            <Chip
-                                key={day.value}
-                                label={day.label}
-                                size="small"
-                                color={selected ? selectedColor : 'default'}
-                                variant={selected ? 'filled' : 'outlined'}
-                                onClick={() => toggleDay(day.value)}
-                                clickable
-                                sx={{fontSize: '0.75rem', fontWeight: 500}}
-                            />
-                        );
-                    })}
+        <Stack spacing={1.5}>
+            {/* Card 1 — Recurring Schedule (days, frequency, holiday) */}
+            <Box sx={cardContainerSx}>
+                <SectionHeader
+                    icon={RepeatIcon}
+                    title="Recurring Schedule"
+                    subtitle="When this job repeats"
+                    dense={dense}
+                />
+                <Box sx={{px: bodyPx, py: bodyPy}}>
+                    <Typography sx={captionSx}>Days of Week</Typography>
+                    <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 2}}>
+                        {dayOptions.map(day => {
+                            const selected = daysOfWeekArray.includes(day.value);
+                            const selectedColor = isWeekend(day.value) ? 'secondary' : 'primary';
+                            return (
+                                <Chip
+                                    key={day.value}
+                                    label={day.label}
+                                    size="small"
+                                    color={selected ? selectedColor : 'default'}
+                                    variant={selected ? 'filled' : 'outlined'}
+                                    onClick={() => toggleDay(day.value)}
+                                    clickable
+                                    sx={{fontSize: '0.75rem', fontWeight: 500}}
+                                />
+                            );
+                        })}
+                    </Box>
+                    <Stack direction="row" spacing={1.5}>
+                        <FormControl size="small" sx={{flex: 1}}>
+                            <InputLabel>Frequency</InputLabel>
+                            <Select
+                                value={job.frequency ?? Frequency.None}
+                                label="Frequency"
+                                onChange={(e) => onFrequencyChange(Number(e.target.value))}
+                            >
+                                {frequencyOptions.map(opt => (
+                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <FormControl size="small" sx={{flex: 1}}>
+                            <InputLabel>Holiday</InputLabel>
+                            <Select
+                                value={job.holidayDeliveryOption ?? HolidayDeliveryOptions.DontBook}
+                                label="Holiday"
+                                onChange={(e) => onHolidayOptionChange(Number(e.target.value))}
+                            >
+                                {holidayOptions.map(opt => (
+                                    <MenuItem key={opt.value} value={opt.value}>{opt.label}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Stack>
                 </Box>
-
-                {/* Frequency & Holiday Options */}
-                <Stack direction="row" spacing={1.5} sx={{mb: 1.5}}>
-                    <FormControl size="small" sx={{minWidth: 140}}>
-                        <InputLabel sx={{fontSize: '0.8125rem'}}>Frequency</InputLabel>
-                        <Select
-                            value={job.frequency ?? Frequency.None}
-                            label="Frequency"
-                            onChange={(e) => onFrequencyChange(Number(e.target.value))}
-                            sx={{fontSize: '0.8125rem'}}
-                        >
-                            {frequencyOptions.map(opt => (
-                                <MenuItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{minWidth: 140}}>
-                        <InputLabel sx={{fontSize: '0.8125rem'}}>Holiday</InputLabel>
-                        <Select
-                            value={job.holidayDeliveryOption ?? HolidayDeliveryOptions.DontBook}
-                            label="Holiday"
-                            onChange={(e) => onHolidayOptionChange(Number(e.target.value))}
-                            sx={{fontSize: '0.8125rem'}}
-                        >
-                            {holidayOptions.map(opt => (
-                                <MenuItem key={opt.value} value={opt.value}>
-                                    {opt.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                </Stack>
-
-                {/* Dates — wrapped in Tooltips that always carry the pickup
-                    timezone abbreviation so dispatchers across regions know
-                    which calendar the schedule reads against. */}
-                <Tooltip title={dateTooltip('First Due', job.firstDue, firstDueDisplay)} placement="top-start" arrow>
-                    <Box>
-                        <EditableField
-                            icon="event" label="First Due" value={firstDueDisplay}
-                            onClick={onEditFirstDue} dense={dense}
-                        />
-                    </Box>
-                </Tooltip>
-                <Tooltip title={dateTooltip('Stop Date', job.stopDate, job._stopDateStr)} placement="top-start" arrow>
-                    <Box>
-                        <EditableField
-                            icon="event_busy" label="Stop Date" value={job._stopDateStr}
-                            onClick={onEditStopDate} dense={dense}
-                        />
-                    </Box>
-                </Tooltip>
-                <Tooltip title={dateTooltip('Restart Date', job.restartDate, job._restartDateStr)} placement="top-start" arrow>
-                    <Box>
-                        <EditableField
-                            icon="event_available" label="Restart Date" value={job._restartDateStr}
-                            onClick={onEditRestartDate} dense={dense}
-                        />
-                    </Box>
-                </Tooltip>
             </Box>
-        </Box>
+
+            {/* Card 2 — Schedule Dates (always pickup-timezone anchored) */}
+            <Box sx={cardContainerSx}>
+                <SectionHeader
+                    icon={EventIcon}
+                    title="Schedule Dates"
+                    subtitle="Anchored to pickup timezone"
+                    dense={dense}
+                />
+                {dateRows.map((row, index) => {
+                    const {Icon} = row;
+                    const isSet = !!row.value;
+                    return (
+                        <React.Fragment key={row.label}>
+                            {index > 0 && <Divider sx={{mx: innerDividerMx}} />}
+                            <Tooltip title={dateTooltip(row.label, row.tooltipDate, row.value)} placement="top-start" arrow>
+                                <ListItemButton onClick={row.onClick} sx={dateRowSx(dense)}>
+                                    <Box sx={dateAvatarSx}>
+                                        <Icon sx={{fontSize: 20}} />
+                                    </Box>
+                                    <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0}}>
+                                        <Typography sx={dateLabelSx}>{row.label}</Typography>
+                                        <Typography sx={isSet ? dateValueSetSx : dateValueUnsetSx}>
+                                            {isSet ? row.value : 'Not set'}
+                                        </Typography>
+                                    </Box>
+                                    <ChevronRightIcon sx={{color: 'text.secondary', fontSize: 20, flexShrink: 0}} />
+                                </ListItemButton>
+                            </Tooltip>
+                        </React.Fragment>
+                    );
+                })}
+            </Box>
+        </Stack>
     );
 }

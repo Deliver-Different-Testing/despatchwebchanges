@@ -383,9 +383,15 @@ public partial class JobRepository(
         }
 
         // Finally, update all jobs to the locked state
-        foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId))) d.UcjbLocked = true;
+        foreach (var d in dbData.Where(j => processedJobIds.Contains(j.UcjbId)))
+        {
+            d.UcjbLocked = true;
+        }
 
-        foreach (var d in dbDataArchive.Where(j => processedJobIds.Contains(j.UcjbId))) d.UcjbLocked = 1;
+        foreach (var d in dbDataArchive.Where(j => processedJobIds.Contains(j.UcjbId)))
+        {
+            d.UcjbLocked = 1;
+        }
 
         try
         {
@@ -442,7 +448,9 @@ public partial class JobRepository(
         await Task.WhenAll(activeTask, archiveTask);
 
         foreach (var jobId in jobIds)
+        {
             Log.Information("Job {JobId} marked as voided via bulk upload", jobId);
+        }
     }
 
     /// <summary>
@@ -460,7 +468,10 @@ public partial class JobRepository(
     {
         try
         {
-            foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
+            foreach (var jobId in jobIds)
+            {
+                await Context.Procedures.uspRestoreJobAsync(jobId);
+            }
         }
         catch (Exception e)
         {
@@ -482,7 +493,10 @@ public partial class JobRepository(
             return;
         }
 
-        foreach (var jobId in jobIds) await Context.Procedures.uspReDespatchJobAsync(jobId);
+        foreach (var jobId in jobIds)
+        {
+            await Context.Procedures.uspReDespatchJobAsync(jobId);
+        }
     }
 
     /// <summary>
@@ -496,7 +510,10 @@ public partial class JobRepository(
             return;
         }
 
-        foreach (var jobId in jobIds) await Context.Procedures.uspReassignJobAsync(jobId);
+        foreach (var jobId in jobIds)
+        {
+            await Context.Procedures.uspReassignJobAsync(jobId);
+        }
     }
 
     /// <summary>
@@ -784,7 +801,10 @@ public partial class JobRepository(
                 return;
             }
 
-            foreach (var jobId in jobIds) await Context.Procedures.uspRestoreJobAsync(jobId);
+            foreach (var jobId in jobIds)
+            {
+                await Context.Procedures.uspRestoreJobAsync(jobId);
+            }
         }
         catch (Exception e)
         {
@@ -2605,7 +2625,10 @@ public partial class JobRepository(
             .Take(pageSize)
             .ToList();
 
-        foreach (var bulkJob in bulkJobs) bulkJob.AngularId = Guid.NewGuid();
+        foreach (var bulkJob in bulkJobs)
+        {
+            bulkJob.AngularId = Guid.NewGuid();
+        }
 
         var hasMore = (page + 1) * pageSize < totalCount;
 
@@ -4814,7 +4837,9 @@ public partial class JobRepository(
         if (currentTotal == 0 || newAmount == 0)
         {
             foreach (var line in lines)
+            {
                 line.ChargeAmount = 0;
+            }
         }
         else
         {

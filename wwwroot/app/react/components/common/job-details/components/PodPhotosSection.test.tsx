@@ -67,7 +67,7 @@ describe('PodPhotosSection', () => {
         );
 
         expect(screen.getByText('Delivery Photos')).toBeInTheDocument();
-        expect(screen.getByText('(2)')).toBeInTheDocument();
+        expect(screen.getByText('2 photos')).toBeInTheDocument();
         expect(screen.getByText('Pickup Photos')).toBeInTheDocument();
     });
 

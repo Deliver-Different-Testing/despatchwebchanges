@@ -48,12 +48,12 @@ import {getMinsSelectionOptions} from "../../functions/MinsSelectionOptions";
 import DispatchBoxes from "./enums/DispatchBoxes";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import {setAiEnabled} from "../../functions/aiSettings";
-import ITaskItemConfig from "../../enums/task-item-config";
 import CurrentWorkLists from "./enums/CurrentWorkLists";
 import {fetchClearListJobs, fetchDispatchJobs} from "../../react/services/jobSearchApi";
 import {queryKeys} from "../../react/query/queryClient";
 import angular from "angular";
 import {DispatchJob} from "../../react/interfaces";
+import ITaskItemConfig from "../../interfaces/task-item-config";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);

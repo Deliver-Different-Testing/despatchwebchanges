@@ -69,7 +69,9 @@ public class TaskRepository(
             .ToListAsync();
 
         foreach (var task in tasks)
+        {
             task.DueDate = TimeZoneHelper.SetDateTimeWithTimeZone(task.DueDate, tenantTimeZone);
+        }
 
         return tasks;
     }

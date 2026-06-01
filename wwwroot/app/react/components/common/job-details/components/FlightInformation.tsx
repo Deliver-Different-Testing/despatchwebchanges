@@ -16,10 +16,8 @@ import type {Dayjs} from 'dayjs';
 import {
     cardContainerSx,
     cardNotesContainerSx,
-    sectionToolbarSx,
-    sectionToolbarTitleSx,
-    sectionToolbarIconSx,
 } from '../JobDetails.styles';
+import {SectionHeader} from './SectionHeader';
 import nationwideApi from '../../../../services/nationwideApi';
 
 interface FlightInformationProps {
@@ -163,30 +161,32 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
 
     return (
         <Box sx={cardContainerSx}>
-            <Box sx={sectionToolbarSx}>
-                <FlightIcon sx={sectionToolbarIconSx} />
-                <Typography variant="subtitle2" sx={sectionToolbarTitleSx}>
-                    Flight Information
-                </Typography>
-                <Box sx={{ml: 'auto', display: 'flex', alignItems: 'center', gap: 1}}>
-                    {webhookStatus === 'active' && (
-                        <Chip size="small" label="Webhooks Active" color="success" />
-                    )}
-                    {webhookStatus === 'inactive' && (
-                        <Chip size="small" label="Webhooks Inactive" color="error" />
-                    )}
-                    <Button
-                        size="small"
-                        variant="outlined"
-                        startIcon={webhookStatus === 'loading' ? <CircularProgress size={14} /> : <CellTowerIcon sx={{fontSize: 16}} />}
-                        onClick={checkWebhookStatus}
-                        disabled={webhookStatus === 'loading'}
-                        sx={{fontSize: '0.6875rem', py: 0.25, px: 1, minWidth: 0}}
-                    >
-                        {webhookStatus === 'loading' ? 'Checking...' : 'Check Webhooks'}
-                    </Button>
-                </Box>
-            </Box>
+            <SectionHeader
+                icon={FlightIcon}
+                title="Flight Information"
+                subtitle={segments.length > 1 ? `${segments.length} segments` : undefined}
+                endAction={
+                    <>
+                        {webhookStatus === 'active' && (
+                            <Chip size="small" label="Webhooks Active" color="success" />
+                        )}
+                        {webhookStatus === 'inactive' && (
+                            <Chip size="small" label="Webhooks Inactive" color="error" />
+                        )}
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            color="inherit"
+                            startIcon={webhookStatus === 'loading' ? <CircularProgress size={14} /> : <CellTowerIcon sx={{fontSize: 16}} />}
+                            onClick={checkWebhookStatus}
+                            disabled={webhookStatus === 'loading'}
+                            sx={{fontSize: '0.75rem'}}
+                        >
+                            {webhookStatus === 'loading' ? 'Checking...' : 'Check Webhooks'}
+                        </Button>
+                    </>
+                }
+            />
             {segments.map((segment, index) => (
                 <React.Fragment key={index}>
                     <FlightSegmentRow segment={segment} />

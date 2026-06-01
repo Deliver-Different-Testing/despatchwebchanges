@@ -22,6 +22,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
+import {ErrorBoundary} from '../../components/common/error-boundary';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
 import {
     PrebookListModel,
@@ -310,17 +311,19 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                         </Typography>
                     </Toolbar>
                     <Box sx={{flex: 1, overflow: 'auto'}}>
-                        <JobDetails
-                            key={selectedJobId ?? 'none'}
-                            config={{
-                                jobId: selectedJobId ?? undefined,
-                                isRecurringJob: true,
-                                isBulkJob: false,
-                                isUsCustomer,
-                                showToast,
-                                onJobUpdate: handleRefresh,
-                            } satisfies MountJobDetailsConfig}
-                        />
+                        <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
+                            <JobDetails
+                                key={selectedJobId ?? 'none'}
+                                config={{
+                                    jobId: selectedJobId ?? undefined,
+                                    isRecurringJob: true,
+                                    isBulkJob: false,
+                                    isUsCustomer,
+                                    showToast,
+                                    onJobUpdate: handleRefresh,
+                                } satisfies MountJobDetailsConfig}
+                            />
+                        </ErrorBoundary>
                     </Box>
                 </Card>
             </Box>
