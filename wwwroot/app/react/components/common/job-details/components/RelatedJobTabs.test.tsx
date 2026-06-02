@@ -53,14 +53,15 @@ describe('RelatedJobTabs', () => {
         expect(screen.getByText('J-003')).toBeInTheDocument();
     });
 
-    it('uses full jobNo for recurring jobs when siblings do not share a prefix', () => {
-        // Label policy (2026-05-26): parent (first) always shows full jobNo;
-        // children show '*<suffix>' only if their jobNo starts with the
-        // parent's. 'J-001' / 'J-002' don't share a prefix, so both fall
-        // back to their full jobNo regardless of the recurring flag.
+    it('renders synthetic "Job #N" labels for recurring jobs', () => {
+        // Recurring booking templates routinely have null UcbkJobNumber, so
+        // the parent/suffix policy would just produce blank tabs. The
+        // AngularJS template used `Job #{{$index + 1}}` for this case; we
+        // restore that here so multi-leg recurring jobs are navigable.
         const jobs = [
-            createMockJob({id: 1, jobNo: 'J-001'}),
-            createMockJob({id: 2, jobNo: 'J-002'}),
+            createMockJob({id: 1, jobNo: undefined as unknown as string}),
+            createMockJob({id: 2, jobNo: undefined as unknown as string}),
+            createMockJob({id: 3, jobNo: 'J-003'}),
         ];
         renderWithTheme(
             <RelatedJobTabs
@@ -71,14 +72,17 @@ describe('RelatedJobTabs', () => {
             />
         );
 
-        expect(screen.getByText('J-001')).toBeInTheDocument();
-        expect(screen.getByText('J-002')).toBeInTheDocument();
-        expect(screen.queryByText('Job #1')).not.toBeInTheDocument();
+        expect(screen.getByText('Job #1')).toBeInTheDocument();
+        expect(screen.getByText('Job #2')).toBeInTheDocument();
+        expect(screen.getByText('Job #3')).toBeInTheDocument();
+        // The real jobNo, when present, stays on the title attribute only.
+        expect(screen.queryByText('J-003')).not.toBeInTheDocument();
     });
 
-    it('abbreviates child tab labels using parent jobNo prefix', () => {
+    it('abbreviates child tab labels using parent jobNo prefix on non-recurring jobs', () => {
         // Parent KT2103CRT + child KT2103CRTLHP → child renders as '*LHP'.
-        // Mirrors the RunViewer Detail panel convention.
+        // Mirrors the RunViewer Detail panel convention. Only applies to
+        // non-recurring jobs — recurring jobs use the synthetic labels above.
         const jobs = [
             createMockJob({id: 1, jobNo: 'KT2103CRT'}),
             createMockJob({id: 2, jobNo: 'KT2103CRTDEL'}),
@@ -88,7 +92,7 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={true}
+                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );

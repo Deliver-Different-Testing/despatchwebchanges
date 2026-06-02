@@ -47,6 +47,27 @@ describe('JobDetailHeader', () => {
         expect(screen.queryByText('Dispatched')).not.toBeInTheDocument();
     });
 
+    it('hides the job-number Typography for prebook/recurring jobs', () => {
+        // Recurring booking templates have null UcbkJobNumber in production —
+        // the AngularJS template never displayed a number here, so we mirror
+        // that. The toolbar buttons must still render so the operator can
+        // toggle density / edit mode / lock from the recurring detail panel.
+        const job = createMockJob({preBook: true, jobNo: undefined as unknown as string});
+        renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+        expect(screen.queryByText('J-1001')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('Compact view')).toBeInTheDocument();
+        expect(screen.getByLabelText('Show/Hide fields')).toBeInTheDocument();
+        expect(screen.getByLabelText('Lock Job')).toBeInTheDocument();
+    });
+
+    it('still renders the partner-job chip on a recurring partner job', () => {
+        // The chip lives outside the gated jobNo Typography — gating jobNo
+        // should not accidentally hide the chip for recurring partner jobs.
+        const job = createMockJob({preBook: true, isPartnerJob: true});
+        renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);
+        expect(screen.getByText('Partner Job')).toBeInTheDocument();
+    });
+
     it('calls onStatusClick when status chip is clicked', () => {
         const onStatusClick = jest.fn();
         renderWithTheme(<JobDetailHeader {...createDefaultProps({onStatusClick})} />);
@@ -98,10 +119,31 @@ describe('JobDetailHeader', () => {
         expect(onResetFieldVisibility).toHaveBeenCalledTimes(1);
     });
 
-    it('never renders the AI Summary toggle (feature disabled)', () => {
-        renderWithTheme(<JobDetailHeader {...createDefaultProps()} />);
+    it('hides the AI Summary toggle when aiEnabled is false', () => {
+        renderWithTheme(<JobDetailHeader {...createDefaultProps({aiEnabled: false})} />);
         expect(screen.queryByLabelText('AI Summary')).not.toBeInTheDocument();
         expect(screen.queryByLabelText('Hide AI Summary')).not.toBeInTheDocument();
+    });
+
+    it('shows the AI Summary toggle when aiEnabled is true', () => {
+        renderWithTheme(<JobDetailHeader {...createDefaultProps({aiEnabled: true})} />);
+        expect(screen.getByLabelText('AI Summary')).toBeInTheDocument();
+    });
+
+    it('flips the AI Summary tooltip to "Hide AI Summary" when the panel is open', () => {
+        renderWithTheme(
+            <JobDetailHeader {...createDefaultProps({aiEnabled: true, showAiPanel: true})} />
+        );
+        expect(screen.getByLabelText('Hide AI Summary')).toBeInTheDocument();
+    });
+
+    it('calls onToggleAiPanel when the AI Summary button is clicked', () => {
+        const onToggleAiPanel = jest.fn();
+        renderWithTheme(
+            <JobDetailHeader {...createDefaultProps({aiEnabled: true, onToggleAiPanel})} />
+        );
+        fireEvent.click(screen.getByLabelText('AI Summary'));
+        expect(onToggleAiPanel).toHaveBeenCalledTimes(1);
     });
 
     it('shows/hides POD report menu based on job done status', () => {

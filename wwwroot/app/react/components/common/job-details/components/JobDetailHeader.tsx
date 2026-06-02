@@ -20,6 +20,7 @@ import DensitySmallIcon from '@mui/icons-material/DensitySmall';
 import DensityMediumIcon from '@mui/icons-material/DensityMedium';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import CheckIcon from '@mui/icons-material/Check';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
@@ -37,9 +38,12 @@ interface JobDetailHeaderProps {
     viewDensityLabel: string;
     isEditMode: boolean;
     routes: RouteOption[];
+    aiEnabled?: boolean;
+    showAiPanel?: boolean;
     onToggleDensity: () => void;
     onToggleEditMode: () => void;
     onResetFieldVisibility: () => void;
+    onToggleAiPanel?: () => void;
     onStatusClick: () => void;
     onPodReport: () => void;
     onPodSpreadsheet: () => void;
@@ -95,9 +99,12 @@ export function JobDetailHeader({
                                     viewDensityLabel,
                                     isEditMode,
                                     routes,
+                                    aiEnabled,
+                                    showAiPanel,
                                     onToggleDensity,
                                     onToggleEditMode,
                                     onResetFieldVisibility,
+                                    onToggleAiPanel,
                                     onStatusClick,
                                     onPodReport,
                                     onPodSpreadsheet,
@@ -123,9 +130,17 @@ export function JobDetailHeader({
         <Box sx={toolbarSx}>
             {/* Job identity */}
             <Box sx={styles.jobIdentity}>
-                <Typography sx={jobNoSx}>
-                    {job.jobNo}
-                </Typography>
+                {/* Recurring jobs never had a real UcbkJobNumber to show — the
+                    AngularJS detail template kept the header empty for them and
+                    used synthetic 'Job #N' labels in the tabs instead. The React
+                    port added this Typography unconditionally, which renders as
+                    a blank slot for prebook jobs. Gate it on !preBook to restore
+                    the AngularJS behaviour. */}
+                {!job.preBook && (
+                    <Typography sx={jobNoSx}>
+                        {job.jobNo}
+                    </Typography>
+                )}
                 {job.isPartnerJob && (
                     <Chip
                         icon={<HandshakeIcon sx={{fontSize: 14}}/>}
@@ -202,6 +217,21 @@ export function JobDetailHeader({
                         }
                     </IconButton>
                 </Tooltip>
+
+                {/* AI Summary Panel Toggle — per-user opt-in via dashboard settings.
+                    Auto-fetches when the panel mounts, so keep collapsed by default
+                    to avoid burning tokens on every job open. */}
+                {aiEnabled && (
+                    <Tooltip title={showAiPanel ? 'Hide AI Summary' : 'AI Summary'}>
+                        <IconButton
+                            size="small"
+                            color={showAiPanel ? 'primary' : 'default'}
+                            onClick={onToggleAiPanel}
+                        >
+                            <AutoAwesomeIcon sx={{fontSize: ICON_SIZE}}/>
+                        </IconButton>
+                    </Tooltip>
+                )}
 
                 {/* View Density Toggle */}
                 <Tooltip title={`${isDense ? 'Normal' : 'Compact'} view`}>
