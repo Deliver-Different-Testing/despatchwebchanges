@@ -38,6 +38,9 @@ import {useRouteList} from '../../../hooks/useRecurringJobsApi';
 import {WarningBanner} from './components/WarningBanner';
 import {RelatedJobTabs} from './components/RelatedJobTabs';
 import {JobDetailHeader} from './components/JobDetailHeader';
+import {AiSummaryCard} from '../ai-summary-card/AiSummaryCard';
+import {summarizeJob} from '../../../services/aiAssistantApi';
+import {isAiEnabled} from '../../../../functions/aiSettings';
 import {MetricsGrid} from './components/MetricsGrid';
 import {RateAcceptanceBanner} from './components/RateAcceptanceBanner';
 import {AddressSection} from './components/AddressSection';
@@ -220,6 +223,12 @@ export function JobDetails({config}: JobDetailsProps) {
 
     // Track which job tab is selected
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+
+    // AI panel state — per-user opt-in via dashboard settings. Collapsed by
+    // default; expanding mounts AiSummaryCard which auto-fetches summarizeJob.
+    const aiEnabled = useMemo(() => isAiEnabled(), []);
+    const [showAiPanel, setShowAiPanel] = useState(false);
+    const handleToggleAiPanel = useCallback(() => setShowAiPanel(prev => !prev), []);
     // Keep jobRef synchronously current so handlers never read a stale job
     const job: IJob | undefined = sortedRelatedJobs[selectedTabIndex] ?? sortedRelatedJobs[0];
 
@@ -429,9 +438,12 @@ export function JobDetails({config}: JobDetailsProps) {
                     viewDensityLabel={viewDensityLabel}
                     isEditMode={isEditMode}
                     routes={routes}
+                    aiEnabled={aiEnabled}
+                    showAiPanel={showAiPanel}
                     onToggleDensity={toggleDensity}
                     onToggleEditMode={toggleEditMode}
                     onResetFieldVisibility={handleResetFieldVisibility}
+                    onToggleAiPanel={handleToggleAiPanel}
                     onStatusClick={actions.handleStatusClick}
                     onPodReport={actions.handlePodReport}
                     onPodSpreadsheet={actions.handlePodSpreadsheet}
@@ -439,6 +451,18 @@ export function JobDetails({config}: JobDetailsProps) {
                     onLockToggle={actions.handleLockToggle}
                     onRouteChange={actions.handleRouteChange}
                 />
+
+                {/* AI Summary Panel — toggled from the header. key={job.id}
+                    forces a fresh fetch when switching between related-job tabs. */}
+                {aiEnabled && showAiPanel && (
+                    <Box sx={{mx: 1.5, mt: 1}}>
+                        <AiSummaryCard
+                            key={job.id}
+                            title="AI Job Briefing"
+                            fetchSummary={(signal) => summarizeJob(job.id, {signal})}
+                        />
+                    </Box>
+                )}
 
                 {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)
                     queue for the other tenant's approval; notes / refs / contacts sync
