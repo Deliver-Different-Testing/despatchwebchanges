@@ -18,9 +18,11 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         List<AiMessage> messages,
         int maxTokens,
         List<AiToolDefinition> tools = null,
+        string forceToolName = null,
+        bool enableCaching = false,
         CancellationToken ct = default)
     {
-        var messageParams = BuildMessageParameters(systemPrompt, messages, maxTokens, tools);
+        var messageParams = BuildMessageParameters(systemPrompt, messages, maxTokens, tools, forceToolName, enableCaching);
 
         var response = await _client.Messages.Create(messageParams, ct);
 
@@ -76,7 +78,9 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
         string systemPrompt,
         List<AiMessage> messages,
         int maxTokens,
-        List<AiToolDefinition> tools = null)
+        List<AiToolDefinition> tools = null,
+        string forceToolName = null,
+        bool enableCaching = false)
     {
         var anthropicMessages = messages.Select(msg => new MessageParam
         {
@@ -101,7 +105,11 @@ public sealed class AiClientService(IOptions<AnthropicSettings> settings) : IAiC
                         Required = ParseToolRequired(t.InputSchemaJson)
                     }
                 }).ToList()
-                : null
+                : null,
+            ToolChoice = string.IsNullOrEmpty(forceToolName)
+                ? null
+                : new ToolChoiceTool { Name = forceToolName },
+            CacheControl = enableCaching ? new CacheControlEphemeral() : null
         };
     }
 

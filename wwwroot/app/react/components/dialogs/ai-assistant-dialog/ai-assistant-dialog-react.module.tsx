@@ -9,7 +9,7 @@
 import React from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import {ThemeProvider} from '@mui/material/styles';
-import { AiSummaryPanel } from '../../common/ai-summary-panel/AiSummaryPanel';
+import { AiSummaryCard } from '../../common/ai-summary-card/AiSummaryCard';
 import { getTheme } from '../../../theme/muiTheme';
 import { summarizeJob, summarizeOperations } from '../../../services/aiAssistantApi';
 
@@ -26,10 +26,9 @@ function renderSummaryPanel(container: HTMLElement, jobId: number): void {
 
     root.render(
         <ThemeProvider theme={currentTheme}>
-            <AiSummaryPanel
-                title="AI Job Summary"
+            <AiSummaryCard
+                title="AI Job Briefing"
                 fetchSummary={(signal) => summarizeJob(jobId, {signal})}
-                autoFetch={true}
             />
         </ThemeProvider>
     );
@@ -46,9 +45,9 @@ function renderOperationsInsightsPanel(container: HTMLElement): void {
 
     root.render(
         <ThemeProvider theme={currentTheme}>
-            <AiSummaryPanel
+            <AiSummaryCard
                 title="AI Operations Insights"
-                fetchSummary={() => summarizeOperations()}
+                fetchSummary={(signal) => summarizeOperations({signal})}
             />
         </ThemeProvider>
     );

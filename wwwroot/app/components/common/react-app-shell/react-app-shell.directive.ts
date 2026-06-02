@@ -1,5 +1,4 @@
 import angular from 'angular';
-import { initAiSettings } from '../../../functions/aiSettings';
 import { openHubUrl, openJobInSearch } from '../../../react/services/navigationService';
 /**
  * React App Shell Directive
@@ -8,8 +7,25 @@ import { openHubUrl, openJobInSearch } from '../../../react/services/navigationS
  * This makes it easy to use the React toolbar and sidenav across all pages.
  */
 
+interface BreadcrumbItem {
+    label: string;
+    href?: string;
+}
+
+function buildBreadcrumbs(section: string | undefined, title: string | undefined): BreadcrumbItem[] {
+    const crumbs: BreadcrumbItem[] = [];
+    if (section) {
+        crumbs.push({label: section});
+    }
+    if (title) {
+        crumbs.push({label: title});
+    }
+    return crumbs;
+}
+
 interface ReactAppShellScope extends angular.IScope {
     title: string;
+    section?: string;
     messagesCount?: number;
     onMessagesClick?: (event: { $event: MouseEvent }) => void;
     views?: any[];
@@ -44,6 +60,7 @@ function reactAppShellDirective(
         restrict: 'E',
         scope: {
             title: '@',
+            section: '@?',
             messagesCount: '<?',
             onMessagesClick: '&?',
             views: '<?',
@@ -267,6 +284,7 @@ function reactAppShellDirective(
                     // Mount the shell
                     ReactAppShell.mount(containerId, {
                         title: scope.title || 'Dashboard',
+                        breadcrumbs: buildBreadcrumbs(scope.section, scope.title),
                         firstName,
                         fullName,
                         isUsCustomer: APP_CONFIG.US_Customer,
@@ -284,10 +302,7 @@ function reactAppShellDirective(
                     mounted = true;
                     console.log('[ReactAppShellDirective] Mounted successfully');
 
-                    // Fetch server-side AI feature flag so isAiEnabled() reflects it
-                    await initAiSettings().catch(() => {/* non-fatal */});
-
-                    // Set up toolbar actions (after AI flag is resolved)
+                    // Set up toolbar actions
                     updateToolbarActions();
 
                     // Listen for state changes
@@ -308,6 +323,7 @@ function reactAppShellDirective(
             // Watch for changes to scope properties
             scope.$watchGroup([
                 'title',
+                'section',
                 'messagesCount',
                 'viewsLoading',
                 'currentLayoutName',
@@ -315,8 +331,10 @@ function reactAppShellDirective(
             ], () => {
                 if (mounted) {
                     const ReactAppShell = (window as any).ReactAppShell;
-                    if (ReactAppShell && scope.title) {
-                        ReactAppShell.updateTitle(scope.title);
+                    if (ReactAppShell) {
+                        ReactAppShell.updateBreadcrumbs(
+                            buildBreadcrumbs(scope.section, scope.title)
+                        );
                     }
                     updateToolbarActions();
                 }

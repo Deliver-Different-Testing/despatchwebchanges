@@ -11,6 +11,7 @@ import {ThemeProvider} from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import {AppShell} from './AppShell';
 import {getTheme} from '../../../theme/muiTheme';
+import type {BreadcrumbItem} from '../app-toolbar/AppToolbar';
 import {
     MessagesButton,
     RefreshButton,
@@ -85,7 +86,8 @@ export interface ToolbarActionsConfig {
 
 // State management
 interface AppShellState {
-    title: string;
+    title?: string;
+    breadcrumbs?: BreadcrumbItem[];
     firstName: string;
     fullName: string;
     isUsCustomer: boolean;
@@ -235,6 +237,7 @@ function renderShell(): void {
             <CssBaseline />
             <AppShell
                 title={shellState.title}
+                breadcrumbs={shellState.breadcrumbs}
                 firstName={shellState.firstName}
                 fullName={shellState.fullName}
                 isUsCustomer={shellState.isUsCustomer}
@@ -256,7 +259,8 @@ function renderShell(): void {
 export function mountAppShell(
     containerId: string,
     config: {
-        title: string;
+        title?: string;
+        breadcrumbs?: BreadcrumbItem[];
         firstName: string;
         fullName: string;
         isUsCustomer: boolean;
@@ -333,6 +337,17 @@ export function updateTitle(title: string): void {
 }
 
 /**
+ * Updates the breadcrumb trail. Pass an empty array to clear it and fall back
+ * to the legacy single-title rendering path.
+ */
+export function updateBreadcrumbs(breadcrumbs: BreadcrumbItem[]): void {
+    if (!shellState) return;
+
+    shellState.breadcrumbs = breadcrumbs.length > 0 ? breadcrumbs : undefined;
+    renderShell();
+}
+
+/**
  * Sets toolbar actions configuration
  */
 export function setToolbarActions(actions: ToolbarActionsConfig | null): void {
@@ -388,6 +403,7 @@ window.ReactAppShell = {
     update: updateAppShell,
     updateState: updateCurrentState,
     updateTitle: updateTitle,
+    updateBreadcrumbs: updateBreadcrumbs,
     setToolbarActions: setToolbarActions,
     updateToolbarAction: updateToolbarAction,
     unmount: unmountAppShell,
@@ -487,6 +503,7 @@ appShellReactModule.service('reactAppShellService', [
 
             updateState: updateCurrentState,
             updateTitle: updateTitle,
+            updateBreadcrumbs: updateBreadcrumbs,
 
             /**
              * Unmount and cleanup

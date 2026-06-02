@@ -31,6 +31,59 @@ describe('AppToolbar', () => {
             expect(screen.getByText('Test Dashboard')).toBeInTheDocument();
         });
 
+        it('should render a single-crumb fallback as the page heading when no breadcrumbs are provided', () => {
+            renderWithTheme(<AppToolbar {...defaultProps} />);
+            const heading = screen.getByRole('heading', {level: 1, name: 'Test Dashboard'});
+            expect(heading).toBeInTheDocument();
+        });
+
+        it('should render section + page when breadcrumbs are provided', () => {
+            renderWithTheme(
+                <AppToolbar
+                    {...defaultProps}
+                    title={undefined}
+                    breadcrumbs={[
+                        {label: 'Dashboards'},
+                        {label: 'Recurring Jobs'},
+                    ]}
+                />
+            );
+            expect(screen.getByText('Dashboards')).toBeInTheDocument();
+            expect(screen.getByText('Recurring Jobs')).toBeInTheDocument();
+            // Current page is the h1; ancestor is not
+            expect(screen.getByRole('heading', {level: 1})).toHaveTextContent('Recurring Jobs');
+        });
+
+        it('should not render ancestor crumbs as links when href is absent', () => {
+            renderWithTheme(
+                <AppToolbar
+                    {...defaultProps}
+                    title={undefined}
+                    breadcrumbs={[
+                        {label: 'Dashboards'},
+                        {label: 'Recurring Jobs'},
+                    ]}
+                />
+            );
+            // The breadcrumbs nav must exist...
+            expect(screen.getByLabelText('page navigation')).toBeInTheDocument();
+            // ...but no <a> elements inside it (ancestor crumb is plain text).
+            const nav = screen.getByLabelText('page navigation');
+            expect(nav.querySelectorAll('a')).toHaveLength(0);
+        });
+
+        it('should prefer breadcrumbs over title when both are provided', () => {
+            renderWithTheme(
+                <AppToolbar
+                    {...defaultProps}
+                    title="Legacy Title"
+                    breadcrumbs={[{label: 'New Title'}]}
+                />
+            );
+            expect(screen.queryByText('Legacy Title')).not.toBeInTheDocument();
+            expect(screen.getByText('New Title')).toBeInTheDocument();
+        });
+
         it('should render the logo with default URL', () => {
             renderWithTheme(<AppToolbar {...defaultProps} />);
             const logo = screen.getByAltText('DFRNT');

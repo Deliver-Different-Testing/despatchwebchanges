@@ -2,44 +2,13 @@ import {ContactID} from '../contants';
 
 const STORAGE_KEY = `aiEnabled_${ContactID}`;
 
-/** Cached server-side flag. null = not yet fetched (assume enabled to avoid flicker). */
-let _serverEnabled: boolean | null = null;
-
 /**
- * Fetches the server-side EnableAiFeatures flag and caches it.
- * Call once during app init (e.g. app shell mount).
- */
-export async function initAiSettings(): Promise<void> {
-    try {
-        const response = await fetch('/Ai/IsEnabled', {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            credentials: 'include',
-        });
-        if (response.ok) {
-            const data = await response.json() as { enabled: boolean };
-            _serverEnabled = data.enabled;
-        }
-    } catch {
-        // Network error — default to enabled so existing features don't break
-        _serverEnabled = null;
-    }
-}
-
-/**
- * Returns true only when AI is enabled both server-side (via Anthropic__EnableAiFeatures)
- * and by the user's per-account localStorage preference.
+ * Returns true when the signed-in user has opted in to AI features via
+ * the dashboard settings dialog. Per-user only — there is no server-side
+ * gate. Defaults to false: users have to turn it on themselves.
  */
 export function isAiEnabled(): boolean {
-    if (_serverEnabled === false) return false;
-    const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === null ? true : stored === 'true';
-}
-
-/** Returns true unless the server has explicitly disabled AI features.
- *  Unlike isAiEnabled(), this ignores the user's per-account preference
- *  so that the settings toggle remains visible for users to change. */
-export function isAiServerEnabled(): boolean {
-    return _serverEnabled !== false;
+    return localStorage.getItem(STORAGE_KEY) === 'true';
 }
 
 export function setAiEnabled(enabled: boolean): void {

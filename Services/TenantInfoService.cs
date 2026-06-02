@@ -203,6 +203,31 @@ public sealed class TenantInfoService(
         });
     }
     
+    /// <inheritdoc />
+    public async Task<int?> GetCurrentNpAgentIdAsync()
+    {
+        var contactId = GetContactId();
+        if (contactId == 0)
+        {
+            return null;
+        }
+
+        var cacheKey = $"np_agent_id_{contactId}";
+
+        return await cache.GetOrCreateAsync(cacheKey, async entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(8);
+
+            return await Context.TucClientContacts
+                .Where(c => c.UcctId == contactId
+                            && c.UcctClient != null
+                            && c.UcctClient.ClientTypeId == (int)ClientType.NetworkPartner
+                            && c.UcctClient.NpAgentId != null)
+                .Select(c => c.UcctClient.NpAgentId)
+                .FirstOrDefaultAsync();
+        });
+    }
+
     /// <summary>
     /// Gets the tenant's timezone ID string, defaulting to UTC if not set.
     /// </summary>

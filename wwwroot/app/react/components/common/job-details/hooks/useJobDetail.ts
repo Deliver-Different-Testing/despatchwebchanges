@@ -70,7 +70,9 @@ export function useJobDetail({
         if (!jobQuery.data) return [];
         const allJobs = [jobQuery.data.job, ...jobQuery.data.relatedJobs];
         allJobs.sort((a, b) =>
-            a.jobNo.localeCompare(b.jobNo, undefined, {numeric: true, sensitivity: 'base'})
+            // Recurring job templates can have a null jobNo until they're instantiated;
+            // fall back to '' so localeCompare doesn't crash.
+            (a.jobNo ?? '').localeCompare(b.jobNo ?? '', undefined, {numeric: true, sensitivity: 'base'})
         );
         return allJobs;
     }, [jobQuery.data]);

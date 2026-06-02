@@ -22,6 +22,7 @@ public interface ITenantInfoService : IDisposable
     int GetContactId();
     bool IsUsTenant();
     Task<Suggestion> GetStaffInfoAsync();
+    Task<int?> GetCurrentNpAgentIdAsync();
     string GetTenantTimeZone();
     DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
 }

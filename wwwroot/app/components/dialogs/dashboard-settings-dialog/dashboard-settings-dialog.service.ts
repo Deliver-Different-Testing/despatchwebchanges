@@ -4,7 +4,7 @@ import {IBox} from "../../../interfaces/layout.interfaces";
 import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
-import {isAiEnabled, isAiServerEnabled} from "../../../functions/aiSettings";
+import {isAiEnabled} from "../../../functions/aiSettings";
 import angular from 'angular';
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
@@ -86,7 +86,7 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
             showDashboards: canShowDashboards,
-            showAiToggle: isAiServerEnabled()
+            showAiToggle: true
         };
 
         if (!selectedRefreshInterval) {

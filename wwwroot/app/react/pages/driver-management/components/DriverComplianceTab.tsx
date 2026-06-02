@@ -27,7 +27,7 @@ import {
 import {ComplianceFilter, CourierCompliance, FleetOption, PaginatedRequest} from '../../../interfaces';
 import {driverManagementApi} from '../../../services/driverManagementApi';
 import {summarizeCompliance} from '../../../services/aiAssistantApi';
-import {AiSummaryPanel} from '../../../components/common/ai-summary-panel/AiSummaryPanel';
+import {AiSummaryCard} from '../../../components/common/ai-summary-card/AiSummaryCard';
 import {isAiEnabled} from '../../../../functions/aiSettings';
 import {
     DataTable,
@@ -174,10 +174,9 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
 
             {/* AI Compliance Risk Summary */}
             {isAiEnabled() && (
-                <AiSummaryPanel
+                <AiSummaryCard
                     title="AI Compliance Risk Summary"
-                    fetchSummary={summarizeCompliance}
-                    accentColor="#e53935"
+                    fetchSummary={(signal) => summarizeCompliance({signal})}
                 />
             )}
 

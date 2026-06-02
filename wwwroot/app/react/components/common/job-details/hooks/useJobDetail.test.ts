@@ -162,6 +162,31 @@ describe('useJobDetail', () => {
         expect(jobNos).toEqual(['J1', 'J2', 'J10', 'J20']);
     });
 
+    it('sorts safely when jobNo is null (e.g. recurring job templates)', async () => {
+        const mockGroup = {
+            job: {id: 1, jobNo: null, isBulkJob: false} as any,
+            relatedJobs: [
+                {id: 2, jobNo: 'J2', isBulkJob: false} as any,
+                {id: 3, jobNo: null, isBulkJob: false} as any,
+                {id: 4, jobNo: 'J1', isBulkJob: false} as any,
+            ],
+        };
+        mockGetRecurringJobDetail.mockResolvedValueOnce(mockDto as any);
+        mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
+
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+        const {result} = renderHook(
+            () => useJobDetail({jobId: 1, isRecurringJob: true, isBulkJob: false}),
+            {wrapper},
+        );
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        // Should not throw, and nulls should sort before non-null values.
+        const jobNos = result.current.sortedRelatedJobs.map(j => j.jobNo);
+        expect(jobNos).toEqual([null, null, 'J1', 'J2']);
+    });
+
     it('returns error state when API call fails', async () => {
         mockGetJobDetail.mockRejectedValueOnce(new Error('Network error'));
 

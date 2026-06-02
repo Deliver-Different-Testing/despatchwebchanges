@@ -2,9 +2,12 @@
  * AI Summary API Service
  *
  * Handles communication with the AI summarization backend endpoints.
+ * Notes/events summaries return free-form markdown; the four briefing-style
+ * summaries (job, task dashboard, operations, compliance) return a structured
+ * shape that the AiSummaryCard component renders directly.
  */
 
-import { apiClient, RequestOptions } from './apiClient';
+import {apiClient, RequestOptions} from './apiClient';
 
 export interface AiUsageInfo {
     inputTokens: number;
@@ -16,38 +19,57 @@ export interface AiSummaryResponse {
     usage: AiUsageInfo;
 }
 
-/** Summarize notes for a job */
+export type SummarySeverity = 'Ok' | 'Info' | 'Caution' | 'Urgent' | 'Critical';
+export type TimelineStatus = 'Ok' | 'Pending' | 'Warning' | 'Late';
+
+export interface AttentionItem {
+    headline: string;
+    action: string;
+    severity: SummarySeverity;
+}
+
+export interface TimelineItem {
+    label: string;
+    detail: string;
+    status: TimelineStatus;
+}
+
+export interface StructuredSummaryResponse {
+    verdict: string;
+    severity: SummarySeverity;
+    keyFacts: string[];
+    attention: AttentionItem[];
+    timeline: TimelineItem[];
+    highlights: string[];
+    usage: AiUsageInfo;
+}
+
+/** Summarize notes for a job (markdown) */
 export function summarizeJobNotes(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, { params: { jobId } });
+    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobNotes', null, {params: {jobId}});
 }
 
-/** Summarize event history for a job */
+/** Summarize event history for a job (markdown) */
 export function summarizeJobEvents(jobId: number): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobEvents', null, { params: { jobId } });
+    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJobEvents', null, {params: {jobId}});
 }
 
-/** Summarize task dashboard for daily briefing */
-export function summarizeTaskDashboard(): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeTaskDashboard');
+/** Structured task dashboard briefing */
+export function summarizeTaskDashboard(options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeTaskDashboard', null, options);
 }
 
-/** Combined job summary (notes + events + details) */
-export function summarizeJob(jobId: number, options?: RequestOptions): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeJob', null, { params: { jobId }, ...options });
+/** Structured job briefing (verdict + attention + key facts + timeline) */
+export function summarizeJob(jobId: number, options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeJob', null, {params: {jobId}, ...options});
 }
 
-/** Operations insight summary for overview dashboard */
-export function summarizeOperations(): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeOperations');
+/** Structured operations health summary */
+export function summarizeOperations(options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeOperations', null, options);
 }
 
-/** Compliance risk summary for driver management */
-export function summarizeCompliance(): Promise<AiSummaryResponse> {
-    return apiClient.post<AiSummaryResponse>('/Ai/SummarizeCompliance');
-}
-
-/** Check whether AI features are enabled server-side */
-export async function fetchAiEnabled(): Promise<boolean> {
-    const result = await apiClient.get<{ enabled: boolean }>('/Ai/IsEnabled');
-    return result.enabled;
+/** Structured compliance risk briefing */
+export function summarizeCompliance(options?: RequestOptions): Promise<StructuredSummaryResponse> {
+    return apiClient.post<StructuredSummaryResponse>('/Ai/SummarizeCompliance', null, options);
 }

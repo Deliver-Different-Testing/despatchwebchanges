@@ -426,4 +426,118 @@ public class TenantInfoServiceTests : IAsyncDisposable
         // Assert
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task GetCurrentNpAgentIdAsync_WhenContactsClientIsNetworkPartner_ReturnsNpAgentId()
+    {
+        SetupHttpContextWithClaims(("ContactID", "100"));
+
+        await using var context = _db.CreateContext();
+        context.TucClients.Add(new TucClient
+        {
+            UcclId = 50,
+            UcclName = "NP",
+            UcclLegalName = "NP",
+            UcclCode = "NP",
+            Smsname = "NP",
+            ClientTypeId = (int)DespatchWeb.Enums.ClientType.NetworkPartner,
+            NpAgentId = 77,
+            CreatedBy = "test",
+            LastModifiedBy = "test"
+        });
+        context.TucClientContacts.Add(new TucClientContact
+        {
+            UcctId = 100,
+            UcctClientId = 50,
+            CreatedBy = "test",
+            LastModifiedBy = "test"
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        var result = await service.GetCurrentNpAgentIdAsync();
+
+        Assert.Equal(77, result);
+    }
+
+    [Fact]
+    public async Task GetCurrentNpAgentIdAsync_WhenContactsClientIsCustomer_ReturnsNull()
+    {
+        SetupHttpContextWithClaims(("ContactID", "100"));
+
+        await using var context = _db.CreateContext();
+        context.TucClients.Add(new TucClient
+        {
+            UcclId = 50,
+            UcclName = "Cust",
+            UcclLegalName = "Cust",
+            UcclCode = "Cust",
+            Smsname = "Cust",
+            ClientTypeId = (int)DespatchWeb.Enums.ClientType.Customer,
+            NpAgentId = 77,
+            CreatedBy = "test",
+            LastModifiedBy = "test"
+        });
+        context.TucClientContacts.Add(new TucClientContact
+        {
+            UcctId = 100,
+            UcctClientId = 50,
+            CreatedBy = "test",
+            LastModifiedBy = "test"
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        var result = await service.GetCurrentNpAgentIdAsync();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetCurrentNpAgentIdAsync_WhenNpClientHasNoLinkedAgent_ReturnsNull()
+    {
+        SetupHttpContextWithClaims(("ContactID", "100"));
+
+        await using var context = _db.CreateContext();
+        context.TucClients.Add(new TucClient
+        {
+            UcclId = 50,
+            UcclName = "NP",
+            UcclLegalName = "NP",
+            UcclCode = "NP",
+            Smsname = "NP",
+            ClientTypeId = (int)DespatchWeb.Enums.ClientType.NetworkPartner,
+            NpAgentId = null,
+            CreatedBy = "test",
+            LastModifiedBy = "test"
+        });
+        context.TucClientContacts.Add(new TucClientContact
+        {
+            UcctId = 100,
+            UcctClientId = 50,
+            CreatedBy = "test",
+            LastModifiedBy = "test"
+        });
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        var result = await service.GetCurrentNpAgentIdAsync();
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GetCurrentNpAgentIdAsync_WhenNoContactIdClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims();
+
+        var service = CreateService();
+
+        var result = await service.GetCurrentNpAgentIdAsync();
+
+        Assert.Null(result);
+    }
 }

@@ -2,7 +2,7 @@
  * React App Toolbar Component
  *
  * A modern Material Design 3 compliant app bar.
- * Layout: Logo | Title | Spacer | Actions | User Menu
+ * Layout: Logo | Divider | Breadcrumbs | Spacer | Actions | User Menu
  */
 
 import React from 'react';
@@ -12,12 +12,21 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
+import Breadcrumbs from '@mui/material/Breadcrumbs';
+import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import MenuIcon from '@mui/icons-material/Menu';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import dayjs from 'dayjs';
 
+export interface BreadcrumbItem {
+    label: string;
+    href?: string;
+}
+
 export interface AppToolbarProps {
-    title: string;
+    title?: string;
+    breadcrumbs?: BreadcrumbItem[];
     firstName: string;
     logoUrl?: string;
     children?: React.ReactNode;
@@ -25,9 +34,6 @@ export interface AppToolbarProps {
     onMenuHover?: () => void;
 }
 
-/**
- * Generate time-based greeting
- */
 function greetUser(userName: string): string {
     const currentHour = dayjs().hour();
     let greeting: string;
@@ -43,8 +49,22 @@ function greetUser(userName: string): string {
     return `${greeting}, ${userName}`;
 }
 
+function resolveCrumbs(
+    breadcrumbs?: BreadcrumbItem[],
+    title?: string,
+): BreadcrumbItem[] {
+    if (breadcrumbs && breadcrumbs.length > 0) {
+        return breadcrumbs;
+    }
+    if (title) {
+        return [{label: title}];
+    }
+    return [];
+}
+
 export const AppToolbar: React.FC<AppToolbarProps> = ({
     title,
+    breadcrumbs,
     firstName,
     logoUrl = 'images/dfrnt_logo.png',
     children,
@@ -52,6 +72,8 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
     onMenuHover,
 }) => {
     const greeting = greetUser(firstName);
+    const resolvedCrumbs = resolveCrumbs(breadcrumbs, title);
+    const hasMultipleCrumbs = resolvedCrumbs.length > 1;
 
     return (
     <AppBar
@@ -59,7 +81,6 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
         elevation={1}
         sx={(theme) => ({
             bgcolor: theme.palette.primary.main,
-            // Ensure proper contrast for both themes
             color: theme.palette.primary.contrastText,
         })}
     >
@@ -86,20 +107,71 @@ export const AppToolbar: React.FC<AppToolbarProps> = ({
                 }}
             />
 
-            {/* Title - Page Context */}
-            <Typography
-                variant="h6"
-                component="h1"
-                noWrap
-                sx={{
-                    fontWeight: 500,
-                    fontSize: {xs: '1rem', sm: '1.125rem'},
-                    ml: 1.5,
-                    letterSpacing: '0.01em',
-                }}
-            >
-                {title}
-            </Typography>
+            {/* Vertical divider between brand and page context */}
+            {resolvedCrumbs.length > 0 && (
+                <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={(theme) => ({
+                        mx: {xs: 1, sm: 2},
+                        my: 1.5,
+                        borderColor: alpha(theme.palette.primary.contrastText, 0.24),
+                        display: hasMultipleCrumbs
+                            ? {xs: 'none', sm: 'block'}
+                            : 'block',
+                    })}
+                />
+            )}
+
+            {/* Breadcrumbs - Page Context */}
+            {resolvedCrumbs.length > 0 && (
+                <Breadcrumbs
+                    aria-label="page navigation"
+                    separator={
+                        <NavigateNextIcon
+                            fontSize="small"
+                            sx={{opacity: 0.6}}
+                        />
+                    }
+                    sx={{
+                        color: 'inherit',
+                        '& .MuiBreadcrumbs-ol': {flexWrap: 'nowrap'},
+                        '& .MuiBreadcrumbs-li': {
+                            whiteSpace: 'nowrap',
+                            minWidth: 0,
+                        },
+                        '& .MuiBreadcrumbs-separator': {
+                            mx: 0.75,
+                        },
+                    }}
+                >
+                    {resolvedCrumbs.map((crumb, index) => {
+                        const isLast = index === resolvedCrumbs.length - 1;
+                        const hideOnMobile = hasMultipleCrumbs && !isLast;
+                        return (
+                            <Typography
+                                key={`${crumb.label}-${index}`}
+                                component={isLast ? 'h1' : 'span'}
+                                noWrap
+                                sx={{
+                                    fontSize: '0.9375rem',
+                                    fontWeight: isLast ? 500 : 400,
+                                    letterSpacing: 0,
+                                    lineHeight: 1.25,
+                                    color: 'inherit',
+                                    opacity: isLast ? 1 : 0.75,
+                                    margin: 0,
+                                    display: hideOnMobile
+                                        ? {xs: 'none', sm: 'inline'}
+                                        : 'inline',
+                                }}
+                            >
+                                {crumb.label}
+                            </Typography>
+                        );
+                    })}
+                </Breadcrumbs>
+            )}
 
             {/* Spacer */}
             <Box sx={{flexGrow: 1}} />

@@ -13,6 +13,7 @@ import {AppShellProps} from './app-shell.types';
 
 export const AppShell: React.FC<AppShellProps> = ({
     title,
+    breadcrumbs,
     firstName,
     fullName,
     isUsCustomer,
@@ -63,6 +64,7 @@ export const AppShell: React.FC<AppShellProps> = ({
         <Box sx={{display: 'flex', flexDirection: 'column'}}>
             <AppToolbar
                 title={title}
+                breadcrumbs={breadcrumbs}
                 firstName={firstName}
                 logoUrl={logoUrl}
                 onLogoClick={onLogoClick}
