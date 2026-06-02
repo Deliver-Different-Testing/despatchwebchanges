@@ -68,6 +68,7 @@ declare global {
         FullName?: string;
         ContactID?: number;
         ClientInternal?: boolean;
+        IsNetworkPartner?: boolean;
         TimeZone?: string;
         CurrencyCode?: string;
         serverConfig?: {
@@ -101,7 +102,8 @@ declare global {
         // ── Lazy-loaded React page modules ───────────────────────────────
         ReactAppShell?: {
             mount: (containerId: string, config: {
-                title: string;
+                title?: string;
+                breadcrumbs?: Array<{label: string; href?: string}>;
                 firstName: string;
                 fullName: string;
                 isUsCustomer: boolean;
@@ -114,6 +116,7 @@ declare global {
             update: (updates: Record<string, unknown>) => void;
             updateState: (state: string) => void;
             updateTitle: (title: string) => void;
+            updateBreadcrumbs: (breadcrumbs: Array<{label: string; href?: string}>) => void;
             setToolbarActions: (actions: ToolbarActionsConfig | null) => void;
             updateToolbarAction: <K extends Exclude<keyof ToolbarActionsConfig, 'customContent'>>(
                 actionKey: K,
@@ -360,6 +363,7 @@ declare global {
     const FirstName: string;
     const ContactID: number;
     const ClientInternal: boolean;
+    const IsNetworkPartner: boolean;
     const TimeZone: string;
     const serverConfig: {
         isProduction: boolean;

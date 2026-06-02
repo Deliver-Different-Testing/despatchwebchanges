@@ -32,7 +32,6 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import WarningIcon from '@mui/icons-material/Warning';
 import dayjs, {Dayjs} from 'dayjs';
-import {aiAccentColor} from '../../theme/designTokens';
 import {
     DateFilterData,
     ExtendedTask,
@@ -58,7 +57,7 @@ import {
 } from '../../hooks/useTasksApi';
 import {tasksApi} from '../../services/tasksApi';
 import {summarizeTaskDashboard} from '../../services/aiAssistantApi';
-import {AiSummaryPanel} from '../../components/common/ai-summary-panel/AiSummaryPanel';
+import {AiSummaryCard} from '../../components/common/ai-summary-card/AiSummaryCard';
 import {isAiEnabled} from '../../../functions/aiSettings';
 
 // Local storage keys
@@ -587,10 +586,9 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             {/* AI Briefing — only show when there are tasks and AI is enabled */}
             {isAiEnabled() && !tasksLoading && tasks.length > 0 && (
                 <Box sx={{mb: 2, flexShrink: 0}}>
-                    <AiSummaryPanel
+                    <AiSummaryCard
                         title="AI Daily Briefing"
-                        fetchSummary={summarizeTaskDashboard}
-                        accentColor={aiAccentColor}
+                        fetchSummary={(signal) => summarizeTaskDashboard({signal})}
                     />
                 </Box>
             )}

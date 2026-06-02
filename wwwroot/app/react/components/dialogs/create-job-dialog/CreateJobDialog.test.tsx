@@ -291,7 +291,6 @@ describe('CreateJobDialog', () => {
         }
 
         it('populates addressLine8 with countryName from HERE Maps response on submit', async () => {
-            const user = userEvent.setup();
             const onSubmit = jest.fn();
             const showToast = jest.fn();
 
@@ -322,8 +321,9 @@ describe('CreateJobDialog', () => {
             selectAutocomplete(screen.getByLabelText(/vehicle/i), 'Car');
             selectAutocomplete(screen.getByLabelText(/speed/i), 'Sta');
 
-            // Submit
-            await user.click(screen.getByRole('button', {name: /create job/i}));
+            // Submit — use fireEvent.click to avoid the slow user-event pointer pipeline
+            // (the rest of the test already uses fireEvent for the same reason)
+            fireEvent.click(screen.getByRole('button', {name: /create job/i}));
 
             await waitFor(() => {
                 expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1);

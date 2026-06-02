@@ -13,9 +13,7 @@ public sealed class ClearListEnvelopeService(
     IDbContextFactory<DespatchContext> contextFactory,
     ITenantClock clock) : IClearListEnvelopeService
 {
-    private DespatchContext _context;
-
-    private DespatchContext Context => _context ??= contextFactory.CreateDbContext();
+    private DespatchContext Context => field ??= contextFactory.CreateDbContext();
 
     /// <summary>
     /// Calculates the bounding envelope (min/max lat/long) for a clear list area, optionally including courier and job positions.
@@ -218,9 +216,4 @@ public sealed class ClearListEnvelopeService(
                 MaximumLatitude = g.Max(x => x.Latitude)
             })
             .FirstOrDefaultAsync() ?? new ClearListEnvelopeViewModel();
-
-    /// <summary>
-    /// Disposes the database context if it was created.
-    /// </summary>
-    public void Dispose() => _context?.Dispose();
 }

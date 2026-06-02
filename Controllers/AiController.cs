@@ -1,8 +1,6 @@
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace DespatchWeb.Controllers;
@@ -11,22 +9,13 @@ namespace DespatchWeb.Controllers;
 public class AiController(
     IAiSummarizationService summarizationService,
     IAiRateLimiter rateLimiter,
-    ITenantInfoService tenantInfo,
-    IOptions<AnthropicSettings> settings) : Controller
+    ITenantInfoService tenantInfo) : Controller
 {
-    [HttpGet]
-    public IActionResult IsEnabled() => Json(new { enabled = settings.Value.EnableAiFeatures });
-
     [HttpPost]
     public async Task<IActionResult> SummarizeJobNotes(int jobId, CancellationToken ct)
     {
         try
         {
-            if (!settings.Value.EnableAiFeatures)
-            {
-                return StatusCode(503, "AI features are not enabled");
-            }
-
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
@@ -58,11 +47,6 @@ public class AiController(
     {
         try
         {
-            if (!settings.Value.EnableAiFeatures)
-            {
-                return StatusCode(503, "AI features are not enabled");
-            }
-
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
@@ -94,11 +78,6 @@ public class AiController(
     {
         try
         {
-            if (!settings.Value.EnableAiFeatures)
-            {
-                return StatusCode(503, "AI features are not enabled");
-            }
-
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
@@ -130,11 +109,6 @@ public class AiController(
     {
         try
         {
-            if (!settings.Value.EnableAiFeatures)
-            {
-                return StatusCode(503, "AI features are not enabled");
-            }
-
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
@@ -166,11 +140,6 @@ public class AiController(
     {
         try
         {
-            if (!settings.Value.EnableAiFeatures)
-            {
-                return StatusCode(503, "AI features are not enabled");
-            }
-
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 
@@ -202,11 +171,6 @@ public class AiController(
     {
         try
         {
-            if (!settings.Value.EnableAiFeatures)
-            {
-                return StatusCode(503, "AI features are not enabled");
-            }
-
             var staffId = tenantInfo.GetStaffId();
             var tenantId = tenantInfo.GetTenantTimeZone();
 

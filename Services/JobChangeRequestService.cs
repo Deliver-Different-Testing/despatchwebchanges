@@ -19,6 +19,7 @@ public sealed class JobChangeRequestService(
     ITenantInfoService tenantInfo,
     IJobCommandRepository jobCommandRepository) : IJobChangeRequestService
 {
+    private const int ListForJobMaxRows = 100;
     private static readonly JsonSerializerOptions CompoundPayloadJsonOptions = new(JsonSerializerDefaults.Web);
 
     public async Task<JobChangeRequestResult> CreateLocalAsync(CreateJobChangeRequestRequest request,
@@ -50,14 +51,15 @@ public sealed class JobChangeRequestService(
         {
             return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
         }
-        
+
         var pairingIdFromDispatch = request.PairingId ?? await ctx.JobPartnerDispatches
             .AsNoTracking()
             .Where(d => d.JobId == request.JobId)
             .Select(d => (int?)d.PartnerPairingId)
             .FirstOrDefaultAsync(ct);
 
-        var (pairing, pairingError) = await ResolveActivePairingAsync(ctx, pairingIdFromDispatch, partnerTenantId: null, ct);
+        var (pairing, pairingError) =
+            await ResolveActivePairingAsync(ctx, pairingIdFromDispatch, partnerTenantId: null, ct);
         if (pairing is null)
         {
             return new JobChangeRequestResult { Success = false, Message = pairingError };
@@ -77,7 +79,7 @@ public sealed class JobChangeRequestService(
         }
 
         var stage = MapLifecycleStage(job.UcjbStatus);
-   
+
         var localTenantId = tenantInfo.GetCurrentTenantId();
         var isLocalOwner = string.IsNullOrEmpty(localTenantId)
                            || string.Equals(localTenantId, pairing.OwnerTenantId, StringComparison.Ordinal);
@@ -141,8 +143,12 @@ public sealed class JobChangeRequestService(
         var forward = await partnerClient.ForwardCreateAsync(pairing.Id, job.PartnerJobGuid.Value, sourceUuid,
             field.ToString(), currentValue, request.RequestedValue, request.Reason,
             decision.Mode.ToString(), decision.RequiresCommercialRefresh, ct);
-        if (forward.Success) return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
-        
+
+        if (forward.Success)
+        {
+            return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
+        }
+
         Log.Error(
             "Peer forward for change request {SourceUuid} (PartnerJobGuid={PartnerJobGuid}) failed: {Message}",
             sourceUuid, job.PartnerJobGuid, forward.Message);
@@ -152,7 +158,6 @@ public sealed class JobChangeRequestService(
             Request = ToDto(row),
             PeerForwardWarning = forward.Message ?? "Partner notification failed"
         };
-
     }
 
     public async Task<JobChangeRequestResult> ApproveAsync(int id, ApproveJobChangeRequestRequest request,
@@ -183,31 +188,34 @@ public sealed class JobChangeRequestService(
                 Message = $"Field '{row.UjcrFieldName}' is not supported in this version"
             };
         }
-        
+
         if (request.RowVersion is not null)
         {
             ctx.Entry(row).OriginalValues[nameof(TucJobChangeRequest.UjcrRowVersion)] = request.RowVersion;
         }
-        
+
         decimal? refreshedAmount = null;
         decimal? oldAmountForRefresh = null;
         var needsRefresh = row.UjcrRequiresCommercialRefresh
-                          && field != JobChangeField.PartnerAgreedRate
-                          && row.UjcrPairingId is not null;
+                           && field != JobChangeField.PartnerAgreedRate
+                           && row.UjcrPairingId is not null;
         if (needsRefresh)
         {
             var refreshPairing = row.UjcrPairingId!.Value;
             var refreshed = await sendToPartner.GetRateForJobAsync(refreshPairing, row.UjcrJobId);
             if (refreshed.RateCardRate is null)
             {
-                Log.Warning("Commercial refresh for change request {SourceUuid} produced no rate (source={Source}); leaving row Pending",
+                Log.Warning(
+                    "Commercial refresh for change request {SourceUuid} produced no rate (source={Source}); leaving row Pending",
                     row.UjcrSourceRequestUuid, refreshed.Source);
                 return new JobChangeRequestResult
                 {
                     Success = false,
-                    Message = "Could not re-rate the job against the current rate card. Approval rolled back; please retry."
+                    Message =
+                        "Could not re-rate the job against the current rate card. Approval rolled back; please retry."
                 };
             }
+
             refreshedAmount = refreshed.RateCardRate;
             oldAmountForRefresh = await ctx.TucJobs
                 .Where(j => j.UcjbId == row.UjcrJobId)
@@ -243,7 +251,7 @@ public sealed class JobChangeRequestService(
             await using var tx = await ctx.Database.BeginTransactionAsync(ct);
 
             await ApplyFieldChangeAsync(ctx, row.UjcrJobId, field, row.UjcrRequestedValue, ct);
-            
+
             if (needsRefresh)
             {
                 row.UjcrOldCommercialAmount = oldAmountForRefresh;
@@ -591,18 +599,6 @@ public sealed class JobChangeRequestService(
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
-    private static string ResolvePeerDecisionStatus(string outcome)
-    {
-        if (outcome.Equals(JobChangeRequestStatus.Approved, StringComparison.OrdinalIgnoreCase))
-        {
-            return JobChangeRequestStatus.Approved;
-        }
-
-        return outcome.Equals(JobChangeRequestStatus.Cancelled, StringComparison.OrdinalIgnoreCase)
-            ? JobChangeRequestStatus.Cancelled
-            : JobChangeRequestStatus.Rejected;
-    }
-
     public async Task<JobChangeRequestResult> RecordPeerAppliedAsync(Guid sourceUuid,
         PeerInboundChangeAppliedPayload payload, CancellationToken ct)
     {
@@ -660,8 +656,6 @@ public sealed class JobChangeRequestService(
         return new JobChangeRequestResult { Success = true, Request = ToDto(row) };
     }
 
-    private const int ListForJobMaxRows = 100;
-
     public async Task<IReadOnlyList<JobChangeRequestDto>> ListForJobAsync(int jobId, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
@@ -691,7 +685,7 @@ public sealed class JobChangeRequestService(
             join c in ctx.TucClients.AsNoTracking() on j.UcjbClientId equals c.UcclId into clients
             from c in clients.DefaultIfEmpty()
             orderby r.UjcrId descending
-            select new {Row = r, JobNo = j.UcjbNumber, ClientName = c != null ? c.UcclName : null};
+            select new { Row = r, JobNo = j.UcjbNumber, ClientName = c != null ? c.UcclName : null };
 
         var rows = await query.Take(limit).ToListAsync(ct);
         return rows
@@ -702,6 +696,18 @@ public sealed class JobChangeRequestService(
                 ClientName = x.ClientName
             })
             .ToList();
+    }
+
+    private static string ResolvePeerDecisionStatus(string outcome)
+    {
+        if (outcome.Equals(JobChangeRequestStatus.Approved, StringComparison.OrdinalIgnoreCase))
+        {
+            return JobChangeRequestStatus.Approved;
+        }
+
+        return outcome.Equals(JobChangeRequestStatus.Cancelled, StringComparison.OrdinalIgnoreCase)
+            ? JobChangeRequestStatus.Cancelled
+            : JobChangeRequestStatus.Rejected;
     }
 
     private async Task ApplyFieldChangeAsync(DespatchContext ctx, int jobId, JobChangeField field,
@@ -764,19 +770,24 @@ public sealed class JobChangeRequestService(
 
                 break;
             case JobChangeField.FromContactName:
-                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, Truncate(requestedValue, 100)), ct);
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromContact, Truncate(requestedValue, 100)),
+                    ct);
                 break;
             case JobChangeField.ToContactName:
-                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, Truncate(requestedValue, 100)), ct);
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToContact, Truncate(requestedValue, 100)),
+                    ct);
                 break;
             case JobChangeField.FromContactPhone:
-                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromPhone, Truncate(requestedValue, 100)), ct);
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.PickupFromPhone, Truncate(requestedValue, 100)),
+                    ct);
                 break;
             case JobChangeField.ToContactPhone:
-                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, Truncate(requestedValue, 100)), ct);
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.DeliverToPhone, Truncate(requestedValue, 100)),
+                    ct);
                 break;
             case JobChangeField.TrackingMobile:
-                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMobile, Truncate(requestedValue, 100)), ct);
+                await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingMobile, Truncate(requestedValue, 100)),
+                    ct);
                 break;
             case JobChangeField.TrackingEmail:
                 await q.ExecuteUpdateAsync(s => s.SetProperty(j => j.TrackingEmail, Truncate(requestedValue, 100)), ct);
@@ -799,6 +810,7 @@ public sealed class JobChangeRequestService(
                         .SetProperty(j => j.DeliverToLeaveId, leaveId)
                         .SetProperty(j => j.DeliverToPrivateBusiness, privateBusiness), ct);
                 }
+
                 break;
 
             // Manual — dates / times / DG / flags. The approver path runs the commercial
@@ -938,11 +950,6 @@ public sealed class JobChangeRequestService(
             await jobCommandRepository.UpdatePickupAddressAsync(request);
         }
     }
-
-    // Wire payload for JobChangeField.Packages. Mirrors UpdateJobPackagesRequest minus
-    // the JobId (carried in the change-request row) so the change-request body stays
-    // self-describing without coupling to the controller's DTO shape.
-    private sealed record UpdateJobPackagesPayload(List<ParcelDimensions> Parcels, decimal? Weight);
 
     private static string? Truncate(string? value, int max) =>
         value?[..Math.Min(value.Length, max)];
@@ -1117,9 +1124,9 @@ public sealed class JobChangeRequestService(
         string? l5, string? l6, string? l7, string? l8)
     {
         if (string.IsNullOrWhiteSpace(l1) && string.IsNullOrWhiteSpace(l2)
-            && string.IsNullOrWhiteSpace(l3) && string.IsNullOrWhiteSpace(l4)
-            && string.IsNullOrWhiteSpace(l5) && string.IsNullOrWhiteSpace(l6)
-            && string.IsNullOrWhiteSpace(l7) && string.IsNullOrWhiteSpace(l8))
+                                          && string.IsNullOrWhiteSpace(l3) && string.IsNullOrWhiteSpace(l4)
+                                          && string.IsNullOrWhiteSpace(l5) && string.IsNullOrWhiteSpace(l6)
+                                          && string.IsNullOrWhiteSpace(l7) && string.IsNullOrWhiteSpace(l8))
         {
             return null;
         }
@@ -1154,4 +1161,9 @@ public sealed class JobChangeRequestService(
         AppliedAt = r.UjcrAppliedAtUtc,
         RowVersion = r.UjcrRowVersion
     };
+
+    // Wire payload for JobChangeField.Packages. Mirrors UpdateJobPackagesRequest minus
+    // the JobId (carried in the change-request row) so the change-request body stays
+    // self-describing without coupling to the controller's DTO shape.
+    private sealed record UpdateJobPackagesPayload(List<ParcelDimensions> Parcels, decimal? Weight);
 }

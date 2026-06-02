@@ -72,6 +72,7 @@ public class HomeControllerTests : IDisposable
             FullName = "Jane Doe",
             Email = "jane@test.com",
             Internal = true,
+            IsNetworkPartner = true,
             StaffID = 5
         };
         _clientRepoMock.ValidateClientAsync(100).Returns(clientDetail);
@@ -82,7 +83,35 @@ public class HomeControllerTests : IDisposable
 
         var result = await controller.Index();
 
-        Assert.IsType<ViewResult>(result);
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(true, view.ViewData["ClientInternal"]);
+        Assert.Equal(true, view.ViewData["IsNetworkPartner"]);
+    }
+
+    [Fact]
+    public async Task Index_NonNetworkPartner_SetsIsNetworkPartnerFalse()
+    {
+        Environment.SetEnvironmentVariable("SQLCredentials", ";Password=test;");
+        var user = CreateAuthenticatedUser();
+        var clientDetail = new ClientViewModel
+        {
+            FirstName = "Jane",
+            FullName = "Jane Doe",
+            Email = "jane@test.com",
+            Internal = false,
+            IsNetworkPartner = false,
+            StaffID = 5
+        };
+        _clientRepoMock.ValidateClientAsync(100).Returns(clientDetail);
+        _connectionStringManagerMock.SetConnectionStringAsync(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(Task.CompletedTask);
+
+        var controller = CreateController(user);
+
+        var result = await controller.Index();
+
+        var view = Assert.IsType<ViewResult>(result);
+        Assert.Equal(false, view.ViewData["IsNetworkPartner"]);
     }
 
     [Fact]

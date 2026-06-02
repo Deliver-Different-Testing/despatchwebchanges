@@ -2,9 +2,9 @@
 /**
  * AI Summary API Service Tests
  *
- * Tests the AI summarization API functions: summarizeJobNotes,
+ * Tests the AI summarization API functions: summarizeJobNotes (markdown),
  * summarizeJob, summarizeTaskDashboard, summarizeOperations,
- * summarizeCompliance.
+ * summarizeCompliance (structured).
  */
 
 import {
@@ -14,7 +14,7 @@ import {
     summarizeCompliance,
     summarizeTaskDashboard,
 } from './aiAssistantApi';
-import { apiClient } from './apiClient';
+import {apiClient} from './apiClient';
 
 jest.mock('./apiClient', () => ({
     apiClient: {
@@ -26,12 +26,26 @@ jest.mock('./apiClient', () => ({
 
 const mockApiClient = apiClient as jest.Mocked<typeof apiClient>;
 
+const structuredResponse = {
+    verdict: '✅ On track',
+    severity: 'Ok' as const,
+    keyFacts: [],
+    attention: [],
+    timeline: [],
+    highlights: [],
+    usage: {inputTokens: 100, outputTokens: 20},
+};
+
 describe('aiAssistantApi', () => {
-    describe('summarizeJobNotes', () => {
-        it('should call correct endpoint with jobId', async () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+    });
+
+    describe('summarizeJobNotes (markdown)', () => {
+        it('calls correct endpoint with jobId', async () => {
             mockApiClient.post.mockResolvedValueOnce({
                 summary: 'Test summary',
-                usage: { inputTokens: 100, outputTokens: 20 },
+                usage: {inputTokens: 100, outputTokens: 20},
             });
 
             await summarizeJobNotes(42);
@@ -39,80 +53,90 @@ describe('aiAssistantApi', () => {
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 '/Ai/SummarizeJobNotes',
                 null,
-                { params: { jobId: 42 } }
+                {params: {jobId: 42}}
             );
         });
     });
 
-    describe('summarizeJob', () => {
-        it('should call correct endpoint with jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Job summary',
-                usage: { inputTokens: 100, outputTokens: 20 },
-            });
+    describe('summarizeJob (structured)', () => {
+        it('calls correct endpoint with jobId', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeJob(99);
 
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 '/Ai/SummarizeJob',
                 null,
-                { params: { jobId: 99 } }
+                {params: {jobId: 99}}
             );
         });
 
-        it('should pass abort signal via options', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Summary',
-                usage: { inputTokens: 50, outputTokens: 10 },
-            });
+        it('passes abort signal via options', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
             const controller = new AbortController();
 
-            await summarizeJob(1, { signal: controller.signal });
+            await summarizeJob(1, {signal: controller.signal});
 
             expect(mockApiClient.post).toHaveBeenCalledWith(
                 '/Ai/SummarizeJob',
                 null,
-                expect.objectContaining({ signal: controller.signal })
+                expect.objectContaining({signal: controller.signal})
             );
         });
     });
 
-    describe('summarizeTaskDashboard', () => {
-        it('should call correct endpoint with no params', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Dashboard summary',
-                usage: { inputTokens: 200, outputTokens: 40 },
-            });
+    describe('summarizeTaskDashboard (structured)', () => {
+        it('calls correct endpoint', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeTaskDashboard();
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/SummarizeTaskDashboard');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeTaskDashboard',
+                null,
+                undefined
+            );
+        });
+
+        it('passes abort signal', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
+            const controller = new AbortController();
+
+            await summarizeTaskDashboard({signal: controller.signal});
+
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeTaskDashboard',
+                null,
+                expect.objectContaining({signal: controller.signal})
+            );
         });
     });
 
-    describe('summarizeOperations', () => {
-        it('should call correct endpoint', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Operations insight',
-                usage: { inputTokens: 100, outputTokens: 25 },
-            });
+    describe('summarizeOperations (structured)', () => {
+        it('calls correct endpoint', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeOperations();
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/SummarizeOperations');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeOperations',
+                null,
+                undefined
+            );
         });
     });
 
-    describe('summarizeCompliance', () => {
-        it('should call correct endpoint', async () => {
-            mockApiClient.post.mockResolvedValueOnce({
-                summary: 'Compliance summary',
-                usage: { inputTokens: 150, outputTokens: 20 },
-            });
+    describe('summarizeCompliance (structured)', () => {
+        it('calls correct endpoint', async () => {
+            mockApiClient.post.mockResolvedValueOnce(structuredResponse);
 
             await summarizeCompliance();
 
-            expect(mockApiClient.post).toHaveBeenCalledWith('/Ai/SummarizeCompliance');
+            expect(mockApiClient.post).toHaveBeenCalledWith(
+                '/Ai/SummarizeCompliance',
+                null,
+                undefined
+            );
         });
     });
 });

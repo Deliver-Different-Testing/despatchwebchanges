@@ -87,7 +87,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     const [driverLocationInterval, setDriverLocationInterval] = useState<RefreshOption>(
         initialDriverInterval ?? {id: 0, text: 'Disabled'}
     );
-    const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? true);
+    const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
     const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
         // Deep clone the boxes
         const cloned: Record<string, DashboardBox> = {};
@@ -319,7 +319,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 <AutoAwesomeIcon sx={{color: aiAccentColor}} />
                             </Box>
                             <Typography variant="h6" fontWeight={600}>
-                                AI Features
+                                AI Briefings
                             </Typography>
                         </Stack>
 
@@ -347,7 +347,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 <Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         <Typography variant="subtitle2" fontWeight={600}>
-                                            AI Summaries & Suggestions
+                                            Show AI briefing cards
                                         </Typography>
                                         <Chip
                                             label="BETA"
@@ -362,7 +362,11 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         />
                                     </Box>
                                     <Typography variant="body2" color="text.secondary">
-                                        Show AI-powered job summaries, inline panels, and smart suggestions
+                                        Off by default. Turn on to surface AI-generated briefings on the
+                                        job details page, the task dashboard, the operations overview, and
+                                        the driver compliance tab. The briefing leads with a verdict, what
+                                        needs attention, and the key facts — no need to scroll the page.
+                                        Applies to your account only.
                                     </Typography>
                                 </Box>
                                 <Switch

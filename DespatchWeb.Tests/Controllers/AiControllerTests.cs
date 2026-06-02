@@ -1,9 +1,7 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
@@ -12,7 +10,6 @@ namespace DespatchWeb.Tests.Controllers;
 public class AiControllerTests
 {
     private readonly IAiRateLimiter _rateLimiter = Substitute.For<IAiRateLimiter>();
-    private readonly AnthropicSettings _settingsValue = new() { EnableAiFeatures = true };
     private readonly IAiSummarizationService _summarizationService = Substitute.For<IAiSummarizationService>();
     private readonly ITenantInfoService _tenantInfo = Substitute.For<ITenantInfoService>();
 
@@ -34,48 +31,10 @@ public class AiControllerTests
             .Returns(Task.CompletedTask);
     }
 
-    private AiController CreateController(AnthropicSettings? settings = null) => new(
+    private AiController CreateController() => new(
         _summarizationService,
         _rateLimiter,
-        _tenantInfo,
-        Options.Create(settings ?? _settingsValue));
-
-    [Fact]
-    public void IsEnabled_WhenFeaturesEnabled_ReturnsEnabledTrue()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = true });
-
-        var result = controller.IsEnabled();
-
-        var json = result as JsonResult;
-        Assert.NotNull(json);
-        dynamic? value = json.Value;
-        Assert.True((bool)value!.enabled);
-    }
-
-    [Fact]
-    public void IsEnabled_WhenFeaturesDisabled_ReturnsEnabledFalse()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = controller.IsEnabled();
-
-        var json = result as JsonResult;
-        Assert.NotNull(json);
-        dynamic? value = json.Value;
-        Assert.False((bool)value!.enabled);
-    }
-
-    [Fact]
-    public async Task SummarizeJobNotes_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
+        _tenantInfo);
 
     [Fact]
     public async Task SummarizeJobNotes_RateLimited_Returns429()
@@ -103,17 +62,6 @@ public class AiControllerTests
         var result = await controller.SummarizeJobNotes(1, TestContext.Current.CancellationToken);
 
         Assert.IsType<JsonResult>(result);
-    }
-
-    [Fact]
-    public async Task SummarizeJobEvents_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeJobEvents(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
     }
 
     [Fact]
@@ -147,17 +95,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeTaskDashboard_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeTaskDashboard(TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeTaskDashboard_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -173,9 +110,9 @@ public class AiControllerTests
     public async Task SummarizeTaskDashboard_ValidRequest_ReturnsJson()
     {
         _summarizationService.SummarizeTaskDashboardAsync(Arg.Any<CancellationToken>()).Returns(
-            new AiSummaryResponse
+            new StructuredSummaryResponse
             {
-                Summary = "3 overdue tasks need attention.",
+                Verdict = "3 overdue tasks need attention.",
                 Usage = new AiUsageInfo { InputTokens = 150, OutputTokens = 30 }
             });
 
@@ -190,9 +127,9 @@ public class AiControllerTests
     public async Task SummarizeTaskDashboard_ValidRequest_RecordsTokenUsage()
     {
         _summarizationService.SummarizeTaskDashboardAsync(Arg.Any<CancellationToken>()).Returns(
-            new AiSummaryResponse
+            new StructuredSummaryResponse
             {
-                Summary = "Summary",
+                Verdict = "Summary",
                 Usage = new AiUsageInfo { InputTokens = 100, OutputTokens = 25 }
             });
 
@@ -234,17 +171,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeJob_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeJob(1, TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeJob_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -259,9 +185,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeJob_ValidRequest_ReturnsJson()
     {
-        _summarizationService.SummarizeJobAsync(1, Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeJobAsync(1, Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "Job picked up on time and delivered.",
+            Verdict = "Job picked up on time and delivered.",
             Usage = new AiUsageInfo { InputTokens = 200, OutputTokens = 35 }
         });
 
@@ -287,17 +213,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeOperations_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeOperations(TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeOperations_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -312,9 +227,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeOperations_ValidRequest_ReturnsJson()
     {
-        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "15 active, 8 inactive.",
+            Verdict = "15 active, 8 inactive.",
             Usage = new AiUsageInfo { InputTokens = 80, OutputTokens = 20 }
         });
 
@@ -328,9 +243,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeOperations_ValidRequest_RecordsTokenUsage()
     {
-        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeOperationsAsync(Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "OK",
+            Verdict = "OK",
             Usage = new AiUsageInfo { InputTokens = 90, OutputTokens = 15 }
         });
 
@@ -358,17 +273,6 @@ public class AiControllerTests
     }
 
     [Fact]
-    public async Task SummarizeCompliance_AiFeaturesDisabled_Returns503()
-    {
-        var controller = CreateController(new AnthropicSettings { EnableAiFeatures = false });
-
-        var result = await controller.SummarizeCompliance(TestContext.Current.CancellationToken);
-
-        var statusResult = result as ObjectResult;
-        Assert.Equal(503, statusResult!.StatusCode);
-    }
-
-    [Fact]
     public async Task SummarizeCompliance_RateLimited_Returns429()
     {
         _rateLimiter.TryAcquireAsync(Arg.Any<int>(), Arg.Any<string>()).Returns(false);
@@ -383,9 +287,9 @@ public class AiControllerTests
     [Fact]
     public async Task SummarizeCompliance_ValidRequest_ReturnsJson()
     {
-        _summarizationService.SummarizeComplianceAsync(Arg.Any<CancellationToken>()).Returns(new AiSummaryResponse
+        _summarizationService.SummarizeComplianceAsync(Arg.Any<CancellationToken>()).Returns(new StructuredSummaryResponse
         {
-            Summary = "3 expired licenses.",
+            Verdict = "3 expired licenses.",
             Usage = new AiUsageInfo { InputTokens = 120, OutputTokens = 20 }
         });
 

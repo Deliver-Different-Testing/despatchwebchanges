@@ -61,6 +61,7 @@ public partial class HomeController(
                 ViewBag.FullName = clientDetail.FullName;
                 ViewBag.Email = clientDetail.Email;
                 ViewBag.ClientInternal = clientDetail.Internal;
+                ViewBag.IsNetworkPartner = clientDetail.IsNetworkPartner;
                 ViewBag.ContactID = clientDetail.StaffID ?? parsedContactId;
                 ViewBag.IsUsTenant = isUsTenantFlag ?? false;
                 ViewBag.TimeZone = tenantTimeZone;

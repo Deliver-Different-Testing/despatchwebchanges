@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
@@ -48,16 +49,16 @@ public sealed class JobApiClient(
             throw new InvalidOperationException($"Job API call failed: {Snippet(transportMsg)}");
         }
 
-        if (response.Errors is { Count: > 0 })
+        if (response.Errors is not { Count: > 0 })
         {
-            var msg = string.Join("; ",
-                response.Errors.Select(e => string.IsNullOrEmpty(e.Property) ? e.Message : $"{e.Property}: {e.Message}"));
-            throw new InvalidOperationException($"Job API rejected request: {msg}");
+            return response.JobId is > 0
+                ? response.JobId.Value
+                : throw new InvalidOperationException("Job API did not return a JobID");
         }
 
-        return response.JobId is > 0
-            ? response.JobId.Value
-            : throw new InvalidOperationException("Job API did not return a JobID");
+        var msg = string.Join("; ",
+            response.Errors.Select(e => string.IsNullOrEmpty(e.Property) ? e.Message : $"{e.Property}: {e.Message}"));
+        throw new InvalidOperationException($"Job API rejected request: {msg}");
     }
 
     private TenantApiContext ResolveTenantContext(int requestClientId)
@@ -93,7 +94,7 @@ public sealed class JobApiClient(
 
         return new BookPickupDto
         {
-            QuoteId = request.SpeedId.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            QuoteId = request.SpeedId.ToString(CultureInfo.InvariantCulture),
             SpeedId = request.SpeedId,
             Pickup = new PickupDto
             {
@@ -156,5 +157,10 @@ public sealed class JobApiClient(
         return body.Length > 200 ? body[..200] + "…" : body;
     }
 
-    private sealed record TenantApiContext(int TenantId, string Connection, string TimeZone, int? ClientId, int ContactId);
+    private sealed record TenantApiContext(
+        int TenantId,
+        string Connection,
+        string TimeZone,
+        int? ClientId,
+        int ContactId);
 }

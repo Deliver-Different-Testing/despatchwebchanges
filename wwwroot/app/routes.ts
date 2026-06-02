@@ -191,7 +191,7 @@ class RouterConfig {
             template: `
                 <md-content class="md-dense prebook-view">
                     <style>.prebook-view md-card { margin: 0; }</style>
-                    <react-app-shell title="Recurring Jobs Dashboard"></react-app-shell>
+                    <react-app-shell section="Dashboards" title="Recurring Jobs"></react-app-shell>
                     <div class="dashboard-padding" style="height: calc(100vh - 64px);">
                         <div style="display: flex; height: 100%; padding: 16px;">
                             <div id="react-recurring-jobs-list" style="flex: 1; height: 100%; overflow: hidden;"></div>
@@ -273,7 +273,7 @@ class RouterConfig {
             url: "/overview",
             template: `
                 <md-content class="md-dense" style="height: 100%;">
-                    <react-app-shell title="Overview Dashboard"></react-app-shell>
+                    <react-app-shell section="Dashboards" title="Overview"></react-app-shell>
                     <div class="scrollable-container" style="height: calc(100vh - 64px); overflow: auto;">
                         <div id="react-overview"></div>
                     </div>
@@ -486,7 +486,7 @@ class RouterConfig {
             url: "/driverManagement",
             template: `
                 <md-content class="md-dense" style="height: 100%;">
-                    <react-app-shell title="Driver Management"></react-app-shell>
+                    <react-app-shell section="Operations" title="Drivers"></react-app-shell>
                     <div id="react-driver-management" style="height: calc(100vh - 64px);"></div>
                 </md-content>
             `,
@@ -559,7 +559,7 @@ class RouterConfig {
         this.$stateProvider.state("courierMap", {
             url: "/courierMap",
             template: `
-                <react-app-shell title="Courier Map"></react-app-shell>
+                <react-app-shell section="Operations" title="Courier Map"></react-app-shell>
                 <div id="react-courier-map" style="height: calc(100vh - 64px);"></div>
             `,
             resolve: {

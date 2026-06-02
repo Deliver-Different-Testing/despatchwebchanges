@@ -36,6 +36,8 @@ public interface IAiClientService
         List<AiMessage> messages,
         int maxTokens,
         List<AiToolDefinition> tools = null,
+        string forceToolName = null,
+        bool enableCaching = false,
         CancellationToken ct = default);
 
     IAsyncEnumerable<string> StreamMessageAsync(

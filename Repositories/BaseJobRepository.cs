@@ -102,6 +102,14 @@ public partial class BaseJobRepository(
             query = ApplyStatusFilter(query, queryParams.StatusFilter);
             query = ApplySearchTextFilter(query, queryParams.SearchText);
 
+            // Network Partner users only see jobs routed to their NP agent. Non-NP
+            // users see everything per existing view/client filters.
+            var npAgentId = await infoService.GetCurrentNpAgentIdAsync();
+            if (npAgentId.HasValue)
+            {
+                query = query.Where(j => j.NpAgentId == npAgentId.Value);
+            }
+
             switch (page)
             {
                 case AppPage.Dispatch:
