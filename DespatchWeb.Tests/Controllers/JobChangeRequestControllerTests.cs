@@ -1,12 +1,14 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.RequestModels;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(JobChangeRequestController))]
 public class JobChangeRequestControllerTests
 {
     private readonly IJobChangeRequestService _service = Substitute.For<IJobChangeRequestService>();

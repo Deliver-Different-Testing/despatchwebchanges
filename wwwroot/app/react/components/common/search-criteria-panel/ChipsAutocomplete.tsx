@@ -93,12 +93,13 @@ export const ChipsAutocomplete: React.FC<ChipsAutocompleteProps> = ({
                     {...params}
                     placeholder={value.length === 0 ? placeholder : ''}
                     slotProps={{
+                        ...params.slotProps,
                         input: {
-                            ...params.InputProps,
+                            ...params.slotProps.input,
                             endAdornment: (
                                 <>
                                     {loading ? <CircularProgress color="inherit" size={18} /> : null}
-                                    {params.InputProps.endAdornment}
+                                    {params.slotProps.input.endAdornment}
                                 </>
                             ),
                         },

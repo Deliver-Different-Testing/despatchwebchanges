@@ -337,7 +337,9 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                     <ScheduleIcon sx={{fontSize: 24}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         {isNewSchedule ? 'Create' : 'Edit'} Afterhours Schedule
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -355,7 +357,6 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Driver Selection Section */}
@@ -372,7 +373,9 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
                         <PersonIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" fontWeight={500}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 500
+                        }}>
                             {isNewSchedule ? 'Select' : 'Change'} Driver
                         </Typography>
                     </Box>
@@ -387,7 +390,7 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                         }}
                         onChange={(_, value) => handleCourierSelect(value)}
                         isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={({InputProps: autoInputProps, ...params}) => (
+                        renderInput={({slotProps: autoSlotProps, ...params}) => (
                             <TextField
                                 {...params}
                                 label="Search driver..."
@@ -395,12 +398,13 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                                 error={!!validationErrors.courier}
                                 helperText={validationErrors.courier}
                                 slotProps={{
+                                    ...autoSlotProps,
                                     input: {
-                                        ...autoInputProps,
+                                        ...autoSlotProps.input,
                                         endAdornment: (
                                             <>
                                                 {isSearchingCouriers ? <CircularProgress size={20} /> : null}
-                                                {autoInputProps.endAdornment}
+                                                {autoSlotProps.input.endAdornment}
                                             </>
                                         ),
                                     },
@@ -423,14 +427,23 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                                 gap: 1,
                             }}
                         >
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Current driver:
                             </Typography>
-                            <Typography variant="body2" fontWeight={600}>
+                            <Typography variant="body2" sx={{
+                                fontWeight: 600
+                            }}>
                                 {courierName}
                             </Typography>
                             {courierCode && (
-                                <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: "text.secondary",
+                                        fontStyle: "italic"
+                                    }}>
                                     ({courierCode})
                                 </Typography>
                             )}
@@ -451,7 +464,9 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 3}}>
                         <ScheduleIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" fontWeight={500}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 500
+                        }}>
                             Schedule Details
                         </Typography>
                     </Box>
@@ -485,7 +500,12 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                             </Typography>
                         )}
                         {selectedDays.length > 0 && (
-                            <Typography variant="caption" color="text.secondary" sx={{mt: 0.5}}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: 0.5
+                                }}>
                                 {getSelectedDaysText()}
                             </Typography>
                         )}
@@ -556,10 +576,17 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                             })}
                         >
                             <TimerIcon sx={{color: 'info.main'}} />
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Total Duration
                             </Typography>
-                            <Typography variant="body1" fontWeight={600} sx={{ml: 'auto'}}>
+                            <Typography
+                                variant="body1"
+                                sx={{
+                                    fontWeight: 600,
+                                    ml: 'auto'
+                                }}>
                                 {duration}
                             </Typography>
                         </Box>
@@ -584,7 +611,6 @@ export const EditAfterhoursDialog: React.FC<EditAfterhoursDialogProps> = ({
                     )}
                 </Paper>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

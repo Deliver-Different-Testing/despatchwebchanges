@@ -72,7 +72,9 @@ export function TextInputDialog({
                     <EditIcon sx={{ fontSize: 28 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>{title}</Typography>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>{title}</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Update the field value</Typography>
                 </Box>
                 <IconButton onClick={onCancel} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>

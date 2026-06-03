@@ -544,7 +544,7 @@ export const TaskItem = React.memo(function TaskItem(props: TaskItemProps) {
                                 >
                                     <ListItemText
                                         primary={staff.text}
-                                        slotProps={{primary: {fontSize: '0.8125rem'}}}
+                                        slotProps={{primary: {sx: {fontSize: '0.8125rem'}}}}
                                     />
                                 </ListItemButton>
                             ))}

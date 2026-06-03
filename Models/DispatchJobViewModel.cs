@@ -99,6 +99,14 @@ public class DispatchJobViewModel
     // for the generic "counterparty" / "partner" copy.
     public string PartnerTenantName { get; set; }
 
+    // IntMgrPartnerPairing.Id for the pairing this job belongs to. Set at
+    // SendToPartner time for outbound jobs and by IntegrationManager at
+    // mirror ingestion for inbound jobs, so the frontend can disambiguate
+    // when filing a JobChangeRequest on a tenant with multiple active
+    // pairings. Falls back to JobPartnerDispatch / most-recent CR pairing
+    // for jobs that pre-date the column.
+    public int? PartnerPairingId { get; set; }
+
     // UI helper fields
     public List<Suggestion> RelatedJobs { get; set; }
     public List<DispatchJobViewModel> Children { get; set; }

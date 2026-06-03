@@ -2408,12 +2408,8 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
             UcjbNumber = "JOB-001",
             PartnerJobGuid = Guid.NewGuid(),
-            JobPartnerDispatch = new JobPartnerDispatch
-            {
-                JobId = 1,
-                PartnerPairingId = 7,
-                PartnerPairing = pairing
-            },
+            PartnerPairingId = 7,
+            PartnerPairing = pairing,
             TucJobChangeRequests = new List<TucJobChangeRequest>(),
             PricingBreakdownJobs = new List<PricingBreakdown>(),
             TucJobItemJobs = new List<TucJobItem>(),
@@ -2429,9 +2425,10 @@ public class JobMappingsTests
     [Fact]
     public void JobMappingCore_PartnerTenantName_FromMostRecentChangeRequest_WhenReceiverSide()
     {
-        // Receiver side: no JobPartnerDispatch row, so the mapping falls back to
-        // the most recent change request's pairing. The "most recent" tie-break
-        // matters when multiple historical requests reference different pairings.
+        // Legacy receiver-side mirror: PartnerPairingId never got populated, so the
+        // mapping falls back to the most recent change request's pairing. The
+        // "most recent" tie-break matters when multiple historical requests
+        // reference different pairings.
         var olderPairing = new IntMgrPartnerPairing
         {
             Id = 5,
@@ -2461,7 +2458,6 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
             UcjbNumber = "JOB-001",
             PartnerJobGuid = Guid.NewGuid(),
-            JobPartnerDispatch = null,
             TucJobChangeRequests = new List<TucJobChangeRequest>
             {
                 new()
@@ -2493,10 +2489,12 @@ public class JobMappingsTests
     }
 
     [Fact]
-    public void JobMappingCore_PartnerTenantName_Null_WhenNoDispatchAndNoChangeRequests()
+    public void JobMappingCore_PartnerTenantName_Null_WhenNoPairingAndNoChangeRequests()
     {
-        // Fresh receiver-side mirror with no change requests yet — UI falls back
-        // to the generic "the partner" wording on a null value.
+        // Legacy receiver-side mirror with no PartnerPairingId and no change
+        // requests yet — UI falls back to the generic "the partner" wording on
+        // a null value. (The stale-link banner in JobDetails fires for this
+        // case to prompt a resend.)
         var job = new TucJob
         {
             UcjbId = 1,
@@ -2504,7 +2502,6 @@ public class JobMappingsTests
             UcjbTime = new DateTime(2024, 6, 10, 8, 0, 0),
             UcjbNumber = "JOB-001",
             PartnerJobGuid = Guid.NewGuid(),
-            JobPartnerDispatch = null,
             TucJobChangeRequests = new List<TucJobChangeRequest>(),
             PricingBreakdownJobs = new List<PricingBreakdown>(),
             TucJobItemJobs = new List<TucJobItem>(),

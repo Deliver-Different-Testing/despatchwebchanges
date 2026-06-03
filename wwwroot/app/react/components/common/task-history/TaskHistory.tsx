@@ -299,7 +299,6 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                     </Tooltip>
                 </Box>
             </Box>
-
             {/* Main Content */}
             <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'}}>
                 {/* Loading Bar */}
@@ -534,7 +533,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                     </Box>
                 ) : !loading ? (
                     /* Empty State */
-                    <Box
+                    (<Box
                         sx={{
                             flex: 1,
                             display: 'flex',
@@ -552,7 +551,7 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                         <Typography variant="body2" sx={{color: 'text.secondary'}}>
                             No delivery journey events found for this job.
                         </Typography>
-                    </Box>
+                    </Box>)
                 ) : null}
             </Box>
         </Box>

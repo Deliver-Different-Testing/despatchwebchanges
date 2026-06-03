@@ -154,7 +154,9 @@ export const SideNav: React.FC<SideNavProps> = ({
                         <AccountCircleIcon sx={{fontSize: 36}} />
                     </Box>
                     <Box>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             {userName}
                         </Typography>
                         <Typography variant="body2" sx={{opacity: 0.85}}>
@@ -166,7 +168,6 @@ export const SideNav: React.FC<SideNavProps> = ({
                     {currentDate}
                 </Typography>
             </Box>
-
             {/* Navigation Menu */}
             <Box sx={{flex: 1, overflow: 'auto', py: 1}}>
                 <List disablePadding>
@@ -203,8 +204,8 @@ export const SideNav: React.FC<SideNavProps> = ({
                                     <ListItemText
                                         primary={item.label}
                                         slotProps={{primary: {
-                                            fontWeight: isActive ? 600 : 400,
                                             color: isActive ? 'primary.main' : 'text.primary',
+                                            sx: {fontWeight: isActive ? 600 : 400},
                                         }}}
                                     />
                                 </ListItemButton>
@@ -213,7 +214,6 @@ export const SideNav: React.FC<SideNavProps> = ({
                     })}
                 </List>
             </Box>
-
             {/* Footer */}
             <Box
                 sx={(theme) => ({
@@ -222,7 +222,9 @@ export const SideNav: React.FC<SideNavProps> = ({
                     textAlign: 'center',
                 })}
             >
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     &copy; {currentYear} Deliver Different
                 </Typography>
                 {isUsCustomer && (
@@ -236,7 +238,9 @@ export const SideNav: React.FC<SideNavProps> = ({
                         }}
                     >
                         <FavoriteIcon sx={{fontSize: 14, color: 'error.main'}} />
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Made with aroha in Aotearoa
                         </Typography>
                     </Box>

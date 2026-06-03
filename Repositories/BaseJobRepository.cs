@@ -102,14 +102,6 @@ public partial class BaseJobRepository(
             query = ApplyStatusFilter(query, queryParams.StatusFilter);
             query = ApplySearchTextFilter(query, queryParams.SearchText);
 
-            // Network Partner users only see jobs routed to their NP agent. Non-NP
-            // users see everything per existing view/client filters.
-            var npAgentId = await infoService.GetCurrentNpAgentIdAsync();
-            if (npAgentId.HasValue)
-            {
-                query = query.Where(j => j.NpAgentId == npAgentId.Value);
-            }
-
             switch (page)
             {
                 case AppPage.Dispatch:
@@ -171,13 +163,13 @@ public partial class BaseJobRepository(
 
                 allJobs = await Context.TucJobs
                     .Where(j => pageJobIds.Contains(j.UcjbId))
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
+                    .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
                     .ToListAsync(cancellationToken);
             }
             else
             {
                 allJobs = await query
-                    .Select(JobMappings.JobDispatchMapping(isUsTenant))
+                    .Select(JobMappings.JobDispatchMapping(isUsTenant, infoService.GetCurrentTenantId()))
                     .ToListAsync(cancellationToken);
 
                 allJobs = allJobs.DistinctBy(j => j.Id).ToList();

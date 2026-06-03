@@ -33,7 +33,7 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import {alpha} from '@mui/material/styles';
 import type {SxProps, Theme} from '@mui/material';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import EditIcon from '@mui/icons-material/Edit';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
@@ -205,7 +205,9 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
             <Card variant="outlined">
                 <CardContent sx={{display: 'flex', alignItems: 'center', gap: 1, py: 2}}>
                     <CircularProgress size={16}/>
-                    <Typography variant="body2" color="text.secondary">Loading change requests…</Typography>
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>Loading change requests…</Typography>
                 </CardContent>
             </Card>
         );
@@ -219,7 +221,9 @@ export const JobChangeRequestsForJob: React.FC<JobChangeRequestsForJobProps> = (
         return (
             <Card variant="outlined">
                 <CardContent sx={{py: 2}}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         No partner change requests for this job.
                     </Typography>
                 </CardContent>
@@ -401,7 +405,9 @@ function ChangeRequestCard({
                             />
                         )}
                         <Tooltip title={requestedAtTooltip}>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {relativeAgeShort(row.requestedAt)} ago
                             </Typography>
                         </Tooltip>
@@ -492,7 +498,9 @@ function ChangeRequestCard({
                     </Box>
                 ) : isCancelling ? (
                     <Box sx={{mt: 1.5, display: 'flex', flexDirection: 'column', gap: 1}}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             Cancel this change request? The partner will be notified the request was retracted.
                         </Typography>
                         <Box sx={{display: 'flex', gap: 1, justifyContent: 'flex-end'}}>

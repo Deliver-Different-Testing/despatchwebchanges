@@ -147,7 +147,12 @@ export function DataTable<T>({
                             <TableRow>
                                 <TableCell colSpan={colSpan} align="center" sx={{py: 8}}>
                                     <CircularProgress size={32} />
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            mt: 2
+                                        }}>
                                         Loading...
                                     </Typography>
                                 </TableCell>
@@ -158,10 +163,17 @@ export function DataTable<T>({
                                     {emptyIcon && React.cloneElement(emptyIcon as React.ReactElement<Record<string, unknown>>, {
                                         sx: {fontSize: 48, color: 'grey.400', mb: 1, ...(emptyIcon.props as Record<string, unknown>)?.sx as object},
                                     })}
-                                    <Typography variant="body1" sx={{fontWeight: 600}} color="text.secondary">
+                                    <Typography
+                                        variant="body1"
+                                        sx={{
+                                            color: "text.secondary",
+                                            fontWeight: 600
+                                        }}>
                                         {emptyTitle}
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {emptyMessage}
                                     </Typography>
                                 </TableCell>

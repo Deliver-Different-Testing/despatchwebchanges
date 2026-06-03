@@ -68,7 +68,7 @@ public sealed class JobReportService(
         // Fire and forget S3 upload to avoid blocking the response
         _ = Task.Run(async () =>
         {
-            try { await UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyyMM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3Bucket"); }
+            try { await UploadToS3Async(csvBytes, $"Jobs/{currentDate:yyyy}/{currentDate:MM}/Jobs-{currentDate:yyyyMMddHHmmss}", "S3BucketMars"); }
             catch (Exception ex) { Log.Error(ex, "Background S3 upload failed for jobs report"); }
         });
 
@@ -172,7 +172,7 @@ public sealed class JobReportService(
                     {
                         await UploadToS3Async(
                             csvBytes,
-                            $"ClientJobsReports/{currentDate:yyyyMM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
+                            $"ClientJobsReports/{currentDate:yyyy}/{currentDate:MM}/ClientJobsReport_{clientCode}_{currentDate:yyyyMMddHHmmss}.csv",
                             "S3BucketMars");
                     }
                     catch (Exception ex) { Log.Error(ex, "Background S3 upload failed for client jobs report {ClientCode}", clientCode); }
@@ -470,9 +470,8 @@ public sealed class JobReportService(
     /// </summary>
     private async Task ArchiveUploadedFileToS3Async(IFormFile file, DateTimeOffset currentDate)
     {
-        var folder = currentDate.ToString("yyyyMM");
         var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-        var key = $"Jobs/{folder}/Jobs-{timestamp}";
+        var key = $"Jobs/{currentDate:yyyy}/{currentDate:MM}/Jobs-{timestamp}";
 
         using var memoryStream = new MemoryStream();
         await file.CopyToAsync(memoryStream);
@@ -480,7 +479,7 @@ public sealed class JobReportService(
 
         try
         {
-            var bucketName = Environment.GetEnvironmentVariable("S3Bucket")?.Replace("downloads", "uploads");
+            var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
             var putRequest = new PutObjectRequest
             {
                 BucketName = bucketName,

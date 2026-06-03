@@ -236,7 +236,9 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                         <TodayIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             {title}
                         </Typography>
                         <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -262,7 +264,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             {showDate && showTime ? (
                                 // Show separate date and time pickers for better UX
-                                <>
+                                (<>
                                     <DatePicker
                                         value={dateTime}
                                         onChange={handleDateChange}
@@ -288,7 +290,7 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                         }}
                                         sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                                     />
-                                </>
+                                </>)
                             ) : (
                                 renderPicker()
                             )}

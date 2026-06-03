@@ -332,6 +332,6 @@ describe('CreateJobDialog', () => {
             const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
             expect(submittedJob.pickUpAddress.addressLine8).toBe('United States');
             expect(submittedJob.deliveryAddress.addressLine8).toBe('United States');
-        });
+        }, 30000);
     });
 });

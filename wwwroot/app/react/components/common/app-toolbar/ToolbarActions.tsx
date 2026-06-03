@@ -196,7 +196,9 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                 {(!views || views.length === 0) ? (
                     <Box sx={{p: 3, textAlign: 'center'}}>
                         <VisibilityOffIcon sx={{fontSize: 40, color: 'text.disabled', mb: 1}}/>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             No views available
                         </Typography>
                     </Box>
@@ -224,7 +226,7 @@ export const ViewsMenu: React.FC<ViewsMenuProps> = ({
                             <ListItemText
                                 slotProps={{primary: {
                                     variant: 'body2',
-                                    fontWeight: view.selected ? 500 : 400,
+                                    sx: {fontWeight: view.selected ? 500 : 400},
                                 }}}
                             >
                                 {view.name}
@@ -342,8 +344,8 @@ export const LayoutsMenu: React.FC<LayoutsMenuProps> = ({
                             <ListItemText
                                 slotProps={{primary: {
                                     variant: 'body2',
-                                    fontWeight: isActive ? 600 : 400,
                                     color: isActive ? 'primary.main' : 'text.primary',
+                                    sx: {fontWeight: isActive ? 600 : 400},
                                 }}}
                             >
                                 {layout.name}

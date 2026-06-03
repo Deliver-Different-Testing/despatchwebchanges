@@ -124,7 +124,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                     <EngineeringIcon sx={{ fontSize: 28 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>
                         Agent Details
                     </Typography>
                     {agent && (
@@ -143,7 +145,6 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                 {isLoading ? (
@@ -182,7 +183,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                         })}
                                     >
                                         <PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
+                                        <Typography variant="subtitle1" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             Basic Information
                                         </Typography>
                                     </Box>
@@ -236,7 +239,12 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                     )
                                                 ))}
                                                 {rankingValue === 0 && (
-                                                    <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            color: "text.secondary",
+                                                            ml: 1
+                                                        }}>
                                                         No ranking
                                                     </Typography>
                                                 )}
@@ -277,7 +285,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                     </Typography>
                                                 </Box>
                                             ) : (
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     Not provided
                                                 </Typography>
                                             )}
@@ -317,7 +327,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                     </Typography>
                                                 </Box>
                                             ) : (
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     Not provided
                                                 </Typography>
                                             )}
@@ -369,7 +381,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                         })}
                                     >
                                         <NoteIcon sx={{ color: 'info.main', fontSize: 22 }} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
+                                        <Typography variant="subtitle1" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             Notes
                                         </Typography>
                                     </Box>
@@ -414,7 +428,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                         })}
                                     >
                                         <FlightIcon sx={{ color: 'success.main', fontSize: 22 }} />
-                                        <Typography variant="subtitle1" fontWeight={600}>
+                                        <Typography variant="subtitle1" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             Assigned Airports
                                         </Typography>
                                         {agent.airports && agent.airports.length > 0 && (
@@ -463,7 +479,13 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                                                 fontSize: '0.75rem',
                                                             })}
                                                         />
-                                                        <Typography variant="body2" fontWeight={500} sx={{ flex: 1 }} noWrap>
+                                                        <Typography
+                                                            variant="body2"
+                                                            noWrap
+                                                            sx={{
+                                                                fontWeight: 500,
+                                                                flex: 1
+                                                            }}>
                                                             {airport.name}
                                                         </Typography>
                                                     </Box>
@@ -517,7 +539,12 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                                             >
                                                 <FlightOffIcon sx={{ fontSize: 32, color: 'grey.400' }} />
                                             </Box>
-                                            <Typography variant="body2" color="text.secondary" fontStyle="italic">
+                                            <Typography
+                                                variant="body2"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    fontStyle: "italic"
+                                                }}>
                                                 No airports assigned
                                             </Typography>
                                         </Box>
@@ -528,7 +555,9 @@ export const AgentInfoDialog: React.FC<AgentInfoDialogProps> = ({open, agent, is
                     </Box>
                 ) : (
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8 }}>
-                        <Typography color="text.secondary">No agent data available</Typography>
+                        <Typography sx={{
+                            color: "text.secondary"
+                        }}>No agent data available</Typography>
                     </Box>
                 )}
             </DialogContent>

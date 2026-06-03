@@ -304,7 +304,9 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     <LocalShippingIcon sx={{fontSize: 24}}/>
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>Dispatch</Typography>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>Dispatch</Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
                         {subtitleForMode(mode)}
                     </Typography>
@@ -318,7 +320,6 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     <CloseIcon/>
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3, display: 'flex', flexDirection: 'column', gap: 3}}>
@@ -375,12 +376,13 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                             size="small"
                                             sx={TEXT_FIELD_SX}
                                             slotProps={{
+                                                ...params.slotProps,
                                                 input: {
-                                                    ...params.InputProps,
+                                                    ...params.slotProps.input,
                                                     endAdornment: (
                                                         <>
                                                             {searchLoading ? <CircularProgress color="inherit" size={18}/> : null}
-                                                            {params.InputProps.endAdornment}
+                                                            {params.slotProps.input.endAdornment}
                                                         </>
                                                     ),
                                                 },
@@ -442,7 +444,6 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                     {submitError && <Alert severity="error">{submitError}</Alert>}
                 </Box>
             </DialogContent>
-
             {/* Footer */}
             <DialogActions
                 sx={(theme) => ({

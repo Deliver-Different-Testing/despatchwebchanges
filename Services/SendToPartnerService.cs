@@ -122,36 +122,26 @@ public sealed class SendToPartnerService(
         }
     }
 
-    // Persists the outbound job→pairing link so the dispatch UI can surface the partner
-    // name in the courier column. Idempotent: re-sending an already-linked job updates the
-    // pairing reference instead of failing on the PK.
+    // Stamps the pairing id onto the tucJob row so JobChangeRequestService can resolve the
+    // source pairing, and the dispatch UI can surface the partner name in the courier column.
+    // Symmetric with the inbound path where IntegrationManager populates TucJob.PartnerPairingId
+    // at mirror ingestion. Idempotent — ExecuteUpdateAsync is a single UPDATE with no
+    // load/track step, so re-sending an already-linked job just rewrites the same value.
     private async Task RecordOutboundPartnerDispatchAsync(int jobId, int pairingId)
     {
         try
         {
             await using var ctx = await contextFactory.CreateDbContextAsync();
-            var existing = await ctx.JobPartnerDispatches.FindAsync(jobId);
-            if (existing is null)
-            {
-                ctx.JobPartnerDispatches.Add(new JobPartnerDispatch
-                {
-                    JobId = jobId,
-                    PartnerPairingId = pairingId
-                });
-            }
-            else
-            {
-                existing.PartnerPairingId = pairingId;
-            }
-
-            await ctx.SaveChangesAsync();
+            await ctx.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(s => s.SetProperty(j => j.PartnerPairingId, pairingId));
         }
         catch (Exception ex)
         {
             // Partner already accepted upstream — log and continue so the success path
             // isn't unwound by a local persistence hiccup.
             Log.Error(ex,
-                "Job {JobId}: failed to persist JobPartnerDispatch link to pairing {PairingId}",
+                "Job {JobId}: failed to stamp TucJob.PartnerPairingId = {PairingId}",
                 jobId, pairingId);
         }
     }

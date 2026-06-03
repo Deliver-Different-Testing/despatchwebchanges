@@ -41,8 +41,8 @@ import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import CheckBoxOutlineBlankIcon from '@mui/icons-material/CheckBoxOutlineBlank';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
-import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutlined';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import {
     ChatMessage,
     MessageContactOption,
@@ -524,7 +524,9 @@ function DialogHeader({title, subtitle, showBackButton, onBack, onClose}: Dialog
             )}
             {!showBackButton && <ChatIcon sx={SX_MR_1}/>}
             <Box sx={SX_FLEX_1}>
-                <Typography variant="h6" fontWeight={600}>
+                <Typography variant="h6" sx={{
+                    fontWeight: 600
+                }}>
                     {title}
                 </Typography>
                 {subtitle && (
@@ -582,7 +584,9 @@ function ConversationsPanel({
                     borderColor: 'divider',
                 }}
             >
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography variant="subtitle1" sx={{
+                    fontWeight: 600
+                }}>
                     Conversations
                 </Typography>
                 {totalUnreadCount > 0 && (
@@ -600,14 +604,12 @@ function ConversationsPanel({
                     <AddCommentIcon/>
                 </IconButton>
             </Box>
-
             {/* Loading indicator */}
             {isLoading && conversations.length === 0 && (
                 <Box sx={SX_LOADING_BOX}>
                     <CircularProgress size={32}/>
                 </Box>
             )}
-
             {/* Conversations List */}
             <List sx={SX_LIST_CONTAINER}>
                 {conversations.map((conv) => (
@@ -650,10 +652,17 @@ function ConversationsPanel({
                         <ListItemText
                             primary={
                                 <Box sx={SX_CONV_NAME_ROW}>
-                                    <Typography variant="body2" fontWeight={500} noWrap sx={SX_CONV_NAME_TEXT}>
+                                    <Typography
+                                        variant="body2"
+                                        noWrap
+                                        sx={[{
+                                            fontWeight: 500
+                                        }, ...(Array.isArray(SX_CONV_NAME_TEXT) ? SX_CONV_NAME_TEXT : [SX_CONV_NAME_TEXT])]}>
                                         {conv.otherPartyName}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {formatLastMessageTime(conv.lastMessageTime)}
                                     </Typography>
                                 </Box>
@@ -662,13 +671,15 @@ function ConversationsPanel({
                                 <Box sx={SX_CONV_SECONDARY_ROW}>
                                     <Typography
                                         variant="caption"
-                                        color="text.secondary"
                                         noWrap
-                                        sx={SX_FLEX_1}
-                                    >
+                                        sx={[{
+                                            color: "text.secondary"
+                                        }, ...(Array.isArray(SX_FLEX_1) ? SX_FLEX_1 : [SX_FLEX_1])]}>
                                         {conv.lastMessage ? (
                                             <>
-                                                <Typography component="span" variant="caption" fontWeight={500}>
+                                                <Typography component="span" variant="caption" sx={{
+                                                    fontWeight: 500
+                                                }}>
                                                     {conv.unreadCount > 0 ? `${conv.otherPartyName}: ` : 'You: '}
                                                 </Typography>
                                                 {conv.lastMessage.substring(0, 40)}
@@ -690,7 +701,6 @@ function ConversationsPanel({
                     </ListItem>
                 ))}
             </List>
-
             {/* Empty State */}
             {!isLoading && conversations.length === 0 && (
                 <EmptyState
@@ -758,7 +768,9 @@ function ChatPanel({
                 justifyContent: 'center'
             }}>
                 <ChatIcon sx={{fontSize: 64, color: 'action.disabled', mb: 2}}/>
-                <Typography color="text.secondary">
+                <Typography sx={{
+                    color: "text.secondary"
+                }}>
                     Select a conversation or start a new one
                 </Typography>
             </Box>
@@ -782,10 +794,17 @@ function ChatPanel({
                     {selectedConversation.otherPartyInitials}
                 </Avatar>
                 <Box sx={SX_FLEX_1}>
-                    <Typography variant="body1" fontWeight={500}>
+                    <Typography variant="body1" sx={{
+                        fontWeight: 500
+                    }}>
                         {selectedConversation.otherPartyName}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'capitalize'}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            textTransform: 'capitalize'
+                        }}>
                         {selectedConversation.otherPartyType === OtherMessagePartyType.Courier ? 'Courier' : 'Staff'}
                         {' · '}{selectedConversation.otherPartyStatus}
                     </Typography>
@@ -794,7 +813,6 @@ function ChatPanel({
                     <RefreshIcon sx={{animation: isMessagesLoading ? 'spin 1s linear infinite' : 'none'}}/>
                 </IconButton>
             </Box>
-
             {/* Messages Area */}
             <Box
                 sx={{
@@ -850,7 +868,6 @@ function ChatPanel({
                     </>
                 )}
             </Box>
-
             {/* Quick Responses Panel */}
             {showQuickResponses && (
                 <Box
@@ -862,8 +879,13 @@ function ChatPanel({
                     }}
                 >
                     <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1}}>
-                        <Typography variant="caption" fontWeight={500} color="text.secondary"
-                                    sx={{textTransform: 'uppercase'}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                fontWeight: 500,
+                                color: "text.secondary",
+                                textTransform: 'uppercase'
+                            }}>
                             Quick Responses
                         </Typography>
                         <IconButton size="small" onClick={onToggleQuickResponses}>
@@ -890,7 +912,6 @@ function ChatPanel({
                     </Box>
                 </Box>
             )}
-
             {/* Message Input */}
             <Box
                 sx={{
@@ -1055,7 +1076,11 @@ function NewChatView({
                         borderColor: 'divider',
                     }}
                 >
-                    <Typography fontWeight={500} color="primary.main">
+                    <Typography
+                        sx={{
+                            fontWeight: 500,
+                            color: "primary.main"
+                        }}>
                         {selectedContacts.length} selected
                     </Typography>
                     <Box sx={{display: 'flex', gap: 1}}>
@@ -1076,7 +1101,6 @@ function NewChatView({
                     </Box>
                 </Box>
             )}
-
             {/* Search Section */}
             <Box
                 sx={{
@@ -1127,15 +1151,15 @@ function NewChatView({
                     Multi
                 </Button>
             </Box>
-
             {/* Loading */}
             {isSearching && (
                 <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, p: 3}}>
                     <CircularProgress size={24}/>
-                    <Typography color="text.secondary">Searching...</Typography>
+                    <Typography sx={{
+                        color: "text.secondary"
+                    }}>Searching...</Typography>
                 </Box>
             )}
-
             {/* Results */}
             <Box sx={{flex: 1, overflow: 'auto'}}>
                 {/* Recent Conversations */}
@@ -1143,10 +1167,13 @@ function NewChatView({
                     <Box sx={{py: 2}}>
                         <Typography
                             variant="caption"
-                            fontWeight={600}
-                            color="text.secondary"
-                            sx={{px: 2, textTransform: 'uppercase', letterSpacing: 0.5}}
-                        >
+                            sx={{
+                                fontWeight: 600,
+                                color: "text.secondary",
+                                px: 2,
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5
+                            }}>
                             Recent
                         </Typography>
                         <List>
@@ -1172,10 +1199,13 @@ function NewChatView({
                     <Box sx={{py: 2}}>
                         <Typography
                             variant="caption"
-                            fontWeight={600}
-                            color="text.secondary"
-                            sx={{px: 2, textTransform: 'uppercase', letterSpacing: 0.5}}
-                        >
+                            sx={{
+                                fontWeight: 600,
+                                color: "text.secondary",
+                                px: 2,
+                                textTransform: 'uppercase',
+                                letterSpacing: 0.5
+                            }}>
                             Results ({searchResults.length})
                         </Typography>
                         <List>
@@ -1216,7 +1246,11 @@ function NewChatView({
                 {/* Multi-select Compose */}
                 {isMultiSelectMode && selectedContacts.length > 0 && (
                     <Box sx={{m: 2, p: 2, bgcolor: 'grey.100', borderRadius: 2}}>
-                        <Typography fontWeight={500} sx={{mb: 1.5}}>
+                        <Typography
+                            sx={{
+                                fontWeight: 500,
+                                mb: 1.5
+                            }}>
                             Send to {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}
                         </Typography>
                         <TextField
@@ -1330,7 +1364,11 @@ function EmptyState({icon, message, action}: EmptyStateProps) {
             }}
         >
             <Box sx={{color: 'action.disabled', mb: 2}}>{icon}</Box>
-            <Typography color="text.secondary" sx={{mb: action ? 2 : 0}}>
+            <Typography
+                sx={{
+                    color: "text.secondary",
+                    mb: action ? 2 : 0
+                }}>
                 {message}
             </Typography>
             {action}
@@ -1359,7 +1397,11 @@ function ErrorState({message, onRetry}: ErrorStateProps) {
             <Typography variant="h6" gutterBottom>
                 Unable to load messages
             </Typography>
-            <Typography color="text.secondary" sx={{mb: 3}}>
+            <Typography
+                sx={{
+                    color: "text.secondary",
+                    mb: 3
+                }}>
                 {message}
             </Typography>
             <Button variant="contained" startIcon={<RefreshIcon/>} onClick={onRetry}>

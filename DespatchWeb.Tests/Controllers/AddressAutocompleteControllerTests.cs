@@ -1,12 +1,14 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(AddressAutocompleteController))]
 public class AddressAutocompleteControllerTests
 {
     private readonly IAddressLookupService _addressLookup = Substitute.For<IAddressLookupService>();

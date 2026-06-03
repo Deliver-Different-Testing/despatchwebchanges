@@ -199,17 +199,21 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                     field.inputValue.length >= MIN_SEARCH_LENGTH ? (
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1, py: 1}}>
                             <SearchOffIcon color="action" />
-                            <Typography color="text.secondary">
+                            <Typography sx={{
+                                color: "text.secondary"
+                            }}>
                                 No matches for &ldquo;{field.inputValue}&rdquo;
                             </Typography>
                         </Box>
                     ) : (
-                        <Typography color="text.secondary">
+                        <Typography sx={{
+                            color: "text.secondary"
+                        }}>
                             Type at least {MIN_SEARCH_LENGTH} characters to search
                         </Typography>
                     )
                 }
-                renderInput={({InputProps: autoInputProps, ...params}) => (
+                renderInput={({slotProps: autoSlotProps, ...params}) => (
                     <TextField
                         {...params}
                         autoFocus={autoFocus}
@@ -221,12 +225,13 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                         error={hasError}
                         helperText={hasError ? 'This field is required.' : undefined}
                         slotProps={{
+                            ...autoSlotProps,
                             input: {
-                                ...autoInputProps,
+                                ...autoSlotProps.input,
                                 endAdornment: (
                                     <>
                                         {field.loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                        {autoInputProps.endAdornment}
+                                        {autoSlotProps.input.endAdornment}
                                     </>
                                 ),
                             },
@@ -289,7 +294,9 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                     <PaymentsIcon sx={{fontSize: 28}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>
                         Inter-Courier Charge
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -307,7 +314,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 <Paper
@@ -377,7 +383,6 @@ export const InterCourierChargeDialog: React.FC<InterCourierChargeDialogProps> =
                     </Box>
                 </Paper>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

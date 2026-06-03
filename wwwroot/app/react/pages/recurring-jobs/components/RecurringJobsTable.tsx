@@ -149,7 +149,9 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                         <Typography variant="body2" noWrap>
                             {formatDate(job.booked)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
+                        <Typography variant="caption" noWrap sx={{
+                            color: "text.secondary"
+                        }}>
                             {formatTime(job.booked)}
                         </Typography>
                     </Box>
@@ -181,7 +183,13 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                             <Typography variant="body2" noWrap sx={{maxWidth: 150}}>
                                 {getAddressPrimary(job.pickupAddress)}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap sx={{maxWidth: 150}}>
+                            <Typography
+                                variant="caption"
+                                noWrap
+                                sx={{
+                                    color: "text.secondary",
+                                    maxWidth: 150
+                                }}>
                                 {getAddressSecondary(job.pickupAddress, isUsCustomer)}
                             </Typography>
                         </Box>
@@ -194,7 +202,13 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                             <Typography variant="body2" noWrap sx={{maxWidth: 150}}>
                                 {getAddressPrimary(job.deliveryAddress)}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary" noWrap sx={{maxWidth: 150}}>
+                            <Typography
+                                variant="caption"
+                                noWrap
+                                sx={{
+                                    color: "text.secondary",
+                                    maxWidth: 150
+                                }}>
                                 {getAddressSecondary(job.deliveryAddress, isUsCustomer)}
                             </Typography>
                         </Box>
@@ -214,7 +228,9 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                         <Typography variant="body2" noWrap>
                             {formatDate(job.nextDueTime)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" noWrap>
+                        <Typography variant="caption" noWrap sx={{
+                            color: "text.secondary"
+                        }}>
                             {formatTime(job.nextDueTime)}
                         </Typography>
                     </Box>
@@ -286,7 +302,12 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                             <TableRow>
                                 <TableCell colSpan={columns.length} align="center" sx={{py: 8}}>
                                     <CircularProgress size={32}/>
-                                    <Typography variant="body2" color="text.secondary" sx={{mt: 2}}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            mt: 2
+                                        }}>
                                         Loading recurring jobs...
                                     </Typography>
                                 </TableCell>
@@ -295,7 +316,9 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                             <TableRow>
                                 <TableCell colSpan={columns.length} align="center" sx={{py: 8}}>
                                     <EventRepeatIcon sx={{fontSize: 48, color: 'text.disabled', mb: 1}}/>
-                                    <Typography variant="body1" color="text.secondary">
+                                    <Typography variant="body1" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         No recurring jobs available
                                     </Typography>
                                 </TableCell>

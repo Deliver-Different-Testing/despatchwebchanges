@@ -112,6 +112,12 @@ export interface IJob {
     isPartnerJob?: boolean;
     /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
     partnerTenantName?: string | null;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -315,6 +321,12 @@ export interface IJobDto {
     isPartnerJob?: boolean;
     /** Name of the OTHER tenant on a partner pairing — populated for sender + receiver. */
     partnerTenantName?: string | null;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     pickUpLongitude?: number;
     pickUpLatitude?: number;
@@ -796,6 +808,12 @@ export interface IDispatchJob {
     // Job flags
     locked?: boolean;
     isPartnerJob?: boolean;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;
@@ -922,6 +940,12 @@ export interface IDispatchJobDto {
     // Job flags
     locked?: boolean;
     isPartnerJob?: boolean;
+    /**
+     * IntMgrPartnerPairing.Id that this job belongs to. Sent on JobChangeRequest
+     * payloads so the backend can disambiguate when a tenant has multiple active
+     * pairings. Null for non-partner jobs or for legacy jobs predating the column.
+     */
+    partnerPairingId?: number | null;
     invoiced?: boolean;
     allowSplit?: boolean;
     isActive?: boolean;

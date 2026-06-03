@@ -315,9 +315,10 @@ export function DriversPanel({
                             />
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
-                                sx={{ fontSize: 13 }}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    fontSize: 13
+                                }}>
                                 Loading drivers...
                             </Typography>
                         </Box>
@@ -343,14 +344,17 @@ export function DriversPanel({
                             />
                             <Typography
                                 variant="body2"
-                                color="text.secondary"
-                                fontWeight={500}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    fontWeight: 500
+                                }}>
                                 No active drivers
                             </Typography>
                             <Typography
                                 variant="caption"
-                                color="text.disabled"
+                                sx={{
+                                    color: "text.disabled"
+                                }}
                             >
                                 Drivers will appear when they log in
                             </Typography>
@@ -379,14 +383,17 @@ export function DriversPanel({
                                 />
                                 <Typography
                                     variant="body2"
-                                    color="text.secondary"
-                                    fontWeight={500}
-                                >
+                                    sx={{
+                                        color: "text.secondary",
+                                        fontWeight: 500
+                                    }}>
                                     No matches found
                                 </Typography>
                                 <Typography
                                     variant="caption"
-                                    color="text.disabled"
+                                    sx={{
+                                        color: "text.disabled"
+                                    }}
                                 >
                                     Try a different name or code
                                 </Typography>
@@ -407,7 +414,6 @@ export function DriversPanel({
                     )}
                 </Box>
             </Box>
-
             {/* ── Toggle handle ─────────────────── */}
             <IconButton
                 onClick={onTogglePanel}

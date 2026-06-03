@@ -79,9 +79,7 @@ describe('JobChangeRequestsForJob', () => {
         mockApi.forJob.mockResolvedValueOnce([]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
 
-        await waitFor(() => {
-            expect(screen.getByText(/No partner change requests/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/No partner change requests/)).toBeInTheDocument();
         expect(mockApi.forJob).toHaveBeenCalledWith(42);
     });
 
@@ -89,9 +87,7 @@ describe('JobChangeRequestsForJob', () => {
         mockApi.forJob.mockResolvedValueOnce([baseRow]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42}/>);
 
-        await waitFor(() => {
-            expect(screen.getByText('Quantity')).toBeInTheDocument();
-        });
+        expect(await screen.findByText('Quantity')).toBeInTheDocument();
         expect(screen.getByText('3')).toBeInTheDocument();
         expect(screen.getByText('5')).toBeInTheDocument();
         // Reason is wrapped in curly quotes — use a regex match.
@@ -141,9 +137,7 @@ describe('JobChangeRequestsForJob', () => {
         mockApi.forJob.mockResolvedValueOnce([baseRow]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="OwnerTenant"/>);
 
-        await waitFor(() => {
-            expect(screen.getByRole('button', {name: /Approve/})).toBeInTheDocument();
-        });
+        expect(await screen.findByRole('button', {name: /Approve/})).toBeInTheDocument();
         expect(screen.getByRole('button', {name: /^Reject$/})).toBeInTheDocument();
     });
 
@@ -151,9 +145,7 @@ describe('JobChangeRequestsForJob', () => {
         mockApi.forJob.mockResolvedValueOnce([baseRow]);
         renderWithProviders(<JobChangeRequestsForJob jobId={42} localPartyType="PartnerTenant"/>);
 
-        await waitFor(() => {
-            expect(screen.getByText(/Awaiting partner/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Awaiting partner/)).toBeInTheDocument();
         expect(screen.queryByRole('button', {name: /Approve/})).not.toBeInTheDocument();
     });
 
@@ -171,9 +163,7 @@ describe('JobChangeRequestsForJob', () => {
         await waitFor(() => {
             expect(mockApi.approve).toHaveBeenCalledWith({requestId: 1, rowVersion: undefined});
         });
-        await waitFor(() => {
-            expect(screen.getByText(/No partner change requests/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/No partner change requests/)).toBeInTheDocument();
         expect(onChanged).toHaveBeenCalled();
     });
 

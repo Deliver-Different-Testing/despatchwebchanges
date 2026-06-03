@@ -149,7 +149,13 @@ function renderLimits(charge: {
     return (
         <>
             {lines.map((line, i) => (
-                <Typography key={i} variant="caption" color="text.secondary" display="block">
+                <Typography
+                    key={i}
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        display: "block"
+                    }}>
                     {line}
                 </Typography>
             ))}
@@ -795,7 +801,9 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     <ReceiptIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Accessorial Charges
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -818,7 +826,6 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Portion job tabs */}
             {portionJobs.length > 0 && (
                 <Box sx={{ display: 'flex', borderBottom: '2px solid', borderColor: 'divider', bgcolor: 'background.paper' }}>
@@ -843,7 +850,6 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     ))}
                 </Box>
             )}
-
             <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
                 {isLoading ? (
                     <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -853,19 +859,36 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                         {/* Section 1 — Applied Charges */}
                         <Box>
-                            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                            <Typography
+                                variant="subtitle1"
+                                sx={{
+                                    fontWeight: 600,
+                                    mb: 1
+                                }}>
                                 Applied Charges
                             </Typography>
                             <TableContainer component={Paper} elevation={1}>
                                 <Table size="small">
                                     <TableHead>
                                         <TableRow sx={{ bgcolor: 'grey.100' }}>
-                                            <TableCell><Typography fontWeight={600}>Service</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Stage</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Input / Units</Typography></TableCell>
-                                            <TableCell align="right"><Typography fontWeight={600}>Amount</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Notes</Typography></TableCell>
-                                            <TableCell align="center"><Typography fontWeight={600}>Actions</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Service</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Stage</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Input / Units</Typography></TableCell>
+                                            <TableCell align="right"><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Amount</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Notes</Typography></TableCell>
+                                            <TableCell align="center"><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Actions</Typography></TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -882,9 +905,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                     >
                                                         <Typography
                                                             variant="body2"
-                                                            color="text.secondary"
-                                                            fontStyle="italic"
-                                                        >
+                                                            sx={{
+                                                                color: "text.secondary",
+                                                                fontStyle: "italic"
+                                                            }}>
                                                             No charges have been applied to this job.
                                                         </Typography>
                                                     </Box>
@@ -906,7 +930,9 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                     >
                                                         <TableCell>
                                                             <Typography variant="body2">{charge.name}</Typography>
-                                                            <Typography variant="caption" color="text.secondary">
+                                                            <Typography variant="caption" sx={{
+                                                                color: "text.secondary"
+                                                            }}>
                                                                 {formatChargeType(charge.chargeType)}
                                                             </Typography>
                                                         </TableCell>
@@ -945,18 +971,24 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                                 {isAutoPopulated(charge) && (
                                                                                     <LockIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
                                                                                 )}
-                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                <Typography variant="body2" sx={{
+                                                                                    color: "text.secondary"
+                                                                                }}>
                                                                                     {charge.unitTypeName}
                                                                                 </Typography>
                                                                             </Box>
                                                                         )}
                                                                         {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
+                                                                            <Typography variant="body2" sx={{
+                                                                                color: "text.secondary"
+                                                                            }}>
                                                                                 {'\u00D7'} {formatCurrency(charge.ratePerUnit)}
                                                                             </Typography>
                                                                         )}
                                                                         {charge.chargeType === 'percentage' && charge.percentageRate != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
+                                                                            <Typography variant="body2" sx={{
+                                                                                color: "text.secondary"
+                                                                            }}>
                                                                                 {'\u00D7'} {charge.percentageRate}%
                                                                             </Typography>
                                                                         )}
@@ -964,7 +996,9 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                     {renderLimits(charge)}
                                                                 </Box>
                                                             ) : (
-                                                                <Typography variant="body2" color="text.secondary">
+                                                                <Typography variant="body2" sx={{
+                                                                    color: "text.secondary"
+                                                                }}>
                                                                     Flat fee
                                                                 </Typography>
                                                             )}
@@ -1048,8 +1082,12 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                             <TableRow sx={{ bgcolor: 'grey.50' }}>
                                                 <TableCell colSpan={4} />
                                                 <TableCell>
-                                                    <Typography variant="body2" color="text.secondary">Total</Typography>
-                                                    <Typography variant="body2" fontWeight={700}>
+                                                    <Typography variant="body2" sx={{
+                                                        color: "text.secondary"
+                                                    }}>Total</Typography>
+                                                    <Typography variant="body2" sx={{
+                                                        fontWeight: 700
+                                                    }}>
                                                         {formatCurrency(
                                                             appliedCharges.reduce((sum, c) =>
                                                                 sum + (c.overrideAmount ?? c.calculatedAmount ?? 0), 0)
@@ -1068,7 +1106,12 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
 
                         {/* Section 2 — Add Charges */}
                         <Box>
-                            <Typography variant="subtitle1" fontWeight={600} sx={{ mb: 1 }}>
+                            <Typography
+                                variant="subtitle1"
+                                sx={{
+                                    fontWeight: 600,
+                                    mb: 1
+                                }}>
                                 Add Charges
                             </Typography>
                             <TableContainer component={Paper} elevation={1}>
@@ -1076,11 +1119,21 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                     <TableHead>
                                         <TableRow sx={{ bgcolor: 'grey.100' }}>
                                             <TableCell padding="checkbox" />
-                                            <TableCell><Typography fontWeight={600}>Service</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Description</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Calculation</Typography></TableCell>
-                                            <TableCell align="right"><Typography fontWeight={600}>Amount</Typography></TableCell>
-                                            <TableCell><Typography fontWeight={600}>Notes</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Service</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Description</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Calculation</Typography></TableCell>
+                                            <TableCell align="right"><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Amount</Typography></TableCell>
+                                            <TableCell><Typography sx={{
+                                                fontWeight: 600
+                                            }}>Notes</Typography></TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -1097,9 +1150,10 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                     >
                                                         <Typography
                                                             variant="body2"
-                                                            color="text.secondary"
-                                                            fontStyle="italic"
-                                                        >
+                                                            sx={{
+                                                                color: "text.secondary",
+                                                                fontStyle: "italic"
+                                                            }}>
                                                             No charges available for this group.
                                                         </Typography>
                                                     </Box>
@@ -1130,18 +1184,24 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                             />
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
+                                                            <Typography variant="body2" sx={{
+                                                                fontWeight: isSelected ? 600 : 400
+                                                            }}>
                                                                 {charge.name}
                                                             </Typography>
                                                         </TableCell>
                                                         <TableCell>
-                                                            <Typography variant="body2" color="text.secondary">
+                                                            <Typography variant="body2" sx={{
+                                                                color: "text.secondary"
+                                                            }}>
                                                                 {charge.description}
                                                             </Typography>
                                                         </TableCell>
                                                         <TableCell onClick={e => e.stopPropagation()}>
                                                             {charge.chargeType === 'flat' ? (
-                                                                <Typography variant="body2" color="text.secondary">
+                                                                <Typography variant="body2" sx={{
+                                                                    color: "text.secondary"
+                                                                }}>
                                                                     Flat fee
                                                                 </Typography>
                                                             ) : (
@@ -1164,18 +1224,24 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                                 {isAutoPopulated(charge) && (
                                                                                     <LockIcon sx={{ fontSize: 12, color: 'text.disabled' }} />
                                                                                 )}
-                                                                                <Typography variant="body2" color="text.secondary">
+                                                                                <Typography variant="body2" sx={{
+                                                                                    color: "text.secondary"
+                                                                                }}>
                                                                                     {charge.unitTypeName}
                                                                                 </Typography>
                                                                             </Box>
                                                                         )}
                                                                         {(charge.chargeType === 'hourly' || charge.chargeType === 'per_unit') && charge.ratePerUnit != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
+                                                                            <Typography variant="body2" sx={{
+                                                                                color: "text.secondary"
+                                                                            }}>
                                                                                 {'\u00D7'} {formatCurrency(charge.ratePerUnit)}
                                                                             </Typography>
                                                                         )}
                                                                         {charge.chargeType === 'percentage' && charge.percentageRate != null && (
-                                                                            <Typography variant="body2" color="text.secondary">
+                                                                            <Typography variant="body2" sx={{
+                                                                                color: "text.secondary"
+                                                                            }}>
                                                                                 {'\u00D7'} {charge.percentageRate}%
                                                                             </Typography>
                                                                         )}
@@ -1184,7 +1250,14 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                                                                     {(() => {
                                                                         const note = getPercentageCalculationNote(charge);
                                                                         return note ? (
-                                                                            <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, fontStyle: 'italic' }}>
+                                                                            <Typography
+                                                                                variant="caption"
+                                                                                sx={{
+                                                                                    color: "text.secondary",
+                                                                                    display: "block",
+                                                                                    mt: 0.5,
+                                                                                    fontStyle: 'italic'
+                                                                                }}>
                                                                                 {note}
                                                                             </Typography>
                                                                         ) : null;
@@ -1229,7 +1302,6 @@ export const AccessorialChargesDialog: React.FC<AccessorialChargesDialogProps> =
                     </Box>
                 )}
             </DialogContent>
-
             {/* Actions */}
             {!isLoading && (
                 <DialogActions

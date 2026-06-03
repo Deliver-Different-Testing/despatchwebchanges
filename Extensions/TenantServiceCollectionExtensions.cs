@@ -9,6 +9,7 @@ public static class TenantServiceCollectionExtensions
     {
         services.AddScoped<ITenantInfoService, TenantInfoService>();
         services.AddScoped<ITenantClock, TenantClock>();
+        services.AddScoped<INpScopeProvider, NpScopeProvider>();
 
         return services;
     }

@@ -706,7 +706,7 @@ export const JobListPanel: React.FC<JobListPanelProps> = ({
         } catch (err) {
             // Re-throw so the dialog surfaces the error inline.
             const message = err instanceof Error ? err.message : 'Failed to dispatch jobs';
-            throw new Error(message);
+            throw new Error(message, {cause: err});
         }
     }, [multiSelect, showToast, fetchConfig, onRefresh]);
 

@@ -13,7 +13,7 @@ namespace DespatchWeb.Services;
 /// <summary>
 /// Service for managing job photos, signatures, and file attachments stored in Amazon S3.
 /// </summary>
-public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
+public sealed class JobPhotoService(IAmazonS3 s3Client, ITenantClock clock) : IJobPhotoService
 {
     /// <summary>
     /// Retrieves delivery photos and signatures for a job from S3 storage.
@@ -92,7 +92,7 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
             var folder = GetUploadFolder(photoType, isPod);
 
             // Create the file path in format: [folder]/[year]/[month]/[jobId]-[timestamp]-[filename]
-            var now = DateTime.UtcNow;
+            var now = clock.TenantNow;
             var monthFolder = $"{now.Year}/{now:MM}/";
 
             // Extract the file extension
@@ -215,11 +215,10 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var key = $"JobAttachments/{jobId}-";
 
-            Log.Debug("Getting attached files with pattern {Key}", key);
+            Log.Debug("Getting attached files for job {JobId}", jobId);
 
-            var s3List = await SearchAttachmentFilesByPatternAsync(bucketName, key);
+            var s3List = await ListJobAttachmentObjectsAsync(bucketName, jobId);
 
             foreach (var s3Object in s3List)
             {
@@ -295,9 +294,11 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         try
         {
             var bucketName = Environment.GetEnvironmentVariable("S3BucketMars");
-            var currentDate = DateTime.UtcNow; // You might want to inject a time service for this
+            var currentDate = clock.TenantNow;
+            var monthFolder = $"{currentDate.Year}/{currentDate:MM}/";
             var timestamp = currentDate.ToString("yyyyMMddHHmmss");
-            var key = $"JobAttachments/{jobId}-{timestamp}";
+            var fileExtension = Path.GetExtension(file.FileName);
+            var key = $"JobAttachments/{monthFolder}{jobId}-{timestamp}{fileExtension}";
 
             using var memoryStream = new MemoryStream();
             await file.CopyToAsync(memoryStream);
@@ -544,6 +545,36 @@ public sealed class JobPhotoService(IAmazonS3 s3Client) : IJobPhotoService
         }
 
         return allResults;
+    }
+
+    /// <summary>
+    /// Lists S3 objects for a job's attachments across both the legacy flat layout
+    /// (<c>JobAttachments/{jobId}-...</c>) and the dated layout
+    /// (<c>JobAttachments/{yyyy}/{MM}/{jobId}-...</c>). The dated layout is scanned
+    /// across the last 24 calendar months so attachments uploaded any time during
+    /// a job's active period are still discoverable.
+    /// </summary>
+    private async Task<IReadOnlyList<S3Object>> ListJobAttachmentObjectsAsync(string bucketName, int jobId)
+    {
+        var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+        var combined = new List<S3Object>();
+
+        await AppendAsync($"JobAttachments/{jobId}-");
+
+        var month = clock.TenantNow;
+        for (var i = 0; i < 24; i++)
+        {
+            await AppendAsync($"JobAttachments/{month.Year}/{month:MM}/{jobId}-");
+            month = month.AddMonths(-1);
+        }
+
+        return combined;
+
+        async Task AppendAsync(string prefix)
+        {
+            var hits = await SearchAttachmentFilesByPatternAsync(bucketName, prefix);
+            combined.AddRange(hits.Where(s3Object => seenKeys.Add(s3Object.Key)));
+        }
     }
 
     /// <summary>

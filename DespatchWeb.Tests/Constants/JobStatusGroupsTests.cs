@@ -1,8 +1,10 @@
 using DespatchWeb.Constants;
 using DespatchWeb.Enums;
+using JetBrains.Annotations;
 
 namespace DespatchWeb.Tests.Constants;
 
+[TestSubject(typeof(JobStatusGroups))]
 public class JobStatusGroupsTests
 {
     [Fact]

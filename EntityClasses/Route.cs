@@ -25,6 +25,14 @@ public partial class Route
 
     public string UpdatedBy { get; set; }
 
+    public byte? DefaultTargetType { get; set; }
+
+    public int? DefaultAgentId { get; set; }
+
+    public int? ScheduleId { get; set; }
+
+    public virtual TucAgent DefaultAgent { get; set; }
+
     public virtual TucCourier DefaultCourier { get; set; }
 
     public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();

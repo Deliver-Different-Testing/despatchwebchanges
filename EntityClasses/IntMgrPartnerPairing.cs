@@ -39,9 +39,9 @@ public partial class IntMgrPartnerPairing
 
     public virtual TucClient Client { get; set; }
 
-    public virtual ICollection<JobPartnerDispatch> JobPartnerDispatches { get; set; } = new List<JobPartnerDispatch>();
-
     public virtual TucAgent LinkedAgent { get; set; }
 
     public virtual ICollection<TucJobChangeRequest> TucJobChangeRequests { get; set; } = new List<TucJobChangeRequest>();
+
+    public virtual ICollection<TucJob> TucJobs { get; set; } = new List<TucJob>();
 }

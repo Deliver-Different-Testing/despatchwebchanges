@@ -1836,7 +1836,7 @@ class HomeController extends BaseController {
 
             if (newStopJobId) {
                 const newStopJob = this.jobList.find(j => j.id === newStopJobId) ||
-                    await this.DispatchData.getDispatchJobDetail(newStopJobId);
+                    (await this.DispatchData.getDispatchJobDetail(newStopJobId));
 
                 if (newStopJob) {
                     await this.selectJob(newStopJob);

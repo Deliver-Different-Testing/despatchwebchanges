@@ -113,7 +113,8 @@ describe('RateAcceptanceBanner', () => {
         expect(submit).toBeDisabled();
 
         const reasonInput = within(dialog).getByLabelText('Reason');
-        await user.type(reasonInput, 'Rate too low');
+        await user.click(reasonInput);
+        await user.paste('Rate too low');
         expect(submit).not.toBeDisabled();
 
         await user.click(submit);

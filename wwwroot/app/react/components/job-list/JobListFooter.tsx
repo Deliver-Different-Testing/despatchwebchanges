@@ -49,10 +49,17 @@ export const JobListFooter: React.FC<JobListFooterProps> = ({
 
     return (
         <Box sx={styles.container}>
-            <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
+            <Typography
+                variant="caption"
+                sx={{
+                    color: "text.secondary",
+                    fontWeight: 500
+                }}>
                 {displayText}
             </Typography>
-            <Typography variant="caption" color="text.disabled">
+            <Typography variant="caption" sx={{
+                color: "text.disabled"
+            }}>
                 {lastUpdated}
             </Typography>
         </Box>

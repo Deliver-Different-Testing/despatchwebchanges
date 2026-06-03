@@ -491,6 +491,8 @@ public partial class TucJob
 
     public int? RouteId { get; set; }
 
+    public int? PartnerPairingId { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }
@@ -515,8 +517,6 @@ public partial class TucJob
 
     public virtual ICollection<JobDeliveryJourney> JobDeliveryJourneys { get; set; } = new List<JobDeliveryJourney>();
 
-    public virtual JobPartnerDispatch JobPartnerDispatch { get; set; }
-
     public virtual ICollection<JobRecoveryAgent> JobRecoveryAgents { get; set; } = new List<JobRecoveryAgent>();
 
     public virtual TblJobRelationshipType JobRelationshipType { get; set; }
@@ -524,6 +524,8 @@ public partial class TucJob
     public virtual TucCourier MasterCourier { get; set; }
 
     public virtual TucJobType NotifiedJobType { get; set; }
+
+    public virtual IntMgrPartnerPairing PartnerPairing { get; set; }
 
     public virtual TimeZone PickupTimeZone { get; set; }
 

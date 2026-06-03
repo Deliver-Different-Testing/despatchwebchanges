@@ -105,6 +105,18 @@ public class SendToPartnerServiceTests : IDisposable
         await ctx.SaveChangesAsync();
     }
 
+    private async Task SeedJobAsync(int jobId = 42)
+    {
+        await using var ctx = _db.CreateContext();
+        ctx.TucJobs.Add(new TucJob
+        {
+            UcjbId = jobId,
+            UcjbDate = DateTime.UtcNow,
+            UcjbStatus = 1
+        });
+        await ctx.SaveChangesAsync();
+    }
+
     [Fact]
     public async Task SendAsync_OkWithSuccessTrue_ReturnsSuccessAndTrackingNumber()
     {
@@ -227,7 +239,7 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.False(result.Success);
         Assert.Contains("…", result.Message);
-        Assert.True(result.Message.Length < longBody.Length,
+        Assert.True(result.Message?.Length < longBody.Length,
             "Long bodies should be truncated to keep the error message readable.");
     }
 
@@ -274,11 +286,14 @@ public class SendToPartnerServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task SendAsync_Success_InsertsJobPartnerDispatchRow()
+    public async Task SendAsync_Success_StampsPartnerPairingIdOnTucJob()
     {
-        // After IM accepts the dispatch, DispatchWeb persists the job→pairing link
-        // so the job list can surface the partner name in the courier column.
+        // After IM accepts the dispatch, DispatchWeb stamps the pairing id onto
+        // the tucJob row. Symmetric with the inbound mirror path where IM populates
+        // TucJob.PartnerPairingId at ingest — JobChangeRequestService resolves the
+        // pairing directly off the column without a separate link table.
         await SeedPairingAsync();
+        await SeedJobAsync();
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent(new { success = true, trackingNumber = "TRK-1" })
@@ -288,16 +303,18 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.True(result.Success);
         await using var verifyCtx = _db.CreateContext();
-        var link = await verifyCtx.JobPartnerDispatches
-            .FirstOrDefaultAsync(d => d.JobId == 42, TestContext.Current.CancellationToken);
-        Assert.NotNull(link);
-        Assert.Equal(7, link.PartnerPairingId);
+        var jobPairingId = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == 42)
+            .Select(j => j.PartnerPairingId)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Equal(7, jobPairingId);
     }
 
     [Fact]
-    public async Task SendAsync_PartnerFailure_DoesNotInsertDispatchRow()
+    public async Task SendAsync_PartnerFailure_DoesNotStampPartnerPairingId()
     {
-        // Partner rejected the handover — no local link row should be persisted.
+        // Partner rejected the handover — TucJob.PartnerPairingId stays null.
+        await SeedJobAsync();
         _httpHandler.SetResponse(new HttpResponseMessage(HttpStatusCode.OK)
         {
             Content = JsonContent(new { success = false, message = "Partner declined" })
@@ -307,9 +324,11 @@ public class SendToPartnerServiceTests : IDisposable
 
         Assert.False(result.Success);
         await using var verifyCtx = _db.CreateContext();
-        var linkCount = await verifyCtx.JobPartnerDispatches
-            .CountAsync(TestContext.Current.CancellationToken);
-        Assert.Equal(0, linkCount);
+        var jobPairingId = await verifyCtx.TucJobs
+            .Where(j => j.UcjbId == 42)
+            .Select(j => j.PartnerPairingId)
+            .SingleAsync(TestContext.Current.CancellationToken);
+        Assert.Null(jobPairingId);
     }
 
     [Fact]

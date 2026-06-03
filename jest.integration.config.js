@@ -33,7 +33,7 @@ const config = {
 
     // MSW and its dependencies use ESM - need to transform them
     transformIgnorePatterns: [
-        'node_modules[\\\\/](?!(msw|@mswjs|until-async)[\\\\/])',
+        'node_modules[\\\\/](?!(msw|@mswjs|until-async|rettime|@open-draft)[\\\\/])',
     ],
 
     moduleNameMapper: {

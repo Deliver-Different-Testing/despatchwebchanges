@@ -102,7 +102,12 @@ export const AgentInformation = React.memo(({agent}: AgentInformationProps) => {
             </Box>
             {agent.agentNotes && (
                 <Box sx={cardNotesContainerSx}>
-                    <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            fontWeight: 500
+                        }}>
                         Notes:
                     </Typography>
                     <Typography variant="body2">

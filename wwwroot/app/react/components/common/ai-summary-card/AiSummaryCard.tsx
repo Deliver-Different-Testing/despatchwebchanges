@@ -22,14 +22,14 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ReportProblemIcon from '@mui/icons-material/ReportProblem';
 import StopIcon from '@mui/icons-material/Stop';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {
     AttentionItem,
@@ -244,12 +244,19 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                     bgcolor: v.bg,
                 };
             }}>
-                <Stack direction="row" alignItems="center" spacing={1}>
+                <Stack direction="row" spacing={1} sx={{
+                    alignItems: "center"
+                }}>
                     <AutoAwesomeIcon sx={(theme) => {
                         const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
                         return {fontSize: 20, color: v.color};
                     }} />
-                    <Typography variant="subtitle2" fontWeight={600} color="text.primary">
+                    <Typography
+                        variant="subtitle2"
+                        sx={{
+                            fontWeight: 600,
+                            color: "text.primary"
+                        }}>
                         {title}
                     </Typography>
                     <Chip
@@ -286,9 +293,16 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                         />
                     )}
                 </Stack>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
+                <Stack direction="row" spacing={0.5} sx={{
+                    alignItems: "center"
+                }}>
                     {generatedAt && !loading && (
-                        <Typography variant="caption" color="text.disabled" sx={{mr: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.disabled",
+                                mr: 0.5
+                            }}>
                             {relativeTime}
                         </Typography>
                     )}
@@ -318,7 +332,6 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                     )}
                 </Stack>
             </Box>
-
             <Box sx={{px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5}}>
                 {loading && !summary && (
                     <Box>
@@ -335,12 +348,23 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
 
                 {summary && (
                     <>
-                        <Typography variant="subtitle1" fontWeight={600} sx={{lineHeight: 1.4}}>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                fontWeight: 600,
+                                lineHeight: 1.4
+                            }}>
                             {summary.verdict}
                         </Typography>
 
                         {summary.keyFacts.length > 0 && (
-                            <Stack direction="row" spacing={0.75} flexWrap="wrap" rowGap={0.75}>
+                            <Stack
+                                direction="row"
+                                spacing={0.75}
+                                sx={{
+                                    flexWrap: "wrap",
+                                    rowGap: 0.75
+                                }}>
                                 {summary.keyFacts.map((fact, i) => (
                                     <Chip
                                         key={`${fact}-${i}`}
@@ -355,7 +379,13 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
 
                         {summary.attention.length > 0 && (
                             <Stack spacing={1} sx={{mt: 0.5}}>
-                                <Typography variant="overline" color="text.secondary" sx={{lineHeight: 1, letterSpacing: 0.5}}>
+                                <Typography
+                                    variant="overline"
+                                    sx={{
+                                        color: "text.secondary",
+                                        lineHeight: 1,
+                                        letterSpacing: 0.5
+                                    }}>
                                     Needs attention
                                 </Typography>
                                 {summary.attention.map((item, i) => (
@@ -366,10 +396,22 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
 
                         {summary.timeline.length > 0 && (
                             <Stack spacing={0.5} sx={{mt: 0.5}}>
-                                <Typography variant="overline" color="text.secondary" sx={{lineHeight: 1, letterSpacing: 0.5}}>
+                                <Typography
+                                    variant="overline"
+                                    sx={{
+                                        color: "text.secondary",
+                                        lineHeight: 1,
+                                        letterSpacing: 0.5
+                                    }}>
                                     Timeline
                                 </Typography>
-                                <Stack direction="row" spacing={0.75} flexWrap="wrap" rowGap={0.75}>
+                                <Stack
+                                    direction="row"
+                                    spacing={0.75}
+                                    sx={{
+                                        flexWrap: "wrap",
+                                        rowGap: 0.75
+                                    }}>
                                     {summary.timeline.map((item, i) => (
                                         <TimelinePill key={`${item.label}-${i}`} item={item} />
                                     ))}
@@ -416,7 +458,12 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                         )}
 
                         {summary.usage && (summary.usage.inputTokens > 0 || summary.usage.outputTokens > 0) && (
-                            <Typography variant="caption" color="text.disabled" sx={{mt: 0.5}}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: "text.disabled",
+                                    mt: 0.5
+                                }}>
                                 {summary.usage.inputTokens} input / {summary.usage.outputTokens} output tokens
                             </Typography>
                         )}
@@ -460,8 +507,12 @@ const AttentionCallout: React.FC<{item: AttentionItem}> = ({item}) => (
             })()}
         </Box>
         <Box>
-            <Typography variant="body2" fontWeight={600}>{item.headline}</Typography>
-            <Typography variant="body2" color="text.secondary">{item.action}</Typography>
+            <Typography variant="body2" sx={{
+                fontWeight: 600
+            }}>{item.headline}</Typography>
+            <Typography variant="body2" sx={{
+                color: "text.secondary"
+            }}>{item.action}</Typography>
         </Box>
     </Paper>
 );

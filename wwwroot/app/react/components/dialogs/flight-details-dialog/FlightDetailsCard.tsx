@@ -84,7 +84,6 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                     Flight Information
                 </Typography>
             </Box>
-
             {/* Details grid */}
             <Box
                 sx={{
@@ -118,7 +117,9 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                             {departureInfo.code}
                         </Typography>
                         {departureInfo.city && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {departureInfo.city}{departureInfo.country ? `, ${departureInfo.country}` : ''}
                             </Typography>
                         )}
@@ -136,7 +137,9 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                         >
                             {departureInfo.time.format('HH:mm')}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {departureInfo.time.format('MMM D, YYYY')}
                         </Typography>
                     </Box>
@@ -187,7 +190,9 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                             {arrivalInfo.code}
                         </Typography>
                         {arrivalInfo.city && (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {arrivalInfo.city}{arrivalInfo.country ? `, ${arrivalInfo.country}` : ''}
                             </Typography>
                         )}
@@ -205,7 +210,9 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                         >
                             {arrivalInfo.time.format('HH:mm')}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {arrivalInfo.time.format('MMM D, YYYY')}
                         </Typography>
                     </Box>
@@ -232,7 +239,6 @@ export const FlightDetailsCard: React.FC<FlightDetailsCardProps> = ({
                     )}
                 </Box>
             </Box>
-
             {/* Aircraft section */}
             {aircraftName && (
                 <>

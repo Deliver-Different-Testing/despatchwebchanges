@@ -2,12 +2,14 @@
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.RequestModels;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(TaskController))]
 public class TaskControllerTests
 {
     private readonly ITaskRepository _taskRepoMock = Substitute.For<ITaskRepository>();

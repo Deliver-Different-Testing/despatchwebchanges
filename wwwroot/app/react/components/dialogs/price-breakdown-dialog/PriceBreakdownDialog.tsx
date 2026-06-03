@@ -251,7 +251,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     <ReceiptLongIcon sx={{ fontSize: 28 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>
                         Price Breakdown
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -268,7 +270,6 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             <DialogContent sx={{ p: 0 }}>
                 {/* Summary Cards */}
                 {!isEditing && priceBreakdowns.length > 0 && (
@@ -302,10 +303,20 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     <TrendingUpIcon sx={{ fontSize: 28, color: 'success.main' }} />
                                 </Box>
                                 <Box>
-                                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            fontWeight: 500
+                                        }}>
                                         Total Revenue
                                     </Typography>
-                                    <Typography variant="h5" fontWeight={700} color="success.dark">
+                                    <Typography
+                                        variant="h5"
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: "success.dark"
+                                        }}>
                                         {formatCurrency(totals.totalRevenue)}
                                     </Typography>
                                 </Box>
@@ -339,10 +350,20 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     <WalletIcon sx={{ fontSize: 28, color: 'warning.dark' }} />
                                 </Box>
                                 <Box>
-                                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            fontWeight: 500
+                                        }}>
                                         Total Cost
                                     </Typography>
-                                    <Typography variant="h5" fontWeight={700} color="warning.dark">
+                                    <Typography
+                                        variant="h5"
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: "warning.dark"
+                                        }}>
                                         {formatCurrency(totals.totalCost)}
                                     </Typography>
                                 </Box>
@@ -376,10 +397,20 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                     <SavingsIcon sx={{ fontSize: 28, color: 'info.main' }} />
                                 </Box>
                                 <Box>
-                                    <Typography variant="body2" color="text.secondary" fontWeight={500}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            fontWeight: 500
+                                        }}>
                                         Gross Profit
                                     </Typography>
-                                    <Typography variant="h5" fontWeight={700} color="info.dark">
+                                    <Typography
+                                        variant="h5"
+                                        sx={{
+                                            fontWeight: 700,
+                                            color: "info.dark"
+                                        }}>
                                         {formatCurrency(totals.profit)}
                                     </Typography>
                                     {totals.totalRevenue > 0 && (
@@ -409,7 +440,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                             }}
                         >
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                <Typography variant="h6" fontWeight={600}>
+                                <Typography variant="h6" sx={{
+                                    fontWeight: 600
+                                }}>
                                     Price Items
                                 </Typography>
                                 {priceBreakdowns.length > 0 && (
@@ -492,7 +525,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                                 <InventoryIcon fontSize="small" color="primary" />
                                                             </Box>
                                                             <Box>
-                                                                <Typography variant="body2" fontWeight={500}>
+                                                                <Typography variant="body2" sx={{
+                                                                    fontWeight: 500
+                                                                }}>
                                                                     {item.name}
                                                                 </Typography>
                                                                 {item.childJobId === jobId && (
@@ -509,20 +544,26 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                         </Box>
                                                     </TableCell>
                                                     <TableCell align="right">
-                                                        <Typography variant="body2" fontWeight={500}>
+                                                        <Typography variant="body2" sx={{
+                                                            fontWeight: 500
+                                                        }}>
                                                             {formatCurrency(item.amount || 0)}
                                                         </Typography>
                                                     </TableCell>
                                                     <TableCell align="right">
-                                                        <Typography variant="body2" color="text.secondary">
+                                                        <Typography variant="body2" sx={{
+                                                            color: "text.secondary"
+                                                        }}>
                                                             {formatCurrency(item.costAmount || 0)}
                                                         </Typography>
                                                     </TableCell>
                                                     <TableCell align="right">
                                                         <Typography
                                                             variant="body2"
-                                                            fontWeight={600}
                                                             color={profit >= 0 ? 'success.main' : 'error.main'}
+                                                            sx={{
+                                                                fontWeight: 600
+                                                            }}
                                                         >
                                                             {formatCurrency(profit)}
                                                         </Typography>
@@ -538,7 +579,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                         )}
                                                     </TableCell>
                                                     <TableCell align="center">
-                                                        <Stack direction="row" spacing={0.5} justifyContent="center">
+                                                        <Stack direction="row" spacing={0.5} sx={{
+                                                            justifyContent: "center"
+                                                        }}>
                                                             <IconButton
                                                                 size="small"
                                                                 onClick={() => handleEdit(item)}
@@ -599,10 +642,17 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                 >
                                     <ReceiptLongIcon sx={{ fontSize: 36, color: 'primary.main' }} />
                                 </Box>
-                                <Typography variant="h6" color="text.secondary" gutterBottom>
+                                <Typography variant="h6" gutterBottom sx={{
+                                    color: "text.secondary"
+                                }}>
                                     No price items yet
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: "text.secondary",
+                                        mb: 2
+                                    }}>
                                     Start by adding your first price breakdown item
                                 </Typography>
                                 <Button
@@ -659,7 +709,9 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                         <EditIcon color="primary" />
                                     )}
                                 </Box>
-                                <Typography variant="h6" fontWeight={600}>
+                                <Typography variant="h6" sx={{
+                                    fontWeight: 600
+                                }}>
                                     {isNew ? 'Add New Price Item' : 'Edit Price Item'}
                                 </Typography>
                             </Box>
@@ -735,25 +787,43 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                 border: `1px solid ${theme.palette.divider}`,
                                             })}
                                         >
-                                            <Typography variant="overline" color="text.secondary" sx={{ mb: 1.5, display: 'block' }}>
+                                            <Typography
+                                                variant="overline"
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    mb: 1.5,
+                                                    display: 'block'
+                                                }}>
                                                 Live Preview
                                             </Typography>
-                                            <Stack direction="row" spacing={4} justifyContent="center">
-                                                <Box textAlign="center">
-                                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                            <Stack direction="row" spacing={4} sx={{
+                                                justifyContent: "center"
+                                            }}>
+                                                <Box sx={{
+                                                    textAlign: "center"
+                                                }}>
+                                                    <Typography variant="body2" gutterBottom sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         Profit
                                                     </Typography>
                                                     <Typography
                                                         variant="h5"
-                                                        fontWeight={700}
                                                         color={formProfit >= 0 ? 'success.main' : 'error.main'}
+                                                        sx={{
+                                                            fontWeight: 700
+                                                        }}
                                                     >
                                                         {formatCurrency(formProfit)}
                                                     </Typography>
                                                 </Box>
                                                 {typeof formAmount === 'number' && formAmount > 0 && (
-                                                    <Box textAlign="center">
-                                                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                                                    <Box sx={{
+                                                        textAlign: "center"
+                                                    }}>
+                                                        <Typography variant="body2" gutterBottom sx={{
+                                                            color: "text.secondary"
+                                                        }}>
                                                             Margin
                                                         </Typography>
                                                         <Chip
@@ -803,7 +873,6 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     </Box>
                 )}
             </DialogContent>
-
             {/* Footer Actions */}
             {!isEditing && (
                 <DialogActions
@@ -815,11 +884,18 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     })}
                 >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {priceBreakdowns.length > 0 && (
                                 <>
                                     {priceBreakdowns.length} {priceBreakdowns.length === 1 ? 'item' : 'items'} •{' '}
-                                    <Typography component="span" fontWeight={600} color="text.primary">
+                                    <Typography
+                                        component="span"
+                                        sx={{
+                                            fontWeight: 600,
+                                            color: "text.primary"
+                                        }}>
                                         {formatCurrency(totals.totalRevenue)}
                                     </Typography>{' '}
                                     total

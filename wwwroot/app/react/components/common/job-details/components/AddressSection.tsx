@@ -136,7 +136,11 @@ function ContactCard({
         <Box sx={dense ? contactCardDenseSx : contactCardSx}>
             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.25}}>
                 <IconComp sx={{fontSize: 14, color: 'text.secondary'}}/>
-                <Typography variant="caption" color="text.secondary" sx={contactLabelSx}>
+                <Typography
+                    variant="caption"
+                    sx={[{
+                        color: "text.secondary"
+                    }, ...(Array.isArray(contactLabelSx) ? contactLabelSx : [contactLabelSx])]}>
                     {label}
                 </Typography>
                 {children}

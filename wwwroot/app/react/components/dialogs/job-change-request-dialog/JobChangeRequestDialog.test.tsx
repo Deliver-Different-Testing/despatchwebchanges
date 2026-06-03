@@ -74,13 +74,14 @@ describe('JobChangeRequestDialog', () => {
         expect(mockCreate).not.toHaveBeenCalled();
     });
 
-    it('submits Notes (auto-apply) with the typed value', async () => {
+    it('submits Notes (auto-apply) with the typed value and surfaces the result via a toast', async () => {
         const user = userEvent.setup();
         mockCreate.mockResolvedValueOnce({
             success: true,
             request: {status: 'Applied'},
         });
-        renderDialog();
+        const onClose = jest.fn();
+        renderDialog({onClose});
         // Default field is Notes — the value input is "New notes".
         await user.click(screen.getByLabelText(/New notes/i));
         await user.paste('Please leave at reception');
@@ -91,9 +92,16 @@ describe('JobChangeRequestDialog', () => {
                 fieldName: 'Notes',
                 requestedValue: 'Please leave at reception',
                 reason: undefined,
+                pairingId: undefined,
             });
         });
-        expect(screen.getByText(/Change applied/)).toBeInTheDocument();
+        // Dialog closes synchronously on submit — the dispatcher isn't blocked
+        // while the request is in flight.
+        expect(onClose).toHaveBeenCalled();
+        // The result lands as a toast (standalone toastService mounts to document.body).
+        await waitFor(() => {
+            expect(screen.getByText(/Change applied/)).toBeInTheDocument();
+        });
     });
 
     it('renders the Speed dropdown from getSpeedList when Service Speed is picked', async () => {
@@ -356,16 +364,37 @@ describe('JobChangeRequestDialog', () => {
         });
     });
 
-    it('surfaces backend error message', async () => {
+    it('forwards pairingId to the create payload when supplied', async () => {
+        // The dispatcher's tenant may have multiple active partner pairings; sending
+        // pairingId lets the backend disambiguate without falling back to the
+        // single-active-pairing heuristic that errors out on multi-pairing tenants.
+        const user = userEvent.setup();
+        mockCreate.mockResolvedValueOnce({success: true, request: {status: 'Applied'}});
+        renderDialog({pairingId: 17});
+        await user.click(screen.getByLabelText(/New notes/i));
+        await user.paste('x');
+        await user.click(screen.getByRole('button', {name: /Apply/}));
+        await waitFor(() => {
+            expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({pairingId: 17}));
+        });
+    });
+
+    it('surfaces backend error message via a toast after closing the dialog', async () => {
         const user = userEvent.setup();
         mockCreate.mockResolvedValueOnce({
             success: false,
             message: 'A pending request for Notes already exists',
         });
-        renderDialog();
+        const onClose = jest.fn();
+        renderDialog({onClose});
         await user.click(screen.getByLabelText(/New notes/i));
         await user.paste('x');
         await user.click(screen.getByRole('button', {name: /Apply/}));
+        // The dialog closes immediately; the backend error appears as a toast
+        // so the dispatcher can keep working in the meantime.
+        await waitFor(() => {
+            expect(onClose).toHaveBeenCalled();
+        });
         await waitFor(() => {
             expect(screen.getByText(/already exists/)).toBeInTheDocument();
         });

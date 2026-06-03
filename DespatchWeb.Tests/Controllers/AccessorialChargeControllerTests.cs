@@ -1,12 +1,14 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Accessorial;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(AccessorialChargeController))]
 public class AccessorialChargeControllerTests
 {
     private readonly IAccessorialChargeService _accessorialChargeService = Substitute.For<IAccessorialChargeService>();

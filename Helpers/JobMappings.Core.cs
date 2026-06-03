@@ -279,12 +279,13 @@ public static partial class JobMappings
         Locked = j.UcjbLocked ?? false,
         IsPartnerJob = j.PartnerJobGuid.HasValue,
 
-        // The other tenant's name on a partner pairing. Sender side gets it via
-        // JobPartnerDispatch; receiver side falls back to the most recent change
-        // request's pairing (a fresh inbound mirror with no change requests yet
+        // The other tenant's name on a partner pairing. Resolved from the direct
+        // PartnerPairing nav; falls back to the most recent change request's
+        // pairing for legacy mirrors created before TucJob.PartnerPairingId was
+        // being populated (a fresh inbound mirror with no change requests yet
         // shows null, and the UI gracefully falls back to "the partner").
-        PartnerTenantName = j.JobPartnerDispatch != null && j.JobPartnerDispatch.PartnerPairing != null
-            ? j.JobPartnerDispatch.PartnerPairing.PartnerTenantName
+        PartnerTenantName = j.PartnerPairing != null
+            ? j.PartnerPairing.PartnerTenantName
             : j.TucJobChangeRequests
                 .Where(r => r.UjcrPairing != null && r.UjcrPairing.PartnerTenantName != null)
                 .OrderByDescending(r => r.UjcrRequestedAtUtc)

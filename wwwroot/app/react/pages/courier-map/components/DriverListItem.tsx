@@ -15,7 +15,7 @@ import ListItemAvatar from '@mui/material/ListItemAvatar';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
 import NearMe from '@mui/icons-material/NearMe';
-import WorkOutline from '@mui/icons-material/WorkOutline';
+import WorkOutline from '@mui/icons-material/WorkOutlined';
 import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded';
 import type { DriverListItemProps } from '../CourierMapPage.types';
 import { getDriverStatus } from '../CourierMapPage.types';

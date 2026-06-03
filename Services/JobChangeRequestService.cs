@@ -52,14 +52,16 @@ public sealed class JobChangeRequestService(
             return new JobChangeRequestResult { Success = false, Message = "Job is not an inter-tenant partner job" };
         }
 
-        var pairingIdFromDispatch = request.PairingId ?? await ctx.JobPartnerDispatches
-            .AsNoTracking()
-            .Where(d => d.JobId == request.JobId)
-            .Select(d => (int?)d.PartnerPairingId)
-            .FirstOrDefaultAsync(ct);
+        // Resolve the pairing this job belongs to. Prefer the explicit request.PairingId
+        // (frontend sends it when known); otherwise fall back to TucJob.PartnerPairingId
+        // (column set at SendToPartner-time for outbound, IM ingest for inbound).
+        // ResolveActivePairingAsync validates the candidate and only falls back to
+        // "single active pairing on this tenant" when both are null — bailing out
+        // loudly when ambiguous.
+        var pairingIdHint = request.PairingId ?? job.PartnerPairingId;
 
         var (pairing, pairingError) =
-            await ResolveActivePairingAsync(ctx, pairingIdFromDispatch, partnerTenantId: null, ct);
+            await ResolveActivePairingAsync(ctx, pairingIdHint, partnerTenantId: null, ct);
         if (pairing is null)
         {
             return new JobChangeRequestResult { Success = false, Message = pairingError };

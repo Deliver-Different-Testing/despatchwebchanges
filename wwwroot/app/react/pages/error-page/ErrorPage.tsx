@@ -12,7 +12,7 @@ import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import SearchOffIcon from '@mui/icons-material/SearchOff';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import LockIcon from '@mui/icons-material/Lock';
 import CloudOffIcon from '@mui/icons-material/CloudOff';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';

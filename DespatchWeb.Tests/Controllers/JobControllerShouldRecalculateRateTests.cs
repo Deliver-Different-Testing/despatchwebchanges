@@ -1,8 +1,10 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
+using JetBrains.Annotations;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(JobController))]
 public class JobControllerShouldRecalculateRateTests
 {
     [Theory]

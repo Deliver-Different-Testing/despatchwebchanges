@@ -2,12 +2,14 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(NoteController))]
 public class NoteControllerTests
 {
     private readonly INoteRepository _noteRepositoryMock = Substitute.For<INoteRepository>();

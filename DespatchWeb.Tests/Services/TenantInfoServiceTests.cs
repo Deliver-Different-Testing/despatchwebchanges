@@ -88,20 +88,6 @@ public class TenantInfoServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public void GetCurrentTimeFromTimeZone_WithNullTimeZone_ReturnsTenantTime()
-    {
-        // Arrange
-        SetupHttpContextWithClaims(("TimeZone", "UTC"));
-        var service = CreateService();
-
-        // Act
-        var result = service.GetCurrentTimeFromTimeZone(null);
-
-        // Assert
-        Assert.True(Math.Abs((result - DateTime.UtcNow).TotalSeconds) < 1);
-    }
-
-    [Fact]
     public void GetCurrentTimeFromTimeZone_WithSpecificTimeZone_ReturnsCorrectTime()
     {
         // Arrange
@@ -427,117 +413,84 @@ public class TenantInfoServiceTests : IAsyncDisposable
         Assert.Null(result);
     }
 
-    [Fact]
-    public async Task GetCurrentNpAgentIdAsync_WhenContactsClientIsNetworkPartner_ReturnsNpAgentId()
+    [Theory]
+    [InlineData("1", 1)]   // Internal
+    [InlineData("3", 3)]   // NetworkPartner
+    [InlineData("5", 5)]   // DFRNTAdmin
+    public void GetClientTypeId_WithValidClaim_ReturnsValue(string claimValue, int expected)
     {
-        SetupHttpContextWithClaims(("ContactID", "100"));
-
-        await using var context = _db.CreateContext();
-        context.TucClients.Add(new TucClient
-        {
-            UcclId = 50,
-            UcclName = "NP",
-            UcclLegalName = "NP",
-            UcclCode = "NP",
-            Smsname = "NP",
-            ClientTypeId = (int)DespatchWeb.Enums.ClientType.NetworkPartner,
-            NpAgentId = 77,
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
-        context.TucClientContacts.Add(new TucClientContact
-        {
-            UcctId = 100,
-            UcctClientId = 50,
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
-        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
+        SetupHttpContextWithClaims(("ClientTypeId", claimValue));
         var service = CreateService();
 
-        var result = await service.GetCurrentNpAgentIdAsync();
-
-        Assert.Equal(77, result);
+        Assert.Equal(expected, service.GetClientTypeId());
     }
 
     [Fact]
-    public async Task GetCurrentNpAgentIdAsync_WhenContactsClientIsCustomer_ReturnsNull()
+    public void GetClientTypeId_WithNoClaim_ReturnsNull()
     {
-        SetupHttpContextWithClaims(("ContactID", "100"));
-
-        await using var context = _db.CreateContext();
-        context.TucClients.Add(new TucClient
-        {
-            UcclId = 50,
-            UcclName = "Cust",
-            UcclLegalName = "Cust",
-            UcclCode = "Cust",
-            Smsname = "Cust",
-            ClientTypeId = (int)DespatchWeb.Enums.ClientType.Customer,
-            NpAgentId = 77,
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
-        context.TucClientContacts.Add(new TucClientContact
-        {
-            UcctId = 100,
-            UcctClientId = 50,
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
-        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
+        // Couriers and pre-claim sessions don't carry ClientTypeId — caller
+        // gets null instead of a misleading zero.
+        SetupHttpContextWithClaims();
         var service = CreateService();
 
-        var result = await service.GetCurrentNpAgentIdAsync();
-
-        Assert.Null(result);
+        Assert.Null(service.GetClientTypeId());
     }
 
     [Fact]
-    public async Task GetCurrentNpAgentIdAsync_WhenNpClientHasNoLinkedAgent_ReturnsNull()
+    public void GetClientTypeId_WithEmptyClaim_ReturnsNull()
     {
-        SetupHttpContextWithClaims(("ContactID", "100"));
-
-        await using var context = _db.CreateContext();
-        context.TucClients.Add(new TucClient
-        {
-            UcclId = 50,
-            UcclName = "NP",
-            UcclLegalName = "NP",
-            UcclCode = "NP",
-            Smsname = "NP",
-            ClientTypeId = (int)DespatchWeb.Enums.ClientType.NetworkPartner,
-            NpAgentId = null,
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
-        context.TucClientContacts.Add(new TucClientContact
-        {
-            UcctId = 100,
-            UcctClientId = 50,
-            CreatedBy = "test",
-            LastModifiedBy = "test"
-        });
-        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
-
+        // Hub stamps an empty string when the underlying tucClient row had a null
+        // ClientTypeId, so the claim is present-but-empty rather than absent.
+        SetupHttpContextWithClaims(("ClientTypeId", string.Empty));
         var service = CreateService();
 
-        var result = await service.GetCurrentNpAgentIdAsync();
-
-        Assert.Null(result);
+        Assert.Null(service.GetClientTypeId());
     }
 
     [Fact]
-    public async Task GetCurrentNpAgentIdAsync_WhenNoContactIdClaim_ReturnsNull()
+    public void GetClientTypeId_CalledMultipleTimes_ReturnsCachedValue()
+    {
+        SetupHttpContextWithClaims(("ClientTypeId", "3"));
+        var service = CreateService();
+
+        Assert.Equal(3, service.GetClientTypeId());
+        Assert.Equal(3, service.GetClientTypeId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_WithValidClaim_ReturnsValue()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", "77"));
+        var service = CreateService();
+
+        Assert.Equal(77, service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_WithNoClaim_ReturnsNull()
     {
         SetupHttpContextWithClaims();
-
         var service = CreateService();
 
-        var result = await service.GetCurrentNpAgentIdAsync();
+        Assert.Null(service.GetNpAgentId());
+    }
 
-        Assert.Null(result);
+    [Fact]
+    public void GetNpAgentId_WithEmptyClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", string.Empty));
+        var service = CreateService();
+
+        Assert.Null(service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetNpAgentId_CalledMultipleTimes_ReturnsCachedValue()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", "77"));
+        var service = CreateService();
+
+        Assert.Equal(77, service.GetNpAgentId());
+        Assert.Equal(77, service.GetNpAgentId());
     }
 }

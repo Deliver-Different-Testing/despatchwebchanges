@@ -51,6 +51,13 @@ export interface CreateJobChangeRequestPayload {
     currentValue?: string;
     requestedValue?: string;
     reason?: string;
+    /**
+     * IntMgrPartnerPairing.Id that the job belongs to. Send this whenever the
+     * frontend knows it (job.partnerPairingId) so the backend can resolve the
+     * pairing on tenants with multiple active partner pairings without falling
+     * back to the "single active pairing" heuristic.
+     */
+    pairingId?: number;
 }
 
 export interface DecisionPayload {

@@ -17,9 +17,13 @@ export const StatCard: React.FC<StatCardProps> = ({value, label, color, icon}) =
         <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
             <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                 {icon && React.cloneElement(icon as React.ReactElement<Record<string, unknown>>, {sx: {fontSize: 28, color, ...(icon.props as Record<string, unknown>)?.sx as object}})}
-                <Typography variant="h5" fontWeight={700} color={color}>{value}</Typography>
+                <Typography variant="h5" color={color} sx={{
+                    fontWeight: 700
+                }}>{value}</Typography>
             </Box>
-            <Typography variant="caption" color="text.secondary">{label}</Typography>
+            <Typography variant="caption" sx={{
+                color: "text.secondary"
+            }}>{label}</Typography>
         </CardContent>
     </Card>
 );

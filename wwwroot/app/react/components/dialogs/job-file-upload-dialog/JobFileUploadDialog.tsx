@@ -156,7 +156,9 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
             <Typography>
                 {isPodMode ? 'Drag and drop POD photo here or click to upload' : 'Drag and drop files here or click to upload'}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{
+                color: "text.secondary"
+            }}>
                 Accepted file types: Images, PDF. Max size: 10MB
             </Typography>
         </Box>
@@ -178,7 +180,12 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     {fileList.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={isPodMode ? 5 : 4} align="center">
-                                <Typography variant="body2" color="text.secondary" sx={{py: 2}}>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        color: "text.secondary",
+                                        py: 2
+                                    }}>
                                     No files uploaded yet
                                 </Typography>
                             </TableCell>
@@ -216,23 +223,29 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                 <Typography variant="subtitle2" gutterBottom>
                     Uploading Files ({upload.completedFiles}/{upload.totalFiles})
                 </Typography>
-
                 {/* Overall progress */}
                 <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 0.5}}>
                     <Typography variant="body2">Overall Progress</Typography>
                     <Typography variant="body2">{upload.overallProgress}%</Typography>
                 </Box>
                 <LinearProgress variant="determinate" value={upload.overallProgress} sx={{mb: 1}} />
-
                 {/* Per-file progress */}
                 {upload.uploadingFiles.map((uf, i) => (
                     <Box key={i} sx={{mt: 1}}>
                         <Box sx={{display: 'flex', justifyContent: 'space-between', mb: 0.25}}>
-                            <Typography variant="caption" color="text.secondary" noWrap sx={{maxWidth: '70%'}}>
+                            <Typography
+                                variant="caption"
+                                noWrap
+                                sx={{
+                                    color: "text.secondary",
+                                    maxWidth: '70%'
+                                }}>
                                 {uf.file.name}
                                 {uf.isPOD && uf.podDescription ? ` - ${uf.podDescription}` : ''}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {uf.progress}%
                             </Typography>
                         </Box>
@@ -243,9 +256,14 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                         />
                     </Box>
                 ))}
-
                 {upload.uploadingFiles.length > 1 && (
-                    <Typography variant="caption" display="block" color="text.secondary" sx={{mt: 1}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            display: "block",
+                            color: "text.secondary",
+                            mt: 1
+                        }}>
                         Files in queue: {upload.uploadingFiles.filter(f => f.progress === 0).length}
                     </Typography>
                 )}
@@ -296,7 +314,6 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
             onClose={handleDialogClose}
             maxWidth="md"
             fullWidth
-            disableEscapeKeyDown
             disableEnforceFocus
             slotProps={{
                 paper: {
@@ -331,7 +348,9 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     {isPODOnly ? <CameraAltIcon sx={{fontSize: 24}} /> : <UploadFileIcon sx={{fontSize: 24}} />}
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         {headerTitle}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -361,7 +380,6 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     </Tooltip>
                 )}
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box sx={{p: 3, display: 'flex', flexDirection: 'column'}}>
@@ -387,7 +405,6 @@ export const JobFileUploadDialog: React.FC<JobFileUploadDialogProps> = ({
                     {renderUploadProgress()}
                 </Box>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

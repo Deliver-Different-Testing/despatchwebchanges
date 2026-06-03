@@ -72,7 +72,9 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                     <LocalShippingIcon sx={{ fontSize: 28 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>Assign Courier to Delivery Leg</Typography>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>Assign Courier to Delivery Leg</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Optionally assign a courier for delivery</Typography>
                 </Box>
                 <IconButton onClick={() => onClose({action: 'cancel'})} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
@@ -80,7 +82,12 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                 </IconButton>
             </Box>
             <DialogContent sx={styles.content}>
-                <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        mb: 2
+                    }}>
                     Optionally assign a courier to the delivery leg (Leg B). You can skip this step.
                 </Typography>
                 <Autocomplete
@@ -92,19 +99,20 @@ export const SplitJobCourierDialog: React.FC<SplitJobCourierDialogProps> = ({ope
                     value={selected}
                     onChange={(_, value) => setSelected(value)}
                     isOptionEqualToValue={(option, value) => option.id === value.id}
-                    renderInput={({InputProps: autoInputProps, ...params}) => (
+                    renderInput={({slotProps: autoSlotProps, ...params}) => (
                         <TextField
                             {...params}
                             label="Search courier..."
                             placeholder="Type at least 2 characters"
                             autoFocus
                             slotProps={{
+                                ...autoSlotProps,
                                 input: {
-                                    ...autoInputProps,
+                                    ...autoSlotProps.input,
                                     endAdornment: (
                                         <>
                                             {isFetching ? <CircularProgress size={20}/> : null}
-                                            {autoInputProps.endAdornment}
+                                            {autoSlotProps.input.endAdornment}
                                         </>
                                     ),
                                 },

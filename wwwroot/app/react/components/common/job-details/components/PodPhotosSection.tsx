@@ -91,7 +91,12 @@ function PhotoGrid({
         return (
             <Box sx={{py: 3, textAlign: 'center'}}>
                 <PhotoLibraryIcon sx={{fontSize: 36, color: 'text.disabled', mb: 0.5}} />
-                <Typography variant="body2" color="text.secondary" sx={{fontSize: '0.8125rem'}}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        fontSize: '0.8125rem'
+                    }}>
                     No {title.toLowerCase()} photos
                 </Typography>
             </Box>

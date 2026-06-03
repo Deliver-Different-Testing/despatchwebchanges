@@ -157,7 +157,9 @@ export function SwapPodsDialog({
                     <SwapHorizIcon sx={{fontSize: 24}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Swap PODs
                     </Typography>
                     <Typography variant="caption" sx={{opacity: 0.85}}>
@@ -175,7 +177,6 @@ export function SwapPodsDialog({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Info banner */}
@@ -193,14 +194,16 @@ export function SwapPodsDialog({
                     })}
                 >
                     <InfoIcon sx={(theme) => ({color: theme.palette.info.dark, fontSize: 20, mt: 0.1})} />
-                    <Typography variant="body2" color="text.primary">
+                    <Typography variant="body2" sx={{
+                        color: "text.primary"
+                    }}>
                         This will move the POD signature from <strong>{jobNo}</strong> to the job you specify, and vice versa.
                     </Typography>
                 </Paper>
 
                 {phase === 'input' ? (
                     /* Phase 1 — Input */
-                    <Box>
+                    (<Box>
                         {/* Current job (read-only) */}
                         <TextField
                             fullWidth
@@ -213,7 +216,6 @@ export function SwapPodsDialog({
                                 '& .MuiOutlinedInput-root': {bgcolor: 'white'},
                             }}
                         />
-
                         {/* Second job input */}
                         <TextField
                             fullWidth
@@ -234,10 +236,10 @@ export function SwapPodsDialog({
                                 '& .MuiOutlinedInput-root': {bgcolor: 'white'},
                             }}
                         />
-                    </Box>
+                    </Box>)
                 ) : (
                     /* Phase 2 — Confirm */
-                    <Paper
+                    (<Paper
                         elevation={0}
                         sx={(theme) => ({
                             p: 2.5,
@@ -248,7 +250,9 @@ export function SwapPodsDialog({
                     >
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
                             <CheckCircleIcon color="success" sx={{fontSize: 20}} />
-                            <Typography variant="subtitle2" fontWeight={600}>
+                            <Typography variant="subtitle2" sx={{
+                                fontWeight: 600
+                            }}>
                                 Ready to swap
                             </Typography>
                         </Box>
@@ -263,10 +267,20 @@ export function SwapPodsDialog({
                                     textAlign: 'center',
                                 })}
                             >
-                                <Typography variant="caption" color="text.secondary" display="block">
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: "block"
+                                    }}>
                                     Job 1
                                 </Typography>
-                                <Typography variant="h6" fontWeight={700} color="primary.main">
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 700,
+                                        color: "primary.main"
+                                    }}>
                                     {jobNo}
                                 </Typography>
                             </Box>
@@ -281,18 +295,27 @@ export function SwapPodsDialog({
                                     textAlign: 'center',
                                 })}
                             >
-                                <Typography variant="caption" color="text.secondary" display="block">
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: "block"
+                                    }}>
                                     Job 2
                                 </Typography>
-                                <Typography variant="h6" fontWeight={700} color="primary.main">
+                                <Typography
+                                    variant="h6"
+                                    sx={{
+                                        fontWeight: 700,
+                                        color: "primary.main"
+                                    }}>
                                     {secondJobNo.trim()}
                                 </Typography>
                             </Box>
                         </Box>
-                    </Paper>
+                    </Paper>)
                 )}
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

@@ -73,10 +73,8 @@ describe('PartnerRatePanel', () => {
     it('shows rate card and pre-fills the input with the rate-card rate', async () => {
         renderPanel();
 
-        await waitFor(() => {
-            expect(screen.getByText(/Rate Card/)).toBeInTheDocument();
-            expect(screen.getByText(/85\.00/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Rate Card/)).toBeInTheDocument();
+        expect(screen.getByText(/85\.00/)).toBeInTheDocument();
 
         const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
         expect(input.value).toBe('85.00');
@@ -94,11 +92,9 @@ describe('PartnerRatePanel', () => {
     it('shows live quotes as a radio group with the first quote pre-selected', async () => {
         renderPanel({fetchRate: jest.fn().mockResolvedValue(liveQuoteResponse)});
 
-        await waitFor(() => {
-            expect(screen.getByText(/Live Quote/)).toBeInTheDocument();
-            expect(screen.getByText(/Standard Delivery/)).toBeInTheDocument();
-            expect(screen.getByText(/Express Delivery/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Live Quote/)).toBeInTheDocument();
+        expect(screen.getByText(/Standard Delivery/)).toBeInTheDocument();
+        expect(screen.getByText(/Express Delivery/)).toBeInTheDocument();
 
         const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
         expect(input.value).toBe('60.00');
@@ -108,7 +104,7 @@ describe('PartnerRatePanel', () => {
         const user = userEvent.setup();
         renderPanel({fetchRate: jest.fn().mockResolvedValue(liveQuoteResponse)});
 
-        await waitFor(() => expect(screen.getByText(/Express Delivery/)).toBeInTheDocument());
+        expect(await screen.findByText(/Express Delivery/)).toBeInTheDocument();
         await user.click(screen.getByText(/Express Delivery/));
 
         const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
@@ -118,10 +114,8 @@ describe('PartnerRatePanel', () => {
     it('shows the percentage hint and pre-fills with the derived rate (Mode 2)', async () => {
         renderPanel({fetchRate: jest.fn().mockResolvedValue(percentageResponse)});
 
-        await waitFor(() => {
-            expect(screen.getByText(/Percentage/)).toBeInTheDocument();
-            expect(screen.getByText(/60% of the job amount/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Percentage/)).toBeInTheDocument();
+        expect(screen.getByText(/60% of the job amount/)).toBeInTheDocument();
 
         const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
         expect(input.value).toBe('60.00');
@@ -131,10 +125,8 @@ describe('PartnerRatePanel', () => {
     it('shows the cost-plus hint and pre-fills with the partner quote (Mode 3)', async () => {
         renderPanel({fetchRate: jest.fn().mockResolvedValue(costPlusResponse)});
 
-        await waitFor(() => {
-            expect(screen.getByText(/Cost Plus/)).toBeInTheDocument();
-            expect(screen.getByText(/margin 25%/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/Cost Plus/)).toBeInTheDocument();
+        expect(screen.getByText(/margin 25%/)).toBeInTheDocument();
 
         const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
         expect(input.value).toBe('80.00');
@@ -144,9 +136,7 @@ describe('PartnerRatePanel', () => {
     it('shows the manual-entry message when source is none', async () => {
         renderPanel({fetchRate: jest.fn().mockResolvedValue(noRateResponse)});
 
-        await waitFor(() => {
-            expect(screen.getByText(/No pre-agreed rate/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/No pre-agreed rate/)).toBeInTheDocument();
     });
 
     it('renders the server message verbatim when source is none and a message was provided', async () => {
@@ -159,9 +149,7 @@ describe('PartnerRatePanel', () => {
             } satisfies PartnerRateForJobResponse),
         });
 
-        await waitFor(() => {
-            expect(screen.getByText(/No active service mapping/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/No active service mapping/)).toBeInTheDocument();
     });
 
     it('reports rate=0/valid=false when the input is cleared', async () => {
@@ -169,7 +157,7 @@ describe('PartnerRatePanel', () => {
         const user = userEvent.setup();
         renderPanel({onRateChange});
 
-        await waitFor(() => expect(screen.getByLabelText(/Agreed Rate/)).toBeInTheDocument());
+        expect(await screen.findByLabelText(/Agreed Rate/)).toBeInTheDocument();
 
         const input = screen.getByLabelText(/Agreed Rate/) as HTMLInputElement;
         await user.clear(input);
@@ -182,8 +170,6 @@ describe('PartnerRatePanel', () => {
     it('falls back to a "none" response when fetchRate rejects', async () => {
         renderPanel({fetchRate: jest.fn().mockRejectedValue(new Error('network down'))});
 
-        await waitFor(() => {
-            expect(screen.getByText(/No pre-agreed rate/)).toBeInTheDocument();
-        });
+        expect(await screen.findByText(/No pre-agreed rate/)).toBeInTheDocument();
     });
 });

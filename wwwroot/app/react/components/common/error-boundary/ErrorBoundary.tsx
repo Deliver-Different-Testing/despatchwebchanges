@@ -7,7 +7,7 @@ import Collapse from '@mui/material/Collapse';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface ErrorBoundaryProps {
@@ -118,10 +118,14 @@ function FallbackPanel({error, componentStack, onReset}: FallbackPanelProps) {
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
                         <ErrorOutlineIcon color="error" sx={{fontSize: 32}}/>
                         <Box>
-                            <Typography variant="h6" component="h2" fontWeight={600}>
+                            <Typography variant="h6" component="h2" sx={{
+                                fontWeight: 600
+                            }}>
                                 Something Went Wrong
                             </Typography>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 An unexpected error occurred in this page. Please try refreshing.
                             </Typography>
                         </Box>

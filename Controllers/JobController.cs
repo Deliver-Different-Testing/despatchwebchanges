@@ -2585,13 +2585,13 @@ public class JobController(
     }
 
     // Narrower partner guard for endpoints that only need to protect the *sender*
-    // side of a partner pairing. A job is "outbound" iff this tenant has a
-    // JobPartnerDispatch row for it — the receiving tenant's mirror has the
-    // PartnerJobGuid but no dispatch row, so it slips past this check and can
-    // dispatch/void normally.
+    // side of a partner pairing. A job is "outbound" iff the linked
+    // IntMgrPartnerPairing.OwnerTenantId is this tenant — the receiving tenant's
+    // mirror is tied to a pairing owned by the originating partner, so it slips
+    // past this check and can dispatch/void normally.
     private async Task<IActionResult> RejectIfOutboundPartnerJobAsync(int jobId)
     {
-        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId))
+        if (await jobQueryRepository.IsOutboundPartnerJobAsync(jobId, infoService.GetCurrentTenantId()))
         {
             return BadRequest(new
             {

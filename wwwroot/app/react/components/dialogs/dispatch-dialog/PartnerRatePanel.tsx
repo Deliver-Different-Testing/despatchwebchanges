@@ -108,7 +108,9 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
         return (
             <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1.5, py: 3}}>
                 <CircularProgress size={24}/>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Looking up rate...
                 </Typography>
             </Box>
@@ -137,7 +139,9 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                     <Paper elevation={0} sx={SECTION_PAPER_SX}>
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 1}}>
                             <Chip label="Live Quote" size="small" color="primary" variant="outlined"/>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {rateResult.liveQuotes.length} rate{rateResult.liveQuotes.length > 1 ? 's' : ''} from partner
                             </Typography>
                         </Box>
@@ -154,7 +158,9 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                                                 {quote.serviceName} &mdash; <Box component="strong" sx={{fontWeight: 700}}>${quote.totalCharge.toFixed(2)} {quote.currency}</Box>
                                             </Typography>
                                             {quote.transitDays != null && (
-                                                <Typography variant="caption" color="text.disabled">
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.disabled"
+                                                }}>
                                                     ({quote.transitDays}d transit)
                                                 </Typography>
                                             )}
@@ -177,7 +183,13 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                                 )}
                             </Typography>
                         </Box>
-                        <Typography variant="caption" color="text.disabled" sx={{display: 'block', mt: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.disabled",
+                                display: 'block',
+                                mt: 0.5
+                            }}>
                             IM substitutes this rate at dispatch &mdash; any value you type below will be ignored.
                         </Typography>
                     </Paper>
@@ -194,7 +206,13 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
                                 )}
                             </Typography>
                         </Box>
-                        <Typography variant="caption" color="text.disabled" sx={{display: 'block', mt: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.disabled",
+                                display: 'block',
+                                mt: 0.5
+                            }}>
                             IM will use the partner quote at dispatch and rewrite the job amount to the margin-adjusted revenue.
                         </Typography>
                     </Paper>
@@ -202,13 +220,14 @@ export const PartnerRatePanel: React.FC<PartnerRatePanelProps> = ({
 
                 {rateResult.source === 'none' && (
                     <Paper elevation={0} sx={SECTION_PAPER_SX}>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {rateResult.message ?? 'No pre-agreed rate or live quote available. Enter a rate manually.'}
                         </Typography>
                     </Paper>
                 )}
             </Box>
-
             <Box>
                 <Typography variant="body2" sx={SECTION_LABEL_SX}>Agreed Rate</Typography>
                 <TextField

@@ -177,9 +177,19 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     '&:hover': {bgcolor: alpha(accentColor, 0.08)},
                 }}
             >
-                <Box display="flex" alignItems="center" gap={1}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1
+                    }}>
                     <AutoAwesomeIcon sx={{fontSize: 20, color: accentColor}} />
-                    <Typography variant="subtitle2" fontWeight={600} color="text.primary">
+                    <Typography
+                        variant="subtitle2"
+                        sx={{
+                            fontWeight: 600,
+                            color: "text.primary"
+                        }}>
                         {title}
                     </Typography>
                     <Chip
@@ -194,9 +204,19 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         }}
                     />
                 </Box>
-                <Box display="flex" alignItems="center" gap={0.5}>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5
+                    }}>
                     {generatedAt && !loading && (
-                        <Typography variant="caption" color="text.disabled" sx={{mr: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.disabled",
+                                mr: 0.5
+                            }}>
                             {relativeTime}
                         </Typography>
                     )}
@@ -227,12 +247,13 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 </Box>
             </Box>
-
             {/* Content */}
             <Collapse in={expanded}>
                 <CardContent sx={{pt: 1, pb: 2, px: 2}}>
                     {loading && !summary && (
-                        <Box py={1}>
+                        <Box sx={{
+                            py: 1
+                        }}>
                             <Skeleton variant="text" width="90%" />
                             <Skeleton variant="text" width="75%" />
                             <Skeleton variant="text" width="60%" />
@@ -251,7 +272,9 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                     )}
 
                     {!loading && !error && !summary && (
-                        <Typography variant="body2" color="text.disabled">
+                        <Typography variant="body2" sx={{
+                            color: "text.disabled"
+                        }}>
                             Click to generate an AI summary.
                         </Typography>
                     )}

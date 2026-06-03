@@ -14,7 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DownloadIcon from '@mui/icons-material/Download';
 import EmailIcon from '@mui/icons-material/Email';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import SendIcon from '@mui/icons-material/Send';
 import VerifiedIcon from '@mui/icons-material/VerifiedUser';

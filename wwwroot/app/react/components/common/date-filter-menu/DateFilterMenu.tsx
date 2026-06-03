@@ -361,7 +361,6 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                     <CalendarIcon sx={{fontSize: 22}}/>
                 </IconButton>
             </Tooltip>
-
             <Menu
                 anchorEl={anchorEl}
                 open={open}
@@ -392,15 +391,18 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                     }}
                 >
                     <DateRangeIcon color="primary" sx={{fontSize: 20}}/>
-                    <Typography variant="subtitle2" fontWeight={600}>
+                    <Typography variant="subtitle2" sx={{
+                        fontWeight: 600
+                    }}>
                         Date Filter
                     </Typography>
                     {timeZoneLong && (
                         <Typography
                             variant="caption"
-                            color="text.secondary"
-                            sx={{ml: 'auto'}}
-                        >
+                            sx={{
+                                color: "text.secondary",
+                                ml: 'auto'
+                            }}>
                             {timeZoneLong}
                         </Typography>
                     )}
@@ -467,9 +469,12 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                             {startDate && endDate && (
                                 <Typography
                                     variant="caption"
-                                    color="text.secondary"
-                                    sx={{display: 'block', mt: 1, textAlign: 'center'}}
-                                >
+                                    sx={{
+                                        color: "text.secondary",
+                                        display: 'block',
+                                        mt: 1,
+                                        textAlign: 'center'
+                                    }}>
                                     {startDate.format('MMM DD, YYYY')} — {endDate.format('MMM DD, YYYY')}
                                 </Typography>
                             )}
@@ -495,9 +500,12 @@ export const DateFilterMenu: React.FC<DateFilterMenuProps> = ({
                             </FormControl>
                             <Typography
                                 variant="caption"
-                                color="text.secondary"
-                                sx={{display: 'block', mt: 1, textAlign: 'center'}}
-                            >
+                                sx={{
+                                    color: "text.secondary",
+                                    display: 'block',
+                                    mt: 1,
+                                    textAlign: 'center'
+                                }}>
                                 {'All Time'} — {endDate.format('MMM DD, h:mm A')}
                             </Typography>
                         </Box>

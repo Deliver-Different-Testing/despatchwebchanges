@@ -443,7 +443,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
         }}>
             {/* Inject animation keyframes */}
             <style>{fadeInUpKeyframes}</style>
-
             {/* Stat Cards Row */}
             <Box sx={{display: 'flex', gap: 2, mb: 2, flexShrink: 0}}>
                 {STAT_CARDS.map((card) => {
@@ -495,11 +494,16 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     );
                 })}
             </Box>
-
             {/* Inline Filter Bar */}
             <Card variant="outlined" sx={{mb: 2, flexShrink: 0}}>
                 <CardContent sx={{py: 1.5, '&:last-child': {pb: 1.5}}}>
-                    <Box display="flex" alignItems="center" gap={2} flexWrap="wrap">
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 2,
+                            flexWrap: "wrap"
+                        }}>
                         <TextField
                             size="small"
                             label="Search..."
@@ -582,7 +586,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     </Box>
                 </CardContent>
             </Card>
-
             {/* AI Briefing — only show when there are tasks and AI is enabled */}
             {isAiEnabled() && !tasksLoading && tasks.length > 0 && (
                 <Box sx={{mb: 2, flexShrink: 0}}>
@@ -592,7 +595,6 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                     />
                 </Box>
             )}
-
             {/* Main Content - Two Column Layout */}
             <Box sx={{flex: 1, display: 'flex', gap: 2, minHeight: 0}}>
                 {/* Left Panel: Tasks or Calendar */}
@@ -656,9 +658,17 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
 
                                 {/* Empty State */}
                                 {!tasksLoading && filteredTasks.length === 0 && (
-                                    <Box display="flex" alignItems="center" justifyContent="center" p={3}>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            p: 3
+                                        }}>
                                         <InfoIcon sx={{mr: 1, color: 'text.disabled'}}/>
-                                        <Typography color="text.secondary">
+                                        <Typography sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             No tasks match your filters
                                         </Typography>
                                     </Box>

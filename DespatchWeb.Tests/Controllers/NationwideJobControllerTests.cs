@@ -1,15 +1,14 @@
 ﻿using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
-/// <summary>
-/// Unit tests for NationwideJobController - tests flight search and agent assignment endpoints.
-/// </summary>
+[TestSubject(typeof(NationwideJobController))]
 public class NationwideJobControllerTests
 {
     private readonly INationwideJobRepository _repositoryMock = Substitute.For<INationwideJobRepository>();

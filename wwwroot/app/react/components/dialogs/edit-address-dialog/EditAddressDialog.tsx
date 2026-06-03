@@ -642,7 +642,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     <LocationIcon sx={{fontSize: 24}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         {title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -660,7 +662,6 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Address Search Section */}
@@ -677,7 +678,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
                         <SearchIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" fontWeight={500}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 500
+                        }}>
                             Address Lookup
                         </Typography>
                     </Box>
@@ -691,20 +694,21 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                         onChange={(_, value) => handleAddressSelect(value)}
                         filterOptions={(x) => x} // Disable client-side filtering
                         isOptionEqualToValue={(option, value) => option.id === value.id}
-                        renderInput={({InputProps: autoInputProps, ...params}) => (
+                        renderInput={({slotProps: autoSlotProps, ...params}) => (
                             <TextField
                                 {...params}
                                 label="Search Address"
                                 placeholder="Type at least 3 characters to search..."
                                 slotProps={{
+                                    ...autoSlotProps,
                                     input: {
-                                        ...autoInputProps,
+                                        ...autoSlotProps.input,
                                         endAdornment: (
                                             <>
                                                 {(isSearchingAddresses || isLoadingAddress) && (
                                                     <CircularProgress size={20} />
                                                 )}
-                                                {autoInputProps.endAdornment}
+                                                {autoSlotProps.input.endAdornment}
                                             </>
                                         ),
                                     },
@@ -721,7 +725,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     {isLoadingAddress && (
                         <Box sx={{mt: 1, display: 'flex', alignItems: 'center', gap: 1}}>
                             <CircularProgress size={16} />
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Loading address details...
                             </Typography>
                         </Box>
@@ -742,7 +748,9 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
                         <LocationIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" fontWeight={500}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 500
+                        }}>
                             Address Details
                         </Typography>
                     </Box>
@@ -918,7 +926,12 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                             onClick={() => setIsContactCardExpanded(!isContactCardExpanded)}
                         >
                             <ShippingIcon sx={{color: 'text.secondary', mr: 1}} />
-                            <Typography variant="subtitle1" fontWeight={500} sx={{flex: 1}}>
+                            <Typography
+                                variant="subtitle1"
+                                sx={{
+                                    fontWeight: 500,
+                                    flex: 1
+                                }}>
                                 Shipment Details
                             </Typography>
                             {isContactCardExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -1020,10 +1033,17 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                 >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
                         <MapIcon sx={{color: 'text.secondary'}} />
-                        <Typography variant="subtitle1" fontWeight={500}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 500
+                        }}>
                             Location Preview
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ml: 'auto'}}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "text.secondary",
+                                ml: 'auto'
+                            }}>
                             Click on the map to set coordinates
                         </Typography>
                     </Box>
@@ -1051,7 +1071,6 @@ export const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
                     </Box>
                 </Paper>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

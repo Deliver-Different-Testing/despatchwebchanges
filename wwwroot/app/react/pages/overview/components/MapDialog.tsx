@@ -81,14 +81,15 @@ export const MapDialog: React.FC<MapDialogProps> = ({open, onClose, delivery}) =
                     <MapIcon sx={{ fontSize: 28 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>{delivery?.jobName} Map</Typography>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>{delivery?.jobName} Map</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>View delivery locations and routes</Typography>
                 </Box>
                 <IconButton onClick={onClose} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             <Box sx={{flex: 1, position: 'relative', overflow: 'hidden'}}>
                 {isLoading && (
                     <Box
