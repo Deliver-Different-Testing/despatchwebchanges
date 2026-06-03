@@ -288,7 +288,9 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     <NoteIcon sx={{fontSize: 24}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         {title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -305,12 +307,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             <DialogContent sx={{p: 3}}>
                 {/* Note Type Section */}
                 <Box sx={{mb: 3}}>
                     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5}}>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 600
+                        }}>
                             Note Type
                         </Typography>
                         <IconButton
@@ -368,7 +371,9 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                         borderRadius: 2,
                                     }}
                                 >
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {selectedNoteType.description}
                                     </Typography>
                                 </Paper>
@@ -399,7 +404,9 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                         }}
                     >
                         <Box sx={{p: 2, bgcolor: 'grey.50', borderBottom: 1, borderColor: 'divider'}}>
-                            <Typography variant="subtitle1" fontWeight={600}>
+                            <Typography variant="subtitle1" sx={{
+                                fontWeight: 600
+                            }}>
                                 Create New Note Type
                             </Typography>
                         </Box>
@@ -480,7 +487,12 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
 
                 {/* Note Content Section */}
                 <Box sx={{mb: 3}}>
-                    <Typography variant="subtitle1" fontWeight={600} sx={{mb: 1.5}}>
+                    <Typography
+                        variant="subtitle1"
+                        sx={{
+                            fontWeight: 600,
+                            mb: 1.5
+                        }}>
                         Note Content
                     </Typography>
                     <TextField
@@ -526,7 +538,9 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     >
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
                             <InfoIcon fontSize="small" color="action" />
-                            <Typography variant="subtitle2" color="text.secondary">
+                            <Typography variant="subtitle2" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Note Information
                             </Typography>
                         </Box>
@@ -536,7 +550,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                             <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
                                 <PersonIcon fontSize="small" color="action" sx={{mt: 0.25}} />
                                 <Box>
-                                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            color: "text.secondary",
+                                            textTransform: 'uppercase',
+                                            letterSpacing: 0.5
+                                        }}>
                                         Created by
                                     </Typography>
                                     <Typography variant="body2">
@@ -550,7 +570,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
                                     <ScheduleIcon fontSize="small" color="action" sx={{mt: 0.25}} />
                                     <Box>
-                                        <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: "text.secondary",
+                                                textTransform: 'uppercase',
+                                                letterSpacing: 0.5
+                                            }}>
                                             Created on
                                         </Typography>
                                         <Typography variant="body2">
@@ -565,7 +591,13 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                                 <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1.5}}>
                                     <UpdateIcon fontSize="small" color="action" sx={{mt: 0.25}} />
                                     <Box>
-                                        <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: "text.secondary",
+                                                textTransform: 'uppercase',
+                                                letterSpacing: 0.5
+                                            }}>
                                             Last updated
                                         </Typography>
                                         <Typography variant="body2">
@@ -585,9 +617,7 @@ export const NoteManagementDialog: React.FC<NoteManagementDialogProps> = ({
                     </Paper>
                 )}
             </DialogContent>
-
             <Divider />
-
             <DialogActions sx={{p: 2, gap: 1}}>
                 <Button onClick={onClose} disabled={isSubmitting}>
                     Cancel

@@ -319,7 +319,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     <Inventory2OutlinedIcon sx={{fontSize: 24}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>Edit Dimensions</Typography>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>Edit Dimensions</Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
                         {groups.length} type{groups.length !== 1 ? 's' : ''} · {totalParcels} parcel{totalParcels !== 1 ? 's' : ''} total
                     </Typography>
@@ -328,13 +330,11 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {isParentJob && (
                 <Alert severity="info" icon={<InfoIcon />} sx={{borderRadius: 0, flexShrink: 0}}>
                     This is a child job. Parcel information has been inherited from the parent job.
                 </Alert>
             )}
-
             {/* Table */}
             <Box sx={{flex: 1, overflowY: 'auto', p: 2}}>
                 <Table size="small" stickyHeader>
@@ -360,7 +360,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             value={g.itemName}
                                             onChange={e => updateGroup(g.id, 'itemName', e.target.value)}
                                             placeholder="Name"
-                                            inputProps={{maxLength: MAX_NAME_LENGTH}}
+                                            slotProps={{htmlInput: {maxLength: MAX_NAME_LENGTH}}}
                                         />
                                         {g.representativeItemId != null && (itemTypesByItemId.get(g.representativeItemId) ?? []).length > 0 && (
                                             <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5}}>
@@ -381,7 +381,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             onChange={e => updateGroup(g.id, 'length', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
                                             placeholder="—"
-                                            inputProps={numInput}
+                                            slotProps={{htmlInput: numInput}}
                                             sx={noSpinnerSx}
                                         />
                                     </TableCell>
@@ -394,7 +394,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             onChange={e => updateGroup(g.id, 'depth', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
                                             placeholder="—"
-                                            inputProps={numInput}
+                                            slotProps={{htmlInput: numInput}}
                                             sx={noSpinnerSx}
                                         />
                                     </TableCell>
@@ -407,7 +407,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             onChange={e => updateGroup(g.id, 'height', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
                                             placeholder="—"
-                                            inputProps={numInput}
+                                            slotProps={{htmlInput: numInput}}
                                             sx={noSpinnerSx}
                                         />
                                     </TableCell>
@@ -420,7 +420,7 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                             onChange={e => updateGroup(g.id, 'weight', e.target.value)}
                                             onWheel={e => e.currentTarget.blur()}
                                             placeholder="—"
-                                            inputProps={{min: 0, step: 0.001}}
+                                            slotProps={{htmlInput: {min: 0, step: 0.001}}}
                                             sx={noSpinnerSx}
                                         />
                                     </TableCell>
@@ -456,7 +456,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                                 {g.expandedBarcodes && g.barcodes.map((barcode, i) => (
                                     <TableRow key={`${g.id}-bc-${i}`} sx={{bgcolor: 'action.hover'}}>
                                         <TableCell sx={{pl: 4}}>
-                                            <Typography variant="caption" color="text.secondary">
+                                            <Typography variant="caption" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Item {i + 1}
                                             </Typography>
                                         </TableCell>
@@ -483,7 +485,6 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     </Button>
                 </Box>
             </Box>
-
             {/* Weight section */}
             <Box sx={{px: 2, py: 1.5, borderTop: 1, borderColor: 'divider', display: 'flex', alignItems: 'center', gap: 2, flexShrink: 0, flexWrap: 'wrap'}}>
                 <TextField
@@ -493,8 +494,10 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     value={targetWeight}
                     onChange={e => setTargetWeight(e.target.value)}
                     onWheel={e => e.currentTarget.blur()}
-                    inputProps={{min: 0, step: 0.001}}
-                    slotProps={{input: {endAdornment: <InputAdornment position="end">{weightUnit}</InputAdornment>}}}
+                    slotProps={{
+                        input: {endAdornment: <InputAdornment position="end">{weightUnit}</InputAdornment>},
+                        htmlInput: {min: 0, step: 0.001},
+                    }}
                     sx={{...noSpinnerSx, width: 150}}
                     error={weightMismatch}
                 />
@@ -511,11 +514,12 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     </span>
                 </Tooltip>
                 <Box sx={{flex: 1}} />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Parcel total: <strong>{parcelTotal > 0 ? parcelTotal.toFixed(1) : '—'} {parcelTotal > 0 ? weightUnit : ''}</strong>
                 </Typography>
             </Box>
-
             {hasEmptyWeights && (
                 <Alert severity="error" sx={{borderRadius: 0, flexShrink: 0, py: 0.25, '& .MuiAlert-message': {py: 0.5}}}>
                     All parcels must have a weight greater than 0 before saving.
@@ -526,7 +530,6 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     Job weight ({(parseFloat(targetWeight) || 0).toFixed(1)} {weightUnit}) doesn't match parcel total ({parcelTotal.toFixed(1)} {weightUnit}). Adjust line item weights or click <strong>Match proportionally</strong>.
                 </Alert>
             )}
-
             {/* Footer */}
             <Box sx={{display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, p: 2, borderTop: 1, borderColor: 'divider', flexShrink: 0}}>
                 <Button onClick={handleCancel} disabled={isLoading}>
@@ -544,7 +547,6 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                     </Tooltip>
                 )}
             </Box>
-
             {/* Discard confirmation */}
             <Dialog
                 open={discardDialogOpen}
@@ -567,7 +569,9 @@ export const EditParcelDimensionsDialog: React.FC<EditParcelDimensionsDialogProp
                         <WarningAmberIcon sx={{fontSize: 24}} />
                     </Box>
                     <Box sx={{flex: 1}}>
-                        <Typography variant="h6" fontWeight={600}>Discard unsaved changes</Typography>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>Discard unsaved changes</Typography>
                         <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>Changes will be permanently lost</Typography>
                     </Box>
                     <IconButton onClick={() => setDiscardDialogOpen(false)} sx={{color: 'white', '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'}}}>

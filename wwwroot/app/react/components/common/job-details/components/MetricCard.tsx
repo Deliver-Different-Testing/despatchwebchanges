@@ -103,7 +103,13 @@ export const MetricCard = React.memo(({
             ...filledIndicatorSx,
             ...densePaddingSx,
         }}>
-            <Typography className="MetricCard-label" variant="overline" color="text.secondary" sx={dense ? getMetricLabelSx(true) : metricLabelSx}>
+            <Typography
+                className="MetricCard-label"
+                variant="overline"
+                sx={{
+                    color: "text.secondary",
+                    ...(dense ? getMetricLabelSx(true) : metricLabelSx) as object,
+                }}>
                 {label}
             </Typography>
             <Typography

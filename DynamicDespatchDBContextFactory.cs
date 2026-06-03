@@ -9,7 +9,8 @@ namespace DespatchWeb;
 public class DynamicDespatchDbContextFactory(
     IOptions<DbContextOptions<DespatchContext>> options,
     IConnectionStringManager connectionStringManager,
-    IHttpContextAccessor contextAccessor)
+    IHttpContextAccessor contextAccessor,
+    IServiceProvider serviceProvider)
     : IDbContextFactory<DespatchContext>
 {
     private readonly DbContextOptions<DespatchContext> _options = options.Value;
@@ -61,6 +62,14 @@ public class DynamicDespatchDbContextFactory(
         });
         optionsBuilder.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 
-        return new DespatchContext(optionsBuilder.Options);
+        // Resolve INpScopeProvider lazily here (not via constructor) to keep
+        // the DI cycle out of startup validation. NpScopeProvider depends on
+        // ITenantInfoService, which depends on IDbContextFactory<DespatchContext>
+        // (for the staff-info DB read), which is this factory. At runtime there's
+        // no actual cycle — the chain is only walked when a query filter fires,
+        // by which point the scoped instance graph is fully constructed — but
+        // the static validator can't see that.
+        var npScope = serviceProvider.GetRequiredService<INpScopeProvider>();
+        return new DespatchContext(optionsBuilder.Options, npScope);
     }
 }

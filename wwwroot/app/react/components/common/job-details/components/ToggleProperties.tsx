@@ -106,8 +106,8 @@ export const ToggleProperties = React.memo(({
                                 slotProps={{
                                     primary: {
                                         variant: 'body2',
-                                        fontSize: '0.8125rem',
-                                        color: isFieldVisible('checkboxes') ? 'text.primary' : 'text.disabled'
+                                        color: isFieldVisible('checkboxes') ? 'text.primary' : 'text.disabled',
+                                        sx: {fontSize: '0.8125rem'},
                                     }
                                 }}
                             />
@@ -171,8 +171,14 @@ export const ToggleProperties = React.memo(({
                 {/* Truck Options */}
                 <Collapse in={isFieldVisible('truckOptions') && !!job.truck} unmountOnExit>
                     <Divider sx={{my: 0.5}}/>
-                    <Typography variant="caption" color="text.secondary"
-                                sx={{mb: 0.5, display: 'block', fontWeight: 500}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            mb: 0.5,
+                            display: 'block',
+                            fontWeight: 500
+                        }}>
                         Truck Options
                     </Typography>
                     <Box sx={{display: 'flex', flexWrap: 'wrap', justifyContent: 'center'}}>

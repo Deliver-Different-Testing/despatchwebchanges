@@ -6,16 +6,30 @@
  * standalone (via toastService singleton for use outside React).
  */
 
-import React, {createContext, useContext, useState, useCallback, ReactNode} from 'react';
+import React, {createContext, useContext, useState, useCallback, useMemo, useRef, ReactNode} from 'react';
 import {createRoot, Root} from 'react-dom/client';
 import {ThemeProvider} from '@mui/material/styles';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import type {AlertColor} from '@mui/material/Alert';
 import {getTheme} from '../theme/muiTheme';
 
+/**
+ * Types that {@link ShowToastFn} accepts. This is the narrow set the AngularJS
+ * bridge and every external caller pass through. 'loading' is intentionally
+ * NOT a member here — sticky-progress toasts are only reachable via
+ * {@link ToastContextValue.showLoadingToast}, which returns an explicit handle
+ * so the caller is forced to resolve/cancel the in-flight indicator.
+ */
 export type ToastType = 'success' | 'warning' | 'error' | 'info';
+
+/**
+ * Full toast type union including the internal 'loading' variant. Used only
+ * inside the toast renderer itself, not on public callback signatures.
+ */
+type InternalToastType = ToastType | 'loading';
 
 /** Optional action button rendered on the right side of a toast. */
 export interface ToastAction {
@@ -26,6 +40,19 @@ export interface ToastAction {
 /** Shared callback type for showing a toast notification */
 export type ShowToastFn = (message: string, type: ToastType, action?: ToastAction) => void;
 
+/**
+ * Handle returned by {@link ToastContextValue.showLoadingToast} (and the
+ * standalone equivalent). Lets the caller turn the in-flight toast into a
+ * final status toast — typically `success` or `error` — once the underlying
+ * async work resolves, or dismiss it outright on cancellation.
+ */
+export interface ToastHandle {
+    /** Replace the loading toast in-place with a new message/type. */
+    update: (message: string, type: ToastType, action?: ToastAction) => void;
+    /** Remove the toast immediately. */
+    dismiss: () => void;
+}
+
 /** Minimal toast service interface used by dialog modules */
 export interface ToastService {
     showToast: ShowToastFn;
@@ -34,7 +61,7 @@ export interface ToastService {
 interface Toast {
     id: number;
     message: string;
-    type: ToastType;
+    type: InternalToastType;
     action?: ToastAction;
 }
 
@@ -44,6 +71,7 @@ interface ToastContextValue {
     showWarningToast: (message: string, action?: ToastAction) => void;
     showErrorToast: (message: string, action?: ToastAction) => void;
     showInfoToast: (message: string, action?: ToastAction) => void;
+    showLoadingToast: (message: string) => ToastHandle;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -55,6 +83,21 @@ interface ToastProviderProps {
     autoHideDuration?: number;
 }
 
+const mapTypeToSeverity = (type: InternalToastType): AlertColor => {
+    switch (type) {
+        case 'success':
+            return 'success';
+        case 'warning':
+            return 'warning';
+        case 'error':
+            return 'error';
+        case 'loading':
+        case 'info':
+        default:
+            return 'info';
+    }
+};
+
 /**
  * Toast container component that renders the actual snackbars
  */
@@ -63,37 +106,34 @@ const ToastContainer: React.FC<{
     autoHideDuration: number;
     onClose: (id: number) => void;
 }> = ({toasts, autoHideDuration, onClose}) => {
-    const mapTypeToSeverity = (type: ToastType): AlertColor => {
-        switch (type) {
-            case 'success':
-                return 'success';
-            case 'warning':
-                return 'warning';
-            case 'error':
-                return 'error';
-            case 'info':
-            default:
-                return 'info';
-        }
-    };
-
     return (
         <>
             {toasts.map((toast, index) => (
                 <Snackbar
                     key={toast.id}
                     open={true}
-                    autoHideDuration={autoHideDuration}
-                    onClose={() => onClose(toast.id)}
+                    // 'loading' toasts are sticky — they must persist until the
+                    // caller dismisses or updates them via the returned handle.
+                    autoHideDuration={toast.type === 'loading' ? null : autoHideDuration}
+                    onClose={(_, reason) => {
+                        // Ignore clickaway for loading toasts (and any toast) —
+                        // the user shouldn't be able to dismiss feedback by
+                        // clicking elsewhere on the page.
+                        if (reason === 'clickaway') return;
+                        onClose(toast.id);
+                    }}
                     anchorOrigin={{vertical: 'top', horizontal: 'right'}}
                     sx={{
                         mt: index * 8, // Stack toasts vertically
                     }}
                 >
                     <Alert
-                        onClose={() => onClose(toast.id)}
+                        onClose={toast.type === 'loading' ? undefined : () => onClose(toast.id)}
                         severity={mapTypeToSeverity(toast.type)}
                         variant="filled"
+                        icon={toast.type === 'loading'
+                            ? <CircularProgress size={18} color="inherit"/>
+                            : undefined}
                         sx={{width: '100%'}}
                         action={toast.action ? (
                             <Button
@@ -121,12 +161,21 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
     children,
     autoHideDuration = 5000,
 }) => {
+    // Hold the toast list in a ref alongside state so the handle returned by
+    // showLoadingToast can call update/dismiss synchronously without closing
+    // over a stale snapshot of the list.
+    const toastsRef = useRef<Toast[]>([]);
     const [toasts, setToasts] = useState<Toast[]>([]);
+
+    const commit = useCallback((next: Toast[]) => {
+        toastsRef.current = next;
+        setToasts(next);
+    }, []);
 
     const showToast = useCallback((message: string, type: ToastType, action?: ToastAction) => {
         const id = ++toastIdCounter;
-        setToasts(prev => [...prev, {id, message, type, action}]);
-    }, []);
+        commit([...toastsRef.current, {id, message, type, action}]);
+    }, [commit]);
 
     const showSuccessToast = useCallback((message: string, action?: ToastAction) => {
         showToast(message, 'success', action);
@@ -145,19 +194,35 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({
     }, [showToast]);
 
     const handleClose = useCallback((id: number) => {
-        setToasts(prev => prev.filter(t => t.id !== id));
-    }, []);
+        commit(toastsRef.current.filter(t => t.id !== id));
+    }, [commit]);
+
+    const showLoadingToast = useCallback((message: string): ToastHandle => {
+        const id = ++toastIdCounter;
+        commit([...toastsRef.current, {id, message, type: 'loading'}]);
+        return {
+            update: (nextMessage, nextType, action) => {
+                commit(toastsRef.current.map(t =>
+                    t.id === id ? {...t, message: nextMessage, type: nextType, action} : t
+                ));
+            },
+            dismiss: () => {
+                commit(toastsRef.current.filter(t => t.id !== id));
+            },
+        };
+    }, [commit]);
+
+    const value = useMemo<ToastContextValue>(() => ({
+        showToast,
+        showSuccessToast,
+        showWarningToast,
+        showErrorToast,
+        showInfoToast,
+        showLoadingToast,
+    }), [showToast, showSuccessToast, showWarningToast, showErrorToast, showInfoToast, showLoadingToast]);
 
     return (
-        <ToastContext.Provider
-            value={{
-                showToast,
-                showSuccessToast,
-                showWarningToast,
-                showErrorToast,
-                showInfoToast,
-            }}
-        >
+        <ToastContext.Provider value={value}>
             {children}
             <ToastContainer
                 toasts={toasts}
@@ -209,6 +274,7 @@ class StandaloneToastService {
     private container: HTMLDivElement | null = null;
     private toasts: Toast[] = [];
     private initialized = false;
+    private autoHideTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
     private initialize(): void {
         if (this.initialized) return;
@@ -243,23 +309,21 @@ class StandaloneToastService {
     }
 
     private handleClose(id: number): void {
+        const timer = this.autoHideTimers.get(id);
+        if (timer) {
+            clearTimeout(timer);
+            this.autoHideTimers.delete(id);
+        }
         this.toasts = this.toasts.filter(t => t.id !== id);
         this.render();
     }
 
-    showToast(message: string, type: ToastType, action?: ToastAction): void {
-        this.initialize();
+    private scheduleAutoHide(id: number): void {
+        const timer = setTimeout(() => this.handleClose(id), 5000);
+        this.autoHideTimers.set(id, timer);
+    }
 
-        const id = ++toastIdCounter;
-        this.toasts = [...this.toasts, {id, message, type, action}];
-        this.render();
-
-        // Auto-remove after duration
-        setTimeout(() => {
-            this.handleClose(id);
-        }, 5000);
-
-        // Also log to console for debugging
+    private logToConsole(type: InternalToastType, message: string): void {
         const prefix = `[Toast ${type.toUpperCase()}]`;
         switch (type) {
             case 'error':
@@ -271,6 +335,16 @@ class StandaloneToastService {
             default:
                 console.log(prefix, message);
         }
+    }
+
+    showToast(message: string, type: ToastType, action?: ToastAction): void {
+        this.initialize();
+
+        const id = ++toastIdCounter;
+        this.toasts = [...this.toasts, {id, message, type, action}];
+        this.render();
+        this.scheduleAutoHide(id);
+        this.logToConsole(type, message);
     }
 
     showSuccessToast(message: string, action?: ToastAction): void {
@@ -287,6 +361,27 @@ class StandaloneToastService {
 
     showInfoToast(message: string, action?: ToastAction): void {
         this.showToast(message, 'info', action);
+    }
+
+    showLoadingToast(message: string): ToastHandle {
+        this.initialize();
+
+        const id = ++toastIdCounter;
+        this.toasts = [...this.toasts, {id, message, type: 'loading'}];
+        this.render();
+        this.logToConsole('loading', message);
+
+        return {
+            update: (nextMessage, nextType, action) => {
+                this.toasts = this.toasts.map(t =>
+                    t.id === id ? {...t, message: nextMessage, type: nextType, action} : t
+                );
+                this.render();
+                this.logToConsole(nextType, nextMessage);
+                this.scheduleAutoHide(id);
+            },
+            dismiss: () => this.handleClose(id),
+        };
     }
 }
 

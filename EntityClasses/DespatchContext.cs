@@ -53,8 +53,6 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<JobDeliveryJourneyArchive> JobDeliveryJourneyArchives { get; set; }
 
-    public virtual DbSet<JobPartnerDispatch> JobPartnerDispatches { get; set; }
-
     public virtual DbSet<JobRecoveryAgent> JobRecoveryAgents { get; set; }
 
     public virtual DbSet<PricingBreakdown> PricingBreakdowns { get; set; }
@@ -1195,25 +1193,6 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(20);
         });
 
-        modelBuilder.Entity<JobPartnerDispatch>(entity =>
-        {
-            entity.HasKey(e => e.JobId).HasName("PK__JobPartn__056690C285B97BCF");
-
-            entity.ToTable("JobPartnerDispatch");
-
-            entity.Property(e => e.JobId).ValueGeneratedNever();
-
-            entity.HasOne(d => d.Job).WithOne(p => p.JobPartnerDispatch)
-                .HasForeignKey<JobPartnerDispatch>(d => d.JobId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__JobPartne__JobId__5D0D6C03");
-
-            entity.HasOne(d => d.PartnerPairing).WithMany(p => p.JobPartnerDispatches)
-                .HasForeignKey(d => d.PartnerPairingId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__JobPartne__Partn__5E01903C");
-        });
-
         modelBuilder.Entity<JobRecoveryAgent>(entity =>
         {
             entity.HasKey(e => e.RecoveryId).HasName("PK__JobRecov__EE4C84ACAA36A485");
@@ -1322,6 +1301,10 @@ public partial class DespatchContext : DbContext
         {
             entity.HasIndex(e => new { e.Active, e.Name }, "IX_Routes_Active");
 
+            entity.HasIndex(e => e.DefaultAgentId, "IX_Routes_DefaultAgentId");
+
+            entity.HasIndex(e => e.ScheduleId, "IX_Routes_ScheduleId");
+
             entity.Property(e => e.Area)
                 .IsRequired()
                 .HasMaxLength(100)
@@ -1338,6 +1321,10 @@ public partial class DespatchContext : DbContext
                 .HasMaxLength(100);
             entity.Property(e => e.UpdatedAt).HasColumnType("datetime");
             entity.Property(e => e.UpdatedBy).HasMaxLength(100);
+
+            entity.HasOne(d => d.DefaultAgent).WithMany(p => p.Routes)
+                .HasForeignKey(d => d.DefaultAgentId)
+                .HasConstraintName("FK_Routes_tucAgents");
 
             entity.HasOne(d => d.DefaultCourier).WithMany(p => p.Routes)
                 .HasForeignKey(d => d.DefaultCourierId)
@@ -5616,6 +5603,8 @@ public partial class DespatchContext : DbContext
 
             entity.HasIndex(e => e.PartnerJobGuid, "IX_tucJob_PartnerJobGuid");
 
+            entity.HasIndex(e => e.PartnerPairingId, "IX_tucJob_PartnerPairingId");
+
             entity.HasIndex(e => new { e.RouteId, e.UcjbDate }, "IX_tucJob_RouteId_ucjbDate");
 
             entity.HasIndex(e => e.SourceId, "IX_tucJob_SourceID");
@@ -6007,6 +5996,10 @@ public partial class DespatchContext : DbContext
                 .HasConstraintName("FK__tucJob__MasterCo__69135035");
 
             entity.HasOne(d => d.NotifiedJobType).WithMany(p => p.TucJobNotifiedJobTypes).HasForeignKey(d => d.NotifiedJobTypeId);
+
+            entity.HasOne(d => d.PartnerPairing).WithMany(p => p.TucJobs)
+                .HasForeignKey(d => d.PartnerPairingId)
+                .HasConstraintName("FK_tucJob_PartnerPairingId");
 
             entity.HasOne(d => d.PickupTimeZone).WithMany(p => p.TucJobPickupTimeZones)
                 .HasForeignKey(d => d.PickupTimeZoneId)

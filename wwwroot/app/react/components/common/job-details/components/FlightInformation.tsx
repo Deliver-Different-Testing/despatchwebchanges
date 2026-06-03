@@ -54,7 +54,9 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                         {segment.flightNumber}
                     </Typography>
                     {segment.airlineName && (
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             {segment.airlineName}
                         </Typography>
                     )}
@@ -63,7 +65,6 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                     <Chip size="small" icon={<ScheduleIcon />} label={elapsed} variant="outlined" />
                 )}
             </Box>
-
             {/* Route: departure ··· ✈ ··· arrival */}
             <Box sx={{display: 'flex', alignItems: 'flex-start', gap: 1}}>
                 {/* Departure */}
@@ -72,7 +73,12 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                         {segment.departureAirportFsCode}
                     </Typography>
                     {segment.departureAirportCity && (
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block'}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: 'block'
+                            }}>
                             {segment.departureAirportCity}
                         </Typography>
                     )}
@@ -122,7 +128,12 @@ function FlightSegmentRow({segment}: {segment: IFlightSegment}) {
                         {segment.arrivalAirportFsCode}
                     </Typography>
                     {segment.arrivalAirportCity && (
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block'}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: 'block'
+                            }}>
                             {segment.arrivalAirportCity}
                         </Typography>
                     )}
@@ -205,7 +216,12 @@ export const FlightInformation = React.memo(({flight, jobId}: FlightInformationP
             ))}
             {flight.notes && (
                 <Box sx={cardNotesContainerSx}>
-                    <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            fontWeight: 500
+                        }}>
                         Notes:
                     </Typography>
                     <Typography variant="body2">

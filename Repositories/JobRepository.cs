@@ -3250,7 +3250,7 @@ public partial class JobRepository(
 
         // Single query to get both jobs and map items data
         var jobs = await query
-            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
             .ToListAsync();
 
         var totalCount = jobs.Count;
@@ -3710,7 +3710,7 @@ public partial class JobRepository(
         // First, try to get from active jobs (TucJobs)
         var activeJob = await Context.TucJobs
             .Where(j => j.UcjbId == jobId)
-            .Select(JobMappings.JobDispatchMapping(isUsCustomer))
+            .Select(JobMappings.JobDispatchMapping(isUsCustomer, _infoService.GetCurrentTenantId()))
             .FirstOrDefaultAsync();
 
         if (activeJob != null)
@@ -5261,8 +5261,8 @@ public partial class JobRepository(
     public async Task<bool> IsPartnerJobAsync(int jobId) =>
         await Context.IsPartnerJobAsync(jobId);
 
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId) =>
-        await Context.IsOutboundPartnerJobAsync(jobId);
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId) =>
+        await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
 
     public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
         CancellationToken cancellationToken = default)

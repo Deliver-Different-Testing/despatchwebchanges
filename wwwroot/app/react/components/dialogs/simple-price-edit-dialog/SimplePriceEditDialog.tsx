@@ -192,7 +192,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 mb: 2.5,
             })}>
                 <LocalShippingIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
-                <Typography variant="body2" fontWeight={600} letterSpacing={0.5}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        fontWeight: 600,
+                        letterSpacing: 0.5
+                    }}>
                     {jobNumber}
                 </Typography>
             </Box>
@@ -256,10 +261,17 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                 {opt.icon}
                             </Box>
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, minWidth: 0 }}>
-                                <Typography variant="body1" fontWeight={500}>
+                                <Typography variant="body1" sx={{
+                                    fontWeight: 500
+                                }}>
                                     {opt.title}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary" lineHeight={1.4}>
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: "text.secondary",
+                                        lineHeight: 1.4
+                                    }}>
                                     {disabled ? 'Not available for bulk jobs' : opt.description}
                                 </Typography>
                             </Box>
@@ -280,7 +292,13 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     },
                     animation: 'slideDown 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                 })}>
-                    <Typography variant="body2" fontWeight={500} color="text.secondary" sx={{ mb: 1.25 }}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            fontWeight: 500,
+                            color: "text.secondary",
+                            mb: 1.25
+                        }}>
                         {selectedMode === 'base' ? 'Enter Raw Base Amount' : 'Enter Final Amount'}
                     </Typography>
                     <TextField
@@ -352,12 +370,16 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                         ? alpha(theme.palette.error.main, 0.25)
                         : alpha(theme.palette.success.main, 0.25)}`,
                 })}>
-                    <Typography variant="caption" color={hasChildSumMismatch ? 'error.main' : 'success.main'} fontWeight={500}>
+                    <Typography variant="caption" color={hasChildSumMismatch ? 'error.main' : 'success.main'} sx={{
+                        fontWeight: 500
+                    }}>
                         {hasChildSumMismatch
                             ? `Parent must equal children total — set to $${childSum.toFixed(2)}`
                             : 'Parent matches children total'}
                     </Typography>
-                    <Typography variant="caption" fontWeight={700} color={hasChildSumMismatch ? 'error.main' : 'success.main'}>
+                    <Typography variant="caption" color={hasChildSumMismatch ? 'error.main' : 'success.main'} sx={{
+                        fontWeight: 700
+                    }}>
                         ${childSum.toFixed(2)}
                     </Typography>
                 </Box>
@@ -371,7 +393,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     borderTop: `1px solid ${alpha(theme.palette.common.black, 0.08)}`,
                 })}>
                     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5}}>
-                        <Typography variant="body2" fontWeight={500} color="text.secondary">
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 500,
+                                color: "text.secondary"
+                            }}>
                             Child Jobs
                         </Typography>
                         {(selectedMode === 'gross' || selectedMode === 'base') && amount > 0 && (
@@ -429,7 +456,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                         flexShrink: 0,
                                     })}>
                                         <LocalShippingIcon sx={{fontSize: 13, color: 'text.secondary'}} />
-                                        <Typography variant="caption" fontWeight={600} noWrap>
+                                        <Typography variant="caption" noWrap sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {child.jobNumber}
                                         </Typography>
                                     </Box>
@@ -463,7 +492,14 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                                         })}
                                     />
                                     {isChanged && (
-                                        <Typography variant="caption" color="text.disabled" sx={{flexShrink: 0, minWidth: 60, textAlign: 'right'}}>
+                                        <Typography
+                                            variant="caption"
+                                            sx={{
+                                                color: "text.disabled",
+                                                flexShrink: 0,
+                                                minWidth: 60,
+                                                textAlign: 'right'
+                                            }}>
                                             was ${child.charge.toFixed(2)}
                                         </Typography>
                                     )}
@@ -494,7 +530,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             gap: 2,
         }}>
             <CircularProgress size={48} />
-            <Typography variant="body1" color="text.secondary" fontWeight={500}>
+            <Typography
+                variant="body1"
+                sx={{
+                    color: "text.secondary",
+                    fontWeight: 500
+                }}>
                 Saving price...
             </Typography>
         </Box>
@@ -503,10 +544,20 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
     const renderSuccessState = () => (
         <Box sx={{ p: '32px 24px', textAlign: 'center' }}>
             <CheckCircleIcon sx={{ fontSize: 56, color: 'success.main', mb: 2 }} />
-            <Typography variant="h6" fontWeight={600} sx={{ mb: 1 }}>
+            <Typography
+                variant="h6"
+                sx={{
+                    fontWeight: 600,
+                    mb: 1
+                }}>
                 Price Updated
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    mb: 3
+                }}>
                 {getModeSubtitle(selectedMode)}
             </Typography>
 
@@ -518,12 +569,15 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 p: 2.5,
                 mb: 2.5,
             })}>
-                <Typography variant="caption" color="text.secondary" sx={{
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.5,
-                    display: 'block',
-                    mb: 0.5,
-                }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                        display: 'block',
+                        mb: 0.5
+                    }}>
                     New Price
                 </Typography>
                 <Typography sx={{ fontSize: 36, fontWeight: 700, color: 'success.main' }}>
@@ -544,19 +598,41 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     mb: 2.5,
                 })}>
                     <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: "block",
+                                mb: 0.5
+                            }}>
                             Previous Price
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} color="text.secondary">
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                fontWeight: 600,
+                                color: "text.secondary"
+                            }}>
                             ${currentCharge.toFixed(2)}
                         </Typography>
                     </Box>
                     <ArrowForwardIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                     <Box sx={{ textAlign: 'center' }}>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 0.5 }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: "block",
+                                mb: 0.5
+                            }}>
                             New Price
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} color="success.main">
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                fontWeight: 600,
+                                color: "success.main"
+                            }}>
                             ${savedAmount.toFixed(2)}
                         </Typography>
                     </Box>
@@ -570,7 +646,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                 gap: 0.75,
             }}>
                 <InfoIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     Job {jobNumber} has been updated
                 </Typography>
             </Box>
@@ -614,7 +692,9 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
             >
                 <PriceChangeIcon sx={{ fontSize: 24 }} />
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Edit Price
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -632,14 +712,12 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content — scrollable so action buttons remain visible */}
             <Box sx={{overflowY: 'auto', flex: 1}}>
                 {isLoading && renderLoadingState()}
                 {showResult && !isLoading && renderSuccessState()}
                 {!showResult && !isLoading && renderEditState()}
             </Box>
-
             {/* Actions for result state */}
             {showResult && !isLoading && (
                 <Box sx={{
@@ -662,7 +740,6 @@ export const SimplePriceEditDialog: React.FC<SimplePriceEditDialogProps> = ({
                     </Button>
                 </Box>
             )}
-
             {/* Actions for edit state */}
             {!showResult && !isLoading && (
                 <Box sx={{

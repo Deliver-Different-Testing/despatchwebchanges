@@ -35,6 +35,7 @@ import {
 } from '../../../../services/jobListApi';
 import type {DispatchType} from '../../../dialogs/dispatch-dialog';
 import type {ISuggestion} from '../../../../../interfaces/job.interface';
+import {toastService} from '../../../../services/toastService';
 
 interface TextDialogState {
     open: boolean;
@@ -671,7 +672,7 @@ export function useJobActions({
             setDispatchDialog((s) => ({...s, open: false}));
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Dispatch failed';
-            throw new Error(message);
+            throw new Error(message, {cause: err});
         }
     }, [isRecurringJob, dispatchJob, updateField, refreshAndNotify]);
 
@@ -679,23 +680,43 @@ export function useJobActions({
     // partner with the agreed rate. Recurring + bulk + archived jobs disable
     // this radio at the dialog level — this callback only fires for standard
     // active non-archived tucJobs.
+    //
+    // The IM round-trip can take several seconds, so we close the dialog
+    // synchronously and surface progress via a sticky loading toast that morphs
+    // into success/error when the call resolves. The dispatcher is free to
+    // continue working in the meantime.
     const dispatchDialogConfirmPartner = useCallback(async (
         partner: ISuggestion,
         agreedRate: number,
-    ) => {
+    ): Promise<void> => {
         const j = jobRef.current;
         if (!j) return;
-        const result = await sendToPartner(j.id, partner.id, agreedRate);
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to send job to partner');
-        }
-        showToast(
-            `Job ${j.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`,
-            'success',
-        );
         setDispatchDialog((s) => ({...s, open: false}));
-        await refreshAndNotify();
-    }, [showToast, refreshAndNotify]);
+        const toast = toastService.showLoadingToast(
+            `Sending job ${j.jobNo} to ${partner.text}…`,
+        );
+        sendToPartner(j.id, partner.id, agreedRate)
+            .then(async (result) => {
+                if (!result.success) {
+                    toast.update(
+                        result.message || `Failed to send job ${j.jobNo} to ${partner.text}`,
+                        'error',
+                    );
+                    return;
+                }
+                toast.update(
+                    `Job ${j.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`,
+                    'success',
+                );
+                await refreshAndNotify();
+            })
+            .catch((err: unknown) => {
+                const message = err instanceof Error && err.message
+                    ? err.message
+                    : `Failed to send job ${j.jobNo} to ${partner.text}`;
+                toast.update(message, 'error');
+            });
+    }, [refreshAndNotify]);
 
     const handleEditPodName = useCallback(async () => {
         const j = jobRef.current;

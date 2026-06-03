@@ -263,9 +263,10 @@ public class JobReportServiceTests
         // Act
         await service.ProcessJobPriceUploadAsync(fileMock);
 
-        // Assert - verify S3 upload was called
+        // Assert - verify S3 upload was called with a {Prefix}/{yyyy}/{MM}/{filename} key.
         await _s3ClientMock.Received().PutObjectAsync(
-            Arg.Any<PutObjectRequest>(),
+            Arg.Is<PutObjectRequest>(r => System.Text.RegularExpressions.Regex.IsMatch(
+                r.Key, @"^Jobs/\d{4}/\d{2}/Jobs-\d{14}$")),
             Arg.Any<CancellationToken>());
 
         // Assert - verify repository update was called

@@ -220,7 +220,6 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                     </>
                 }
             />
-
             {/* Category Menu */}
             <Menu
                 anchorEl={menuAnchorEl}
@@ -241,7 +240,12 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                             <span className="material-symbols-outlined">topic</span>
                         </ListItemIcon>
                         <ListItemText>All Categories</ListItemText>
-                        <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "text.secondary",
+                                ml: 1
+                            }}>
                             ({notes.length})
                         </Typography>
                     </MenuItem>,
@@ -256,17 +260,20 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                                 <span className="material-symbols-outlined">topic</span>
                             </ListItemIcon>
                             <ListItemText>{category.text}</ListItemText>
-                            <Typography variant="body2" color="text.secondary" sx={{ml: 1}}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    ml: 1
+                                }}>
                                 ({categoryNoteCounts.get(category.id!) ?? 0})
                             </Typography>
                         </MenuItem>
                     )),
                 ])}
             </Menu>
-
             {/* Loading Indicator */}
             {loading && <LinearProgress sx={{height: 2}} />}
-
             {/* Notes Container */}
             <Box
                 sx={{
@@ -403,7 +410,12 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
                         <Typography variant="subtitle1" gutterBottom>
                             No Notes
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{mb: 2}}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "text.secondary",
+                                mb: 2
+                            }}>
                             {getNoNotesMessage()}
                         </Typography>
                         {isFilterActive && (

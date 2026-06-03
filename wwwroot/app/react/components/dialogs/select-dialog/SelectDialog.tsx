@@ -136,7 +136,9 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
                     <ChecklistIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Edit {title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -154,7 +156,6 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                 <Box sx={{ p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -202,7 +203,6 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
                     )}
                 </Box>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

@@ -25,7 +25,9 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
         return (
             <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mt: 2}}>
                 <CircularProgress size={16} />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     Loading edit history...
                 </Typography>
             </Box>
@@ -45,7 +47,6 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
             >
                 Edit History ({history.length})
             </Button>
-
             <Collapse in={expanded}>
                 <Box sx={{
                         display: 'flex',
@@ -71,10 +72,14 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                             {/* Header */}
                             <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1.5}}>
                                 <EditIcon fontSize="small" color="action" />
-                                <Typography variant="body2" fontWeight={600}>
+                                <Typography variant="body2" sx={{
+                                    fontWeight: 600
+                                }}>
                                     {entry.editedByName}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {entry.editedAtStr} {timeZoneAbbr}
                                 </Typography>
                             </Box>
@@ -82,7 +87,13 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                             {/* Text change */}
                             {entry.oldNoteText !== entry.newNoteText && (
                                 <Box sx={{mb: 1}}>
-                                    <Typography variant="caption" color="text.secondary" sx={{textTransform: 'uppercase', letterSpacing: 0.5}}>
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            color: "text.secondary",
+                                            textTransform: 'uppercase',
+                                            letterSpacing: 0.5
+                                        }}>
                                         Text changed
                                     </Typography>
                                     <Box
@@ -95,7 +106,12 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                                             borderColor: 'error.light',
                                         }}
                                     >
-                                        <Typography variant="body2" color="text.secondary" sx={{whiteSpace: 'pre-wrap'}}>
+                                        <Typography
+                                            variant="body2"
+                                            sx={{
+                                                color: "text.secondary",
+                                                whiteSpace: 'pre-wrap'
+                                            }}>
                                             {entry.oldNoteText}
                                         </Typography>
                                     </Box>
@@ -105,11 +121,15 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                             {/* Type change */}
                             {entry.oldNoteTypeId !== entry.newNoteTypeId && (
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 0.5}}>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         Type:
                                     </Typography>
                                     <Chip label={entry.oldNoteTypeName ?? 'Unknown'} size="small" variant="outlined" color="default" />
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         &rarr;
                                     </Typography>
                                     <Chip label={entry.newNoteTypeName ?? 'Unknown'} size="small" variant="outlined" color="primary" />
@@ -119,7 +139,9 @@ export const NoteHistory: React.FC<NoteHistoryProps> = ({history, isLoading, tim
                             {/* Importance change */}
                             {entry.oldIsImportant !== entry.newIsImportant && (
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         Important:
                                     </Typography>
                                     <Chip

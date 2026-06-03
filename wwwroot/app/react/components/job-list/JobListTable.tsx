@@ -560,7 +560,9 @@ export const JobListTable: React.FC<JobListTableProps> = ({
                 color: 'text.disabled',
             }}>
                 <EventRepeatIcon sx={{fontSize: 48, mb: 1, color: 'text.disabled'}}/>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{
+                    color: "text.secondary"
+                }}>
                     No jobs to display
                 </Typography>
             </Box>
@@ -953,13 +955,14 @@ const CourierCell: React.FC<CourierCellProps> = React.memo(({
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={handleKeyDown}
                         slotProps={{
+                            ...params.slotProps,
                             input: {
-                                ...params.InputProps,
+                                ...params.slotProps.input,
                                 sx: {fontSize: '0.8125rem', py: 0},
                                 endAdornment: (
                                     <>
                                         {loading && <CircularProgress color="inherit" size={16}/>}
-                                        {params.InputProps.endAdornment}
+                                        {params.slotProps.input.endAdornment}
                                     </>
                                 ),
                             },

@@ -88,7 +88,9 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
             <>
                 <Alert severity="warning" sx={{mb: 1}}>
                     <AlertTitle>Partner rate needs review</AlertTitle>
-                    <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} alignItems={{sm: 'center'}}>
+                    <Stack direction={{xs: 'column', sm: 'row'}} spacing={2} sx={{
+                        alignItems: {sm: 'center'}
+                    }}>
                         <Typography variant="body2" sx={{flex: 1}}>
                             The partner has dispatched this job at{' '}
                             <strong>{proposed != null ? formatCurrency(proposed) : 'an unspecified rate'}</strong>.
@@ -121,7 +123,6 @@ export const RateAcceptanceBanner: React.FC<RateAcceptanceBannerProps> = ({jobId
                         </Typography>
                     )}
                 </Alert>
-
                 <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
                     <DialogTitle>Reject partner rate</DialogTitle>
                     <DialogContent>

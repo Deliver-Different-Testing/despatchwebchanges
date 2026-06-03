@@ -1,8 +1,10 @@
 using DespatchWeb.Controllers;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(ConfigController))]
 public class ConfigControllerTests : IDisposable
 {
     private readonly string? _originalKey = Environment.GetEnvironmentVariable("HereMapsAPIKey");

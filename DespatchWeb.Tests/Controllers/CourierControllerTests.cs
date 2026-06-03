@@ -2,15 +2,14 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
 using DespatchWeb.Models.Response;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
-/// <summary>
-/// Unit tests for CourierController - tests courier-related endpoints.
-/// </summary>
+[TestSubject(typeof(CourierController))]
 public class CourierControllerTests
 {
     private readonly ICourierRepository _courierRepository = Substitute.For<ICourierRepository>();

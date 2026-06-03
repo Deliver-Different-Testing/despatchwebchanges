@@ -226,7 +226,9 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                     <ExtensionIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Additional Services
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -256,7 +258,6 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{ p: 3, bgcolor: 'background.default' }}>
                 {isLoading ? (
@@ -279,16 +280,24 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                                     <TableRow sx={{ bgcolor: 'grey.100' }}>
                                         <TableCell padding="checkbox" />
                                         <TableCell>
-                                            <Typography fontWeight={600}>Name</Typography>
+                                            <Typography sx={{
+                                                fontWeight: 600
+                                            }}>Name</Typography>
                                         </TableCell>
                                         <TableCell align="right">
-                                            <Typography fontWeight={600}>Rate</Typography>
+                                            <Typography sx={{
+                                                fontWeight: 600
+                                            }}>Rate</Typography>
                                         </TableCell>
                                         <TableCell>
-                                            <Typography fontWeight={600}>Description</Typography>
+                                            <Typography sx={{
+                                                fontWeight: 600
+                                            }}>Description</Typography>
                                         </TableCell>
                                         <TableCell align="center">
-                                            <Typography fontWeight={600}>Per Item</Typography>
+                                            <Typography sx={{
+                                                fontWeight: 600
+                                            }}>Per Item</Typography>
                                         </TableCell>
                                     </TableRow>
                                 </TableHead>
@@ -325,7 +334,9 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                                     {services.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                                                <Typography color="text.secondary">
+                                                <Typography sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     No services available
                                                 </Typography>
                                             </TableCell>
@@ -347,10 +358,14 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                                                 mb: 1,
                                             }}
                                         >
-                                            <Typography fontWeight={600} variant="subtitle1">
+                                            <Typography variant="subtitle1" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 Description
                                             </Typography>
-                                            <Typography fontWeight={600} variant="subtitle1">
+                                            <Typography variant="subtitle1" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 Rate
                                             </Typography>
                                         </Box>
@@ -374,9 +389,11 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                                         {selectedServices.length === 0 && (
                                             <Typography
                                                 variant="body2"
-                                                color="text.secondary"
-                                                sx={{ py: 1, textAlign: 'center' }}
-                                            >
+                                                sx={{
+                                                    color: "text.secondary",
+                                                    py: 1,
+                                                    textAlign: 'center'
+                                                }}>
                                                 No services selected
                                             </Typography>
                                         )}
@@ -390,13 +407,17 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                                                 alignItems: 'center',
                                             }}
                                         >
-                                            <Typography fontWeight={600}>
+                                            <Typography sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 Total: (EXCL GST)
                                             </Typography>
                                             {isTotalCalculating ? (
                                                 <CircularProgress size={20} />
                                             ) : (
-                                                <Typography fontWeight={600}>
+                                                <Typography sx={{
+                                                    fontWeight: 600
+                                                }}>
                                                     {formatCurrency(totalCost)}
                                                 </Typography>
                                             )}
@@ -408,7 +429,6 @@ export const AdditionalServicesDialog: React.FC<AdditionalServicesDialogProps> =
                     </Box>
                 )}
             </DialogContent>
-
             {/* Actions */}
             {!isLoading && (
                 <DialogActions

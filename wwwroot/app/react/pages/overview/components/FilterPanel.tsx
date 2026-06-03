@@ -149,7 +149,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     Quick Filters
                 </Typography>
             </Box>
-
             {/* Date Range */}
             <ToolbarHeader icon="date_range" title="Date Range" />
             <Box sx={{p: 2}}>
@@ -176,7 +175,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     {hasDateFilter ? getDateRangeDisplay() : 'Select Dates'}
                 </Button>
             </Box>
-
             {/* Regions */}
             <ToolbarHeader
                 icon="public_off"
@@ -192,7 +190,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                             />
                         }
                         label={
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {allRegionsSelected ? 'Unselect All' : 'Select All'}
                             </Typography>
                         }
@@ -230,7 +230,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     )}
                 </Box>
             )}
-
             {/* Speeds */}
             <ToolbarHeader
                 icon="speed"
@@ -246,7 +245,9 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                             />
                         }
                         label={
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>
                                 {allSpeedsSelected ? 'Unselect All' : 'Select All'}
                             </Typography>
                         }
@@ -284,7 +285,6 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     )}
                 </Box>
             )}
-
             {/* Couriers */}
             <ToolbarHeader icon="local_shipping" title="Couriers" />
             <Box sx={{p: 2}}>
@@ -305,17 +305,18 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                     noOptionsText={
                         courierSearchText ? `No couriers found matching "${courierSearchText}"` : 'Type to search...'
                     }
-                    renderInput={({InputProps: autoInputProps, ...params}) => (
+                    renderInput={({slotProps: autoSlotProps, ...params}) => (
                         <TextField
                             {...params}
                             label="Search couriers..."
                             slotProps={{
+                                ...autoSlotProps,
                                 input: {
-                                    ...autoInputProps,
+                                    ...autoSlotProps.input,
                                     endAdornment: (
                                         <>
                                             {couriersLoading ? <CircularProgress size={20} /> : null}
-                                            {autoInputProps.endAdornment}
+                                            {autoSlotProps.input.endAdornment}
                                         </>
                                     ),
                                 },

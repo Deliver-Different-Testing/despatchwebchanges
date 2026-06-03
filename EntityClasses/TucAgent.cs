@@ -113,6 +113,8 @@ public partial class TucAgent
 
     public virtual TucAgentRanking Ranking { get; set; }
 
+    public virtual ICollection<Route> Routes { get; set; } = new List<Route>();
+
     public virtual ICollection<TblAfterHour> TblAfterHours { get; set; } = new List<TblAfterHour>();
 
     public virtual ICollection<TblAirport> TblAirports { get; set; } = new List<TblAirport>();

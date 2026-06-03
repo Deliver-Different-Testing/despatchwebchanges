@@ -39,7 +39,7 @@ import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import CallSplitIcon from '@mui/icons-material/CallSplit';
 import FirstPageIcon from '@mui/icons-material/FirstPage';
 import RedoIcon from '@mui/icons-material/Redo';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutlined';
 
 import LinearProgress from '@mui/material/LinearProgress';
 
@@ -301,7 +301,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             refresh();
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Error dispatching job';
-            throw new Error(message);
+            throw new Error(message, {cause: err});
         }
     };
 
@@ -651,7 +651,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     <ListItemText>Mark Missing</ListItemText>
                 </MenuItem>
             </Menu>
-
             {/* Task Groups Submenu */}
             <Menu
                 open={Boolean(eventGroupsAnchor)}
@@ -663,7 +662,9 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 {eventGroups.length === 0 ? (
                     <MenuItem disabled>
                         <ListItemText>
-                            <Typography variant="body2" color="text.secondary">No task groups</Typography>
+                            <Typography variant="body2" sx={{
+                                color: "text.secondary"
+                            }}>No task groups</Typography>
                         </ListItemText>
                     </MenuItem>
                 ) : (
@@ -674,7 +675,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     ))
                 )}
             </Menu>
-
             {/* Late Call Dialog */}
             <Dialog open={lateDialogOpen} onClose={() => setLateDialogOpen(false)} maxWidth="xs" fullWidth>
                 <DialogTitle>Late {lateType === 'pickup' ? 'Pickup' : 'Delivery'}</DialogTitle>
@@ -703,7 +703,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* Generic Confirmation Dialog */}
             <Dialog
                 open={confirmDialogOpen}
@@ -730,7 +729,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
-
             {/* Split Job Loading Dialog */}
             <Dialog
                 open={splitJobLoading}
@@ -744,7 +742,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </Typography>
                 </DialogContent>
             </Dialog>
-
             {/* Universal Dispatch Dialog */}
             <DispatchDialog
                 open={dispatchDialog.open}
@@ -766,7 +763,6 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 fetchRate={api.getPartnerRateForJob}
                 getPartnerOptions={api.getActivePartnerOptions}
             />
-
         </>
     );
 };

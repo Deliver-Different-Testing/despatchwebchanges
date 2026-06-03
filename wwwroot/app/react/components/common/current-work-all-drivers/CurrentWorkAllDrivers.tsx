@@ -142,19 +142,19 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
                 {searchText && (
                     <Typography
                         variant="caption"
-                        color="text.secondary"
-                        sx={{ mt: 0.5, display: 'block' }}
-                    >
+                        sx={{
+                            color: "text.secondary",
+                            mt: 0.5,
+                            display: 'block'
+                        }}>
                         {filteredAndSortedDrivers.length} of {drivers.length} drivers
                     </Typography>
                 )}
             </Box>
-
             {/* Loading indicator */}
             {loading && (
                 <LinearProgress sx={{ flexShrink: 0 }} />
             )}
-
             {/* Driver List */}
             <Box sx={{ flex: 1, overflow: 'auto' }}>
                 {filteredAndSortedDrivers.length === 0 ? (
@@ -173,7 +173,9 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
                         <Typography variant="subtitle1" gutterBottom>
                             {searchText ? 'No Drivers Found' : 'No Drivers Available'}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             {searchText
                                 ? `No drivers match "${searchText}"`
                                 : 'No active drivers found'
@@ -204,7 +206,9 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
                                         primary={
                                             <Typography
                                                 variant="subtitle2"
-                                                fontWeight={selectedCourierId === driver.courierId ? 600 : 500}
+                                                sx={{
+                                                    fontWeight: selectedCourierId === driver.courierId ? 600 : 500
+                                                }}
                                             >
                                                 {driver.name}
                                             </Typography>
@@ -227,9 +231,10 @@ export const CurrentWorkAllDrivers: React.FC<CurrentWorkAllDriversProps> = ({
                                         />
                                         <Typography
                                             variant="caption"
-                                            color="text.secondary"
-                                            sx={{ fontSize: '0.7rem' }}
-                                        >
+                                            sx={{
+                                                color: "text.secondary",
+                                                fontSize: '0.7rem'
+                                            }}>
                                             {driver.driverStatusText}
                                         </Typography>
                                     </Box>

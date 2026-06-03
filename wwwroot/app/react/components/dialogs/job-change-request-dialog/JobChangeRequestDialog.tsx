@@ -26,7 +26,6 @@ import TextField from '@mui/material/TextField';
 import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
 import Stack from '@mui/material/Stack';
 import Divider from '@mui/material/Divider';
 import CloseIcon from '@mui/icons-material/Close';
@@ -34,6 +33,7 @@ import SendIcon from '@mui/icons-material/Send';
 import SyncAltIcon from '@mui/icons-material/SyncAlt';
 import {jobChangeRequestApi, type JobChangeRequestResult} from '../../../services/jobChangeRequestApi';
 import {getSpeedList} from '../../../services/jobDetailApi';
+import {toastService} from '../../../services/toastService';
 import {FIELD_META, formatChangeRequestValue, getFieldMeta, type JobChangeRequestFieldMeta} from '../../job-change-requests/jobChangeRequestFormatting';
 import type {ISuggestion} from '../../../../interfaces/job.interface';
 
@@ -74,6 +74,12 @@ export interface JobChangeRequestDialogProps {
      * dispatcher sees exactly who will approve their change request.
      */
     partnerName?: string | null;
+    /**
+     * IntMgrPartnerPairing.Id the job belongs to. Forwarded to the backend so
+     * the change-request resolver doesn't have to guess on tenants with more
+     * than one active pairing.
+     */
+    pairingId?: number | null;
 }
 
 interface AddressDraft {
@@ -136,16 +142,18 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
     preInitialValue,
     lockedField = false,
     partnerName,
+    pairingId,
 }) => {
     const partnerLabel = partnerName?.trim() || 'the partner';
     const [fieldName, setFieldName] = useState(preselectedFieldName ?? 'Notes');
     const [requestedValue, setRequestedValue] = useState(preInitialValue ?? '');
     const [addressDraft, setAddressDraft] = useState<AddressDraft>(() => parseAddressDraft(preInitialValue ?? ''));
     const [reason, setReason] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+    // Validation-only error surfaced inline. Post-submit errors (network /
+    // backend failures) are shown via a toast because the dialog is closed
+    // synchronously once validation passes so the dispatcher isn't blocked
+    // while the request travels through the partner relay.
     const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
-    const [peerWarning, setPeerWarning] = useState('');
     const [speedList, setSpeedList] = useState<ISuggestion[] | null>(null);
 
     const meta = useMemo(() => getFieldMeta(fieldName), [fieldName]);
@@ -161,9 +169,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
             setAddressDraft(parseAddressDraft(preInitialValue ?? ''));
             setReason('');
             setError('');
-            setSuccess('');
-            setPeerWarning('');
-            setSubmitting(false);
         }
         wasOpenRef.current = open;
     }, [open, preselectedFieldName, preInitialValue]);
@@ -179,9 +184,8 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
     }, [fieldName, speedList]);
 
     const handleClose = useCallback(() => {
-        if (submitting) return;
         onClose();
-    }, [submitting, onClose]);
+    }, [onClose]);
 
     const submitValue = useMemo(() => {
         switch (meta.category) {
@@ -192,7 +196,7 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
         }
     }, [meta.category, addressDraft, requestedValue]);
 
-    const handleSubmit = useCallback(async () => {
+    const handleSubmit = useCallback(() => {
         if (!fieldName) {
             setError('Choose a field to change');
             return;
@@ -203,36 +207,50 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                 : 'Enter the requested value');
             return;
         }
-        setError('');
-        setSuccess('');
-        setPeerWarning('');
-        setSubmitting(true);
-        try {
-            const result = await jobChangeRequestApi.create({
-                jobId,
-                fieldName,
-                requestedValue: submitValue,
-                reason: reason.trim() || undefined,
-            });
+        // Validation passed — close the dialog immediately and report progress
+        // via a sticky toast so the dispatcher isn't blocked while the request
+        // travels through IM to the partner tenant.
+        const isAutoApply = meta.mode === 'auto';
+        const fieldLabel = meta.label;
+        const trimmedReason = reason.trim() || undefined;
+        const targetFieldName = fieldName;
+        const targetValue = submitValue;
+        onClose();
+        const toast = toastService.showLoadingToast(
+            isAutoApply
+                ? `Applying ${fieldLabel} change…`
+                : `Sending ${fieldLabel} change to ${partnerLabel}…`,
+        );
+        jobChangeRequestApi.create({
+            jobId,
+            fieldName: targetFieldName,
+            requestedValue: targetValue,
+            reason: trimmedReason,
+            pairingId: pairingId ?? undefined,
+        }).then((result) => {
             if (!result.success) {
-                setError(result.message ?? 'Submission failed');
-            } else {
-                const status = result.request?.status === 'Applied'
-                    ? 'Change applied'
-                    : `Change request sent to ${partnerLabel}`;
-                setSuccess(status);
-                if (result.peerForwardWarning) {
-                    setPeerWarning(result.peerForwardWarning);
-                }
-                onSubmitted?.(result);
+                toast.update(result.message ?? 'Submission failed', 'error');
+                return;
             }
-        } catch (e) {
+            if (result.peerForwardWarning) {
+                toast.update(
+                    `Saved locally, but ${partnerLabel} was not notified (${result.peerForwardWarning}). Please retry or contact support.`,
+                    'warning',
+                );
+            } else {
+                toast.update(
+                    result.request?.status === 'Applied'
+                        ? 'Change applied'
+                        : `Change request sent to ${partnerLabel}`,
+                    'success',
+                );
+            }
+            onSubmitted?.(result);
+        }).catch((e: unknown) => {
             const msg = (e as { message?: string })?.message ?? 'Submission failed';
-            setError(msg);
-        } finally {
-            setSubmitting(false);
-        }
-    }, [fieldName, submitValue, meta.category, reason, jobId, onSubmitted]);
+            toast.update(msg, 'error');
+        });
+    }, [fieldName, submitValue, meta.category, meta.mode, meta.label, reason, jobId, partnerLabel, pairingId, onClose, onSubmitted]);
 
     // Short instructional subtitle that mirrors the pattern used by sibling
     // dialogs (SelectDialog: "Select an option…", EditDateTimeDialog: "Update
@@ -289,7 +307,9 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                     <SyncAltIcon sx={{fontSize: 24}}/>
                 </Box>
                 <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="h6" fontWeight={600} noWrap>
+                    <Typography variant="h6" noWrap sx={{
+                        fontWeight: 600
+                    }}>
                         {lockedField ? `Confirm ${meta.label} change` : `Request change to ${meta.label}`}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -298,7 +318,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                 </Box>
                 <IconButton
                     onClick={handleClose}
-                    disabled={submitting}
                     sx={{
                         color: 'white',
                         '&:hover': {bgcolor: 'rgba(255,255,255,0.1)'},
@@ -307,7 +326,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                     <CloseIcon/>
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 <Box
@@ -336,7 +354,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                                     setRequestedValue('');
                                     setAddressDraft(EMPTY_ADDRESS);
                                 }}
-                                disabled={submitting}
                                 meta={meta}
                             />
 
@@ -348,7 +365,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                                 addressValue={addressDraft}
                                 onAddressChange={setAddressDraft}
                                 speedList={speedList}
-                                disabled={submitting}
                             />
                         </>
                     )}
@@ -362,7 +378,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                         multiline
                         minRows={2}
                         maxRows={5}
-                        disabled={submitting}
                         autoFocus={lockedField}
                         helperText={`Visible to ${partnerLabel} during approval`}
                     />
@@ -374,15 +389,8 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                     )}
 
                     {error && <Alert severity="error">{error}</Alert>}
-                    {success && <Alert severity="success">{success}</Alert>}
-                    {peerWarning && (
-                        <Alert severity="warning">
-                            Saved locally, but {partnerLabel} was not notified ({peerWarning}). Please retry or contact support.
-                        </Alert>
-                    )}
                 </Box>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({
@@ -396,7 +404,6 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                 <Button
                     onClick={handleClose}
                     variant="outlined"
-                    disabled={submitting}
                     sx={{minWidth: 100}}
                 >
                     Cancel
@@ -405,11 +412,10 @@ export const JobChangeRequestDialog: React.FC<JobChangeRequestDialogProps> = ({
                     onClick={handleSubmit}
                     variant="contained"
                     color="primary"
-                    disabled={submitting}
-                    startIcon={submitting ? <CircularProgress size={16} color="inherit"/> : <SendIcon/>}
+                    startIcon={<SendIcon/>}
                     sx={{minWidth: 100}}
                 >
-                    {submitting ? 'Sending…' : meta.mode === 'auto' ? 'Apply' : 'Submit'}
+                    {meta.mode === 'auto' ? 'Apply' : 'Submit'}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -443,7 +449,13 @@ function LockedFieldSummary({fieldName, meta, value}: LockedFieldSummaryProps) {
                 bgcolor: 'action.hover',
             })}
         >
-            <Typography variant="overline" color="text.secondary" sx={{letterSpacing: 1, lineHeight: 1}}>
+            <Typography
+                variant="overline"
+                sx={{
+                    color: "text.secondary",
+                    letterSpacing: 1,
+                    lineHeight: 1
+                }}>
                 Field
             </Typography>
             <Typography variant="body2" sx={{mb: 1, mt: 0.25}}>
@@ -452,7 +464,13 @@ function LockedFieldSummary({fieldName, meta, value}: LockedFieldSummaryProps) {
                 </Box>
                 {meta.label}
             </Typography>
-            <Typography variant="overline" color="text.secondary" sx={{letterSpacing: 1, lineHeight: 1}}>
+            <Typography
+                variant="overline"
+                sx={{
+                    color: "text.secondary",
+                    letterSpacing: 1,
+                    lineHeight: 1
+                }}>
                 New value
             </Typography>
             <Typography
@@ -461,7 +479,13 @@ function LockedFieldSummary({fieldName, meta, value}: LockedFieldSummaryProps) {
             >
                 {displayValue}
             </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 1}}>
+            <Typography
+                variant="caption"
+                sx={{
+                    color: "text.secondary",
+                    display: 'block',
+                    mt: 1
+                }}>
                 {meta.hint}
             </Typography>
         </Box>
@@ -471,11 +495,10 @@ function LockedFieldSummary({fieldName, meta, value}: LockedFieldSummaryProps) {
 interface FieldPickerProps {
     value: string;
     onChange: (value: string) => void;
-    disabled: boolean;
     meta: JobChangeRequestFieldMeta;
 }
 
-function FieldPicker({value, onChange, disabled, meta}: FieldPickerProps) {
+function FieldPicker({value, onChange, meta}: FieldPickerProps) {
     const grouped = useMemo(() => {
         const autos: Array<[string, JobChangeRequestFieldMeta]> = [];
         const manuals: Array<[string, JobChangeRequestFieldMeta]> = [];
@@ -495,7 +518,6 @@ function FieldPicker({value, onChange, disabled, meta}: FieldPickerProps) {
             onChange={e => onChange(e.target.value)}
             size="small"
             fullWidth
-            disabled={disabled}
             helperText={meta.hint}
         >
             <ListHeader>Applies immediately</ListHeader>
@@ -539,7 +561,13 @@ function ListHeader({children}: {children: React.ReactNode}) {
                 '&.Mui-disabled': {opacity: 1},
             }}
         >
-            <Typography variant="overline" color="text.secondary" sx={{letterSpacing: 1, fontSize: '0.65rem'}}>
+            <Typography
+                variant="overline"
+                sx={{
+                    color: "text.secondary",
+                    letterSpacing: 1,
+                    fontSize: '0.65rem'
+                }}>
                 {children}
             </Typography>
         </MenuItem>
@@ -554,14 +582,13 @@ interface FieldValueInputProps {
     addressValue: AddressDraft;
     onAddressChange: (value: AddressDraft) => void;
     speedList: ISuggestion[] | null;
-    disabled: boolean;
 }
 
 function FieldValueInput({
-    fieldName, meta, textValue, onTextChange, addressValue, onAddressChange, speedList, disabled,
+    fieldName, meta, textValue, onTextChange, addressValue, onAddressChange, speedList,
 }: FieldValueInputProps) {
     if (meta.category === 'address') {
-        return <AddressFieldGroup value={addressValue} onChange={onAddressChange} disabled={disabled}/>;
+        return <AddressFieldGroup value={addressValue} onChange={onAddressChange}/>;
     }
     if (fieldName === 'Speed') {
         if (speedList === null) {
@@ -583,7 +610,6 @@ function FieldValueInput({
                 onChange={e => onTextChange(e.target.value)}
                 size="small"
                 fullWidth
-                disabled={disabled}
             >
                 {speedList.length === 0 && (
                     <MenuItem value="" disabled>No speeds available</MenuItem>
@@ -602,7 +628,6 @@ function FieldValueInput({
                 onChange={e => onTextChange(e.target.value)}
                 size="small"
                 fullWidth
-                disabled={disabled}
                 type="number"
                 slotProps={{
                     input: {
@@ -621,7 +646,6 @@ function FieldValueInput({
                 onChange={e => onTextChange(e.target.value)}
                 size="small"
                 fullWidth
-                disabled={disabled}
                 type="number"
                 slotProps={{input: {inputProps: {step: '1', min: '1'}}}}
             />
@@ -637,7 +661,6 @@ function FieldValueInput({
                 onChange={e => onTextChange(e.target.value)}
                 size="small"
                 fullWidth
-                disabled={disabled}
                 type="datetime-local"
                 slotProps={{inputLabel: {shrink: true}}}
             />
@@ -650,7 +673,6 @@ function FieldValueInput({
             onChange={e => onTextChange(e.target.value)}
             size="small"
             fullWidth
-            disabled={disabled}
             multiline={meta.category === 'note'}
             minRows={meta.category === 'note' ? 3 : 1}
             maxRows={meta.category === 'note' ? 8 : 1}
@@ -661,10 +683,9 @@ function FieldValueInput({
 interface AddressFieldGroupProps {
     value: AddressDraft;
     onChange: (value: AddressDraft) => void;
-    disabled: boolean;
 }
 
-function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) {
+function AddressFieldGroup({value, onChange}: AddressFieldGroupProps) {
     const set = (key: keyof AddressDraft) => (event: React.ChangeEvent<HTMLInputElement>) =>
         onChange({...value, [key]: event.target.value});
     return (
@@ -675,7 +696,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                 onChange={set('addressLine1')}
                 size="small"
                 fullWidth
-                disabled={disabled}
                 autoFocus
             />
             <TextField
@@ -684,7 +704,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                 onChange={set('addressLine2')}
                 size="small"
                 fullWidth
-                disabled={disabled}
             />
             <Stack direction="row" spacing={1}>
                 <TextField
@@ -693,7 +712,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                     onChange={set('addressLine3')}
                     size="small"
                     fullWidth
-                    disabled={disabled}
                 />
                 <TextField
                     label="City"
@@ -701,7 +719,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                     onChange={set('addressLine4')}
                     size="small"
                     fullWidth
-                    disabled={disabled}
                 />
             </Stack>
             <Stack direction="row" spacing={1}>
@@ -711,7 +728,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                     onChange={set('addressLine5')}
                     size="small"
                     fullWidth
-                    disabled={disabled}
                 />
                 <TextField
                     label="Postcode"
@@ -719,7 +735,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                     onChange={set('addressLine6')}
                     size="small"
                     fullWidth
-                    disabled={disabled}
                 />
                 <TextField
                     label="Country"
@@ -727,7 +742,6 @@ function AddressFieldGroup({value, onChange, disabled}: AddressFieldGroupProps) 
                     onChange={set('addressLine7')}
                     size="small"
                     fullWidth
-                    disabled={disabled}
                 />
             </Stack>
         </Stack>

@@ -185,7 +185,9 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                     <FlightIcon sx={{ fontSize: 24 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Flight Details
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -202,7 +204,6 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Segment tabs for multi-segment flights */}
             {flight.isMultiSegment && flight.flightSegments && flight.flightSegments.length > 0 && (
                 <Box
@@ -244,7 +245,6 @@ export const FlightDetailsDialog: React.FC<FlightDetailsDialogProps> = ({
                     </Tabs>
                 </Box>
             )}
-
             {/* Content */}
             <DialogContent
                 sx={{

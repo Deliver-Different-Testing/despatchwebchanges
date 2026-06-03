@@ -10,19 +10,27 @@ public interface ITenantInfoService : IDisposable
     DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone);
     string FormatDateForTenant(DateTime? dateTime);
     int GetStaffId();
-    /// <summary>
-    /// Current tenant ID from the <c>CurrentTenantID</c> claim, as a string. Used to
-    /// determine the local side of an inter-tenant pairing (matches against
-    /// <see cref="EntityClasses.IntMgrPartnerPairing.OwnerTenantId"/> /
-    /// <see cref="EntityClasses.IntMgrPartnerPairing.PartnerTenantId"/>, which are
-    /// stored as strings). Returns null when no claim is present (background jobs,
-    /// service-account paths).
-    /// </summary>
     string? GetCurrentTenantId();
     int GetContactId();
     bool IsUsTenant();
+
+    /// <summary>
+    /// tucClient.ClientTypeId for the logged-in user, stamped on the JWT at
+    /// Hub login (Phase 5+ data-scope). 1=Internal, 2=Customer, 3=NetworkPartner,
+    /// 5=DFRNTAdmin, 6=ConnectedTenant. Null when the claim is absent
+    /// (couriers / pre-claim sessions). Use this for the canonical NP check
+    /// rather than inferring from NpAgentId.
+    /// </summary>
+    int? GetClientTypeId();
+
+    /// <summary>
+    /// tucClient.NpAgentId for the logged-in user, stamped on the JWT at
+    /// Hub login. Lets NP-scoped surfaces apply a WHERE NpAgentId = &lt;claim&gt;
+    /// filter without a per-request tucClient lookup. Null when the user
+    /// has no NP scope.
+    /// </summary>
+    int? GetNpAgentId();
     Task<Suggestion> GetStaffInfoAsync();
-    Task<int?> GetCurrentNpAgentIdAsync();
     string GetTenantTimeZone();
     DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
 }

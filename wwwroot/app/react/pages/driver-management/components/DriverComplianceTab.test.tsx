@@ -2,7 +2,8 @@
  * Optimised: read-only tests consolidated to reduce render count.
  */
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {DriverComplianceTab} from './DriverComplianceTab';
@@ -114,28 +115,28 @@ describe('DriverComplianceTab', () => {
     });
 
     describe('Bulk reminders dialog', () => {
-        it('should open dialog when Send Reminders button is clicked and there are remindable items', () => {
+        it('should open dialog when Send Reminders button is clicked and there are remindable items', async () => {
+            const user = userEvent.setup();
             setupMocks();
             renderWithProviders();
 
-            fireEvent.click(screen.getByRole('button', {name: /Send Reminders/}));
+            await user.click(screen.getByRole('button', {name: /Send Reminders/}));
 
             expect(screen.getByText('Send Bulk Reminders')).toBeInTheDocument();
             expect(screen.getByText(/Send reminder emails to 1 driver/)).toBeInTheDocument();
         });
 
         it('should close dialog when Cancel is clicked', async () => {
+            const user = userEvent.setup();
             setupMocks();
             renderWithProviders();
 
-            fireEvent.click(screen.getByRole('button', {name: /Send Reminders/}));
+            await user.click(screen.getByRole('button', {name: /Send Reminders/}));
             expect(screen.getByText('Send Bulk Reminders')).toBeInTheDocument();
 
-            fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+            await user.click(screen.getByRole('button', {name: 'Cancel'}));
 
-            await waitFor(() => {
-                expect(screen.queryByText('Send Bulk Reminders')).not.toBeInTheDocument();
-            });
+            await waitForElementToBeRemoved(() => screen.queryByText('Send Bulk Reminders'));
         });
     });
 

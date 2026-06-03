@@ -207,7 +207,9 @@ export const AddEventDialog: React.FC<AddEventDialogProps> = ({
                         <EventIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Add Task
                         </Typography>
                         <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>

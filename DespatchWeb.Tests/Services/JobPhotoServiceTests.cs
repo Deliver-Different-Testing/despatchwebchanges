@@ -14,8 +14,9 @@ namespace DespatchWeb.Tests.Services;
 public class JobPhotoServiceTests
 {
     private readonly IAmazonS3 _s3ClientMock = Substitute.For<IAmazonS3>();
+    private readonly FakeTenantClock _clock = new(TestDates.Now);
 
-    private JobPhotoService CreateService() => new(_s3ClientMock);
+    private JobPhotoService CreateService() => new(_s3ClientMock, _clock);
 
     [Fact]
     public async Task UploadJobPhotoOrSignatureAsync_NullFile_ReturnsFailure()
@@ -64,7 +65,7 @@ public class JobPhotoServiceTests
         // Assert
         Assert.True(result.Success);
         Assert.Contains(".jpg", result.FileName);
-        Assert.Contains("DeliveryPhotos", result.S3Key);
+        Assert.Matches(@"^DeliveryPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
         await _s3ClientMock.Received().PutObjectAsync(Arg.Any<PutObjectRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -84,7 +85,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Contains("DeliverySignatures", result.S3Key);
+        Assert.Matches(@"^DeliverySignatures/\d{4}/\d{2}/1-\d{14}\.png$", result.S3Key);
     }
 
     [Fact]
@@ -103,7 +104,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Contains("PickupPhotos", result.S3Key);
+        Assert.Matches(@"^PickupPhotos/\d{4}/\d{2}/1-\d{14}\.jpg$", result.S3Key);
     }
 
     [Fact]
@@ -235,7 +236,7 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.True(result.Success);
-        Assert.Contains("JobAttachments", result.S3Key);
+        Assert.Matches(@"^JobAttachments/\d{4}/\d{2}/1-\d{14}\.pdf$", result.S3Key);
     }
 
     [Theory]
@@ -348,6 +349,51 @@ public class JobPhotoServiceTests
 
         // Assert
         Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetAttachedFilesAsync_ReturnsLegacyFlatAndDatedObjects()
+    {
+        // Arrange — clock is fixed at 2024-06-15, dated lookup will scan 2024/06 back through 2022/07.
+        Environment.SetEnvironmentVariable("S3BucketMars", "test-bucket");
+        var service = CreateService();
+
+        const string legacyKey = "JobAttachments/1-20230101120000";
+        const string datedKey = "JobAttachments/2024/06/1-20240615143000.pdf";
+
+        _s3ClientMock.ListObjectsV2Async(Arg.Any<ListObjectsV2Request>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<ListObjectsV2Request>();
+                var objects = req.Prefix switch
+                {
+                    "JobAttachments/1-" => new List<S3Object> { new() { Key = legacyKey, Size = 10 } },
+                    "JobAttachments/2024/06/1-" => new List<S3Object> { new() { Key = datedKey, Size = 20 } },
+                    _ => new List<S3Object>()
+                };
+                return new ListObjectsV2Response { S3Objects = objects };
+            });
+
+        _s3ClientMock.GetObjectAsync(Arg.Any<GetObjectRequest>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                var req = call.Arg<GetObjectRequest>();
+                var response = new GetObjectResponse
+                {
+                    Key = req.Key,
+                    ResponseStream = new MemoryStream()
+                };
+                response.Metadata.Add("FileName", req.Key.EndsWith(".pdf") ? "dated.pdf" : "legacy.bin");
+                return response;
+            });
+
+        // Act
+        var result = await service.GetAttachedFilesAsync(1);
+
+        // Assert — both legacy and dated objects come back, deduped if the mock ever returned them twice.
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, f => f.S3Key == legacyKey);
+        Assert.Contains(result, f => f.S3Key == datedKey);
     }
 
     private static IFormFile CreateMockFile(string fileName, string contentType, long size)

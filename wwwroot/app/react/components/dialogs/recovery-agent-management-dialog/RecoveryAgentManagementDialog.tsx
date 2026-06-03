@@ -307,10 +307,11 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
     return (
         <Dialog
             open={open}
-            onClose={handleCancel}
+            onClose={(_event, reason) => {
+                if (reason !== 'escapeKeyDown') handleCancel();
+            }}
             maxWidth="md"
             fullWidth
-            disableEscapeKeyDown
             slotProps={{
                 paper: {
                     elevation: 24,
@@ -350,7 +351,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                     <GroupIcon sx={{fontSize: 28}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>
                         Lost Package Recovery
                     </Typography>
                     {job && (
@@ -370,7 +373,6 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {!job ? (
                     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 8}}>
@@ -400,7 +402,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                 })}
                             >
                                 <PackageIcon sx={{color: 'primary.main', fontSize: 22}} />
-                                <Typography variant="subtitle1" fontWeight={600}>
+                                <Typography variant="subtitle1" sx={{
+                                    fontWeight: 600
+                                }}>
                                     Package Information
                                 </Typography>
                             </Box>
@@ -500,7 +504,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                         <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2}}>
                             <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
                                 <GroupIcon sx={{color: 'primary.main'}} />
-                                <Typography variant="h6" fontWeight={600}>
+                                <Typography variant="h6" sx={{
+                                    fontWeight: 600
+                                }}>
                                     Recovery Agents
                                 </Typography>
                                 {totalRecoveryAgents > 0 && (
@@ -546,7 +552,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     })}
                                 >
                                     <PersonAddIcon sx={{color: 'primary.main'}} />
-                                    <Typography variant="subtitle1" fontWeight={600}>
+                                    <Typography variant="subtitle1" sx={{
+                                        fontWeight: 600
+                                    }}>
                                         Assign Recovery Agent
                                     </Typography>
                                 </Box>
@@ -557,7 +565,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         icon={<InfoIcon />}
                                         sx={{mb: 2.5, borderRadius: 2}}
                                     >
-                                        <Typography variant="body2" fontWeight={600}>
+                                        <Typography variant="body2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             Recovery Agent Assignment
                                         </Typography>
                                         <Typography variant="body2">
@@ -617,10 +627,14 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         }
                                         label={
                                             <Box>
-                                                <Typography variant="body2" fontWeight={600}>
+                                                <Typography variant="body2" sx={{
+                                                    fontWeight: 600
+                                                }}>
                                                     Set as Primary Recovery Agent
                                                 </Typography>
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     Primary agents take lead responsibility for recovery operations
                                                 </Typography>
                                             </Box>
@@ -692,7 +706,9 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     })}
                                 >
                                     <EditIcon sx={{color: 'primary.main'}} />
-                                    <Typography variant="subtitle1" fontWeight={600}>
+                                    <Typography variant="subtitle1" sx={{
+                                        fontWeight: 600
+                                    }}>
                                         Edit Recovery Agent — {editingAgent.agentName}
                                     </Typography>
                                 </Box>
@@ -708,10 +724,14 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                         }
                                         label={
                                             <Box>
-                                                <Typography variant="body2" fontWeight={600}>
+                                                <Typography variant="body2" sx={{
+                                                    fontWeight: 600
+                                                }}>
                                                     Set as Primary Recovery Agent
                                                 </Typography>
-                                                <Typography variant="caption" color="text.secondary">
+                                                <Typography variant="caption" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     Primary agents take lead responsibility for recovery operations
                                                 </Typography>
                                             </Box>
@@ -850,10 +870,22 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                                     >
                                         <GroupOffIcon sx={{fontSize: 32, color: 'grey.400'}} />
                                     </Box>
-                                    <Typography variant="h6" fontWeight={600} sx={{mb: 1}}>
+                                    <Typography
+                                        variant="h6"
+                                        sx={{
+                                            fontWeight: 600,
+                                            mb: 1
+                                        }}>
                                         No Recovery Agents Assigned
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{mb: 2.5, maxWidth: 480, mx: 'auto'}}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            mb: 2.5,
+                                            maxWidth: 480,
+                                            mx: 'auto'
+                                        }}>
                                         Get started by assigning recovery agents to specific locations where the package
                                         might be found.
                                     </Typography>
@@ -870,9 +902,7 @@ export const RecoveryAgentManagementDialog: React.FC<RecoveryAgentManagementDial
                     </>
                 )}
             </DialogContent>
-
             <Divider />
-
             <DialogActions sx={{p: 2, gap: 1}}>
                 {!isFormOpen && (
                     <>
@@ -939,7 +969,13 @@ function DetailCard({icon, label, value, valueColor}: DetailCardProps): React.Re
                 >
                     {label}
                 </Typography>
-                <Typography variant="body2" fontWeight={500} sx={{color: valueColor || 'text.primary', mt: 0.25}}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        fontWeight: 500,
+                        color: valueColor || 'text.primary',
+                        mt: 0.25
+                    }}>
                     {value || '—'}
                 </Typography>
             </Box>
@@ -1023,10 +1059,17 @@ function AgentCard({
                     {icon}
                 </Box>
                 <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="subtitle1" fontWeight={600} noWrap>
+                    <Typography variant="subtitle1" noWrap sx={{
+                        fontWeight: 600
+                    }}>
                         {title}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{mb: 0.75}}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            mb: 0.75
+                        }}>
                         {role}
                     </Typography>
                     <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 2, color: 'text.secondary'}}>
@@ -1040,7 +1083,6 @@ function AgentCard({
                 </Box>
                 {actions && <Box sx={{display: 'flex', gap: 0.5}}>{actions}</Box>}
             </Box>
-
             <Box sx={{display: 'flex', justifyContent: 'flex-end'}}>
                 <Chip
                     label={statusLabel}

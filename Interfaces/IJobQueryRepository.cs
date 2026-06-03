@@ -119,6 +119,6 @@ public interface IJobQueryRepository
 
     Task<List<Suggestion>> GetActivePartnerOptionsAsync();
     Task<bool> IsPartnerJobAsync(int jobId);
-    Task<bool> IsOutboundPartnerJobAsync(int jobId);
+    Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId);
     Task<List<JobItemTypeDto>> GetJobItemTypesAsync(int? jobId, int? bulkJobId);
 }

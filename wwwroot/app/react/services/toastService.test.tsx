@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import {fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {fireEvent, render, screen, waitFor, within} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {ToastProvider, toastService, useToast} from './toastService';
 
@@ -80,7 +80,7 @@ describe('ToastProvider', () => {
 
             await waitFor(() => {
                 const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledSuccess');
+                expect(alert).toHaveClass('MuiAlert-filled', 'MuiAlert-colorSuccess');
             });
         });
     });
@@ -101,7 +101,7 @@ describe('ToastProvider', () => {
 
             await waitFor(() => {
                 const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledWarning');
+                expect(alert).toHaveClass('MuiAlert-filled', 'MuiAlert-colorWarning');
             });
         });
     });
@@ -122,7 +122,7 @@ describe('ToastProvider', () => {
 
             await waitFor(() => {
                 const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledError');
+                expect(alert).toHaveClass('MuiAlert-filled', 'MuiAlert-colorError');
             });
         });
     });
@@ -143,7 +143,7 @@ describe('ToastProvider', () => {
 
             await waitFor(() => {
                 const alert = screen.getByRole('alert');
-                expect(alert).toHaveClass('MuiAlert-filledInfo');
+                expect(alert).toHaveClass('MuiAlert-filled', 'MuiAlert-colorInfo');
             });
         });
     });
@@ -205,6 +205,76 @@ describe('ToastProvider', () => {
 
             await waitFor(() => {
                 expect(screen.queryByText('Success message')).not.toBeInTheDocument();
+            });
+        });
+    });
+
+    describe('showLoadingToast', () => {
+        const LoadingToastComponent: React.FC<{
+            outcome: 'success' | 'error' | 'dismiss';
+        }> = ({outcome}) => {
+            const toast = useToast();
+            const handleClick = () => {
+                const handle = toast.showLoadingToast('Sending…');
+                // Resolve on the next tick so the assertions can observe the
+                // loading state first.
+                setTimeout(() => {
+                    switch (outcome) {
+                        case 'success':
+                            handle.update('All done', 'success');
+                            break;
+                        case 'error':
+                            handle.update('Boom', 'error');
+                            break;
+                        case 'dismiss':
+                            handle.dismiss();
+                            break;
+                    }
+                }, 0);
+            };
+            return <button onClick={handleClick}>Start</button>;
+        };
+
+        it('shows a sticky loading toast that morphs into a success toast', async () => {
+            renderWithProviders(<LoadingToastComponent outcome="success" />);
+            fireEvent.click(screen.getByText('Start'));
+
+            // Loading state visible.
+            expect(await screen.findByText('Sending…')).toBeInTheDocument();
+            const loadingAlert = screen.getByRole('alert');
+            expect(loadingAlert).toHaveClass('MuiAlert-colorInfo');
+            // No close (X) button while loading — the user shouldn't be able
+            // to dismiss feedback for an in-flight operation.
+            expect(within(loadingAlert).queryByRole('button', {name: /close/i})).not.toBeInTheDocument();
+
+            // Then morphs into a success toast in-place.
+            await waitFor(() => {
+                expect(screen.queryByText('Sending…')).not.toBeInTheDocument();
+            });
+            expect(await screen.findByText('All done')).toBeInTheDocument();
+            await waitFor(() => {
+                expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorSuccess');
+            });
+        });
+
+        it('shows a sticky loading toast that morphs into an error toast', async () => {
+            renderWithProviders(<LoadingToastComponent outcome="error" />);
+            fireEvent.click(screen.getByText('Start'));
+
+            expect(await screen.findByText('Sending…')).toBeInTheDocument();
+            expect(await screen.findByText('Boom')).toBeInTheDocument();
+            await waitFor(() => {
+                expect(screen.getByRole('alert')).toHaveClass('MuiAlert-colorError');
+            });
+        });
+
+        it('dismiss() removes the loading toast without showing a result', async () => {
+            renderWithProviders(<LoadingToastComponent outcome="dismiss" />);
+            fireEvent.click(screen.getByText('Start'));
+
+            expect(await screen.findByText('Sending…')).toBeInTheDocument();
+            await waitFor(() => {
+                expect(screen.queryByText('Sending…')).not.toBeInTheDocument();
             });
         });
     });

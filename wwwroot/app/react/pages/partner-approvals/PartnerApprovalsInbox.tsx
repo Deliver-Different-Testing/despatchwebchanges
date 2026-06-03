@@ -31,7 +31,7 @@ import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutlined';
 import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import {alpha} from '@mui/material/styles';
@@ -142,7 +142,9 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                     <HandshakeIcon sx={{fontSize: 24}}/>
                 </Box>
                 <Box sx={{flex: 1, minWidth: 0}}>
-                    <Typography variant="h6" fontWeight={600} noWrap>
+                    <Typography variant="h6" noWrap sx={{
+                        fontWeight: 600
+                    }}>
                         Partner Approvals
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}} noWrap>
@@ -165,13 +167,14 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                     </span>
                 </Tooltip>
             </Box>
-
             {/* Scrollable list area */}
             <Box sx={{flex: 1, overflow: 'auto', p: 2}}>
                 {isLoading && (
                     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6}}>
                         <CircularProgress size={20} sx={{mr: 1.5}}/>
-                        <Typography variant="body2" color="text.secondary">Loading approvals…</Typography>
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>Loading approvals…</Typography>
                     </Box>
                 )}
                 {actionError && (
@@ -195,7 +198,9 @@ export const PartnerApprovalsInbox: React.FC<PartnerApprovalsInboxProps> = ({onO
                                     <Typography variant="overline" sx={{letterSpacing: 1, fontWeight: 600}}>
                                         {group.label}
                                     </Typography>
-                                    <Typography variant="caption" color="text.secondary">
+                                    <Typography variant="caption" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         {group.items.length} request{group.items.length === 1 ? '' : 's'}
                                     </Typography>
                                 </Box>
@@ -324,13 +329,17 @@ function InboxRow({
                         {level === 'overdue' && <Chip size="small" color="error" label="Overdue"/>}
                         {level === 'stale' && <Chip size="small" color="warning" label="Review soon"/>}
                         <Tooltip title={new Date(request.requestedAt).toLocaleString()}>
-                            <Typography variant="caption" color="text.secondary">{age} ago</Typography>
+                            <Typography variant="caption" sx={{
+                                color: "text.secondary"
+                            }}>{age} ago</Typography>
                         </Tooltip>
                     </Box>
                 </Box>
 
                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5, flexWrap: 'wrap'}}>
-                    <Typography variant="caption" color="text.secondary">From</Typography>
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>From</Typography>
                     <Typography component="span" sx={{fontFamily: 'monospace', fontSize: '0.85rem'}}>
                         {fromDisplay}
                     </Typography>
@@ -341,7 +350,14 @@ function InboxRow({
                 </Box>
 
                 {request.reason && (
-                    <Typography variant="caption" color="text.secondary" sx={{display: 'block', mt: 0.5, fontStyle: 'italic'}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            display: 'block',
+                            mt: 0.5,
+                            fontStyle: 'italic'
+                        }}>
                         “{request.reason}”
                     </Typography>
                 )}

@@ -56,7 +56,13 @@ export const JobListStatsHeader: React.FC<JobListStatsHeaderProps> = ({stats}) =
 const StatItem: React.FC<{color: string; label: string; value: number}> = ({color, label, value}) => (
     <Box sx={{display: 'flex', alignItems: 'center', gap: 0.75}}>
         <Box sx={statDot(color)}/>
-        <Typography variant="caption" color="text.secondary" sx={{fontWeight: 500, lineHeight: 1}}>
+        <Typography
+            variant="caption"
+            sx={{
+                color: "text.secondary",
+                fontWeight: 500,
+                lineHeight: 1
+            }}>
             {label}
         </Typography>
         <Typography variant="caption" sx={{fontWeight: 700, lineHeight: 1, color: 'text.primary'}}>

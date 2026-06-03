@@ -203,7 +203,9 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                     <ManageSearchIcon sx={{fontSize: 28}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>
                         {title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -220,7 +222,6 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 <Paper
@@ -237,7 +238,12 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                         existing dropdown" for the 3-way Assign picker. */}
                     {hasTypeOptions && (
                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5, mb: 2}}>
-                            <Typography variant="body2" fontWeight={600} sx={{color: 'text.secondary'}}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'text.secondary'
+                                }}>
                                 Type:
                             </Typography>
                             <RadioGroup
@@ -277,29 +283,34 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                             inputValue.length >= minInputLength ? (
                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 1, py: 1}}>
                                     <SearchOffIcon color="action" />
-                                    <Typography color="text.secondary">
+                                    <Typography sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         No {title.toLowerCase()} matching "{inputValue}" were found.
                                     </Typography>
                                 </Box>
                             ) : (
-                                <Typography color="text.secondary">
+                                <Typography sx={{
+                                    color: "text.secondary"
+                                }}>
                                     Type at least {minInputLength} character{minInputLength > 1 ? 's' : ''} to search
                                 </Typography>
                             )
                         }
-                        renderInput={({InputProps: autoInputProps, ...params}) => (
+                        renderInput={({slotProps: autoSlotProps, ...params}) => (
                             <TextField
                                 {...params}
                                 autoFocus
                                 placeholder={activePlaceholder}
                                 variant="outlined"
                                 slotProps={{
+                                    ...autoSlotProps,
                                     input: {
-                                        ...autoInputProps,
+                                        ...autoSlotProps.input,
                                         endAdornment: (
                                             <>
                                                 {loading ? <CircularProgress color="inherit" size={20} /> : null}
-                                                {autoInputProps.endAdornment}
+                                                {autoSlotProps.input.endAdornment}
                                             </>
                                         ),
                                     },
@@ -345,7 +356,6 @@ export const AutoCompleteDialog: React.FC<AutoCompleteDialogProps> = ({
                     )}
                 </Paper>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

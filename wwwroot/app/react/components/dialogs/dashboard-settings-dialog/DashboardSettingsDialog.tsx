@@ -165,7 +165,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     <SettingsIcon sx={{fontSize: 28}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h5" fontWeight={600}>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>
                         {config.title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -182,13 +184,18 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 0, bgcolor: 'background.default'}}>
                 {/* Auto-Refresh Section */}
                 {config.showRefreshInterval && (
                     <Box sx={{p: 3}}>
-                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 2}}>
+                        <Stack
+                            direction="row"
+                            spacing={1.5}
+                            sx={{
+                                alignItems: "center",
+                                mb: 2
+                            }}>
                             <Box
                                 sx={(theme) => ({
                                     width: 36,
@@ -202,7 +209,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             >
                                 <ScheduleIcon color="primary" />
                             </Box>
-                            <Typography variant="h6" fontWeight={600}>
+                            <Typography variant="h6" sx={{
+                                fontWeight: 600
+                            }}>
                                 Auto-Refresh
                             </Typography>
                         </Stack>
@@ -220,14 +229,19 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             >
                                 <Stack
                                     direction="row"
-                                    alignItems="center"
-                                    justifyContent="space-between"
-                                >
+                                    sx={{
+                                        alignItems: "center",
+                                        justifyContent: "space-between"
+                                    }}>
                                     <Box>
-                                        <Typography variant="subtitle2" fontWeight={600}>
+                                        <Typography variant="subtitle2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             Job List
                                         </Typography>
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography variant="body2" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             How often the job list refreshes
                                         </Typography>
                                     </Box>
@@ -264,14 +278,19 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 >
                                     <Stack
                                         direction="row"
-                                        alignItems="center"
-                                        justifyContent="space-between"
-                                    >
+                                        sx={{
+                                            alignItems: "center",
+                                            justifyContent: "space-between"
+                                        }}>
                                         <Box>
-                                            <Typography variant="subtitle2" fontWeight={600}>
+                                            <Typography variant="subtitle2" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 Driver Locations
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary">
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 How often the map updates
                                             </Typography>
                                         </Box>
@@ -304,7 +323,13 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 {/* AI Features Section */}
                 {config.showAiToggle && (
                     <Box sx={{p: 3}}>
-                        <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 2}}>
+                        <Stack
+                            direction="row"
+                            spacing={1.5}
+                            sx={{
+                                alignItems: "center",
+                                mb: 2
+                            }}>
                             <Box
                                 sx={{
                                     width: 36,
@@ -318,7 +343,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             >
                                 <AutoAwesomeIcon sx={{color: aiAccentColor}} />
                             </Box>
-                            <Typography variant="h6" fontWeight={600}>
+                            <Typography variant="h6" sx={{
+                                fontWeight: 600
+                            }}>
                                 AI Briefings
                             </Typography>
                         </Stack>
@@ -341,12 +368,15 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         >
                             <Stack
                                 direction="row"
-                                alignItems="center"
-                                justifyContent="space-between"
-                            >
+                                sx={{
+                                    alignItems: "center",
+                                    justifyContent: "space-between"
+                                }}>
                                 <Box>
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        <Typography variant="subtitle2" fontWeight={600}>
+                                        <Typography variant="subtitle2" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             Show AI briefing cards
                                         </Typography>
                                         <Chip
@@ -361,7 +391,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                             }}
                                         />
                                     </Box>
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         Off by default. Turn on to surface AI-generated briefings on the
                                         job details page, the task dashboard, the operations overview, and
                                         the driver compliance tab. The briefing leads with a verdict, what
@@ -391,7 +423,13 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
 
                 {/* Dashboard Panels Section */}
                 <Box sx={{p: 3}}>
-                    <Stack direction="row" spacing={1.5} alignItems="center" sx={{mb: 1}}>
+                    <Stack
+                        direction="row"
+                        spacing={1.5}
+                        sx={{
+                            alignItems: "center",
+                            mb: 1
+                        }}>
                         <Box
                             sx={(theme) => ({
                                 width: 36,
@@ -405,14 +443,22 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         >
                             <DashboardIcon color="primary" />
                         </Box>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Dashboard Panels
                         </Typography>
                     </Stack>
 
                     {config.showDashboards ? (
                         <>
-                            <Typography variant="body2" color="text.secondary" sx={{mb: 2, ml: 6}}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    mb: 2,
+                                    ml: 6
+                                }}>
                                 Toggle panels to show or hide them on your dashboard
                             </Typography>
 
@@ -437,8 +483,10 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     >
                                         <Stack
                                             direction="row"
-                                            alignItems="center"
                                             spacing={2}
+                                            sx={{
+                                                alignItems: "center"
+                                            }}
                                         >
                                             <Box
                                                 sx={(theme) => ({
@@ -459,13 +507,17 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                                 />
                                             </Box>
                                             <Box sx={{flex: 1}}>
-                                                <Typography variant="subtitle2" fontWeight={600}>
+                                                <Typography variant="subtitle2" sx={{
+                                                    fontWeight: 600
+                                                }}>
                                                     {box.title || box.name}
                                                 </Typography>
                                                 {box.description && (
                                                     <Typography
                                                         variant="body2"
-                                                        color="text.secondary"
+                                                        sx={{
+                                                            color: "text.secondary"
+                                                        }}
                                                     >
                                                         {box.description}
                                                     </Typography>
@@ -484,7 +536,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         </>
                     ) : (
                         /* Empty state when custom layout not available */
-                        <Paper
+                        (<Paper
                             elevation={0}
                             sx={(theme) => ({
                                 p: 4,
@@ -509,17 +561,23 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             >
                                 <InfoIcon sx={(theme) => ({fontSize: 28, color: theme.palette.info.main})} />
                             </Box>
-                            <Typography variant="body1" color="text.secondary">
+                            <Typography variant="body1" sx={{
+                                color: "text.secondary"
+                            }}>
                                 Panel visibility requires a custom layout.
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: 0.5
+                                }}>
                                 Create a custom layout to manage panel visibility.
                             </Typography>
-                        </Paper>
+                        </Paper>)
                     )}
                 </Box>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

@@ -67,7 +67,9 @@ const FormSection: React.FC<{
     >
         <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 2}}>
             {React.cloneElement(icon as React.ReactElement<Record<string, unknown>>, {sx: {color: 'text.secondary'}})}
-            <Typography variant="subtitle1" fontWeight={500}>
+            <Typography variant="subtitle1" sx={{
+                fontWeight: 500
+            }}>
                 {title}
             </Typography>
         </Box>
@@ -429,7 +431,9 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                     <AddBusinessIcon sx={{fontSize: 24}} />
                 </Box>
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Add New Job
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -447,7 +451,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{p: 3, bgcolor: 'background.default'}}>
                 {/* Job Details Section */}
@@ -464,7 +467,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(_, value) => setSelectedClient(value)}
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({InputProps: autoInputProps, ...params}) => (
+                            renderInput={({slotProps: autoSlotProps, ...params}) => (
                                 <TextField
                                     {...params}
                                     label="Client"
@@ -473,12 +476,13 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                     error={touched && !selectedClient}
                                     helperText={touched && !selectedClient ? 'Client is required.' : ''}
                                     slotProps={{
+                                        ...autoSlotProps,
                                         input: {
-                                            ...autoInputProps,
+                                            ...autoSlotProps.input,
                                             endAdornment: (
                                                 <>
                                                     {isSearchingClients && <CircularProgress size={20} />}
-                                                    {autoInputProps.endAdornment}
+                                                    {autoSlotProps.input.endAdornment}
                                                 </>
                                             ),
                                         },
@@ -515,18 +519,19 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(_, value) => setSelectedCourier(value)}
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({InputProps: autoInputProps, ...params}) => (
+                            renderInput={({slotProps: autoSlotProps, ...params}) => (
                                 <TextField
                                     {...params}
                                     label="Courier"
                                     placeholder="Start typing to search couriers"
                                     slotProps={{
+                                        ...autoSlotProps,
                                         input: {
-                                            ...autoInputProps,
+                                            ...autoSlotProps.input,
                                             endAdornment: (
                                                 <>
                                                     {isSearchingCouriers && <CircularProgress size={20} />}
-                                                    {autoInputProps.endAdornment}
+                                                    {autoSlotProps.input.endAdornment}
                                                 </>
                                             ),
                                         },
@@ -572,7 +577,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(_, value) => setSelectedPickupAddress(value)}
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({InputProps: autoInputProps, ...params}) => (
+                            renderInput={({slotProps: autoSlotProps, ...params}) => (
                                 <TextField
                                     {...params}
                                     label="From Address"
@@ -581,12 +586,13 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                     error={touched && !selectedPickupAddress}
                                     helperText={touched && !selectedPickupAddress ? 'Pickup address is required.' : ''}
                                     slotProps={{
+                                        ...autoSlotProps,
                                         input: {
-                                            ...autoInputProps,
+                                            ...autoSlotProps.input,
                                             endAdornment: (
                                                 <>
                                                     {isSearchingFromAddress && <CircularProgress size={20} />}
-                                                    {autoInputProps.endAdornment}
+                                                    {autoSlotProps.input.endAdornment}
                                                 </>
                                             ),
                                         },
@@ -609,7 +615,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             onChange={(_, value) => setSelectedDeliveryAddress(value)}
                             filterOptions={(x) => x}
                             isOptionEqualToValue={(a, b) => a.id === b.id}
-                            renderInput={({InputProps: autoInputProps, ...params}) => (
+                            renderInput={({slotProps: autoSlotProps, ...params}) => (
                                 <TextField
                                     {...params}
                                     label="To Address"
@@ -618,12 +624,13 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                                     error={touched && !selectedDeliveryAddress}
                                     helperText={touched && !selectedDeliveryAddress ? 'Delivery address is required.' : ''}
                                     slotProps={{
+                                        ...autoSlotProps,
                                         input: {
-                                            ...autoInputProps,
+                                            ...autoSlotProps.input,
                                             endAdornment: (
                                                 <>
                                                     {isSearchingToAddress && <CircularProgress size={20} />}
-                                                    {autoInputProps.endAdornment}
+                                                    {autoSlotProps.input.endAdornment}
                                                 </>
                                             ),
                                         },
@@ -771,7 +778,6 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                     </Box>
                 </FormSection>
             </DialogContent>
-
             {/* Actions */}
             <DialogActions sx={{px: 3, py: 2, bgcolor: 'background.default', borderTop: '1px solid', borderColor: 'divider'}}>
                 {isLoading && <CircularProgress size={28} sx={{mr: 1}} />}

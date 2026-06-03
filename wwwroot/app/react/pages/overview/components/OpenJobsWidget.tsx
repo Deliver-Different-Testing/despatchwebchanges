@@ -245,7 +245,6 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                     </span>
                 </IconButton>
             </Box>
-
             <Collapse in={!isCollapsed}>
                 <Box sx={{p: 2}}>
                     {/* Empty state */}
@@ -257,7 +256,12 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                             >
                                 inventory_2
                             </span>
-                            <Typography variant="body1" color="text.secondary" sx={{mt: 1}}>
+                            <Typography
+                                variant="body1"
+                                sx={{
+                                    color: "text.secondary",
+                                    mt: 1
+                                }}>
                                 No open jobs match your current filter criteria
                             </Typography>
                         </Box>
@@ -317,7 +321,9 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                                                         <Typography variant="body2" noWrap>
                                                             {job.pickup.name}
                                                         </Typography>
-                                                        <Typography variant="caption" color="text.secondary" noWrap>
+                                                        <Typography variant="caption" noWrap sx={{
+                                                            color: "text.secondary"
+                                                        }}>
                                                             {job.pickup.address}
                                                         </Typography>
                                                     </Box>
@@ -328,7 +334,9 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
                                                         <Typography variant="body2" noWrap>
                                                             {job.delivery.name}
                                                         </Typography>
-                                                        <Typography variant="caption" color="text.secondary" noWrap>
+                                                        <Typography variant="caption" noWrap sx={{
+                                                            color: "text.secondary"
+                                                        }}>
                                                             {job.delivery.address}
                                                         </Typography>
                                                     </Box>
@@ -455,20 +463,26 @@ const DriverCard: React.FC<{driver: DriverViewModel}> = React.memo(({driver: ini
                         <Typography variant="caption">
                             Last completed:{' '}
                             {initialDriver.lastCompleted === 'N/A' ? (
-                                <Typography component="span" variant="caption" color="warning.main">N/A</Typography>
+                                <Typography component="span" variant="caption" sx={{
+                                    color: "warning.main"
+                                }}>N/A</Typography>
                             ) : (
                                 initialDriver.lastCompleted
                             )}
                         </Typography>
                         {minsSinceLastCompleted !== null && (
-                            <Typography variant="caption" display="block" sx={{fontSize: '0.625rem'}}>
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    display: "block",
+                                    fontSize: '0.625rem'
+                                }}>
                                 {minsSinceLastCompleted} mins ago
                             </Typography>
                         )}
                     </Box>
                 </Box>
             </Box>
-
             <Collapse in={expanded}>
                 <Box sx={{p: 2, display: 'flex', flexWrap: 'wrap', gap: 2}}>
                     {initialDriver.jobs.map((job) => (
@@ -487,7 +501,9 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
             {/* Header */}
             <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1}}>
                 <Box>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" sx={{
+                        color: "text.secondary"
+                    }}>
                         Reference
                     </Typography>
                     <Typography variant="body2">{job.reference}</Typography>
@@ -520,7 +536,12 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
                     <Typography variant="body2" sx={{pl: 3}}>
                         {job.pickup.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{pl: 3}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            pl: 3
+                        }}>
                         {job.pickup.address}
                     </Typography>
                 </Box>
@@ -536,7 +557,12 @@ const JobCard: React.FC<{job: ViewJob}> = React.memo(({job}) => (
                     <Typography variant="body2" sx={{pl: 3}}>
                         {job.delivery.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{pl: 3}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            pl: 3
+                        }}>
                         {job.delivery.address}
                     </Typography>
                 </Box>

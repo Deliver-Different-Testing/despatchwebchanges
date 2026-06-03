@@ -185,7 +185,6 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     </ToggleButton>
                 ))}
             </ToggleButtonGroup>
-
             {dateSearchRange === 'custom' && (
                 <Box sx={{
                     display: 'flex',
@@ -197,13 +196,25 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
                     borderColor: 'divider',
                 }}>
                     <Box sx={{flex: '1 1 120px', minWidth: 0}}>
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: 'block',
+                                mb: 0.5
+                            }}>
                             From
                         </Typography>
                         <DateInput value={fromDate} onChange={onFromDateChange} />
                     </Box>
                     <Box sx={{flex: '1 1 120px', minWidth: 0}}>
-                        <Typography variant="caption" color="text.secondary" sx={{display: 'block', mb: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: 'block',
+                                mb: 0.5
+                            }}>
                             To
                         </Typography>
                         <DateInput value={toDate} onChange={onToDateChange} />

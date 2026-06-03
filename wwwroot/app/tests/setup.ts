@@ -7,9 +7,6 @@
 
 import '@testing-library/jest-dom';
 
-// Increase default test timeout for CI environments (slow kubernetes pods)
-jest.setTimeout(15000);
-
 // DOM mocks — only run in jsdom environment (skipped for node-only tests)
 if (typeof window !== 'undefined') {
     // Mock window.history for navigation tests

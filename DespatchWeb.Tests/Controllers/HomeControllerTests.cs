@@ -3,6 +3,7 @@ using DespatchWeb.Controllers;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
@@ -10,6 +11,7 @@ using NSubstitute;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(HomeController))]
 public class HomeControllerTests : IDisposable
 {
     private readonly IClientRepository _clientRepoMock = Substitute.For<IClientRepository>();

@@ -402,7 +402,7 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     loading={isLoadingCouriers}
                     disabled={isLoading}
                     sx={{width: 200}}
-                    renderInput={({InputProps: autoInputProps, ...params}) => (
+                    renderInput={({slotProps: autoSlotProps, ...params}) => (
                         <TextField
                             {...params}
                             label="Courier"
@@ -412,12 +412,13 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                 },
                             }}
                             slotProps={{
+                                ...autoSlotProps,
                                 input: {
-                                    ...autoInputProps,
+                                    ...autoSlotProps.input,
                                     endAdornment: (
                                         <>
                                             {isLoadingCouriers ? <CircularProgress color="inherit" size={16}/> : null}
-                                            {autoInputProps.endAdornment}
+                                            {autoSlotProps.input.endAdornment}
                                         </>
                                     ),
                                 },

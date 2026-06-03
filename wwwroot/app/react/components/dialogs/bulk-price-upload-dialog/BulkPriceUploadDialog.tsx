@@ -292,13 +292,25 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         <CloudUploadIcon
                             sx={{ fontSize: 48, color: 'text.secondary', mb: 1.5 }}
                         />
-                        <Typography variant="subtitle1" fontWeight={500} sx={{ mb: 0.5 }}>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                fontWeight: 500,
+                                mb: 0.5
+                            }}>
                             Drop your file here
                         </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                color: "text.secondary",
+                                mb: 1
+                            }}>
                             or click to browse
                         </Typography>
-                        <Typography variant="caption" color="text.disabled">
+                        <Typography variant="caption" sx={{
+                            color: "text.disabled"
+                        }}>
                             Supports .xls, .xlsx, .csv files
                         </Typography>
                     </Box>
@@ -310,7 +322,6 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         onChange={handleFileInputChange}
                     />
                 </Box>
-
                 {/* Error message */}
                 {errorMessage && (
                     <Box
@@ -325,12 +336,13 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         }}
                     >
                         <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                        <Typography variant="body2" color="error.main">
+                        <Typography variant="body2" sx={{
+                            color: "error.main"
+                        }}>
                             {errorMessage}
                         </Typography>
                     </Box>
                 )}
-
                 {/* File format info */}
                 <Box
                     sx={{
@@ -339,10 +351,20 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         borderRadius: 2.5,
                     }}
                 >
-                    <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+                    <Typography
+                        variant="subtitle2"
+                        sx={{
+                            fontWeight: 600,
+                            mb: 1
+                        }}>
                         Expected File Format
                     </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            mb: 1
+                        }}>
                         Your spreadsheet should contain a column named <strong>Id</strong> with job IDs, and optionally:
                     </Typography>
                     <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
@@ -355,7 +377,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                             { label: 'CourierBonus', desc: 'Courier bonus amount' },
                         ].map((item) => (
                             <Box component="li" key={item.label} sx={{ mb: 0.5 }}>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     <strong style={{ color: 'rgba(0, 0, 0, 0.87)' }}>{item.label}</strong>
                                 </Typography>
                             </Box>
@@ -410,14 +434,13 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     <DescriptionIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                     <Typography
                         variant="body2"
-                        fontWeight={500}
                         sx={{
+                            fontWeight: 500,
                             maxWidth: 280,
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                        }}
-                    >
+                            whiteSpace: 'nowrap'
+                        }}>
                         {uploadedFile?.name}
                     </Typography>
                     <IconButton
@@ -428,7 +451,6 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         <EditIcon sx={{ fontSize: 16 }} />
                     </IconButton>
                 </Box>
-
                 {/* Error message */}
                 {errorMessage && (
                     <Box
@@ -443,16 +465,21 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                         }}
                     >
                         <ErrorIcon sx={{ color: 'error.main', fontSize: 20 }} />
-                        <Typography variant="body2" color="error.main">
+                        <Typography variant="body2" sx={{
+                            color: "error.main"
+                        }}>
                             {errorMessage}
                         </Typography>
                     </Box>
                 )}
-
-                <Typography variant="body1" fontWeight={600} sx={{ mb: 2 }}>
+                <Typography
+                    variant="body1"
+                    sx={{
+                        fontWeight: 600,
+                        mb: 2
+                    }}>
                     How should prices be applied?
                 </Typography>
-
                 {/* Pricing options */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
                     {modes.map((mode) => (
@@ -535,17 +562,20 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
 
                             {/* Text */}
                             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, minWidth: 0 }}>
-                                <Typography variant="body1" fontWeight={500}>
+                                <Typography variant="body1" sx={{
+                                    fontWeight: 500
+                                }}>
                                     {mode.title}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" sx={{
+                                    color: "text.secondary"
+                                }}>
                                     {mode.desc}
                                 </Typography>
                             </Box>
                         </Box>
                     ))}
                 </Box>
-
                 {/* Mode hint */}
                 <Box
                     sx={{
@@ -559,7 +589,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     }}
                 >
                     <InfoIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         {modeDescription}
                     </Typography>
                 </Box>
@@ -581,7 +613,12 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                 }}
             >
                 <CircularProgress size={48} />
-                <Typography variant="body1" color="text.secondary" fontWeight={500}>
+                <Typography
+                    variant="body1"
+                    sx={{
+                        color: "text.secondary",
+                        fontWeight: 500
+                    }}>
                     {loadingMessage || 'Processing...'}
                 </Typography>
             </Box>
@@ -614,11 +651,12 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     >
                         <CheckCircleIcon sx={{ fontSize: 32, color: 'success.main' }} />
                     </Box>
-                    <Typography variant="h6" fontWeight={600}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>
                         Prices Updated
                     </Typography>
                 </Box>
-
                 {/* Summary stats */}
                 <Box
                     sx={{
@@ -633,46 +671,58 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     }}
                 >
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 600
+                        }}>
                             {totalJobs}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Jobs Updated
                         </Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 600
+                        }}>
                             {formatCurrency(totalOldAmount)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Previous Total
                         </Typography>
                     </Box>
                     <ArrowForwardIcon sx={{ color: 'text.secondary', fontSize: 20, flexShrink: 0 }} />
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
-                        <Typography variant="subtitle1" fontWeight={600}>
+                        <Typography variant="subtitle1" sx={{
+                            fontWeight: 600
+                        }}>
                             {formatCurrency(totalNewAmount)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             New Total
                         </Typography>
                     </Box>
                     <Box sx={{ textAlign: 'center', flex: 1 }}>
                         <Typography
                             variant="subtitle1"
-                            fontWeight={600}
                             sx={{
-                                color: amountChange > 0 ? 'success.main' : amountChange < 0 ? 'error.main' : 'text.secondary',
-                            }}
-                        >
+                                fontWeight: 600,
+                                color: amountChange > 0 ? 'success.main' : amountChange < 0 ? 'error.main' : 'text.secondary'
+                            }}>
                             {formatChange(amountChange)}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary">
+                        <Typography variant="caption" sx={{
+                            color: "text.secondary"
+                        }}>
                             Change
                         </Typography>
                     </Box>
                 </Box>
-
                 {/* Search */}
                 <Box
                     sx={{
@@ -705,11 +755,15 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                             },
                         }}
                     />
-                    <Typography variant="caption" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            whiteSpace: 'nowrap'
+                        }}>
                         {filteredRows.length} of {resultRows.length} jobs
                     </Typography>
                 </Box>
-
                 {/* Results table */}
                 <TableContainer
                     component={Paper}
@@ -781,7 +835,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                                 <TableRow>
                                     <TableCell colSpan={5} align="center" sx={{ py: 5 }}>
                                         <SearchOffIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
-                                        <Typography variant="body2" color="text.secondary">
+                                        <Typography variant="body2" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             No jobs match your search
                                         </Typography>
                                     </TableCell>
@@ -828,7 +884,9 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
             >
                 <UploadFileIcon sx={{ fontSize: 24 }} />
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" fontWeight={500}>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 500
+                    }}>
                         Bulk Price Upload
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
@@ -846,7 +904,6 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Content */}
             <DialogContent sx={{ p: 0, bgcolor: 'background.default' }}>
                 {currentState === 'upload' && renderUploadState()}
@@ -854,7 +911,6 @@ export const BulkPriceUploadDialog: React.FC<BulkPriceUploadDialogProps> = ({
                 {currentState === 'loading' && renderLoadingState()}
                 {currentState === 'result' && renderResultState()}
             </DialogContent>
-
             {/* Actions */}
             <DialogActions
                 sx={(theme) => ({

@@ -70,8 +70,10 @@ const config = {
         ['jest-slow-test-reporter', { numTests: 15, warnOnSlowerThan: 300, color: true }],
     ],
 
-    // Fail fast on hung tests (type-check CI job catches real issues)
-    testTimeout: 15000,
+    // Fail fast on hung tests (type-check CI job catches real issues).
+    // 30s matches the integration config and gives MUI v9 / React 19 renders
+    // enough headroom on slow CI runners without masking real hangs.
+    testTimeout: 30000,
 
     // Use modern fake timers for better async handling
     fakeTimers: {

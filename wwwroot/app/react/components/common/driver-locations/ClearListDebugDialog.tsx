@@ -42,7 +42,9 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
             </Typography>
             <Typography variant="body2" component="div" sx={{ flex: 1 }}>
                 {value ?? (
-                    <Typography variant="body2" component="span" color="text.disabled">
+                    <Typography variant="body2" component="span" sx={{
+                        color: "text.disabled"
+                    }}>
                         N/A
                     </Typography>
                 )}
@@ -130,7 +132,9 @@ export function ClearListDebugButton({ courierId }: { courierId: number }) {
                         <BugReportIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Clear List Debug
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -199,7 +203,9 @@ function SectionCard({
                 })}
             >
                 {icon}
-                <Typography variant="subtitle1" fontWeight={600}>
+                <Typography variant="subtitle1" sx={{
+                    fontWeight: 600
+                }}>
                     {title}
                 </Typography>
             </Box>
@@ -219,7 +225,6 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
             <Alert severity="info">
                 <Typography variant="body2">{data.explanation}</Typography>
             </Alert>
-
             {/* Courier Info */}
             <SectionCard
                 icon={<PersonIcon sx={{ color: 'primary.main', fontSize: 22 }} />}
@@ -237,7 +242,6 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                 } />
                 {data.loginTime && <InfoRow label="Login Time" value={data.loginTime} />}
             </SectionCard>
-
             {/* GPS Info */}
             <SectionCard
                 icon={<GpsFixedIcon sx={{ color: 'success.main', fontSize: 22 }} />}
@@ -269,7 +273,6 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                 } />
                 {data.gpsTimestamp && <InfoRow label="GPS Timestamp" value={data.gpsTimestamp} />}
             </SectionCard>
-
             {/* Admin Assignment */}
             <SectionCard
                 icon={<AssignmentIcon sx={{ color: 'info.main', fontSize: 22 }} />}
@@ -278,18 +281,25 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
             >
                 <InfoRow label="Assigned Area" value={data.assignedClearListAreaName} />
                 <InfoRow label="Status" value={data.assignedStatusLabel} />
-                <Typography variant="caption" color="text.secondary">
+                <Typography variant="caption" sx={{
+                    color: "text.secondary"
+                }}>
                     This controls the row position (top/middle/bottom), NOT which area column the driver appears in.
                 </Typography>
             </SectionCard>
-
             {/* Polygon-to-Area Mappings */}
             <SectionCard
                 icon={<MapIcon sx={{ color: 'warning.main', fontSize: 22 }} />}
                 title="Polygon Area Mappings"
                 color="warning"
             >
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "text.secondary",
+                        display: 'block',
+                        mb: 1.5
+                    }}>
                     Which clear list areas this courier's GPS polygon is linked to. The driver appears in areas where
                     the channel matches.
                 </Typography>
@@ -320,7 +330,9 @@ function DebugContent({ data }: { data: IClearListDebugViewModel }) {
                                     ),
                                 })}
                             >
-                                <Typography variant="body2" fontWeight={600}>
+                                <Typography variant="body2" sx={{
+                                    fontWeight: 600
+                                }}>
                                     {m.clearListAreaName}
                                 </Typography>
                                 <Chip

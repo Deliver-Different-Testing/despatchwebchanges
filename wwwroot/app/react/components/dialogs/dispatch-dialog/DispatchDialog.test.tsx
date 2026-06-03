@@ -223,7 +223,8 @@ describe('DispatchDialog', () => {
             renderWithTheme(<DispatchDialog {...makeProps()} />);
 
             const search = screen.getByPlaceholderText(/Search courier/);
-            await user.type(search, 'ABC');
+            await user.click(search);
+            await user.paste('ABC');
 
             await waitFor(() => {
                 expect(mockedAutocompleteSearch).toHaveBeenCalledWith('ABC', '/courier/AllActiveSearch');
@@ -236,7 +237,8 @@ describe('DispatchDialog', () => {
 
             await user.click(screen.getByRole('radio', {name: /Agent/}));
             const search = screen.getByPlaceholderText(/Search agent/);
-            await user.type(search, 'One');
+            await user.click(search);
+            await user.paste('One');
 
             await waitFor(() => {
                 expect(mockedApiClientGet).toHaveBeenCalledWith(
@@ -252,7 +254,8 @@ describe('DispatchDialog', () => {
 
             await user.click(screen.getByRole('radio', {name: /^NP$/}));
             const search = screen.getByPlaceholderText(/Search Network Partner/);
-            await user.type(search, 'Net');
+            await user.click(search);
+            await user.paste('Net');
 
             await waitFor(() => {
                 expect(mockedApiClientGet).toHaveBeenCalledWith(
@@ -300,7 +303,8 @@ describe('DispatchDialog', () => {
             renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             const search = screen.getByPlaceholderText(/Search courier/);
-            await user.type(search, 'ABC');
+            await user.click(search);
+            await user.paste('ABC');
             // Wait for results to populate the listbox, then pick one.
             const option = await screen.findByRole('option', {name: /ABC Couriers/});
             await user.click(option);
@@ -324,7 +328,8 @@ describe('DispatchDialog', () => {
             renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
             const search = screen.getByPlaceholderText(/Search courier/);
-            await user.type(search, 'ABC');
+            await user.click(search);
+            await user.paste('ABC');
             const option = await screen.findByRole('option', {name: /ABC Couriers/});
             await user.click(option);
 

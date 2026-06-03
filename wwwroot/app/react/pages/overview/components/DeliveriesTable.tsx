@@ -169,7 +169,6 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                     <CircularProgress size={40} />
                 </Box>
             )}
-
             {/* Table */}
             <TableContainer>
                 <Table size="small">
@@ -271,7 +270,6 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                     </TableBody>
                 </Table>
             </TableContainer>
-
             {/* Empty state */}
             {deliveries.length === 0 && !isLoading && (
                 <Box sx={{textAlign: 'center', py: 6, color: 'text.disabled'}}>
@@ -281,15 +279,21 @@ export const DeliveriesTable: React.FC<DeliveriesTableProps> = React.memo(({
                     >
                         local_shipping
                     </span>
-                    <Typography variant="body1" color="text.secondary" sx={{mt: 1}}>
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: "text.secondary",
+                            mt: 1
+                        }}>
                         No deliveries found
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" sx={{
+                        color: "text.secondary"
+                    }}>
                         Try adjusting your filters or date range.
                     </Typography>
                 </Box>
             )}
-
             {/* Pagination */}
             {total > 0 && (
                 <TablePagination

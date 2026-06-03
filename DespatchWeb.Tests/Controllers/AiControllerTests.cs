@@ -1,12 +1,14 @@
 using DespatchWeb.Controllers;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models.Response;
+using JetBrains.Annotations;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Controllers;
 
+[TestSubject(typeof(AiController))]
 public class AiControllerTests
 {
     private readonly IAiRateLimiter _rateLimiter = Substitute.For<IAiRateLimiter>();

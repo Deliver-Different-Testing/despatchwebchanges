@@ -166,7 +166,9 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                         <ChecklistIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             Task Groups Management
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -208,10 +210,20 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                 }}
                             >
                                 <Box>
-                                    <Typography variant="h6" fontWeight={600} color="text.primary">
+                                    <Typography
+                                        variant="h6"
+                                        sx={{
+                                            fontWeight: 600,
+                                            color: "text.primary"
+                                        }}>
                                         Active Task Groups
                                     </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            color: "text.secondary",
+                                            mt: 0.5
+                                        }}>
                                         Manage task assignments and schedules
                                     </Typography>
                                 </Box>
@@ -239,7 +251,13 @@ export const EventGroupDialog: React.FC<EventGroupDialogProps> = ({
                                             </TableCell>
                                             <TableCell sx={{ width: '22%', fontWeight: 600, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                                 Due Date
-                                                <Typography variant="caption" display="block" color="text.secondary" fontStyle="italic">
+                                                <Typography
+                                                    variant="caption"
+                                                    sx={{
+                                                        display: "block",
+                                                        color: "text.secondary",
+                                                        fontStyle: "italic"
+                                                    }}>
                                                     ({tz})
                                                 </Typography>
                                             </TableCell>

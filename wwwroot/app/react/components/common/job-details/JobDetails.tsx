@@ -81,8 +81,8 @@ function CardVisibilityToggle({label, fieldKey, isVisible, onToggle}: {
                     <ListItemText primary={label} slotProps={{
                         primary: {
                             variant: 'body2',
-                            fontSize: '0.8125rem',
-                            color: isVisible ? 'text.primary' : 'text.disabled'
+                            color: isVisible ? 'text.primary' : 'text.disabled',
+                            sx: {fontSize: '0.8125rem'},
                         }
                     }}/>
                 </ListItemButton>
@@ -423,7 +423,12 @@ export function JobDetails({config}: JobDetailsProps) {
                 {/* Partner-job context banner — slim, dismissible (per-device).
                     Explains the change-request workflow up-front so dispatchers
                     don't discover gated fields by trying them. */}
-                {job.isPartnerJob && <PartnerJobBanner partnerName={job.partnerTenantName ?? undefined}/>}
+                {job.isPartnerJob && (
+                    <PartnerJobBanner
+                        partnerName={job.partnerTenantName ?? undefined}
+                        pairingId={job.partnerPairingId}
+                    />
+                )}
 
                 <RelatedJobTabs
                     sortedRelatedJobs={sortedRelatedJobs}
@@ -634,7 +639,6 @@ export function JobDetails({config}: JobDetailsProps) {
                     )}
                 </Box>
             </Paper>
-
             {/* Read Status Bar */}
             <Paper elevation={0} sx={rootStyles.readStatusBar} onClick={handleToggleReadStatus}>
                 <Chip
@@ -650,19 +654,29 @@ export function JobDetails({config}: JobDetailsProps) {
                     <Typography variant="body2" sx={rootStyles.readText}>
                         Read by <strong>{job.readTrackerInfo.readBy}</strong>
                         {(job.readTrackerInfo._readDateStr || job.readTrackerInfo.readDate) && (
-                            <Typography component="span" color="text.secondary" sx={{fontSize: 'inherit', ml: 0.5}}>
+                            <Typography
+                                component="span"
+                                sx={{
+                                    color: "text.secondary",
+                                    fontSize: 'inherit',
+                                    ml: 0.5
+                                }}>
                                 on {job.readTrackerInfo._readDateStr || String(job.readTrackerInfo.readDate)} {getTimezoneAbbreviation(window.TimeZone || '')}
                             </Typography>
                         )}
                     </Typography>
                 )}
                 {!isRead && (
-                    <Typography variant="body2" color="text.secondary" sx={rootStyles.readText}>
+                    <Typography
+                        variant="body2"
+                        sx={{
+                            color: "text.secondary",
+                            ...rootStyles.readText as object,
+                        }}>
                         Click to mark as read
                     </Typography>
                 )}
             </Paper>
-
             {/* POD Photos — only mount when there are photos or still loading */}
             {(deliveryPhotos.length > 0 || pickupPhotos.length > 0 || photosLoading) && (
                 <Box sx={rootStyles.photosWrapper}>
@@ -680,7 +694,6 @@ export function JobDetails({config}: JobDetailsProps) {
                     </Suspense>
                 </Box>
             )}
-
             {/* Price Change Modal */}
             {pendingRateChange && (
                 <PriceChangeModal
@@ -698,7 +711,6 @@ export function JobDetails({config}: JobDetailsProps) {
                     }}
                 />
             )}
-
             {/* Text Input Dialog */}
             <TextInputDialog
                 open={actions.textDialog.open}
@@ -708,7 +720,6 @@ export function JobDetails({config}: JobDetailsProps) {
                 onSubmit={actions.handleTextDialogSubmit}
                 onCancel={actions.handleTextDialogCancel}
             />
-
             {/* Inter-tenant Job Change Request dialog — opened when the partner-job
                 gate rejects an inline field edit (or when a click handler knows the
                 edit will be gated, e.g. Pricing). The history panel above
@@ -721,13 +732,13 @@ export function JobDetails({config}: JobDetailsProps) {
                 preInitialValue={changeRequestDialog.value}
                 lockedField={changeRequestDialog.locked}
                 partnerName={job.partnerTenantName}
+                pairingId={job.partnerPairingId}
                 onClose={() => setChangeRequestDialog({open: false})}
                 onSubmitted={() => {
                     setChangeRequestDialog({open: false});
                     void refreshAndNotify();
                 }}
             />
-
             {/* Universal Dispatch Dialog — replaces the legacy AutoCompleteDialog
                 courier picker. Same dialog handles Courier / Agent / NP / DFRNT
                 Partner dispatch; isRecurringJob switches it into recurring mode

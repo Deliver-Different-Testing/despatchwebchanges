@@ -44,7 +44,12 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
 
     const InfoRow = ({label, value}: { label: string; value: React.ReactNode }) => (
         <Box sx={{display: 'flex', justifyContent: 'space-between', py: 0.75, borderBottom: '1px solid', borderColor: 'divider', '&:last-child': {borderBottom: 'none'}}}>
-            <Typography variant="body2" color="text.secondary" sx={{fontWeight: 500}}>{label}</Typography>
+            <Typography
+                variant="body2"
+                sx={{
+                    color: "text.secondary",
+                    fontWeight: 500
+                }}>{label}</Typography>
             <Typography variant="body2">{value}</Typography>
         </Box>
     );
@@ -101,14 +106,12 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     />
                 </CardContent>
             </Card>
-
             {/* Loading */}
             {isLoadingDetails && (
                 <Box sx={{display: 'flex', justifyContent: 'center', py: 6}}>
                     <CircularProgress size={64} />
                 </Box>
             )}
-
             {/* Driver Summary Bar */}
             {!isLoadingDetails && driver && (
                 <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
@@ -138,7 +141,6 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     </Toolbar>
                 </Card>
             )}
-
             {/* Driver Information Grid */}
             {!isLoadingDetails && driver && (
                 <Box sx={{display: 'grid', gridTemplateColumns: {xs: '1fr', md: '1fr 1fr', lg: '1fr 1fr 1fr'}, gap: 2}}>
@@ -183,14 +185,20 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                     </InfoCard>
                 </Box>
             )}
-
             {/* Empty State */}
             {!isLoadingDetails && !driver && (
                 <Card sx={{borderRadius: 1}}>
                     <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8}}>
                         <PersonSearchIcon sx={{fontSize: 48, color: 'grey.400', mb: 1}} />
-                        <Typography variant="body1" sx={{fontWeight: 600}} color="text.secondary">No Driver Selected</Typography>
-                        <Typography variant="body2" color="text.secondary">Please select a driver from the search box above to view their details</Typography>
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                color: "text.secondary",
+                                fontWeight: 600
+                            }}>No Driver Selected</Typography>
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>Please select a driver from the search box above to view their details</Typography>
                     </Box>
                 </Card>
             )}

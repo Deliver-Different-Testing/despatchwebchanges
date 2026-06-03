@@ -24,6 +24,10 @@ public sealed class TenantInfoService(
     private string _cachedCountryCode;
     private int? _cachedStaffId;
     private int? _cachedContactId;
+    private bool _clientTypeIdRead;
+    private int? _cachedClientTypeId;
+    private bool _npAgentIdRead;
+    private int? _cachedNpAgentId;
     private TimeZoneInfo _cachedTimeZoneInfo;
     private CultureInfo _cachedCultureInfo;
 
@@ -94,11 +98,6 @@ public sealed class TenantInfoService(
     /// <returns>The current time in the specified timezone.</returns>
     public DateTime GetCurrentTimeFromTimeZone(TimeZone timeZone)
     {
-        if (timeZone is null)
-        {
-            return GetCurrentTenantTime();
-        }
-
         var cacheKey = $"timezone_info_{timeZone.Name}";
         var timeZoneInfo = cache.GetOrCreate(cacheKey, entry =>
         {
@@ -164,6 +163,28 @@ public sealed class TenantInfoService(
         return _cachedContactId.Value;
     }
 
+    /// <inheritdoc />
+    public int? GetClientTypeId()
+    {
+        if (_clientTypeIdRead) return _cachedClientTypeId;
+        _clientTypeIdRead = true;
+        var raw = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "ClientTypeId")?.Value;
+        _cachedClientTypeId = int.TryParse(raw, out var value) ? value : null;
+        return _cachedClientTypeId;
+    }
+
+    /// <inheritdoc />
+    public int? GetNpAgentId()
+    {
+        if (_npAgentIdRead) return _cachedNpAgentId;
+        _npAgentIdRead = true;
+        var raw = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "NpAgentId")?.Value;
+        _cachedNpAgentId = int.TryParse(raw, out var value) ? value : null;
+        return _cachedNpAgentId;
+    }
+
     /// <summary>
     /// Determines if the current tenant is a US-based tenant.
     /// </summary>
@@ -200,31 +221,6 @@ public sealed class TenantInfoService(
                 .FirstOrDefaultAsync();
 
             return staff;
-        });
-    }
-    
-    /// <inheritdoc />
-    public async Task<int?> GetCurrentNpAgentIdAsync()
-    {
-        var contactId = GetContactId();
-        if (contactId == 0)
-        {
-            return null;
-        }
-
-        var cacheKey = $"np_agent_id_{contactId}";
-
-        return await cache.GetOrCreateAsync(cacheKey, async entry =>
-        {
-            entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(8);
-
-            return await Context.TucClientContacts
-                .Where(c => c.UcctId == contactId
-                            && c.UcctClient != null
-                            && c.UcctClient.ClientTypeId == (int)ClientType.NetworkPartner
-                            && c.UcctClient.NpAgentId != null)
-                .Select(c => c.UcctClient.NpAgentId)
-                .FirstOrDefaultAsync();
         });
     }
 

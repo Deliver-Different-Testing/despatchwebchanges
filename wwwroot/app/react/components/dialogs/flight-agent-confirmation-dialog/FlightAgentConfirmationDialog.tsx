@@ -529,7 +529,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                         {mode === 'flight' ? <FlightIcon sx={{fontSize: 24}}/> : <PersonIcon sx={{fontSize: 24}}/>}
                     </Box>
                     <Box sx={{flex: 1}}>
-                        <Typography variant="h6" fontWeight={600}>
+                        <Typography variant="h6" sx={{
+                            fontWeight: 600
+                        }}>
                             {dialogTitle}
                         </Typography>
                         {mode === 'flight' && departureAirport && arrivalAirport && (
@@ -558,11 +560,15 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                 <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                                     {/* Departure */}
                                     <Box sx={{textAlign: 'center', flex: 1}}>
-                                        <Typography variant="h4" fontWeight={700} color="primary">
+                                        <Typography variant="h4" color="primary" sx={{
+                                            fontWeight: 700
+                                        }}>
                                             {departureAirport}
                                         </Typography>
                                         {departureTime && (
-                                            <Typography variant="body2" color="text.secondary">
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 {departureTime.format('MMM D, HH:mm')}
                                             </Typography>
                                         )}
@@ -582,11 +588,15 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                                     {/* Arrival */}
                                     <Box sx={{textAlign: 'center', flex: 1}}>
-                                        <Typography variant="h4" fontWeight={700} color="primary">
+                                        <Typography variant="h4" color="primary" sx={{
+                                            fontWeight: 700
+                                        }}>
                                             {arrivalAirport}
                                         </Typography>
                                         {arrivalTime && (
-                                            <Typography variant="body2" color="text.secondary">
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 {arrivalTime.format('MMM D, HH:mm')}
                                             </Typography>
                                         )}
@@ -602,7 +612,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                 <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
                                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
                                         <LocalShippingIcon color="action" fontSize="small"/>
-                                        <Typography variant="subtitle2" color="text.secondary">
+                                        <Typography variant="subtitle2" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             Cargo Facility
                                         </Typography>
                                     </Box>
@@ -610,12 +622,16 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                         <CircularProgress size={20}/>
                                     ) : cargoStatus ? (
                                         <>
-                                            <Typography variant="h6" fontWeight={600}>
+                                            <Typography variant="h6" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 {cargoStatus.hours}
                                             </Typography>
                                             <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5}}>
                                                 {getStatusIcon(cargoStatus.icon, cargoStatus.class)}
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     {cargoStatus.text}
                                                 </Typography>
                                             </Box>
@@ -627,14 +643,18 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                 <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
                                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
                                         <AccessTimeIcon color="action" fontSize="small"/>
-                                        <Typography variant="subtitle2" color="text.secondary">
+                                        <Typography variant="subtitle2" sx={{
+                                            color: "text.secondary"
+                                        }}>
                                             Processing Time
                                         </Typography>
                                     </Box>
                                     {isCalculatingTimes ? (
                                         <CircularProgress size={20}/>
                                     ) : cargoProcessing ? (
-                                        <Typography variant="h6" fontWeight={600}>
+                                        <Typography variant="h6" sx={{
+                                            fontWeight: 600
+                                        }}>
                                             {cargoProcessing.processingTimeMins} min
                                         </Typography>
                                     ) : null}
@@ -650,7 +670,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                     }}>
                                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                             <InventoryIcon color="action" fontSize="small"/>
-                                            <Typography variant="subtitle2" color="text.secondary">
+                                            <Typography variant="subtitle2" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 Package Ready
                                             </Typography>
                                         </Box>
@@ -675,16 +697,22 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                         />
                                     ) : packageReadyTime ? (
                                         <>
-                                            <Typography variant="h6" fontWeight={600}>
+                                            <Typography variant="h6" sx={{
+                                                fontWeight: 600
+                                            }}>
                                                 {packageReadyTime.format('HH:mm')}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary">
+                                            <Typography variant="body2" sx={{
+                                                color: "text.secondary"
+                                            }}>
                                                 {packageReadyTime.format('MMM D, YYYY')}
                                             </Typography>
                                             {cargoIndicator && (
                                                 <Box sx={{display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5}}>
                                                     {getStatusIcon(cargoIndicator.icon, cargoIndicator.class)}
-                                                    <Typography variant="body2" color="text.secondary">
+                                                    <Typography variant="body2" sx={{
+                                                        color: "text.secondary"
+                                                    }}>
                                                         {cargoIndicator.text}
                                                     </Typography>
                                                 </Box>
@@ -701,7 +729,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                 severity="warning"
                                 sx={{'& .MuiAlert-message': {width: '100%'}}}
                             >
-                                <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                                <Typography variant="subtitle2" gutterBottom sx={{
+                                    fontWeight: 600
+                                }}>
                                     Package Available After Cargo Hours
                                 </Typography>
                                 <Typography variant="body2" sx={{mb: 2}}>
@@ -731,7 +761,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                             <Box sx={{display: 'flex', gap: 2}}>
                                 {/* Deliver By */}
                                 <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         Deliver By
                                     </Typography>
                                     <DateTimePicker
@@ -758,7 +790,9 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
 
                                 {/* Available Time */}
                                 <Paper elevation={0} sx={{flex: 1, p: 2, border: '1px solid', borderColor: 'divider'}}>
-                                    <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                                    <Typography variant="subtitle2" gutterBottom sx={{
+                                        color: "text.secondary"
+                                    }}>
                                         Available Time
                                     </Typography>
                                     {isCalculatingTimes ? (
@@ -767,10 +801,14 @@ export const FlightAgentConfirmationDialog: React.FC<FlightAgentConfirmationDial
                                         <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                             {getStatusIcon(availableTime.icon, availableTime.class)}
                                             <Box>
-                                                <Typography variant="h6" fontWeight={600}>
+                                                <Typography variant="h6" sx={{
+                                                    fontWeight: 600
+                                                }}>
                                                     {availableTime.text}
                                                 </Typography>
-                                                <Typography variant="body2" color="text.secondary">
+                                                <Typography variant="body2" sx={{
+                                                    color: "text.secondary"
+                                                }}>
                                                     {availableTime.subtext}
                                                 </Typography>
                                             </Box>

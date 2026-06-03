@@ -73,7 +73,9 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
             })}>
                 <NotificationsActiveIcon sx={{fontSize: 24}} />
                 <Box sx={{flex: 1}}>
-                    <Typography variant="h6" fontWeight={600}>Price Change</Typography>
+                    <Typography variant="h6" sx={{
+                        fontWeight: 600
+                    }}>Price Change</Typography>
                     <Typography variant="body2" sx={{opacity: 0.9, mt: 0.25}}>{jobNumber}</Typography>
                 </Box>
                 <IconButton
@@ -83,10 +85,14 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                     <CloseIcon />
                 </IconButton>
             </Box>
-
             {/* Price comparison */}
             <Box sx={{p: '24px 24px 20px'}}>
-                <Typography variant="body2" color="text.secondary" sx={{mb: 2.5}}>
+                <Typography
+                    variant="body2"
+                    sx={{
+                        color: "text.secondary",
+                        mb: 2.5
+                    }}>
                     Updating this job changes its calculated price. How would you like to proceed?
                 </Typography>
 
@@ -101,19 +107,41 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                     mb: 0.5,
                 })}>
                     <Box sx={{textAlign: 'center', flex: 1}}>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{mb: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: "block",
+                                mb: 0.5
+                            }}>
                             Original
                         </Typography>
-                        <Typography variant="h6" fontWeight={600} color="text.secondary">
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 600,
+                                color: "text.secondary"
+                            }}>
                             ${oldPrice.toFixed(2)}
                         </Typography>
                     </Box>
                     <ArrowForwardIcon sx={{fontSize: 20, color: 'text.disabled', flexShrink: 0}} />
                     <Box sx={{textAlign: 'center', flex: 1}}>
-                        <Typography variant="caption" color="text.secondary" display="block" sx={{mb: 0.5}}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                color: "text.secondary",
+                                display: "block",
+                                mb: 0.5
+                            }}>
                             New
                         </Typography>
-                        <Typography variant="h6" fontWeight={700} color="primary.main">
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontWeight: 700,
+                                color: "primary.main"
+                            }}>
                             ${newPrice.toFixed(2)}
                         </Typography>
                     </Box>
@@ -122,7 +150,9 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                 {diff !== 0 && (
                     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5, mt: 1}}>
                         <PriceDelta oldPrice={oldPrice} newPrice={newPrice} />
-                        <Typography variant="body2" fontWeight={600} color={diffColor}>
+                        <Typography variant="body2" color={diffColor} sx={{
+                            fontWeight: 600
+                        }}>
                             {diff > 0 ? '+' : ''}{diff.toFixed(2)}
                         </Typography>
                     </Box>
@@ -136,14 +166,20 @@ export const PriceChangeModal: React.FC<PriceChangeModalProps> = ({
                         borderRadius: 2,
                     })}>
                         {description.split(/\r|\n/).filter(Boolean).map((line, i) => (
-                            <Typography key={i} variant="caption" color="text.secondary" display="block" lineHeight={1.8}>
+                            <Typography
+                                key={i}
+                                variant="caption"
+                                sx={{
+                                    color: "text.secondary",
+                                    display: "block",
+                                    lineHeight: 1.8
+                                }}>
                                 {line}
                             </Typography>
                         ))}
                     </Box>
                 )}
             </Box>
-
             {/* Actions */}
             <Box sx={{
                 px: 2,

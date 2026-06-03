@@ -654,13 +654,16 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         Assert.Contains("not active", result.Message);
     }
 
+    // Multi-active-pairings disambiguator. Both outbound and inbound partner jobs
+    // carry the source pairing on TucJob.PartnerPairingId (stamped at SendToPartner
+    // time / IM ingestion respectively). The resolver reads it directly — no link
+    // table involved.
     [Fact]
-    public async Task CreateLocalAsync_uses_pairing_from_JobPartnerDispatch_when_tenant_has_multiple_active_pairings()
+    public async Task CreateLocalAsync_uses_pairing_from_TucJob_PartnerPairingId_when_multiple_actives()
     {
-        await SeedJobAsync();
         var firstId = await SeedPairingAsync(partnerTenantId: "200");
         var secondId = await SeedPairingAsync(partnerTenantId: "300");
-        await SeedJobPartnerDispatchAsync(jobId: 1, pairingId: secondId);
+        await SeedJobAsync(partnerPairingId: secondId);
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -676,12 +679,11 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task CreateLocalAsync_explicit_pairingId_wins_over_JobPartnerDispatch()
+    public async Task CreateLocalAsync_explicit_pairingId_wins_over_TucJob_PartnerPairingId()
     {
-        await SeedJobAsync();
         var firstId = await SeedPairingAsync(partnerTenantId: "200");
         var secondId = await SeedPairingAsync(partnerTenantId: "300");
-        await SeedJobPartnerDispatchAsync(jobId: 1, pairingId: firstId);
+        await SeedJobAsync(partnerPairingId: firstId);
         var service = CreateService();
 
         var result = await service.CreateLocalAsync(new CreateJobChangeRequestRequest
@@ -1214,7 +1216,8 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     private async Task SeedJobAsync(short initialQty = 3, decimal? initialAgreedRate = null,
         bool unsetPartnerJobGuid = false, string? initialNotes = "original notes",
         string? pickupLine1 = null, string? pickupLine2 = null,
-        string? deliveryLine1 = null, string? deliveryLine2 = null)
+        string? deliveryLine1 = null, string? deliveryLine2 = null,
+        int? partnerPairingId = null)
     {
         await using var ctx = CreateContext();
         ctx.TucJobs.Add(new TucJob
@@ -1225,6 +1228,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
             UcjbQty = initialQty,
             UcjbNotes = initialNotes,
             PartnerJobGuid = unsetPartnerJobGuid ? null : Guid.NewGuid(),
+            PartnerPairingId = partnerPairingId,
             PartnerAgreedRate = initialAgreedRate,
             PickupAddressLine1 = pickupLine1,
             PickupAddressLine2 = pickupLine2,
@@ -1250,17 +1254,6 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         ctx.IntMgrPartnerPairings.Add(pairing);
         await ctx.SaveChangesAsync();
         return pairing.Id;
-    }
-
-    private async Task SeedJobPartnerDispatchAsync(int jobId, int pairingId)
-    {
-        await using var ctx = CreateContext();
-        ctx.JobPartnerDispatches.Add(new JobPartnerDispatch
-        {
-            JobId = jobId,
-            PartnerPairingId = pairingId
-        });
-        await ctx.SaveChangesAsync();
     }
 
     private async Task<Guid?> GetPartnerJobGuidAsync(int jobId)

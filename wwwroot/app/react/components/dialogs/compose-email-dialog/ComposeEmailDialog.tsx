@@ -159,7 +159,9 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
                     <EmailIcon sx={{ fontSize: 28 }} />
                 </Box>
                 <Box sx={{ flex: 1 }}>
-                    <Typography variant="h5" fontWeight={600}>Compose Email</Typography>
+                    <Typography variant="h5" sx={{
+                        fontWeight: 600
+                    }}>Compose Email</Typography>
                     <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>Send an email to selected couriers</Typography>
                 </Box>
                 <IconButton onClick={handleClose} sx={{ color: 'white', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
@@ -169,7 +171,13 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
             <DialogContent>
                 {/* Recipients */}
                 <Box sx={{mb: 2}}>
-                    <Typography variant="caption" color="text.secondary" sx={{mb: 0.5, display: 'block'}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            mb: 0.5,
+                            display: 'block'
+                        }}>
                         Recipients ({selectedCouriers.length})
                     </Typography>
                     <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 0.5}}>
@@ -181,7 +189,13 @@ export const ComposeEmailDialog: React.FC<ComposeEmailDialogProps> = ({
 
                 {/* Quick Templates */}
                 <Box sx={{mb: 2}}>
-                    <Typography variant="caption" color="text.secondary" sx={{mb: 0.5, display: 'block'}}>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: "text.secondary",
+                            mb: 0.5,
+                            display: 'block'
+                        }}>
                         Quick Templates
                     </Typography>
                     <Box sx={{display: 'flex', gap: 1, flexWrap: 'wrap'}}>

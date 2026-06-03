@@ -110,7 +110,9 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                         <DateRangeIcon sx={{ fontSize: 28 }} />
                     </Box>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h5" fontWeight={600}>
+                        <Typography variant="h5" sx={{
+                            fontWeight: 600
+                        }}>
                             Select Date Range
                         </Typography>
                         <Typography variant="body2" sx={{ opacity: 0.85, mt: 0.25 }}>
@@ -155,10 +157,14 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                         })}
                     >
                         <CalendarIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             From
                         </Typography>
-                        <Typography variant="subtitle2" fontWeight={600}>
+                        <Typography variant="subtitle2" sx={{
+                            fontWeight: 600
+                        }}>
                             {startDate?.format('MMM D, YYYY')}
                         </Typography>
                     </Paper>
@@ -179,10 +185,14 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                         })}
                     >
                         <CalendarIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" sx={{
+                            color: "text.secondary"
+                        }}>
                             To
                         </Typography>
-                        <Typography variant="subtitle2" fontWeight={600}>
+                        <Typography variant="subtitle2" sx={{
+                            fontWeight: 600
+                        }}>
                             {endDate?.format('MMM D, YYYY')}
                         </Typography>
                     </Paper>
@@ -199,8 +209,10 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                     >
                         <Typography
                             variant="subtitle2"
-                            fontWeight={600}
                             color={isValidRange ? 'success.main' : 'error.main'}
+                            sx={{
+                                fontWeight: 600
+                            }}
                         >
                             {isValidRange ? `${duration} Day${duration !== 1 ? 's' : ''}` : 'Invalid'}
                         </Typography>
@@ -212,7 +224,9 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                     <Stack
                         direction={{ xs: 'column', md: 'row' }}
                         spacing={3}
-                        justifyContent="center"
+                        sx={{
+                            justifyContent: "center"
+                        }}
                     >
                         {/* Start Date Calendar */}
                         <Paper
@@ -232,7 +246,9 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                                     borderBottom: `1px solid ${theme.palette.divider}`,
                                 })}
                             >
-                                <Typography variant="subtitle2" fontWeight={600} color="primary">
+                                <Typography variant="subtitle2" color="primary" sx={{
+                                    fontWeight: 600
+                                }}>
                                     Start Date
                                 </Typography>
                             </Box>
@@ -266,7 +282,9 @@ export const DateRangeDialog: React.FC<DateRangeDialogProps> = ({
                                     borderBottom: `1px solid ${theme.palette.divider}`,
                                 })}
                             >
-                                <Typography variant="subtitle2" fontWeight={600} color="primary">
+                                <Typography variant="subtitle2" color="primary" sx={{
+                                    fontWeight: 600
+                                }}>
                                     End Date
                                 </Typography>
                             </Box>

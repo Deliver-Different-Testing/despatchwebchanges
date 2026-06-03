@@ -159,7 +159,9 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps({onSearchChange}));
 
             const searchInput = screen.getByPlaceholderText('Search jobs...');
-            await userEvent.type(searchInput, 'test');
+            const user = userEvent.setup();
+            await user.click(searchInput);
+            await user.paste('test');
 
             await waitFor(() => {
                 expect(onSearchChange).toHaveBeenCalledWith('test');
@@ -202,7 +204,9 @@ describe('RecurringJobsToolbar', () => {
             renderWithProviders(createDefaultProps());
 
             const courierInput = screen.getByRole('combobox', {name: /courier/i});
-            await userEvent.type(courierInput, 'John');
+            const user = userEvent.setup();
+            await user.click(courierInput);
+            await user.paste('John');
 
             // Verify useCourierSearch is called
             expect(mockUseCourierSearch).toHaveBeenCalled();
