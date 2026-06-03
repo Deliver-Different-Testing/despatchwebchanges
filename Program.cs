@@ -205,6 +205,7 @@ app.UseSecurityHeaders();
 app.UseCookiePolicy();
 app.UseRouting();
 app.UseAuthentication();
+app.UseConnectedTenantRejection();
 app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
