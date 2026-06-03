@@ -26,8 +26,13 @@ public sealed class TenantInfoService(
     private int? _cachedContactId;
     private bool _clientTypeIdRead;
     private int? _cachedClientTypeId;
+    private bool _clientTypeIdClaimAbsent;
     private bool _npAgentIdRead;
     private int? _cachedNpAgentId;
+    private bool _npAgentIdClaimAbsent;
+    private bool _npAgentIdClaimEmpty;
+    private bool _clientIdRead;
+    private int? _cachedClientId;
     private TimeZoneInfo _cachedTimeZoneInfo;
     private CultureInfo _cachedCultureInfo;
 
@@ -167,22 +172,91 @@ public sealed class TenantInfoService(
     public int? GetClientTypeId()
     {
         if (_clientTypeIdRead) return _cachedClientTypeId;
-        _clientTypeIdRead = true;
-        var raw = contextAccessor.HttpContext?.User.Claims
-            .FirstOrDefault(x => x.Type == "ClientTypeId")?.Value;
-        _cachedClientTypeId = int.TryParse(raw, out var value) ? value : null;
+        ReadClientTypeIdClaim();
         return _cachedClientTypeId;
+    }
+
+    /// <inheritdoc />
+    public bool ClientTypeIdClaimAbsent
+    {
+        get
+        {
+            if (!_clientTypeIdRead) ReadClientTypeIdClaim();
+            return _clientTypeIdClaimAbsent;
+        }
+    }
+
+    private void ReadClientTypeIdClaim()
+    {
+        _clientTypeIdRead = true;
+        var claim = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "ClientTypeId");
+        if (claim is null)
+        {
+            _clientTypeIdClaimAbsent = true;
+            _cachedClientTypeId = null;
+            return;
+        }
+        _cachedClientTypeId = int.TryParse(claim.Value, out var value) ? value : null;
     }
 
     /// <inheritdoc />
     public int? GetNpAgentId()
     {
         if (_npAgentIdRead) return _cachedNpAgentId;
-        _npAgentIdRead = true;
-        var raw = contextAccessor.HttpContext?.User.Claims
-            .FirstOrDefault(x => x.Type == "NpAgentId")?.Value;
-        _cachedNpAgentId = int.TryParse(raw, out var value) ? value : null;
+        ReadNpAgentIdClaim();
         return _cachedNpAgentId;
+    }
+
+    /// <inheritdoc />
+    public bool NpAgentIdClaimAbsent
+    {
+        get
+        {
+            if (!_npAgentIdRead) ReadNpAgentIdClaim();
+            return _npAgentIdClaimAbsent;
+        }
+    }
+
+    /// <inheritdoc />
+    public bool NpAgentIdClaimEmpty
+    {
+        get
+        {
+            if (!_npAgentIdRead) ReadNpAgentIdClaim();
+            return _npAgentIdClaimEmpty;
+        }
+    }
+
+    private void ReadNpAgentIdClaim()
+    {
+        _npAgentIdRead = true;
+        var claim = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "NpAgentId");
+        if (claim is null)
+        {
+            _npAgentIdClaimAbsent = true;
+            _cachedNpAgentId = null;
+            return;
+        }
+        if (string.IsNullOrEmpty(claim.Value))
+        {
+            _npAgentIdClaimEmpty = true;
+            _cachedNpAgentId = null;
+            return;
+        }
+        _cachedNpAgentId = int.TryParse(claim.Value, out var value) ? value : null;
+    }
+
+    /// <inheritdoc />
+    public int? GetClientId()
+    {
+        if (_clientIdRead) return _cachedClientId;
+        _clientIdRead = true;
+        var raw = contextAccessor.HttpContext?.User.Claims
+            .FirstOrDefault(x => x.Type == "ClientID")?.Value;
+        _cachedClientId = int.TryParse(raw, out var value) ? value : null;
+        return _cachedClientId;
     }
 
     /// <summary>

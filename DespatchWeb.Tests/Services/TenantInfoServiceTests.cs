@@ -493,4 +493,91 @@ public class TenantInfoServiceTests : IAsyncDisposable
         Assert.Equal(77, service.GetNpAgentId());
         Assert.Equal(77, service.GetNpAgentId());
     }
+
+    [Fact]
+    public void ClientTypeIdClaimAbsent_ClaimMissing_ReturnsTrue()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.True(service.ClientTypeIdClaimAbsent);
+    }
+
+    [Fact]
+    public void ClientTypeIdClaimAbsent_ClaimPresentButEmpty_ReturnsFalse()
+    {
+        // Spec §3.3: empty-string ≠ absent. The claim being present, even as "",
+        // signals Hub-authoritative data — no DB fallback.
+        SetupHttpContextWithClaims(("ClientTypeId", string.Empty));
+        var service = CreateService();
+
+        Assert.False(service.ClientTypeIdClaimAbsent);
+    }
+
+    [Fact]
+    public void ClientTypeIdClaimAbsent_ClaimPresent_ReturnsFalse()
+    {
+        SetupHttpContextWithClaims(("ClientTypeId", "3"));
+        var service = CreateService();
+
+        Assert.False(service.ClientTypeIdClaimAbsent);
+    }
+
+    [Fact]
+    public void NpAgentIdClaimAbsent_ClaimMissing_ReturnsTrueAndEmptyFalse()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.True(service.NpAgentIdClaimAbsent);
+        Assert.False(service.NpAgentIdClaimEmpty);
+    }
+
+    [Fact]
+    public void NpAgentIdClaimEmpty_ClaimPresentButEmpty_ReturnsTrueAndAbsentFalse()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", string.Empty));
+        var service = CreateService();
+
+        Assert.False(service.NpAgentIdClaimAbsent);
+        Assert.True(service.NpAgentIdClaimEmpty);
+    }
+
+    [Fact]
+    public void NpAgentIdClaim_ParseableValue_BothFlagsFalse()
+    {
+        SetupHttpContextWithClaims(("NpAgentId", "42"));
+        var service = CreateService();
+
+        Assert.False(service.NpAgentIdClaimAbsent);
+        Assert.False(service.NpAgentIdClaimEmpty);
+        Assert.Equal(42, service.GetNpAgentId());
+    }
+
+    [Fact]
+    public void GetClientId_WithValidClaim_ReturnsValue()
+    {
+        SetupHttpContextWithClaims(("ClientID", "123"));
+        var service = CreateService();
+
+        Assert.Equal(123, service.GetClientId());
+    }
+
+    [Fact]
+    public void GetClientId_WithNoClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims();
+        var service = CreateService();
+
+        Assert.Null(service.GetClientId());
+    }
+
+    [Fact]
+    public void GetClientId_WithEmptyClaim_ReturnsNull()
+    {
+        SetupHttpContextWithClaims(("ClientID", string.Empty));
+        var service = CreateService();
+
+        Assert.Null(service.GetClientId());
+    }
 }
