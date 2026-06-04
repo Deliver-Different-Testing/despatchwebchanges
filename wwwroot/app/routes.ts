@@ -339,6 +339,7 @@ class RouterConfig {
             template: `
                 <md-content class="md-dense task-dashboard-view">
                     <react-app-shell
+                        section="Dashboards"
                         title="Task Dashboard"
                         layouts="layouts"
                         current-layout-name="currentLayoutName"
