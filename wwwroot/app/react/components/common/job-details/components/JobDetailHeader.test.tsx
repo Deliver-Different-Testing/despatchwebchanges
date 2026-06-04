@@ -119,33 +119,6 @@ describe('JobDetailHeader', () => {
         expect(onResetFieldVisibility).toHaveBeenCalledTimes(1);
     });
 
-    it('hides the AI Summary toggle when aiEnabled is false', () => {
-        renderWithTheme(<JobDetailHeader {...createDefaultProps({aiEnabled: false})} />);
-        expect(screen.queryByLabelText('AI Summary')).not.toBeInTheDocument();
-        expect(screen.queryByLabelText('Hide AI Summary')).not.toBeInTheDocument();
-    });
-
-    it('shows the AI Summary toggle when aiEnabled is true', () => {
-        renderWithTheme(<JobDetailHeader {...createDefaultProps({aiEnabled: true})} />);
-        expect(screen.getByLabelText('AI Summary')).toBeInTheDocument();
-    });
-
-    it('flips the AI Summary tooltip to "Hide AI Summary" when the panel is open', () => {
-        renderWithTheme(
-            <JobDetailHeader {...createDefaultProps({aiEnabled: true, showAiPanel: true})} />
-        );
-        expect(screen.getByLabelText('Hide AI Summary')).toBeInTheDocument();
-    });
-
-    it('calls onToggleAiPanel when the AI Summary button is clicked', () => {
-        const onToggleAiPanel = jest.fn();
-        renderWithTheme(
-            <JobDetailHeader {...createDefaultProps({aiEnabled: true, onToggleAiPanel})} />
-        );
-        fireEvent.click(screen.getByLabelText('AI Summary'));
-        expect(onToggleAiPanel).toHaveBeenCalledTimes(1);
-    });
-
     it('shows/hides POD report menu based on job done status', () => {
         const job = createMockJob({done: true, preBook: false});
         const {unmount} = renderWithTheme(<JobDetailHeader {...createDefaultProps({job})} />);

@@ -43,7 +43,7 @@ describe('AiSummaryCard', () => {
     it('auto-fetches and renders verdict + key facts + attention + timeline', async () => {
         const mockFetch = jest.fn().mockResolvedValue(buildSummary());
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 
@@ -61,7 +61,7 @@ describe('AiSummaryCard', () => {
             buildSummary({attention: [], severity: 'Ok', verdict: '✅ On track'})
         );
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         expect(await screen.findByText('✅ On track')).toBeInTheDocument();
         expect(screen.queryByText('Needs attention')).not.toBeInTheDocument();
@@ -72,7 +72,7 @@ describe('AiSummaryCard', () => {
             buildSummary({timeline: [], highlights: []})
         );
 
-        renderWithTheme(<AiSummaryCard title="AI Operations" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Operations" fetchSummary={mockFetch} />);
 
         await screen.findByText('🚨 Overdue for delivery — courier stale');
         expect(screen.queryByText('Timeline')).not.toBeInTheDocument();
@@ -81,7 +81,7 @@ describe('AiSummaryCard', () => {
     it('refresh button re-invokes fetchSummary', async () => {
         const mockFetch = jest.fn().mockResolvedValue(buildSummary());
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
 
@@ -93,7 +93,7 @@ describe('AiSummaryCard', () => {
     it('renders error message when fetch rejects', async () => {
         const mockFetch = jest.fn().mockRejectedValue(new Error('boom'));
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         expect(await screen.findByText('boom')).toBeInTheDocument();
     });
@@ -106,7 +106,7 @@ describe('AiSummaryCard', () => {
 
         const mockFetch = jest.fn().mockResolvedValue(buildSummary());
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         await screen.findByText('🚨 Overdue for delivery — courier stale');
         fireEvent.click(screen.getByLabelText('Copy briefing'));
@@ -121,7 +121,7 @@ describe('AiSummaryCard', () => {
     it('reveals highlights when the toggle is activated', async () => {
         const mockFetch = jest.fn().mockResolvedValue(buildSummary());
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         await screen.findByText('🚨 Overdue for delivery — courier stale');
         // Highlights collapsed by default — text exists in collapsed Collapse, so use the toggle
@@ -130,13 +130,50 @@ describe('AiSummaryCard', () => {
         await screen.findByText('Customer requested call before delivery');
     });
 
+    describe('collapsible mode', () => {
+        it('starts collapsed and defers the fetch until first expansion', async () => {
+            const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+
+            renderWithTheme(
+                <AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} collapsible />
+            );
+
+            // Body content stays hidden and no fetch fires.
+            expect(mockFetch).not.toHaveBeenCalled();
+            expect(screen.queryByText('🚨 Overdue for delivery — courier stale')).not.toBeInTheDocument();
+
+            // Clicking the chevron expands and triggers the first fetch.
+            fireEvent.click(screen.getByLabelText('Expand DFRNT briefing'));
+            await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+            expect(await screen.findByText('🚨 Overdue for delivery — courier stale')).toBeInTheDocument();
+        });
+
+        it('does not refetch when collapsing and re-expanding', async () => {
+            const mockFetch = jest.fn().mockResolvedValue(buildSummary());
+
+            renderWithTheme(
+                <AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} collapsible />
+            );
+
+            // First expansion → fetch fires once.
+            fireEvent.click(screen.getByLabelText('Expand DFRNT briefing'));
+            await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(1));
+            await screen.findByText('🚨 Overdue for delivery — courier stale');
+
+            // Collapse, then expand again — the cached summary stays loaded.
+            fireEvent.click(screen.getByLabelText('Collapse DFRNT briefing'));
+            fireEvent.click(screen.getByLabelText('Expand DFRNT briefing'));
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+        });
+    });
+
     it('shows a stop button while loading and clears it on success', async () => {
         let resolveFetch: (value: StructuredSummaryResponse) => void = () => {};
         const mockFetch = jest.fn(() => new Promise<StructuredSummaryResponse>((resolve) => {
             resolveFetch = resolve;
         }));
 
-        renderWithTheme(<AiSummaryCard title="AI Job Briefing" fetchSummary={mockFetch} />);
+        renderWithTheme(<AiSummaryCard title="DFRNT Job Briefing" fetchSummary={mockFetch} />);
 
         expect(await screen.findByLabelText('Stop generating')).toBeInTheDocument();
 

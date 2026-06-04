@@ -27,7 +27,7 @@ function renderSummaryPanel(container: HTMLElement, jobId: number): void {
     root.render(
         <ThemeProvider theme={currentTheme}>
             <AiSummaryCard
-                title="AI Job Briefing"
+                title="DFRNT Job Briefing"
                 fetchSummary={(signal) => summarizeJob(jobId, {signal})}
             />
         </ThemeProvider>
@@ -46,7 +46,7 @@ function renderOperationsInsightsPanel(container: HTMLElement): void {
     root.render(
         <ThemeProvider theme={currentTheme}>
             <AiSummaryCard
-                title="AI Operations Insights"
+                title="DFRNT Operations Insights"
                 fetchSummary={(signal) => summarizeOperations({signal})}
             />
         </ThemeProvider>

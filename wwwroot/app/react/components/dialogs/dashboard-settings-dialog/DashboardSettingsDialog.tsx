@@ -346,7 +346,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             <Typography variant="h6" sx={{
                                 fontWeight: 600
                             }}>
-                                AI Briefings
+                                DFRNT Briefings
                             </Typography>
                         </Stack>
 
@@ -377,7 +377,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         <Typography variant="subtitle2" sx={{
                                             fontWeight: 600
                                         }}>
-                                            Show AI briefing cards
+                                            Show DFRNT briefing cards
                                         </Typography>
                                         <Chip
                                             label="BETA"
@@ -394,7 +394,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     <Typography variant="body2" sx={{
                                         color: "text.secondary"
                                     }}>
-                                        Off by default. Turn on to surface AI-generated briefings on the
+                                        Off by default. Turn on to surface DFRNT-generated briefings on the
                                         job details page, the task dashboard, the operations overview, and
                                         the driver compliance tab. The briefing leads with a verdict, what
                                         needs attention, and the key facts — no need to scroll the page.
