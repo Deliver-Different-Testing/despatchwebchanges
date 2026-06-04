@@ -214,19 +214,10 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         try {
             await navigator.clipboard.writeText(text);
             setCopyTooltip('Copied!');
-            setTimeout(() => setCopyTooltip('Copy briefing'), 2000);
         } catch {
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            setCopyTooltip('Copied!');
-            setTimeout(() => setCopyTooltip('Copy briefing'), 2000);
+            setCopyTooltip('Copy failed');
         }
+        setTimeout(() => setCopyTooltip('Copy briefing'), 2000);
     }, [summary]);
 
     // First-fetch trigger. Non-collapsible cards start expanded, so this

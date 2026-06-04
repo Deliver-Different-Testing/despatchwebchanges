@@ -31,7 +31,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Alert from '@mui/material/Alert';
 import CloseIcon from '@mui/icons-material/Close';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import SendIcon from '@mui/icons-material/Send';
+import HandshakeIcon from '@mui/icons-material/Handshake';
+import SupportAgentIcon from '@mui/icons-material/SupportAgent';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import type {SxProps, Theme} from '@mui/material';
 
 import {autocompleteSearch} from '../../../services/jobDetailApi';
@@ -242,11 +244,24 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
     }, [selectedType, partnerOptions, selectedPartnerId, agreedRate, destination, onSendToPartner, onDispatchCourier]);
 
     const showPartnerRatePanel = selectedType === 'DfrntPartner' && selectedPartnerId !== '';
-    const isDfrnt = selectedType === 'DfrntPartner';
-    const confirmLabel = isDfrnt
-        ? (submitting ? 'Sending...' : 'Send to Partner')
-        : (submitting ? 'Dispatching...' : 'Dispatch');
-    const confirmIcon = isDfrnt ? <SendIcon/> : <LocalShippingIcon/>;
+
+    // Per-type confirm label + icon. Courier keeps the original "Dispatch" verb;
+    // the other three are framed as "Send to ..." so it's obvious which lane the
+    // job is heading down (and gives DFRNT Partner its own visual identity).
+    const CONFIRM_LABELS: Record<DispatchType, {idle: string; busy: string}> = {
+        Courier: {idle: 'Dispatch', busy: 'Dispatching...'},
+        DfrntPartner: {idle: 'Send to Partner', busy: 'Sending...'},
+        Agent: {idle: 'Send to Agent', busy: 'Sending...'},
+        NP: {idle: 'Send to NP', busy: 'Sending...'},
+    };
+    const CONFIRM_ICONS: Record<DispatchType, React.ReactElement> = {
+        Courier: <LocalShippingIcon/>,
+        DfrntPartner: <HandshakeIcon/>,
+        Agent: <SupportAgentIcon/>,
+        NP: <AccountTreeIcon/>,
+    };
+    const confirmLabel = submitting ? CONFIRM_LABELS[selectedType].busy : CONFIRM_LABELS[selectedType].idle;
+    const confirmIcon = CONFIRM_ICONS[selectedType];
 
     // Wrap the disabled DFRNT Partner radio in a Tooltip — Tooltip needs a
     // non-disabled child to receive pointer events, hence the <span>.
@@ -333,8 +348,6 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                 onChange={(e) => handleTypeChange(e.target.value as DispatchType)}
                             >
                                 <FormControlLabel value="Courier" control={<Radio size="small"/>} label="Courier"/>
-                                <FormControlLabel value="Agent" control={<Radio size="small"/>} label="Agent"/>
-                                <FormControlLabel value="NP" control={<Radio size="small"/>} label="NP"/>
                                 {dfrntState.disabled ? (
                                     <Tooltip title={dfrntState.tooltip} placement="top">
                                         <span>{dfrntRadio}</span>
@@ -342,6 +355,8 @@ export const DispatchDialog: React.FC<DispatchDialogProps> = ({
                                 ) : (
                                     dfrntRadio
                                 )}
+                                <FormControlLabel value="Agent" control={<Radio size="small"/>} label="Agent"/>
+                                <FormControlLabel value="NP" control={<Radio size="small"/>} label="NP"/>
                             </RadioGroup>
                         </Paper>
                     </Box>

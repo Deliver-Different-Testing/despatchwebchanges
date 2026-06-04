@@ -803,6 +803,22 @@ public class JobMappingsTests
         // Assert
         Assert.True(result.IsArchived);
     }
+    
+    [Fact]
+    public void JobDispatchMapping_SetsPreBookFalse()
+    {
+        var liveJob = new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB-1",
+            UcjbDate = new DateTime(2024, 1, 15)
+        };
+
+        var mapping = JobMappings.JobDispatchMapping(isUsCustomer: false).Compile();
+        var result = mapping(liveJob);
+
+        Assert.False(result.PreBook);
+    }
 
     [Fact]
     public void JobArchiveMapping_MapsBasicFieldsCorrectly()
