@@ -21,13 +21,19 @@ public partial class DespatchContext
 
     /// <summary>
     /// True when no row filter applies — background worker, scaffolding,
-    /// design-time, DfrntAdmin (5), or Tenant (4). Exposed for EF query
-    /// filter expressions.
+    /// design-time, DfrntAdmin (5), Tenant (4), or Internal (1). Internal is
+    /// a transitional bypass: spec §"Data scope per ClientType" collapses it
+    /// into Customer, but until the Phase 1.3 reparent of DFRNT staff to
+    /// DFRNTAdmin (5) ships (see docs/CLIENT-TYPE-FILTERING-CURRENT-STATE-2026-06-02.md),
+    /// ClientTypeId = 1 still belongs to dispatch operations users who must
+    /// see every job and every courier. Drop the IsInternal arm once that
+    /// reparent has run.
     /// </summary>
     public bool CurrentBypassFilters =>
         CurrentScope.BypassFilters
         || CurrentScope.IsDfAdmin
-        || CurrentScope.IsTenant;
+        || CurrentScope.IsTenant
+        || CurrentScope.IsInternal;
 
     /// <summary>NP scope value used by the NetworkPartner predicate branch.</summary>
     public int? CurrentNpAgentId => CurrentScope.NpAgentId;
@@ -545,7 +551,8 @@ public partial class DespatchContext
 
         // TucCourier — NP-scoped table per spec §2. No customer-side column, so
         // Customer-scoped users see no rows by default (DespatchWeb is not a
-        // customer-facing surface; this is the safe default).
+        // customer-facing surface; this is the safe default). Internal (1) is
+        // bypassed via CurrentBypassFilters until the Phase 1.3 reparent ships.
         modelBuilder.Entity<TucCourier>().HasQueryFilter(c =>
             CurrentBypassFilters
             || (CurrentIsNetworkPartner && CurrentNpAgentId != null && c.NpAgentId == CurrentNpAgentId));

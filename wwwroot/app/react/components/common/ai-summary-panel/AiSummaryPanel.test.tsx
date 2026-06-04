@@ -49,16 +49,16 @@ describe('AiSummaryPanel', () => {
         it('renders collapsed by default with title and placeholder text', () => {
             const mockFetch = createMockFetch();
             renderWithTheme(
-                <AiSummaryPanel title="AI Summary" fetchSummary={mockFetch} />
+                <AiSummaryPanel title="DFRNT Summary" fetchSummary={mockFetch} />
             );
 
-            expect(screen.getByText('AI Summary')).toBeInTheDocument();
+            expect(screen.getByText('DFRNT Summary')).toBeInTheDocument();
             // Should not have fetched yet
             expect(mockFetch).not.toHaveBeenCalled();
 
             // MUI Collapse renders content in DOM even when collapsed (for animation),
             // so the placeholder text is present but visually hidden via Collapse.
-            const placeholder = screen.getByText('Click to generate an AI summary.');
+            const placeholder = screen.getByText('Click to generate a DFRNT summary.');
             expect(placeholder).toBeInTheDocument();
         });
     });
@@ -67,11 +67,11 @@ describe('AiSummaryPanel', () => {
         it('fetches summary when expanded by clicking the header', async () => {
             const mockFetch = createMockFetch('Generated summary');
             renderWithTheme(
-                <AiSummaryPanel title="AI Summary" fetchSummary={mockFetch} />
+                <AiSummaryPanel title="DFRNT Summary" fetchSummary={mockFetch} />
             );
 
             // Click to expand
-            fireEvent.click(screen.getByText('AI Summary'));
+            fireEvent.click(screen.getByText('DFRNT Summary'));
 
             await waitFor(() => {
                 expect(mockFetch).toHaveBeenCalledTimes(1);

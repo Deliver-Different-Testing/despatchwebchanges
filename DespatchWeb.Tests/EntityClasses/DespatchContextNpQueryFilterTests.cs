@@ -42,6 +42,12 @@ public class DespatchContextNpQueryFilterTests : IAsyncDisposable
     private static ScopeContext TenantScope() =>
         new(ClientTypeId: (int)ClientType.Tenant, ClientId: null, NpAgentId: null);
 
+    // Internal is treated as bypass while the Phase 1.3 reparent of DFRNT staff
+    // to DFRNTAdmin (5) is pending. ClientId is populated to prove the customer-side
+    // predicate is NOT applied to Internal — they get the full row set.
+    private static ScopeContext InternalScope(int? clientId = 7) =>
+        new(ClientTypeId: (int)ClientType.Internal, ClientId: clientId, NpAgentId: null);
+
     // ---- NetworkPartner branch --------------------------------------------------
 
     [Fact]
@@ -340,6 +346,66 @@ public class DespatchContextNpQueryFilterTests : IAsyncDisposable
         var count = await context.TucJobs.CountAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(2, count);
+    }
+
+    [Fact]
+    public async Task TucJobs_Internal_ReturnsAllRows()
+    {
+        // Internal staff (ClientTypeId = 1) are bypassed transitionally — they
+        // must see every job regardless of UcjbClientId / NpAgentId so the
+        // dispatch flow keeps working until Phase 1.3 reparents them to
+        // DFRNTAdmin (5). Mixing rows across NP / customer / unscoped proves
+        // the bypass is total, not just one branch.
+        await using (var seed = _db.CreateContext())
+        {
+            seed.TucJobs.AddRange(
+                new TucJob { UcjbId = 1, UcjbNumber = "NP", NpAgentId = 77 },
+                new TucJob { UcjbId = 2, UcjbNumber = "CUST", UcjbClientId = 7 },
+                new TucJob { UcjbId = 3, UcjbNumber = "FOREIGN", UcjbClientId = 99 },
+                new TucJob { UcjbId = 4, UcjbNumber = "BARE" }
+            );
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(InternalScope());
+        var count = await context.TucJobs.CountAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(4, count);
+    }
+
+    [Fact]
+    public async Task TucCouriers_Internal_ReturnsAllRows()
+    {
+        // Regression guard for the original dispatch bug: Internal users must
+        // see every courier (NpAgentId set or not) so the Dispatch dialog
+        // dropdown populates.
+        await using (var seed = _db.CreateContext())
+        {
+            seed.TucCouriers.AddRange(
+                new TucCourier
+                {
+                    UccrId = 1, Code = "C1", UccrName = "A", UccrSurname = "X",
+                    UccrEmail = "a@t.com", UccrMobile = "1",
+                    Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T",
+                    NpAgentId = 77
+                },
+                new TucCourier
+                {
+                    UccrId = 2, Code = "C2", UccrName = "B", UccrSurname = "Y",
+                    UccrEmail = "b@t.com", UccrMobile = "2",
+                    Created = TestDates.Now, CreatedBy = "T", LastModified = TestDates.Now, LastModifiedBy = "T",
+                    NpAgentId = null
+                }
+            );
+            await seed.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        await using var context = CreateContext(InternalScope());
+        var ids = await context.TucCouriers.Select(c => c.UccrId)
+            .OrderBy(id => id)
+            .ToListAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal([1, 2], ids);
     }
 
     [Fact]

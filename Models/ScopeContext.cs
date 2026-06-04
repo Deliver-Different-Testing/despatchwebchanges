@@ -37,9 +37,18 @@ public sealed record ScopeContext(
     public bool IsConnectedTenant => ClientTypeId == (int)ClientType.ConnectedTenant;
     public bool IsTenant => ClientTypeId == (int)ClientType.Tenant;
 
-    // NULL / 1 / 2 collapse to Customer scope per spec §"Data scope per ClientType".
+    /// <summary>
+    /// Transitional: ClientTypeId == 1 (Internal). The spec collapses Internal
+    /// into Customer scope, but DespatchWeb operations staff still live on
+    /// ClientTypeId = 1 until the Phase 1.3 reparent to DFRNTAdmin (5) runs.
+    /// Bypassed by EF filters so dispatch keeps working in the meantime.
+    /// Remove this property (and its consumer in DespatchContext) once the
+    /// reparent migration has shipped.
+    /// </summary>
+    public bool IsInternal => ClientTypeId == (int)ClientType.Internal;
+
+    // NULL / 2 collapse to Customer scope. Internal (1) is intentionally
+    // excluded while the Phase 1.3 reparent is pending — see IsInternal.
     public bool IsCustomerScoped =>
-        ClientTypeId is null
-            or (int)ClientType.Internal
-            or (int)ClientType.Customer;
+        ClientTypeId is null or (int)ClientType.Customer;
 }

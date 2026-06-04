@@ -92,7 +92,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
             if (e instanceof Error && (e.name === 'AbortError' || e.name === 'CanceledError') || controller.signal.aborted) {
                 return;
             }
-            const message = e instanceof Error ? e.message : 'Failed to generate AI summary';
+            const message = e instanceof Error ? e.message : 'Failed to generate DFRNT summary';
             setError(message);
         } finally {
             if (abortControllerRef.current === controller) {
@@ -275,7 +275,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         <Typography variant="body2" sx={{
                             color: "text.disabled"
                         }}>
-                            Click to generate an AI summary.
+                            Click to generate a DFRNT summary.
                         </Typography>
                     )}
                 </CardContent>

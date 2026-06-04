@@ -224,11 +224,10 @@ export function JobDetails({config}: JobDetailsProps) {
     // Track which job tab is selected
     const [selectedTabIndex, setSelectedTabIndex] = useState(0);
 
-    // AI panel state — per-user opt-in via dashboard settings. Collapsed by
-    // default; expanding mounts AiSummaryCard which auto-fetches summarizeJob.
+    // AI briefing — per-user opt-in via dashboard settings. The card lives
+    // below MetricsGrid and renders in collapsible mode so it stays closed
+    // until the user expands it (first expand triggers summarizeJob).
     const aiEnabled = useMemo(() => isAiEnabled(), []);
-    const [showAiPanel, setShowAiPanel] = useState(false);
-    const handleToggleAiPanel = useCallback(() => setShowAiPanel(prev => !prev), []);
     // Keep jobRef synchronously current so handlers never read a stale job
     const job: IJob | undefined = sortedRelatedJobs[selectedTabIndex] ?? sortedRelatedJobs[0];
 
@@ -443,12 +442,9 @@ export function JobDetails({config}: JobDetailsProps) {
                     viewDensityLabel={viewDensityLabel}
                     isEditMode={isEditMode}
                     routes={routes}
-                    aiEnabled={aiEnabled}
-                    showAiPanel={showAiPanel}
                     onToggleDensity={toggleDensity}
                     onToggleEditMode={toggleEditMode}
                     onResetFieldVisibility={handleResetFieldVisibility}
-                    onToggleAiPanel={handleToggleAiPanel}
                     onStatusClick={actions.handleStatusClick}
                     onPodReport={actions.handlePodReport}
                     onPodSpreadsheet={actions.handlePodSpreadsheet}
@@ -456,18 +452,6 @@ export function JobDetails({config}: JobDetailsProps) {
                     onLockToggle={actions.handleLockToggle}
                     onRouteChange={actions.handleRouteChange}
                 />
-
-                {/* AI Summary Panel — toggled from the header. key={job.id}
-                    forces a fresh fetch when switching between related-job tabs. */}
-                {aiEnabled && showAiPanel && (
-                    <Box sx={{mx: 1.5, mt: 1}}>
-                        <AiSummaryCard
-                            key={job.id}
-                            title="AI Job Briefing"
-                            fetchSummary={(signal) => summarizeJob(job.id, {signal})}
-                        />
-                    </Box>
-                )}
 
                 {/* Partner-job edit banner. Rated fields (qty, speed, dates, DG, etc.)
                     queue for the other tenant's approval; notes / refs / contacts sync
@@ -498,6 +482,21 @@ export function JobDetails({config}: JobDetailsProps) {
                         onInternalStatusClick={actions.handleInternalStatusClick}
                     />
                 </Box>
+
+                {/* AI Job Briefing — collapsible card under the pricing / client
+                    row. key={job.id} resets state when switching related-job tabs;
+                    the card starts collapsed and only calls summarizeJob the first
+                    time the user opens it. */}
+                {aiEnabled && (
+                    <Box sx={{mx: 1.5, mt: 1}}>
+                        <AiSummaryCard
+                            key={job.id}
+                            title="DFRNT Job Briefing"
+                            fetchSummary={(signal) => summarizeJob(job.id, {signal})}
+                            collapsible
+                        />
+                    </Box>
+                )}
 
                 {/* Main content area */}
                 <Box sx={isDense ? rootStyles.contentAreaDense : rootStyles.contentArea}>

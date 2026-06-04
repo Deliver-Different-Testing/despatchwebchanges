@@ -269,6 +269,28 @@ public class ScopeProviderTests : IAsyncDisposable
     }
 
     [Fact]
+    public void Internal_ResolvesToInternalScope_NotCustomerScoped()
+    {
+        // Transitional: Internal (ClientTypeId = 1) is bypassed by EF filters
+        // (treated like Tenant / DFRNTAdmin) until the Phase 1.3 reparent ships,
+        // so it must NOT fall into the customer-side ClientId predicate branch.
+        SetAuthenticated(true);
+        StubClaims(
+            clientTypeId: (int)ClientType.Internal,
+            clientTypeIdAbsent: false,
+            npAgentId: null,
+            npAgentIdAbsent: false,
+            npAgentIdEmpty: true,
+            clientId: 100);
+
+        var scope = CreateProvider().Scope;
+
+        Assert.True(scope.IsInternal);
+        Assert.False(scope.IsCustomerScoped);
+        Assert.False(scope.IsNetworkPartner);
+    }
+
+    [Fact]
     public void Customer_ResolvesToCustomerScope()
     {
         SetAuthenticated(true);

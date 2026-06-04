@@ -42,6 +42,17 @@ import {
 interface AiSummaryCardProps {
     title: string;
     fetchSummary: (signal?: AbortSignal) => Promise<StructuredSummaryResponse>;
+    /**
+     * When true the card renders with a clickable header + chevron and starts
+     * collapsed. The first fetch is deferred until the user expands it, so
+     * tokens aren't burnt for users who don't open the panel. Subsequent
+     * collapse/expand cycles preserve the already-loaded summary.
+     *
+     * Default (omitted): the card is always expanded and auto-fetches on
+     * mount, matching the legacy behaviour used by the task dashboard,
+     * overview, and driver compliance call sites.
+     */
+    collapsible?: boolean;
 }
 
 interface SeverityVisuals {
@@ -137,7 +148,7 @@ function buildPlainTextCopy(summary: StructuredSummaryResponse): string {
     return lines.join('\n');
 }
 
-export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary}) => {
+export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary, collapsible}) => {
     const [loading, setLoading] = useState(false);
     const [summary, setSummary] = useState<StructuredSummaryResponse | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -145,6 +156,10 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
     const [highlightsOpen, setHighlightsOpen] = useState(false);
     const [, setTick] = useState(0);
     const [copyTooltip, setCopyTooltip] = useState('Copy briefing');
+    // In collapsible mode the card starts collapsed; the first expand kicks
+    // off the fetch. Non-collapsible callers stay always-open.
+    const [expanded, setExpanded] = useState(!collapsible);
+    const hasFetchedRef = useRef(false);
     const abortRef = useRef<AbortController | null>(null);
 
     const relativeTime = generatedAt ? formatRelativeTime(generatedAt) : '';
@@ -173,7 +188,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
             ) {
                 return;
             }
-            setError(e instanceof Error ? e.message : 'Failed to generate AI summary');
+            setError(e instanceof Error ? e.message : 'Failed to generate DFRNT summary');
         } finally {
             if (abortRef.current === controller) {
                 setLoading(false);
@@ -214,14 +229,26 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
         }
     }, [summary]);
 
-    // Auto-fetch on mount
+    // First-fetch trigger. Non-collapsible cards start expanded, so this
+    // fires on mount and matches the legacy behaviour. Collapsible cards
+    // start collapsed and only fetch when the user first opens them.
     useEffect(() => {
+        if (!expanded) return;
+        if (hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
         loadSummary();
-        return () => {
-            abortRef.current?.abort();
-        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [expanded]);
+
+    // Abort any in-flight fetch on unmount.
+    useEffect(() => {
+        return () => abortRef.current?.abort();
     }, []);
+
+    const handleToggleExpanded = useCallback(() => {
+        if (!collapsible) return;
+        setExpanded(v => !v);
+    }, [collapsible]);
 
     return (
         <Card sx={(theme) => {
@@ -233,17 +260,30 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                 borderLeft: `4px solid ${v.color}`,
             };
         }}>
-            <Box sx={(theme) => {
-                const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
-                return {
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 2,
-                    py: 1.25,
-                    bgcolor: v.bg,
-                };
-            }}>
+            <Box
+                onClick={collapsible ? handleToggleExpanded : undefined}
+                onKeyDown={collapsible ? (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleToggleExpanded();
+                    }
+                } : undefined}
+                role={collapsible ? 'button' : undefined}
+                tabIndex={collapsible ? 0 : undefined}
+                aria-expanded={collapsible ? expanded : undefined}
+                sx={(theme) => {
+                    const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
+                    return {
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        px: 2,
+                        py: 1.25,
+                        bgcolor: v.bg,
+                        cursor: collapsible ? 'pointer' : undefined,
+                        userSelect: collapsible ? 'none' : undefined,
+                    };
+                }}>
                 <Stack direction="row" spacing={1} sx={{
                     alignItems: "center"
                 }}>
@@ -310,7 +350,12 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                         <>
                             <CircularProgress size={16} sx={{mr: 0.5}} />
                             <Tooltip title="Stop generating">
-                                <IconButton size="small" onClick={handleStop} sx={{p: 0.5}} aria-label="Stop generating">
+                                <IconButton
+                                    size="small"
+                                    onClick={(e) => {e.stopPropagation(); handleStop();}}
+                                    sx={{p: 0.5}}
+                                    aria-label="Stop generating"
+                                >
                                     <StopIcon sx={{fontSize: 18}} />
                                 </IconButton>
                             </Tooltip>
@@ -330,8 +375,20 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                             </IconButton>
                         </Tooltip>
                     )}
+                    {collapsible && (
+                        <IconButton
+                            size="small"
+                            tabIndex={-1}
+                            sx={{p: 0.5}}
+                            aria-label={expanded ? 'Collapse DFRNT briefing' : 'Expand DFRNT briefing'}
+                            onClick={(e) => {e.stopPropagation(); handleToggleExpanded();}}
+                        >
+                            {expanded ? <ExpandLessIcon sx={{fontSize: 20}} /> : <ExpandMoreIcon sx={{fontSize: 20}} />}
+                        </IconButton>
+                    )}
                 </Stack>
             </Box>
+            <Collapse in={expanded} unmountOnExit={false}>
             <Box sx={{px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5}}>
                 {loading && !summary && (
                     <Box>
@@ -470,6 +527,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                     </>
                 )}
             </Box>
+            </Collapse>
         </Card>
     );
 };
