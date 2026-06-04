@@ -100,6 +100,12 @@ export class JobChangeRequestApiService {
     pendingForApproval(limit = 200): Promise<JobChangeRequestInboxItem[]> {
         return apiClient.get<JobChangeRequestInboxItem[]>('JobChangeRequest/PendingForApproval', {limit});
     }
+
+    async hasActivePartners(): Promise<boolean> {
+        const result = await apiClient.get<{hasActivePartners: boolean}>(
+            'JobChangeRequest/HasActivePartners');
+        return result.hasActivePartners;
+    }
 }
 
 export const jobChangeRequestApi = new JobChangeRequestApiService();

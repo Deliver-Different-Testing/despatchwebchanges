@@ -1143,6 +1143,39 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task HasActivePartnersAsync_returns_false_when_no_pairings_exist()
+    {
+        var service = CreateService();
+
+        var result = await service.HasActivePartnersAsync(CancellationToken.None);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public async Task HasActivePartnersAsync_returns_true_when_an_active_pairing_exists()
+    {
+        await SeedPairingAsync(status: "Active");
+        var service = CreateService();
+
+        var result = await service.HasActivePartnersAsync(CancellationToken.None);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public async Task HasActivePartnersAsync_ignores_non_active_pairings()
+    {
+        await SeedPairingAsync(partnerTenantId: "201", status: "Revoked");
+        await SeedPairingAsync(partnerTenantId: "202", status: "Pending");
+        var service = CreateService();
+
+        var result = await service.HasActivePartnersAsync(CancellationToken.None);
+
+        Assert.False(result);
+    }
+
+    [Fact]
     public async Task ApproveAsync_blocks_when_commercial_refresh_returns_no_rate()
     {
         // GIVEN a pending Manual change that requires commercial refresh

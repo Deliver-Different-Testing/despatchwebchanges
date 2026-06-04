@@ -18,6 +18,7 @@ import Tooltip from '@mui/material/Tooltip';
 import HandshakeIcon from '@mui/icons-material/Handshake';
 import type {SxProps, Theme} from '@mui/material/styles';
 import {useApproverInbox} from './useApproverInbox';
+import {useHasActivePartners} from './useHasActivePartners';
 import {PartnerApprovalsInbox} from './PartnerApprovalsInbox';
 import {ageLevel} from '../../components/job-change-requests/jobChangeRequestFormatting';
 
@@ -51,7 +52,8 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
     toolbarVariant = false,
 }) => {
     const [open, setOpen] = useState(false);
-    const {data: items = []} = useApproverInbox();
+    const {data: hasActivePartners} = useHasActivePartners();
+    const {data: items = []} = useApproverInbox({enabled: hasActivePartners === true});
 
     const {count, hasOverdue} = useMemo(() => {
         let overdue = false;
@@ -67,6 +69,14 @@ export const PartnerApprovalsBadge: React.FC<PartnerApprovalsBadgeProps> = ({
     const tooltip = count === 0
         ? 'No partner approvals waiting'
         : `${count} partner approval${count === 1 ? '' : 's'} waiting${hasOverdue ? ' (overdue)' : ''}`;
+
+    // Hide the badge entirely for tenants with no active partner pairings.
+    // While the gating query is still resolving we render nothing — partner
+    // status doesn't change often, and a brief absence is preferable to a
+    // visible flash that disappears once the answer arrives.
+    if (hasActivePartners !== true) {
+        return null;
+    }
 
     return (
         <>

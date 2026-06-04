@@ -43,4 +43,11 @@ public interface IJobChangeRequestService
     /// can render without per-row job fetches.
     /// </summary>
     Task<IReadOnlyList<JobChangeRequestInboxItem>> ListPendingForApprovalAsync(int limit, CancellationToken ct);
+
+    /// <summary>
+    /// True when the local tenant has at least one <c>IntMgrPartnerPairing</c>
+    /// row in <c>Status='Active'</c>. Drives the app-bar Partner Approvals badge
+    /// visibility — tenants with no active partnerships never see the button.
+    /// </summary>
+    Task<bool> HasActivePartnersAsync(CancellationToken ct);
 }

@@ -700,6 +700,13 @@ public sealed class JobChangeRequestService(
             .ToList();
     }
 
+    public async Task<bool> HasActivePartnersAsync(CancellationToken ct)
+    {
+        await using var ctx = await contextFactory.CreateDbContextAsync(ct);
+        return await ctx.IntMgrPartnerPairings
+            .AnyAsync(p => p.Status == "Active", ct);
+    }
+
     private static string ResolvePeerDecisionStatus(string outcome)
     {
         if (outcome.Equals(JobChangeRequestStatus.Approved, StringComparison.OrdinalIgnoreCase))

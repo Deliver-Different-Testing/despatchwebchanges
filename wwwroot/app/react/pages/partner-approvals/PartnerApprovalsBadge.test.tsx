@@ -12,6 +12,7 @@ import {jobChangeRequestApi, type JobChangeRequestInboxItem} from '../../service
 jest.mock('../../services/jobChangeRequestApi', () => ({
     jobChangeRequestApi: {
         pendingForApproval: jest.fn(),
+        hasActivePartners: jest.fn(),
         approve: jest.fn(),
         reject: jest.fn(),
     },
@@ -44,6 +45,8 @@ function makeItem(hoursOld: number, id: number): JobChangeRequestInboxItem {
 describe('PartnerApprovalsBadge', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        // Default: tenant has active partners. Individual tests override.
+        mockApi.hasActivePartners.mockResolvedValue(true);
     });
 
     it('shows no badge content when the inbox is empty', async () => {
@@ -83,5 +86,18 @@ describe('PartnerApprovalsBadge', () => {
 
         expect(await screen.findByText(/Partner Approvals/i)).toBeInTheDocument();
         expect(screen.getByText('Acme')).toBeInTheDocument();
+    });
+
+    it('renders nothing and skips the inbox poll when the tenant has no active partners', async () => {
+        mockApi.hasActivePartners.mockResolvedValue(false);
+        mockApi.pendingForApproval.mockResolvedValue([makeItem(1, 1)]);
+        renderWithProviders(<PartnerApprovalsBadge/>);
+
+        await waitFor(() => {
+            expect(mockApi.hasActivePartners).toHaveBeenCalled();
+        });
+
+        expect(screen.queryByRole('button', {name: /Open partner approvals/i})).not.toBeInTheDocument();
+        expect(mockApi.pendingForApproval).not.toHaveBeenCalled();
     });
 });
