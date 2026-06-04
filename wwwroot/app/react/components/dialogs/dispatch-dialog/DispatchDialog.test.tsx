@@ -79,6 +79,17 @@ function makeProps(overrides: Partial<DispatchDialogProps> = {}): DispatchDialog
     };
 }
 
+// Drives the dialog through the Courier path: type into the search box,
+// pick the first matching courier, and click Confirm.
+async function pickCourierAndConfirm(user: ReturnType<typeof userEvent.setup>) {
+    const search = screen.getByPlaceholderText(/Search courier/);
+    await user.click(search);
+    await user.paste('ABC');
+    const option = await screen.findByRole('option', {name: /ABC Couriers/});
+    await user.click(option);
+    await user.click(screen.getByRole('button', {name: /Dispatch/}));
+}
+
 beforeEach(() => {
     mockedAutocompleteSearch.mockReset();
     mockedApiClientGet.mockReset();
@@ -302,14 +313,7 @@ describe('DispatchDialog', () => {
             const onDispatchCourier = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
-            const search = screen.getByPlaceholderText(/Search courier/);
-            await user.click(search);
-            await user.paste('ABC');
-            // Wait for results to populate the listbox, then pick one.
-            const option = await screen.findByRole('option', {name: /ABC Couriers/});
-            await user.click(option);
-
-            await user.click(screen.getByRole('button', {name: /Dispatch/}));
+            await pickCourierAndConfirm(user);
 
             await waitFor(() => {
                 expect(onDispatchCourier).toHaveBeenCalledWith('Courier', {id: 101, text: 'ABC Couriers'});
@@ -327,13 +331,7 @@ describe('DispatchDialog', () => {
             const onDispatchCourier = jest.fn().mockRejectedValue(new Error('server-side failure'));
             renderWithTheme(<DispatchDialog {...makeProps({onDispatchCourier})} />);
 
-            const search = screen.getByPlaceholderText(/Search courier/);
-            await user.click(search);
-            await user.paste('ABC');
-            const option = await screen.findByRole('option', {name: /ABC Couriers/});
-            await user.click(option);
-
-            await user.click(screen.getByRole('button', {name: /Dispatch/}));
+            await pickCourierAndConfirm(user);
 
             expect(await screen.findByText(/server-side failure/)).toBeInTheDocument();
             // Dialog is still open.
@@ -378,9 +376,25 @@ describe('DispatchDialog', () => {
     });
 
     describe('Confirm button label', () => {
-        it('reads "Dispatch" for Courier / Agent / NP radios', () => {
+        it('reads "Dispatch" for the Courier radio', () => {
             renderWithTheme(<DispatchDialog {...makeProps()} />);
             expect(screen.getByRole('button', {name: /^Dispatch$/})).toBeInTheDocument();
+        });
+
+        it('reads "Send to Agent" when the Agent radio is selected', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            await user.click(screen.getByRole('radio', {name: /Agent/}));
+            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to Agent$/})).toBeInTheDocument();
+        });
+
+        it('reads "Send to NP" when the NP radio is selected', async () => {
+            const user = userEvent.setup();
+            renderWithTheme(<DispatchDialog {...makeProps()} />);
+
+            await user.click(screen.getByRole('radio', {name: /^NP$/}));
+            expect(within(screen.getByRole('dialog')).getByRole('button', {name: /^Send to NP$/})).toBeInTheDocument();
         });
 
         it('reads "Send to Partner" when the DFRNT Partner radio is selected', async () => {

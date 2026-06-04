@@ -121,27 +121,17 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
         try {
             await navigator.clipboard.writeText(summary);
             setCopyTooltip('Copied!');
-            setTimeout(() => setCopyTooltip('Copy to clipboard'), 2000);
         } catch {
-            // Fallback for older browsers
-            const textarea = document.createElement('textarea');
-            textarea.value = summary;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
-            setCopyTooltip('Copied!');
-            setTimeout(() => setCopyTooltip('Copy to clipboard'), 2000);
+            setCopyTooltip('Copy failed');
         }
+        setTimeout(() => setCopyTooltip('Copy to clipboard'), 2000);
     }, [summary]);
 
     // Auto-fetch on mount if requested
     useEffect(() => {
         if (autoFetch && !hasFetched && !loading) {
             setExpanded(true);
-            loadSummary();
+            void loadSummary();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);

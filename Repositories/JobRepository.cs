@@ -25,11 +25,10 @@ public partial class JobRepository(
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
+    private const decimal PriceEqualityTolerance = 0.0001m;
     private readonly ITenantClock _clock = clock;
     private readonly IDbContextFactory<DespatchContext> _contextFactory = contextFactory;
     private readonly ITenantInfoService _infoService = infoService;
-
-    private const decimal PriceEqualityTolerance = 0.0001m;
 
     /// <summary>
     /// Updates pricing fields (amount, PPD, fuel, courier payment) for multiple jobs manually.
@@ -1851,27 +1850,12 @@ public partial class JobRepository(
                 .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
             return;
         }
+
         // Non-stop: resolve to parent and sync weight across the entire delivery chain
         var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
         await Context.TucJobs
             .Where(j => j.UcjbId == effectiveJobId || j.RootParentId == effectiveJobId)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.UcjbWeight, (double)weight));
-    }
-
-    public async Task<decimal> GetJobAmountAsync(int jobId, bool isBooking)
-    {
-        if (isBooking)
-        {
-            return await Context.TucJobBookings
-                .Where(j => j.UcbkId == jobId)
-                .Select(j => j.UcbkAmount ?? 0)
-                .FirstOrDefaultAsync();
-        }
-
-        return await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => j.UcjbAmount ?? 0)
-            .FirstOrDefaultAsync();
     }
 
     /// <summary>
@@ -2291,6 +2275,82 @@ public partial class JobRepository(
         await createJobService.CreateJobAsync(data, cancellationToken);
 
     /// <summary>
+    /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
+    /// it to TucJob.UcjbQty, then records a Staff journey entry so to apply is auditable.
+    /// </summary>
+    public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
+    {
+        var pendingChange = await Context.JobDeliveryJourneys
+            .Where(j => j.JobId == jobId &&
+                        j.FieldName == "ucjbQty" &&
+                        j.UpdatedByType != nameof(DeliveryJourneyUpdatedByType.Staff) &&
+                        j.NewValue != null)
+            .OrderByDescending(j => j.UpdatedAt)
+            .FirstOrDefaultAsync();
+
+        if (pendingChange == null)
+        {
+            return false;
+        }
+
+        if (!short.TryParse(pendingChange.NewValue, out var newQty))
+        {
+            return false;
+        }
+
+        var currentQty = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.UcjbQty)
+            .FirstOrDefaultAsync();
+
+        // Guard: qty already matches — update was previously applied
+        if (currentQty == newQty)
+        {
+            return false;
+        }
+
+        var rowsAffected = await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));
+
+        if (rowsAffected == 0)
+        {
+            return false;
+        }
+
+        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
+        {
+            JobId = jobId,
+            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
+            FieldName = "ucjbQty",
+            OldValue = currentQty.ToString(),
+            NewValue = newQty.ToString(),
+            StaffId = _infoService.GetStaffId(),
+            UpdatedAt = DateTime.UtcNow,
+            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
+        });
+        await Context.SaveChangesAsync();
+
+        return true;
+    }
+
+    public async Task<decimal> GetJobAmountAsync(int jobId, bool isBooking)
+    {
+        if (isBooking)
+        {
+            return await Context.TucJobBookings
+                .Where(j => j.UcbkId == jobId)
+                .Select(j => j.UcbkAmount ?? 0)
+                .FirstOrDefaultAsync();
+        }
+
+        return await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .Select(j => j.UcjbAmount ?? 0)
+            .FirstOrDefaultAsync();
+    }
+
+    /// <summary>
     /// Retrieves a bulk job and its related family jobs (parent and siblings).
     /// </summary>
     /// <param name="bulkJobId">The bulk job ID to retrieve.</param>
@@ -2684,7 +2744,8 @@ public partial class JobRepository(
                     .Where(j =>
                         j.UcjbDate.Date >= fromDate
                         && j.UcjbDate.Date <= toDate
-                        && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
+                        && (!data.ClientSet ||
+                            (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
                         && (!data.CourierSet ||
                             (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
                         && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
@@ -2696,7 +2757,8 @@ public partial class JobRepository(
                         j.UcjbDate.HasValue
                         && j.UcjbDate.Value.Date >= fromDate
                         && j.UcjbDate.Value.Date <= toDate
-                        && (!data.ClientSet || (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
+                        && (!data.ClientSet ||
+                            (j.UcjbClientId.HasValue && data.ClientIds.Contains(j.UcjbClientId.Value)))
                         && (!data.CourierSet ||
                             (j.UcjbCourierId.HasValue && data.CourierIds.Contains(j.UcjbCourierId.Value)))
                         && (!data.SpeedSet || (j.UcjbSpeed.HasValue && data.SpeedIds.Contains(j.UcjbSpeed.Value)))
@@ -4259,6 +4321,39 @@ public partial class JobRepository(
             .Select(_ => DespatchContext.UTL_fncJob_RawBaseToAmount(jobId, baseAmount))
             .FirstOrDefaultAsync() ?? 0m;
 
+    public async Task<List<Suggestion>> GetActivePartnerOptionsAsync() =>
+        await Context.IntMgrPartnerPairings
+            .Where(p => p.Status == "Active")
+            .Select(p => new Suggestion
+            {
+                Id = p.Id,
+                Text = p.PartnerTenantName
+            })
+            .ToListAsync();
+
+    public async Task<bool> IsPartnerJobAsync(int jobId) =>
+        await Context.IsPartnerJobAsync(jobId);
+
+    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string localTenantId) =>
+        await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
+
+    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
+        CancellationToken cancellationToken = default)
+        => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
+
+    public new async Task<bool> IsJobArchived(int jobId)
+        => await base.IsJobArchived(jobId);
+
+    public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
+        bool isBulkJob = false)
+        => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
+
+    public new async Task<int?> GetJobParentIdAsync(int jobId)
+        => await base.GetJobParentIdAsync(jobId);
+
+    public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds)
+        => await base.GetJobCurrentAmountsAsync(jobIds);
+
     /// <summary>
     /// Checks if a job can be split.
     /// A job can be split if it has no flights assigned .
@@ -4292,7 +4387,8 @@ public partial class JobRepository(
     internal static PerformanceSpendReportModel MapToPerformanceSpendReportModel(ClientJobsReportRow row)
     {
         var totalTime = row.Booked != null && row.Delivered != null
-            ? (int?)Math.Round((row.Delivered.Value.TimeOfDay - row.Booked.Value.TimeOfDay).TotalMinutes, MidpointRounding.AwayFromZero)
+            ? (int?)Math.Round((row.Delivered.Value.TimeOfDay - row.Booked.Value.TimeOfDay).TotalMinutes,
+                MidpointRounding.AwayFromZero)
             : null;
 
         return new PerformanceSpendReportModel
@@ -5246,98 +5342,5 @@ public partial class JobRepository(
                 .SetProperty(j => j.UcjbStatus, (int)JobStatus.Dispatched)
                 .SetProperty(j => j.InternalStatus, (int)InternalJobStatus.AwaitingPod)
             );
-    }
-
-    public async Task<List<Suggestion>> GetActivePartnerOptionsAsync() =>
-        await Context.IntMgrPartnerPairings
-            .Where(p => p.Status == "Active")
-            .Select(p => new Suggestion
-            {
-                Id = p.Id,
-                Text = p.PartnerTenantName
-            })
-            .ToListAsync();
-
-    public async Task<bool> IsPartnerJobAsync(int jobId) =>
-        await Context.IsPartnerJobAsync(jobId);
-
-    public async Task<bool> IsOutboundPartnerJobAsync(int jobId, string? localTenantId) =>
-        await Context.IsOutboundPartnerJobAsync(jobId, localTenantId);
-
-    public new async Task<IReadOnlyList<JobCoordinateModel>> GetJobCoordinatesAsync(IReadOnlyList<int> selectedViewIds,
-        CancellationToken cancellationToken = default)
-        => await base.GetJobCoordinatesAsync(selectedViewIds, cancellationToken);
-
-    public new async Task<bool> IsJobArchived(int jobId)
-        => await base.IsJobArchived(jobId);
-
-    public new async Task<IReadOnlyList<MultiSuggestion>> GetRelatedJobsMultiSelectListAsync(int jobId, bool isArchived,
-        bool isBulkJob = false)
-        => await base.GetRelatedJobsMultiSelectListAsync(jobId, isArchived, isBulkJob);
-
-    public new async Task<int?> GetJobParentIdAsync(int jobId)
-        => await base.GetJobParentIdAsync(jobId);
-
-    public new async Task<Dictionary<int, JobCurrentAmountInfo>> GetJobCurrentAmountsAsync(IReadOnlyList<int> jobIds)
-        => await base.GetJobCurrentAmountsAsync(jobIds);
-
-    /// <summary>
-    /// Reads the most recent external (non-Staff) qty change from JobDeliveryJourney and applies
-    /// it to TucJob.UcjbQty, then records a Staff journey entry so to apply is auditable.
-    /// </summary>
-    public async Task<bool> ApplyWebQtyUpdateAsync(int jobId)
-    {
-        var pendingChange = await Context.JobDeliveryJourneys
-            .Where(j => j.JobId == jobId &&
-                        j.FieldName == "ucjbQty" &&
-                        j.UpdatedByType != nameof(DeliveryJourneyUpdatedByType.Staff) &&
-                        j.NewValue != null)
-            .OrderByDescending(j => j.UpdatedAt)
-            .FirstOrDefaultAsync();
-
-        if (pendingChange == null)
-        {
-            return false;
-        }
-
-        if (!short.TryParse(pendingChange.NewValue, out var newQty))
-        {
-            return false;
-        }
-
-        var currentQty = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .Select(j => j.UcjbQty)
-            .FirstOrDefaultAsync();
-
-        // Guard: qty already matches — update was previously applied
-        if (currentQty == newQty)
-        {
-            return false;
-        }
-
-        var rowsAffected = await Context.TucJobs
-            .Where(j => j.UcjbId == jobId)
-            .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbQty, newQty));
-
-        if (rowsAffected == 0)
-        {
-            return false;
-        }
-
-        await Context.JobDeliveryJourneys.AddAsync(new JobDeliveryJourney
-        {
-            JobId = jobId,
-            ChangeType = nameof(DeliveryJourneyChangeType.JobUpdate),
-            FieldName = "ucjbQty",
-            OldValue = currentQty.ToString(),
-            NewValue = newQty.ToString(),
-            StaffId = _infoService.GetStaffId(),
-            UpdatedAt = DateTime.UtcNow,
-            UpdatedByType = nameof(DeliveryJourneyUpdatedByType.Staff)
-        });
-        await Context.SaveChangesAsync();
-
-        return true;
     }
 }

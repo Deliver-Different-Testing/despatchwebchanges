@@ -27,9 +27,10 @@ jest.mock('../dialogs/add-event-dialog', () => ({
 jest.mock('../dialogs/event-group-dialog', () => ({
     openEventGroupDialog: jest.fn().mockResolvedValue(true),
 }));
+
 // Stub the universal dispatch dialog so tests can drive the two confirm callbacks
 // directly without going through the dialog's internal radio/dropdown/rate flow
-// (the dialog's own behaviour is covered by DispatchDialog.test.tsx).
+// (the dialog's own behavior is covered by DispatchDialog.test.tsx).
 jest.mock('../dialogs/dispatch-dialog', () => ({
     DispatchDialog: jest.fn(({open, initialType, onDispatchCourier, onSendToPartner}: {
         open: boolean;
@@ -945,7 +946,7 @@ describe('JobListContextMenu', () => {
             const props = createDefaultProps();
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to DFRNT Partner'));
+            await user.click(screen.getByText('Send to Partner'));
 
             const dialog = await screen.findByTestId('dispatch-dialog');
             expect(dialog).toHaveAttribute('data-initial-type', 'DfrntPartner');
@@ -970,7 +971,7 @@ describe('JobListContextMenu', () => {
             });
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to DFRNT Partner'));
+            await user.click(screen.getByText('Send to Partner'));
             await user.click(await screen.findByText('Stub Send To Partner'));
 
             await waitFor(() => {
@@ -1028,7 +1029,7 @@ describe('JobListContextMenu', () => {
             mockedApi.allocateJobs.mockResolvedValue(undefined);
             renderWithTheme(<JobListContextMenu {...props} />);
 
-            await user.click(screen.getByText('Send to DFRNT Partner'));
+            await user.click(screen.getByText('Send to Partner'));
 
             // Switch the dialog stub to Courier dispatch using the same Stub button.
             await user.click(screen.getByText('Stub Dispatch Courier'));

@@ -386,7 +386,7 @@ public partial class JobRepository
         return openJobs;
     }
 
-    internal static IQueryable<TucJob> ApplySorting(
+    private static IQueryable<TucJob> ApplySorting(
         IQueryable<TucJob> query,
         string orderBy,
         string orderDirection

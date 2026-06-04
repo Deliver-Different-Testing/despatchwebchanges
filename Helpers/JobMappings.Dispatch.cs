@@ -115,7 +115,7 @@ public static partial class JobMappings
             Ld = j.UcjbLateDel,
 
             Done = j.UcjbJobDone,
-            PreBook = true,
+            PreBook = false,
             IsArchived = false,
 
             PickupFrom = j.UcjbPickUpFrom,

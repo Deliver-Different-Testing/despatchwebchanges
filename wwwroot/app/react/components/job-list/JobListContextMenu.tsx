@@ -316,20 +316,18 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
             throw new Error(result.message || 'Failed to send job to partner');
         }
         setDispatchDialog((s) => ({...s, open: false}));
+        let copied = false;
         try {
             await navigator.clipboard.writeText(sentJobNo);
+            copied = true;
         } catch {
-            const textarea = document.createElement('textarea');
-            textarea.value = sentJobNo;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textarea);
+            // navigator.clipboard rejects when the document loses focus or runs
+            // in an insecure context; to send succeeded, so just skip the copy.
         }
+        
+        const copySuffix = copied ? ' (job number copied)' : '';
         showToast(
-            `Job ${sentJobNo} sent to ${partner.text} — tracking: ${result.trackingNumber} (job number copied)`,
+            `Job ${sentJobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}${copySuffix}`,
             'success',
             {label: 'Open', onClick: () => openJobInSearch(sentJobId)},
         );
@@ -368,7 +366,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 }
             }
         } catch {
-            // User cancelled
+            // User canceled
         }
     };
 
@@ -380,7 +378,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                 if (result) refresh();
             }
         } catch {
-            // User cancelled
+            // User canceled
         }
     };
 
@@ -589,7 +587,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                                 onClick={() => openDispatchDialog('DfrntPartner')}
                             >
                                 <ListItemIcon><SendIcon fontSize="small"/></ListItemIcon>
-                                <ListItemText>Send to DFRNT Partner</ListItemText>
+                                <ListItemText>Send to Partner</ListItemText>
                             </MenuItem>
                         </span>
                     </Tooltip>
