@@ -269,6 +269,13 @@ public static partial class JobMappings
             },
             CustomJobName = j.CustomJobName,
             RouteId = j.RouteId,
-            RouteName = j.Route != null ? j.Route.Name : null
+            RouteName = j.Route != null ? j.Route.Name : null,
+            RecurringMode = (Enums.RecurringMode)j.RecurringMode,
+            RawBaseAmount = j.RawBaseAmount,
+            FuelSurchargeAmount = j.FuelSurchargeAmount,
+            UcbkAmount = j.UcbkAmount,
+            // BookingParentID = self (or NULL) means parent / standalone;
+            // otherwise this row is a child in a family.
+            IsChild = j.BookingParentId.HasValue && j.BookingParentId.Value != j.UcbkId
         };
 }

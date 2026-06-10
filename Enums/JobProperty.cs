@@ -78,5 +78,13 @@ public enum JobProperty
     // row), and the existing tucJob-side convention populates both
     // columns together.
     AgentId,
-    NpAgentId
+    NpAgentId,
+
+    // Three-state recurring operational mode
+    // (0=Inactive, 1=Active, 2=Manual). Backed by tucJobBooking.RecurringMode.
+    // Replaces JobProperty.Active in new UI; Active stays for legacy callers
+    // and is kept in sync by the update branch per Steve's compatibility rule
+    // (Active/Inactive map 1:1, Manual maps to ucbkActive=1 so it stays
+    // visible in legacy active-only screens during rollout).
+    RecurringMode
 }

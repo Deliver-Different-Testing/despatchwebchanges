@@ -7,9 +7,12 @@
 
 import {apiClient, RequestOptions, downloadBlob} from './apiClient';
 import {
+    InsertRecurringToLiveRequest,
+    InsertRecurringToLiveResult,
     PaginatedRecurringJobsResponse,
     PaginatedRecurringJobsResponseDto,
     RecurringJobQuery,
+    RecurringMode,
     RouteOption,
     SpeedOption,
     transformPaginatedResponse,
@@ -64,7 +67,20 @@ export const recurringJobsApi = {
      */
     exportToCsv: async (query: RecurringJobQuery): Promise<void> => {
         const response = await apiClient.postForBlob('job/RecurringJobsExportCsv', query);
-        downloadBlob(response, `recurring-jobs-${query.active ? 'active' : 'inactive'}.csv`);
+        // Honour the three-state mode for the download filename suffix
+        // when present, falling back to the legacy active/inactive label.
+        const modeLabel = query.recurringMode !== undefined
+            ? RecurringMode[query.recurringMode].toLowerCase()
+            : (query.active ? 'active' : 'inactive');
+        downloadBlob(response, `recurring-jobs-${modeLabel}.csv`);
+    },
+
+    /**
+     * Manual-mode operator push of a recurring booking into live tucJob.
+     * Source booking stays on RecurringMode = Manual after the call.
+     */
+    insertToLive: async (request: InsertRecurringToLiveRequest): Promise<InsertRecurringToLiveResult> => {
+        return await apiClient.post<InsertRecurringToLiveResult>('job/InsertRecurringToLive', request);
     },
 };
 

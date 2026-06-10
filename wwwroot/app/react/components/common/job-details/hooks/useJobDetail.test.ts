@@ -145,7 +145,12 @@ describe('useJobDetail', () => {
         expect(result.current.jobGroup).toBeUndefined();
     });
 
-    it('returns sorted related jobs alphabetically with numeric sorting', async () => {
+    it('returns related jobs in chain order: parent first, then non-leg children lex-sorted', async () => {
+        // Parent J10 (id=1) is jobGroup.job, the rest are children with
+        // no LHP/LH[0-9]/DEL suffix so they fall into bucket [4, 0, num]
+        // and get lex-sorted by jobNo within that bucket. The parent
+        // ALWAYS comes first regardless of jobNo because bucket 0 is
+        // reserved for `job.id === parentId`.
         const mockGroup = createMockJobGroup('J10', ['J2', 'J20', 'J1']);
         mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
         mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
@@ -159,7 +164,7 @@ describe('useJobDetail', () => {
         await waitFor(() => expect(result.current.isLoading).toBe(false));
 
         const jobNos = result.current.sortedRelatedJobs.map(j => j.jobNo);
-        expect(jobNos).toEqual(['J1', 'J2', 'J10', 'J20']);
+        expect(jobNos).toEqual(['J10', 'J1', 'J2', 'J20']);
     });
 
     it('sorts safely when jobNo is null (e.g. recurring job templates)', async () => {

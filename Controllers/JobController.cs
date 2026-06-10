@@ -372,6 +372,35 @@ public class JobController(
         return Ok();
     }
 
+    // Manual-mode operator push of a recurring booking into live tucJob for
+    // a specific service date. The source booking stays on RecurringMode =
+    // Manual after the push so subsequent days do not auto-materialise —
+    // operator must explicitly Activate to opt into the nightly cron.
+    [HttpPost]
+    public async Task<IActionResult> InsertRecurringToLive([FromBody] InsertRecurringToLiveRequest request)
+    {
+        try
+        {
+            var result = await recurringJobRepository.InsertRecurringToLiveAsync(request);
+            return Json(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Scope-validation failures (e.g. Single scope on a grouped row,
+            // booking not Manual, missing RouteId) are user-correctable —
+            // surface them as 400 so the React modal can show the toast
+            // verbatim.
+            Log.Warning(ex, "InsertRecurringToLive rejected: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(InsertRecurringToLive)));
+            return StatusCode(500, ErrorMessageStringFormatter.Format(e));
+        }
+    }
+
     public async Task<IActionResult> GetCurrentWorkList(int courierId,
         DateTimeOffset startDate,
         DateTimeOffset endDate)

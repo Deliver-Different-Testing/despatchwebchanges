@@ -24,15 +24,20 @@ import {JobDetails} from '../../components/common/job-details/JobDetails';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
+import {updateJobDetail} from '../../services/jobListApi';
 import {
+    InsertRecurringToLiveResult,
     PrebookListModel,
     RecurringJobContextMenu as ContextMenuState,
     RecurringJobQuery,
-    RecurringJobSort, RecurringJobsPageProps,
+    RecurringJobSort,
+    RecurringJobsPageProps,
+    RecurringMode,
 } from '../../interfaces';
 import {RecurringJobsTable} from './components/RecurringJobsTable';
 import {RecurringJobsToolbar, RecurringJobsFilters} from './components/RecurringJobsToolbar';
 import {RecurringJobsContextMenu} from './components/RecurringJobsContextMenu';
+import {InsertToLiveDialog} from './components/InsertToLiveDialog';
 
 const DEFAULT_QUERY: RecurringJobQuery = {
     order: 'booked',
@@ -40,6 +45,7 @@ const DEFAULT_QUERY: RecurringJobQuery = {
     limit: 50,
     page: 1,
     active: true,
+    recurringMode: RecurringMode.Active,
 };
 
 export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
@@ -65,6 +71,10 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     const [jobToVoid, setJobToVoid] = useState<PrebookListModel | null>(null);
     const [isVoiding, setIsVoiding] = useState(false);
 
+    // Insert-to-Live dialog (Manual mode push)
+    const [insertDialogOpen, setInsertDialogOpen] = useState(false);
+    const [jobToInsert, setJobToInsert] = useState<PrebookListModel | null>(null);
+
     // Fetch data
     const {data, isLoading, refetch} = useRecurringJobsList(query);
 
@@ -86,14 +96,54 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         }));
     }, []);
 
-    const handleActiveFilterChange = useCallback((isActive: boolean) => {
+    const handleRecurringModeChange = useCallback((mode: RecurringMode) => {
         setQuery((prev) => ({
             ...prev,
-            active: isActive,
+            // Keep `active` in sync with the new tri-state value so any
+            // legacy code path that still reads it makes the right call.
+            active: mode === RecurringMode.Active,
+            recurringMode: mode,
             page: 1,
         }));
         setSelectedJobId(null);
     }, []);
+
+    const handleInsertToLiveOpen = useCallback((job: PrebookListModel) => {
+        setJobToInsert(job);
+        setInsertDialogOpen(true);
+    }, []);
+
+    const handleInsertToLiveClose = useCallback(() => {
+        setInsertDialogOpen(false);
+        setJobToInsert(null);
+    }, []);
+
+    const handleInsertToLiveSuccess = useCallback(async (_result: InsertRecurringToLiveResult) => {
+        setInsertDialogOpen(false);
+        setJobToInsert(null);
+        await refetch();
+    }, [refetch]);
+
+    // Flip a row's RecurringMode (Active / Manual / Inactive). Posts to the
+    // existing job/UpdateRecurringJob endpoint with JobProperty.RecurringMode
+    // and the byte value. The backend syncs ucbkActive per Steve's compat
+    // rule (Active|Manual → ucbkActive=1, Inactive → ucbkActive=0). After
+    // the call we refetch so the row falls out of / into whichever tab is
+    // currently open.
+    const handleSetMode = useCallback(async (job: PrebookListModel, mode: RecurringMode) => {
+        const modeLabel = RecurringMode[mode];
+        try {
+            await updateJobDetail(job.id, 'RecurringMode', String(mode), true);
+            showToast(`Mode changed to ${modeLabel}.`, 'success');
+            await refetch();
+        } catch (error) {
+            const message = error instanceof Error
+                ? error.message
+                : `Failed to change mode to ${modeLabel}.`;
+            console.error('Mode change failed:', error);
+            showToast(message, 'error');
+        }
+    }, [refetch, showToast]);
 
     const handleFiltersChange = useCallback((filters: RecurringJobsFilters) => {
         setQuery((prev) => ({
@@ -222,7 +272,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     </Toolbar>
                     <RecurringJobsToolbar
                         searchText={query.searchText || ''}
-                        isActive={query.active}
+                        recurringMode={query.recurringMode ?? (query.active ? RecurringMode.Active : RecurringMode.Inactive)}
                         isLoading={isLoading}
                         isExporting={isExporting}
                         filters={{
@@ -233,7 +283,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                             routeId: query.routeId,
                         }}
                         onSearchChange={handleSearchChange}
-                        onActiveFilterChange={handleActiveFilterChange}
+                        onRecurringModeChange={handleRecurringModeChange}
                         onFiltersChange={handleFiltersChange}
                         onRefresh={handleRefresh}
                         onExport={handleExport}
@@ -335,6 +385,17 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 onClose={handleContextMenuClose}
                 onAddPickupStop={handleAddPickupStop}
                 onAddDeliveryStop={handleAddDeliveryStop}
+                onInsertToLive={handleInsertToLiveOpen}
+                onSetMode={handleSetMode}
+            />
+
+            {/* Insert-to-Live Dialog (Manual-mode push) */}
+            <InsertToLiveDialog
+                open={insertDialogOpen}
+                job={jobToInsert}
+                onClose={handleInsertToLiveClose}
+                onSuccess={handleInsertToLiveSuccess}
+                showToast={showToast}
             />
 
             {/* Void Confirmation Dialog */}

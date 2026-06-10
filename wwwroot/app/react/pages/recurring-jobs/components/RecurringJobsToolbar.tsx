@@ -24,7 +24,7 @@ import ClearFiltersIcon from '@mui/icons-material/FilterAltOff';
 import ExportIcon from '@mui/icons-material/FileDownload';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey} from '../../../interfaces';
+import {CourierSuggestion, DAYS_OF_WEEK_BITS, DayOfWeekKey, RecurringMode} from '../../../interfaces';
 import {useCourierSearch} from '../../../hooks/useCourierApi';
 import {useRouteList, useSpeedList} from '../../../hooks/useRecurringJobsApi';
 
@@ -38,12 +38,12 @@ export interface RecurringJobsFilters {
 
 export interface RecurringJobsToolbarProps {
     searchText: string;
-    isActive: boolean;
+    recurringMode: RecurringMode;
     isLoading: boolean;
     isExporting: boolean;
     filters: RecurringJobsFilters;
     onSearchChange: (searchText: string) => void;
-    onActiveFilterChange: (isActive: boolean) => void;
+    onRecurringModeChange: (mode: RecurringMode) => void;
     onFiltersChange: (filters: RecurringJobsFilters) => void;
     onRefresh: () => void;
     onExport: () => void;
@@ -65,12 +65,12 @@ const DAY_ABBREVIATIONS: Record<DayOfWeekKey, string> = {
 
 export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                                                                               searchText,
-                                                                              isActive,
+                                                                              recurringMode,
                                                                               isLoading,
                                                                               isExporting,
                                                                               filters,
                                                                               onSearchChange,
-                                                                              onActiveFilterChange,
+                                                                              onRecurringModeChange,
                                                                               onFiltersChange,
                                                                               onRefresh,
                                                                               onExport,
@@ -125,13 +125,13 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
         onSearchChange('');
     }, [onSearchChange]);
 
-    const handleActiveFilterChange = useCallback(
-        (_event: React.MouseEvent<HTMLElement>, newValue: boolean | null) => {
+    const handleRecurringModeChange = useCallback(
+        (_event: React.MouseEvent<HTMLElement>, newValue: RecurringMode | null) => {
             if (newValue !== null) {
-                onActiveFilterChange(newValue);
+                onRecurringModeChange(newValue);
             }
         },
-        [onActiveFilterChange]
+        [onRecurringModeChange]
     );
 
     // Filter handlers
@@ -267,16 +267,16 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                     }}
                 />
 
-                {/* Active/Inactive Filter */}
+                {/* Active / Manual / Inactive Filter (Steve 2026-06-09) */}
                 <ToggleButtonGroup
-                    value={isActive}
+                    value={recurringMode}
                     exclusive
-                    onChange={handleActiveFilterChange}
+                    onChange={handleRecurringModeChange}
                     size="small"
                     disabled={isLoading}
                 >
                     <ToggleButton
-                        value={true}
+                        value={RecurringMode.Active}
                         sx={{
                             px: 2,
                             textTransform: 'none',
@@ -292,7 +292,23 @@ export const RecurringJobsToolbar: React.FC<RecurringJobsToolbarProps> = ({
                         Active
                     </ToggleButton>
                     <ToggleButton
-                        value={false}
+                        value={RecurringMode.Manual}
+                        sx={{
+                            px: 2,
+                            textTransform: 'none',
+                            '&.Mui-selected': {
+                                bgcolor: 'warning.main',
+                                color: 'warning.contrastText',
+                                '&:hover': {
+                                    bgcolor: 'warning.dark',
+                                },
+                            },
+                        }}
+                    >
+                        Manual
+                    </ToggleButton>
+                    <ToggleButton
+                        value={RecurringMode.Inactive}
                         sx={{
                             px: 2,
                             textTransform: 'none',
