@@ -10,6 +10,17 @@ import {parseDateFromApi} from '../utils/dateUtils';
 import type {ShowToastFn} from '../services/toastService';
 
 /**
+ * Three-state recurring operational mode.
+ * Backed by tucJobBooking.RecurringMode (tinyint). Numeric values are
+ * wire-format — must match DespatchWeb.Enums.RecurringMode ordinals.
+ */
+export enum RecurringMode {
+    Inactive = 0,
+    Active = 1,
+    Manual = 2,
+}
+
+/**
  * Query parameters for fetching recurring jobs list
  */
 export interface RecurringJobQuery {
@@ -18,13 +29,44 @@ export interface RecurringJobQuery {
     limit: number;
     page: number;
     searchText?: string;
+    // Legacy two-state filter kept for backwards compat. New code should
+    // send recurringMode; the backend uses recurringMode when present.
     active: boolean;
+    recurringMode?: RecurringMode;
     // Filters
     speedId?: number;
     time?: string;
     courierId?: number;
     daysOfWeek?: number;
     routeId?: number;
+}
+
+/**
+ * Scope picker for the Manual-mode "Insert to live" action. Wire-format
+ * ordinals — must match DespatchWeb.Enums.InsertToLiveScope.
+ * Group is the default and the only single-booking scope (Group resolves
+ * standalone bookings as families of one).
+ */
+export enum InsertToLiveScope {
+    Group = 1,
+    Route = 2,
+}
+
+export interface InsertRecurringToLiveRequest {
+    jobId: number;
+    // Calendar date in `YYYY-MM-DD` format. Backend binds to DateOnly —
+    // do NOT send a UTC ISO instant (`toISOString()`) because that
+    // rolls east-of-UTC tenants onto the previous calendar day.
+    insertDate: string;
+    scope: InsertToLiveScope;
+}
+
+export interface InsertRecurringToLiveResult {
+    bookingsMaterialised: number;
+    jobsInserted: number;
+    jobsRepriced: number;
+    insertedJobIds: number[];
+    parentBookingIds: number[];
 }
 
 /**
@@ -76,6 +118,20 @@ export interface PrebookListModel {
     deliveryAddress: AddressViewModel;
     routeId?: number | null;
     routeName?: string | null;
+    // Optional on the TS side so legacy mocks/fixtures that pre-date the
+    // RecurringMode rollout keep compiling — production responses always
+    // populate this from the backend. Treat absence as "unknown mode" at
+    // the UI (kebab menu's Insert-to-live action only appears when the
+    // value is explicitly Manual).
+    recurringMode?: RecurringMode;
+    rawBaseAmount?: number | null;
+    fuelSurchargeAmount?: number | null;
+    ucbkAmount?: number | null;
+    // True when BookingParentID points to a different ucbkID (i.e. this
+    // row is a child of a family). Standalones and parents both flag as
+    // false. Drives the Insert-to-live menu item visibility — children
+    // can't be pushed in isolation; only the parent can.
+    isChild?: boolean;
 }
 
 /**
@@ -95,6 +151,11 @@ export interface PrebookListModelDto {
     deliveryAddress: AddressViewModel;
     routeId?: number | null;
     routeName?: string | null;
+    recurringMode?: RecurringMode;
+    rawBaseAmount?: number | null;
+    fuelSurchargeAmount?: number | null;
+    ucbkAmount?: number | null;
+    isChild?: boolean;
 }
 
 /**

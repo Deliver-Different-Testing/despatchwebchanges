@@ -312,7 +312,11 @@ public sealed class JobReportService(
             var data = await recurringJobRepository.GetAllRecurringJobsForExportAsync(request);
 
             var csvBytes = await GenerateRecurringJobsCsvBytesAsync(data);
-            var statusText = request.Active ? "active" : "inactive";
+            // Filename suffix honours the new RecurringMode filter when
+            // present, falling back to the legacy bool for old clients.
+            var statusText = request.RecurringMode.HasValue
+                ? request.RecurringMode.Value.ToString().ToLowerInvariant()
+                : (request.Active ? "active" : "inactive");
             var filename = $"recurring-jobs-{statusText}-{currentDate:yyyy-MM-dd-HHmm}.csv";
 
             return (csvBytes, filename);
@@ -371,7 +375,15 @@ public sealed class JobReportService(
         ["Courier"] = x => FormatCsvField(x.Courier),
         ["Speed"] = x => FormatCsvField(x.Speed),
         ["Pickup Address"] = x => FormatAddress(x.PickupAddress),
-        ["Delivery Address"] = x => FormatAddress(x.DeliveryAddress)
+        ["Delivery Address"] = x => FormatAddress(x.DeliveryAddress),
+        // Mode + pricing audit columns (Steve 2026-06-09): lets ops eyeball
+        // RawBaseAmount vs headline so fuel drift is visible row-by-row,
+        // and surfaces Manual rows that are intentionally held back from
+        // the nightly auto-materialiser.
+        ["Mode"] = x => x.RecurringMode.ToString(),
+        ["Raw Base Amount"] = x => x.RawBaseAmount.HasValue ? x.RawBaseAmount.Value.ToString("0.00") : string.Empty,
+        ["Fuel Surcharge"] = x => x.FuelSurchargeAmount.HasValue ? x.FuelSurchargeAmount.Value.ToString("0.00") : string.Empty,
+        ["Amount"] = x => x.UcbkAmount.HasValue ? x.UcbkAmount.Value.ToString("0.00") : string.Empty
     };
 
     /// <summary>

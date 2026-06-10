@@ -26,7 +26,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={[createMockJob()]}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );
@@ -43,7 +42,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );
@@ -53,21 +51,23 @@ describe('RelatedJobTabs', () => {
         expect(screen.getByText('J-003')).toBeInTheDocument();
     });
 
-    it('renders synthetic "Job #N" labels for recurring jobs', () => {
-        // Recurring booking templates routinely have null UcbkJobNumber, so
-        // the parent/suffix policy would just produce blank tabs. The
-        // AngularJS template used `Job #{{$index + 1}}` for this case; we
-        // restore that here so multi-leg recurring jobs are navigable.
+    it('falls back to synthetic "Job #N" labels when jobNo is missing', () => {
+        // Defensive fallback for legacy recurring booking templates from
+        // before the 2026-04-08 child-template backfill: those rows have
+        // ucbkJobNumber = null, so the parent/suffix policy would produce
+        // blank tabs. tabLabel() drops to a synthetic 1-based 'Job #N'
+        // for those rows only. Templates with a real jobNo (post-backfill,
+        // and all freshly-booked schedule families) use the real number
+        // via the abbreviation policy in the next test.
         const jobs = [
             createMockJob({id: 1, jobNo: undefined as unknown as string}),
             createMockJob({id: 2, jobNo: undefined as unknown as string}),
-            createMockJob({id: 3, jobNo: 'J-003'}),
+            createMockJob({id: 3, jobNo: undefined as unknown as string}),
         ];
         renderWithTheme(
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={true}
                 onTabChange={onTabChange}
             />
         );
@@ -75,14 +75,14 @@ describe('RelatedJobTabs', () => {
         expect(screen.getByText('Job #1')).toBeInTheDocument();
         expect(screen.getByText('Job #2')).toBeInTheDocument();
         expect(screen.getByText('Job #3')).toBeInTheDocument();
-        // The real jobNo, when present, stays on the title attribute only.
-        expect(screen.queryByText('J-003')).not.toBeInTheDocument();
     });
 
-    it('abbreviates child tab labels using parent jobNo prefix on non-recurring jobs', () => {
+    it('abbreviates child tab labels using parent jobNo prefix', () => {
         // Parent KT2103CRT + child KT2103CRTLHP → child renders as '*LHP'.
-        // Mirrors the RunViewer Detail panel convention. Only applies to
-        // non-recurring jobs — recurring jobs use the synthetic labels above.
+        // Mirrors RunViewer's relatedJobTabLabel (homeControl.js ~lines
+        // 273-286). Applied to both recurring and non-recurring families
+        // since the 2026-06-10 child-template migrations now populate
+        // real ucbkJobNumber on every leg.
         const jobs = [
             createMockJob({id: 1, jobNo: 'KT2103CRT'}),
             createMockJob({id: 2, jobNo: 'KT2103CRTDEL'}),
@@ -92,7 +92,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );
@@ -100,7 +99,7 @@ describe('RelatedJobTabs', () => {
         expect(screen.getByText('KT2103CRT')).toBeInTheDocument();
         expect(screen.getByText('*DEL')).toBeInTheDocument();
         expect(screen.getByText('*LHP')).toBeInTheDocument();
-        // Full jobNo NOT rendered as a tab label (it lives on the title attr).
+        // Full child jobNo NOT rendered as a tab label (it lives on the title attr).
         expect(screen.queryByText('KT2103CRTLHP')).not.toBeInTheDocument();
     });
 
@@ -113,7 +112,6 @@ describe('RelatedJobTabs', () => {
             <RelatedJobTabs
                 sortedRelatedJobs={jobs}
                 selectedTabIndex={0}
-                isRecurringJob={false}
                 onTabChange={onTabChange}
             />
         );

@@ -48,7 +48,13 @@ const createMockProps = (overrides?: Partial<RecurringJobsContextMenuProps>) =>
 
 describe('RecurringJobsContextMenu', () => {
     describe('Rendering', () => {
-        it('renders menu with correct items, icons, divider, and position when anchorPosition and job are provided', () => {
+        it('renders menu with correct items, icons, and position when anchorPosition and job are provided', () => {
+            // Dividers are gated on the Insert-to-Live / SetMode prop
+            // groups (`onInsertToLive`, `onSetMode`) — defaultProps only
+            // wires the always-on Add Pickup / Add Delivery handlers, so
+            // no divider is expected in this base scenario. Divider
+            // presence is covered by the Insert-to-Live + SetMode
+            // describe blocks below.
             const props = createMockProps({
                 anchorPosition: {x: 300, y: 400},
             });
@@ -67,9 +73,8 @@ describe('RecurringJobsContextMenu', () => {
             const icons = screen.getAllByTestId('PinDropIcon');
             expect(icons.length).toBe(2);
 
-            // Divider between menu items
-            const divider = screen.getByRole('separator');
-            expect(divider).toBeInTheDocument();
+            // No divider when only the always-on actions are wired up.
+            expect(screen.queryByRole('separator')).not.toBeInTheDocument();
         });
 
         it('does not render menu when anchorPosition is null, job is null, or both are null', () => {

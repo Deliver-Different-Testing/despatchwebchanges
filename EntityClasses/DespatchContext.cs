@@ -6669,6 +6669,17 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.ProofOfDeliveryMobile).HasMaxLength(100);
             entity.Property(e => e.PumpPrice).HasColumnType("decimal(10, 4)");
             entity.Property(e => e.RawAmount).HasColumnType("money");
+            entity.Property(e => e.RawBaseAmount).HasColumnType("money");
+            entity.Property(e => e.RecurringMode)
+                .HasDefaultValue((byte)1)
+                // HasSentinel((byte)255) so EF stops treating the CLR default
+                // of byte (0) as "value not set, use the DB default of 1".
+                // Without this, fixtures (and real callers) that explicitly
+                // assign RecurringMode = Inactive (0) get silently rewritten
+                // to Active (1) at SaveChanges because EF can't distinguish
+                // "0 means Inactive" from "0 means default-CLR-value".
+                .HasSentinel((byte)255)
+                .HasColumnName("RecurringMode");
             entity.Property(e => e.RefJobId).HasColumnName("RefJobID");
             entity.Property(e => e.RequiredDeliveryTime).HasColumnType("datetime");
             entity.Property(e => e.RestartDate).HasColumnType("datetime");

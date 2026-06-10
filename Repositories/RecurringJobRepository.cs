@@ -130,7 +130,7 @@ public class RecurringJobRepository(
                 JobProperty.Size or JobProperty.DGDocumentation or
                     JobProperty.TrackingMethod or JobProperty.Frequency or
                     JobProperty.HolidayDelivery or JobProperty.DaysOfWeek or
-                    JobProperty.Active
+                    JobProperty.Active or JobProperty.RecurringMode
                     => await UpdatePropertyWithNoteAsync(jobId, property, value),
 
                 _ => throw new ArgumentOutOfRangeException(nameof(property), property, null)
@@ -277,6 +277,452 @@ public class RecurringJobRepository(
                 ErrorMessageStringFormatter.FormatForLogging(ex, nameof(RecurringJobRepository),
                     nameof(UpdateBookingPickupAddressAsync)));
             throw;
+        }
+    }
+
+    public async Task<InsertRecurringToLiveResult> InsertRecurringToLiveAsync(InsertRecurringToLiveRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (request.JobId <= 0)
+        {
+            throw new ArgumentException("JobId is required", nameof(request));
+        }
+
+        // ToDateTime(MinValue) anchors the calendar date at 00:00:00
+        // with Kind = Unspecified - SQL Server's `datetime` column then
+        // stores `<insertDate> 00:00:00.000` verbatim. ucbkTime is
+        // combined separately by UTL_stpJobBooking_InsertSchedule's
+        // @TargetDate + ucbkTime CONVERT, so the time-of-day is sourced
+        // from the parent template and the date from this value -
+        // neither path round-trips through UTC.
+        var insertDate = request.InsertDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Unspecified);
+
+        // Scope resolves to parent ucbkIDs only. The SP UTL_stpJobBooking_
+        // InsertJobAndChildren / UTL_stpJobBooking_InsertSchedule fan
+        // out to children automatically — same routing pattern as
+        // UTL_stpJobBooking_Monitor — so we deliberately do NOT iterate
+        // over children at the C# layer.
+        var parentBookingIds = await ResolveParentBookingScopeAsync(request.JobId, request.Scope);
+
+        if (parentBookingIds.Count == 0)
+        {
+            return new InsertRecurringToLiveResult
+            {
+                ParentBookingIds = [],
+                InsertedJobIds = []
+            };
+        }
+
+        var startUtc = DateTime.UtcNow;
+
+        // Pre-fetch the parent metadata we need: ScheduleID for SP
+        // routing (same logic as UTL_stpJobBooking_Monitor),
+        // RawBaseAmount for downstream reprice.
+        var parentMeta = await Context.TucJobBookings
+            .Where(b => parentBookingIds.Contains(b.UcbkId))
+            .Select(b => new
+            {
+                b.UcbkId,
+                b.ScheduleId,
+                b.RawBaseAmount
+            })
+            .ToDictionaryAsync(b => b.UcbkId);
+
+        foreach (var parentUcbkId in parentBookingIds)
+        {
+            if (!parentMeta.TryGetValue(parentUcbkId, out var meta))
+            {
+                continue;
+            }
+
+            // Monitor SP's routing: ScheduleID > 0 → InsertSchedule, else
+            // → InsertJobAndChildren. Both are shared SPs (same name on
+            // NZ and US tenants per docs/sp-reference) — InsertSchedule
+            // internally calls WS_stpJob_Insert (NZ) / DD_stpJob_Insert
+            // Excelerator (US) for pricing, and InsertJobAndChildren
+            // fans out to UTL_stpJobBooking_InsertJob for parent + each
+            // child template — so a single call per parent reaches the
+            // whole family.
+            var useSchedule = meta.ScheduleId.HasValue && meta.ScheduleId.Value > 0;
+
+            await ExecuteMaterialiseParentAsync(parentUcbkId, insertDate, useSchedule);
+        }
+
+        // Identify newly inserted tucJob rows. Each parent's family will
+        // have multiple rows in tucJob now — we want them all so they
+        // get repriced. The BookingParentID on the new tucJob row points
+        // to the source booking template (parent or child ucbkID).
+        var familyTemplateIds = await Context.TucJobBookings
+            .Where(b => parentBookingIds.Contains(b.UcbkId)
+                       || (b.BookingParentId.HasValue && parentBookingIds.Contains(b.BookingParentId.Value)))
+            .Select(b => b.UcbkId)
+            .ToListAsync();
+
+        var newJobs = await Context.TucJobs
+            .Where(j => j.BookingParentId.HasValue
+                       && familyTemplateIds.Contains(j.BookingParentId.Value)
+                       && j.CreatedTime >= startUtc)
+            .Select(j => new { j.UcjbId, j.BookingParentId })
+            .ToListAsync();
+
+        var insertedJobIds = newJobs.Select(j => j.UcjbId).ToList();
+
+        // Reprice each new tucJob from its source booking template's
+        // RawBaseAmount via UTL_fncJob_RawBaseToAmount. We pull
+        // RawBaseAmount per child template (not just parent) because
+        // children can carry their own pricing components — fall back to
+        // parent's RawBaseAmount only when child's is NULL.
+        //
+        // Resolution chain when RawBaseAmount is NULL on a template
+        // (common for newly-booked recurring jobs whose create-flow
+        // doesn't stamp the new column):
+        //   1. Child template's RawBaseAmount
+        //   2. Parent template's RawBaseAmount
+        //   3. Compute via Steve's backfill formula:
+        //        max(0, ucbkAmount - FuelSurchargeAmount)
+        //   When (3) fires, we also self-heal the template by writing
+        //   the computed value back so subsequent pushes / queries see
+        //   it without having to recompute.
+        var allTemplatePricing = await Context.TucJobBookings
+            .Where(b => familyTemplateIds.Contains(b.UcbkId))
+            .Select(b => new
+            {
+                b.UcbkId,
+                b.BookingParentId,
+                b.RawBaseAmount,
+                b.UcbkAmount,
+                b.FuelSurchargeAmount
+            })
+            .ToDictionaryAsync(b => b.UcbkId);
+
+        decimal? ResolveRawBase(int templateUcbkId, out bool computedFromFormula)
+        {
+            computedFromFormula = false;
+            if (!allTemplatePricing.TryGetValue(templateUcbkId, out var tpl))
+            {
+                return null;
+            }
+
+            if (tpl.RawBaseAmount.HasValue)
+            {
+                return tpl.RawBaseAmount.Value;
+            }
+
+            // Walk up to parent.
+            if (tpl.BookingParentId.HasValue
+                && allTemplatePricing.TryGetValue(tpl.BookingParentId.Value, out var parentTpl)
+                && parentTpl.RawBaseAmount.HasValue)
+            {
+                return parentTpl.RawBaseAmount.Value;
+            }
+
+            // Formula fallback: use the template's own headline - fuel.
+            var headline = tpl.UcbkAmount ?? 0m;
+            var fuel = tpl.FuelSurchargeAmount ?? 0m;
+            var derived = headline - fuel;
+            if (derived < 0m)
+            {
+                derived = 0m;
+            }
+
+            // Only treat the derived value as a real anchor if the
+            // template has actual pricing data (some new templates may
+            // genuinely have ucbkAmount=NULL — in that case skip).
+            if (!tpl.UcbkAmount.HasValue && !tpl.FuelSurchargeAmount.HasValue)
+            {
+                return null;
+            }
+
+            computedFromFormula = true;
+            return derived;
+        }
+
+        var repricedCount = 0;
+        var selfHealedTemplateIds = new HashSet<int>();
+        foreach (var nj in newJobs)
+        {
+            if (!nj.BookingParentId.HasValue)
+            {
+                continue;
+            }
+
+            var resolved = ResolveRawBase(nj.BookingParentId.Value, out var computed);
+            if (!resolved.HasValue)
+            {
+                continue;
+            }
+
+            var rawBaseAmount = resolved.Value;
+
+            // Self-heal: persist the computed RawBaseAmount back onto the
+            // template so subsequent pushes / queries pick it up directly.
+            // Only do this when we derived it via formula (paths 1+2 are
+            // already authoritative).
+            if (computed && selfHealedTemplateIds.Add(nj.BookingParentId.Value))
+            {
+                await Context.TucJobBookings
+                    .Where(b => b.UcbkId == nj.BookingParentId.Value)
+                    .ExecuteUpdateAsync(s => s.SetProperty(b => b.RawBaseAmount, rawBaseAmount));
+            }
+
+            var newTotal = await Context.TucJobs
+                .Where(t => t.UcjbId == nj.UcjbId)
+                .Select(_ => DespatchContext.UTL_fncJob_RawBaseToAmount(nj.UcjbId, rawBaseAmount))
+                .FirstOrDefaultAsync() ?? 0m;
+
+            var fuel = newTotal - rawBaseAmount;
+
+            await Context.TucJobs
+                .Where(t => t.UcjbId == nj.UcjbId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.RawBaseAmount, rawBaseAmount)
+                    .SetProperty(t => t.UcjbAmount, newTotal)
+                    .SetProperty(t => t.FuelSurchargeAmount, fuel));
+            repricedCount++;
+        }
+
+        return new InsertRecurringToLiveResult
+        {
+            BookingsMaterialised = parentBookingIds.Count,
+            JobsInserted = insertedJobIds.Count,
+            JobsRepriced = repricedCount,
+            InsertedJobIds = insertedJobIds,
+            ParentBookingIds = parentBookingIds
+        };
+    }
+
+    // Rotates the family's ucbkJobNumber via the same path uspPrebookSet
+    // uses for the daily cron (UTL_stpJob_Insert_JobNumber + child suffix
+    // CASE), temp-stamps ucbkDate/ucbkTime/RecurringInitialDays on parent
+    // and children, calls the appropriate materialiser SP, then restores
+    // the originals. Because the job number is freshly minted on every
+    // call, there is no path to a ucjbNumber UNIQUE collision in tucJob
+    // and no need for a conflict warning UI.
+    //
+    // The child-suffix CASE is copied verbatim from uspPrebookSet so the
+    // job-number format stays consistent across the daily cron and
+    // operator-initiated pushes:
+    //   JRT=13 + last-char-digit  →  RIGHT(ucbkJobNumber, 1)
+    //   ends '%LHP'               →  'LHP'
+    //   ends '%DEL'               →  'DEL'
+    //   ends 'LH?' (last 3 chars) →  RIGHT(ucbkJobNumber, 3)
+    //   otherwise                 →  '' (parent number unmodified)
+    private async Task ExecuteMaterialiseParentAsync(int parentUcbkId, DateTime insertDate, bool useSchedule)
+    {
+        var spName = useSchedule
+            ? "dbo.UTL_stpJobBooking_InsertSchedule"
+            : "dbo.UTL_stpJobBooking_InsertJobAndChildren";
+
+        var sql = $@"
+            -- Snapshot originals so we can restore on success/CATCH.
+            -- Parent template:
+            DECLARE @origParentDate datetime,
+                    @origParentInitialDays int,
+                    @origParentTime datetime,
+                    @origParentJobNumber nvarchar(50),
+                    @origParentSpeed int;
+            SELECT @origParentDate = ucbkDate,
+                   @origParentInitialDays = RecurringInitialDays,
+                   @origParentTime = ucbkTime,
+                   @origParentJobNumber = ucbkJobNumber,
+                   @origParentSpeed = ucbkSpeed
+            FROM dbo.tucJobBooking
+            WHERE ucbkID = @parentUcbkId;
+
+            IF @origParentTime IS NULL
+            BEGIN
+                DECLARE @msg nvarchar(400) = N'Cannot push booking '
+                    + CAST(@parentUcbkId AS nvarchar(20))
+                    + N' — parent has NULL ucbkTime. Set a time on the parent before pushing.';
+                ;THROW 50010, @msg, 1;
+            END
+
+            -- Children snapshot table for restore.
+            DECLARE @ChildSnapshot TABLE (
+                ucbkID int PRIMARY KEY,
+                origDate datetime,
+                origInitialDays int,
+                origTime datetime,
+                origJobNumber nvarchar(50)
+            );
+            INSERT INTO @ChildSnapshot (ucbkID, origDate, origInitialDays, origTime, origJobNumber)
+            SELECT ucbkID, ucbkDate, RecurringInitialDays, ucbkTime, ucbkJobNumber
+            FROM dbo.tucJobBooking
+            WHERE BookingParentID = @parentUcbkId
+              AND ucbkID <> @parentUcbkId;
+
+            BEGIN TRY
+                -- Mint fresh @JobNo via the same SP uspPrebookSet calls.
+                DECLARE @PrebookStaffId int;
+                SELECT @PrebookStaffId = ucstID FROM tucStaff WHERE ucstFirstName = 'Prebooks';
+                IF @PrebookStaffId IS NULL
+                    SET @PrebookStaffId = 0;
+
+                DECLARE @JobNo varchar(50);
+                EXEC UTL_stpJob_Insert_JobNumber @PrebookStaffId, @origParentSpeed, @JobNo OUTPUT;
+
+                -- Stamp parent: fresh job number, chosen date, reset
+                -- RecurringInitialDays so the materialiser uses the date
+                -- as-is (no rolling-window offset).
+                UPDATE dbo.tucJobBooking
+                SET ucbkDate = @insertDate,
+                    RecurringInitialDays = 0,
+                    ucbkJobNumber = @JobNo
+                WHERE ucbkID = @parentUcbkId;
+
+                -- Stamp children: same date, parent's time (inherited),
+                -- @JobNo + suffix from the child's current ucbkJobNumber
+                -- shape. CASE matches uspPrebookSet verbatim.
+                UPDATE dbo.tucJobBooking
+                SET ucbkDate = @insertDate,
+                    RecurringInitialDays = 0,
+                    ucbkTime = @origParentTime,
+                    ucbkJobNumber = @JobNo
+                        + CASE
+                            WHEN JobRelationshipTypeID = 13 AND ucbkJobNumber LIKE '%[0-9]'
+                                THEN RIGHT(ucbkJobNumber, 1)
+                            WHEN RIGHT(ucbkJobNumber, 3) = 'LHP' THEN 'LHP'
+                            WHEN RIGHT(ucbkJobNumber, 3) = 'DEL' THEN 'DEL'
+                            WHEN LEFT(RIGHT(ucbkJobNumber, 3), 2) = 'LH' THEN RIGHT(ucbkJobNumber, 3)
+                            ELSE ''
+                          END
+                WHERE BookingParentID = @parentUcbkId
+                  AND ucbkID <> @parentUcbkId
+                  AND JobRelationshipTypeID IN (13, 20);
+
+                EXEC {spName} @JobBookingID = @parentUcbkId;
+
+                -- Restore parent.
+                UPDATE dbo.tucJobBooking
+                SET ucbkDate = @origParentDate,
+                    RecurringInitialDays = @origParentInitialDays,
+                    ucbkTime = @origParentTime,
+                    ucbkJobNumber = @origParentJobNumber
+                WHERE ucbkID = @parentUcbkId;
+
+                -- Restore children from snapshot — BUT self-heal
+                -- ucbkTime: if the original was NULL, keep the parent's
+                -- time we stamped (so the child template no longer has
+                -- a NULL time after a successful push). Same idea would
+                -- apply to ucbkJobNumber, except the daily cron rotates
+                -- those, so leaving them suffixed would confuse the
+                -- next cron — so jobNumber always restores.
+                UPDATE jb
+                SET jb.ucbkDate = cs.origDate,
+                    jb.RecurringInitialDays = cs.origInitialDays,
+                    jb.ucbkTime = ISNULL(cs.origTime, jb.ucbkTime),
+                    jb.ucbkJobNumber = cs.origJobNumber
+                FROM dbo.tucJobBooking jb
+                INNER JOIN @ChildSnapshot cs ON cs.ucbkID = jb.ucbkID;
+            END TRY
+            BEGIN CATCH
+                -- Mirror restore on failure so the booking templates
+                -- never carry the temp-stamped state past this call.
+                UPDATE dbo.tucJobBooking
+                SET ucbkDate = @origParentDate,
+                    RecurringInitialDays = @origParentInitialDays,
+                    ucbkTime = @origParentTime,
+                    ucbkJobNumber = @origParentJobNumber
+                WHERE ucbkID = @parentUcbkId;
+
+                UPDATE jb
+                SET jb.ucbkDate = cs.origDate,
+                    jb.RecurringInitialDays = cs.origInitialDays,
+                    jb.ucbkTime = cs.origTime,
+                    jb.ucbkJobNumber = cs.origJobNumber
+                FROM dbo.tucJobBooking jb
+                INNER JOIN @ChildSnapshot cs ON cs.ucbkID = jb.ucbkID;
+                THROW;
+            END CATCH;";
+
+        await Context.Database.ExecuteSqlRawAsync(
+            sql,
+            new Microsoft.Data.SqlClient.SqlParameter("@parentUcbkId", parentUcbkId),
+            new Microsoft.Data.SqlClient.SqlParameter("@insertDate", insertDate));
+    }
+
+    // Returns the set of PARENT ucbkIDs to materialise. Children are not
+    // returned individually — they're handled by the SP's fan-out.
+    // Validates the starting booking is a parent and in Manual mode.
+    private async Task<List<int>> ResolveParentBookingScopeAsync(int startBookingId, InsertToLiveScope scope)
+    {
+        var effectiveId = await Context.GetEffectiveJobBookingIdAsync(startBookingId);
+
+        var startMeta = await Context.TucJobBookings
+            .Where(b => b.UcbkId == effectiveId)
+            .Select(b => new
+            {
+                b.UcbkId,
+                b.RecurringMode,
+                b.UcbkOneOff,
+                b.RouteId,
+                b.BookingParentId
+            })
+            .FirstOrDefaultAsync();
+
+        if (startMeta is null)
+        {
+            throw new ArgumentException($"Recurring booking {startBookingId} not found", nameof(startBookingId));
+        }
+
+        if (startMeta.UcbkOneOff == true)
+        {
+            throw new InvalidOperationException(
+                $"Booking {startBookingId} is a one-off, not a recurring booking.");
+        }
+
+        // The UI hides Insert-to-live for children, but enforce here too —
+        // a parent is BookingParentID = NULL or = self.
+        var isParent = !startMeta.BookingParentId.HasValue
+                       || startMeta.BookingParentId.Value == startMeta.UcbkId;
+        if (!isParent)
+        {
+            throw new InvalidOperationException(
+                $"Booking {startBookingId} is a child — Insert-to-live can only be initiated from the parent booking.");
+        }
+
+        if (startMeta.RecurringMode != (byte)Enums.RecurringMode.Manual)
+        {
+            throw new InvalidOperationException(
+                $"Booking {startBookingId} is not in Manual mode (current mode: {(Enums.RecurringMode)startMeta.RecurringMode}). Only Manual bookings can be pushed via Insert-to-live.");
+        }
+
+        switch (scope)
+        {
+            case InsertToLiveScope.Group:
+                // The starting parent IS the family root. SP will fan out
+                // to children automatically.
+                return [startMeta.UcbkId];
+
+            case InsertToLiveScope.Route:
+            {
+                if (!startMeta.RouteId.HasValue)
+                {
+                    throw new InvalidOperationException(
+                        $"Booking {startBookingId} has no RouteId — route-scope push needs a route assignment.");
+                }
+
+                // All Manual PARENT bookings on the same route. Children
+                // come along via each parent's SP fan-out.
+                var parentIds = await Context.TucJobBookings
+                    .Where(b => b.RouteId == startMeta.RouteId.Value
+                                && b.UcbkOneOff != true
+                                && b.RecurringMode == (byte)Enums.RecurringMode.Manual
+                                && (!b.BookingParentId.HasValue || b.BookingParentId.Value == b.UcbkId))
+                    .Select(b => b.UcbkId)
+                    .ToListAsync();
+
+                if (parentIds.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Route {startMeta.RouteId.Value} has no Manual-mode parent bookings to push.");
+                }
+
+                return parentIds;
+            }
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(scope), scope, "Unsupported insert-to-live scope");
         }
     }
 
@@ -654,21 +1100,76 @@ public class RecurringJobRepository(
                 var staffId = _infoService.GetStaffId();
                 var currentTenantTime = _clock.TenantNow;
 
+                // Keep RecurringMode in sync so the new tri-state filter
+                // sees Active/Inactive transitions immediately. Legacy
+                // boolean callers don't know about Manual — that state can
+                // only be set via JobProperty.RecurringMode below.
+                var newMode = isActive
+                    ? (byte)Enums.RecurringMode.Active
+                    : (byte)Enums.RecurringMode.Inactive;
+
                 if (isActive)
                 {
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                        .ExecuteUpdateAsync(s => s.SetProperty(j => j.UcbkActive, true));
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.UcbkActive, true)
+                            .SetProperty(j => j.RecurringMode, newMode));
                 }
                 else
                 {
                     await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
                         .ExecuteUpdateAsync(s => s
                             .SetProperty(j => j.UcbkActive, false)
+                            .SetProperty(j => j.RecurringMode, newMode)
                             .SetProperty(j => j.UcbkInActiveBy, staffId)
                             .SetProperty(j => j.UcbkInActiveDate, currentTenantTime));
                 }
 
                 return $"Changed Active to {(isActive ? "Yes" : "No")}";
+            }
+            case JobProperty.RecurringMode:
+            {
+                // Three-state operator transition. ucbkActive is synced per
+                // Steve's compatibility rule so legacy active-only screens
+                // continue to behave sensibly during rollout:
+                //   Inactive => ucbkActive=0 (stamp who/when)
+                //   Active   => ucbkActive=1
+                //   Manual   => ucbkActive=1 (visible but excluded from
+                //               auto-materialiser via uspPrebookSet filter)
+                var modeValue = ParseValue<byte>(value, property);
+                if (!Enum.IsDefined(typeof(Enums.RecurringMode), modeValue))
+                {
+                    throw new ArgumentException(
+                        $"Invalid value '{value}' for RecurringMode. Expected 0 (Inactive), 1 (Active), or 2 (Manual).",
+                        nameof(value));
+                }
+
+                var mode = (Enums.RecurringMode)modeValue;
+                var staffId = _infoService.GetStaffId();
+                var currentTenantTime = _clock.TenantNow;
+
+                if (mode == Enums.RecurringMode.Inactive)
+                {
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.RecurringMode, modeValue)
+                            .SetProperty(j => j.UcbkActive, false)
+                            .SetProperty(j => j.UcbkInActiveBy, staffId)
+                            .SetProperty(j => j.UcbkInActiveDate, currentTenantTime));
+                }
+                else
+                {
+                    // Active or Manual — both surface as ucbkActive=1.
+                    // Inactive-audit fields are preserved as historical
+                    // markers per Steve's recommendation; they are not
+                    // cleared on a re-activate.
+                    await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(j => j.RecurringMode, modeValue)
+                            .SetProperty(j => j.UcbkActive, true));
+                }
+
+                return $"Changed Mode to {mode}";
             }
             default:
                 throw new ArgumentOutOfRangeException(nameof(property), property, null);
@@ -734,8 +1235,19 @@ public class RecurringJobRepository(
 
     private IQueryable<TucJobBooking> BuildRecurringJobQuery(RecurringJobQueryRequest request, bool isUsTenant)
     {
+        // Mode-aware filter (Steve 2026-06-09, three-state recurring mode).
+        // When the new RecurringMode arrives we filter by the tinyint
+        // directly so Manual (=2) is reachable. When only the legacy
+        // Active bool is sent, we fall back to it but read the new
+        // column anyway (Active≡RecurringMode=1, Inactive≡RecurringMode=0)
+        // so existing UI keeps working while Manual rows are correctly
+        // hidden from the "Active" tab even though ucbkActive=1 on them.
+        var modeFilter = request.RecurringMode.HasValue
+            ? (byte)request.RecurringMode.Value
+            : (byte)(request.Active ? Enums.RecurringMode.Active : Enums.RecurringMode.Inactive);
+
         var query = Context.TucJobBookings
-            .Where(j => j.UcbkActive == request.Active && j.UcbkOneOff != true);
+            .Where(j => j.RecurringMode == modeFilter && j.UcbkOneOff != true);
 
         // US tenants: exclude child jobs (only show parent jobs)
         if (isUsTenant)

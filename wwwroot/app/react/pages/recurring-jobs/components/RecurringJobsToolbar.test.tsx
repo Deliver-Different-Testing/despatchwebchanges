@@ -9,6 +9,7 @@ import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsToolbar, RecurringJobsToolbarProps, RecurringJobsFilters} from './RecurringJobsToolbar';
+import {RecurringMode} from '../../../interfaces';
 
 // Mock the hooks
 jest.mock('../../../hooks/useRecurringJobsApi', () => ({
@@ -57,12 +58,12 @@ const defaultFilters: RecurringJobsFilters = {
 
 const createDefaultProps = (overrides?: Partial<RecurringJobsToolbarProps>): RecurringJobsToolbarProps => ({
     searchText: '',
-    isActive: true,
+    recurringMode: RecurringMode.Active,
     isLoading: false,
     isExporting: false,
     filters: defaultFilters,
     onSearchChange: jest.fn(),
-    onActiveFilterChange: jest.fn(),
+    onRecurringModeChange: jest.fn(),
     onFiltersChange: jest.fn(),
     onRefresh: jest.fn(),
     onExport: jest.fn(),
@@ -101,11 +102,12 @@ describe('RecurringJobsToolbar', () => {
         // Search input
         expect(screen.getByPlaceholderText('Search jobs...')).toBeInTheDocument();
 
-        // Active/Inactive toggle buttons
+        // Active / Manual / Inactive mode selector
         expect(screen.getByText('Active')).toBeInTheDocument();
+        expect(screen.getByText('Manual')).toBeInTheDocument();
         expect(screen.getByText('Inactive')).toBeInTheDocument();
 
-        // Active selected when isActive is true
+        // Active selected by default
         const activeButton = screen.getByText('Active').closest('button');
         expect(activeButton).toHaveAttribute('aria-pressed', 'true');
 
@@ -181,21 +183,43 @@ describe('RecurringJobsToolbar', () => {
         });
     });
 
-    describe('Active/Inactive toggle', () => {
-        it('should have Inactive selected when isActive is false', () => {
-            renderWithProviders(createDefaultProps({isActive: false}));
+    describe('Active/Manual/Inactive mode selector', () => {
+        it('should have Inactive selected when recurringMode is Inactive', () => {
+            renderWithProviders(createDefaultProps({recurringMode: RecurringMode.Inactive}));
 
             const inactiveButton = screen.getByText('Inactive').closest('button');
             expect(inactiveButton).toHaveAttribute('aria-pressed', 'true');
         });
 
-        it('should call onActiveFilterChange when toggling', () => {
-            const onActiveFilterChange = jest.fn();
-            renderWithProviders(createDefaultProps({isActive: true, onActiveFilterChange}));
+        it('should have Manual selected when recurringMode is Manual', () => {
+            renderWithProviders(createDefaultProps({recurringMode: RecurringMode.Manual}));
+
+            const manualButton = screen.getByText('Manual').closest('button');
+            expect(manualButton).toHaveAttribute('aria-pressed', 'true');
+        });
+
+        it('should call onRecurringModeChange with Manual when Manual clicked', () => {
+            const onRecurringModeChange = jest.fn();
+            renderWithProviders(createDefaultProps({
+                recurringMode: RecurringMode.Active,
+                onRecurringModeChange,
+            }));
+
+            fireEvent.click(screen.getByText('Manual'));
+
+            expect(onRecurringModeChange).toHaveBeenCalledWith(RecurringMode.Manual);
+        });
+
+        it('should call onRecurringModeChange with Inactive when Inactive clicked', () => {
+            const onRecurringModeChange = jest.fn();
+            renderWithProviders(createDefaultProps({
+                recurringMode: RecurringMode.Active,
+                onRecurringModeChange,
+            }));
 
             fireEvent.click(screen.getByText('Inactive'));
 
-            expect(onActiveFilterChange).toHaveBeenCalledWith(false);
+            expect(onRecurringModeChange).toHaveBeenCalledWith(RecurringMode.Inactive);
         });
     });
 

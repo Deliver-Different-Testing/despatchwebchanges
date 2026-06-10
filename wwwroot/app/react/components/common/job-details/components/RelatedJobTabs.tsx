@@ -1,18 +1,18 @@
 /**
  * RelatedJobTabs - Tabs for switching between related jobs in a job group
  *
- * Label policy:
- *   - Recurring jobs (preBook templates) → synthetic 'Job #N' using the
- *     1-based tab index. The template booking and its legs typically have
- *     null `UcbkJobNumber`, so falling back to a real jobNo just gives
- *     blank tabs. This matches the AngularJS template
- *     (`<span ng-if="::ctrl.isRecurringJob">Job #{{$index + 1}}</span>`).
- *   - Non-recurring jobs (Kevin 2026-05-26, mirrors RunViewer Detail panel):
- *       - Parent tab (first sibling, shortest jobNo) → full jobNo
- *       - Each child tab → '*' + suffix-that-differs-from-parent
- *         (e.g. KT2103CRTLHP under parent KT2103CRT renders as '*LHP')
- *       - Fallback to full jobNo if the child's jobNo doesn't share the
- *         parent's prefix (heuristic miss)
+ * Label policy (mirrors RunViewer's relatedJobTabLabel from homeControl.js
+ * ~lines 273-286, applied to both recurring and non-recurring families
+ * since the 2026-06-10 child-template migrations now populate real
+ * ucbkJobNumber on every leg):
+ *   - Parent tab (sortedRelatedJobs[0] after the chain-order sort in
+ *     useJobDetail.ts) → full jobNo
+ *   - Each child tab → '*' + suffix-that-differs-from-parent
+ *     (e.g. KT2103CRTLHP under parent KT2103CRT renders as '*LHP')
+ *   - Defensive fallbacks for legacy data:
+ *       - If a leg's jobNo doesn't share the parent's prefix → full jobNo
+ *       - If the leg has no jobNo at all (legacy templates from before
+ *         the 2026-04-08 child-template backfill) → 'Job #N' placeholder
  *   - Full jobNo always available on hover via the title attribute.
  */
 
@@ -24,12 +24,15 @@ import type {IJob} from '../JobDetails.types';
 interface RelatedJobTabsProps {
     sortedRelatedJobs: IJob[];
     selectedTabIndex: number;
-    isRecurringJob: boolean;
     onTabChange: (index: number) => void;
 }
 
-function tabLabel(job: IJob, parent: IJob | undefined): string {
+function tabLabel(job: IJob, parent: IJob | undefined, fallbackIndex: number): string {
     const jobNo = job.jobNo ?? '';
+    // Legacy recurring templates from before the 2026-04-08 child-template
+    // backfill have null ucbkJobNumber - fall through to the placeholder so
+    // the tabs aren't blank.
+    if (!jobNo) return `Job #${fallbackIndex + 1}`;
     if (!parent || !parent.jobNo) return jobNo;
     if (job.id === parent.id) return parent.jobNo;
     if (jobNo.startsWith(parent.jobNo)) {
@@ -41,7 +44,6 @@ function tabLabel(job: IJob, parent: IJob | undefined): string {
 export function RelatedJobTabs({
     sortedRelatedJobs,
     selectedTabIndex,
-    isRecurringJob,
     onTabChange,
 }: RelatedJobTabsProps) {
     if (sortedRelatedJobs.length <= 1) return null;
@@ -73,7 +75,7 @@ export function RelatedJobTabs({
             {sortedRelatedJobs.map((job, index) => (
                 <Tab
                     key={job.id}
-                    label={isRecurringJob ? `Job #${index + 1}` : tabLabel(job, parent)}
+                    label={tabLabel(job, parent, index)}
                     title={job.jobNo ?? ''}
                 />
             ))}

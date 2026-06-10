@@ -432,7 +432,6 @@ export function JobDetails({config}: JobDetailsProps) {
                 <RelatedJobTabs
                     sortedRelatedJobs={sortedRelatedJobs}
                     selectedTabIndex={selectedTabIndex}
-                    isRecurringJob={isRecurringJob}
                     onTabChange={handleTabChange}
                 />
 

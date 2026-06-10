@@ -68,12 +68,35 @@ export function useJobDetail({
 
     const sortedRelatedJobs = useMemo(() => {
         if (!jobQuery.data) return [];
+        const parentId = jobQuery.data.job.id;
         const allJobs = [jobQuery.data.job, ...jobQuery.data.relatedJobs];
-        allJobs.sort((a, b) =>
-            // Recurring job templates can have a null jobNo until they're instantiated;
-            // fall back to '' so localeCompare doesn't crash.
-            (a.jobNo ?? '').localeCompare(b.jobNo ?? '', undefined, {numeric: true, sensitivity: 'base'})
-        );
+
+        // Chain-order sort mirroring RunViewer's siblingSortKey
+        // (homeControl.js ~lines 229-243). Tabs read left-to-right as
+        // the shipment timeline: parent -> LHP -> LH1..LHn -> DEL ->
+        // anything else. Suffix matching is case-insensitive against
+        // the live job number.
+        //
+        // Parent is identified by id-equality with jobGroup.job.id —
+        // IJob has no parentJobId so we can't use the RunViewer's
+        // `parentJobID == null` heuristic directly.
+        const siblingSortKey = (job: IJob): [number, number, string] => {
+            if (job.id === parentId) return [0, 0, ''];
+            const num = (job.jobNo ?? '').toUpperCase();
+            if (/LHP$/.test(num)) return [1, 0, ''];
+            const lh = num.match(/LH(\d+)$/);
+            if (lh) return [2, parseInt(lh[1], 10), ''];
+            if (/DEL$/.test(num)) return [3, 0, ''];
+            return [4, 0, num];
+        };
+
+        allJobs.sort((a, b) => {
+            const ka = siblingSortKey(a);
+            const kb = siblingSortKey(b);
+            if (ka[0] !== kb[0]) return ka[0] - kb[0];
+            if (ka[1] !== kb[1]) return ka[1] - kb[1];
+            return ka[2].localeCompare(kb[2]);
+        });
         return allJobs;
     }, [jobQuery.data]);
 
