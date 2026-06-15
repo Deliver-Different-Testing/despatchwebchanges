@@ -303,6 +303,8 @@ describe('jobApi integration', () => {
                 toLong: -118.2437,
                 speedId: 1,
                 vehicleId: 2,
+                weightKg: null,
+                weightLb: null,
             });
 
             expect(result).toBe(12345);

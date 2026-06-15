@@ -334,6 +334,7 @@ declare global {
                     deletePriceBreakdown: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
                 }
             ) => Promise<number | null>;
+            setToastService: (service: ToastService) => void;
         };
         ReactSelectDialog?: {
             showSelectDialog: (options: SelectDialogOptions) => Promise<SelectDialogResult | null>;

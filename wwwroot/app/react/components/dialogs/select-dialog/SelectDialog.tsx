@@ -79,6 +79,7 @@ export const SelectDialog: React.FC<SelectDialogProps> = ({
             const result: SelectDialogResult = {
                 fieldName,
                 value: selectedItem.id,
+                text: selectedItem.text,
                 checkboxValue: showCheckbox ? checkboxValue : undefined,
             };
 

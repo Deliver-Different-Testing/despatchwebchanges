@@ -78,8 +78,12 @@ export async function setFirstJob(jobId: number, courierId: number): Promise<voi
 
 // ── Bulk Job ─────────────────────────────────────────────────────────
 
-export async function releaseBulkJob(bulkJobId: number): Promise<void> {
-    await apiClient.post('job/ReleaseBulkJob', null, {params: {bulkJobId}});
+export interface ReleaseBulkJobResult {
+    jobNumbers: string[];
+}
+
+export async function releaseBulkJob(bulkJobId: number): Promise<ReleaseBulkJobResult> {
+    return apiClient.post<ReleaseBulkJobResult>('job/ReleaseBulkJob', null, {params: {bulkJobId}});
 }
 
 // ── Split Job ────────────────────────────────────────────────────────

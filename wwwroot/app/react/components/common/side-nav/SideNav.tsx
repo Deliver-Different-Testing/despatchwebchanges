@@ -225,7 +225,7 @@ export const SideNav: React.FC<SideNavProps> = ({
                 <Typography variant="caption" sx={{
                     color: "text.secondary"
                 }}>
-                    &copy; {currentYear} Deliver Different
+                    &copy; {currentYear} Deliver DFRNT
                 </Typography>
                 {isUsCustomer && (
                     <Box

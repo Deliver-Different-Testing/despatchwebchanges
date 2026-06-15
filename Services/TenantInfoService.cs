@@ -1,3 +1,4 @@
+#nullable enable annotations
 using System.Globalization;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -272,9 +273,9 @@ public sealed class TenantInfoService(
 
     /// <summary>
     /// Gets the current staff member's information (ID and full name) with 8-hour caching.
+    /// Returns null when no TucStaff row matches the current staff ID claim.
     /// </summary>
-    /// <returns>A Suggestion object with staff ID and name.</returns>
-    public async Task<Suggestion> GetStaffInfoAsync()
+    public async Task<Suggestion?> GetStaffInfoAsync()
     {
         var staffId = GetStaffId();
 

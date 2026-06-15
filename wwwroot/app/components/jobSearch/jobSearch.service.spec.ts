@@ -206,16 +206,16 @@ describe('JobSearchService', () => {
     });
 
     describe('getScanDetail', () => {
-        it('calls GET /Job/ScanJobDetail with runDate and scan params', async () => {
+        it('calls GET /Job/ScanJobDetail with runDate, jobId, isBulkJob params', async () => {
             const scanResults = [{bulkScanId: 1, scanDateTime: new Date(), scanDetail: 'Delivered', courier: 'C1'}];
             const http = createMockHttp(scanResults);
 
             const response = await http.get('/Job/ScanJobDetail', {
-                params: {runDate: '2024-06-15', scan: 'J001'},
+                params: {runDate: '2024-06-15', jobId: 42, isBulkJob: false},
             });
 
             expect(http.get).toHaveBeenCalledWith('/Job/ScanJobDetail', {
-                params: {runDate: '2024-06-15', scan: 'J001'},
+                params: {runDate: '2024-06-15', jobId: 42, isBulkJob: false},
             });
             expect(response.data).toEqual(scanResults);
         });

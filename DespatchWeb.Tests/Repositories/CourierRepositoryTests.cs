@@ -1,6 +1,7 @@
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.RequestModels;
 using DespatchWeb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -1096,5 +1097,218 @@ public class CourierRepositoryTests : IAsyncDisposable
         });
 
         await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private static readonly CourierLocationRequest NzWideBounds = new()
+    {
+        MinLng = 165m,
+        MaxLng = 180m,
+        MinLat = -47m,
+        MaxLat = -34m
+    };
+
+    private async Task SetupAvailableCourier(
+        int courierId,
+        int fleetId,
+        string fleetName,
+        bool displayOnClearlistsDespatch,
+        decimal lat,
+        decimal lng)
+    {
+        await using var context = CreateContext();
+
+        if (context.TucCourierFleets.Local.All(f => f.UccfId != fleetId))
+        {
+            context.TucCourierFleets.Add(new TucCourierFleet
+            {
+                UccfId = fleetId,
+                UccfName = fleetName,
+                DisplayOnClearlistsDespatch = displayOnClearlistsDespatch,
+                Created = TestDates.Now,
+                CreatedBy = "Test",
+                LastModified = TestDates.Now,
+                LastModifiedBy = "Test"
+            });
+        }
+
+        context.TblCourierLogInOuts.Add(new TblCourierLogInOut
+        {
+            CourierLogInOutId = courierId,
+            CourierId = courierId,
+            LogInTime = new DateTime(2024, 1, 15, 8, 0, 0),
+            LogOutTime = null,
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+
+        context.TblCourierGps.Add(new TblCourierGp
+        {
+            CourierGpsid = courierId,
+            CourierId = courierId,
+            Latitude = lat,
+            Longitude = lng,
+            Created = new DateTime(2024, 1, 15, 9, 0, 0),
+            RawData = "test"
+        });
+
+        context.TucCouriers.Add(new TucCourier
+        {
+            UccrId = courierId,
+            Code = $"C{courierId:D3}",
+            UccrName = $"Driver{courierId}",
+            UccrSurname = "Test",
+            Active = true,
+            CourierFleetId = fleetId,
+            CourierLogInOutId = courierId,
+            CourierGpsid = courierId,
+            UccrChannelId = 1,
+            Created = TestDates.Now,
+            CreatedBy = "Test",
+            LastModified = TestDates.Now,
+            LastModifiedBy = "Test"
+        });
+
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_ReturnsDriversWhoseFleetIsHiddenFromClearlists()
+    {
+        // Arrange - a driver whose fleet has DisplayOnClearlistsDespatch = false used to be
+        // filtered out of the courier-map endpoint. Regression: they should now appear.
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaWellington,
+            fleetName: "UA Wellington",
+            displayOnClearlistsDespatch: false,
+            lat: -41.3m,
+            lng: 174.8m);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal(1, driver.CourierId);
+        Assert.Equal((int)CourierFleet.UaWellington, driver.CourierFleetId);
+        Assert.Equal("UA Wellington", driver.CourierFleetName);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_WithCourierFleetIds_FiltersToOnlyMatchingFleets()
+    {
+        // Arrange - three drivers across three fleets
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+        await SetupAvailableCourier(
+            courierId: 2,
+            fleetId: (int)CourierFleet.UaWellington,
+            fleetName: "UA Wellington",
+            displayOnClearlistsDespatch: false,
+            lat: -41.3m,
+            lng: 174.8m);
+        await SetupAvailableCourier(
+            courierId: 3,
+            fleetId: (int)CourierFleet.Regional,
+            fleetName: "Regional",
+            displayOnClearlistsDespatch: false,
+            lat: -38m,
+            lng: 175m);
+
+        var repository = CreateRepository();
+
+        // Act - filter to just Wellington + Regional
+        var request = new CourierLocationRequest
+        {
+            MinLng = NzWideBounds.MinLng,
+            MaxLng = NzWideBounds.MaxLng,
+            MinLat = NzWideBounds.MinLat,
+            MaxLat = NzWideBounds.MaxLat,
+            CourierFleetIds = [(int)CourierFleet.UaWellington, (int)CourierFleet.Regional]
+        };
+        var result = await repository.GetAvailableCouriersAsync(
+            request,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Contains(result, d => d.CourierId == 2);
+        Assert.Contains(result, d => d.CourierId == 3);
+        Assert.DoesNotContain(result, d => d.CourierId == 1);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_WithEmptyCourierFleetIds_TreatedAsNoFleetFilter()
+    {
+        // Arrange
+        await SetupAvailableCourier(
+            courierId: 1,
+            fleetId: (int)CourierFleet.UaAuckland,
+            fleetName: "UA Auckland",
+            displayOnClearlistsDespatch: true,
+            lat: -36.85m,
+            lng: 174.76m);
+        await SetupAvailableCourier(
+            courierId: 2,
+            fleetId: (int)CourierFleet.Regional,
+            fleetName: "Regional",
+            displayOnClearlistsDespatch: false,
+            lat: -38m,
+            lng: 175m);
+
+        var repository = CreateRepository();
+
+        var request = new CourierLocationRequest
+        {
+            MinLng = NzWideBounds.MinLng,
+            MaxLng = NzWideBounds.MaxLng,
+            MinLat = NzWideBounds.MinLat,
+            MaxLat = NzWideBounds.MaxLat,
+            CourierFleetIds = []
+        };
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            request,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert - both drivers returned, fleet filter ignored when list is empty
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public async Task GetAvailableCouriersAsync_PopulatesCourierFleetIdAndName()
+    {
+        // Arrange
+        await SetupAvailableCourier(
+            courierId: 7,
+            fleetId: (int)CourierFleet.AucklandCool,
+            fleetName: "Auckland Cool",
+            displayOnClearlistsDespatch: false,
+            lat: -36.85m,
+            lng: 174.76m);
+
+        var repository = CreateRepository();
+
+        // Act
+        var result = await repository.GetAvailableCouriersAsync(
+            NzWideBounds,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Assert
+        var driver = Assert.Single(result);
+        Assert.Equal((int)CourierFleet.AucklandCool, driver.CourierFleetId);
+        Assert.Equal("Auckland Cool", driver.CourierFleetName);
     }
 }

@@ -2,9 +2,12 @@
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Models;
+using DespatchWeb.Models.Dto;
+using DespatchWeb.Models.Response;
 using DespatchWeb.Services;
 using Microsoft.EntityFrameworkCore;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace DespatchWeb.Tests.Services;
 
@@ -35,6 +38,18 @@ public class SplitJobServiceTests : IAsyncDisposable
         _tenantInfoServiceMock.GetContactId().Returns(1);
         _tenantInfoServiceMock.IsUsTenant().Returns(false);
         _tenantInfoServiceMock.GetTenantTimeZone().Returns("New Zealand Standard Time");
+
+        // Rating defaults — return rate=0 for every child unless a test overrides per-child.
+        // Re-rate falls back to an even split when totalRate == 0, so the parent amount is
+        // still preserved exactly across children.
+        _rateJobServiceMock.GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>())
+            .Returns(new ApiRerate { Rate = 0m });
+        _rateJobServiceMock.GetJobRateUsAsync(Arg.Any<JobRatingDetailsDto>())
+            .Returns(new ApiRerate { Rate = 0m });
+        _jobRepositoryMock.GetJobDetailsForRatingNzAsync(Arg.Any<int>(), Arg.Any<bool>())
+            .Returns(new JobRatingDetailsDtoNz());
+        _jobRepositoryMock.GetJobDetailsForRatingAsync(Arg.Any<int>())
+            .Returns(new JobRatingDetailsDto());
 
         SeedLookupData();
     }
@@ -237,11 +252,13 @@ public class SplitJobServiceTests : IAsyncDisposable
     {
         var service = CreateService();
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(int PickupJobId, int DeliveryJobId)>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            (Func<Task<(int PickupJobId, int DeliveryJobId)>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("Job 999 not found", ex.Message);
         return;
 
-        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(999, "TestUser", CreateMeetingPointAddress(),
+        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(999, "TestUser",
+            CreateMeetingPointAddress(),
             ct: TestContext.Current.CancellationToken);
     }
 
@@ -265,11 +282,13 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         var service = CreateService();
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>((Func<Task<(int PickupJobId, int DeliveryJobId)>>?)Act ?? throw new InvalidOperationException());
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            (Func<Task<(int PickupJobId, int DeliveryJobId)>>?)Act ?? throw new InvalidOperationException());
         Assert.Contains("flights assigned", ex.Message);
         return;
 
-        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+        async Task<(int PickupJobId, int DeliveryJobId)> Act() => await service.SplitJobAsync(100, "TestUser",
+            CreateMeetingPointAddress(),
             ct: TestContext.Current.CancellationToken);
     }
 
@@ -731,4 +750,221 @@ public class SplitJobServiceTests : IAsyncDisposable
         Assert.Null(delivery.UcjbCourierId);
     }
 
+    [Fact]
+    public async Task SplitJobAsync_DistributesParentAmountAcrossChildren_ProportionalToLegRates()
+    {
+        // The original bug: child legs were initialised at parent.UcjbAmount and re-rate
+        // was best-effort, so a silent re-rate failure billed the client 2x. Now we expect
+        // the parent amount to be exactly redistributed across the legs in proportion to
+        // each leg's calculated rate — verified here with explicit per-leg rate mocks.
+        SeedJob(configure: j => j.UcjbAmount = 100.00m);
+
+        // Pickup leg (Sequence=1) returns rate $30; delivery leg (Sequence=2) returns rate $70.
+        // Match by FromId so the mock keys off which leg we're rating:
+        //   pickup leg: UcjbFrom = job.UcjbFrom (default null)
+        //   delivery leg: UcjbFrom = 1 (Unknown suburb, the meeting point)
+        _jobRepositoryMock
+            .GetJobDetailsForRatingNzAsync(Arg.Any<int>(), Arg.Any<bool>())
+            .Returns(callInfo =>
+            {
+                var jobId = callInfo.Arg<int>();
+                using var ctx = new DespatchContext(_db.Options);
+                var job = ctx.TucJobs.AsNoTracking().First(j => j.UcjbId == jobId);
+                return new JobRatingDetailsDtoNz { JobId = jobId, FromId = job.UcjbFrom };
+            });
+        _rateJobServiceMock
+            .GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>())
+            .Returns(callInfo =>
+            {
+                var dto = callInfo.Arg<JobRatingDetailsDtoNz>();
+                return new ApiRerate { Rate = dto.FromId == 1 ? 70m : 30m };
+            });
+
+        var service = CreateService();
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(30.00m, pickup.UcjbAmount);
+        Assert.Equal(70.00m, delivery.UcjbAmount);
+        // The invariant: child total must equal parent total exactly — no double-charging.
+        Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_AllRatesZero_FallsBackToEvenSplit()
+    {
+        // If every leg's rate comes back as zero (e.g. DFRNT returns 0 legitimately or the
+        // mock isn't configured) we still preserve the parent total by splitting evenly.
+        // This is the safety net behind the bigger invariant: child total == parent total.
+        SeedJob(configure: j => j.UcjbAmount = 100.00m);
+
+        var service = CreateService();
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(50.00m, pickup.UcjbAmount);
+        Assert.Equal(50.00m, delivery.UcjbAmount);
+        Assert.Equal(100.00m, (pickup.UcjbAmount ?? 0m) + (delivery.UcjbAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_RateServiceThrows_RollsBackTheSplit()
+    {
+        // The whole point of pulling re-rate inside the transaction: if rating fails, the
+        // split must roll back rather than leave the children persisted at $0 (visible) or
+        // — worse — at parent.UcjbAmount (silent over-billing).
+        SeedJob(configure: j => j.UcjbAmount = 100.00m);
+        _rateJobServiceMock
+            .GetJobRateNzAsync(Arg.Any<JobRatingDetailsDtoNz>())
+            .ThrowsAsync(new InvalidOperationException("DFRNT API unavailable"));
+
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+                ct: TestContext.Current.CancellationToken));
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        // No children persisted — the transaction rolled back.
+        var childCount = await verifyCtx.TucJobs.AsNoTracking()
+            .CountAsync(j => j.ParentId == 100 && j.UcjbId != 100,
+                TestContext.Current.CancellationToken);
+        Assert.Equal(0, childCount);
+
+        // Parent untouched — relationship type still null, amount preserved.
+        var parent = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100,
+            cancellationToken: TestContext.Current.CancellationToken);
+        Assert.Equal(100.00m, parent.UcjbAmount);
+        Assert.Null(parent.JobRelationshipTypeId);
+    }
+
+    [Fact]
+    public async Task SplitJobAsync_ReSplit_OnlyRedistributesTheLegBeingSplit_SiblingUntouched()
+    {
+        // The original bug's x3 case: re-splitting a leg redistributed the leg's amount
+        // across ALL descendants of the root parent, silently overwriting the sibling
+        // from the first split. The fixed scope is the IMMEDIATE children of the parent
+        // being split, so the unrelated sibling keeps its post-first-split amount.
+        SeedJob(configure: j => j.UcjbAmount = 100.00m);
+
+        var service = CreateService();
+
+        // First split — pickup + delivery, each at $50 via even-split fallback.
+        var (pickupId, deliveryId) = await service.SplitJobAsync(100, "TestUser", CreateMeetingPointAddress(),
+            ct: TestContext.Current.CancellationToken);
+
+        // Re-split the delivery leg.
+        var (subPickupId, subDeliveryId) = await service.SplitJobAsync(deliveryId, "TestUser",
+            CreateMeetingPointAddress(), ct: TestContext.Current.CancellationToken);
+
+        await using var verifyCtx = new DespatchContext(_db.Options);
+        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var subPickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == subPickupId,
+            cancellationToken: TestContext.Current.CancellationToken);
+        var subDelivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == subDeliveryId,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        // Unrelated sibling — set by the first split — must not be touched by the re-split.
+        Assert.Equal(50.00m, pickup.UcjbAmount);
+
+        // The delivery leg's $50 is split evenly between its two new sub-children.
+        Assert.Equal(25.00m, subPickup.UcjbAmount);
+        Assert.Equal(25.00m, subDelivery.UcjbAmount);
+
+        // Tree total still equals the original parent amount (no double/triple-charging).
+        // delivery is now a SplitParent and its UcjbAmount stays as-is at the parent level;
+        // its leaf children are subPickup + subDelivery, summing to delivery's $50.
+        Assert.Equal(delivery.UcjbAmount, (subPickup.UcjbAmount ?? 0m) + (subDelivery.UcjbAmount ?? 0m));
+        Assert.Equal(100.00m,
+            (pickup.UcjbAmount ?? 0m) + (subPickup.UcjbAmount ?? 0m) + (subDelivery.UcjbAmount ?? 0m));
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToSplitChildrenAsync_Van_CallsUpdateForEachNonVoidChild()
+    {
+        // Bug guard: when a parent split job's Van flag is toggled, the propagation must
+        // dispatch the same UpdateJobAsync(JobProperty.Van) call to every non-void child
+        // so the children re-rate as vans too. Skips the void child.
+        SeedJob(jobId: 100, jobNumber: "JOB-100", configure: j =>
+        {
+            j.JobRelationshipTypeId = (int)JobRelationshipTypes.SplitParent;
+            j.RootParentId = 100;
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 101,
+            UcjbNumber = "JOB-100A",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 1
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 102,
+            UcjbNumber = "JOB-100B",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 2
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 103,
+            UcjbNumber = "JOB-100C",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 3,
+            UcjbVoid = true
+        });
+        await _seedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToSplitChildrenAsync(100, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Van, "true");
+        await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(102, JobProperty.Van, "true");
+        await _jobCommandRepositoryMock.DidNotReceive().UpdateJobAsync(103, JobProperty.Van, Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToSplitChildrenAsync_NotSplitParent_DoesNotPropagate()
+    {
+        // A standalone job (no SplitParent relationship type) must never fan out updates —
+        // there are no children to update, and propagation would either no-op or
+        // accidentally hit unrelated rows.
+        SeedJob(jobId: 200, jobNumber: "JOB-200");
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToSplitChildrenAsync(200, JobProperty.Van, "true",
+            TestContext.Current.CancellationToken);
+
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string>());
+    }
 }

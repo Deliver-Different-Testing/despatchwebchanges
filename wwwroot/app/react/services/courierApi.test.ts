@@ -3,7 +3,7 @@
  * Courier API Service Tests
  */
 
-import {courierApi, getAvailableCourierLocations, getClearListEnvelope, searchActiveCouriersExtended} from './courierApi';
+import {courierApi, getAvailableCourierLocations, getAllFleetOptions, getClearListEnvelope, searchActiveCouriersExtended} from './courierApi';
 import {apiClient} from './apiClient';
 import {createMockApiError} from '../__testUtils__';
 
@@ -219,6 +219,33 @@ describe('courierApi', () => {
             expect(result).toEqual([]);
         });
 
+        it('should include courierFleetIds in params when non-empty', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockCouriers);
+
+            await getAvailableCourierLocations(165, -47, 180, -34, [11, 39]);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/AvailableCourierLocation', {
+                minLng: 165,
+                minLat: -47,
+                maxLng: 180,
+                maxLat: -34,
+                courierFleetIds: [11, 39],
+            }, undefined);
+        });
+
+        it('should omit courierFleetIds from params when empty', async () => {
+            mockApiClient.get.mockResolvedValueOnce(mockCouriers);
+
+            await getAvailableCourierLocations(165, -47, 180, -34, []);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/AvailableCourierLocation', {
+                minLng: 165,
+                minLat: -47,
+                maxLng: 180,
+                maxLat: -34,
+            }, undefined);
+        });
+
         it('should work with courierApi object', async () => {
             mockApiClient.get.mockResolvedValueOnce(mockCouriers);
 
@@ -233,6 +260,30 @@ describe('courierApi', () => {
         ])('should propagate %s errors from apiClient', async (_, error) => {
             mockApiClient.get.mockRejectedValueOnce(error);
             await expect(getAvailableCourierLocations(-125, 24, -65, 50)).rejects.toEqual(error);
+        });
+    });
+
+    describe('getAllFleetOptions', () => {
+        it('should call apiClient.get with correct endpoint', async () => {
+            const mockOptions = [
+                {id: 32, text: 'UA Auckland'},
+                {id: 34, text: 'UA Wellington'},
+            ];
+            mockApiClient.get.mockResolvedValueOnce(mockOptions);
+
+            const result = await getAllFleetOptions();
+
+            expect(mockApiClient.get).toHaveBeenCalledWith('courier/GetAllFleetOptions', undefined, undefined);
+            expect(result).toEqual(mockOptions);
+        });
+
+        it('should work with courierApi object', async () => {
+            const mockOptions = [{id: 39, text: 'Regional'}];
+            mockApiClient.get.mockResolvedValueOnce(mockOptions);
+
+            const result = await courierApi.getAllFleetOptions();
+
+            expect(result).toEqual(mockOptions);
         });
     });
 

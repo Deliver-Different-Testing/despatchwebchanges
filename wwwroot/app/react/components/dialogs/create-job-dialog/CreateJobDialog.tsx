@@ -96,6 +96,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
     const [selectedClient, setSelectedClient] = useState<Suggestion | null>(null);
     const [clientSearchText, setClientSearchText] = useState('');
     const [charge, setCharge] = useState<string>('');
+    const [weight, setWeight] = useState<string>('');
     const [selectedCourier, setSelectedCourier] = useState<CourierSuggestion | null>(null);
     const [courierSearchText, setCourierSearchText] = useState('');
     const [jobDate, setJobDate] = useState<Dayjs>(dayjs().tz(getIanaTimezone()));
@@ -154,6 +155,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             setSelectedClient(null);
             setClientSearchText('');
             setCharge('');
+            setWeight('');
             setSelectedCourier(null);
             setCourierSearchText('');
             setJobDate(dayjs().tz(getIanaTimezone()));
@@ -258,6 +260,14 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             showToast('Please enter a valid charge amount.', 'warning');
             return false;
         }
+        const weightNum = parseFloat(weight);
+        if (!weight || isNaN(weightNum) || weightNum <= 0) {
+            showToast(
+                isUsTenant ? 'Please enter a valid weight (lb).' : 'Please enter a valid weight (kg).',
+                'warning'
+            );
+            return false;
+        }
         if (!jobDate || !jobDate.isValid()) {
             showToast('Please select a job date.', 'warning');
             return false;
@@ -291,7 +301,7 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             return false;
         }
         return true;
-    }, [selectedClient, charge, jobDate, selectedPickupAddress, selectedDeliveryAddress,
+    }, [selectedClient, charge, weight, isUsTenant, jobDate, selectedPickupAddress, selectedDeliveryAddress,
         pickupContact, deliveryContact, podName, selectedVehicle, selectedSpeed, showToast]);
 
     // Submit handler
@@ -347,6 +357,8 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                 toLong: deliveryResult.lng,
                 speedId: selectedSpeed!.id,
                 vehicleId: selectedVehicle!.id,
+                weightKg: isUsTenant ? null : parseFloat(weight),
+                weightLb: isUsTenant ? parseFloat(weight) : null,
             };
 
             // Create the job
@@ -368,13 +380,21 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
             onSubmit(newJobId);
         } catch (error) {
             console.error('[CreateJobDialog] Job creation failed:', error);
-            showToast('Failed to create job. Please try again.', 'error');
+            const serverMessage = (() => {
+                const data = (error as {response?: {data?: unknown}})?.response?.data;
+                if (typeof data === 'string' && data.trim()) return data;
+                if (data && typeof data === 'object' && 'message' in data && typeof (data as {message: unknown}).message === 'string') {
+                    return (data as {message: string}).message;
+                }
+                return null;
+            })();
+            showToast(serverMessage || 'Failed to create job. Please try again.', 'error');
         } finally {
             setIsLoading(false);
         }
     }, [isLoading, validate, processAddress, selectedPickupAddress, selectedDeliveryAddress,
         selectedClient, deliveryContact, podName, jobDate, pickupContact, refA, refB,
-        deliveryNotes, pickupNotes, jobNotes, charge, selectedSpeed, selectedVehicle,
+        deliveryNotes, pickupNotes, jobNotes, charge, weight, isUsTenant, selectedSpeed, selectedVehicle,
         selectedCourier, onSubmit, showToast]);
 
     // Filter vehicle/speed options locally
@@ -505,6 +525,17 @@ export const CreateJobDialog: React.FC<CreateJobDialogProps> = ({
                             error={touched && (!charge || parseFloat(charge) <= 0)}
                             helperText={touched && (!charge || parseFloat(charge) <= 0) ? 'Charge must be greater than 0.' : ''}
                             slotProps={{htmlInput: {step: '0.01', min: '0.01'}}}
+                        />
+                        <TextField
+                            sx={{flex: '0 0 160px'}}
+                            label={isUsTenant ? 'Weight (lb)' : 'Weight (kg)'}
+                            type="number"
+                            value={weight}
+                            onChange={(e) => setWeight(e.target.value)}
+                            required
+                            error={touched && (!weight || parseFloat(weight) <= 0)}
+                            helperText={touched && (!weight || parseFloat(weight) <= 0) ? 'Weight must be greater than 0.' : ''}
+                            slotProps={{htmlInput: {step: 'any', min: '0', inputMode: 'decimal'}}}
                         />
                     </Box>
                     <Box sx={{display: 'flex', gap: 2}}>

@@ -380,7 +380,7 @@ describe('JobSearchController', () => {
             expect(ctrl.isBulkJob).toBe(false);
             expect(ctrl.mapCenter).toEqual({lat: -37.0, lng: 175.0});
             expect(jobSearchService.getScanDetail).toHaveBeenCalledWith(
-                dayjs('2024-06-15'), 'J042',
+                dayjs('2024-06-15'), 42, false,
             );
         });
 
@@ -410,6 +410,9 @@ describe('JobSearchController', () => {
             expect(jobSearchService.getDispatchBulkJobDetail).toHaveBeenCalledWith(55);
             expect(ctrl.isBulkJob).toBe(true);
             expect(ctrl.currentSelection).toBe(' for Bulk Job B055');
+            expect(jobSearchService.getScanDetail).toHaveBeenCalledWith(
+                dayjs('2024-06-15'), 55, true,
+            );
         });
     });
 

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿#nullable enable annotations
+using Newtonsoft.Json;
 
 namespace DespatchWeb.Models.Response;
 

@@ -15,6 +15,7 @@ import * as courierApi from '../../services/courierApi';
 // Mock the courier API
 jest.mock('../../services/courierApi', () => ({
     getAvailableCourierLocations: jest.fn(),
+    getAllFleetOptions: jest.fn(),
 }));
 
 // Mock useCourierMap hook
@@ -93,9 +94,17 @@ const mockCouriers = [
     },
 ];
 
+const mockFleetOptions = [
+    {id: 32, text: 'UA Auckland'},
+    {id: 34, text: 'UA Wellington'},
+    {id: 39, text: 'Regional'},
+    {id: 66, text: 'Auckland Cool'},
+];
+
 describe('CourierMapPage Component', () => {
     beforeEach(() => {
         (courierApi.getAvailableCourierLocations as jest.Mock).mockResolvedValue(mockCouriers);
+        (courierApi.getAllFleetOptions as jest.Mock).mockResolvedValue(mockFleetOptions);
     });
 
     describe('Rendering', () => {
@@ -174,7 +183,8 @@ describe('CourierMapPage Component', () => {
                     -125, // minLng
                     24, // minLat
                     -65, // maxLng
-                    50 // maxLat
+                    50, // maxLat
+                    [] // courierFleetIds — none selected
                 );
             });
         });
@@ -188,8 +198,18 @@ describe('CourierMapPage Component', () => {
                     165, // minLng
                     -47, // minLat
                     180, // maxLng
-                    -34 // maxLat
+                    -34, // maxLat
+                    [] // courierFleetIds — none selected
                 );
+            });
+        });
+
+        it('fetches fleet options on mount', async () => {
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            await waitFor(() => {
+                expect(courierApi.getAllFleetOptions).toHaveBeenCalled();
             });
         });
     });
@@ -285,6 +305,39 @@ describe('CourierMapPage Component', () => {
             expect(mockCenterOnCourier).toHaveBeenCalledWith(
                 expect.objectContaining({courierId: 1})
             );
+        });
+    });
+
+    describe('Fleet Selector', () => {
+        it('renders fleet selector with "All fleets" placeholder by default', async () => {
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            expect(await screen.findByPlaceholderText('All fleets')).toBeInTheDocument();
+        });
+
+        it('passes selected fleet ids to the locations API when a fleet is chosen', async () => {
+            const props = createDefaultProps({isUsCustomer: false});
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            // Wait for the panel to render and fleet options to load
+            const fleetInput = await screen.findByLabelText('Filter by fleet');
+
+            // Open the dropdown (Autocomplete opens on ArrowDown) and pick "UA Wellington"
+            fleetInput.focus();
+            fireEvent.keyDown(fleetInput, {key: 'ArrowDown'});
+            const option = await screen.findByRole('option', {name: 'UA Wellington'});
+            fireEvent.click(option);
+
+            await waitFor(() => {
+                expect(courierApi.getAvailableCourierLocations).toHaveBeenLastCalledWith(
+                    165,
+                    -47,
+                    180,
+                    -34,
+                    [34]
+                );
+            });
         });
     });
 

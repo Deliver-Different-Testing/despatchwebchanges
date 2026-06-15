@@ -112,7 +112,14 @@ public sealed class JobApiClient(
             },
             Packages =
             [
-                new PackageDto { Name = "custom", Cubic = 0, Kg = 0, Units = 1 }
+                new PackageDto
+                {
+                    Name = "custom",
+                    Cubic = 0,
+                    Kg = request.WeightKg,
+                    Lb = request.WeightLb,
+                    Units = 1
+                }
             ],
             DateTime = request.Date.DateTime,
             ClientReferenceA = request.RefA,

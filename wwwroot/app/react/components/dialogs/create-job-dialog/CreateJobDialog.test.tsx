@@ -106,6 +106,8 @@ describe('CreateJobDialog', () => {
             // Form fields
             expect(screen.getByLabelText(/client/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/charge amount/i)).toBeInTheDocument();
+            // isUsTenant=true in defaultProps -> weight label is "Weight (lb)"
+            expect(screen.getByLabelText(/weight \(lb\)/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/courier/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/job date/i)).toBeInTheDocument();
             expect(screen.getByLabelText(/from address/i)).toBeInTheDocument();
@@ -161,18 +163,18 @@ describe('CreateJobDialog', () => {
             // Toast
             expect(showToast).toHaveBeenCalledWith('Please select a client.', 'warning');
 
-            // All validation errors
-            await waitFor(() => {
-                expect(screen.getByText('Client is required.')).toBeInTheDocument();
-                expect(screen.getByText('Charge must be greater than 0.')).toBeInTheDocument();
-                expect(screen.getByText('Pickup address is required.')).toBeInTheDocument();
-                expect(screen.getByText('Delivery address is required.')).toBeInTheDocument();
-                expect(screen.getByText('Pickup contact is required.')).toBeInTheDocument();
-                expect(screen.getByText('Delivery contact is required.')).toBeInTheDocument();
-                expect(screen.getByText('POD name is required.')).toBeInTheDocument();
-                expect(screen.getByText('Vehicle is required.')).toBeInTheDocument();
-                expect(screen.getByText('Speed is required.')).toBeInTheDocument();
-            });
+            // All validation errors — wait for the first to appear (validation is async),
+            // then assert the rest synchronously instead of polling all 10 each cycle.
+            expect(await screen.findByText('Client is required.')).toBeInTheDocument();
+            expect(screen.getByText('Charge must be greater than 0.')).toBeInTheDocument();
+            expect(screen.getByText('Weight must be greater than 0.')).toBeInTheDocument();
+            expect(screen.getByText('Pickup address is required.')).toBeInTheDocument();
+            expect(screen.getByText('Delivery address is required.')).toBeInTheDocument();
+            expect(screen.getByText('Pickup contact is required.')).toBeInTheDocument();
+            expect(screen.getByText('Delivery contact is required.')).toBeInTheDocument();
+            expect(screen.getByText('POD name is required.')).toBeInTheDocument();
+            expect(screen.getByText('Vehicle is required.')).toBeInTheDocument();
+            expect(screen.getByText('Speed is required.')).toBeInTheDocument();
 
             // onSubmit not called
             expect(onSubmit).not.toHaveBeenCalled();
@@ -290,7 +292,7 @@ describe('CreateJobDialog', () => {
             fireEvent.keyDown(input, {key: 'Enter'});
         }
 
-        it('populates addressLine8 with countryName from HERE Maps response on submit', async () => {
+        it('submits with US-tenant Lb weight, populates addressLine8 from HERE Maps', async () => {
             const onSubmit = jest.fn();
             const showToast = jest.fn();
 
@@ -313,6 +315,7 @@ describe('CreateJobDialog', () => {
             // Fill all required fields
             selectAutocomplete(screen.getByLabelText(/client/i), 'Test');
             fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
+            fireEvent.change(screen.getByLabelText(/weight \(lb\)/i), {target: {value: '12'}});
             selectAutocomplete(screen.getByLabelText(/from address/i), '123');
             selectAutocomplete(screen.getByLabelText(/to address/i), '123');
             fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
@@ -332,6 +335,49 @@ describe('CreateJobDialog', () => {
             const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
             expect(submittedJob.pickUpAddress.addressLine8).toBe('United States');
             expect(submittedJob.deliveryAddress.addressLine8).toBe('United States');
+            expect(submittedJob.weightLb).toBe(12);
+            expect(submittedJob.weightKg).toBeNull();
+        }, 30000);
+
+        it('submits with NZ-tenant Kg weight (label switches to Weight (kg))', async () => {
+            mockUseClientSearch.mockReturnValue({
+                data: [{id: 1, text: 'Test Client'}],
+                isFetching: false,
+            });
+            mockUseAddressSearch.mockReturnValue({
+                data: [mockAddressOption],
+                isFetching: false,
+            });
+
+            (addressApi.getLocationDetailsById as jest.Mock).mockResolvedValue(mockLookupResponse);
+            (jobApi.quickCreateJob as jest.Mock).mockResolvedValue(999);
+
+            const props = createMockProps({isUsTenant: false});
+            renderWithAllProviders(<CreateJobDialog {...props} />);
+
+            // Label flips to kg for non-US tenants
+            expect(screen.getByLabelText(/weight \(kg\)/i)).toBeInTheDocument();
+
+            selectAutocomplete(screen.getByLabelText(/client/i), 'Test');
+            fireEvent.change(screen.getByLabelText(/charge amount/i), {target: {value: '10'}});
+            fireEvent.change(screen.getByLabelText(/weight \(kg\)/i), {target: {value: '5'}});
+            selectAutocomplete(screen.getByLabelText(/from address/i), '123');
+            selectAutocomplete(screen.getByLabelText(/to address/i), '123');
+            fireEvent.change(screen.getByLabelText(/pickup contact/i), {target: {value: 'John'}});
+            fireEvent.change(screen.getByLabelText(/delivery contact/i), {target: {value: 'Jane'}});
+            fireEvent.change(screen.getByLabelText(/pod name/i), {target: {value: 'Reception'}});
+            selectAutocomplete(screen.getByLabelText(/vehicle/i), 'Car');
+            selectAutocomplete(screen.getByLabelText(/speed/i), 'Sta');
+
+            fireEvent.click(screen.getByRole('button', {name: /create job/i}));
+
+            await waitFor(() => {
+                expect(jobApi.quickCreateJob).toHaveBeenCalledTimes(1);
+            }, {timeout: 3000});
+
+            const submittedJob = (jobApi.quickCreateJob as jest.Mock).mock.calls[0][0];
+            expect(submittedJob.weightKg).toBe(5);
+            expect(submittedJob.weightLb).toBeNull();
         }, 30000);
     });
 });

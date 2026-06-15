@@ -186,13 +186,16 @@ public class SplitJobService(
                 // Consolidate MARS information
                 await ConsolidateMarsInformationAsync(context, jobId, userName, ct);
 
+                // Re-rate the immediate children inside the transaction so the parent amount
+                // is divided across the two legs before commit. A rating failure rolls back
+                // the whole split — better than committing two children at the full parent
+                // amount and double-charging the client.
+                await ReRateSplitJobsAsync(context, jobId, job.UcjbAmount ?? 0m, ct);
+
                 await transaction.CommitAsync(ct);
 
                 Log.Information("Successfully split job {JobId} into pickup {PickupId} and delivery {DeliveryId}",
                     jobId, pickupJob.UcjbId, deliveryJob.UcjbId);
-
-                // Re-rate outside transaction ( the best effort — jobs are already committed)
-                await ReRateSplitJobsAsync(jobId, job.UcjbAmount ?? 0m, rootParentId, ct);
 
                 return (pickupJob.UcjbId, deliveryJob.UcjbId);
             }
@@ -220,17 +223,24 @@ public class SplitJobService(
             {
                 j.JobRelationshipTypeId,
                 j.RootParentId,
-                j.UcjbAmount
+                j.UcjbAmount,
+                j.UcjbVoid
             })
             .FirstOrDefaultAsync(ct);
 
         if (parentInfo is null)
         {
+            Log.Information(
+                "Propagate skipped — parent {ParentJobId} not found: field {Field}",
+                parentJobId, field);
             return;
         }
 
         if (parentInfo.JobRelationshipTypeId != (int)JobRelationshipTypes.SplitParent)
         {
+            Log.Information(
+                "Propagate skipped — parent {ParentJobId} relType={RelType} (not SplitParent=8), void={IsVoid}, field {Field}",
+                parentJobId, parentInfo.JobRelationshipTypeId, parentInfo.UcjbVoid, field);
             return;
         }
 
@@ -244,10 +254,18 @@ public class SplitJobService(
 
         if (childJobIds.Count == 0)
         {
+            Log.Information(
+                "Propagate skipped — no non-void children of parent {ParentJobId} (root {RootParentId}), field {Field}",
+                parentJobId, rootParentId, field);
             return;
         }
 
+        Log.Information(
+            "Propagate starting — parent {ParentJobId}, {ChildCount} child(ren) {ChildJobIds}, field {Field}",
+            parentJobId, childJobIds.Count, childJobIds, field);
+
         // Propagate the field update to each child job
+        var failures = 0;
         foreach (var childId in childJobIds)
         {
             try
@@ -256,13 +274,18 @@ public class SplitJobService(
             }
             catch (Exception ex)
             {
+                failures++;
                 Log.Warning(ex, "Failed to propagate {Field} update to child job {ChildId}", field, childId);
             }
         }
 
-        // Redistribute the parent's current amount across children
+        Log.Information(
+            "Propagate finished — parent {ParentJobId}, field {Field}, {SuccessCount}/{ChildCount} children updated",
+            parentJobId, field, childJobIds.Count - failures, childJobIds.Count);
+
+        // Redistribute the parent's current amount across its immediate children
         var parentAmount = parentInfo.UcjbAmount ?? 0m;
-        await ReRateSplitJobsAsync(parentJobId, parentAmount, rootParentId, ct);
+        await ReRateSplitJobsAsync(context, parentJobId, parentAmount, ct);
     }
 
     /// <summary>
@@ -289,7 +312,10 @@ public class SplitJobService(
             UcjbWeight = parent.UcjbWeight,
             UcjbSpeed = parent.UcjbSpeed,
             UcjbClientId = parent.UcjbClientId,
-            UcjbAmount = parent.UcjbAmount,
+            // Children start at 0 — ReRateSplitJobsAsync redistributes the parent amount
+            // proportionally before the split transaction commits. Initialising at the parent
+            // amount would silently double-charge if re-rate failed.
+            UcjbAmount = 0m,
             UcjbStatus = parent.UcjbStatus,
             UcjbOpId = parent.UcjbOpId,
             UcjbReturn = parent.UcjbReturn,
@@ -414,107 +440,101 @@ public class SplitJobService(
     }
 
     /// <summary>
-    /// Re-rates all child jobs for a split, distributing the parent amount proportionally.
-    /// Runs outside the main transaction as best-effort — jobs are already committed.
+    /// Rates the immediate children of <paramref name="parentJobId"/> and distributes
+    /// <paramref name="parentAmount"/> across them in proportion to each leg's calculated rate.
+    /// The total of all child UcjbAmount values after this method runs equals parentAmount exactly
+    /// (the last child absorbs the rounding remainder).
+    ///
+    /// Uses the caller's context so the updates participate in the caller's transaction —
+    /// a rating failure rolls back the split rather than leaving children mis-priced.
     /// </summary>
     private async Task ReRateSplitJobsAsync(
+        DespatchContext context,
         int parentJobId,
         decimal parentAmount,
-        int rootParentId,
         CancellationToken ct)
     {
-        try
+        if (parentAmount == 0m)
         {
-            if (parentAmount == 0m)
-            {
-                Log.Information("Parent job {ParentJobId} has zero amount. Skipping re-rate.", parentJobId);
-                return;
-            }
-
-            var isUs = tenantInfoService.IsUsTenant();
-
-            await using var context = await contextFactory.CreateDbContextAsync(ct);
-            var childJobIds = await context.TucJobs
-                .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
-                .OrderBy(j => j.Sequence)
-                .Select(j => j.UcjbId)
-                .Take(100)
-                .ToListAsync(ct);
-
-            if (childJobIds.Count == 0)
-            {
-                Log.Warning("No non-void jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
-                return;
-            }
-
-            // Rate each child sequentially using repository + rate service
-            var rates = new List<(int JobId, decimal Rate)>();
-            foreach (var childId in childJobIds)
-            {
-                var rate = 0m;
-                try
-                {
-                    if (isUs)
-                    {
-                        var details = await jobRepository.GetJobDetailsForRatingAsync(childId);
-                        rate = (await rateJobService.GetJobRateUsAsync(details)).Rate;
-                    }
-                    else
-                    {
-                        var details = await jobRepository.GetJobDetailsForRatingNzAsync(childId, false);
-                        rate = (await rateJobService.GetJobRateNzAsync(details)).Rate;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log.Warning(ex, "Failed to rate job {JobId}. Using rate 0.", childId);
-                }
-
-                rates.Add((childId, rate));
-            }
-
-            // Distribute parent amount proportionally based on calculated rates
-            var totalRate = rates.Sum(r => r.Rate);
-            var runningTotal = 0m;
-
-            for (var i = 0; i < rates.Count; i++)
-            {
-                decimal amount;
-                if (i == rates.Count - 1)
-                {
-                    // Last job absorbs rounding difference to ensure exact balance
-                    amount = parentAmount - runningTotal;
-                }
-                else if (totalRate == 0m)
-                {
-                    // All rates are 0: distribute evenly
-                    amount = Math.Round(parentAmount / rates.Count, 2, MidpointRounding.AwayFromZero);
-                }
-                else
-                {
-                    var percentage = rates[i].Rate / totalRate;
-                    amount = Math.Round(percentage * parentAmount, 2, MidpointRounding.AwayFromZero);
-                }
-
-                runningTotal += amount;
-
-                var i1 = i;
-                await context.TucJobs
-                    .Where(j => j.UcjbId == rates[i1].JobId)
-                    .ExecuteUpdateAsync(j => j
-                        .SetProperty(x => x.RatedManually, false)
-                        .SetProperty(x => x.UcjbAmount, amount), ct);
-            }
-
-            Log.Information(
-                "Successfully re-rated {Count} split jobs for parent {ParentJobId}. Parent amount: {ParentAmount}",
-                rates.Count, parentJobId, parentAmount);
+            Log.Information("Parent job {ParentJobId} has zero amount. Skipping re-rate.", parentJobId);
+            return;
         }
-        catch (Exception ex)
+
+        // Only the IMMEDIATE children of the parent being split — using RootParentId here would
+        // pull in unrelated siblings from earlier splits when re-splitting a leg, and redistribute
+        // this parent's amount across them too.
+        var childJobIds = await context.TucJobs
+            .Where(j => j.ParentId == parentJobId && j.UcjbId != parentJobId && !j.UcjbVoid)
+            .OrderBy(j => j.Sequence)
+            .Select(j => j.UcjbId)
+            .Take(100)
+            .ToListAsync(ct);
+
+        if (childJobIds.Count == 0)
         {
-            Log.Warning(ex, "Failed to re-rate split jobs for parent {ParentJobId}. Jobs created but not rated.",
-                parentJobId);
+            Log.Warning("No non-void child jobs found for parent {ParentJobId}. Skipping re-rate.", parentJobId);
+            return;
         }
+
+        var isUs = tenantInfoService.IsUsTenant();
+
+        // Rate each child sequentially. A rating failure propagates — the alternative
+        // (catch + rate=0) silently mis-prices the surviving legs because the failed leg's
+        // share of the parent amount gets reassigned to the others.
+        var rates = new List<(int JobId, decimal Rate)>();
+        foreach (var childId in childJobIds)
+        {
+            decimal rate;
+            if (isUs)
+            {
+                var details = await jobRepository.GetJobDetailsForRatingAsync(childId);
+                rate = (await rateJobService.GetJobRateUsAsync(details)).Rate;
+            }
+            else
+            {
+                var details = await jobRepository.GetJobDetailsForRatingNzAsync(childId, false);
+                rate = (await rateJobService.GetJobRateNzAsync(details)).Rate;
+            }
+
+            rates.Add((childId, rate));
+        }
+
+        // Distribute parent amount proportionally based on calculated rates
+        var totalRate = rates.Sum(r => r.Rate);
+        var runningTotal = 0m;
+
+        for (var i = 0; i < rates.Count; i++)
+        {
+            decimal amount;
+            if (i == rates.Count - 1)
+            {
+                // Last job absorbs rounding difference to ensure exact balance
+                amount = parentAmount - runningTotal;
+            }
+            else if (totalRate == 0m)
+            {
+                // All rates are 0: distribute evenly so the parent total is still preserved
+                amount = Math.Round(parentAmount / rates.Count, 2, MidpointRounding.AwayFromZero);
+            }
+            else
+            {
+                var percentage = rates[i].Rate / totalRate;
+                amount = Math.Round(percentage * parentAmount, 2, MidpointRounding.AwayFromZero);
+            }
+
+            runningTotal += amount;
+
+            var i1 = i;
+            await context.TucJobs
+                .Where(j => j.UcjbId == rates[i1].JobId)
+                .ExecuteUpdateAsync(j => j
+                    .SetProperty(x => x.RatedManually, false)
+                    .SetProperty(x => x.UcjbAmount, amount), ct);
+        }
+
+        Log.Information(
+            "Re-rated {Count} split children of parent {ParentJobId}. Parent amount: {ParentAmount}",
+            rates.Count, parentJobId, parentAmount);
     }
 
     /// <summary>

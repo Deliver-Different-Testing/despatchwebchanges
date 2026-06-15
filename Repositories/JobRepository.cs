@@ -776,7 +776,7 @@ public partial class JobRepository(
     /// <param name="jobIds">List of job IDs to restore.</param>
     public async Task RestoreSplitJobsAsync(IReadOnlyList<int> jobIds)
     {
-        if (jobIds == null || jobIds.Count == 0)
+        if (jobIds is null or { Count: 0 })
         {
             return;
         }
@@ -795,7 +795,7 @@ public partial class JobRepository(
     {
         try
         {
-            if (jobIds == null || jobIds.Count == 0)
+            if (jobIds.Count == 0)
             {
                 return;
             }
@@ -1125,6 +1125,9 @@ public partial class JobRepository(
                 await Context.PricingBreakdownArchives.AddAsync(archiveItem);
                 await Context.SaveChangesAsync();
 
+                await RecalculateJobAmountFromBreakdownAsync(
+                    effectiveJobId, null, viewModel.ChildJobId, isArchived: true);
+
                 return archiveItem.PricingBreakdownId;
             }
 
@@ -1154,6 +1157,9 @@ public partial class JobRepository(
 
             await Context.PricingBreakdowns.AddAsync(item);
             await Context.SaveChangesAsync();
+
+            await RecalculateJobAmountFromBreakdownAsync(
+                item.JobId, item.PrebookJobId, item.ChildJobId, isArchived: false);
 
             return item.PricingBreakdownId;
         }
@@ -1220,6 +1226,9 @@ public partial class JobRepository(
         {
             await SetJobAsManuallyPriceAsync(viewModel.JobId.Value, note);
         }
+
+        await RecalculateJobAmountFromBreakdownAsync(
+            viewModel.JobId, viewModel.PrebookJobId, viewModel.ChildJobId, isArchived);
     }
 
     /// <summary>
@@ -1238,8 +1247,12 @@ public partial class JobRepository(
                 return;
             }
 
+            var archiveJobId = archiveBreakdown.JobId;
             Context.PricingBreakdownArchives.Remove(archiveBreakdown);
             await Context.SaveChangesAsync();
+
+            await RecalculateJobAmountFromBreakdownAsync(
+                archiveJobId, null, null, isArchived: true);
             return;
         }
 
@@ -1271,8 +1284,15 @@ public partial class JobRepository(
                 break;
         }
 
+        var deletedJobId = breakdown.JobId;
+        var deletedPrebookId = breakdown.PrebookJobId;
+        var deletedChildJobId = breakdown.ChildJobId;
+
         Context.PricingBreakdowns.Remove(breakdown);
         await Context.SaveChangesAsync();
+
+        await RecalculateJobAmountFromBreakdownAsync(
+            deletedJobId, deletedPrebookId, deletedChildJobId, isArchived: false);
     }
 
     /// <summary>
@@ -1282,6 +1302,7 @@ public partial class JobRepository(
     public async Task VoidPrebookJobAsync(int jobId)
     {
         var staffInfo = await _infoService.GetStaffInfoAsync();
+        if (staffInfo is null) throw new NullReferenceException("Staff Info cannot be null");
         await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, staffInfo.Text, staffInfo.Id);
     }
 
@@ -1445,13 +1466,21 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Releases a bulk job for dispatch, creating the associated run and TUC jobs.
+    /// Releases a bulk job (and any children) to live dispatch, creating a TblBulkRun if one
+    /// doesn't exist yet and invoking UTL_stpJob_InsertFromTblBulkJob for each releasable row.
+    /// Returns the live job numbers that were released, in book-date order, so the caller
+    /// can show them to the operator and let them copy/paste into the search filter.
+    ///
+    /// Throws InvalidOperationException for the conditions that were previously silent
+    /// "commit-with-no-work" returns: bulk job not found, all children already released, or
+    /// the SP completed but no matching live tucJob exists afterward.
     /// </summary>
     /// <param name="bulkJobId">The bulk job ID to release.</param>
-    public async Task ReleaseBulkJobByIdAsync(int bulkJobId)
+    /// <returns>The released job numbers, in book-date order.</returns>
+    public async Task<IReadOnlyList<string>> ReleaseBulkJobByIdAsync(int bulkJobId)
     {
         var strategy = Context.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async () =>
+        return await strategy.ExecuteAsync(async () =>
         {
             await using var transaction = await Context.Database.BeginTransactionAsync();
 
@@ -1460,7 +1489,7 @@ public partial class JobRepository(
                 var currentTenantTime = _clock.TenantNow;
                 var releaseNote = $"Bulk Job Released Manually at {currentTenantTime:dd/MM/yyyy HH:mm}\r\n";
 
-                // Update book date and notes in a single query
+                // Stamp BookDate + Notes across the parent and any children.
                 var updatedCount = await Context.TblBulkJobs
                     .Where(b => b.BulkJobId == bulkJobId || b.ParentId == bulkJobId)
                     .ExecuteUpdateAsync(setters => setters
@@ -1469,39 +1498,36 @@ public partial class JobRepository(
 
                 if (updatedCount == 0)
                 {
-                    await transaction.CommitAsync();
-                    return; // No bulk jobs to process
+                    throw new InvalidOperationException(
+                        $"Bulk job {bulkJobId} not found — no parent or child rows matched.");
+                }
+                
+                var releasable = await Context.TblBulkJobs
+                    .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
+                    .OrderBy(b => b.BookDate)
+                    .ThenBy(b => b.BookTime)
+                    .ThenBy(b => b.BulkJobId)
+                    .Select(b => new { b.BulkJobId, b.JobNumber, b.ClientCode })
+                    .ToListAsync();
+
+                if (releasable.Count == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Bulk job {bulkJobId} has no releasable rows — all children may already be Done.");
                 }
 
-                // Get bulk job info and existing run name in a single query
-                var bulkJobInfo = await Context.TblBulkJobs
-                    .Where(b => (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId) && b.Done == false)
-                    .Select(b => new
-                    {
-                        b.BulkJobId,
-                        b.ClientCode,
-                        ExistingRunName = Context.TblBulkJobRuns
-                            .Where(jr => jr.BulkJobId == b.BulkJobId)
-                            .Join(Context.TblBulkRuns,
-                                jr => jr.RunId,
-                                r => r.Id,
-                                (jr, r) => r.Name)
-                            .FirstOrDefault()
-                    })
+                var releasableIds = releasable.Select(r => (int?)r.BulkJobId).ToList();
+                var runName = await Context.TblBulkJobRuns
+                    .Where(jr => releasableIds.Contains(jr.BulkJobId))
+                    .Join(Context.TblBulkRuns,
+                        jr => jr.RunId,
+                        r => r.Id,
+                        (jr, r) => r.Name)
                     .FirstOrDefaultAsync();
 
-                if (bulkJobInfo == null)
-                {
-                    await transaction.CommitAsync();
-                    return;
-                }
-
-                var runName = bulkJobInfo.ExistingRunName;
-
-                // Create a run if it doesn't exist
                 if (string.IsNullOrEmpty(runName))
                 {
-                    runName = bulkJobInfo.ClientCode + currentTenantTime.ToString("HHmm");
+                    runName = releasable[0].ClientCode + currentTenantTime.ToString("HHmm");
 
                     var newRun = new TblBulkRun
                     {
@@ -1517,42 +1543,23 @@ public partial class JobRepository(
                         Created = currentTenantTime,
                         LastModified = currentTenantTime
                     };
-
                     await Context.TblBulkRuns.AddAsync(newRun);
                     await Context.SaveChangesAsync();
 
-                    // Get all bulk job IDs in a single query
-                    var bulkJobIds = await Context.TblBulkJobs
-                        .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
-                        .Select(b => b.BulkJobId)
-                        .ToListAsync();
-
-                    // Bulk insert job-run relationships
-                    var jobRuns = bulkJobIds.Select(bjId => new TblBulkJobRun
+                    var jobRuns = releasable.Select(r => new TblBulkJobRun
                     {
                         RunId = newRun.Id,
-                        BulkJobId = bjId,
+                        BulkJobId = r.BulkJobId,
                         PickRunOrder = null
                     }).ToList();
-
                     await Context.TblBulkJobRuns.AddRangeAsync(jobRuns);
                     await Context.SaveChangesAsync();
                 }
 
-                // Get bulk jobs to create
-                var bulkJobsToCreate = await Context.TblBulkJobs
-                    .Where(b => b.Done == false && (b.BulkJobId == bulkJobId || b.ParentId == bulkJobId))
-                    .OrderBy(b => b.BookDate)
-                    .ThenBy(b => b.BookTime)
-                    .ThenBy(b => b.BulkJobId)
-                    .Select(b => b.BulkJobId)
-                    .ToListAsync();
-
-                // Process each bulk job with the run name (either existing or newly created)
-                foreach (var bjId in bulkJobsToCreate)
+                foreach (var row in releasable)
                 {
                     await Context.Procedures.UTL_stpJob_InsertFromTblBulkJobAsync(
-                        bulkJobID: bjId,
+                        bulkJobID: row.BulkJobId,
                         runName: runName,
                         courierID: null,
                         runStatus: null,
@@ -1561,11 +1568,28 @@ public partial class JobRepository(
                     );
                 }
 
+                // Verify the SP actually inserted live tucJob rows for the numbers we expected.
+                var jobNumbers = releasable.Select(r => r.JobNumber).ToList();
+                var liveJobCount = await Context.TucJobs
+                    .Where(j => jobNumbers.Contains(j.UcjbNumber) && !j.UcjbVoid)
+                    .CountAsync();
+
+                if (liveJobCount != jobNumbers.Count)
+                {
+                    throw new InvalidOperationException(
+                        $"Bulk release for {bulkJobId} expected {jobNumbers.Count} live jobs " +
+                        $"({string.Join(", ", jobNumbers)}) but only {liveJobCount} are present and not voided. " +
+                        "The insert stored procedure or a trigger may have failed silently — investigate before retrying.");
+                }
+
                 await transaction.CommitAsync();
+                return (IReadOnlyList<string>)jobNumbers;
             }
-            catch
+            catch (Exception e)
             {
                 await transaction.RollbackAsync();
+                Log.Error(e, "{Message}",
+                    ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobRepository), nameof(ReleaseBulkJobByIdAsync)));
                 throw;
             }
         });
@@ -1687,7 +1711,7 @@ public partial class JobRepository(
     )
     {
         var clientItemsString =
-            clientItemIds is null || clientItemIds.Count == 0
+            clientItemIds.Count == 0
                 ? string.Empty
                 : string.Join(",", clientItemIds);
 
@@ -1753,10 +1777,10 @@ public partial class JobRepository(
     public async Task UpdatePackagesForJobAsync(int jobId,
         IReadOnlyList<ParcelDimensions> parcels)
     {
-        parcels ??= [];
-
         try
         {
+            parcels ??= [];
+
             var effectiveJobId = await Context.GetEffectiveJobIdAsync(jobId);
             var childJobId = await IsStopJob(jobId) ? jobId : (int?)null;
 
@@ -1866,8 +1890,6 @@ public partial class JobRepository(
     public async Task UpdatePackagesForBulkJobAsync(int bulkJobId,
         IReadOnlyList<ParcelDimensions> parcels)
     {
-        parcels ??= [];
-
         try
         {
             var effectiveJobId = await Context.GetEffectiveBulkJobIdAsync(bulkJobId);
@@ -1967,7 +1989,7 @@ public partial class JobRepository(
             Log.Information(
                 "Successfully updated note for job {JobId}. New note length: {NewLength}",
                 jobId,
-                note?.Length ?? 0
+                note.Length
             );
         }
         catch (KeyNotFoundException ex)
@@ -2051,7 +2073,7 @@ public partial class JobRepository(
                 throw new InvalidOperationException($"Job {data.JobId} not found");
             }
 
-            if (!data.IsBulk && !data.IsPrebook)
+            if (data is { IsBulk: false, IsPrebook: false })
             {
                 await SyncBreakdownLinesToChildAmountAsync(data.JobId, data.NewPrice);
             }
@@ -2163,7 +2185,7 @@ public partial class JobRepository(
     /// <param name="internalStatus">The internal status to set on child jobs.</param>
     public async Task AssignCourierToChildJobsAsync(IReadOnlyList<int> jobIds, InternalJobStatus internalStatus)
     {
-        if (jobIds == null || jobIds.Count == 0)
+        if (jobIds is null or { Count: 0 })
         {
             return;
         }
@@ -4244,16 +4266,52 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Retrieves scan history for a barcode/scan within the last 3 days.
+    /// Retrieves scan history for a job within the last 3 days. The job number
+    /// is resolved server-side from tucJob (with a tucJobArchive fallback) or
+    /// tblBulkJob, so the equality match on tblBulkScan.Scan is immune to any
+    /// client-side formatting drift between currentJob.jobNo and the barcode
+    /// that landed in tblBulkScan.
     /// </summary>
     /// <param name="runDate">Reference date for the search window.</param>
-    /// <param name="scan">The barcode/scan value to search for.</param>
+    /// <param name="jobId">Job id to resolve a job number for.</param>
+    /// <param name="isBulkJob">When true, resolve via tblBulkJob; otherwise tucJob with archive fallback.</param>
     /// <returns>List of scan events with courier and timestamp details.</returns>
     public async Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate,
-        string scan)
+        int jobId, bool isBulkJob)
     {
+        string jobNumber;
+        if (isBulkJob)
+        {
+            jobNumber = await Context.TblBulkJobs
+                .Where(j => j.BulkJobId == jobId)
+                .Select(j => j.JobNumber)
+                .FirstOrDefaultAsync();
+        }
+        else
+        {
+            jobNumber = await Context.TucJobs
+                .Where(j => j.UcjbId == jobId)
+                .Select(j => j.UcjbNumber)
+                .FirstOrDefaultAsync()
+                ?? await Context.TucJobArchives
+                    .Where(j => j.UcjbId == jobId)
+                    .Select(j => j.UcjbNumber)
+                    .FirstOrDefaultAsync();
+        }
+
+        if (string.IsNullOrEmpty(jobNumber))
+        {
+            Log.Information(
+                "ScanList: no job number resolved for jobId={JobId} isBulkJob={IsBulkJob}",
+                jobId, isBulkJob);
+            return [];
+        }
+
         runDate ??= _clock.TenantNow;
-        var cutoffDate = runDate.Value.AddDays(-3);
+        // Compare wall-clock-to-wall-clock: bs.ScanDateTime is stored as
+        // tenant local time without an offset, so strip the offset from
+        // the cutoff before comparing.
+        var cutoffDate = runDate.Value.AddDays(-3).DateTime;
 
         // Use proper joins instead of subqueries to avoid N+1 queries
         var query = from bs in Context.TblBulkScans
@@ -4262,7 +4320,7 @@ public partial class JobRepository(
             join runViewerTransferTo in Context.TucCouriers on bs.ToCourierId equals runViewerTransferTo.UccrId into
                 rvtJoin
             from runViewerTransferTo in rvtJoin.DefaultIfEmpty()
-            where bs.ScanDateTime > cutoffDate && bs.Scan == scan
+            where bs.ScanDateTime > cutoffDate && bs.Scan == jobNumber
             orderby bs.ScanDateTime
             select new
             {
@@ -4289,6 +4347,10 @@ public partial class JobRepository(
                 Courier = GetCourierDescription(s.ScanType, s.Courier, s.TransferTo, s.RunViewerTransferTo, s.RunName)
             })
             .ToListAsync();
+
+        Log.Information(
+            "ScanList: jobId={JobId} isBulkJob={IsBulkJob} jobNumber={JobNumber} count={Count}",
+            jobId, isBulkJob, jobNumber, results.Count);
 
         return results;
     }
@@ -4896,6 +4958,74 @@ public partial class JobRepository(
                 .SetProperty(j => j.RatedManually, true));
 
         await SaveNoteAsync(jobId, note);
+    }
+
+    /// <summary>
+    /// Recalculates a job's total amount from the sum of its current breakdown lines and
+    /// writes the result back to TucJob.UcjbAmount / TucJobArchive.UcjbAmount /
+    /// TucJobBooking.UcbkAmount. Keeps the job's displayed price in lock-step with the
+    /// breakdown dialog's "Total Revenue" after every breakdown CRUD.
+    /// </summary>
+    private async Task RecalculateJobAmountFromBreakdownAsync(
+        int? jobId,
+        int? prebookJobId,
+        int? childJobId,
+        bool isArchived)
+    {
+        if (prebookJobId.HasValue)
+        {
+            var prebookSum = await Context.PricingBreakdowns
+                .Where(p => p.PrebookJobId == prebookJobId)
+                .SumAsync(p => (decimal?)p.ChargeAmount) ?? 0m;
+
+            await Context.TucJobBookings
+                .Where(j => j.UcbkId == prebookJobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcbkAmount, prebookSum));
+            return;
+        }
+
+        if (!jobId.HasValue)
+        {
+            return;
+        }
+
+        if (isArchived)
+        {
+            var archiveSum = await Context.PricingBreakdownArchives
+                .Where(p => p.JobId == jobId)
+                .SumAsync(p => (decimal?)p.ChargeAmount) ?? 0m;
+
+            await Context.TucJobArchives
+                .Where(j => j.UcjbId == jobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbAmount, archiveSum));
+            return;
+        }
+
+        var parentSum = await Context.PricingBreakdowns
+            .Where(p => p.JobId == jobId)
+            .SumAsync(p => (decimal?)p.ChargeAmount) ?? 0m;
+
+        await Context.TucJobs
+            .Where(j => j.UcjbId == jobId)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(j => j.UcjbAmount, parentSum));
+
+        // For split jobs the line also carries a ChildJobId. Sync the child's
+        // UcjbAmount to just its child-specific lines so a row on POD search /
+        // job list displays a total consistent with what the dialog shows.
+        if (childJobId.HasValue && childJobId.Value != jobId.Value)
+        {
+            var childSum = await Context.PricingBreakdowns
+                .Where(p => p.JobId == jobId && p.ChildJobId == childJobId)
+                .SumAsync(p => (decimal?)p.ChargeAmount) ?? 0m;
+
+            await Context.TucJobs
+                .Where(j => j.UcjbId == childJobId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(j => j.UcjbAmount, childSum));
+        }
     }
 
     /// <summary>

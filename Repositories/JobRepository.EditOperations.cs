@@ -51,6 +51,39 @@ public partial class JobRepository
         var baseQuery = Context.TucJobs.Where(j => j.UcjbId == jobId);
         int rowsAffected;
 
+        // For date-field edits we capture the pre-update state so the log line shows
+        // what was overwritten. Cheap single-row read, only when diagnostics are useful.
+        if (IsDateProperty(property))
+        {
+            var before = await baseQuery
+                .Select(j => new
+                {
+                    j.UcjbVoid,
+                    j.JobRelationshipTypeId,
+                    j.ParentId,
+                    j.RootParentId,
+                    j.UcjbDate,
+                    j.UcjbTime,
+                    j.PickUpTime,
+                    j.DeliverByTime,
+                    j.PickupArrivalTime,
+                    j.DeliveryArrivalTime,
+                    j.UcjbComplTime,
+                    j.FollowupTime
+                })
+                .FirstOrDefaultAsync();
+
+            Log.Information(
+                "Edit-date snapshot before: job {JobId}, property {Property}, newValue {Value}, "
+                + "void={IsVoid}, relType={RelType}, parentId={ParentId}, rootParentId={RootParentId}, "
+                + "ucjbDate={UcjbDate}, ucjbTime={UcjbTime}, puTime={PuTime}, deliverBy={DeliverBy}, "
+                + "puArrival={PuArrival}, doArrival={DoArrival}, complTime={ComplTime}, followup={Followup}",
+                jobId, property, value,
+                before?.UcjbVoid, before?.JobRelationshipTypeId, before?.ParentId, before?.RootParentId,
+                before?.UcjbDate, before?.UcjbTime, before?.PickUpTime, before?.DeliverByTime,
+                before?.PickupArrivalTime, before?.DeliveryArrivalTime, before?.UcjbComplTime, before?.FollowupTime);
+        }
+
         switch (property)
         {
             case JobProperty.Time:
@@ -237,6 +270,25 @@ public partial class JobRepository
                     await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.UcjbClientCode, clientCode));
                 break;
 
+            case JobProperty.Truck:
+                var truck = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.Truck, truck)
+                    .SetProperty(j => j.UcjbVan, false));
+                break;
+
+            case JobProperty.Van:
+                var van = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.UcjbVan, van)
+                    .SetProperty(j => j.Truck, false));
+                break;
+
+            case JobProperty.VanOK:
+                var vanOk = bool.Parse(value);
+                rowsAffected = await baseQuery.ExecuteUpdateAsync(s => s.SetProperty(j => j.VanOk, vanOk));
+                break;
+
             default:
                 // Property requires entity-based update
                 return false;
@@ -247,9 +299,34 @@ public partial class JobRepository
             throw new ArgumentException($"Job with ID {jobId} not found", nameof(jobId));
         }
 
-        Log.Debug("ExecuteUpdateAsync: Updated {Property} for job {JobId}", property, jobId);
+        if (IsDateProperty(property))
+        {
+            Log.Information(
+                "Edit-date direct write: job {JobId}, property {Property}, value {Value}, rowsAffected {RowsAffected}",
+                jobId, property, value, rowsAffected);
+        }
+        else
+        {
+            Log.Debug("ExecuteUpdateAsync: Updated {Property} for job {JobId}", property, jobId);
+        }
+
         return true;
     }
+
+    /// <summary>
+    /// Properties that represent a date/time edit. Used to enable extra diagnostic
+    /// logging on the date-edit flow without polluting logs for every field.
+    /// </summary>
+    private static bool IsDateProperty(JobProperty property) =>
+        property is JobProperty.Date
+                 or JobProperty.Time
+                 or JobProperty.BookedTime
+                 or JobProperty.PuTime
+                 or JobProperty.DeliverBy
+                 or JobProperty.PickupArrivalTime
+                 or JobProperty.DeliveryArrivalTime
+                 or JobProperty.CompletedTime
+                 or JobProperty.FollowupTime;
 
     /// <summary>
     /// Updates a job using entity tracking for complex cases requiring includes,
@@ -574,12 +651,14 @@ public partial class JobRepository
                 archive.Reprice = bool.Parse(value);
                 break;
             case JobProperty.Truck:
-                archive.Truck = bool.Parse(value);
-                archive.UcjbVan = false; // Set van to false when truck is selected
+                var isTruck = bool.Parse(value);
+                archive.Truck = isTruck;
+                if (isTruck) archive.UcjbVan = false; // Set van to false when truck is selected
                 break;
             case JobProperty.Van:
-                archive.UcjbVan = bool.Parse(value);
-                archive.Truck = false; // Set truck to false when a van is selected
+                var isVan = bool.Parse(value);
+                archive.UcjbVan = isVan;
+                if (isVan) archive.Truck = false; // Set truck to false when a van is selected
                 break;
             case JobProperty.VanOK:
                 archive.VanOk = bool.Parse(value);

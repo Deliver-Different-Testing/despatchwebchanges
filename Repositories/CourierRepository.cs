@@ -1804,7 +1804,7 @@ public class CourierRepository(
         {
             var currentDate = clock.TenantNow;
 
-            var courierData = await Context.TucCouriers
+            var query = Context.TucCouriers
                 .Where(c => c.CourierFleetId != (int)CourierFleet.ClientDriver &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&
@@ -1812,8 +1812,15 @@ public class CourierRepository(
                             c.CourierGps.Latitude >= data.MinLat &&
                             c.CourierGps.Latitude <= data.MaxLat &&
                             c.CourierLogInOut != null &&
-                            c.CourierLogInOut.LogOutTime == null)
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+                            c.CourierLogInOut.LogOutTime == null);
+
+            if (data.CourierFleetIds is { Count: > 0 })
+            {
+                query = query.Where(c => c.CourierFleetId.HasValue
+                                         && data.CourierFleetIds.Contains(c.CourierFleetId.Value));
+            }
+
+            var courierData = await query
                 .Select(c => new
                 {
                     c.UccrId,
@@ -1827,6 +1834,7 @@ public class CourierRepository(
                         .Select(x => x.ClearListAreaId).ToList(),
                     c.Code,
                     c.CourierFleetId,
+                    CourierFleetName = c.CourierFleet != null ? c.CourierFleet.UccfName : null,
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
                 })
                 .TagWith("GetUsAvailableCouriers - Step 1: Courier Data")
@@ -1884,7 +1892,9 @@ public class CourierRepository(
                     TotalJobs = jobs?.Count ?? 0,
                     OverDueJobs = jobs?.TimedJobs.Count(j =>
                         j.UcjbDate.CombineWithTime(j.UcjbTime).AddMinutes(j.Minutes) < currentDate) ?? 0,
-                    DisplayOrder = c.DisplayOrder
+                    DisplayOrder = c.DisplayOrder,
+                    CourierFleetId = c.CourierFleetId,
+                    CourierFleetName = c.CourierFleetName
                 };
             }).ToList();
         }
@@ -1904,15 +1914,22 @@ public class CourierRepository(
         {
             var now = clock.TenantNow;
 
-            var courierData = await Context.TucCouriers
+            var query = Context.TucCouriers
                 .Where(c => c.CourierLogInOut != null &&
                             c.CourierLogInOut.LogOutTime == null &&
                             c.CourierGps != null &&
                             c.CourierGps.Longitude >= data.MinLng &&
                             c.CourierGps.Longitude <= data.MaxLng &&
                             c.CourierGps.Latitude >= data.MinLat &&
-                            c.CourierGps.Latitude <= data.MaxLat)
-                .Where(c => c.CourierFleet.DisplayOnClearlistsDespatch)
+                            c.CourierGps.Latitude <= data.MaxLat);
+
+            if (data.CourierFleetIds is { Count: > 0 })
+            {
+                query = query.Where(c => c.CourierFleetId.HasValue
+                                         && data.CourierFleetIds.Contains(c.CourierFleetId.Value));
+            }
+
+            var courierData = await query
                 .Select(c => new
                 {
                     c.UccrId,
@@ -1926,6 +1943,7 @@ public class CourierRepository(
                         .Select(x => x.ClearListAreaId).ToList(),
                     c.Code,
                     c.CourierFleetId,
+                    CourierFleetName = c.CourierFleet != null ? c.CourierFleet.UccfName : null,
                     DisplayOrder = c.TblClearListAreaOrder != null ? c.TblClearListAreaOrder.Status : 0
                 })
                 .TagWith("GetNzAvailableCouriers - Step 1: Courier Data")
@@ -1985,7 +2003,9 @@ public class CourierRepository(
                     OverDueJobs = jobs?.TimedJobs.Count(j =>
                         j.UcjbTime != null &&
                         j.UcjbDate.Add(j.UcjbTime.Value.TimeOfDay).AddMinutes(j.Minutes ?? 0) < now) ?? 0,
-                    DisplayOrder = c.DisplayOrder
+                    DisplayOrder = c.DisplayOrder,
+                    CourierFleetId = c.CourierFleetId,
+                    CourierFleetName = c.CourierFleetName
                 };
             }).ToList();
         }

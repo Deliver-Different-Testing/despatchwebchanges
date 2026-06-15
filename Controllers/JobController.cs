@@ -1312,6 +1312,7 @@ public class JobController(
             }
 
             var staffInfo = await infoService.GetStaffInfoAsync();
+            if (staffInfo is null) throw new NullReferenceException("Staff Info Can Not be Null");
             var staffName = staffInfo.Text;
 
             await splitJobService.SplitJobAsync(
@@ -1579,6 +1580,11 @@ public class JobController(
         CancellationToken ct
     )
     {
+        var staffId = infoService.GetStaffId();
+        Log.Information(
+            "UpdateJob requested: job {JobId}, field {JobProperty}, value {Value}, staff {StaffId}",
+            jobId, field, value, staffId);
+
         try
         {
             // Route through the partner-job gate. For non-partner jobs and LocalOnly
@@ -1590,15 +1596,26 @@ public class JobController(
             switch (gateResult)
             {
                 case PartnerJobGateResult.AutoApplied auto:
+                    Log.Information(
+                        "UpdateJob gate=AutoApplied: job {JobId}, field {JobProperty}, requestId {RequestId}",
+                        jobId, field, auto.RequestId);
                     return Ok(new { applied = true, requestId = auto.RequestId });
                 case PartnerJobGateResult.PendingApproval pending:
+                    Log.Information(
+                        "UpdateJob gate=PendingApproval: job {JobId}, field {JobProperty}, requestId {RequestId}",
+                        jobId, field, pending.RequestId);
                     return Accepted(new { pending = true, requestId = pending.RequestId });
                 case PartnerJobGateResult.Blocked blocked:
+                    Log.Information(
+                        "UpdateJob gate=Blocked: job {JobId}, field {JobProperty}, reason {Reason}",
+                        jobId, field, blocked.Message);
                     return BadRequest(new { message = blocked.Message });
                 // NotPartner / LocalOnly → fall through to the direct write below.
             }
 
             await jobCommandRepository.UpdateJobAsync(jobId, field, value);
+            Log.Information(
+                "UpdateJob direct write complete: job {JobId}, field {JobProperty}", jobId, field);
         }
         catch (Exception e)
         {
@@ -1613,6 +1630,9 @@ public class JobController(
 
         if (!ShouldRecalculateRate(field))
         {
+            Log.Information(
+                "UpdateJob skipping propagation (field not rate-relevant): job {JobId}, field {JobProperty}",
+                jobId, field);
             return Ok();
         }
 
@@ -1672,10 +1692,11 @@ public class JobController(
     {
         try
         {
-            await jobCommandRepository.ReleaseBulkJobByIdAsync(bulkJobId);
+            var jobNumbers = await jobCommandRepository.ReleaseBulkJobByIdAsync(bulkJobId);
 
-            Log.Information("Successfully released bulk job {JobNumber}", bulkJobId);
-            return Ok();
+            Log.Information("Released bulk job {BulkJobId} — produced live jobs {JobNumbers}",
+                bulkJobId, string.Join(", ", jobNumbers));
+            return Ok(new { jobNumbers });
         }
         catch (Exception ex)
         {
@@ -2037,7 +2058,8 @@ public class JobController(
 
 
     [HttpPost]
-    public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request, CancellationToken ct)
+    public async Task<IActionResult> UpdateJobPackages([FromBody] UpdateJobPackagesRequest request,
+        CancellationToken ct)
     {
         try
         {
@@ -2134,7 +2156,8 @@ public class JobController(
     }
 
     [HttpPost]
-    public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request, CancellationToken ct)
+    public async Task<IActionResult> UpdateDeliveryAddress([FromBody] UpdateAddressRequest request,
+        CancellationToken ct)
     {
         var payload = JsonSerializer.Serialize(request.Address, CompoundPayloadJsonOptions);
         var gateResult = await partnerJobGate.EvaluateAsync(
@@ -2344,11 +2367,11 @@ public class JobController(
     }
 
 
-    public async Task<IActionResult> ScanJobDetail(DateTimeOffset runDate, string scan)
+    public async Task<IActionResult> ScanJobDetail(DateTimeOffset runDate, int jobId, bool isBulkJob = false)
     {
         try
         {
-            var scanList = await jobQueryRepository.ScanList(runDate, scan);
+            var scanList = await jobQueryRepository.ScanList(runDate, jobId, isBulkJob);
             return Json(scanList);
         }
         catch (Exception e)
@@ -2648,6 +2671,7 @@ public class JobController(
                 return BadRequest(new { message = "This job is managed by a partner and cannot be modified." });
             }
         }
+
         return null;
     }
 

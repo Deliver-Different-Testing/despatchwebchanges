@@ -52,7 +52,7 @@ describe('SideNav', () => {
 
         it('should render copyright', () => {
             renderWithTheme(<SideNav {...defaultProps} />);
-            expect(screen.getByText(/Deliver Different/)).toBeInTheDocument();
+            expect(screen.getByText(/Deliver DFRNT/)).toBeInTheDocument();
         });
     });
 

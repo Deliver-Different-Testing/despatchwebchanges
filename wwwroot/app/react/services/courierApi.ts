@@ -8,6 +8,7 @@ import {apiClient, RequestOptions} from './apiClient';
 import {CourierSuggestion, TimeZoneOption} from '../interfaces';
 import type {IAvailableCourierPosition} from '../../interfaces/courier.interface';
 import type {ClearListEnvelopeData} from '../components/common/dispatch-map/DispatchMap.types';
+import type {FleetOption} from '../interfaces/driverManagement';
 
 /**
  * Search for active couriers
@@ -46,14 +47,21 @@ export async function getAvailableCourierLocations(
     minLat: number,
     maxLng: number,
     maxLat: number,
+    courierFleetIds?: number[],
     options?: RequestOptions
 ): Promise<IAvailableCourierPosition[]> {
-    return apiClient.get<IAvailableCourierPosition[]>('courier/AvailableCourierLocation', {
-        minLng,
-        minLat,
-        maxLng,
-        maxLat,
-    }, options);
+    const params: Record<string, unknown> = {minLng, minLat, maxLng, maxLat};
+    if (courierFleetIds && courierFleetIds.length > 0) {
+        params.courierFleetIds = courierFleetIds;
+    }
+    return apiClient.get<IAvailableCourierPosition[]>('courier/AvailableCourierLocation', params, options);
+}
+
+/**
+ * Get all courier fleets as id/text options for selectors
+ */
+export async function getAllFleetOptions(options?: RequestOptions): Promise<FleetOption[]> {
+    return apiClient.get<FleetOption[]>('courier/GetAllFleetOptions', undefined, options);
 }
 
 /**
@@ -71,6 +79,7 @@ export const courierApi = {
     getTimeZoneOptions,
     getAvailableCourierLocations,
     getClearListEnvelope,
+    getAllFleetOptions,
 };
 
 export default courierApi;

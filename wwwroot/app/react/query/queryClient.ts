@@ -68,8 +68,11 @@ export const queryKeys = {
     couriers: {
         all: ['couriers'] as const,
         search: (searchText: string) => ['couriers', 'search', searchText] as const,
-        locations: (bounds: { minLng: number; minLat: number; maxLng: number; maxLat: number }) =>
-            ['couriers', 'locations', bounds] as const,
+        locations: (
+            bounds: {minLng: number; minLat: number; maxLng: number; maxLat: number},
+            fleetIds: number[],
+        ) => ['couriers', 'locations', bounds, fleetIds] as const,
+        fleetOptions: ['couriers', 'fleetOptions'] as const,
     },
     timeZones: {
         all: ['timeZones'] as const,

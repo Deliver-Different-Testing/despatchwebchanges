@@ -820,7 +820,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 2, text: 'Express'},
         ]);
         (window as any).ReactSelectDialog = {
-            showSelectDialog: jest.fn().mockResolvedValue({value: 2, fieldName: JobProperty.SpeedID}),
+            showSelectDialog: jest.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
         };
 
         const job = createMockJob({isPartnerJob: true, speedName: 'Standard'});
@@ -842,7 +842,7 @@ describe('useJobActions — partner-job gating (no local save)', () => {
             {id: 2, text: 'Express'},
         ]);
         (window as any).ReactSelectDialog = {
-            showSelectDialog: jest.fn().mockResolvedValue({value: 2, fieldName: JobProperty.SpeedID}),
+            showSelectDialog: jest.fn().mockResolvedValue({value: 2, text: 'Express', fieldName: JobProperty.SpeedID}),
         };
 
         const job = createMockJob({isPartnerJob: false, speedName: 'Standard'});
@@ -854,6 +854,94 @@ describe('useJobActions — partner-job gating (no local save)', () => {
 
         expect(mockUpdateField).toHaveBeenCalledWith(
             expect.objectContaining({field: JobProperty.SpeedID, value: 2}),
+        );
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+    });
+
+    it('handleContactClick (Booked By dropdown) saves the picked contact name, not its id', async () => {
+        const {getContactList} = require('../../../../services/jobDetailApi');
+        (getContactList as jest.Mock).mockResolvedValue([
+            {id: 12, text: 'Jane Admin'},
+            {id: 34, text: 'Sam Booker'},
+        ]);
+        (window as any).ReactSelectDialog = {
+            showSelectDialog: jest.fn().mockResolvedValue({
+                value: 34,
+                text: 'Sam Booker',
+                fieldName: JobProperty.FromContactName,
+            }),
+        };
+
+        const job = createMockJob({isPartnerJob: false, clientId: 99, fromContactName: 'Jane Admin'});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleContactClick();
+        });
+
+        expect(mockUpdateField).toHaveBeenCalledWith(
+            expect.objectContaining({field: JobProperty.FromContactName, value: 'Sam Booker'}),
+        );
+        expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
+    });
+
+    it('handleContactClick on a partner job forwards the contact name to change-request locked', async () => {
+        const {getContactList} = require('../../../../services/jobDetailApi');
+        (getContactList as jest.Mock).mockResolvedValue([
+            {id: 12, text: 'Jane Admin'},
+            {id: 34, text: 'Sam Booker'},
+        ]);
+        (window as any).ReactSelectDialog = {
+            showSelectDialog: jest.fn().mockResolvedValue({
+                value: 34,
+                text: 'Sam Booker',
+                fieldName: JobProperty.FromContactName,
+            }),
+        };
+
+        const job = createMockJob({isPartnerJob: true, clientId: 99, fromContactName: 'Jane Admin'});
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleContactClick();
+        });
+
+        expect(mockOnRequestPartnerChange).toHaveBeenCalledWith('FromContactName', 'Sam Booker', true);
+        expect(mockUpdateField).not.toHaveBeenCalled();
+    });
+
+    it('handleContactClick on a recurring job saves the contact name (not id) and routes to UpdateRecurringJob', async () => {
+        const {getContactList} = require('../../../../services/jobDetailApi');
+        (getContactList as jest.Mock).mockResolvedValue([
+            {id: 12, text: 'Jane Admin'},
+            {id: 34, text: 'Sam Booker'},
+        ]);
+        (window as any).ReactSelectDialog = {
+            showSelectDialog: jest.fn().mockResolvedValue({
+                value: 34,
+                text: 'Sam Booker',
+                fieldName: JobProperty.FromContactName,
+            }),
+        };
+
+        const job = createMockJob({
+            isPartnerJob: false,
+            clientId: 99,
+            fromContactName: 'Jane Admin',
+            preBook: true,
+        });
+        const {result, mockUpdateField, mockOnRequestPartnerChange} = setupPartnerHook(job);
+
+        await act(async () => {
+            await result.current.handleContactClick();
+        });
+
+        expect(mockUpdateField).toHaveBeenCalledWith(
+            expect.objectContaining({
+                field: JobProperty.FromContactName,
+                value: 'Sam Booker',
+                isRecurring: true,
+            }),
         );
         expect(mockOnRequestPartnerChange).not.toHaveBeenCalled();
     });

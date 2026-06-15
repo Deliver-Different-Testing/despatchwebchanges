@@ -2548,21 +2548,26 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task ReleaseBulkJob_ValidBulkJobId_ReturnsOk()
+    public async Task ReleaseBulkJob_ValidBulkJobId_ReturnsOkWithJobNumbers()
     {
         // Arrange
         const int bulkJobId = 1;
+        var expectedNumbers = new[] { "BJR-001", "BJR-002" };
 
         _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId)
-            .Returns(Task.CompletedTask);
+            .Returns(expectedNumbers);
 
         var controller = CreateController();
 
         // Act
         var result = await controller.ReleaseBulkJob(bulkJobId);
 
-        // Assert
-        Assert.IsType<OkResult>(result);
+        // Assert — the controller now returns the job numbers so the client can copy
+        // them to the clipboard and surface them in the success toast.
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.NotNull(ok.Value);
+        var jobNumbersProperty = ok.Value.GetType().GetProperty("jobNumbers")?.GetValue(ok.Value);
+        Assert.Equal(expectedNumbers, jobNumbersProperty);
     }
 
     [Fact]
@@ -2571,7 +2576,8 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int bulkJobId = 1;
 
-        _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId).ThrowsAsync(new Exception("Release failed"));
+        _jobCommandRepositoryMock.ReleaseBulkJobByIdAsync(bulkJobId)
+            .ThrowsAsync(new Exception("Release failed"));
 
         var controller = CreateController();
 
@@ -3020,19 +3026,19 @@ public class JobControllerTests : IDisposable
     {
         // Arrange
         var runDate = DateTimeOffset.Now;
-        const string scan = "SCAN001";
+        const int jobId = 42;
         var expectedResults = new List<ScanDetailResult>
         {
             new() { BulkScanId = 1, ScanDateTime = TestDates.Now }
         };
 
-        _jobQueryRepositoryMock.ScanList(runDate, scan)
+        _jobQueryRepositoryMock.ScanList(runDate, jobId, false)
             .Returns(expectedResults);
 
         var controller = CreateController();
 
         // Act
-        var result = await controller.ScanJobDetail(runDate, scan);
+        var result = await controller.ScanJobDetail(runDate, jobId);
 
         // Assert
         Assert.IsType<JsonResult>(result);
@@ -3041,6 +3047,24 @@ public class JobControllerTests : IDisposable
         {
             Assert.Single((IEnumerable)results);
         }
+    }
+
+    [Fact]
+    public async Task ScanJobDetail_BulkJob_PassesIsBulkJobTrue()
+    {
+        // Arrange
+        var runDate = DateTimeOffset.Now;
+        const int bulkJobId = 99;
+        _jobQueryRepositoryMock.ScanList(runDate, bulkJobId, true)
+            .Returns(new List<ScanDetailResult>());
+
+        var controller = CreateController();
+
+        // Act
+        await controller.ScanJobDetail(runDate, bulkJobId, isBulkJob: true);
+
+        // Assert
+        await _jobQueryRepositoryMock.Received(1).ScanList(runDate, bulkJobId, true);
     }
 
     private static DispatchJobViewModel CreateTestDispatchJob(int id, string jobNumber) =>

@@ -31,6 +31,8 @@ export const mockCourierLocations = [
         latitude: 51.5074,
         longitude: -0.1278,
         lastUpdate: '2024-01-15T10:00:00Z',
+        courierFleetId: 32,
+        courierFleetName: 'UA Auckland',
     },
     {
         courierId: 2,
@@ -38,7 +40,16 @@ export const mockCourierLocations = [
         latitude: 51.5080,
         longitude: -0.1290,
         lastUpdate: '2024-01-15T10:05:00Z',
+        courierFleetId: 34,
+        courierFleetName: 'UA Wellington',
     },
+];
+
+export const mockCourierFleetOptions = [
+    {id: 32, text: 'UA Auckland'},
+    {id: 34, text: 'UA Wellington'},
+    {id: 39, text: 'Regional'},
+    {id: 66, text: 'Auckland Cool'},
 ];
 
 export const mockClearListEnvelope = {
@@ -109,7 +120,19 @@ export const courierHandlers = [
             return new HttpResponse('Missing bounding box parameters', { status: 400 });
         }
 
+        const fleetIds = url.searchParams.getAll('courierFleetIds').map((id) => Number(id));
+        if (fleetIds.length > 0) {
+            return HttpResponse.json(
+                mockCourierLocations.filter((c) => fleetIds.includes(c.courierFleetId)),
+            );
+        }
+
         return HttpResponse.json(mockCourierLocations);
+    }),
+
+    // Get all fleet options
+    http.get('*/courier/GetAllFleetOptions', () => {
+        return HttpResponse.json(mockCourierFleetOptions);
     }),
 
     // Get clear list envelope

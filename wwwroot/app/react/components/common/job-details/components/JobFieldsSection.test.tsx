@@ -59,6 +59,66 @@ describe('JobFieldsSection', () => {
         });
     });
 
+    describe('Quantity field (Package Details)', () => {
+        it('sums palletInfo.quantity so consolidated rows show the true piece count', () => {
+            const job = createMockJob({
+                palletInfo: [{id: 1, quantity: 10, weight: 5, length: 100, depth: 50, height: 50, notes: '', itemId: 1}],
+                parcelDimensions: [{itemName: '', dimensions: ''} as any],
+                weight: 50,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('Quantity')).toBeInTheDocument();
+            expect(screen.getByText('10 parcels · 50 kg')).toBeInTheDocument();
+        });
+
+        it('falls back to parcelDimensions row count when palletInfo is empty', () => {
+            const job = createMockJob({
+                palletInfo: [],
+                parcelDimensions: [
+                    {itemName: '', dimensions: ''} as any,
+                    {itemName: '', dimensions: ''} as any,
+                    {itemName: '', dimensions: ''} as any,
+                ],
+                weight: 12,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('3 parcels · 12 kg')).toBeInTheDocument();
+        });
+
+        it('shows singular "parcel" when count is 1', () => {
+            const job = createMockJob({
+                palletInfo: [{id: 1, quantity: 1, weight: 5, length: 1, depth: 1, height: 1, notes: '', itemId: 1}],
+                parcelDimensions: [],
+                weight: 5,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('1 parcel · 5 kg')).toBeInTheDocument();
+        });
+
+        it('uses lbs for US customers', () => {
+            const job = createMockJob({
+                palletInfo: [{id: 1, quantity: 4, weight: 5, length: 1, depth: 1, height: 1, notes: '', itemId: 1}],
+                parcelDimensions: [],
+                weight: 20,
+            });
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job, isUsCustomer: true})} />);
+            expect(screen.getByText('4 parcels · 20 lbs')).toBeInTheDocument();
+        });
+
+        it('shows weight only when no items are recorded', () => {
+            const job = createMockJob({palletInfo: [], parcelDimensions: [], weight: 8});
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            expect(screen.getByText('8 kg')).toBeInTheDocument();
+        });
+
+        it('shows em dash when neither items nor weight are present', () => {
+            const job = createMockJob({palletInfo: [], parcelDimensions: [], weight: undefined as any});
+            renderWithTheme(<JobFieldsSection {...createDefaultProps({job})} />);
+            const quantityRow = screen.getByText('Quantity').parentElement;
+            expect(quantityRow).toHaveTextContent('—');
+        });
+    });
+
     describe('Job Details fields', () => {
         it('displays all job detail field values', () => {
             renderWithTheme(<JobFieldsSection {...createDefaultProps()} />);
@@ -84,10 +144,12 @@ describe('JobFieldsSection', () => {
     });
 
     describe('Delivery Details fields', () => {
-        it('displays dispatcher, courier, and courier mobile', () => {
+        it('displays dispatcher, courier, courier number, and courier mobile', () => {
             renderWithTheme(<JobFieldsSection {...createDefaultProps()} />);
             expect(screen.getByText('Dispatcher A')).toBeInTheDocument();
             expect(screen.getByText('Test Courier')).toBeInTheDocument();
+            expect(screen.getByText('Courier Number')).toBeInTheDocument();
+            expect(screen.getByText('C001')).toBeInTheDocument();
             expect(screen.getByText('021 555 1234')).toBeInTheDocument();
         });
 

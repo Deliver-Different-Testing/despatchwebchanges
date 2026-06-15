@@ -418,6 +418,59 @@ describe('StickyNotes', () => {
         });
     });
 
+    describe('Ordering', () => {
+        it('renders pickup notes second-to-last and delivery notes last, with other notes first in source order', async () => {
+            const orderedNotes: JobNote[] = [
+                {
+                    noteId: 100,
+                    noteTypeId: 10, // Delivery
+                    noteTypeName: 'Delivery',
+                    jobId: 123,
+                    noteText: 'Drop at reception',
+                    isImportant: false,
+                },
+                {
+                    noteId: 101,
+                    noteTypeId: 1, // Internal
+                    noteTypeName: 'Internal',
+                    jobId: 123,
+                    noteText: 'Top-of-list other A',
+                    isImportant: false,
+                },
+                {
+                    noteId: 102,
+                    noteTypeId: 9, // Pickup
+                    noteTypeName: 'Pickup',
+                    jobId: 123,
+                    noteText: 'Gate code 1234',
+                    isImportant: false,
+                },
+                {
+                    noteId: 103,
+                    noteTypeId: 2, // Client
+                    noteTypeName: 'Client',
+                    jobId: 123,
+                    noteText: 'Top-of-list other B',
+                    isImportant: false,
+                },
+            ];
+            mockedNotesApi.getJobNotes.mockResolvedValue(orderedNotes);
+            renderWithProviders(<StickyNotes {...createDefaultProps()} />);
+
+            expect(await screen.findByText('Top-of-list other A')).toBeInTheDocument();
+
+            const rendered = screen.getAllByText(
+                /^(Top-of-list other A|Top-of-list other B|Gate code 1234|Drop at reception)$/
+            );
+            expect(rendered.map(el => el.textContent)).toEqual([
+                'Top-of-list other A',
+                'Top-of-list other B',
+                'Gate code 1234',
+                'Drop at reception',
+            ]);
+        });
+    });
+
     describe('Data Loading', () => {
         it('loads notes and note types on mount', async () => {
             const props = createDefaultProps();

@@ -5,74 +5,140 @@
  * Supports multiple density modes for different viewing preferences.
  */
 
-import React, {useState, useMemo, useEffect, useCallback} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import Alert from '@mui/material/Alert';
+import Avatar from '@mui/material/Avatar';
 import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardActionArea from '@mui/material/CardActionArea';
+import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
 import LinearProgress from '@mui/material/LinearProgress';
+import Stack from '@mui/material/Stack';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import {alpha, useTheme} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material/styles';
 import SyncIcon from '@mui/icons-material/Sync';
 import ViewAgendaIcon from '@mui/icons-material/ViewAgenda';
 import ViewCompactIcon from '@mui/icons-material/ViewCompact';
 import ViewCompactAltIcon from '@mui/icons-material/ViewCompactAlt';
 import NotesIcon from '@mui/icons-material/Notes';
-import CircleIcon from '@mui/icons-material/Circle';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import PackageIcon from '@mui/icons-material/Inventory2';
-import {useTheme, type Theme} from '@mui/material';
-import {alpha} from '@mui/material/styles';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import {
-    TaskHistoryProps,
+    DeliveryHistoryConfig,
     DeliveryJourney,
     DensityMode,
-    DeliveryHistoryConfig,
+    TaskHistoryProps,
 } from './TaskHistory.interfaces';
+import {getEventColorTone, getEventIcon} from './eventIcons';
+import {DeliveryEventDetailsDialog} from './DeliveryEventDetailsDialog';
 import {getIanaTimezone, getTenantTimezone, getTimezoneAbbreviation} from '../../../utils/dateUtils';
+import {formatCurrency} from '../../../utils/currencyUtils';
 import {useDeliveryJourney} from '../../../hooks/useTasksApi';
 
 dayjs.extend(relativeTime);
 
-// Icon color classes mapped to actual colors
-// These are intentional design data for differentiating user avatars/icons, not a theme concern.
-const ICON_COLORS = [
-    '#3b82f6', // Blue
-    '#10b981', // Emerald
-    '#f59e0b', // Amber
-    '#ef4444', // Red
-    '#8b5cf6', // Violet
-    '#06b6d4', // Cyan
-    '#84cc16', // Lime
-    '#ec4899', // Pink
-];
+type PaletteColorKey = 'success' | 'info' | 'warning' | 'error' | 'secondary';
 
-// Status colors derived from theme palette
-function getStatusColors(theme: Theme) {
-    return {
-        completed: {main: theme.palette.success.main, light: alpha(theme.palette.success.main, 0.12)},
-        current: {main: theme.palette.info.main, light: alpha(theme.palette.info.main, 0.12)},
-        todo: {main: theme.palette.error.main, light: alpha(theme.palette.error.main, 0.08)},
-        pending: {main: theme.palette.warning.main, light: alpha(theme.palette.warning.main, 0.12)},
-        waiting: {main: theme.palette.text.disabled, light: theme.palette.grey[100]},
-    };
+interface DensitySpec {
+    rowGap: number;
+    contentPad: number;
+    cardPad: number;
+    markerSize: number;
+    iconFontSize: number;
+    railLeft: number;
+    showNotes: boolean;
+    tagLimit: number;
+    titleVariant: 'subtitle2' | 'body2' | 'caption';
 }
+
+const DENSITY: Record<DensityMode, DensitySpec> = {
+    [DensityMode.Normal]: {
+        rowGap: 2,
+        contentPad: 2,
+        cardPad: 1.5,
+        markerSize: 36,
+        iconFontSize: 20,
+        railLeft: 18,
+        showNotes: true,
+        tagLimit: 10,
+        titleVariant: 'subtitle2',
+    },
+    [DensityMode.Dense]: {
+        rowGap: 1.25,
+        contentPad: 1.5,
+        cardPad: 1,
+        markerSize: 28,
+        iconFontSize: 16,
+        railLeft: 14,
+        showNotes: false,
+        tagLimit: 4,
+        titleVariant: 'body2',
+    },
+    [DensityMode.UltraDense]: {
+        rowGap: 0.75,
+        contentPad: 1,
+        cardPad: 0.75,
+        markerSize: 22,
+        iconFontSize: 13,
+        railLeft: 11,
+        showNotes: false,
+        tagLimit: 2,
+        titleVariant: 'caption',
+    },
+};
 
 const defaultConfig: DeliveryHistoryConfig = {
     showSummaryStats: false,
     densityMode: DensityMode.Normal,
 };
 
-function getIconColor(index: number): string {
-    return ICON_COLORS[index % ICON_COLORS.length];
-}
-
-function getStatusColor(theme: Theme, status: string): { main: string; light: string } {
-    const statusColors = getStatusColors(theme);
-    return statusColors[status as keyof typeof statusColors] || statusColors.waiting;
-}
-
 const POLLING_INTERVAL_MS = 120_000; // 2 minutes
+
+function getEventColors(theme: Theme, iconName: string | undefined | null): { main: string; tint: string; contrast: string } {
+    const key: PaletteColorKey = getEventColorTone(iconName);
+    const palette = theme.palette[key];
+    return {
+        main: palette.main,
+        tint: alpha(palette.main, 0.1),
+        contrast: palette.contrastText,
+    };
+}
+
+const containerSx = {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    bgcolor: 'background.paper',
+    borderRadius: 2,
+    overflow: 'hidden',
+} satisfies SxProps<Theme>;
+
+const headerSx = {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    px: 1.5,
+    py: 0.75,
+    bgcolor: 'primary.main',
+    color: 'primary.contrastText',
+    borderBottom: 1,
+    borderColor: 'divider',
+} satisfies SxProps<Theme>;
+
+const emptyStateSx = {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    p: 4,
+    textAlign: 'center',
+} satisfies SxProps<Theme>;
 
 export const TaskHistory: React.FC<TaskHistoryProps> = ({
                                                             jobId,
@@ -87,18 +153,17 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
 
     const [densityMode, setDensityMode] = useState<DensityMode>(config.densityMode || DensityMode.Normal);
     const [shouldAnimate, setShouldAnimate] = useState(false);
+    const [detailsEvent, setDetailsEvent] = useState<DeliveryJourney | null>(null);
 
     const timeZoneShort = useMemo(() => {
         const ianaTimeZone = getIanaTimezone(getTenantTimezone());
         return getTimezoneAbbreviation(ianaTimeZone);
     }, []);
 
-    // Use React Query for data fetching with automatic 2-minute polling (client-swr-dedup)
     const {data: deliveryEvents = [], isLoading: loading, error: fetchError, refetch} = useDeliveryJourney(jobId, {
         refetchInterval: POLLING_INTERVAL_MS,
     });
 
-    // Show error toast on fetch failure
     useEffect(() => {
         if (fetchError) {
             console.error('Error loading delivery journey:', fetchError);
@@ -106,136 +171,60 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         }
     }, [fetchError, showErrorToast]);
 
-    // Start animation timer on mount
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setShouldAnimate(true);
-        }, 100);
+        const timer = setTimeout(() => setShouldAnimate(true), 100);
         return () => clearTimeout(timer);
     }, []);
+
+    const spec = DENSITY[densityMode];
 
     const cycleDensityMode = (): void => {
         setDensityMode(prev => {
             const modes = [DensityMode.Normal, DensityMode.Dense, DensityMode.UltraDense];
-            const currentIndex = modes.indexOf(prev);
-            return modes[(currentIndex + 1) % modes.length];
+            return modes[(modes.indexOf(prev) + 1) % modes.length];
         });
     };
 
-    const getDensityModeIcon = (): React.ReactNode => {
+    const densityIcon = useMemo((): React.ReactNode => {
         switch (densityMode) {
-            case DensityMode.Normal:
-                return <ViewAgendaIcon/>;
-            case DensityMode.Dense:
-                return <ViewCompactIcon/>;
-            case DensityMode.UltraDense:
-                return <ViewCompactAltIcon/>;
-            default:
-                return <ViewAgendaIcon/>;
+            case DensityMode.Dense: return <ViewCompactIcon/>;
+            case DensityMode.UltraDense: return <ViewCompactAltIcon/>;
+            default: return <ViewAgendaIcon/>;
         }
-    };
+    }, [densityMode]);
 
-    const getDensityModeLabel = (): string => {
+    const densityLabel = useMemo((): string => {
         switch (densityMode) {
-            case DensityMode.Normal:
-                return 'Normal View';
-            case DensityMode.Dense:
-                return 'Dense View';
-            case DensityMode.UltraDense:
-                return 'Ultra-Dense View';
-            default:
-                return 'Normal View';
+            case DensityMode.Dense: return 'Dense view';
+            case DensityMode.UltraDense: return 'Ultra-dense view';
+            default: return 'Normal view';
         }
-    };
+    }, [densityMode]);
 
     const handleRefresh = useCallback(async (): Promise<void> => {
         showInfoToast?.('Refreshing delivery journey...');
         setShouldAnimate(false);
-
         await refetch();
         setShouldAnimate(true);
         showSuccessToast?.('Delivery journey updated');
     }, [refetch, showInfoToast, showSuccessToast]);
 
-    const handleEventClick = (event: React.MouseEvent, deliveryEvent: DeliveryJourney): void => {
-        event.preventDefault();
-        event.stopPropagation();
+    const handleEventClick = (deliveryEvent: DeliveryJourney): void => {
+        // Always open the built-in details dialog so users can read full
+        // content (long addresses, all tags, notes). Parents that wired
+        // onDeliveryEventClick still receive the event — the two are
+        // intentionally additive, not exclusive.
+        setDetailsEvent(deliveryEvent);
         onDeliveryEventClick?.(deliveryEvent);
     };
 
-    const sizes = useMemo(() => {
-        switch (densityMode) {
-            case DensityMode.Dense:
-                return {
-                    padding: 12,
-                    eventGap: 12,
-                    markerSize: 24,
-                    iconSize: 14,
-                    titleSize: '0.875rem',
-                    timeSize: '10px',
-                    tagSize: '10px',
-                    trackLeft: 11,
-                    cardPadding: '8px 10px',
-                    tagLimit: 3,
-                };
-            case DensityMode.UltraDense:
-                return {
-                    padding: 8,
-                    eventGap: 8,
-                    markerSize: 18,
-                    iconSize: 10,
-                    titleSize: '0.75rem',
-                    timeSize: '9px',
-                    tagSize: '9px',
-                    trackLeft: 8,
-                    cardPadding: '6px 8px',
-                    tagLimit: 2,
-                };
-            default:
-                return {
-                    padding: 16,
-                    eventGap: 16,
-                    markerSize: 32,
-                    iconSize: 18,
-                    titleSize: '0.875rem',
-                    timeSize: '0.75rem',
-                    tagSize: '0.75rem',
-                    trackLeft: 15,
-                    cardPadding: '12px',
-                    tagLimit: 10,
-                };
-        }
-    }, [densityMode]);
-
-    // No job selected state
     if (!jobId) {
         return (
-            <Box
-                sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%',
-                    backgroundColor: 'background.paper',
-                    borderRadius: 2,
-                    overflow: 'hidden',
-                }}
-            >
-                <Box
-                    sx={{
-                        flex: 1,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: 4,
-                        textAlign: 'center',
-                    }}
-                >
+            <Box sx={containerSx}>
+                <Box sx={emptyStateSx}>
                     <SelectAllIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}}/>
-                    <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
-                        Select a Job
-                    </Typography>
-                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                    <Typography variant="h6" sx={{mb: 1}}>Select a Job</Typography>
+                    <Typography variant="body2" color="text.secondary">
                         Select a job to view its delivery journey.
                     </Typography>
                 </Box>
@@ -243,40 +232,21 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
         );
     }
 
+    const hoverBgSx = {bgcolor: alpha(theme.palette.common.white, 0.15)};
+
     return (
-        <Box
-            sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                backgroundColor: 'background.paper',
-                borderRadius: 2,
-                overflow: 'hidden',
-            }}
-        >
+        <Box sx={containerSx}>
             {/* Header */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-                    alignItems: 'center',
-                    padding: '6px 12px',
-                    backgroundColor: 'primary.main',
-                    borderBottom: 1,
-                    borderColor: 'divider',
-                }}
-            >
-                <Box sx={{display: 'flex', gap: 0.25}}>
-                    <Tooltip title={getDensityModeLabel()}>
+            <Box sx={headerSx}>
+                <Stack direction="row" spacing={0.25}>
+                    <Tooltip title={densityLabel}>
                         <IconButton
                             size="small"
                             onClick={cycleDensityMode}
-                            sx={{
-                                color: 'primary.contrastText',
-                                '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)},
-                            }}
+                            aria-label={`Toggle density: currently ${densityLabel}`}
+                            sx={{color: 'inherit', '&:hover': hoverBgSx}}
                         >
-                            {getDensityModeIcon()}
+                            {densityIcon}
                         </IconButton>
                     </Tooltip>
                     <Tooltip title="Refresh">
@@ -284,276 +254,282 @@ export const TaskHistory: React.FC<TaskHistoryProps> = ({
                             size="small"
                             onClick={handleRefresh}
                             disabled={loading}
+                            aria-label="Refresh delivery journey"
                             sx={{
-                                color: 'primary.contrastText',
-                                '&:hover': {bgcolor: alpha(theme.palette.common.white, 0.15)},
-                                '@keyframes spin': {
+                                color: 'inherit',
+                                '&:hover': hoverBgSx,
+                                '@keyframes thSpin': {
                                     from: {transform: 'rotate(0deg)'},
                                     to: {transform: 'rotate(360deg)'},
                                 },
-                                '& svg': loading ? {animation: 'spin 1s linear infinite'} : {},
+                                '& svg': loading ? {animation: 'thSpin 1s linear infinite'} : {},
                             }}
                         >
                             <SyncIcon/>
                         </IconButton>
                     </Tooltip>
-                </Box>
+                </Stack>
             </Box>
-            {/* Main Content */}
+
+            {/* Body */}
             <Box sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative'}}>
-                {/* Loading Bar */}
                 {loading && (
-                    <LinearProgress
-                        sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            right: 0,
-                            zIndex: 10,
-                        }}
-                    />
+                    <LinearProgress sx={{position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10}}/>
                 )}
 
-                {/* Journey Events */}
                 {deliveryEvents.length > 0 ? (
-                    <Box
-                        sx={{
-                            flex: 1,
-                            overflowY: 'auto',
-                            padding: `${sizes.padding}px`,
-                        }}
-                    >
-                        <Box sx={{position: 'relative'}}>
-                            {/* Timeline Track */}
+                    <Box sx={{flex: 1, overflowY: 'auto', p: spec.contentPad}}>
+                        <Box
+                            role="list"
+                            aria-label="Delivery journey events"
+                            sx={{position: 'relative'}}
+                        >
+                            {/* Continuous timeline rail */}
                             <Box
+                                aria-hidden
                                 sx={{
                                     position: 'absolute',
-                                    left: `${sizes.trackLeft}px`,
-                                    top: 0,
-                                    bottom: 0,
-                                    width: densityMode === DensityMode.UltraDense ? 1 : 2,
-                                    backgroundColor: 'divider',
+                                    left: spec.railLeft,
+                                    top: spec.markerSize / 2,
+                                    bottom: spec.markerSize / 2,
+                                    width: 2,
+                                    bgcolor: 'divider',
+                                    borderRadius: 1,
                                 }}
                             />
-
-                            {/* Events */}
-                            {deliveryEvents.map((event, index) => {
-                                const statusColor = getStatusColor(theme, event.status);
-                                const iconColor = getIconColor(index);
-                                const isLast = index === deliveryEvents.length - 1;
-                                const tagsToShow = event.tags?.slice(0, sizes.tagLimit) || [];
-                                const remainingTags = (event.tags?.length || 0) - sizes.tagLimit;
-
-                                return (
-                                    <Box
+                            <Stack spacing={spec.rowGap}>
+                                {deliveryEvents.map((event, index) => (
+                                    <EventRow
                                         key={event.id}
-                                        onClick={(e) => handleEventClick(e, event)}
-                                        sx={{
-                                            display: 'flex',
-                                            gap: `${sizes.eventGap}px`,
-                                            marginBottom: isLast ? 0 : `${sizes.eventGap}px`,
-                                            cursor: 'pointer',
-                                            opacity: shouldAnimate ? 1 : 0,
-                                            transform: shouldAnimate ? 'translateX(0)' : 'translateX(-16px)',
-                                            transition: 'opacity 0.4s ease, transform 0.4s ease',
-                                            transitionDelay: `${index * 0.08}s`,
-                                            '&:hover .event-card': {
-                                                borderColor: 'primary.main',
-                                                boxShadow: 2,
-                                            },
-                                        }}
-                                    >
-                                        {/* Event Marker */}
-                                        <Box
-                                            sx={{
-                                                position: 'relative',
-                                                display: 'flex',
-                                                flexDirection: 'column',
-                                                alignItems: 'center',
-                                                zIndex: 5,
-                                            }}
-                                        >
-                                            <Box
-                                                sx={{
-                                                    width: sizes.markerSize,
-                                                    height: sizes.markerSize,
-                                                    borderRadius: '50%',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    backgroundColor: iconColor,
-                                                    border: `${densityMode === DensityMode.UltraDense ? 2 : 3}px solid white`,
-                                                    boxShadow: 1,
-                                                    '& svg': {
-                                                        color: 'white',
-                                                        fontSize: sizes.iconSize,
-                                                    },
-                                                }}
-                                            >
-                                                <CircleIcon sx={{fontSize: sizes.iconSize}}/>
-                                            </Box>
-                                            {!isLast && (
-                                                <Box
-                                                    sx={{
-                                                        width: densityMode === DensityMode.UltraDense ? 1 : 2,
-                                                        flex: 1,
-                                                        minHeight: densityMode === DensityMode.UltraDense ? 8 : 16,
-                                                        backgroundColor: 'divider',
-                                                        marginTop: '-2px',
-                                                    }}
-                                                />
-                                            )}
-                                        </Box>
-
-                                        {/* Event Card */}
-                                        <Box
-                                            className="event-card"
-                                            sx={{
-                                                flex: 1,
-                                                backgroundColor: 'background.paper',
-                                                border: 1,
-                                                borderColor: 'divider',
-                                                borderLeft: `3px solid ${statusColor.main}`,
-                                                borderRadius: 2,
-                                                padding: sizes.cardPadding,
-                                                background: `linear-gradient(to right, ${statusColor.light}, white 20%)`,
-                                                transition: 'all 0.2s ease',
-                                            }}
-                                        >
-                                            {/* Event Header */}
-                                            <Box
-                                                sx={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'flex-start',
-                                                    flexDirection: densityMode === DensityMode.UltraDense ? 'column' : 'row',
-                                                    gap: densityMode === DensityMode.UltraDense ? '2px' : '8px',
-                                                    marginBottom: '6px',
-                                                }}
-                                            >
-                                                <Typography
-                                                    sx={{
-                                                        fontSize: sizes.titleSize,
-                                                        fontWeight: densityMode === DensityMode.UltraDense ? 500 : 600,
-                                                        color: 'text.primary',
-                                                        lineHeight: 1.3,
-                                                    }}
-                                                >
-                                                    {event.title}
-                                                </Typography>
-                                                {densityMode !== DensityMode.UltraDense && (
-                                                    <Typography
-                                                        sx={{
-                                                            fontSize: sizes.timeSize,
-                                                            color: 'text.secondary',
-                                                            backgroundColor: 'grey.50',
-                                                            padding: densityMode === DensityMode.Dense ? '1px 6px' : '2px 8px',
-                                                            borderRadius: 1,
-                                                            whiteSpace: 'nowrap',
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {event._dateStr}
-                                                        {densityMode === DensityMode.Normal && (
-                                                            <Box component="span" sx={{
-                                                                color: 'text.disabled',
-                                                                ml: 0.25
-                                                            }}>{timeZoneShort}</Box>
-                                                        )}
-                                                    </Typography>
-                                                )}
-                                            </Box>
-
-                                            {/* Tags */}
-                                            {tagsToShow.length > 0 && (
-                                                <Box sx={{display: 'flex', flexWrap: 'wrap', gap: '4px'}}>
-                                                    {tagsToShow.map((tag, tagIndex) => (
-                                                        <Box
-                                                            key={tagIndex}
-                                                            component="span"
-                                                            sx={{
-                                                                fontSize: sizes.tagSize,
-                                                                color: 'text.secondary',
-                                                                backgroundColor: 'grey.50',
-                                                                padding: densityMode === DensityMode.UltraDense ? '0 3px' : '2px 6px',
-                                                                borderRadius: 1,
-                                                                border: 1,
-                                                                borderColor: 'divider',
-                                                            }}
-                                                        >
-                                                            {tag}
-                                                        </Box>
-                                                    ))}
-                                                    {remainingTags > 0 && densityMode !== DensityMode.Normal && (
-                                                        <Box
-                                                            component="span"
-                                                            sx={{
-                                                                fontSize: sizes.tagSize,
-                                                                color: 'text.disabled',
-                                                                backgroundColor: 'grey.50',
-                                                                padding: densityMode === DensityMode.UltraDense ? '0 3px' : '2px 6px',
-                                                                borderRadius: 1,
-                                                                border: 1,
-                                                                borderColor: 'divider',
-                                                                fontStyle: 'italic',
-                                                            }}
-                                                        >
-                                                            +{remainingTags}
-                                                        </Box>
-                                                    )}
-                                                </Box>
-                                            )}
-
-                                            {/* Notes - only in Normal mode */}
-                                            {event.notes && densityMode === DensityMode.Normal && (
-                                                <Box
-                                                    sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'flex-start',
-                                                        gap: '6px',
-                                                        marginTop: '8px',
-                                                        padding: '8px',
-                                                        backgroundColor: 'grey.50',
-                                                        borderRadius: 1,
-                                                        fontSize: '0.75rem',
-                                                        color: 'text.secondary',
-                                                        fontStyle: 'italic',
-                                                    }}
-                                                >
-                                                    <NotesIcon
-                                                        sx={{color: 'text.disabled', fontSize: 16, flexShrink: 0}}/>
-                                                    <span>{event.notes}</span>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    </Box>
-                                );
-                            })}
+                                        event={event}
+                                        index={index}
+                                        spec={spec}
+                                        densityMode={densityMode}
+                                        timeZoneShort={timeZoneShort}
+                                        animated={shouldAnimate}
+                                        onClick={() => handleEventClick(event)}
+                                    />
+                                ))}
+                            </Stack>
                         </Box>
                     </Box>
                 ) : !loading ? (
-                    /* Empty State */
-                    (<Box
-                        sx={{
-                            flex: 1,
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: 4,
-                            textAlign: 'center',
-                        }}
-                    >
+                    <Box sx={emptyStateSx}>
                         <PackageIcon sx={{fontSize: 48, color: 'text.disabled', mb: 2}}/>
-                        <Typography variant="h6" sx={{color: 'text.primary', mb: 1}}>
-                            No Journey Events
-                        </Typography>
-                        <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                        <Typography variant="h6" sx={{mb: 1}}>No Journey Events</Typography>
+                        <Typography variant="body2" color="text.secondary">
                             No delivery journey events found for this job.
                         </Typography>
-                    </Box>)
+                    </Box>
                 ) : null}
             </Box>
+
+            <DeliveryEventDetailsDialog
+                open={detailsEvent !== null}
+                event={detailsEvent}
+                timeZoneShort={timeZoneShort}
+                onClose={() => setDetailsEvent(null)}
+            />
+        </Box>
+    );
+};
+
+interface EventRowProps {
+    event: DeliveryJourney;
+    index: number;
+    spec: DensitySpec;
+    densityMode: DensityMode;
+    timeZoneShort: string;
+    animated: boolean;
+    onClick?: () => void;
+}
+
+const EventRow: React.FC<EventRowProps> = ({event, index, spec, densityMode, timeZoneShort, animated, onClick}) => {
+    const theme = useTheme();
+    const statusColor = getEventColors(theme, event.icon);
+    const Icon = getEventIcon(event.icon);
+
+    const tagsToShow = event.tags?.slice(0, spec.tagLimit) ?? [];
+    const remainingTags = (event.tags?.length ?? 0) - spec.tagLimit;
+
+    const cardBody = (
+        <Stack spacing={0.75} sx={{p: spec.cardPad, width: '100%', minWidth: 0}}>
+            {/* Title row */}
+            <Stack
+                direction="row"
+                spacing={1}
+                useFlexGap
+                sx={{alignItems: 'flex-start', flexWrap: 'wrap', rowGap: 0.5}}
+            >
+                <Typography
+                    variant={spec.titleVariant}
+                    sx={{
+                        fontWeight: densityMode === DensityMode.UltraDense ? 500 : 600,
+                        flex: '1 1 auto',
+                        minWidth: 0,
+                        lineHeight: 1.3,
+                        color: 'text.primary',
+                    }}
+                >
+                    {event.title}
+                </Typography>
+
+                {event.grandTotalAfter != null && densityMode !== DensityMode.UltraDense && (
+                    <Chip
+                        size="small"
+                        color="success"
+                        variant="filled"
+                        label={`Total: ${formatCurrency(event.grandTotalAfter)}`}
+                        sx={{height: 20, '& .MuiChip-label': {px: 0.75, fontSize: '0.7rem', fontWeight: 600}}}
+                    />
+                )}
+
+                {densityMode !== DensityMode.UltraDense && (
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{whiteSpace: 'nowrap', flexShrink: 0, lineHeight: 1.3}}
+                    >
+                        {event._dateStr}
+                        {densityMode === DensityMode.Normal && (
+                            <Box component="span" sx={{color: 'text.disabled', ml: 0.5}}>
+                                {timeZoneShort}
+                            </Box>
+                        )}
+                    </Typography>
+                )}
+            </Stack>
+
+            {/* Tags */}
+            {tagsToShow.length > 0 && (
+                <Stack direction="row" spacing={0.5} useFlexGap sx={{flexWrap: 'wrap', rowGap: 0.5}}>
+                    {tagsToShow.map((tag, tagIndex) => (
+                        <Tooltip
+                            key={tagIndex}
+                            title={tag}
+                            placement="top"
+                            enterDelay={400}
+                            disableInteractive
+                        >
+                            <Chip
+                                label={tag}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                    height: densityMode === DensityMode.UltraDense ? 16 : 20,
+                                    maxWidth: densityMode === DensityMode.UltraDense ? 120 : 220,
+                                    '& .MuiChip-label': {
+                                        px: densityMode === DensityMode.UltraDense ? 0.5 : 0.75,
+                                        fontSize: densityMode === DensityMode.UltraDense ? '0.65rem' : '0.7rem',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    },
+                                }}
+                            />
+                        </Tooltip>
+                    ))}
+                    {remainingTags > 0 && densityMode !== DensityMode.Normal && (
+                        <Chip
+                            label={`+${remainingTags}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                                height: densityMode === DensityMode.UltraDense ? 16 : 20,
+                                fontStyle: 'italic',
+                                color: 'text.disabled',
+                                '& .MuiChip-label': {
+                                    px: densityMode === DensityMode.UltraDense ? 0.5 : 0.75,
+                                    fontSize: densityMode === DensityMode.UltraDense ? '0.65rem' : '0.7rem',
+                                },
+                            }}
+                        />
+                    )}
+                </Stack>
+            )}
+
+            {/* Notes */}
+            {event.notes && spec.showNotes && (
+                <Alert
+                    severity="info"
+                    variant="outlined"
+                    icon={<NotesIcon fontSize="small"/>}
+                    sx={{
+                        py: 0.25,
+                        px: 1,
+                        '& .MuiAlert-message': {
+                            fontSize: '0.75rem',
+                            fontStyle: 'italic',
+                            color: 'text.secondary',
+                            py: 0.5,
+                        },
+                        '& .MuiAlert-icon': {py: 0.5},
+                    }}
+                >
+                    {event.notes}
+                </Alert>
+            )}
+        </Stack>
+    );
+
+    return (
+        <Box
+            role="listitem"
+            sx={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 1.5,
+                opacity: animated ? 1 : 0,
+                transform: animated ? 'translateX(0)' : 'translateX(-12px)',
+                transition: theme.transitions.create(['opacity', 'transform'], {
+                    duration: theme.transitions.duration.standard,
+                }),
+                transitionDelay: `${Math.min(index * 0.06, 0.6)}s`,
+            }}
+        >
+            {/* Event marker (dot) */}
+            <Avatar
+                sx={{
+                    width: spec.markerSize,
+                    height: spec.markerSize,
+                    bgcolor: statusColor.main,
+                    color: statusColor.contrast,
+                    border: 2,
+                    borderColor: 'background.paper',
+                    boxShadow: 1,
+                    flexShrink: 0,
+                    zIndex: 1,
+                }}
+            >
+                <Icon sx={{fontSize: spec.iconFontSize}}/>
+            </Avatar>
+
+            {/* Event card */}
+            <Card
+                variant="outlined"
+                sx={{
+                    flex: 1,
+                    minWidth: 0,
+                    borderRadius: 2,
+                    borderLeft: '3px solid',
+                    borderLeftColor: statusColor.main,
+                    bgcolor: 'background.paper',
+                    transition: theme.transitions.create(['box-shadow', 'border-color'], {
+                        duration: theme.transitions.duration.shorter,
+                    }),
+                    '&:hover': onClick
+                        ? {boxShadow: 2, borderColor: 'primary.main', borderLeftColor: statusColor.main}
+                        : undefined,
+                }}
+            >
+                {onClick ? (
+                    <CardActionArea onClick={onClick} sx={{display: 'block'}}>
+                        {cardBody}
+                    </CardActionArea>
+                ) : (
+                    cardBody
+                )}
+            </Card>
         </Box>
     );
 };

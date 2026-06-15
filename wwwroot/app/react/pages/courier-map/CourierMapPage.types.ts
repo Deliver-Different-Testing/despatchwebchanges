@@ -65,6 +65,14 @@ export interface CourierMapPageProps {
 }
 
 /**
+ * Available fleet selection option
+ */
+export interface FleetSelectorOption {
+    id: number;
+    text: string;
+}
+
+/**
  * Props for the DriversPanel component
  */
 export interface DriversPanelProps {
@@ -88,6 +96,14 @@ export interface DriversPanelProps {
     isPanelHidden: boolean;
     /** Callback to toggle panel visibility */
     onTogglePanel: () => void;
+    /** All fleets available to select from */
+    fleetOptions: FleetSelectorOption[];
+    /** Whether fleet options are still loading */
+    isFleetOptionsLoading: boolean;
+    /** Currently selected fleet IDs ([] = all fleets) */
+    selectedFleetIds: number[];
+    /** Callback when fleet selection changes */
+    onSelectedFleetIdsChange: (ids: number[]) => void;
 }
 
 /**

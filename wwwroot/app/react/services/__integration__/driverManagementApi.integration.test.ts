@@ -14,6 +14,7 @@ import {
     mockTodayActiveDrivers,
     mockComplianceList,
     mockAfterHoursSchedule,
+    mockFleetOptions,
 } from '../../__testUtils__/msw/handlers';
 
 describe('driverManagementApi integration', () => {
@@ -79,6 +80,13 @@ describe('driverManagementApi integration', () => {
 
     describe('getAllFleetOptions', () => {
         it('fetches fleet options', async () => {
+            // Override the shared courierHandlers stub so this test gets the
+            // driverManagement-shaped fleet list (3 items) rather than the
+            // 4-item courier list — both handlers register for the same URL.
+            server.use(
+                http.get('*/courier/GetAllFleetOptions', () => HttpResponse.json(mockFleetOptions))
+            );
+
             const result = await driverManagementApi.getAllFleetOptions();
 
             expect(result).toHaveLength(3);

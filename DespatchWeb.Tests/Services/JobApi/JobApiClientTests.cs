@@ -28,7 +28,7 @@ public class JobApiClientTests
 
     private JobApiClient CreateClient() => new(_despatchApi, _httpContextAccessor);
 
-    private static JobCreateViewModel SampleRequest() => new()
+    private static JobCreateViewModel SampleRequest(decimal? weightKg = null, decimal? weightLb = null) => new()
     {
         ClientId = 42,
         SpeedId = 7,
@@ -40,7 +40,9 @@ public class JobApiClientTests
         RefA = "RA-1",
         RefB = "RB-2",
         JobNotes = "Handle with care",
-        Charge = 25.50m
+        Charge = 25.50m,
+        WeightKg = weightKg,
+        WeightLb = weightLb
     };
 
     [Fact]
@@ -79,7 +81,7 @@ public class JobApiClientTests
     [Fact]
     public async Task QuickCreateAsync_MapsJobCreateViewModelToBookPickupDto()
     {
-        BookPickupDto captured = null;
+        BookPickupDto? captured = null;
         _despatchApi.BookPickupAsync(
                 Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
                 Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
@@ -104,6 +106,40 @@ public class JobApiClientTests
         Assert.Equal("NZ", captured.Delivery.To.CountryCode);
         Assert.Single(captured.Packages);
         Assert.Equal(1, captured.Packages[0].Units);
+    }
+
+    [Fact]
+    public async Task QuickCreateAsync_WeightKg_MapsToPackageKg()
+    {
+        BookPickupDto? captured = null;
+        _despatchApi.BookPickupAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
+                Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
+            .Returns(new JobResponseDto { JobId = 1 });
+
+        await CreateClient().QuickCreateAsync(SampleRequest(weightKg: 5m), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Single(captured.Packages);
+        Assert.Equal(5m, captured.Packages[0].Kg);
+        Assert.Null(captured.Packages[0].Lb);
+    }
+
+    [Fact]
+    public async Task QuickCreateAsync_WeightLb_MapsToPackageLb()
+    {
+        BookPickupDto? captured = null;
+        _despatchApi.BookPickupAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<int>(),
+                Arg.Do<BookPickupDto>(d => captured = d), Arg.Any<CancellationToken>())
+            .Returns(new JobResponseDto { JobId = 1 });
+
+        await CreateClient().QuickCreateAsync(SampleRequest(weightLb: 11m), TestContext.Current.CancellationToken);
+
+        Assert.NotNull(captured);
+        Assert.Single(captured.Packages);
+        Assert.Equal(11m, captured.Packages[0].Lb);
+        Assert.Null(captured.Packages[0].Kg);
     }
 
     [Fact]

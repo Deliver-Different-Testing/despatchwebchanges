@@ -101,9 +101,8 @@ public class JobMappingsTests
         Assert.Equal(archiveResult.TailLiftPu, liveResult.TailLiftPu);
         Assert.Equal(archiveResult.TailLiftDo, liveResult.TailLiftDo);
         Assert.Equal(archiveResult.DeliverToPrivateRes, liveResult.DeliverToPrivateRes);
-        // With inline mapping, empty collections result in empty list
         Assert.Empty(liveResult.ParcelDimensions);
-        Assert.True(archiveResult.ParcelDimensions is null or []); // Either null or empty depending on expression evaluation
+        Assert.Empty(archiveResult.ParcelDimensions);
         Assert.Null(liveResult.PalletInfo);
         Assert.Null(archiveResult.PalletInfo);
         Assert.Null(liveResult.AssignedFlight);
@@ -779,7 +778,7 @@ public class JobMappingsTests
         Assert.False(result.TailLiftPu);
         Assert.False(result.TailLiftDo);
         Assert.False(result.DeliverToPrivateRes);
-        Assert.True(result.ParcelDimensions is null or []); // Either null or empty depending on expression evaluation
+        Assert.Empty(result.ParcelDimensions);
         Assert.Null(result.PalletInfo);
         Assert.Null(result.AssignedFlight);
         Assert.False(result.IsFlightAssigned);
@@ -1997,6 +1996,146 @@ public class JobMappingsTests
         Assert.Equal(120, result.PalletInfo[0].Height);
         Assert.Equal(2, result.PalletInfo[0].DgClass);
         Assert.Equal("Archived Pallet", result.PalletInfo[0].Notes);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_ParcelDimensions_FallsBackToParentItems_WhenChildHasNone()
+    {
+        // Arrange — archived split-child with no items routed to it and no own items;
+        // should inherit dimensions from parent (matches live 3-tier behaviour).
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 100, ItemId = 1, ChildJobId = null, Notes = "Parent Parcel", Length = 60, Depth = 40, Height = 50, Barcode = "PARENT-BC" }
+            }
+        };
+
+        var childJob = new TucJobArchive
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        var parcel = Assert.Single(result.ParcelDimensions);
+        Assert.Equal("Parent Parcel", parcel.ItemName);
+        Assert.Equal("PARENT-BC", parcel.Barcode);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_PalletInfo_FallsBackToParentItems_WhenChildHasNone()
+    {
+        // Arrange — same shape as above but asserting palletInfo + quantity propagation.
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 100, ItemId = 1, ChildJobId = null, Items = 7, Weight = 12, Length = 60, Depth = 40, Height = 50, Notes = "Parent Pallet" }
+            }
+        };
+
+        var childJob = new TucJobArchive
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        Assert.NotNull(result.PalletInfo);
+        var pallet = Assert.Single(result.PalletInfo);
+        Assert.Equal(7, pallet.Quantity);
+        Assert.Equal("Parent Pallet", pallet.Notes);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_Items_ChildJobInheritsParentItemCount()
+    {
+        // Arrange — archived split-child without own items inherits row count from parent
+        // (mirrors JobMappingCore_Items_ChildJobInheritsParentItemCount).
+        var parentJob = new TucJobArchive
+        {
+            UcjbId = 100,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 100, ItemId = 1, ChildJobId = null },
+                new() { JobId = 100, ItemId = 2, ChildJobId = null },
+                new() { JobId = 100, ItemId = 3, ChildJobId = null }
+            }
+        };
+
+        var childJob = new TucJobArchive
+        {
+            UcjbId = 200,
+            ParentId = 100,
+            Parent = parentJob,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>()
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(childJob);
+
+        // Assert
+        Assert.Equal(3, result.Items);
+    }
+
+    [Fact]
+    public void JobArchiveMapping_Items_RegularJobCountsOwnItems()
+    {
+        // Arrange — regression: a normal archived job (no children pointing at it)
+        // must count its own ChildJobId==null items, not zero.
+        var archivedJob = new TucJobArchive
+        {
+            UcjbId = 50,
+            UcjbDate = new DateTime(2024, 6, 10),
+            PricingBreakdowns = new List<PricingBreakdownArchive>(),
+            TucJobItemsArchives = new List<TucJobItemsArchive>(),
+            TucJobItemsArchiveJobs = new List<TucJobItemsArchive>
+            {
+                new() { JobId = 50, ItemId = 1, ChildJobId = null, Items = 4, Notes = "Box A" },
+                new() { JobId = 50, ItemId = 2, ChildJobId = null, Items = 1, Notes = "Box B" }
+            }
+        };
+
+        // Act
+        var mapping = JobMappings.JobArchiveMapping.Compile();
+        var result = mapping(archivedJob);
+
+        // Assert
+        Assert.Equal(2, result.Items);
+        Assert.Equal(2, result.ParcelDimensions.Count);
+        Assert.NotNull(result.PalletInfo);
+        Assert.Equal(5, result.PalletInfo.Sum(p => p.Quantity));
     }
 
     [Fact]

@@ -108,7 +108,7 @@ public interface IJobQueryRepository
     Task<T> GetByIdAsync<T>(int id)
         where T : class;
 
-    Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate, string scan);
+    Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate, int jobId, bool isBulkJob);
     Task<bool> ValidatePodSwapAsync(string jobNumber);
     Task<string?> GetStaffNameAsync(int staffId);
     Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);

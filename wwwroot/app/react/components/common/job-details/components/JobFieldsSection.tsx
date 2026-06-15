@@ -138,9 +138,10 @@ export const JobFieldsSection = React.memo(({
                         <Collapse in={isFieldVisible('packageDetails')} unmountOnExit>
                             <List dense disablePadding>
                                 <EditableField
-                                    icon="straighten" label="Dimensions"
+                                    icon="straighten" label="Quantity"
                                     value={(() => {
-                                        const count = job.parcelDimensions?.length;
+                                        const palletQty = job.palletInfo?.reduce((sum, p) => sum + (p.quantity || 0), 0) ?? 0;
+                                        const count = palletQty || job.parcelDimensions?.length || 0;
                                         const weight = job.weight;
                                         const parts: string[] = [];
                                         if (count) parts.push(`${count} parcel${count !== 1 ? 's' : ''}`);
@@ -225,6 +226,12 @@ export const JobFieldsSection = React.memo(({
                                     dense={dense} isEditMode={isEditMode}
                                     isVisible={isFieldVisible('courierName')}
                                     onToggleVisibility={onToggleField} fieldKey="courierName"
+                                />
+                                <EditableField
+                                    icon="badge" label="Courier Number" value={job.courierData?.courierNumber}
+                                    dense={dense} isEditMode={isEditMode}
+                                    isVisible={isFieldVisible('courierNumber')}
+                                    onToggleVisibility={onToggleField} fieldKey="courierNumber"
                                 />
                                 <EditableField
                                     icon="phone_android" label="Courier Mobile" value={job.courierData?.courierMobile}

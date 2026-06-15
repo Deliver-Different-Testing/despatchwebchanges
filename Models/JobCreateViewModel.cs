@@ -15,4 +15,6 @@ public sealed class JobCreateViewModel
     public string JobNotes { get; init; }
     public decimal Charge { get; init; }
     public int SpeedId { get; init; }
+    public decimal? WeightKg { get; init; }
+    public decimal? WeightLb { get; init; }
 }

@@ -59,7 +59,7 @@ public interface ITenantInfoService : IDisposable
     /// </summary>
     int? GetClientId();
 
-    Task<Suggestion> GetStaffInfoAsync();
+    Task<Suggestion?> GetStaffInfoAsync();
     string GetTenantTimeZone();
     DateTimeOffset ConvertUtcToTenantTimeZone(DateTime utcDateTime);
 }
