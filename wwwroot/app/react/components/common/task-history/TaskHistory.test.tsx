@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import {render, screen, waitFor} from '@testing-library/react';
+import {render, screen, waitFor, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {LocalizationProvider} from '@mui/x-date-pickers/LocalizationProvider';
@@ -27,6 +27,11 @@ jest.mock('../../../services/tasksApi', () => ({
     tasksApi: {
         getDeliveryJourney: (...args: unknown[]) => mockGetDeliveryJourney(...args),
     },
+}));
+
+// Mock formatCurrency to avoid depending on window.CurrencyCode in the test env
+jest.mock('../../../utils/currencyUtils', () => ({
+    formatCurrency: (amount: number) => `$${amount.toFixed(2)}`,
 }));
 
 const theme = createTheme();
@@ -252,7 +257,7 @@ describe('TaskHistory', () => {
     });
 
     describe('Event Click', () => {
-        it('calls onDeliveryEventClick when an event is clicked', async () => {
+        it('calls onDeliveryEventClick and opens the details dialog when an event is clicked', async () => {
             const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
             const props = createDefaultProps();
             renderWithProviders(<TaskHistory {...props} />);
@@ -263,6 +268,43 @@ describe('TaskHistory', () => {
             await user.click(screen.getByText('Order Received'));
 
             expect(props.onDeliveryEventClick).toHaveBeenCalled();
+
+            // The details dialog opens showing the full description, all tags,
+            // and the notes — which is the whole point of the click affordance.
+            expect(await screen.findByRole('dialog')).toBeInTheDocument();
+            const dialog = screen.getByRole('dialog');
+            expect(within(dialog).getByText('Order has been received and is being processed')).toBeInTheDocument();
+            expect(within(dialog).getByText('priority')).toBeInTheDocument();
+            expect(within(dialog).getByText('express')).toBeInTheDocument();
+            expect(within(dialog).getByText('Customer requested express delivery')).toBeInTheDocument();
+            expect(within(dialog).getByText('Completed')).toBeInTheDocument();
+        });
+
+        it('opens the details dialog even when no onDeliveryEventClick callback is provided', async () => {
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const props = createDefaultProps({onDeliveryEventClick: undefined});
+            renderWithProviders(<TaskHistory {...props} />);
+
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
+            await user.click(screen.getByText('Order Received'));
+
+            expect(await screen.findByRole('dialog')).toBeInTheDocument();
+        });
+
+        it('closes the details dialog when Close is clicked', async () => {
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const props = createDefaultProps();
+            renderWithProviders(<TaskHistory {...props} />);
+
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
+            await user.click(screen.getByText('Order Received'));
+            const dialog = await screen.findByRole('dialog');
+
+            await user.click(within(dialog).getByRole('button', {name: 'Close'}));
+
+            await waitFor(() => {
+                expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+            });
         });
     });
 
@@ -340,6 +382,114 @@ describe('TaskHistory', () => {
             renderWithProviders(<TaskHistory {...props} />);
 
             expect(await screen.findByText('Order Received')).toBeInTheDocument();
+        });
+    });
+
+    describe('Grand Total chip', () => {
+        const eventsWithGrandTotal: DeliveryJourney[] = [
+            {
+                id: 'p1',
+                jobId: 999,
+                title: 'Pricing Updated',
+                icon: 'attach_money',
+                description: 'Fuel surcharge added',
+                date: dayjs('2025-04-15T14:00:00'),
+                tags: ['Pricing: $0 → $15'],
+                status: 'completed',
+                notes: '',
+                grandTotalAfter: 123.45,
+                _dateStr: 'Apr 15, 2025 2:00 PM',
+            },
+            {
+                id: 'p2',
+                jobId: 999,
+                title: 'Status Changed',
+                icon: 'published_with_changes',
+                description: 'Dispatched',
+                date: dayjs('2025-04-15T15:00:00'),
+                tags: ['Status: Booked → Dispatched'],
+                status: 'completed',
+                notes: '',
+                _dateStr: 'Apr 15, 2025 3:00 PM',
+            },
+        ];
+
+        it('renders Total chip only on events with grandTotalAfter and hides it in UltraDense', async () => {
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            mockGetDeliveryJourney.mockResolvedValue(eventsWithGrandTotal);
+            const props = createDefaultProps({jobId: 999});
+            renderWithProviders(<TaskHistory {...props} />);
+
+            // Pricing event shows the Total chip with the formatted value
+            expect(await screen.findByText('Total: $123.45')).toBeInTheDocument();
+            // Status event has no grandTotalAfter — only one Total chip exists in the DOM
+            expect(screen.getAllByText(/Total: /)).toHaveLength(1);
+
+            // Cycle density: Normal → Dense → still shows Total
+            const densityButton = screen.getAllByRole('button')[0];
+            await user.click(densityButton);
+            expect(screen.getByText('Total: $123.45')).toBeInTheDocument();
+
+            // Dense → UltraDense — Total chip is hidden (matches date-pill hide rule)
+            await user.click(densityButton);
+            expect(screen.queryByText('Total: $123.45')).not.toBeInTheDocument();
+        });
+    });
+
+    describe('Event icons', () => {
+        it('renders the Material icon matching each event\'s icon string', async () => {
+            const props = createDefaultProps();
+            const {container} = renderWithProviders(<TaskHistory {...props} />);
+
+            // Wait for events to load
+            expect(await screen.findByText('Order Received')).toBeInTheDocument();
+
+            // MUI icon components set data-testid to the PascalCase component name.
+            // Mock events use: shopping_cart, local_shipping, directions_car, check_circle
+            expect(container.querySelector('[data-testid="ShoppingCartIcon"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-testid="LocalShippingIcon"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-testid="DirectionsCarIcon"]')).toBeInTheDocument();
+            expect(container.querySelector('[data-testid="CheckCircleIcon"]')).toBeInTheDocument();
+        });
+
+        it('falls back to a generic dot when the icon name is unknown', async () => {
+            mockGetDeliveryJourney.mockResolvedValue([{
+                id: 'x',
+                jobId: 1,
+                title: 'Unknown event',
+                icon: 'not_a_real_icon_name',
+                description: '',
+                date: dayjs('2025-01-15T09:00:00'),
+                tags: [],
+                status: 'completed',
+                notes: '',
+                _dateStr: 'Jan 15, 2025 9:00 AM',
+            }]);
+            const props = createDefaultProps();
+            const {container} = renderWithProviders(<TaskHistory {...props} />);
+
+            expect(await screen.findByText('Unknown event')).toBeInTheDocument();
+            expect(container.querySelector('[data-testid="CircleIcon"]')).toBeInTheDocument();
+        });
+    });
+
+    describe('Notes visibility by density', () => {
+        it('shows notes in Normal density and hides them in Dense / UltraDense', async () => {
+            const user = userEvent.setup({advanceTimers: jest.advanceTimersByTime});
+            const props = createDefaultProps();
+            renderWithProviders(<TaskHistory {...props} />);
+
+            // Normal: notes visible
+            expect(await screen.findByText('Customer requested express delivery')).toBeInTheDocument();
+
+            // Dense: notes hidden
+            const densityButton = screen.getAllByRole('button')[0];
+            await user.click(densityButton);
+            expect(screen.queryByText('Customer requested express delivery')).not.toBeInTheDocument();
+
+            // UltraDense: notes still hidden
+            await user.click(densityButton);
+            expect(screen.queryByText('Customer requested express delivery')).not.toBeInTheDocument();
         });
     });
 });

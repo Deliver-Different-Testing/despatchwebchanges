@@ -473,6 +473,217 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
         Assert.Equal("Keep", remaining.First().ChargeName);
     }
 
+    [Fact]
+    public async Task AddJobPriceBreakdownAsync_WithLiveJob_SyncsUcjbAmountToBreakdownSum()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB001", UcjbAmount = 0m });
+        _context.PricingBreakdowns.Add(CreatePricingBreakdown(1, jobId, null, "Existing", 50.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var viewModel = new ChargeViewModel
+        {
+            Name = "New Charge",
+            Amount = 75.00m,
+            ChildJobId = jobId,
+            CostAmount = 25.00m,
+        };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: false);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(125.00m, job.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task AddJobPriceBreakdownAsync_WithArchivedJob_SyncsUcjbAmountToBreakdownSum()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobArchives.Add(new TucJobArchive { UcjbId = jobId, UcjbNumber = "ARCH001", UcjbAmount = 0m });
+        _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(1, jobId, "Existing", 80.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var viewModel = new ChargeViewModel
+        {
+            Name = "Archive Charge",
+            Amount = 45.00m,
+            ChildJobId = jobId,
+            CostAmount = 20.00m,
+        };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: true);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobArchives.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(125.00m, job.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task AddJobPriceBreakdownAsync_WithPrebookJob_SyncsUcbkAmountToBreakdownSum()
+    {
+        // Arrange
+        const int prebookId = 100;
+        _context.TucJobBookings.Add(new TucJobBooking { UcbkId = prebookId, UcbkJobNumber = "PB001", UcbkAmount = 0m });
+        _context.PricingBreakdowns.Add(CreatePricingBreakdown(1, null, prebookId, "Existing", 30.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var viewModel = new ChargeViewModel
+        {
+            Name = "New Prebook Charge",
+            Amount = 90.00m,
+            PrebookJobId = prebookId,
+            CostAmount = 40.00m,
+        };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AddJobPriceBreakdownAsync(viewModel, isArchived: false);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var booking = await _context.TucJobBookings.FirstAsync(j => j.UcbkId == prebookId, TestContext.Current.CancellationToken);
+        Assert.Equal(120.00m, booking.UcbkAmount);
+    }
+
+    [Fact]
+    public async Task UpdateJobPriceBreakdownAsync_WithLiveJob_SyncsUcjbAmountToNewSum()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB001", UcjbAmount = 150.00m });
+        _context.PricingBreakdowns.AddRange(
+            CreatePricingBreakdown(1, jobId, null, "Line A", 100.00m),
+            CreatePricingBreakdown(2, jobId, null, "Line B", 50.00m)
+        );
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var viewModel = new ChargeViewModel
+        {
+            ChargeId = 1,
+            JobId = jobId,
+            Name = "Line A",
+            Amount = 200.00m,
+            CostAmount = 80.00m,
+        };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: false);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(250.00m, job.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task UpdateJobPriceBreakdownAsync_WithArchivedJob_SyncsUcjbAmountToNewSum()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobArchives.Add(new TucJobArchive { UcjbId = jobId, UcjbNumber = "ARCH001", UcjbAmount = 100.00m });
+        _context.PricingBreakdownArchives.Add(CreatePricingBreakdownArchive(1, jobId, "Existing", 100.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var viewModel = new ChargeViewModel
+        {
+            ChargeId = 1,
+            JobId = jobId,
+            Name = "Existing",
+            Amount = 175.00m,
+            CostAmount = 60.00m,
+        };
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateJobPriceBreakdownAsync(viewModel, isArchived: true);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobArchives.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(175.00m, job.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task DeleteJobPriceBreakdownAsync_WithLiveBreakdown_SyncsUcjbAmountToRemainingSum()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB001", UcjbAmount = 150.00m });
+        _context.PricingBreakdowns.AddRange(
+            CreatePricingBreakdown(1, jobId, null, "Keep", 100.00m),
+            CreatePricingBreakdown(2, jobId, null, "Remove", 50.00m)
+        );
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: false);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(100.00m, job.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task DeleteJobPriceBreakdownAsync_WithArchivedBreakdown_SyncsUcjbAmountToRemainingSum()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobArchives.Add(new TucJobArchive { UcjbId = jobId, UcjbNumber = "ARCH001", UcjbAmount = 200.00m });
+        _context.PricingBreakdownArchives.AddRange(
+            CreatePricingBreakdownArchive(1, jobId, "Keep", 120.00m),
+            CreatePricingBreakdownArchive(2, jobId, "Remove", 80.00m)
+        );
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteJobPriceBreakdownAsync(2, isArchived: true);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobArchives.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(120.00m, job.UcjbAmount);
+    }
+
+    [Fact]
+    public async Task DeleteJobPriceBreakdownAsync_WithLastLiveBreakdown_ZeroesUcjbAmount()
+    {
+        // Arrange
+        const int jobId = 100;
+        _context.TucJobs.Add(new TucJob { UcjbId = jobId, UcjbNumber = "JOB001", UcjbAmount = 100.00m });
+        _context.PricingBreakdowns.Add(CreatePricingBreakdown(1, jobId, null, "Only line", 100.00m));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.DeleteJobPriceBreakdownAsync(1, isArchived: false);
+
+        // Assert
+        _context.ChangeTracker.Clear();
+        var job = await _context.TucJobs.FirstAsync(j => j.UcjbId == jobId, TestContext.Current.CancellationToken);
+        Assert.Equal(0m, job.UcjbAmount);
+    }
+
     private static TucJob CreateJob(int id, string jobNumber) => new()
     {
         UcjbId = id,

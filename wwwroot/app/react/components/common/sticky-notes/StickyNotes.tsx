@@ -45,6 +45,18 @@ function getNoteTypeColor(noteTypeName?: string, isImportant?: boolean): string 
     }
 }
 
+// Mirrors backend Enums/NoteType.cs — keep in sync.
+const PICKUP_NOTE_TYPE_ID = 9;
+const DELIVERY_NOTE_TYPE_ID = 10;
+
+// Pickup + delivery notes anchor to the bottom of the panel so they sit
+// next to the address/journey area; everything else stays in date-desc order.
+function getNoteOrderBucket(noteTypeId?: number): number {
+    if (noteTypeId === DELIVERY_NOTE_TYPE_ID) return 2;
+    if (noteTypeId === PICKUP_NOTE_TYPE_ID) return 1;
+    return 0;
+}
+
 export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     jobId,
     bulkJobId,
@@ -82,9 +94,13 @@ export const StickyNotes: React.FC<StickyNotesProps> = React.memo(({
     const categoriesLoading = noteCategoriesQuery.isLoading;
 
     const filteredNotes = useMemo(() => {
-        if (selectedCategory === 'all') return notes;
-        const categoryId = parseInt(selectedCategory);
-        return notes.filter(note => note.noteTypeId === categoryId);
+        const base = selectedCategory === 'all'
+            ? notes
+            : notes.filter(note => note.noteTypeId === parseInt(selectedCategory));
+        // Stable sort on a copy: preserves date-desc within each bucket.
+        return [...base].sort(
+            (a, b) => getNoteOrderBucket(a.noteTypeId) - getNoteOrderBucket(b.noteTypeId)
+        );
     }, [notes, selectedCategory]);
 
     const isFilterActive = selectedCategory !== 'all';

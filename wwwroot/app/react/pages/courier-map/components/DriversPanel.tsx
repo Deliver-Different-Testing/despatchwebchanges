@@ -7,7 +7,10 @@
 
 import React, { useMemo } from 'react';
 import {alpha, useTheme} from '@mui/material/styles';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -15,13 +18,15 @@ import List from '@mui/material/List';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import CheckBoxOutlineBlank from '@mui/icons-material/CheckBoxOutlineBlank';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import ChevronRight from '@mui/icons-material/ChevronRight';
 import Close from '@mui/icons-material/Close';
 import PersonOff from '@mui/icons-material/PersonOff';
 import Search from '@mui/icons-material/Search';
 import SearchOff from '@mui/icons-material/SearchOff';
 import Sync from '@mui/icons-material/Sync';
-import type { DriversPanelProps } from '../CourierMapPage.types';
+import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
 
 const PANEL_WIDTH = 340;
@@ -84,6 +89,9 @@ function StatCard({
     );
 }
 
+const FLEET_CHECKBOX_BLANK = <CheckBoxOutlineBlank fontSize="small" />;
+const FLEET_CHECKBOX_CHECKED = <CheckBoxIcon fontSize="small" />;
+
 export function DriversPanel({
     drivers,
     totalActiveDrivers,
@@ -95,7 +103,17 @@ export function DriversPanel({
     onRefresh,
     isPanelHidden,
     onTogglePanel,
+    fleetOptions,
+    isFleetOptionsLoading,
+    selectedFleetIds,
+    onSelectedFleetIdsChange,
 }: DriversPanelProps) {
+    const selectedFleets = useMemo(() => {
+        const lookup = new Map(fleetOptions.map((f) => [f.id, f]));
+        return selectedFleetIds
+            .map((id) => lookup.get(id))
+            .filter((f): f is FleetSelectorOption => f != null);
+    }, [fleetOptions, selectedFleetIds]);
     // Compute summary stats from the driver data
     const stats = useMemo(() => {
         const totalJobs = drivers.reduce((sum, d) => sum + d.totalJobs, 0);
@@ -219,6 +237,74 @@ export function DriversPanel({
                         value={stats.overdueCount}
                         palette="error"
                         highlight={stats.overdueCount > 0}
+                    />
+                </Box>
+
+                {/* ── Fleet filter ──────────────────── */}
+                <Box sx={{ px: 2, pb: 1, flexShrink: 0 }}>
+                    <Autocomplete
+                        multiple
+                        disableCloseOnSelect
+                        size="small"
+                        options={fleetOptions}
+                        loading={isFleetOptionsLoading}
+                        value={selectedFleets}
+                        getOptionLabel={(option) => option.text}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        onChange={(_, value) => onSelectedFleetIdsChange(value.map((v) => v.id))}
+                        renderOption={(props, option, { selected }) => {
+                            const {key, ...optionProps} = props as React.HTMLAttributes<HTMLLIElement> & { key: React.Key };
+                            return (
+                                <li key={key} {...optionProps}>
+                                    <Checkbox
+                                        icon={FLEET_CHECKBOX_BLANK}
+                                        checkedIcon={FLEET_CHECKBOX_CHECKED}
+                                        sx={{ mr: 1, p: 0.5 }}
+                                        checked={selected}
+                                    />
+                                    {option.text}
+                                </li>
+                            );
+                        }}
+                        renderValue={(value, getItemProps) =>
+                            value.map((option, index) => {
+                                const {key, ...itemProps} = getItemProps({ index });
+                                return (
+                                    <Chip
+                                        key={key}
+                                        label={option.text}
+                                        size="small"
+                                        {...itemProps}
+                                        sx={{ height: 22, fontSize: 11 }}
+                                    />
+                                );
+                            })
+                        }
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                placeholder={selectedFleets.length === 0 ? 'All fleets' : ''}
+                                aria-label="Filter by fleet"
+                            />
+                        )}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: 2.5,
+                                fontSize: 13,
+                                bgcolor: 'rgba(0, 0, 0, 0.03)',
+                                '& fieldset': { border: 'none' },
+                                '&:hover': {
+                                    bgcolor: 'rgba(0, 0, 0, 0.05)',
+                                },
+                                '&.Mui-focused': {
+                                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                                    '& fieldset': {
+                                        border: '1.5px solid',
+                                        borderColor: 'primary.main',
+                                    },
+                                },
+                            },
+                        }}
                     />
                 </Box>
 

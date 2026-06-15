@@ -37,6 +37,8 @@ export interface CreateJobRequest {
     toLong: number;
     speedId: number;
     vehicleId: number;
+    weightKg: number | null;
+    weightLb: number | null;
 }
 
 export interface RelatedJobDto {

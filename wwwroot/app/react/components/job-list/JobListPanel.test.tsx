@@ -46,14 +46,8 @@ jest.mock('../dialogs/event-group-dialog', () => ({
 jest.mock('../../services/courierApi', () => ({
     searchActiveCouriersExtended: jest.fn().mockResolvedValue([]),
 }));
-jest.mock('../../utils/dateUtils', () => ({
-    formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
-    formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),
-    getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),
-    getTenantTimezone: jest.fn(() => 'New Zealand Standard Time'),
-    getTimezoneAbbreviation: jest.fn(() => 'NZST'),
-    isUsCustomer: jest.fn(() => false),
-}));
+jest.mock('../../utils/dateUtils', () =>
+    require('../../../tests/mocks/dateUtilsMock').nzDateUtilsMock());
 
 jest.mock('../../services/jobListApi', () => ({
     allocateJobs: jest.fn(),
@@ -66,7 +60,7 @@ jest.mock('../../services/jobListApi', () => ({
     reAllocateJobs: jest.fn().mockResolvedValue(undefined),
     restoreJobs: jest.fn().mockResolvedValue(undefined),
     setFirstJob: jest.fn().mockResolvedValue(undefined),
-    releaseBulkJob: jest.fn().mockResolvedValue(undefined),
+    releaseBulkJob: jest.fn().mockResolvedValue({jobNumbers: []}),
     splitJob: jest.fn().mockResolvedValue(undefined),
     markJobMissing: jest.fn().mockResolvedValue(undefined),
     moveJobToReprice: jest.fn().mockResolvedValue(undefined),
@@ -841,9 +835,7 @@ describe('JobListPanel', () => {
                 resolveFetch({jobs: [createMockDispatchJob({id: 1, jobNo: 'LOADED'})], totalCount: 1, hasMore: false});
             });
 
-            await waitFor(() => {
-                expect(screen.getByText('LOADED')).toBeInTheDocument();
-            });
+            expect(await screen.findByText('LOADED')).toBeInTheDocument();
 
             // LinearProgress should be gone after fetch completes
             expect(document.querySelector('.MuiLinearProgress-root')).not.toBeInTheDocument();

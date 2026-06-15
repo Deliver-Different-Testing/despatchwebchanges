@@ -33,14 +33,8 @@ jest.mock('@tanstack/react-virtual', () => ({
     }),
 }));
 
-jest.mock('../../utils/dateUtils', () => ({
-    formatMins: jest.fn((d: any) => d?.format?.('HH:mm') || ''),
-    formatShortDate: jest.fn((d: any) => d?.format?.('DD/MMM') || ''),
-    getIanaTimezone: jest.fn(() => 'Pacific/Auckland'),
-    getTenantTimezone: jest.fn(() => 'New Zealand Standard Time'),
-    getTimezoneAbbreviation: jest.fn(() => 'NZST'),
-    isUsCustomer: jest.fn(() => false),
-}));
+jest.mock('../../utils/dateUtils', () =>
+    require('../../../tests/mocks/dateUtilsMock').nzDateUtilsMock());
 
 const mockedSearch = searchActiveCouriersExtended as jest.Mock;
 

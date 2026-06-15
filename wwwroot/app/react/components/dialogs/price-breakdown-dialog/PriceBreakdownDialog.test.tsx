@@ -224,27 +224,38 @@ describe('PriceBreakdownDialog', () => {
 
     // ── Delete Item ──────────────────────────────────────────────────
     describe('Delete Item', () => {
-        it('calls onDeleteItem when confirmed', async () => {
+        it('opens in-dialog confirmation and calls onDeleteItem when confirmed', async () => {
             const user = userEvent.setup();
             const onDeleteItem = jest.fn().mockResolvedValue(undefined);
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
             await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
 
-            expect(window.confirm).toHaveBeenCalled();
+            expect(screen.getByText('Delete price item?')).toBeInTheDocument();
+            expect(screen.getByText(/Base Charge.*will be removed/)).toBeInTheDocument();
+
+            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+
             await waitFor(() => {
                 expect(onDeleteItem).toHaveBeenCalledWith(1, 100, false);
             });
         });
 
-        it('does not delete when not confirmed', async () => {
-            window.confirm = jest.fn().mockImplementation(() => false);
+        it('does not delete when Cancel is clicked on the confirmation', async () => {
             const user = userEvent.setup();
             const onDeleteItem = jest.fn();
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem})} />);
 
             await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            expect(screen.getByText('Delete price item?')).toBeInTheDocument();
+
+            const cancelButtons = screen.getAllByRole('button', {name: /^cancel$/i});
+            await user.click(cancelButtons[cancelButtons.length - 1]);
+
             expect(onDeleteItem).not.toHaveBeenCalled();
+            await waitFor(() => {
+                expect(screen.queryByText('Delete price item?')).not.toBeInTheDocument();
+            });
         });
 
         it('passes isArchived to onDeleteItem', async () => {
@@ -253,9 +264,73 @@ describe('PriceBreakdownDialog', () => {
             renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem, isArchived: true})} />);
 
             await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            await user.click(screen.getByRole('button', {name: /^delete$/i}));
 
             await waitFor(() => {
                 expect(onDeleteItem).toHaveBeenCalledWith(1, 100, true);
+            });
+        });
+    });
+
+    // ── Toast Notifications ──────────────────────────────────────────
+    describe('Toast Notifications', () => {
+        it('fires success toast on delete', async () => {
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            const onDeleteItem = jest.fn().mockResolvedValue(undefined);
+            renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem, showToast})} />);
+
+            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/Deleted.*Base Charge/), 'success');
+            });
+        });
+
+        it('fires error toast on delete failure', async () => {
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            const onDeleteItem = jest.fn().mockRejectedValue(new Error('boom'));
+            renderWithTheme(<PriceBreakdownDialog {...createMockProps({onDeleteItem, showToast})} />);
+
+            await user.click(screen.getAllByTestId('DeleteIcon')[0].closest('button')!);
+            await user.click(screen.getByRole('button', {name: /^delete$/i}));
+
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith('boom', 'error');
+            });
+        });
+
+        it('fires success toast on add', async () => {
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            const onAddItem = jest.fn().mockResolvedValue(99);
+            renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, showToast, priceBreakdowns: []})} />);
+
+            await user.click(screen.getByRole('button', {name: /add first item/i}));
+            await user.click(screen.getByLabelText(/item name/i));
+            await user.paste('New Charge');
+            await user.click(screen.getByRole('button', {name: /add item/i}));
+
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith(expect.stringMatching(/Added.*New Charge/), 'success');
+            });
+        });
+
+        it('fires error toast on add failure', async () => {
+            const user = userEvent.setup();
+            const showToast = jest.fn();
+            const onAddItem = jest.fn().mockRejectedValue(new Error('nope'));
+            renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, showToast, priceBreakdowns: []})} />);
+
+            await user.click(screen.getByRole('button', {name: /add first item/i}));
+            await user.click(screen.getByLabelText(/item name/i));
+            await user.paste('New Charge');
+            await user.click(screen.getByRole('button', {name: /add item/i}));
+
+            await waitFor(() => {
+                expect(showToast).toHaveBeenCalledWith('nope', 'error');
             });
         });
     });
@@ -307,16 +382,33 @@ describe('PriceBreakdownDialog', () => {
 
     // ── Form Validation ──────────────────────────────────────────────
     describe('Form Validation', () => {
-        it('requires item name and cost amount', async () => {
+        it('requires only item name; cost defaults to 0', async () => {
             const user = userEvent.setup();
-            renderWithTheme(<PriceBreakdownDialog {...createMockProps({priceBreakdowns: []})} />);
+            const onAddItem = jest.fn().mockResolvedValue(99);
+            renderWithTheme(<PriceBreakdownDialog {...createMockProps({onAddItem, priceBreakdowns: []})} />);
 
             await user.click(screen.getByRole('button', {name: /add first item/i}));
 
-            // Submit button disabled when name missing
+            // Submit button disabled when name is missing, even with cost filled
             await user.click(screen.getByLabelText(/cost amount/i));
             await user.paste('30');
             expect(screen.getByRole('button', {name: /add item/i})).toBeDisabled();
+
+            // With a name filled and cost cleared, submit becomes enabled
+            const costInput = screen.getByLabelText(/cost amount/i) as HTMLInputElement;
+            await user.clear(costInput);
+            await user.click(screen.getByLabelText(/item name/i));
+            await user.paste('Only Name');
+            const submit = screen.getByRole('button', {name: /add item/i});
+            expect(submit).toBeEnabled();
+
+            await user.click(submit);
+            await waitFor(() => {
+                expect(onAddItem).toHaveBeenCalledWith(expect.objectContaining({
+                    name: 'Only Name',
+                    costAmount: 0,
+                }));
+            });
         });
     });
 });

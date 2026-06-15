@@ -13,6 +13,15 @@ import {PriceBreakdownDialog, PriceBreakdown} from './PriceBreakdownDialog';
 import {getTheme} from '../../../theme/muiTheme';
 import {ReactQueryProvider} from '../../../query';
 import {pricingBreakdownApi} from '../../../services/pricingBreakdownApi';
+import type {ToastService} from '../../../services/toastService';
+
+const defaultToastService: ToastService = {
+    showToast: (message, type) => {
+        console.log(`[${type.toUpperCase()}] ${message}`);
+    },
+};
+
+let toastService: ToastService = defaultToastService;
 
 // API interface for making requests
 interface ApiService {
@@ -96,10 +105,15 @@ function renderDialog(): void {
                     onAddItem={handleAddItem}
                     onUpdateItem={handleUpdateItem}
                     onDeleteItem={handleDeleteItem}
+                    showToast={toastService.showToast}
                 />
             </ThemeProvider>
         </ReactQueryProvider>
     );
+}
+
+export function setToastService(service: ToastService): void {
+    toastService = service;
 }
 
 /**
@@ -162,6 +176,7 @@ export function openPriceBreakdownDialog(
 // Expose globally for AngularJS access
 window.ReactPriceBreakdownDialog = {
     open: openPriceBreakdownDialog,
+    setToastService,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

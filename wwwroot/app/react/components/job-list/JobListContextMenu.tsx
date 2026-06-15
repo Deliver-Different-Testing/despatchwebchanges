@@ -51,6 +51,7 @@ import {openAddEventDialog} from '../dialogs/add-event-dialog';
 import {openEventGroupDialog} from '../dialogs/event-group-dialog';
 import {executeSplitJobFlow} from '../../services/splitJobFlow';
 import {DispatchDialog, type DispatchType} from '../dialogs/dispatch-dialog';
+import {SendToLiveConfirmationDialog} from '../dialogs/send-to-live-confirmation-dialog';
 import {openJobInSearch} from '../../services/navigationService';
 import JobInternalStatusEnum from "../../../enums/job-internal-status.enum";
 import {NationwideSpeedId} from "../../../contants";
@@ -96,6 +97,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         message: string;
         onConfirm: () => Promise<void>;
     } | null>(null);
+    const [sendToLiveTarget, setSendToLiveTarget] = useState<{id: number; jobNo: string} | null>(null);
     const [splitJobLoading, setSplitJobLoading] = useState(false);
     const [eventGroups, setEventGroups] = useState<api.EventGroupItem[]>(eventGroupsCache);
     const [eventGroupsAnchor, setEventGroupsAnchor] = useState<HTMLElement | null>(null);
@@ -136,7 +138,7 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
         if (onRefresh) onRefresh();
     }, [onRefresh]);
 
-    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || dispatchDialog.open;
+    const hasOpenDialog = lateDialogOpen || confirmDialogOpen || splitJobLoading || dispatchDialog.open || sendToLiveTarget !== null;
     if (!job && !hasOpenDialog) return null;
 
     // Use prop when available, fall back to ref for dialogs that outlive the menu
@@ -335,21 +337,40 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
     };
 
     const handleSendToLive = () => {
+        const target = {id: activeJob.id, jobNo: activeJob.jobNo};
         closeAll();
-        setConfirmDialogConfig({
-            title: 'Send to Live?',
-            message: `Are you sure you want to send bulk job ${activeJob.jobNo} to the live dispatch screen?`,
-            onConfirm: async () => {
-                try {
-                    await api.releaseBulkJob(activeJob.id);
-                    showToast(`Bulk job ${activeJob.jobNo} sent to live successfully`, 'success');
-                    refresh();
-                } catch {
-                    showToast('Failed to send bulk job to live', 'error');
-                }
-            },
-        });
-        setConfirmDialogOpen(true);
+        setSendToLiveTarget(target);
+    };
+
+    const handleSendToLiveConfirm = async (): Promise<void> => {
+        if (!sendToLiveTarget) return;
+        const {id, jobNo} = sendToLiveTarget;
+        try {
+            const {jobNumbers} = await api.releaseBulkJob(id);
+            const joined = jobNumbers.join(', ');
+
+            let copied = false;
+            try {
+                await navigator.clipboard.writeText(joined);
+                copied = true;
+            } catch {
+                // clipboard.writeText rejects in insecure contexts or when the
+                // document loses focus; release succeeded, so just skip the copy.
+            }
+
+            const copySuffix = copied ? ' (copied to clipboard)' : '';
+            showToast(
+                `Bulk job ${jobNo} sent to live — ${joined}${copySuffix}`,
+                'success',
+            );
+            refresh();
+        } catch (err) {
+            // Surface the server's message so operators see the real reason
+            // ("Bulk job not found", "no releasable rows", SP/trigger mismatch, …)
+            // rather than a generic failure string that hides the cause.
+            const message = (err as {message?: string})?.message ?? 'Failed to send bulk job to live';
+            showToast(message, 'error');
+        }
     };
 
     const handleVoidJob = async () => {
@@ -701,6 +722,13 @@ export const JobListContextMenu: React.FC<JobListContextMenuProps> = ({
                     </Button>
                 </DialogActions>
             </Dialog>
+            {/* Send to Live Confirmation Dialog */}
+            <SendToLiveConfirmationDialog
+                open={sendToLiveTarget !== null}
+                jobNo={sendToLiveTarget?.jobNo ?? ''}
+                onClose={() => setSendToLiveTarget(null)}
+                onConfirm={handleSendToLiveConfirm}
+            />
             {/* Generic Confirmation Dialog */}
             <Dialog
                 open={confirmDialogOpen}

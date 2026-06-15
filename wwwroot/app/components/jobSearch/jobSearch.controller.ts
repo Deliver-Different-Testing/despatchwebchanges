@@ -1125,7 +1125,7 @@ class JobSearchController extends BaseController {
 
             if (!this.currentJob?.booked) return;
 
-            this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
+            this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, jobId, false);
             this.scanList = await this.scanPromise;
         } catch (error) {
             console.error('Error in selectJobDetail:', error);
@@ -1153,7 +1153,7 @@ class JobSearchController extends BaseController {
             }
 
             if (!this.currentJob?.booked) return;
-            this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, this.currentJob.jobNo);
+            this.scanPromise = this.jobSearchService.getScanDetail(this.currentJob.booked, bulkJobId, true);
             this.scanList = await this.scanPromise;
         } catch (error) {
             console.error('Error in selectJobDetail:', error);

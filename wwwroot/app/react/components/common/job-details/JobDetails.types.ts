@@ -57,6 +57,7 @@ export const DEFAULT_FIELD_VISIBILITY: FieldVisibility = {
     // Delivery Details section fields
     dispatcherName: true,
     courierName: true,
+    courierNumber: true,
     courierMobile: true,
     scheduleName: true,
 

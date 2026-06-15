@@ -27,6 +27,7 @@ export interface DeliveryJourney {
     tags: string[];
     status: 'completed' | 'current' | 'todo' | 'pending' | 'waiting';
     notes: string;
+    grandTotalAfter?: number | null;
     _dateStr?: string;
 }
 
@@ -56,6 +57,7 @@ export interface DeliveryJourneyDto {
     tags: string[];
     status: string;
     notes: string;
+    grandTotalAfter?: number | null;
 }
 // Backward compatibility aliases
 export type IDeliveryHistoryConfig = DeliveryHistoryConfig;

@@ -170,6 +170,7 @@ describe('SelectDialog', () => {
                 expect(onSubmit).toHaveBeenCalledWith({
                     fieldName: 'SpeedID',
                     value: 2,
+                    text: 'Option B',
                     checkboxValue: undefined,
                 });
             });

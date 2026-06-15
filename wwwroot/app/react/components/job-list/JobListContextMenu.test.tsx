@@ -143,7 +143,7 @@ beforeEach(() => {
     mockedApi.restoreJobs.mockResolvedValue(undefined);
     mockedApi.markJobMissing.mockResolvedValue(undefined);
     mockedApi.restoreNationwideJob.mockResolvedValue(undefined);
-    mockedApi.releaseBulkJob.mockResolvedValue(undefined);
+    mockedApi.releaseBulkJob.mockResolvedValue({jobNumbers: ['J001']});
     mockedApi.setFirstJob.mockResolvedValue(undefined);
     mockedApi.lateCall.mockResolvedValue(undefined);
 
@@ -729,7 +729,7 @@ describe('JobListContextMenu', () => {
             expect(props.showToast).toHaveBeenCalledWith('Agent Smith unassigned successfully', 'success');
         });
 
-        it('Send to Live: shows confirmation, OK calls releaseBulkJob', async () => {
+        it('Send to Live: shows confirmation, confirm calls releaseBulkJob', async () => {
             const user = userEvent.setup();
             const props = createDefaultProps({
                 job: createMockJob({isBulkJob: true, done: false}),
@@ -737,14 +737,45 @@ describe('JobListContextMenu', () => {
             renderWithTheme(<JobListContextMenu {...props} />);
 
             await user.click(screen.getByText('Send to Live'));
-            expect(screen.getByText('Send to Live?')).toBeInTheDocument();
+            expect(screen.getByRole('heading', {name: /send to live/i})).toBeInTheDocument();
+            expect(screen.getByText(/Release bulk job J001 to the live dispatch screen/)).toBeInTheDocument();
 
-            await user.click(screen.getByText('OK'));
+            await user.click(screen.getByRole('button', {name: /^send to live$/i}));
 
             await waitFor(() => {
                 expect(mockedApi.releaseBulkJob).toHaveBeenCalledWith(1);
             });
-            expect(props.showToast).toHaveBeenCalledWith('Bulk job J001 sent to live successfully', 'success');
+            // Success toast now lists the released job numbers so the operator can paste
+            // them into the search filter; the message also signals the clipboard copy.
+            expect(props.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('Bulk job J001 sent to live'),
+                'success',
+            );
+            expect(props.showToast).toHaveBeenCalledWith(
+                expect.stringContaining('J001'),
+                'success',
+            );
+        });
+
+        it('Send to Live: surfaces the server error message instead of a generic failure', async () => {
+            const user = userEvent.setup();
+            mockedApi.releaseBulkJob.mockRejectedValueOnce({
+                message: 'Bulk job 1 not found — no parent or child rows matched.',
+            });
+            const props = createDefaultProps({
+                job: createMockJob({isBulkJob: true, done: false}),
+            });
+            renderWithTheme(<JobListContextMenu {...props} />);
+
+            await user.click(screen.getByText('Send to Live'));
+            await user.click(screen.getByRole('button', {name: /^send to live$/i}));
+
+            await waitFor(() => {
+                expect(props.showToast).toHaveBeenCalledWith(
+                    'Bulk job 1 not found — no parent or child rows matched.',
+                    'error',
+                );
+            });
         });
 
         it('Set First Job: shows confirmation, OK calls setFirstJob with jobId and courierId', async () => {

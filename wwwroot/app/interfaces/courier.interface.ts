@@ -53,6 +53,8 @@ export interface IAvailableCourierPosition {
     totalJobs: number;
     overDueJobs: number;
     displayOrder?: number | null;
+    courierFleetId?: number | null;
+    courierFleetName?: string | null;
 }
 
 export interface IPotentialCouriers {
@@ -68,6 +70,7 @@ export interface ICourierLocationRequest {
     minLat: number;
     maxLng: number;
     maxLat: number;
+    courierFleetIds?: number[];
 }
 
 export interface IDriverWorkOverview {

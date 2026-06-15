@@ -18,6 +18,7 @@ export interface SelectDialogItem {
 export interface SelectDialogResult {
     fieldName: string;
     value: number;
+    text: string;
     checkboxValue?: boolean;
 }
 

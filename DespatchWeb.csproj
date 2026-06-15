@@ -414,6 +414,7 @@
     <TypeScriptCompile Include="wwwroot\app\interfaces\task-request.interfaces.ts" />
     <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
     <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\note-management-dialog\types.ts" />
+    <TypeScriptCompile Include="wwwroot\app\tests\mocks\dateUtilsMock.ts" />
     <TypeScriptCompile Include="wwwroot\app\routes.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
     <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />

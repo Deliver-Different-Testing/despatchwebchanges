@@ -1231,4 +1231,235 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // ConvertToTitleCase should split camelCase: "CustomNewField" -> "Custom New Field"
         Assert.Equal("Custom New Field Updated", result[0].Title);
     }
+
+    private async Task SeedPricingBreakdownsAsync(params PricingBreakdown[] lines)
+    {
+        await using var context = _db.CreateContext();
+        context.PricingBreakdowns.AddRange(lines);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task SeedArchivedStatusUpdatesAsync(params JobDeliveryJourneyArchive[] updates)
+    {
+        await using var context = _db.CreateContext();
+        context.JobDeliveryJourneyArchives.AddRange(updates);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    private async Task SeedArchivedPricingBreakdownsAsync(params PricingBreakdownArchive[] lines)
+    {
+        await using var context = _db.CreateContext();
+        context.PricingBreakdownArchives.AddRange(lines);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_SinglePricingEvent_GrandTotalEqualsCurrent()
+    {
+        // Arrange - one pricing event (+$15 fuel surcharge) and current breakdown sum = $115.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 100m },
+            new PricingBreakdown { PricingBreakdownId = 2, JobId = 1, ChargeName = "Fuel", ChargeAmount = 15m });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "PricingFuelSurcharge",
+            OldValue = "0",
+            NewValue = "15",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var pricingEvent = Assert.Single(result);
+        Assert.Equal(115m, pricingEvent.GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_MultiplePricingEvents_RollsBackToOriginalTotal()
+    {
+        // Arrange - two pricing events. Current total = $75.
+        // Newest event raised fuel from $50 -> $75 (delta +$25) → before that the total was $50.
+        // The earlier event introduced the fuel line at $50 (0 -> 50) → before that the total was $0.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Fuel", ChargeAmount = 75m });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingFuelSurcharge",
+                OldValue = "0",
+                NewValue = "50",
+                UpdatedAt = new DateTime(2024, 1, 15, 12, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingFuelSurcharge",
+                OldValue = "50",
+                NewValue = "75",
+                UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act - results are sorted descending by date, so [0]=newest event (14:00), [1]=oldest (12:00).
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        Assert.Equal(75m, result[0].GrandTotalAfter);
+        Assert.Equal(50m, result[1].GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_AddedAndRemovedPricingLines_ComputesTotal()
+    {
+        // Arrange - older event added a $20 line (null -> 20); newer event removed it (20 -> null).
+        // Current breakdown total = $0.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingAccessorial",
+                OldValue = null,
+                NewValue = "20",
+                UpdatedAt = new DateTime(2024, 1, 15, 12, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingAccessorial",
+                OldValue = "20",
+                NewValue = null,
+                UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        // Newest (removal): total after = current ($0)
+        Assert.Equal(0m, result[0].GrandTotalAfter);
+        // Older (addition): total after = $20 (before the removal undid it)
+        Assert.Equal(20m, result[1].GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_NonPricingEventMixedIn_LeavesGrandTotalNull()
+    {
+        // Arrange - a pricing event and a non-pricing status event. Only the pricing event gets a total.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 80m });
+        await SeedStatusUpdatesAsync(
+            new JobDeliveryJourney
+            {
+                JourneyId = 1,
+                JobId = 1,
+                ChangeType = "JobUpdate",
+                UpdatedByType = "Staff",
+                FieldName = "PricingBase",
+                OldValue = "0",
+                NewValue = "80",
+                UpdatedAt = new DateTime(2024, 1, 15, 12, 0, 0)
+            },
+            new JobDeliveryJourney
+            {
+                JourneyId = 2,
+                JobId = 1,
+                ChangeType = "JobStatus",
+                UpdatedByType = "Staff",
+                UpdatedAt = new DateTime(2024, 1, 15, 13, 0, 0)
+            });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Equal(2, result.Count);
+        // Newest is the status change → no grand total
+        Assert.Null(result[0].GrandTotalAfter);
+        // Older is the pricing event → grand total = current ($80)
+        Assert.Equal(80m, result[1].GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedJob_ComputesGrandTotalFromArchive()
+    {
+        // Arrange - archived job path: no TucJob row, use JobDeliveryJourneyArchive + PricingBreakdownArchive.
+        await SeedArchivedPricingBreakdownsAsync(
+            new PricingBreakdownArchive { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 60m });
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "PricingBase",
+            OldValue = "40",
+            NewValue = "60",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        var pricingEvent = Assert.Single(result);
+        Assert.Equal(60m, pricingEvent.GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_UnparseablePricingValue_TreatedAsZero()
+    {
+        // Arrange - malformed pricing value should not throw; ParseDecimal returns 0.
+        // Single pricing event with non-numeric values, current total = $50.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedPricingBreakdownsAsync(
+            new PricingBreakdown { PricingBreakdownId = 1, JobId = 1, ChargeName = "Base", ChargeAmount = 50m });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "Staff",
+            FieldName = "PricingWeird",
+            OldValue = "abc",
+            NewValue = "xyz",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert - no crash; grand total resolves to current ($50) since the delta parses to 0 - 0.
+        var pricingEvent = Assert.Single(result);
+        Assert.Equal(50m, pricingEvent.GrandTotalAfter);
+    }
 }

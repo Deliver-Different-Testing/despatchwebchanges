@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.RegularExpressions;
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
@@ -300,7 +301,12 @@ public sealed partial class DeliveryJourneyService(
                 .TagWith("DeliveryJourney - Live Status Updates")
                 .ToListAsync();
 
-            return MapStatusUpdatesToViewModels(statusUpdateTemps, jobId);
+            var currentBreakdownTotal = await context.PricingBreakdowns
+                .Where(p => p.JobId == jobId)
+                .TagWith("DeliveryJourney - Live PricingBreakdown Total")
+                .SumAsync(p => p.ChargeAmount);
+
+            return MapStatusUpdatesToViewModels(statusUpdateTemps, jobId, currentBreakdownTotal);
         }
 
         var archivedStatusUpdateTemps = await context.JobDeliveryJourneyArchives
@@ -329,18 +335,51 @@ public sealed partial class DeliveryJourneyService(
             })
             .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
-        
-        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId);
+
+        var currentArchivedBreakdownTotal = await context.PricingBreakdownArchives
+            .Where(p => p.JobId == jobId)
+            .TagWith("DeliveryJourney - Archived PricingBreakdown Total")
+            .SumAsync(p => p.ChargeAmount);
+
+        return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId, currentArchivedBreakdownTotal);
     }
 
     /// <summary>
     /// Maps live status update DTOs to view models, grouping by timestamp.
+    /// Computes a running grand total for pricing events by rolling back the
+    /// current breakdown total via each pricing group's delta in reverse chrono order.
     /// </summary>
     private List<DeliveryJourneyViewModel> MapStatusUpdatesToViewModels(
         List<JobDeliveryJourneyDto> journeyTemps,
-        int jobId) =>
-        journeyTemps
+        int jobId,
+        decimal currentBreakdownTotal)
+    {
+        var orderedGroups = journeyTemps
             .GroupBy(s => s.UpdatedAt)
+            .OrderByDescending(g => g.Key)
+            .ToList();
+
+        var grandTotalByTimestamp = new Dictionary<DateTime, decimal>();
+        var runningTotal = currentBreakdownTotal;
+        foreach (var group in orderedGroups)
+        {
+            var pricingRows = group
+                .Where(s => s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
+                            && !string.IsNullOrEmpty(s.FieldName)
+                            && s.FieldName.StartsWith("Pricing", StringComparison.Ordinal))
+                .ToList();
+
+            if (pricingRows.Count == 0)
+            {
+                continue;
+            }
+
+            grandTotalByTimestamp[group.Key] = runningTotal;
+            var groupDelta = pricingRows.Sum(r => ParseDecimal(r.NewValue) - ParseDecimal(r.OldValue));
+            runningTotal -= groupDelta;
+        }
+
+        return orderedGroups
             .Select(group => new DeliveryJourneyViewModel
             {
                 Id = Guid.NewGuid(),
@@ -349,18 +388,48 @@ public sealed partial class DeliveryJourneyService(
                 Title = GetTitle(group.First()),
                 Description = GetDescription(group.ToList()),
                 Icon = GetIcon(group.First().ChangeType, group.First().FieldName),
-                Tags = BuildTags(group).ToList()
+                Tags = BuildTags(group).ToList(),
+                GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
             })
             .ToList();
+    }
 
     /// <summary>
     /// Maps archived status update DTOs to view models, grouping by timestamp.
+    /// Computes a running grand total for pricing events by rolling back the
+    /// current breakdown total via each pricing group's delta in reverse chrono order.
     /// </summary>
     private List<DeliveryJourneyViewModel> MapArchivedStatusUpdatesToViewModels(
         List<JobDeliveryJourneyArchiveDto> dtoList,
-        int jobId) =>
-        dtoList
+        int jobId,
+        decimal currentBreakdownTotal)
+    {
+        var orderedGroups = dtoList
             .GroupBy(s => s.UpdatedAt)
+            .OrderByDescending(g => g.Key)
+            .ToList();
+
+        var grandTotalByTimestamp = new Dictionary<DateTime, decimal>();
+        var runningTotal = currentBreakdownTotal;
+        foreach (var group in orderedGroups)
+        {
+            var pricingRows = group
+                .Where(s => s.ChangeType == nameof(DeliveryJourneyChangeType.JobUpdate)
+                            && !string.IsNullOrEmpty(s.FieldName)
+                            && s.FieldName.StartsWith("Pricing", StringComparison.Ordinal))
+                .ToList();
+
+            if (pricingRows.Count == 0)
+            {
+                continue;
+            }
+
+            grandTotalByTimestamp[group.Key] = runningTotal;
+            var groupDelta = pricingRows.Sum(r => ParseDecimal(r.NewValue) - ParseDecimal(r.OldValue));
+            runningTotal -= groupDelta;
+        }
+
+        return orderedGroups
             .Select(group => new DeliveryJourneyViewModel
             {
                 Id = Guid.NewGuid(),
@@ -369,9 +438,18 @@ public sealed partial class DeliveryJourneyService(
                 Title = GetTitle(group.First()),
                 Description = GetDescription(group.ToList()),
                 Icon = GetIcon(group.First().ChangeType, group.First().FieldName),
-                Tags = BuildTags(group).ToList()
+                Tags = BuildTags(group).ToList(),
+                GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Parses a string value as a decimal. Returns 0 if the value is null, empty, or unparseable.
+    /// Used to compute deltas across PricingBreakdown audit rows where values may occasionally be missing or malformed.
+    /// </summary>
+    internal static decimal ParseDecimal(string value) =>
+        decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
 
     /// <summary>
     /// Builds tag strings from live status update DTOs for display in the journey timeline.

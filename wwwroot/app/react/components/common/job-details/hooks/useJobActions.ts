@@ -30,8 +30,6 @@ import {
 } from '../../../../services/jobDetailApi';
 import {
     sendToPartner,
-    getActivePartnerOptions,
-    getPartnerRateForJob,
 } from '../../../../services/jobListApi';
 import type {DispatchType} from '../../../dialogs/dispatch-dialog';
 import type {ISuggestion} from '../../../../../interfaces/job.interface';
@@ -359,19 +357,25 @@ export function useJobActions({
         });
         if (!result) return;
 
+        // FromContactName writes to PickupFromContact, a free-text column on
+        // TucJob — we want the contact's display name, not the lookup id the
+        // dropdown surfaces by default. Every other select field routes an
+        // id-typed FK column, so the default `result.value` is correct.
+        const payload = fieldName === JobProperty.FromContactName ? result.text : result.value;
+
         // Partner-job manual fields (e.g. Speed, DG Class, Job Type) never
         // persist locally. The DG documentation side-effect drops off here —
         // a follow-up change request would need to be filed separately if
         // the counterparty wants both at once.
-        if (tryRoutePartnerEdit(fieldName, result.value)) return;
+        if (tryRoutePartnerEdit(fieldName, payload)) return;
 
         if (fieldName === JobProperty.DGClass && result.checkboxValue !== undefined) {
-            await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
+            await updateField({job: j, field: fieldName, value: payload, isRecurring: j.preBook});
             if (j.dgDocumentation !== result.checkboxValue) {
                 await updateField({job: j, field: JobProperty.DGDocumentation, value: result.checkboxValue, isRecurring: j.preBook});
             }
         } else {
-            await updateField({job: j, field: fieldName, value: result.value, isRecurring: j.preBook});
+            await updateField({job: j, field: fieldName, value: payload, isRecurring: j.preBook});
         }
         await refreshAndNotify();
     }, [ensureSelectDialog, updateField, refreshAndNotify, tryRoutePartnerEdit]);
@@ -782,6 +786,7 @@ export function useJobActions({
             });
         } else {
             await ensurePriceBreakdownDialog();
+            window.ReactPriceBreakdownDialog?.setToastService({showToast});
             await window.ReactPriceBreakdownDialog?.open(breakdowns, j.id, j.preBook, j.isArchived);
         }
         await refreshAndNotify();
@@ -1099,9 +1104,26 @@ export function useJobActions({
         const j = jobRef.current;
         if (!j) return;
         const {releaseBulkJob} = await import('../../../../services/jobListApi');
-        await releaseBulkJob(j.id);
-        showToast(`Bulk job ${j.jobNo} sent to live successfully`, 'success');
-        await refreshAndNotify();
+        try {
+            const {jobNumbers} = await releaseBulkJob(j.id);
+            const joined = jobNumbers.join(', ');
+
+            let copied = false;
+            try {
+                await navigator.clipboard.writeText(joined);
+                copied = true;
+            } catch {
+                // clipboard.writeText rejects in insecure contexts or when the
+                // document loses focus; release succeeded, so just skip the copy.
+            }
+
+            const copySuffix = copied ? ' (copied to clipboard)' : '';
+            showToast(`Bulk job ${j.jobNo} sent to live — ${joined}${copySuffix}`, 'success');
+            await refreshAndNotify();
+        } catch (err) {
+            const message = (err as {message?: string})?.message ?? 'Failed to send bulk job to live';
+            showToast(message, 'error');
+        }
     }, [showToast, refreshAndNotify]);
 
     // ── Pallet CRUD ────────────────────────────────────────────────

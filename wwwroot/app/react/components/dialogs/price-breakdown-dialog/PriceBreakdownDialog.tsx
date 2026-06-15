@@ -7,6 +7,7 @@
 
 import React, {useEffect, useMemo, useState} from 'react';
 import {formatCurrency} from '../../../utils/currencyUtils';
+import type {ShowToastFn} from '../../../services/toastService';
 import {alpha} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -15,6 +16,8 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle from '@mui/material/DialogTitle';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Paper from '@mui/material/Paper';
@@ -62,7 +65,18 @@ export interface PriceBreakdownDialogProps {
     onAddItem: (item: Omit<PriceBreakdown, 'chargeId'>) => Promise<number>;
     onUpdateItem: (item: PriceBreakdown) => Promise<void>;
     onDeleteItem: (chargeId: number, jobId: number, isArchived: boolean) => Promise<void>;
+    showToast?: ShowToastFn;
 }
+
+const extractErrorMessage = (error: unknown, fallback: string): string => {
+    if (error instanceof Error && error.message) {
+        return error.message;
+    }
+    if (typeof error === 'string' && error.length > 0) {
+        return error;
+    }
+    return fallback;
+};
 
 
 const calculateMargin = (revenue: number, cost: number): number => {
@@ -87,6 +101,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     onAddItem,
     onUpdateItem,
     onDeleteItem,
+    showToast,
 }) => {
     const [priceBreakdowns, setPriceBreakdowns] = useState<PriceBreakdown[]>(initialBreakdowns);
 
@@ -97,6 +112,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         setIsEditing(false);
         setIsNew(false);
         setSelectedItem(null);
+        setConfirmDelete(null);
     }, [initialBreakdowns]);
 
     const [isEditing, setIsEditing] = useState(false);
@@ -104,6 +120,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
     const [selectedItem, setSelectedItem] = useState<PriceBreakdown | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState<number | null>(null);
+    const [confirmDelete, setConfirmDelete] = useState<PriceBreakdown | null>(null);
 
     const [formName, setFormName] = useState('');
     const [formAmount, setFormAmount] = useState<number | ''>('');
@@ -157,11 +174,12 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         if (!formName.trim()) return;
 
         setIsSaving(true);
+        const wasNew = isNew;
         try {
             const amount = typeof formAmount === 'number' ? formAmount : 0;
             const costAmount = typeof formCostAmount === 'number' ? formCostAmount : 0;
 
-            if (isNew) {
+            if (wasNew) {
                 const newItem: Omit<PriceBreakdown, 'chargeId'> = {
                     name: formName,
                     amount,
@@ -171,6 +189,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                 };
                 const chargeId = await onAddItem(newItem);
                 setPriceBreakdowns([...priceBreakdowns, { ...newItem, chargeId }]);
+                showToast?.(`Added "${formName}"`, 'success');
             } else if (selectedItem) {
                 const updatedItem: PriceBreakdown = {
                     ...selectedItem,
@@ -183,24 +202,38 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                 setPriceBreakdowns(priceBreakdowns.map(item =>
                     item.chargeId === selectedItem.chargeId ? updatedItem : item
                 ));
+                showToast?.(`Updated "${formName}"`, 'success');
             }
             handleCancelEdit();
         } catch (error) {
-            console.error('Error saving price breakdown:', error);
+            const action = wasNew ? 'add' : 'update';
+            showToast?.(extractErrorMessage(error, `Failed to ${action} price item.`), 'error');
         } finally {
             setIsSaving(false);
         }
     };
 
-    const handleDelete = async (item: PriceBreakdown) => {
-        if (!window.confirm('Are you sure you want to delete this price breakdown?')) return;
+    const handleDeleteRequest = (item: PriceBreakdown) => {
+        setConfirmDelete(item);
+    };
+
+    const handleCancelDelete = () => {
+        if (isDeleting !== null) return;
+        setConfirmDelete(null);
+    };
+
+    const handleConfirmDelete = async () => {
+        const item = confirmDelete;
+        if (!item) return;
 
         setIsDeleting(item.chargeId);
         try {
             await onDeleteItem(item.chargeId, jobId, isArchived);
             setPriceBreakdowns(priceBreakdowns.filter(pb => pb.chargeId !== item.chargeId));
+            showToast?.(`Deleted "${item.name}"`, 'success');
+            setConfirmDelete(null);
         } catch (error) {
-            console.error('Error deleting price breakdown:', error);
+            showToast?.(extractErrorMessage(error, 'Failed to delete price item.'), 'error');
         } finally {
             setIsDeleting(null);
         }
@@ -210,7 +243,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
         onSave(totals.totalRevenue);
     };
 
-    const isFormValid = formName.trim() && formCostAmount !== '';
+    const isFormValid = formName.trim().length > 0;
 
     return (
         <Dialog
@@ -595,7 +628,7 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                                             </IconButton>
                                                             <IconButton
                                                                 size="small"
-                                                                onClick={() => handleDelete(item)}
+                                                                onClick={() => handleDeleteRequest(item)}
                                                                 disabled={isDeleting !== null}
                                                                 sx={(theme) => ({
                                                                     bgcolor: alpha(theme.palette.error.main, 0.08),
@@ -760,8 +793,8 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                                             value={formCostAmount}
                                             onChange={(e) => setFormCostAmount(e.target.value ? parseFloat(e.target.value) : '')}
                                             fullWidth
-                                            required
                                             placeholder="0.00"
+                                            helperText="Defaults to 0"
                                             slotProps={{
                                                 htmlInput: {min: 0, step: 0.01},
                                                 input: {
@@ -873,6 +906,44 @@ export const PriceBreakdownDialog: React.FC<PriceBreakdownDialogProps> = ({
                     </Box>
                 )}
             </DialogContent>
+            {/* Delete confirmation (in-dialog, not window.confirm) */}
+            <Dialog
+                open={confirmDelete !== null}
+                onClose={handleCancelDelete}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>Delete price item?</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        {confirmDelete
+                            ? `"${confirmDelete.name}" will be removed from the breakdown and the job total will be recalculated.`
+                            : ''}
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, py: 2 }}>
+                    <Button
+                        onClick={handleCancelDelete}
+                        disabled={isDeleting !== null}
+                        variant="outlined"
+                        sx={{ minWidth: 100 }}
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleConfirmDelete}
+                        disabled={isDeleting !== null}
+                        variant="contained"
+                        color="error"
+                        startIcon={isDeleting !== null
+                            ? <CircularProgress size={16} color="inherit" />
+                            : <DeleteIcon />}
+                        sx={{ minWidth: 100 }}
+                    >
+                        Delete
+                    </Button>
+                </DialogActions>
+            </Dialog>
             {/* Footer Actions */}
             {!isEditing && (
                 <DialogActions

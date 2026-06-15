@@ -142,12 +142,13 @@ class JobSearchService implements angular.IServiceProvider {
         }
     }
 
-    async getScanDetail(runDate: Dayjs, scan: string): Promise<IScanDetailResult[]> {
+    async getScanDetail(runDate: Dayjs, jobId: number, isBulkJob: boolean): Promise<IScanDetailResult[]> {
         const response = await this.$http.get<IScanDetailResult[]>(
             `/Job/ScanJobDetail`, {
                 params: {
                     runDate: formatDateForApiWithTzs(runDate),
-                    scan
+                    jobId,
+                    isBulkJob
                 }
             }
         );

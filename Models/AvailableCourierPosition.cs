@@ -1,4 +1,5 @@
-﻿namespace DespatchWeb.Models;
+﻿#nullable enable annotations
+namespace DespatchWeb.Models;
 
 public class AvailableCourierPosition
 {
@@ -14,4 +15,6 @@ public class AvailableCourierPosition
     public int TotalJobs { get; init; }
     public int OverDueJobs { get; init; }
     public int? DisplayOrder { get; init; }
+    public int? CourierFleetId { get; init; }
+    public string? CourierFleetName { get; init; }
 }

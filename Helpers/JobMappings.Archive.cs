@@ -152,7 +152,13 @@ public static partial class JobMappings
         Done = j.UcjbJobDone,
         Lp = j.UcjbLatePick,
         Ld = j.UcjbLateDel,
-        Items = j.TucJobItemsArchives.Count,
+        Items = j.TucJobItemsArchives.Any()
+            ? j.TucJobItemsArchives.Count
+            : j.TucJobItemsArchiveJobs.Count > 0
+                ? j.TucJobItemsArchiveJobs.Count
+                : j.Parent != null
+                    ? j.Parent.TucJobItemsArchiveJobs.Count(i => i.ChildJobId == null)
+                    : 0,
 
         PickupFrom = j.UcjbPickUpFrom,
         Notify = j.NotifiedJobType != null ? j.NotifiedJobType.UcjtName : null,
@@ -259,7 +265,7 @@ public static partial class JobMappings
         DeliverToPrivateRes = j.TucJobItemsArchives.Any(i => i.PrivateRes == true)
             || j.TucJobItemsArchiveJobs.Any(i => i.PrivateRes == true),
 
-        // Parcel dimensions - child stop items first, fall back to own (simple/parent) items
+        // Parcel dimensions - 3-tier: stop child items → own items → parent items
         ParcelDimensions = j.TucJobItemsArchives.Any()
             ? j.TucJobItemsArchives.Select(i => new ParcelDimensions
                 {
@@ -282,9 +288,21 @@ public static partial class JobMappings
                     Weight = i.Weight,
                     Barcode = i.Barcode
                 }).ToList()
-                : null,
+                : j.Parent != null
+                    ? j.Parent.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new ParcelDimensions
+                        {
+                            ItemId = i.ItemId,
+                            ItemName = i.Notes,
+                            Height = i.Height,
+                            Depth = i.Depth,
+                            Length = i.Length,
+                            Weight = i.Weight,
+                            Barcode = i.Barcode
+                        }).ToList()
+                    : new List<ParcelDimensions>(),
 
-        // Pallet info - child stop items first, fall back to own (simple/parent) items
+        // Pallet info - 3-tier: stop child items → own items → parent items
         PalletInfo = j.TucJobItemsArchives.Any()
             ? j.TucJobItemsArchives.Select(i => new PalletInfo
             {
@@ -315,7 +333,23 @@ public static partial class JobMappings
                     DgClass = i.Dgclass,
                     Notes = i.Notes
                 }).ToList()
-                : null,
+                : j.Parent != null
+                    ? j.Parent.TucJobItemsArchiveJobs.Where(i => i.ChildJobId == null)
+                        .Select(i => new PalletInfo
+                        {
+                            Id = i.JobId,
+                            Quantity = i.Items,
+                            ItemId = i.ItemId,
+                            Weight = i.Weight,
+                            Length = i.Length ?? 0,
+                            Depth = i.Depth ?? 0,
+                            Height = i.Height ?? 0,
+                            Pu = i.Pu,
+                            Do = i.Do,
+                            DgClass = i.Dgclass,
+                            Notes = i.Notes
+                        }).ToList()
+                    : null,
 
         CustomJobName = j.CustomJobName,
 

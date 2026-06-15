@@ -1,3 +1,4 @@
+#nullable enable annotations
 using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Models;
@@ -67,7 +68,7 @@ public interface IJobCommandRepository
         JobProperty property,
         string value);
 
-    Task ReleaseBulkJobByIdAsync(int bulkJobId);
+    Task<IReadOnlyList<string>> ReleaseBulkJobByIdAsync(int bulkJobId);
 
     Task<int> QuickAddJobAsync(JobCreateViewModel request);
     Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel);

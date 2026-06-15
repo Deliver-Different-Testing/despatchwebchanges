@@ -176,6 +176,19 @@ export function DriverListItem({ driver, onClick }: DriverListItemProps) {
                                 {driver.vehicleType}
                             </Typography>
                         )}
+
+                        {driver.courierFleetName && (
+                            <Typography
+                                component="span"
+                                sx={{
+                                    fontSize: 10,
+                                    color: 'text.disabled',
+                                    lineHeight: 1,
+                                }}
+                            >
+                                {driver.courierFleetName}
+                            </Typography>
+                        )}
                     </Box>
                 }
             />

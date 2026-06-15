@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿#nullable enable annotations
+using System.Diagnostics;
 using DespatchWeb.Enums;
 using DespatchWeb.Helpers;
 using DespatchWeb.Interfaces;
