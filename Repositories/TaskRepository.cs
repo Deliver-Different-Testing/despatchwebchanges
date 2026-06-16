@@ -30,7 +30,6 @@ public class TaskRepository(
         // Include partner-task events ('PT') alongside customer-service ('CS')
         // so the inter-tenant change-request workflow surfaces in the task dashboard.
         var query = Context.TucEvents
-            .AsNoTracking()
             .Where(t => t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.CS)
                      || t.UcevTypeNavigation.UcetGroup == nameof(TaskGroup.PT));
 
@@ -217,7 +216,6 @@ public class TaskRepository(
 
     public async Task<IReadOnlyList<Suggestion>> GetEventGroupsAsync() =>
         await Context.TucEventTypeGroups
-            .AsNoTracking()
             .Select(x => new Suggestion { Id = x.Id, Text = x.Name })
             .OrderBy(x => x.Text)
             .ToListAsync();
@@ -226,7 +224,6 @@ public class TaskRepository(
     {
         var now = clock.TenantNow;
         var eventGroups = await Context.TucEventTypeEventTypeGroups
-            .AsNoTracking()
             .Where(x => x.EventTypeGroupId == eventGroupId)
             .Select(x => new EventGroupViewModel
             {
@@ -318,7 +315,6 @@ public class TaskRepository(
     public async Task<IReadOnlyList<Suggestion>> GetActiveStaffAsync()
     {
         var staff = await Context.TucStaffs
-            .AsNoTracking()
             .Where(s => s.UcstActive)
             .Select(s => new Suggestion
             {

@@ -85,6 +85,16 @@ describe('EditDateTimeDialog', () => {
             expect(screen.getAllByText(/Time \(24-hour\)/i).length).toBeGreaterThan(0);
             expect(screen.queryAllByText('Date').length).toBe(0);
         });
+
+        // The native HTML <input type="time"> defers display to the browser
+        // locale (12-hour AM/PM under en-US, 24-hour under en-NZ), so the
+        // "Time (24-hour)" label lied for half our users. Using MUI's
+        // TimePicker with ampm={false} keeps the display 24-hour everywhere.
+        // The mock TimePicker tags its wrapper with data-testid="mock-time-picker".
+        it('uses the MUI TimePicker for the time field in date+time mode', () => {
+            renderWithProviders(createDefaultProps({showDate: true, showTime: true}));
+            expect(screen.getByTestId('mock-time-picker')).toBeInTheDocument();
+        });
     });
 
     // ── Timezone Display ────────────────────────────────────────────

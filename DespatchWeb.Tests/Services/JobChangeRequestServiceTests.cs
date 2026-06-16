@@ -36,6 +36,7 @@ public class JobChangeRequestServiceTests : IAsyncDisposable
         // property to ValueGeneratedNever, then the interceptor fills it pre-save.
         _options = new DbContextOptionsBuilder<DespatchContext>()
             .UseSqlite(_db.Connection)
+            .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
             .AddSqliteDateDiffTranslation()
             .AddInterceptors(new RowVersionFillerInterceptor())
             .Options;

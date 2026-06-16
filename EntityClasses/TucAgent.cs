@@ -101,6 +101,12 @@ public partial class TucAgent
 
     public decimal? DefaultCourierPayPercent { get; set; }
 
+    public bool OptedInToBcti { get; set; }
+
+    public int? BctiScheduleId { get; set; }
+
+    public string AccountsId { get; set; }
+
     public virtual ICollection<AgentVehicle> AgentVehicles { get; set; } = new List<AgentVehicle>();
 
     public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();

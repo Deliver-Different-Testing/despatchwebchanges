@@ -271,6 +271,10 @@ public partial class TucCourier
 
     public int? NpAgentId { get; set; }
 
+    public string PaymentMethod { get; set; }
+
+    public string MasterSubSettlementMode { get; set; }
+
     public virtual TucCourierFleet CourierFleet { get; set; }
 
     public virtual TblCourierGp CourierGps { get; set; }

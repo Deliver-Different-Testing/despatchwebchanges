@@ -973,24 +973,6 @@ public class JobControllerTests : IDisposable
     }
 
     [Fact]
-    public async Task VoidPrebookJob_ValidJobId_ReturnsOk()
-    {
-        // Arrange
-        const int jobId = 1;
-
-        _jobCommandRepositoryMock.VoidPrebookJobAsync(jobId)
-            .Returns(Task.CompletedTask);
-
-        var controller = CreateController();
-
-        // Act
-        var result = await controller.VoidPrebookJob(jobId);
-
-        // Assert
-        Assert.IsType<OkResult>(result);
-    }
-
-    [Fact]
     public async Task Allocate_ValidRequest_ReturnsOk()
     {
         // Arrange

@@ -85,6 +85,8 @@ public partial class TucJobType
 
     public bool AutoDispatchEnabled { get; set; }
 
+    public bool Routed { get; set; }
+
     public virtual ICollection<AirFreightRate> AirFreightRates { get; set; } = new List<AirFreightRate>();
 
     public virtual TucJobTypeGrouping Grouping { get; set; }

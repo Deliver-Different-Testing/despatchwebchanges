@@ -19,6 +19,9 @@ import Typography from '@mui/material/Typography';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
+import {alpha} from '@mui/material/styles';
+import type {SxProps, Theme} from '@mui/material';
+import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
@@ -48,6 +51,29 @@ const DEFAULT_QUERY: RecurringJobQuery = {
     recurringMode: RecurringMode.Active,
 };
 
+// Mirrors the AngularJS .rg-right gutter look (udispatch.less:326-349) so the
+// gutter affordance matches the resizable widgets on job-search/nationwide/home.
+// react-resizable-panels stamps data-resize-handle-state on the <PanelResizeHandle>
+// root ("hover" | "drag" | "inactive"); we select from that parent down to the
+// styled <Box> child so the gutter glows during hover and intensifies on drag.
+const resizeHandleSx = ((theme: Theme) => ({
+    width: '8px',
+    height: '100%',
+    mx: 0.5,
+    bgcolor: 'transparent',
+    cursor: 'col-resize',
+    borderRadius: 1,
+    transition: 'background-color 0.2s cubic-bezier(0.4,0,0.2,1), box-shadow 0.2s cubic-bezier(0.4,0,0.2,1)',
+    '[data-resize-handle-state="hover"] &': {
+        bgcolor: alpha(theme.palette.primary.main, 0.3),
+        boxShadow: `0 0 8px ${alpha(theme.palette.primary.main, 0.3)}`,
+    },
+    '[data-resize-handle-state="drag"] &': {
+        bgcolor: alpha(theme.palette.primary.main, 0.5),
+        boxShadow: `0 0 12px ${alpha(theme.palette.primary.main, 0.5)}`,
+    },
+})) satisfies SxProps<Theme>;
+
 export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                                                                         showToast,
                                                                         isUsCustomer = false,
@@ -66,10 +92,10 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
     const [isExporting, setIsExporting] = useState(false);
     const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
 
-    // Void confirmation dialog
-    const [voidDialogOpen, setVoidDialogOpen] = useState(false);
-    const [jobToVoid, setJobToVoid] = useState<PrebookListModel | null>(null);
-    const [isVoiding, setIsVoiding] = useState(false);
+    // Deactivate confirmation dialog
+    const [deactivateDialogOpen, setDeactivateDialogOpen] = useState(false);
+    const [jobToDeactivate, setJobToDeactivate] = useState<PrebookListModel | null>(null);
+    const [isDeactivating, setIsDeactivating] = useState(false);
 
     // Insert-to-Live dialog (Manual mode push)
     const [insertDialogOpen, setInsertDialogOpen] = useState(false);
@@ -193,33 +219,28 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
         setSelectedJobId(job.id);
     }, []);
 
-    const handleDeleteClick = useCallback((job: PrebookListModel) => {
-        setJobToVoid(job);
-        setVoidDialogOpen(true);
+    const handleDeactivateClick = useCallback((job: PrebookListModel) => {
+        setJobToDeactivate(job);
+        setDeactivateDialogOpen(true);
     }, []);
 
-    const handleVoidConfirm = useCallback(async () => {
-        if (!jobToVoid) return;
+    // Reuses handleSetMode so the row icon and the right-click "Deactivate"
+    // menu item drive the exact same backend path
+    // (updateJobDetail → JobProperty.RecurringMode).
+    const handleDeactivateConfirm = useCallback(async () => {
+        if (!jobToDeactivate) return;
 
-        setIsVoiding(true);
-        try {
-            await recurringJobsApi.voidPrebookJob(jobToVoid.id);
-            showToast('The recurring job has been successfully inactivated.', 'success');
-            setVoidDialogOpen(false);
-            setJobToVoid(null);
-            setSelectedJobId(null);
-            await refetch();
-        } catch (error) {
-            console.error('Error inactivating recurring job:', error);
-            showToast('An error occurred while inactivating the recurring job. Please try again.', 'error');
-        } finally {
-            setIsVoiding(false);
-        }
-    }, [jobToVoid, refetch, showToast]);
+        setIsDeactivating(true);
+        await handleSetMode(jobToDeactivate, RecurringMode.Inactive);
+        setIsDeactivating(false);
+        setDeactivateDialogOpen(false);
+        setJobToDeactivate(null);
+        setSelectedJobId(null);
+    }, [jobToDeactivate, handleSetMode]);
 
-    const handleVoidCancel = useCallback(() => {
-        setVoidDialogOpen(false);
-        setJobToVoid(null);
+    const handleDeactivateCancel = useCallback(() => {
+        setDeactivateDialogOpen(false);
+        setJobToDeactivate(null);
     }, []);
 
     const handleContextMenu = useCallback((event: React.MouseEvent, job: PrebookListModel) => {
@@ -249,12 +270,14 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
 
     return (
         <Box sx={{
-            height: '100%', display: 'flex', gap: 2,
+            height: '100%',
             p: 2,
             bgcolor: 'background.default',
         }}>
+            <PanelGroup direction="horizontal" autoSaveId="recurring-jobs-layout">
             {/* Left Panel: Filters + Table (~55%) */}
-            <Box sx={{flex: 55, display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, minWidth: 0}}>
+            <Panel defaultSize={55} minSize={25}>
+            <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, minWidth: 0}}>
                 {/* Filters Card */}
                 <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
                     <Toolbar
@@ -331,15 +354,21 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                             onPageSizeChange={handlePageSizeChange}
                             onSortChange={handleSortChange}
                             onRowClick={handleRowClick}
-                            onDeleteClick={handleDeleteClick}
+                            onDeleteClick={handleDeactivateClick}
                             onContextMenu={handleContextMenu}
                         />
                     </Box>
                 </Card>
             </Box>
+            </Panel>
+
+            <PanelResizeHandle>
+                <Box sx={resizeHandleSx} />
+            </PanelResizeHandle>
 
             {/* Right Panel: Job Details (~45%) */}
-            <Box sx={{flex: 45, display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
+            <Panel defaultSize={45} minSize={25}>
+            <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
                 <Card
                     variant="outlined"
                     sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
@@ -377,6 +406,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     </Box>
                 </Card>
             </Box>
+            </Panel>
+            </PanelGroup>
 
             {/* Context Menu */}
             <RecurringJobsContextMenu
@@ -398,31 +429,32 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 showToast={showToast}
             />
 
-            {/* Void Confirmation Dialog */}
+            {/* Deactivate Confirmation Dialog */}
             <Dialog
-                open={voidDialogOpen}
-                onClose={handleVoidCancel}
+                open={deactivateDialogOpen}
+                onClose={handleDeactivateCancel}
                 maxWidth="xs"
                 fullWidth
             >
-                <DialogTitle>Inactivate Recurring Job</DialogTitle>
+                <DialogTitle>Deactivate Recurring Job</DialogTitle>
                 <DialogContent>
                     <DialogContentText>
-                        This will inactivate this recurring job. Please confirm that you wish to do this?
+                        This will deactivate this recurring job. You can re-activate it
+                        later from the Inactive tab. Continue?
                     </DialogContentText>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={handleVoidCancel} disabled={isVoiding}>
+                    <Button onClick={handleDeactivateCancel} disabled={isDeactivating}>
                         No
                     </Button>
                     <Button
-                        onClick={handleVoidConfirm}
-                        color="error"
+                        onClick={handleDeactivateConfirm}
+                        color="primary"
                         variant="contained"
-                        disabled={isVoiding}
-                        startIcon={isVoiding ? <CircularProgress size={16} color="inherit"/> : undefined}
+                        disabled={isDeactivating}
+                        startIcon={isDeactivating ? <CircularProgress size={16} color="inherit"/> : undefined}
                     >
-                        {isVoiding ? 'Inactivating...' : 'Yes'}
+                        {isDeactivating ? 'Deactivating...' : 'Yes'}
                     </Button>
                 </DialogActions>
             </Dialog>

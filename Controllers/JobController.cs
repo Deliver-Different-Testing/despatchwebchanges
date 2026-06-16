@@ -365,13 +365,6 @@ public class JobController(
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> VoidPrebookJob([FromBody] int jobId)
-    {
-        await jobCommandRepository.VoidPrebookJobAsync(jobId);
-        return Ok();
-    }
-
     // Manual-mode operator push of a recurring booking into live tucJob for
     // a specific service date. The source booking stays on RecurringMode =
     // Manual after the push so subsequent days do not auto-materialise —

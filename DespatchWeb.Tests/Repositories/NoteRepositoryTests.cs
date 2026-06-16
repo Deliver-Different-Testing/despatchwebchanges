@@ -388,8 +388,9 @@ public class NoteRepositoryTests : IAsyncDisposable
         // Act
         await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
 
-        // Assert — use AsNoTracking since ExecuteDeleteAsync bypasses the change tracker
-        var note = await _context.TucNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
+        // Assert — query is untracked by the global QueryTrackingBehavior so we see
+        // the post-ExecuteDeleteAsync state, not a stale tracker entry.
+        var note = await _context.TucNotes.FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(note);
 
         var history = await _context.TucNoteHistories
@@ -418,7 +419,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.DeleteBulkNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert
-        var note = await _context.TblBulkJobNotes.AsNoTracking().FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
+        var note = await _context.TblBulkJobNotes.FirstOrDefaultAsync(n => n.NoteId == noteId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.Null(note);
 
         var history = await _context.TucNoteHistories
@@ -1061,7 +1062,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.DeleteNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert — bulk note history is untouched
-        var remaining = await _context.TucNoteHistories.AsNoTracking()
+        var remaining = await _context.TucNoteHistories
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
         Assert.Equal(noteId, remaining[0].BulkNoteId);
@@ -1093,7 +1094,7 @@ public class NoteRepositoryTests : IAsyncDisposable
         await repository.DeleteBulkNoteAsync(noteId, TestContext.Current.CancellationToken);
 
         // Assert — active note history is untouched
-        var remaining = await _context.TucNoteHistories.AsNoTracking()
+        var remaining = await _context.TucNoteHistories
             .ToListAsync(cancellationToken: TestContext.Current.CancellationToken);
         Assert.Single(remaining);
         Assert.Equal(noteId, remaining[0].NoteId);

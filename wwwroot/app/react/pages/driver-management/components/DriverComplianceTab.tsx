@@ -175,7 +175,7 @@ export const DriverComplianceTab: React.FC<DriverComplianceTabProps> = ({showToa
             {/* AI Compliance Risk Summary */}
             {isAiEnabled() && (
                 <AiSummaryCard
-                    title="DFRNT Compliance Risk Summary"
+                    title="Auto-mate Compliance Risk Summary"
                     fetchSummary={(signal) => summarizeCompliance({signal})}
                 />
             )}

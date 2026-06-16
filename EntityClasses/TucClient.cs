@@ -587,6 +587,12 @@ public partial class TucClient
 
     public int? NpAgentId { get; set; }
 
+    public string AccountingPaymentTermQboId { get; set; }
+
+    public int? AccountingPaymentTermXeroDay { get; set; }
+
+    public string AccountingPaymentTermXeroType { get; set; }
+
     public virtual ICollection<IntMgrPartnerPairing> IntMgrPartnerPairings { get; set; } = new List<IntMgrPartnerPairing>();
 
     public virtual TucAgent NpAgent { get; set; }

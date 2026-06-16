@@ -27,7 +27,6 @@ import type {FlightViewModel, AgentSuggestion, FlightAgentDialogResult} from '..
 import type {EditDateTimeDialogOptions, EditDateTimeDialogResult} from '../app/react/components/dialogs/edit-date-time-dialog/types';
 import type {OpenBulkPriceUploadDialogOptions} from '../app/react/components/dialogs/bulk-price-upload-dialog/types';
 import type {OpenAccessorialChargesDialogOptions} from '../app/react/components/dialogs/accessorial-charges-dialog/types';
-import type {OpenAdditionalServicesDialogOptions} from '../app/react/components/dialogs/additional-services-dialog/types';
 import type {EditParcelDimensionsDialogOptions, EditParcelDimensionsDialogResult} from '../app/react/components/dialogs/edit-parcel-dimensions-dialog/types';
 import type {OpenMessagingDialogOptions} from '../app/react/components/dialogs/messaging-dialog/types';
 import type {SelectDialogOptions, SelectDialogResult} from '../app/react/components/dialogs/select-dialog/types';
@@ -219,9 +218,6 @@ declare global {
         };
         ReactAccessorialChargesDialog?: {
             open: (options: OpenAccessorialChargesDialogOptions) => Promise<boolean>;
-        };
-        ReactAdditionalServicesDialog?: {
-            open: (options: OpenAdditionalServicesDialogOptions) => Promise<boolean>;
         };
         ReactAddEventDialog?: {
             open: (options: {

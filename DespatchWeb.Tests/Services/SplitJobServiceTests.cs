@@ -71,9 +71,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Bug #1 fix: job numbers use clean letter suffixes without speed name appended
@@ -319,9 +319,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(7, pickup.UcjbStatus);
@@ -352,7 +352,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var childJobs = await verifyCtx.TucJobs.AsNoTracking()
+        var childJobs = await verifyCtx.TucJobs
             .Where(j => j.ParentId == 100 && j.UcjbId != 100)
             .ToListAsync(TestContext.Current.CancellationToken);
 
@@ -372,7 +372,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         // Verify the original job's relationship type was set to SplitParent (ID=1)
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var parentJob = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100,
+        var parentJob = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(1, parentJob.JobRelationshipTypeId);
     }
@@ -388,7 +388,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var parentJob = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100,
+        var parentJob = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotEqual(5, parentJob.UcjbCourierId);
     }
@@ -404,7 +404,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             await service.SplitJobAsync(100, "TestUser", meetingPoint, ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(meetingPoint.AddressLine1, pickup.DeliveryAddressLine1);
@@ -427,7 +427,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("1 Pickup St", pickup.PickupAddressLine1);
@@ -445,7 +445,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             await service.SplitJobAsync(100, "TestUser", meetingPoint, ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(meetingPoint.AddressLine1, delivery.PickupAddressLine1);
@@ -468,7 +468,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal("99 Delivery Ave", delivery.DeliveryAddressLine1);
@@ -485,7 +485,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(42, pickup.UcjbCourierId);
@@ -501,7 +501,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Null(delivery.UcjbCourierId);
@@ -517,9 +517,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(1, pickup.Sequence);
@@ -536,9 +536,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // SplitChild relationship type ID = 2
@@ -556,9 +556,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(100, pickup.ParentId);
@@ -577,9 +577,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.False(pickup.UcjbVoid);
@@ -598,7 +598,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var notes = await verifyCtx.TucNotes.AsNoTracking()
+        var notes = await verifyCtx.TucNotes
             .Where(n => n.JobId == pickupId || n.JobId == deliveryId)
             .ToListAsync(TestContext.Current.CancellationToken);
 
@@ -618,7 +618,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var note = await verifyCtx.TucNotes.AsNoTracking().FirstAsync(n => n.JobId == pickupId,
+        var note = await verifyCtx.TucNotes.FirstAsync(n => n.JobId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Contains("Handle with care", note.NoteText);
@@ -635,7 +635,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             courierIdForLegB: 99, ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(99, delivery.UcjbCourierId);
@@ -657,9 +657,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Pickup: from = original, to = Unknown suburb (meeting point)
@@ -691,9 +691,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             courierIdForLegB: 99, ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Pickup leg always gets dispatch fields (courier is always assigned)
@@ -725,7 +725,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // No courier for leg B → dispatch fields should NOT be copied
@@ -744,7 +744,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Null(delivery.UcjbCourierId);
@@ -769,7 +769,7 @@ public class SplitJobServiceTests : IAsyncDisposable
             {
                 var jobId = callInfo.Arg<int>();
                 using var ctx = new DespatchContext(_db.Options);
-                var job = ctx.TucJobs.AsNoTracking().First(j => j.UcjbId == jobId);
+                var job = ctx.TucJobs.First(j => j.UcjbId == jobId);
                 return new JobRatingDetailsDtoNz { JobId = jobId, FromId = job.UcjbFrom };
             });
         _rateJobServiceMock
@@ -785,9 +785,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(30.00m, pickup.UcjbAmount);
@@ -809,9 +809,9 @@ public class SplitJobServiceTests : IAsyncDisposable
             ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         Assert.Equal(50.00m, pickup.UcjbAmount);
@@ -838,13 +838,13 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         await using var verifyCtx = new DespatchContext(_db.Options);
         // No children persisted — the transaction rolled back.
-        var childCount = await verifyCtx.TucJobs.AsNoTracking()
+        var childCount = await verifyCtx.TucJobs
             .CountAsync(j => j.ParentId == 100 && j.UcjbId != 100,
                 TestContext.Current.CancellationToken);
         Assert.Equal(0, childCount);
 
         // Parent untouched — relationship type still null, amount preserved.
-        var parent = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == 100,
+        var parent = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == 100,
             cancellationToken: TestContext.Current.CancellationToken);
         Assert.Equal(100.00m, parent.UcjbAmount);
         Assert.Null(parent.JobRelationshipTypeId);
@@ -870,13 +870,13 @@ public class SplitJobServiceTests : IAsyncDisposable
             CreateMeetingPointAddress(), ct: TestContext.Current.CancellationToken);
 
         await using var verifyCtx = new DespatchContext(_db.Options);
-        var pickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == pickupId,
+        var pickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == pickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var delivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == deliveryId,
+        var delivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == deliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var subPickup = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == subPickupId,
+        var subPickup = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == subPickupId,
             cancellationToken: TestContext.Current.CancellationToken);
-        var subDelivery = await verifyCtx.TucJobs.AsNoTracking().FirstAsync(j => j.UcjbId == subDeliveryId,
+        var subDelivery = await verifyCtx.TucJobs.FirstAsync(j => j.UcjbId == subDeliveryId,
             cancellationToken: TestContext.Current.CancellationToken);
 
         // Unrelated sibling — set by the first split — must not be touched by the re-split.

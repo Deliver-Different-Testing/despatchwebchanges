@@ -587,6 +587,12 @@ public partial class TblClient
 
     public int? NpAgentId { get; set; }
 
+    public string AccountingPaymentTermQboId { get; set; }
+
+    public int? AccountingPaymentTermXeroDay { get; set; }
+
+    public string AccountingPaymentTermXeroType { get; set; }
+
     public int ClientId { get; set; }
 
     public string Name { get; set; }

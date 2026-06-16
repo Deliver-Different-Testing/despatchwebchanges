@@ -2,9 +2,6 @@ import {IAppConfig} from "./interfaces/app-config.interface";
 import {AppPage} from "./enums/app-pages.enum";
 import "./react/components/common/pod-photo-viewer/pod-photo-viewer-react.module";
 import "./react/components/dialogs/note-management-dialog/note-management-dialog-react.module";
-import {
-    FeatureInDevelopmentDialogController
-} from "./components/dialogs/feature-in-development-dialog/feature-in-development-dialog.controller";
 import ConfigService from "./services/config.service";
 import DispatchCoreService from "./services/dispatch-core.service";
 import ToastrService from "./services/toastr.service";
@@ -12,7 +9,6 @@ import {SelectDialogService} from "./components/dialogs/select-dialog/select-dia
 import "./react/components/dialogs/event-group-dialog/event-group-dialog-react.module";
 import {EditDateTimeDialogService} from "./components/dialogs/edit-date-time-dialog/edit-date-time-dialog.service";
 import {EditAddressDialogService} from "./components/dialogs/edit-address-dialog/edit-address-dialog.service";
-import PriceBreakdownDialogService from "./components/dialogs/price-breakdown-dialog/price-breakdown-dialog.service";
 import JobDetailComponent from "./components/common/job-details/job-details.component";
 import JobFileUploadDialogService from "./components/dialogs/job-file-upload-dialog/job-file-upload-dialog.service";
 import RouterConfig from "./routes";
@@ -216,7 +212,6 @@ app.component("flightAgentDataTableReact", FlightAgentDataTableReactComponent);
 app.directive("reactAppShell", reactAppShellDirective);
 
 // Dialogs
-app.controller("FeatureInDevelopmentDialogController", FeatureInDevelopmentDialogController);
 app.controller("TruckCourierStatusDialogController", TruckCourierStatusDialogController);
 
 // Services
@@ -226,7 +221,6 @@ app.service("toastrService", ToastrService);
 app.service('selectDialogService', SelectDialogService);
 app.service("editDateTimeDialogService", EditDateTimeDialogService);
 app.service("editAddressDialogService", EditAddressDialogService);
-app.service("priceBreakdownDialogService", PriceBreakdownDialogService);
 app.service("jobFileUploadDialogService", JobFileUploadDialogService);
 app.service("editParcelDimensionsDialogService", EditParcelDimensionsDialogService);
 app.service("autoCompleteDialogService", AutoCompleteDialogService);

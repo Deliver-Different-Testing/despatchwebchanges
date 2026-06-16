@@ -883,9 +883,16 @@ public class RecurringJobRepository(
                 break;
 
             case JobProperty.BookedTime:
+                // Ready card reads UcbkDate.CombineWithTime(UcbkTime) — date from
+                // one column, time from another. Writing only UcbkDate would
+                // leave the time stale and reappear under the Created card
+                // (which renders the raw UcbkDate). Mirror the live-job path
+                // (JobRepository.EditOperations BookedTime) and write both.
+                var bookedTime = ParseValue<DateTimeOffset>(value, property).DateTime;
                 await Context.TucJobBookings.Where(j => j.UcbkId == jobId)
-                    .ExecuteUpdateAsync(s =>
-                        s.SetProperty(j => j.UcbkDate, ParseValue<DateTimeOffset>(value, property).DateTime));
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(j => j.UcbkDate, bookedTime)
+                        .SetProperty(j => j.UcbkTime, bookedTime));
                 break;
 
             case JobProperty.StopDate:

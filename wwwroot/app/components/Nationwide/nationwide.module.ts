@@ -6,9 +6,6 @@ import FlightAgentConfirmationDialogService
 import TasksService from "../../services/tasks.service";
 import AccessorialChargesDialogService from "../dialogs/accessorial-charges-dialog/accessorial-charges-dialog.service";
 import DispatchExecutorService from "../../services/dispatch-executor.service";
-import {
-    FeatureInDevelopmentDialogService
-} from "../dialogs/feature-in-development-dialog/feature-in-development-dialog.service";
 import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog/dashboard-settings-dialog.service";
 import '../../react/components/dialogs/recovery-agent-management-dialog/recovery-agent-management-dialog-react.module';
 import angular from 'angular';
@@ -36,7 +33,6 @@ nationwideModule
     .service("flightAgentConfirmationDialogService", FlightAgentConfirmationDialogService)
     .service("accessorialChargesDialogService", AccessorialChargesDialogService)
     .service("dispatchJobService", DispatchExecutorService)
-    .service("featureInDevelopmentDialogService", FeatureInDevelopmentDialogService)
     .service("dashboardSettingsDialogService", DashboardSettingsDialogService);
 
 export default nationwideModule;

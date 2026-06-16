@@ -76,17 +76,6 @@ export const recurringJobsHandlers = [
         return HttpResponse.json(mockSpeedOptions);
     }),
 
-    // Void a prebook job
-    http.post('*/job/VoidPrebookJob', async ({ request }) => {
-        const body = await request.json() as Record<string, unknown>;
-
-        if (!body?.jobId) {
-            return new HttpResponse('Missing jobId parameter', { status: 400 });
-        }
-
-        return new HttpResponse(null, { status: 200 });
-    }),
-
     // Export recurring jobs to CSV
     http.post('*/job/RecurringJobsExportCsv', async ({ request }) => {
         if (request.headers.get('X-Requested-With') !== 'XMLHttpRequest') {

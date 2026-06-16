@@ -590,7 +590,7 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
             {isAiEnabled() && !tasksLoading && tasks.length > 0 && (
                 <Box sx={{mb: 2, flexShrink: 0}}>
                     <AiSummaryCard
-                        title="DFRNT Daily Briefing"
+                        title="Auto-mate Daily Briefing"
                         fetchSummary={(signal) => summarizeTaskDashboard({signal})}
                     />
                 </Box>
