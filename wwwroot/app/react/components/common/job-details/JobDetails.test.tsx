@@ -571,5 +571,52 @@ describe('JobDetails', () => {
                 capturedRelatedJobTabsProps.onTabChange(1);
             });
         });
+
+        it('initializes selectedTabIndex against fresh data, not stale keepPreviousData', () => {
+            // Race scenario: user has family A selected, clicks a child leg in family B.
+            // The bridge swaps config.jobId to family B's child immediately, but React Query
+            // serves family A's sortedRelatedJobs until the new fetch resolves. The
+            // initialization effect must NOT lock the ref to the new jobId on the stale
+            // data - if it does, the ref guard blocks the legitimate re-initialization
+            // once fresh data lands and the tab stays stuck on family A's first entry
+            // (which, after the rootParentId sort fix, is the family parent).
+            const familyAParent  = createMockJob({id: 100, jobNo: 'P1000'});
+            const familyALhp     = createMockJob({id: 101, jobNo: 'P1000LHP'});
+            const familyBParent  = createMockJob({id: 200, jobNo: 'E256HAM'});
+            const familyBLhp     = createMockJob({id: 201, jobNo: 'E256HAMLHP'});
+            const familyBLh1     = createMockJob({id: 202, jobNo: 'E256HAMLH1'});
+
+            // Render 1: jobId points to family B's LHP, but data is still family A (stale).
+            setupDefaultMocks({sortedRelatedJobs: [familyAParent, familyALhp]});
+            const {rerender} = renderJobDetails({jobId: 201});
+
+            // Effect found no match for 201 in family A - selectedTabIndex stays at the
+            // initial 0 and the ref stays uninitialised (this is the bit the fix changes).
+            expect(capturedRelatedJobTabsProps.selectedTabIndex).toBe(0);
+
+            // Render 2: fresh data for family B arrives.
+            setupDefaultMocks({sortedRelatedJobs: [familyBParent, familyBLhp, familyBLh1]});
+            const {JobDetails} = require('./JobDetails');
+            const freshConfig: MountJobDetailsConfig = {
+                jobId: 201,
+                isRecurringJob: false,
+                isBulkJob: false,
+                isUsCustomer: false,
+                showToast: jest.fn(),
+                onJobUpdate: jest.fn(),
+                onJobReadChanged: jest.fn(),
+            };
+            rerender(
+                <QueryClientProvider client={createQueryClient()}>
+                    <ThemeProvider theme={theme}>
+                        <JobDetails config={freshConfig} />
+                    </ThemeProvider>
+                </QueryClientProvider>,
+            );
+
+            // Effect runs against fresh data, finds LHP at index 1.
+            expect(capturedRelatedJobTabsProps.selectedTabIndex).toBe(1);
+            expect(capturedRelatedJobTabsProps.sortedRelatedJobs[1].jobNo).toBe('E256HAMLHP');
+        });
     });
 });

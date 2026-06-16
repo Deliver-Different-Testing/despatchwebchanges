@@ -79,10 +79,6 @@ export const MetricsGrid = React.memo(({
     const jobRef = useRef(job);
     useEffect(() => { jobRef.current = job; }, [job]);
 
-    const handleCreatedClick = useCallback(() => {
-        showToast('Created Date is not editable', 'info');
-    }, [showToast]);
-
     const handleDispatchedClick = useCallback(() => {
         showToast('Dispatch Time is not editable', 'info');
     }, [showToast]);
@@ -119,7 +115,7 @@ export const MetricsGrid = React.memo(({
 
     return (
         <>
-            {/* Row 1: PRICING, CREATED, READY, PU ARRIVAL, PU TIME, DELIVER BY */}
+            {/* Row 1: PRICING, READY, PU ARRIVAL, PU TIME, DELIVER BY */}
             <Box sx={gridSx}>
                 <MetricCard
                     label="Pricing"
@@ -131,14 +127,6 @@ export const MetricsGrid = React.memo(({
                     filled
                     dense={dense}
                     overlay={pendingRate && <PendingChangeBadge request={pendingRate}/>}
-                />
-                <MetricCard
-                    label="Created"
-                    value={`${job._createdDateTimeStr || ''} ${defaultTz}`}
-                    onClick={handleCreatedClick}
-                    category="time"
-                    filled
-                    dense={dense}
                 />
                 <MetricCard
                     label="Ready"

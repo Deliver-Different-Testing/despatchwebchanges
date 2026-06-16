@@ -351,12 +351,20 @@ export function JobDetails({config}: JobDetailsProps) {
             }),
     });
 
-    // Initialize the tab to show the originally-selected job. Only runs once per jobId change —
+    // Initialize the tab to show the originally-selected job. Only runs once per jobId change -
     // subsequent data refetches must not snap the user back if they navigated to a sibling tab.
+    //
+    // The findIndex guard: when the user clicks a sibling in a DIFFERENT family, React Query's
+    // keepPreviousData briefly serves the previous family's sortedRelatedJobs while the new
+    // query is in-flight. Without the guard we'd lock the ref to the new jobId on the stale
+    // data (idx = -1, fallback to 0), then the ref check would block the legitimate
+    // re-initialization once fresh data arrived, leaving the tab stuck on the family parent.
+    // Returning early when idx < 0 keeps the ref un-baked until data matches the requested job.
     useEffect(() => {
         if (jobId && sortedRelatedJobs.length > 0 && tabInitializedForJobRef.current !== jobId) {
             const idx = sortedRelatedJobs.findIndex(j => j.id === jobId);
-            setSelectedTabIndex(idx >= 0 ? idx : 0);
+            if (idx < 0) return;
+            setSelectedTabIndex(idx);
             tabInitializedForJobRef.current = jobId;
         }
     }, [jobId, sortedRelatedJobs]);
