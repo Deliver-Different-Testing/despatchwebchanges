@@ -49,6 +49,179 @@ public sealed partial class DeliveryJourneyService(
             .ToList();
     }
 
+    // Status IDs from tucJobStatus (confirmed via sql-scripts/
+    // recurring-delivery-journey-investigation.sql #5). No flag columns
+    // exist on the status table, so we hard-code the bucket mapping.
+    private static readonly HashSet<int> CompletedStatusIds = [6, 13];
+    private static readonly HashSet<int> VoidedStatusIds = [3, 10, 1000, 1001];
+    private static readonly HashSet<int> PendingStatusIds = [0, 16, 100];
+
+    public async Task<RecurringJourneyDto> GetDeliveryJourneyForRecurringBookingAsync(int bookingId, int limit = 200)
+    {
+        if (limit <= 0)
+        {
+            return new RecurringJourneyDto();
+        }
+
+        await using var context = await contextFactory.CreateDbContextAsync();
+
+        // Step 1: resolve the family root. If bookingId IS the parent
+        // (BookingParentId null or self-ref), root = itself; otherwise
+        // follow the FK up one level. Single-row scalar projection — PK
+        // hit, near-free. Returns 0 when the booking doesn't exist.
+        var rootId = await context.TucJobBookings
+            .Where(b => b.UcbkId == bookingId)
+            .Select(b => !b.BookingParentId.HasValue || b.BookingParentId.Value == b.UcbkId
+                ? b.UcbkId
+                : b.BookingParentId.Value)
+            .TagWith("RecurringJourney - Root booking ID")
+            .FirstOrDefaultAsync();
+
+        if (rootId == 0)
+        {
+            return new RecurringJourneyDto();
+        }
+
+        // Step 2: top-N parent runs in date order, joined to tucJobBooking
+        // so the family filter (root + its child templates) is a SQL join,
+        // not a precomputed IN list. ORDER BY + TOP run in SQL — no
+        // unbounded in-memory sort. ParentID NULL/self-ref identifies the
+        // parent leg of each spawn; children load separately so their
+        // chips render under the right card.
+        var parentRuns = await (
+                from j in context.TucJobs
+                join b in context.TucJobBookings on j.BookingParentId equals b.UcbkId
+                where (b.UcbkId == rootId || b.BookingParentId == rootId)
+                      && (j.ParentId == null || j.ParentId == j.UcjbId)
+                orderby j.UcjbDate descending, j.UcjbTime descending, j.UcjbId descending
+                select new
+                {
+                    j.UcjbId,
+                    j.UcjbNumber,
+                    j.UcjbDate,
+                    j.UcjbTime,
+                    j.UcjbStatus,
+                    j.UcjbComplTime,
+                    j.UcjbPodname,
+                    j.TotalDistance
+                })
+            .Take(limit)
+            .TagWith("RecurringJourney - Top-N parent runs")
+            .ToListAsync();
+
+        if (parentRuns.Count == 0)
+        {
+            return new RecurringJourneyDto();
+        }
+
+        // Step 3: child legs of the parents we just loaded. IN list size
+        // is bounded by `limit`, so the SQL plan stays stable regardless
+        // of how many runs the booking has accumulated historically.
+        var parentIds = parentRuns.Select(r => r.UcjbId).ToList();
+        var childRows = await context.TucJobs
+            .Where(j => j.ParentId.HasValue
+                        && parentIds.Contains(j.ParentId.Value)
+                        && j.UcjbId != j.ParentId)
+            .OrderBy(j => j.ParentId)
+            .ThenBy(j => j.UcjbId)
+            .Select(j => new
+            {
+                j.UcjbId,
+                j.UcjbNumber,
+                ParentJobId = j.ParentId.Value
+            })
+            .TagWith("RecurringJourney - Child legs")
+            .ToListAsync();
+
+        var childrenByParent = childRows
+            .GroupBy(c => c.ParentJobId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<RecurringJourneyChildDto>)g
+                    .Select(c => new RecurringJourneyChildDto
+                    {
+                        JobId = c.UcjbId,
+                        JobNumber = c.UcjbNumber
+                    })
+                    .ToList());
+
+        var timezone = infoService.GetTenantTimeZone();
+
+        // Parent runs are already date-desc from SQL — single pass through
+        // them builds the DTO list and the breakdown counts at the same
+        // time, avoiding the four .Count(predicate) re-scans we'd otherwise
+        // do on the runs list.
+        var runs = new List<RecurringJourneyRunDto>(parentRuns.Count);
+        var completedCount = 0;
+        var voidedCount = 0;
+        var pendingCount = 0;
+
+        foreach (var j in parentRuns)
+        {
+            // ucjbDate carries the date part; ucjbTime is a DATETIME with a
+            // 1900-01-01 anchor for the time-of-day. Combine in C# rather
+            // than in EF to avoid datetime+datetime translation surprises.
+            var serviceLocal = j.UcjbDate + (j.UcjbTime?.TimeOfDay ?? TimeSpan.Zero);
+
+            var status = MapStatusBucket(j.UcjbStatus);
+            switch (status)
+            {
+                case RecurringJourneyStatus.Completed: completedCount++; break;
+                case RecurringJourneyStatus.Voided: voidedCount++; break;
+                case RecurringJourneyStatus.Pending:
+                case RecurringJourneyStatus.InProgress: pendingCount++; break;
+            }
+
+            RecurringJourneyPodDto pod = null;
+            if (status == RecurringJourneyStatus.Completed && j.UcjbComplTime.HasValue)
+            {
+                pod = new RecurringJourneyPodDto
+                {
+                    Time = TimeZoneHelper.SetDateTimeWithTimeZone(j.UcjbComplTime.Value, timezone),
+                    SignedBy = j.UcjbPodname
+                };
+            }
+
+            runs.Add(new RecurringJourneyRunDto
+            {
+                ParentJobId = j.UcjbId,
+                ParentJobNumber = j.UcjbNumber,
+                ServiceDate = TimeZoneHelper.SetDateTimeWithTimeZone(serviceLocal, timezone),
+                Status = status,
+                Miles = j.TotalDistance,
+                Pod = pod,
+                Children = childrenByParent.TryGetValue(j.UcjbId, out var legs) ? legs : []
+            });
+        }
+
+        return new RecurringJourneyDto
+        {
+            Breakdown = new RecurringJourneyBreakdownDto
+            {
+                Total = runs.Count,
+                Completed = completedCount,
+                Voided = voidedCount,
+                Pending = pendingCount
+            },
+            Runs = runs
+        };
+    }
+
+    private static RecurringJourneyStatus MapStatusBucket(int? ucjbStatus)
+    {
+        if (ucjbStatus is null)
+        {
+            return RecurringJourneyStatus.Pending;
+        }
+
+        var id = ucjbStatus.Value;
+        if (CompletedStatusIds.Contains(id)) return RecurringJourneyStatus.Completed;
+        if (VoidedStatusIds.Contains(id)) return RecurringJourneyStatus.Voided;
+        return PendingStatusIds.Contains(id)
+            ? RecurringJourneyStatus.Pending
+            : RecurringJourneyStatus.InProgress;
+    }
+
     /// <summary>
     /// Retrieves task/event records associated with a job, including audit history.
     /// </summary>
@@ -448,7 +621,7 @@ public sealed partial class DeliveryJourneyService(
     /// Parses a string value as a decimal. Returns 0 if the value is null, empty, or unparseable.
     /// Used to compute deltas across PricingBreakdown audit rows where values may occasionally be missing or malformed.
     /// </summary>
-    internal static decimal ParseDecimal(string value) =>
+    private static decimal ParseDecimal(string value) =>
         decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var d) ? d : 0m;
 
     /// <summary>

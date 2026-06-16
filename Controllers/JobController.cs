@@ -2322,6 +2322,20 @@ public class JobController(
         }
     }
 
+    public async Task<IActionResult> GetRecurringJobDeliveryJourney(int bookingId)
+    {
+        try
+        {
+            var journey = await deliveryJourneyService.GetDeliveryJourneyForRecurringBookingAsync(bookingId);
+            return Json(journey);
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "Error retrieving the recurring delivery journey for Booking {BookingId}", bookingId);
+            return StatusCode(500, ErrorMessageStringFormatter.Format(ex));
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> ApplyWebQtyUpdate(int jobId)
     {

@@ -120,6 +120,8 @@ export const queryKeys = {
         }) => ['recurringJobs', 'list', query] as const,
         speeds: ['recurringJobs', 'speeds'] as const,
         routes: ['recurringJobs', 'routes'] as const,
+        deliveryJourney: (bookingId: number) =>
+            ['recurringJobs', 'deliveryJourney', bookingId] as const,
     },
     notes: {
         all: ['notes'] as const,

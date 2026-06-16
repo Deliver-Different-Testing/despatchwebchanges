@@ -487,7 +487,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             Name = "New Charge",
             Amount = 75.00m,
             ChildJobId = jobId,
-            CostAmount = 25.00m,
+            CostAmount = 25.00m
         };
 
         var repository = CreateRepository();
@@ -515,7 +515,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             Name = "Archive Charge",
             Amount = 45.00m,
             ChildJobId = jobId,
-            CostAmount = 20.00m,
+            CostAmount = 20.00m
         };
 
         var repository = CreateRepository();
@@ -543,7 +543,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             Name = "New Prebook Charge",
             Amount = 90.00m,
             PrebookJobId = prebookId,
-            CostAmount = 40.00m,
+            CostAmount = 40.00m
         };
 
         var repository = CreateRepository();
@@ -575,7 +575,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             JobId = jobId,
             Name = "Line A",
             Amount = 200.00m,
-            CostAmount = 80.00m,
+            CostAmount = 80.00m
         };
 
         var repository = CreateRepository();
@@ -604,7 +604,7 @@ public class JobRepositoryPricingBreakdownTests : IAsyncDisposable
             JobId = jobId,
             Name = "Existing",
             Amount = 175.00m,
-            CostAmount = 60.00m,
+            CostAmount = 60.00m
         };
 
         var repository = CreateRepository();

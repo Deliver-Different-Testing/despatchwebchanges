@@ -316,7 +316,7 @@ public sealed class JobReportService(
             // present, falling back to the legacy bool for old clients.
             var statusText = request.RecurringMode.HasValue
                 ? request.RecurringMode.Value.ToString().ToLowerInvariant()
-                : (request.Active ? "active" : "inactive");
+                : request.Active ? "active" : "inactive";
             var filename = $"recurring-jobs-{statusText}-{currentDate:yyyy-MM-dd-HHmm}.csv";
 
             return (csvBytes, filename);

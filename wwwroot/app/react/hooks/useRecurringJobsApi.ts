@@ -9,6 +9,7 @@ import {useQuery, keepPreviousData} from '@tanstack/react-query';
 import {queryKeys} from '../query';
 import {recurringJobsApi} from '../services/recurringJobsApi';
 import {PaginatedRecurringJobsResponse, RecurringJobQuery, RouteOption, SpeedOption} from '../interfaces';
+import type {RecurringJourney} from '../components/common/recurring-delivery-journey/RecurringDeliveryJourney.types';
 
 /**
  * Hook to load paginated recurring jobs list
@@ -77,5 +78,23 @@ export function useRouteList(options?: { enabled?: boolean }) {
         enabled: options?.enabled ?? true,
         staleTime: 5 * 60 * 1000, // Cache for 5 minutes (routes rarely change)
         gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    });
+}
+
+/**
+ * Hook to load the Recurring Log (one entry per live job spawned from a
+ * recurring booking family) plus its breakdown counts.
+ *
+ * Polls every 2 minutes to mirror the live-job delivery journey cadence.
+ */
+export function useRecurringJobDeliveryJourney(
+    bookingId: number | null | undefined,
+    options?: {enabled?: boolean; refetchInterval?: number | false},
+) {
+    return useQuery<RecurringJourney, Error>({
+        queryKey: queryKeys.recurringJobs.deliveryJourney(bookingId ?? 0),
+        queryFn: ({signal}) => recurringJobsApi.getDeliveryJourney(bookingId!, {signal}),
+        enabled: (options?.enabled ?? true) && !!bookingId && bookingId > 0,
+        refetchInterval: options?.refetchInterval ?? 2 * 60 * 1000,
     });
 }
