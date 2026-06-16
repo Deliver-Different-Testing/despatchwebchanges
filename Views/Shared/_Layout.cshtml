@@ -22,12 +22,12 @@
         await Console.Error.WriteLineAsync($"Error reading manifest: {ex.Message}");
     }
 
-    var vendorCoreJs = manifest["vendor-core.js"];
-    var vendorPluginsJs = manifest["vendor-plugins.js"];
-    var appBundleFile = manifest["app.js"];
+    var vendorCoreJs = manifest.GetValueOrDefault("vendor-core.js", "");
+    var vendorPluginsJs = manifest.GetValueOrDefault("vendor-plugins.js", "");
+    var appBundleFile = manifest.GetValueOrDefault("app.js", "");
     var vendorCoreCss = manifest.GetValueOrDefault("vendor-core.css", "");
     var vendorPluginsCss = manifest.GetValueOrDefault("vendor-plugins.css", "");
-    var appStylesFile = manifest["app.css"];
+    var appStylesFile = manifest.GetValueOrDefault("app.css", "");
 }
 
 <!doctype html>
@@ -139,7 +139,10 @@
     {
         <link rel="stylesheet" href="/dist/@vendorPluginsCss"/>
     }
-    <link rel="stylesheet" href="/dist/@appStylesFile"/>
+    @if (!string.IsNullOrEmpty(appStylesFile))
+    {
+        <link rel="stylesheet" href="/dist/@appStylesFile"/>
+    }
 </head>
 
 <body ng-app="uDispatch">
@@ -170,9 +173,18 @@
 <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
 <script src="https://js.api.here.com/v3/3.1/mapsjs-harp.js"></script>
 
-<script src="/dist/@vendorCoreJs"></script>
-<script src="/dist/@vendorPluginsJs"></script>
-<script src="/dist/@appBundleFile"></script>
+@if (!string.IsNullOrEmpty(vendorCoreJs))
+{
+    <script src="/dist/@vendorCoreJs"></script>
+}
+@if (!string.IsNullOrEmpty(vendorPluginsJs))
+{
+    <script src="/dist/@vendorPluginsJs"></script>
+}
+@if (!string.IsNullOrEmpty(appBundleFile))
+{
+    <script src="/dist/@appBundleFile"></script>
+}
 
 
 <script>
