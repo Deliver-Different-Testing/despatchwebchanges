@@ -35,12 +35,12 @@ function createDefaultProps(overrides?: Record<string, any>) {
 }
 
 describe('MetricsGrid', () => {
-    it('renders all 12 metric card labels with values', () => {
+    it('renders all 11 metric card labels with values', () => {
         renderWithTheme(<MetricsGrid {...createDefaultProps()} />);
 
-        // Row 1
+        // Row 1 (Created removed - not editable + not informative)
         expect(screen.getByText('Pricing')).toBeInTheDocument();
-        expect(screen.getByText('Created')).toBeInTheDocument();
+        expect(screen.queryByText('Created')).not.toBeInTheDocument();
         expect(screen.getByText('Ready')).toBeInTheDocument();
         expect(screen.getByText('PU Arrival')).toBeInTheDocument();
         expect(screen.getByText('PU Time')).toBeInTheDocument();
@@ -76,10 +76,6 @@ describe('MetricsGrid', () => {
     it('shows toast for non-editable fields', () => {
         const showToast = jest.fn();
         renderWithTheme(<MetricsGrid {...createDefaultProps({showToast})} />);
-
-        const createdButton = screen.getByText('Created').closest('button');
-        if (createdButton) fireEvent.click(createdButton);
-        expect(showToast).toHaveBeenCalledWith('Created Date is not editable', 'info');
 
         const dispatchButton = screen.getByText('Dispatched').closest('button');
         if (dispatchButton) fireEvent.click(dispatchButton);
@@ -130,11 +126,11 @@ describe('MetricsGrid', () => {
     });
 
     describe('dense mode', () => {
-        it('renders all 12 metric cards and click handlers work in dense mode', () => {
+        it('renders all 11 metric cards and click handlers work in dense mode', () => {
             const onPricingClick = jest.fn();
             renderWithTheme(<MetricsGrid {...createDefaultProps({dense: true, onPricingClick})} />);
             expect(screen.getByText('Pricing')).toBeInTheDocument();
-            expect(screen.getByText('Created')).toBeInTheDocument();
+            expect(screen.queryByText('Created')).not.toBeInTheDocument();
             expect(screen.getByText('Ready')).toBeInTheDocument();
             expect(screen.getByText('PU Arrival')).toBeInTheDocument();
             expect(screen.getByText('PU Time')).toBeInTheDocument();

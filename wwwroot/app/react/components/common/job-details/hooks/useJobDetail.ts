@@ -68,18 +68,28 @@ export function useJobDetail({
 
     const sortedRelatedJobs = useMemo(() => {
         if (!jobQuery.data) return [];
-        const parentId = jobQuery.data.job.id;
         const allJobs = [jobQuery.data.job, ...jobQuery.data.relatedJobs];
+
+        // Anchor the sort on the family parent (NOT the currently-selected
+        // job). When the user clicks a child leg the API returns it as
+        // jobGroup.job; without this resolution the child would win bucket
+        // [0] and the real parent would fall into the catch-all bucket [4],
+        // tail-ending the tabs and breaking the '*<suffix>' label policy
+        // in RelatedJobTabs (which strips against sortedRelatedJobs[0]).
+        // rootParentId points to the family parent on children and is
+        // undefined on the parent itself - same pattern used in
+        // useJobActions.ts:884 for partner-rate lookup.
+        const selected = jobQuery.data.job;
+        const familyParent = selected.rootParentId
+            ? (allJobs.find(j => j.id === selected.rootParentId) ?? selected)
+            : selected;
+        const parentId = familyParent.id;
 
         // Chain-order sort mirroring RunViewer's siblingSortKey
         // (homeControl.js ~lines 229-243). Tabs read left-to-right as
         // the shipment timeline: parent -> LHP -> LH1..LHn -> DEL ->
         // anything else. Suffix matching is case-insensitive against
         // the live job number.
-        //
-        // Parent is identified by id-equality with jobGroup.job.id —
-        // IJob has no parentJobId so we can't use the RunViewer's
-        // `parentJobID == null` heuristic directly.
         const siblingSortKey = (job: IJob): [number, number, string] => {
             if (job.id === parentId) return [0, 0, ''];
             const num = (job.jobNo ?? '').toUpperCase();

@@ -167,6 +167,50 @@ describe('useJobDetail', () => {
         expect(jobNos).toEqual(['J10', 'J1', 'J2', 'J20']);
     });
 
+    it('anchors sort on family parent (via rootParentId) when a child leg is selected', async () => {
+        // P1012 family: parent P1012 (id=100), children LHP / LH1..LH4 / DEL.
+        // User clicks LH1 - the API returns LH1 as jobGroup.job and the
+        // rest (including the parent) as relatedJobs. The hook must
+        // still surface the parent at index 0 so:
+        //   1. Tab order is parent -> LHP -> LH1..LHn -> DEL.
+        //   2. RelatedJobTabs' '*<suffix>' label policy can strip
+        //      against the real parent prefix.
+        // selectedTabIndex (computed elsewhere) is what highlights LH1 -
+        // it's independent of sort order.
+        const mockGroup = {
+            job: {id: 101, jobNo: 'P1012LH1', rootParentId: 100, isBulkJob: false} as any,
+            relatedJobs: [
+                {id: 100, jobNo: 'P1012',    rootParentId: undefined, isBulkJob: false} as any,
+                {id: 102, jobNo: 'P1012LHP', rootParentId: 100,       isBulkJob: false} as any,
+                {id: 103, jobNo: 'P1012LH2', rootParentId: 100,       isBulkJob: false} as any,
+                {id: 104, jobNo: 'P1012LH3', rootParentId: 100,       isBulkJob: false} as any,
+                {id: 105, jobNo: 'P1012LH4', rootParentId: 100,       isBulkJob: false} as any,
+                {id: 106, jobNo: 'P1012DEL', rootParentId: 100,       isBulkJob: false} as any,
+            ],
+        };
+        mockGetJobDetail.mockResolvedValueOnce(mockDto as any);
+        mockTransformJobGroupDTO.mockReturnValueOnce(mockGroup as any);
+
+        const wrapper = createWrapper({withTheme: false, withQueryClient: true, queryClient});
+        const {result} = renderHook(
+            () => useJobDetail({jobId: 101, isRecurringJob: false, isBulkJob: false}),
+            {wrapper},
+        );
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+        const jobNos = result.current.sortedRelatedJobs.map(j => j.jobNo);
+        expect(jobNos).toEqual([
+            'P1012',     // family parent, regardless of which leg was clicked
+            'P1012LHP',  // bucket 1
+            'P1012LH1',  // bucket 2 [1]
+            'P1012LH2',  // bucket 2 [2]
+            'P1012LH3',  // bucket 2 [3]
+            'P1012LH4',  // bucket 2 [4]
+            'P1012DEL',  // bucket 3
+        ]);
+    });
+
     it('sorts safely when jobNo is null (e.g. recurring job templates)', async () => {
         const mockGroup = {
             job: {id: 1, jobNo: null, isBulkJob: false} as any,

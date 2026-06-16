@@ -21,7 +21,12 @@ public static partial class JobMappings
         Booked = j.UcjbDate.HasValue
             ? j.UcjbDate.Value.CombineWithTime(j.UcjbTime)
             : SqlMinDateTime,
-        DispatchTime = j.UcjbDispTime,
+        // See JobMappings.Core.cs for the rationale: combine DispDate + DispTime
+        // and treat NULL / sentinel-1900 DispDate as "not dispatched" so the UI
+        // shows '-' instead of "Jan/01 23:00".
+        DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
+            ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
+            : (DateTime?)null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName,
         FollowupTime = j.FollowupTime,

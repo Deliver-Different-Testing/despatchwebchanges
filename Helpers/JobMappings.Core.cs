@@ -36,7 +36,16 @@ public static partial class JobMappings
         RootParentId = j.RootParentId,
         Date = FormatDate(j.UcjbDate),
         Booked = j.UcjbDate.CombineWithTime(j.UcjbTime),
-        DispatchTime = j.UcjbDispTime,
+        // UcjbDispTime is a datetime that legacy create-flows pre-fill with the
+        // booking's time-of-day under a 1900-01-01 sentinel date - rendering it
+        // directly produces "Jan/01 23:00" on undispatched jobs. The actual
+        // dispatch moment lives split across UcjbDispDate (date) + UcjbDispTime
+        // (time portion), both stamped together at dispatch (JobRepository:5340,
+        // NationwideJobRepository:155). Combine them when DispDate carries a
+        // real value; surface NULL otherwise so the UI shows '-'.
+        DispatchTime = j.UcjbDispDate.HasValue && j.UcjbDispDate.Value.Year > 1900
+            ? j.UcjbDispDate.Value.CombineWithTime(j.UcjbDispTime)
+            : (DateTime?)null,
         CreatedDate = j.CreatedTimeUtc,
         ScheduleName = j.ScheduleName ?? Defaults.NotAvailable,
         FollowupTime = j.FollowupTime,
