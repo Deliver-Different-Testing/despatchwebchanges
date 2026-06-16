@@ -1710,7 +1710,7 @@ public partial class JobRepository(
             FuelSurchargeAmount = 0,
             DeliverToPrivateBusiness = 0,
             UcjbDispTime = currentTime,
-            DisplayInDespatch = false,
+            DisplayInDespatch = false
         };
     }
 

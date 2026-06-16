@@ -26,6 +26,14 @@ jest.mock('../../hooks/useRecurringJobsApi', () => ({
     useRecurringJobsList: jest.fn(),
     useSpeedList: jest.fn(),
     useRouteList: jest.fn(),
+    useRecurringJobDeliveryJourney: jest.fn(() => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: jest.fn(),
+        isFetching: false,
+    })),
 }));
 
 jest.mock('../../hooks/useCourierApi', () => ({
@@ -187,8 +195,9 @@ describe('RecurringJobsPage', () => {
         const selectButton = formControl?.querySelector('[role="combobox"]');
         expect(selectButton).toBeInTheDocument();
 
-        // Refresh button
-        const refreshIcon = screen.getByTestId('RefreshIcon');
+        // Refresh button — the recurring log panel also renders one, so
+        // grab the first which is the toolbar's.
+        const refreshIcon = screen.getAllByTestId('RefreshIcon')[0];
         const refreshButton = refreshIcon.closest('button');
         expect(refreshButton).toBeInTheDocument();
         fireEvent.click(refreshButton!);

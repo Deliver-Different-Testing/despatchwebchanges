@@ -5,6 +5,7 @@
  * Used by the React Recurring Jobs page.
  */
 
+import dayjs from 'dayjs';
 import {apiClient, RequestOptions, downloadBlob} from './apiClient';
 import {
     InsertRecurringToLiveRequest,
@@ -17,6 +18,29 @@ import {
     SpeedOption,
     transformPaginatedResponse,
 } from '../interfaces';
+import type {
+    RecurringJourney,
+    RecurringJourneyDto,
+    RecurringJourneyRunDto,
+    RecurringJourneyRun,
+} from '../components/common/recurring-delivery-journey/RecurringDeliveryJourney.types';
+
+function transformRecurringJourneyRun(dto: RecurringJourneyRunDto): RecurringJourneyRun {
+    return {
+        ...dto,
+        serviceDate: dayjs(dto.serviceDate),
+        pod: dto.pod
+            ? {time: dayjs(dto.pod.time), signedBy: dto.pod.signedBy}
+            : null,
+    };
+}
+
+function transformRecurringJourney(dto: RecurringJourneyDto): RecurringJourney {
+    return {
+        breakdown: dto.breakdown,
+        runs: (dto.runs || []).map(transformRecurringJourneyRun),
+    };
+}
 
 export const recurringJobsApi = {
     /**
@@ -73,6 +97,19 @@ export const recurringJobsApi = {
      */
     insertToLive: async (request: InsertRecurringToLiveRequest): Promise<InsertRecurringToLiveResult> => {
         return await apiClient.post<InsertRecurringToLiveResult>('job/InsertRecurringToLive', request);
+    },
+
+    /**
+     * Fetch the recurring log entries (one per spawned live job) plus
+     * breakdown counts for a recurring booking.
+     */
+    getDeliveryJourney: async (bookingId: number, options?: RequestOptions): Promise<RecurringJourney> => {
+        const response = await apiClient.get<RecurringJourneyDto>(
+            'job/GetRecurringJobDeliveryJourney',
+            {bookingId},
+            options,
+        );
+        return transformRecurringJourney(response);
     },
 };
 

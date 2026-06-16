@@ -126,7 +126,7 @@ public class AiJobSignalCalculatorTests
         {
             new() { Id = 1, Title = "T1", DueDate = Now.AddHours(-1), Closed = false },
             new() { Id = 2, Title = "T2", DueDate = Now.AddHours(-2), Closed = false },
-            new() { Id = 3, Title = "T3", DueDate = Now.AddHours(-3), Closed = false },
+            new() { Id = 3, Title = "T3", DueDate = Now.AddHours(-3), Closed = false }
         };
 
         var signals = AiJobSignalCalculator.Compute(job, [], events, Now);

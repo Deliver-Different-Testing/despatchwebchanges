@@ -1,5 +1,7 @@
 ﻿using DespatchWeb.EntityClasses;
+using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
+using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
 using NSubstitute;
 
@@ -1461,5 +1463,242 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Assert - no crash; grand total resolves to current ($50) since the delta parses to 0 - 0.
         var pricingEvent = Assert.Single(result);
         Assert.Equal(50m, pricingEvent.GrandTotalAfter);
+    }
+
+    // -------------------------------------------------------------------------
+    // GetDeliveryJourneyForRecurringBookingAsync
+    // -------------------------------------------------------------------------
+
+    private async Task SeedBookingsAsync(params TucJobBooking[] bookings)
+    {
+        await using var context = _db.CreateContext();
+        context.TucJobBookings.AddRange(bookings);
+        await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WithUnknownBooking_ReturnsEmpty()
+    {
+        var service = CreateService();
+
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(999);
+
+        Assert.NotNull(result);
+        Assert.Equal(0, result.Breakdown.Total);
+        Assert.Empty(result.Runs);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WithStandaloneRuns_ReturnsRunsWithNoChildren()
+    {
+        // Parent booking 100, no child templates. Three spawned tucJob rows
+        // (ParentID = NULL — the common standalone case from the SQL sample).
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 100 });
+        await SeedJobsAsync(
+            new TucJob
+            {
+                UcjbId = 3963, UcjbNumber = "KT409VANS",
+                UcjbDate = new DateTime(2025, 10, 27),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 0, // New → Pending
+                BookingParentId = 100,
+                TotalDistance = 9m
+            },
+            new TucJob
+            {
+                UcjbId = 3965, UcjbNumber = "KT411VANS",
+                UcjbDate = new DateTime(2025, 10, 29),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 1, // Despatched → InProgress
+                BookingParentId = 100,
+                TotalDistance = 9m
+            },
+            new TucJob
+            {
+                UcjbId = 3967, UcjbNumber = "KT413VANS",
+                UcjbDate = new DateTime(2025, 10, 31),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 6, // Completed
+                UcjbComplTime = new DateTime(2026, 3, 25, 1, 46, 13),
+                UcjbPodname = "Test POD",
+                BookingParentId = 100,
+                TotalDistance = 9m
+            });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(100);
+
+        Assert.Equal(3, result.Breakdown.Total);
+        Assert.Equal(1, result.Breakdown.Completed);
+        Assert.Equal(2, result.Breakdown.Pending); // 1 Pending + 1 InProgress collapse
+        Assert.Equal(0, result.Breakdown.Voided);
+        Assert.Equal(3, result.Runs.Count);
+
+        // Sorted newest-first by ServiceDate.
+        Assert.Equal(3967, result.Runs[0].ParentJobId);
+        Assert.Equal(3965, result.Runs[1].ParentJobId);
+        Assert.Equal(3963, result.Runs[2].ParentJobId);
+        Assert.All(result.Runs, run => Assert.Empty(run.Children));
+
+        var completed = result.Runs[0];
+        Assert.Equal(RecurringJourneyStatus.Completed, completed.Status);
+        Assert.NotNull(completed.Pod);
+        Assert.Equal("Test POD", completed.Pod.SignedBy);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WithMultiLegRun_ReturnsChildren()
+    {
+        // Mirror SQL #3 row 3966: parent ParentID = ucjbID = self, two children
+        // KT412VANSA / KT412VANSB pointing at the parent via ParentID = 3966.
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 108 });
+        await SeedJobsAsync(
+            new TucJob
+            {
+                UcjbId = 3966, UcjbNumber = "KT412VANS",
+                ParentId = 3966, // self-ref → root
+                UcjbDate = new DateTime(2025, 10, 30),
+                UcjbTime = new DateTime(1899, 12, 30, 20, 20, 0),
+                UcjbStatus = 0,
+                BookingParentId = 108,
+                TotalDistance = 9m
+            },
+            new TucJob
+            {
+                UcjbId = 29481, UcjbNumber = "KT412VANSA",
+                ParentId = 3966,
+                UcjbDate = new DateTime(2025, 10, 30),
+                UcjbStatus = 0,
+                BookingParentId = 108
+            },
+            new TucJob
+            {
+                UcjbId = 29482, UcjbNumber = "KT412VANSB",
+                ParentId = 3966,
+                UcjbDate = new DateTime(2025, 10, 30),
+                UcjbStatus = 0,
+                BookingParentId = 108
+            });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(108);
+
+        var run = Assert.Single(result.Runs);
+        Assert.Equal(3966, run.ParentJobId);
+        Assert.Equal("KT412VANS", run.ParentJobNumber);
+        Assert.Equal(2, run.Children.Count);
+        Assert.Equal("KT412VANSA", run.Children[0].JobNumber);
+        Assert.Equal("KT412VANSB", run.Children[1].JobNumber);
+    }
+
+    [Theory]
+    [InlineData(0, RecurringJourneyStatus.Pending)]      // New
+    [InlineData(16, RecurringJourneyStatus.Pending)]     // Awaiting Processing
+    [InlineData(100, RecurringJourneyStatus.Pending)]    // On Hold
+    [InlineData(6, RecurringJourneyStatus.Completed)]    // Completed
+    [InlineData(13, RecurringJourneyStatus.Completed)]   // Assuming Completed
+    [InlineData(1000, RecurringJourneyStatus.Voided)]    // Void
+    [InlineData(3, RecurringJourneyStatus.Voided)]       // Rejected
+    [InlineData(10, RecurringJourneyStatus.Voided)]      // Undeliverable
+    [InlineData(1001, RecurringJourneyStatus.Voided)]    // Missing
+    [InlineData(1, RecurringJourneyStatus.InProgress)]   // Despatched
+    [InlineData(11, RecurringJourneyStatus.InProgress)]  // In Transit
+    [InlineData(17, RecurringJourneyStatus.InProgress)]  // Out for Delivery
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_MapsStatusBuckets(int ucjbStatus, RecurringJourneyStatus expected)
+    {
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 200 });
+        await SeedJobsAsync(new TucJob
+        {
+            UcjbId = 1, UcjbNumber = "JOB1",
+            UcjbDate = new DateTime(2025, 11, 1),
+            UcjbStatus = ucjbStatus,
+            BookingParentId = 200
+        });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(200);
+
+        var run = Assert.Single(result.Runs);
+        Assert.Equal(expected, run.Status);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_AppliesLimitToParentRuns()
+    {
+        // Seed 5 standalone parent runs, ask for limit=2 — service should
+        // return the 2 newest by ucjbDate (then ucjbTime, then ucjbId).
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 400 });
+        await SeedJobsAsync(
+            Enumerable.Range(0, 5).Select(i => new TucJob
+            {
+                UcjbId = 100 + i,
+                UcjbNumber = $"JOB{i}",
+                UcjbDate = new DateTime(2025, 11, 1 + i),
+                UcjbStatus = 0,
+                BookingParentId = 400,
+            }).ToArray());
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(400, limit: 2);
+
+        Assert.Equal(2, result.Runs.Count);
+        Assert.Equal("JOB4", result.Runs[0].ParentJobNumber);
+        Assert.Equal("JOB3", result.Runs[1].ParentJobNumber);
+        // Breakdown reflects the loaded slice, not all 5 rows.
+        Assert.Equal(2, result.Breakdown.Total);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_LimitZeroOrNegative_ReturnsEmpty()
+    {
+        await SeedBookingsAsync(new TucJobBooking { UcbkId = 500 });
+        await SeedJobsAsync(new TucJob
+        {
+            UcjbId = 1,
+            UcjbNumber = "JOB",
+            UcjbDate = new DateTime(2025, 11, 1),
+            UcjbStatus = 0,
+            BookingParentId = 500,
+        });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(500, limit: 0);
+
+        Assert.Empty(result.Runs);
+        Assert.Equal(0, result.Breakdown.Total);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForRecurringBookingAsync_WhenIdIsChild_ResolvesParentFamily()
+    {
+        // Family: parent template 300 + one child template 301. Both spawn
+        // tucJob rows. Caller passes the CHILD id (301) — we should still
+        // return jobs spawned from the whole family.
+        await SeedBookingsAsync(
+            new TucJobBooking { UcbkId = 300 },
+            new TucJobBooking { UcbkId = 301, BookingParentId = 300 });
+
+        await SeedJobsAsync(
+            new TucJob
+            {
+                UcjbId = 10, UcjbNumber = "JOB-A",
+                UcjbDate = new DateTime(2025, 11, 1),
+                UcjbStatus = 6,
+                BookingParentId = 300
+            },
+            new TucJob
+            {
+                UcjbId = 11, UcjbNumber = "JOB-B",
+                UcjbDate = new DateTime(2025, 11, 2),
+                UcjbStatus = 6,
+                BookingParentId = 301
+            });
+
+        var service = CreateService();
+        var result = await service.GetDeliveryJourneyForRecurringBookingAsync(301);
+
+        Assert.Equal(2, result.Runs.Count);
+        Assert.Contains(result.Runs, r => r.ParentJobNumber == "JOB-A");
+        Assert.Contains(result.Runs, r => r.ParentJobNumber == "JOB-B");
     }
 }

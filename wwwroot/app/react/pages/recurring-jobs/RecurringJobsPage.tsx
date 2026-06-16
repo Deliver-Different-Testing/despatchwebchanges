@@ -41,6 +41,7 @@ import {RecurringJobsTable} from './components/RecurringJobsTable';
 import {RecurringJobsToolbar, RecurringJobsFilters} from './components/RecurringJobsToolbar';
 import {RecurringJobsContextMenu} from './components/RecurringJobsContextMenu';
 import {InsertToLiveDialog} from './components/InsertToLiveDialog';
+import {RecurringDeliveryJourney} from '../../components/common/recurring-delivery-journey/RecurringDeliveryJourney';
 
 const DEFAULT_QUERY: RecurringJobQuery = {
     order: 'booked',
@@ -275,8 +276,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             bgcolor: 'background.default',
         }}>
             <PanelGroup direction="horizontal" autoSaveId="recurring-jobs-layout">
-            {/* Left Panel: Filters + Table (~55%) */}
-            <Panel defaultSize={55} minSize={25}>
+            {/* Left Panel: Filters + Table (~40%) */}
+            <Panel defaultSize={40} minSize={25}>
             <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, minWidth: 0}}>
                 {/* Filters Card */}
                 <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
@@ -366,8 +367,8 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                 <Box sx={resizeHandleSx} />
             </PanelResizeHandle>
 
-            {/* Right Panel: Job Details (~45%) */}
-            <Panel defaultSize={45} minSize={25}>
+            {/* Middle Panel: Job Details (~35%) */}
+            <Panel defaultSize={35} minSize={20}>
             <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
                 <Card
                     variant="outlined"
@@ -405,6 +406,19 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                         </ErrorBoundary>
                     </Box>
                 </Card>
+            </Box>
+            </Panel>
+
+            <PanelResizeHandle>
+                <Box sx={resizeHandleSx} />
+            </PanelResizeHandle>
+
+            {/* Right Panel: Recurring Log (~25%) */}
+            <Panel defaultSize={25} minSize={20}>
+            <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0}}>
+                <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
+                    <RecurringDeliveryJourney bookingId={selectedJobId} />
+                </ErrorBoundary>
             </Box>
             </Panel>
             </PanelGroup>
