@@ -29,7 +29,6 @@ type EntryPointName =
     | 'appShellReact'
     | 'errorPageReact'
     | 'recurringJobsReact'
-    | 'additionalServicesDialogReact'
     | 'accessorialChargesDialogReact'
     | 'bulkPriceUploadDialogReact'
     | 'messagingDialogReact'
@@ -81,7 +80,6 @@ const entryPoints: EntryPoints = {
     appShellReact: path.join(rootDir, "wwwroot/app/react/components/common/app-shell/app-shell-react.module.tsx"),
     errorPageReact: path.join(rootDir, "wwwroot/app/react/pages/error-page/error-page-react.module.tsx"),
     recurringJobsReact: path.join(rootDir, "wwwroot/app/react/pages/recurring-jobs/recurring-jobs-react.module.tsx"),
-    additionalServicesDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/additional-services-dialog/additional-services-dialog-react.module.tsx"),
     accessorialChargesDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/accessorial-charges-dialog/accessorial-charges-dialog-react.module.tsx"),
     bulkPriceUploadDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/bulk-price-upload-dialog/bulk-price-upload-dialog-react.module.tsx"),
     messagingDialogReact: path.join(rootDir, "wwwroot/app/react/components/dialogs/messaging-dialog/messaging-dialog-react.module.tsx"),
@@ -384,7 +382,7 @@ function createReactGlobalShimPlugin(): esbuild.Plugin {
 const baseBuildOptions: esbuild.BuildOptions = {
     bundle: true,
     format: "iife",
-    target: ["es2020"],  // Modern browsers - smaller output than es2015
+    target: ["es2020"],
     mainFields: ["browser", "module", "main"],
     loader: {
         ".js": "js",

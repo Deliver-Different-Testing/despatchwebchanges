@@ -490,7 +490,7 @@ export function JobDetails({config}: JobDetailsProps) {
                     <Box sx={{mx: 1.5, mt: 1}}>
                         <AiSummaryCard
                             key={job.id}
-                            title="DFRNT Job Briefing"
+                            title="Auto-mate Job Briefing"
                             fetchSummary={(signal) => summarizeJob(job.id, {signal})}
                             collapsible
                         />

@@ -1296,18 +1296,6 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Voids a prebook/recurring job.
-    /// </summary>
-    /// <param name="jobId">The prebook job ID to void.</param>
-    public async Task VoidPrebookJobAsync(int jobId)
-    {
-        var staffInfo = await _infoService.GetStaffInfoAsync();
-        if (staffInfo is null) throw new NullReferenceException("Staff Info cannot be null");
-        await Context.Procedures.DESWEB_stpVoidPrebookJobAsync(jobId, staffInfo.Text, staffInfo.Id);
-    }
-
-
-    /// <summary>
     /// Updates the delivery address for a job (active or archived).
     /// </summary>
     /// <param name="request">Request containing job ID and new address details.</param>
@@ -1615,7 +1603,9 @@ public partial class JobRepository(
     }
 
     /// <summary>
-    /// Creates paired jobs for an inter-courier charge transfer between two couriers.
+    /// Creates paired phantom jobs for an inter-courier charge transfer between two couriers.
+    /// The jobs are inserted directly as already-completed and hidden from dispatch — they exist
+    /// only to move money between couriers, not as real work to be performed.
     /// </summary>
     /// <param name="viewModel">The inter-courier charge details including from/to courier and amount.</param>
     public async Task AddInterCourierChargeAsync(InterCourierChargeViewModel viewModel)
@@ -1624,10 +1614,9 @@ public partial class JobRepository(
         {
             var staffId = _infoService.GetStaffId();
             var currentTime = _clock.TenantNow;
-
             var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
 
-            // Custom context to run a job number stored process in parallel 
+            // Parallel job-number generation requires separate contexts (stored proc per context).
             await using var fromJobNumberContext = await _contextFactory.CreateDbContextAsync();
             await using var toJobNumberContext = await _contextFactory.CreateDbContextAsync();
 
@@ -1636,61 +1625,19 @@ public partial class JobRepository(
             var toJobNumber =
                 await GenerateJobNumberAsync(staffId, (int)JobServiceType.AllServices, toJobNumberContext);
 
-            var address = new AddressViewModel("Inter-Courier Charge", string.Empty, string.Empty, string.Empty,
-                string.Empty, string.Empty, string.Empty, string.Empty);
+            var fromJob = CreateIccJobEntry(
+                fromJobNumber, viewModel.ClientId, viewModel.FromCourierId, viewModel.Amount,
+                viewModel.Reference, $"To # {viewModel.ToCourierId}", "ICC",
+                note, currentTime, staffId);
 
-            var staffName = await GetStaffNameAsync(staffId);
-            var speed = await GetDefaultSpeedType();
+            var toJob = CreateIccJobEntry(
+                toJobNumber, viewModel.ClientId, viewModel.ToCourierId, viewModel.Amount,
+                viewModel.Reference, $"From # {viewModel.FromCourierId}", string.Empty,
+                note, currentTime, staffId);
 
-            var fromJobResult = await CreateMinimalTucJobAsync(
-                new CreateMinimalTucJobInputModel
-                {
-                    JobNumber = fromJobNumber,
-                    FromAddress = address,
-                    ToAddress = address,
-                    BookedBy = staffName,
-                    ClientId = viewModel.ClientId,
-                    AgentCourierId = viewModel.FromCourierId,
-                    Speed = speed.Text,
-                    SpeedId = speed.Id,
-                    Amount = viewModel.Amount,
-                    Reference = $"To # {viewModel.ToCourierId}",
-                    ReferenceB = "ICC",
-                    Notes = note,
-                    TenantCurrentTime = currentTime,
-                    LoggedInContactId = staffId
-                }
-            );
-
-            if (!fromJobResult.Success)
-            {
-                throw new Exception($"Failed to create FROM job: {fromJobResult.Message}");
-            }
-
-            var toJobResult = await CreateMinimalTucJobAsync(
-                new CreateMinimalTucJobInputModel
-                {
-                    JobNumber = toJobNumber,
-                    FromAddress = address,
-                    ToAddress = address,
-                    BookedBy = staffName,
-                    ClientId = viewModel.ClientId,
-                    AgentCourierId = viewModel.ToCourierId,
-                    Speed = speed.Text,
-                    SpeedId = speed.Id,
-                    Amount = viewModel.Amount,
-                    Reference = $"From # {viewModel.FromCourierId}",
-                    ReferenceB = string.Empty,
-                    Notes = note,
-                    TenantCurrentTime = currentTime,
-                    LoggedInContactId = staffId
-                }
-            );
-
-            if (!toJobResult.Success)
-            {
-                throw new Exception($"Failed to create TO job: {toJobResult.Message}");
-            }
+            await using var insertContext = await _contextFactory.CreateDbContextAsync();
+            await createJobService.InsertJobRawAsync(insertContext, fromJob, CancellationToken.None);
+            await createJobService.InsertJobRawAsync(insertContext, toJob, CancellationToken.None);
         }
         catch (Exception e)
         {
@@ -1699,6 +1646,72 @@ public partial class JobRepository(
                     nameof(AddInterCourierChargeAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Builds a phantom inter-courier-charge job — created in the Completed state and hidden
+    /// from dispatch. Mirrors the pre-2025-09-24 field set; the unified CreateJobService path
+    /// is unsuitable here because it produces live dispatch-board jobs and runs client-default
+    /// validation that the ICC payload doesn't satisfy.
+    /// </summary>
+    internal static TucJob CreateIccJobEntry(
+        string jobNumber,
+        int clientId,
+        int courierId,
+        decimal amount,
+        string reference,
+        string clientRefB,
+        string ourRef,
+        string note,
+        DateTime currentTime,
+        int staffId)
+    {
+        return new TucJob
+        {
+            UcjbNumber = jobNumber,
+            UcjbDate = currentTime,
+            UcjbTime = currentTime,
+            UcjbType = (int)JobServiceType.AllServices,
+            UcjbClientId = clientId,
+            UcjbContact = $"Courier {courierId}",
+            UcjbChargeType = 3,
+            UcjbAmount = amount,
+            UcjbSpeed = 1,
+            PickupAddressLine1 = note,
+            DeliveryAddressLine1 = "ToSP",
+            UcjbSize = 1,
+            UcjbQty = 1,
+            UcjbCbd = false,
+            UcjbKm = 0,
+            UcjbFlightDetails = "FD",
+            UcjbWeight = 1,
+            UcjbCourierId = courierId,
+            UcjbClientRefa = (reference ?? string.Empty)[..Math.Min((reference ?? string.Empty).Length, 20)],
+            UcjbClientRefb = (clientRefB ?? string.Empty)[..Math.Min((clientRefB ?? string.Empty).Length, 15)],
+            UcjbOurRef = (ourRef ?? string.Empty)[..Math.Min((ourRef ?? string.Empty).Length, 20)],
+            UcjbOpId = staffId,
+            UcjbVan = false,
+            Truck = false,
+            UcjbReturn = false,
+            UcjbVoid = false,
+            UcjbAttention = false,
+            UcjbPickUpFrom = 0,
+            UcjbPaged = true,
+            UcjbClientCode = "ZZZ!!",
+            UcjbRefJobId = 0,
+            UcjbNotes = string.Empty,
+            UcjbStatus = (int)JobStatus.Completed,
+            UcjbComplTime = currentTime,
+            UcjbPodname = $"Courier {courierId}",
+            UcjbJobDone = true,
+            ProofOfDelivery = 0,
+            SourceId = (int)JobSource.DespatchWeb,
+            Reprice = false,
+            FuelSurchargeAmount = 0,
+            DeliverToPrivateBusiness = 0,
+            UcjbDispTime = currentTime,
+            DisplayInDespatch = false,
+        };
     }
 
     /// <summary>
@@ -5099,14 +5112,6 @@ public partial class JobRepository(
 
         await CreateNewRecurringJobNote(prebookJobId, note, false);
     }
-
-    private async Task<Suggestion> GetDefaultSpeedType() => await Context.TucJobTypes
-        .Select(t => new Suggestion
-        {
-            Id = t.UcjtId,
-            Text = t.SystemName
-        })
-        .FirstOrDefaultAsync();
 
     private async Task<JobInfo> GetJobInfo(int jobId) =>
         await Context

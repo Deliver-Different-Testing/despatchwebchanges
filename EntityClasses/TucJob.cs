@@ -493,6 +493,14 @@ public partial class TucJob
 
     public int? PartnerPairingId { get; set; }
 
+    public decimal? SubContractorPaymentAmount { get; set; }
+
+    public decimal? SubContractorFuelAmount { get; set; }
+
+    public decimal? SubContractorBonusAmount { get; set; }
+
+    public string MasterSubSettlementMode { get; set; }
+
     public virtual TucJobType AcceptedJobType { get; set; }
 
     public virtual AccessorialChargeGroup AccessorialChargeGroup { get; set; }

@@ -100,10 +100,6 @@
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.min.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\add-pallet-dialog\add-pallet-dialog.Controller.min.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.js.map" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.min.js" />
-    <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\additional-services-dialog\additional-services-dialog.controller.min.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.js" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.js.map" />
     <_ContentIncludedByDefault Remove="wwwroot\dist\components\dialogs\auto-complete-dialog\auto-complete-dialog.controller.min.js" />
@@ -259,11 +255,6 @@
     <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.interface.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.styles.less" />
     <_ContentIncludedByDefault Remove="wwwroot\app\components\overview\mega-map\loading-dialog\loading-dialog.template.html" />
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.layout.less" />
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.template.html" />
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.controller.ts" />
-    <_ContentIncludedByDefault Remove="wwwroot\app\components\dialogs\feature-in-development-dialog\flight-agent-conformation-dialog\flight-agent-conformation-dialog.interfaces.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\types\html.d.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-datepicker.directive.ts" />
     <_ContentIncludedByDefault Remove="wwwroot\app\directives\dayjs-timepicker.directive.ts" />
@@ -293,7 +284,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="efpt.config.json.user" />
-    <None Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.html" />
     <None Include="wwwroot\css\udispatch.less" />
   </ItemGroup>
   <ItemGroup>
@@ -324,102 +314,6 @@
   </ItemGroup>
   <ItemGroup>
     <AdditionalFiles Include="BannedSymbols.txt" />
-  </ItemGroup>
-  <ItemGroup>
-    <TypeScriptCompile Include="wwwroot\app\components\base-controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\task-item-config.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\app-shell\app-shell.types.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\no-data\types.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\pod-photo-viewer\pod-photo-viewer.types.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\side-nav\SideNav.types.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.tsx" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\StickyNotes.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\common\sticky-notes\sticky-notes-react.module.tsx" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\auto-complete-dialog\auto-complete-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\create-job-dialog\create-job-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\dashboard-settings-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsConfig.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\dashboard-settings-dialog\interfaces\IDashboardSettingsDialogResult.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-agent-conformation-dialog\flight-agent-confirmation-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\flight-details-dialog\flight-details-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\messaging-dialog\messaging-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\simple-price-edit-dialog\simple-price-edit-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\truck-courier-status-dialog\truck-courier-status-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\void-job-confirmation-dialog\void-job-confirmation-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\jobSearchBoxes.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\JobSearchDateRange.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\enums\podSearchResponse.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\interfaces\IScanDetailResult.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.module.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\jobSearch\jobSearch.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\additional-services-dialog\additional-services-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-address-dialog\edit-address-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-date-time-dialog\edit-date-time-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\edit-parcel-dimensions-dialog\edit-parcel-dimensions-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.controller.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\feature-in-development-dialog\feature-in-development-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\job-file-upload-dialog\job-file-upload-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\price-breakdown-dialog\price-breakdown-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\dialogs\select-dialog\select-dialog.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\JobDataType.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\enums\NationwideBoxes.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\filters\minutesToTimeFilter.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.module.ts" />
-    <TypeScriptCompile Include="wwwroot\app\components\Nationwide\nationwide.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\contants.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\app-pages.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\dangerous-goods.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\days-of-week.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\densityMode.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\event-type.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\file-upload-type.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\frequency.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\holiday-delivery-options.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\job-internal-status.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\job-note-type.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\job-photo-type.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\job-property.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\job-status.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\late-event-type.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\message-delivery-type.enum.ts" />
-    <TypeScriptCompile Include="wwwroot\app\enums\podPhotoType.ts" />
-    <TypeScriptCompile Include="wwwroot\app\filters.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\countSubJobs.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\dtoMappings.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\isDefaultLayout.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\MinsSelectionOptions.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\setDateFilterDefaults.ts" />
-    <TypeScriptCompile Include="wwwroot\app\functions\toDtoMappings.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\app-config.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\apiConfig.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\aws.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\context-menu-option.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\courier.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\dfrnt-page-view-model.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\DfrntStateParams.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\dialog-result.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\dispatch-executor-service.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\event-group-view-model.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\event-interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapCredentials.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\heremaps-autocomplete.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\hereMapsAppConfig.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\job.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\layout.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-request.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\paginated-response.interface.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\requests.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\interfaces\task-request.interfaces.ts" />
-    <TypeScriptCompile Include="wwwroot\app\materialTheme.ts" />
-    <TypeScriptCompile Include="wwwroot\app\react\components\dialogs\note-management-dialog\types.ts" />
-    <TypeScriptCompile Include="wwwroot\app\tests\mocks\dateUtilsMock.ts" />
-    <TypeScriptCompile Include="wwwroot\app\routes.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\config.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\dispatch-executor.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\job-add-stop.service.ts" />
-    <TypeScriptCompile Include="wwwroot\app\services\tasks.service.ts" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="wwwroot\dist\" />

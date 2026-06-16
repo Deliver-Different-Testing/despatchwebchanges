@@ -15,7 +15,6 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
-import TextField from '@mui/material/TextField';
 import TodayIcon from '@mui/icons-material/Today';
 import CloseIcon from '@mui/icons-material/Close';
 import PublicIcon from '@mui/icons-material/Public';
@@ -96,14 +95,10 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
         }
     }, []);
 
-    // Handle native time input change (preserves existing date)
-    const handleNativeTimeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        if (val) {
-            const [h, m] = val.split(':').map(Number);
-            if (!isNaN(h) && !isNaN(m)) {
-                setDateTime(prev => prev.hour(h).minute(m).second(0));
-            }
+    // Handle time-only change (preserves existing date)
+    const handleTimeChange = useCallback((newValue: Dayjs | null) => {
+        if (newValue && newValue.isValid()) {
+            setDateTime(prev => prev.hour(newValue.hour()).minute(newValue.minute()).second(0));
         }
     }, []);
 
@@ -263,7 +258,11 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                         {/* Date/Time Picker */}
                         <Box sx={{ display: 'flex', gap: 2 }}>
                             {showDate && showTime ? (
-                                // Show separate date and time pickers for better UX
+                                // Separate date and time pickers for better UX.
+                                // Use MUI's TimePicker (not native <input type="time">)
+                                // so the 24-hour display is locale-independent —
+                                // browsers force AM/PM under US locale even when
+                                // the bound value is in HH:mm.
                                 (<>
                                     <DatePicker
                                         value={dateTime}
@@ -278,17 +277,20 @@ export const EditDateTimeDialog: React.FC<EditDateTimeDialogProps> = ({
                                             },
                                         }}
                                     />
-                                    <TextField
-                                        label="Time (24-hour)"
-                                        type="time"
-                                        value={dateTime.format('HH:mm')}
-                                        onChange={handleNativeTimeChange}
+                                    <TimePicker
+                                        value={dateTime}
+                                        onChange={handleTimeChange}
                                         disabled={isLoading}
-                                        fullWidth
+                                        label="Time (24-hour)"
+                                        ampm={false}
+                                        format="HH:mm"
+                                        timeSteps={{ minutes: 1 }}
                                         slotProps={{
-                                            htmlInput: { step: 60 },
+                                            textField: {
+                                                fullWidth: true,
+                                                sx: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } },
+                                            },
                                         }}
-                                        sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                                     />
                                 </>)
                             ) : (

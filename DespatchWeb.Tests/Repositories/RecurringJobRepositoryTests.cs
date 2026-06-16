@@ -313,6 +313,43 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task UpdateRecurringJobAsync_BookedTime_UpdatesBothUcbkDateAndUcbkTime()
+    {
+        // Arrange — the Ready card reads UcbkDate.CombineWithTime(UcbkTime),
+        // so an edit that only writes UcbkDate leaves the time stale and the
+        // new time bleeds into the Created card (which renders raw UcbkDate).
+        const int jobId = 100;
+        var originalDate = new DateTime(2024, 3, 4, 0, 0, 0);
+        var originalTime = new DateTime(2024, 3, 4, 6, 0, 0);
+
+        _context.TucJobBookings.Add(CreateJobBookingWithDates(
+            id: jobId,
+            date: originalDate,
+            time: originalTime,
+            nextDue: null,
+            active: true,
+            oneOff: false));
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var newDateTime = new DateTimeOffset(2024, 3, 3, 15, 20, 0, TimeSpan.Zero);
+        var repository = CreateRepository();
+
+        // Act
+        await repository.UpdateRecurringJobAsync(jobId, JobProperty.BookedTime, newDateTime.ToString("O"));
+
+        _context.ChangeTracker.Clear();
+
+        // Assert — both UcbkDate AND UcbkTime carry the new value; the stale
+        // 6am time from UcbkTime must not survive.
+        var updatedJob = await _context.TucJobBookings.FindAsync([jobId], TestContext.Current.CancellationToken);
+        Assert.Equal(newDateTime.DateTime, updatedJob!.UcbkDate);
+        Assert.Equal(newDateTime.DateTime, updatedJob.UcbkTime);
+        Assert.NotEqual(originalTime, updatedJob.UcbkTime);
+        Assert.Equal(15, updatedJob.UcbkTime!.Value.Hour);
+        Assert.Equal(20, updatedJob.UcbkTime!.Value.Minute);
+    }
+
+    [Fact]
     public async Task GetRecurringJobsListAsync_WithValidDates_AppliesTimezoneConversion()
     {
         // Arrange
@@ -1068,6 +1105,14 @@ public class RecurringJobRepositoryTests : IAsyncDisposable
             CreateJobBookingWithDates(102, TestDates.Now, null, null, false, false) // Inactive
         );
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        // RecurringMode is configured with HasDefaultValue((byte)1) so EF treats
+        // the CLR-default 0 as the sentinel and omits the column from INSERTs,
+        // letting the DB default (=Active) take over. Re-stamp Inactive rows
+        // explicitly so the fixture matches what active=false intended.
+        await _context.TucJobBookings
+            .Where(j => j.UcbkId == 102)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.RecurringMode,
+                (byte)RecurringMode.Inactive), TestContext.Current.CancellationToken);
         var repository = CreateRepository();
 
         var request = new RecurringJobQueryRequest { Active = true };

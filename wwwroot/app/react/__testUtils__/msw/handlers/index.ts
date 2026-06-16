@@ -20,7 +20,6 @@ import { nationwideHandlers } from './nationwideHandlers';
 import { bulkPriceHandlers } from './bulkPriceHandlers';
 import { driverManagementHandlers } from './driverManagementHandlers';
 import { overviewHandlers } from './overviewHandlers';
-import { additionalServicesHandlers } from './additionalServicesHandlers';
 import { jobSearchHandlers } from './jobSearchHandlers';
 import { fileUploadHandlers } from './fileUploadHandlers';
 
@@ -41,7 +40,6 @@ export const handlers = [
     ...bulkPriceHandlers,
     ...driverManagementHandlers,
     ...overviewHandlers,
-    ...additionalServicesHandlers,
     ...jobSearchHandlers,
     ...fileUploadHandlers,
 ];
@@ -63,7 +61,6 @@ export { nationwideHandlers } from './nationwideHandlers';
 export { bulkPriceHandlers } from './bulkPriceHandlers';
 export { driverManagementHandlers } from './driverManagementHandlers';
 export { overviewHandlers } from './overviewHandlers';
-export { additionalServicesHandlers } from './additionalServicesHandlers';
 export { jobSearchHandlers } from './jobSearchHandlers';
 export { fileUploadHandlers } from './fileUploadHandlers';
 
@@ -83,6 +80,5 @@ export { mockFlightCargoProcessingDto, mockFlightViewModelDtos } from './nationw
 export { mockBulkPricePreviewResponse } from './bulkPriceHandlers';
 export { mockFleetOptions, mockCourierSearchResults, mockCourierDetails, mockTodayActiveDrivers, mockComplianceList, mockAfterHoursSchedule, mockDriverEmails, mockDriverEarnings } from './driverManagementHandlers';
 export { mockOverviewStats, mockOverviewRegions, mockOverviewSpeeds, mockOverviewJobsResponse, mockOverviewParentJobs, mockOpenJobDtos, mockMapConfig } from './overviewHandlers';
-export { mockAdditionalServices, mockPaginatedServices, mockPpdExclusiveAmount } from './additionalServicesHandlers';
 export { mockDispatchJobDto, mockJobSearchResultDto, mockEmptySearchResult } from './jobSearchHandlers';
 export { mockAttachedFiles, mockDeliveryPhotos } from './fileUploadHandlers';

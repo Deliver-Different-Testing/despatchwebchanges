@@ -71,6 +71,7 @@ const frequencyOptions = [
 const holidayOptions = [
     {value: HolidayDeliveryOptions.DontBook, label: "Don't Book"},
     {value: HolidayDeliveryOptions.DeliverNextDay, label: 'Deliver Next Day'},
+    {value: HolidayDeliveryOptions.BookAnyway, label: 'Book Anyway'},
 ];
 
 const captionSx = {

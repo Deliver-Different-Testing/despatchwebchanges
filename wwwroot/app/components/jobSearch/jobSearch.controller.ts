@@ -137,6 +137,10 @@ class JobSearchController extends BaseController {
         this.initializeBoxes();
         this.initializeOldLayoutSystem();
 
+        this.watchEvent('angular-resizable.resizeEnd', () => {
+            this.saveCurrentLayout();
+        });
+
         // New map
         this.mapCenter = appConfig.US_Customer ?
             appConfig.US_Coordinates_Center :

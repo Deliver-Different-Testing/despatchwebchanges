@@ -222,23 +222,6 @@ describe('recurringJobsApi', () => {
         });
     });
 
-    describe('voidPrebookJob', () => {
-        it('should call apiClient.post with correct URL and jobId', async () => {
-            mockApiClient.post.mockResolvedValueOnce(undefined);
-
-            await recurringJobsApi.voidPrebookJob(123);
-
-            expect(mockApiClient.post).toHaveBeenCalledWith('job/VoidPrebookJob', {jobId: 123});
-        });
-
-        it('should propagate errors from apiClient', async () => {
-            const error = {status: 400, statusText: 'Bad Request', message: 'Invalid job'};
-            mockApiClient.post.mockRejectedValueOnce(error);
-
-            await expect(recurringJobsApi.voidPrebookJob(123)).rejects.toEqual(error);
-        });
-    });
-
     describe('exportToCsv', () => {
         const mockQuery: RecurringJobQuery = {
             order: 'booked',

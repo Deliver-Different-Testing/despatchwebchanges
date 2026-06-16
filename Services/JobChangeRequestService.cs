@@ -38,7 +38,6 @@ public sealed class JobChangeRequestService(
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
 
         var job = await ctx.TucJobs
-            .AsNoTracking()
             .Where(j => j.UcjbId == request.JobId)
             .FirstOrDefaultAsync(ct);
 
@@ -166,7 +165,7 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        var row = await ctx.TucJobChangeRequests.AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
         {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
@@ -314,7 +313,7 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        var row = await ctx.TucJobChangeRequests.AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
         {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
@@ -391,7 +390,7 @@ public sealed class JobChangeRequestService(
         CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests.FirstOrDefaultAsync(r => r.UjcrId == id, ct);
+        var row = await ctx.TucJobChangeRequests.AsTracking().FirstOrDefaultAsync(r => r.UjcrId == id, ct);
         if (row is null)
         {
             return new JobChangeRequestResult { Success = false, Message = "Change request not found" };
@@ -479,7 +478,6 @@ public sealed class JobChangeRequestService(
             // many but not this specific one (data loss specific to this job). Pull a small
             // sample of recent partner GUIDs so the CloudWatch log line is self-diagnosing.
             var recent = await ctx.TucJobs
-                .AsNoTracking()
                 .Where(j => j.PartnerJobGuid.HasValue)
                 .OrderByDescending(j => j.UcjbId)
                 .Take(10)
@@ -571,7 +569,7 @@ public sealed class JobChangeRequestService(
         PeerInboundChangeDecisionPayload payload, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests
+        var row = await ctx.TucJobChangeRequests.AsTracking()
             .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid, ct);
         if (row is null)
         {
@@ -605,7 +603,7 @@ public sealed class JobChangeRequestService(
         PeerInboundChangeAppliedPayload payload, CancellationToken ct)
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
-        var row = await ctx.TucJobChangeRequests
+        var row = await ctx.TucJobChangeRequests.AsTracking()
             .FirstOrDefaultAsync(r => r.UjcrSourceRequestUuid == sourceUuid, ct);
         if (row is null)
         {
@@ -662,7 +660,6 @@ public sealed class JobChangeRequestService(
     {
         await using var ctx = await contextFactory.CreateDbContextAsync(ct);
         var rows = await ctx.TucJobChangeRequests
-            .AsNoTracking()
             .Where(r => r.UjcrJobId == jobId)
             .OrderByDescending(r => r.UjcrId)
             .Take(ListForJobMaxRows)
@@ -681,10 +678,10 @@ public sealed class JobChangeRequestService(
         // Join through TucJobs → TucClients in a single round-trip so the inbox page
         // doesn't N+1-fetch job details for every row.
         var query =
-            from r in ctx.TucJobChangeRequests.AsNoTracking()
+            from r in ctx.TucJobChangeRequests
             where r.UjcrStatus == JobChangeRequestStatus.Pending && r.UjcrOrigin == "Peer"
-            join j in ctx.TucJobs.AsNoTracking() on r.UjcrJobId equals j.UcjbId
-            join c in ctx.TucClients.AsNoTracking() on j.UcjbClientId equals c.UcclId into clients
+            join j in ctx.TucJobs on r.UjcrJobId equals j.UcjbId
+            join c in ctx.TucClients on j.UcjbClientId equals c.UcclId into clients
             from c in clients.DefaultIfEmpty()
             orderby r.UjcrId descending
             select new { Row = r, JobNo = j.UcjbNumber, ClientName = c != null ? c.UcclName : null };
@@ -1015,7 +1012,6 @@ public sealed class JobChangeRequestService(
         if (requestedPairingId is { } pairingId)
         {
             var explicitMatch = await ctx.IntMgrPartnerPairings
-                .AsNoTracking()
                 .Where(p => p.Id == pairingId)
                 .FirstOrDefaultAsync(ct);
             if (explicitMatch is null)
@@ -1034,7 +1030,6 @@ public sealed class JobChangeRequestService(
         if (!string.IsNullOrWhiteSpace(partnerTenantId))
         {
             var byTenant = await ctx.IntMgrPartnerPairings
-                .AsNoTracking()
                 .Where(p => p.PartnerTenantId == partnerTenantId && p.Status == "Active")
                 .Take(2)
                 .ToListAsync(ct);
@@ -1050,7 +1045,6 @@ public sealed class JobChangeRequestService(
         }
 
         var actives = await ctx.IntMgrPartnerPairings
-            .AsNoTracking()
             .Where(p => p.Status == "Active")
             .Take(2)
             .ToListAsync(ct);

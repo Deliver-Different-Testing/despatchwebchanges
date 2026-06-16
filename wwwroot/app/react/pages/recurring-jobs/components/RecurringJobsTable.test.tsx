@@ -125,9 +125,9 @@ describe('RecurringJobsTable', () => {
             expect(onRowClick).toHaveBeenCalledTimes(1);
             expect(onRowClick).toHaveBeenCalledWith(jobs[0]);
 
-            // Delete button click
-            const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-            fireEvent.click(deleteButton);
+            // Deactivate button click
+            const deactivateButton = screen.getByRole('button', {name: 'Deactivate'});
+            fireEvent.click(deactivateButton);
             expect(onDeleteClick).toHaveBeenCalledTimes(1);
             expect(onDeleteClick).toHaveBeenCalledWith(jobs[0]);
 

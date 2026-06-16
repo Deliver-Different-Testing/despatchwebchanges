@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, within} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 import dayjs from 'dayjs';
@@ -98,8 +98,10 @@ describe('RecurringJobFields', () => {
         );
     });
 
-    it('renders schedule fields', () => {
-        renderWithTheme(<RecurringJobFields {...createDefaultProps()} />);
+    it('renders schedule fields and the full holiday-option set, firing onHolidayOptionChange with the enum value', async () => {
+        const user = userEvent.setup();
+        const onHolidayOptionChange = jest.fn();
+        renderWithTheme(<RecurringJobFields {...createDefaultProps({onHolidayOptionChange})} />);
         expect(screen.getByText('First Due')).toBeInTheDocument();
         expect(screen.getByText('Stop Date')).toBeInTheDocument();
         expect(screen.getByText('Restart Date')).toBeInTheDocument();
@@ -107,6 +109,22 @@ describe('RecurringJobFields', () => {
         expect(frequencyLabels.length).toBeGreaterThanOrEqual(1);
         const holidayLabels = screen.getAllByText('Holiday');
         expect(holidayLabels.length).toBeGreaterThanOrEqual(1);
+
+        // Open the Holiday Select — MUI renders options into a portal popover
+        // on click, so we have to expand it before option text is queryable.
+        // MUI's plain Select doesn't link the InputLabel via aria-labelledby
+        // (the label is positioned visually but not in the a11y tree), so
+        // by-name role queries don't work; instead, take the second combobox
+        // since Frequency renders first in the same Stack.
+        const comboboxes = screen.getAllByRole('combobox');
+        await user.click(comboboxes[1]);
+        const holidayListbox = await screen.findByRole('listbox');
+        expect(within(holidayListbox).getByText("Don't Book")).toBeInTheDocument();
+        expect(within(holidayListbox).getByText('Deliver Next Day')).toBeInTheDocument();
+        expect(within(holidayListbox).getByText('Book Anyway')).toBeInTheDocument();
+
+        await user.click(within(holidayListbox).getByText('Book Anyway'));
+        expect(onHolidayOptionChange).toHaveBeenCalledWith(2);
     });
 
     it('calls onEditFirstDue when First Due is clicked', () => {

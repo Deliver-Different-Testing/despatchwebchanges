@@ -366,7 +366,7 @@ public partial class JobRepository
                 job.TucJobNationwides.First().UcnwAirportOnly = airportOnly;
                 break;
             case JobProperty.Size:
-                UpdateJobSize(value, job);
+                UpdateJobSize(value, job, _infoService.IsUsTenant());
                 break;
             case JobProperty.Void:
                 var voidJob = bool.Parse(value);
@@ -580,7 +580,7 @@ public partial class JobRepository
                 archive.UcjbDate = DateTimeOffset.Parse(value).DateTime;
                 break;
             case JobProperty.Size:
-                UpdateArchiveJobSize(value, archive);
+                UpdateArchiveJobSize(value, archive, _infoService.IsUsTenant());
                 break;
             case JobProperty.Items:
                 archive.UcjbQty = short.Parse(value);
@@ -1061,37 +1061,68 @@ public partial class JobRepository
         await Context.SaveChangesAsync();
     }
 
-    private static void UpdateJobSize(string value, TucJob job)
+    private static void UpdateJobSize(string value, TucJob job, bool isUsTenant)
     {
         var sizeId = int.Parse(value);
-        job.UcjbSize = sizeId;
 
-        switch (sizeId)
+        if (job.Parent != null)
         {
-            case (int)VehicleType.Truck or (int)UrgentVehicleType.Truck:
-                job.Truck = true;
-                job.UcjbVan = false;
-                break;
-            case (int)VehicleType.Van or (int)UrgentVehicleType.Van:
-                job.UcjbVan = true;
-                job.Truck = false;
-                break;
+            ApplySize(job.Parent, sizeId, isUsTenant);
+            foreach (var sibling in job.Parent.InverseParent)
+            {
+                ApplySize(sibling, sizeId, isUsTenant);
+            }
+        }
+        else
+        {
+            ApplySize(job, sizeId, isUsTenant);
+            if (job.InverseParent == null) return;
+            
+            foreach (var child in job.InverseParent)
+            {
+                ApplySize(child, sizeId, isUsTenant);
+            }
         }
     }
 
-    private static void UpdateArchiveJobSize(string value, TucJobArchive job)
+    // VehicleSize IDs are tenant-local and the standard vs Urgent enums collide
+    // (e.g. id 2 is Truck on standard, Car on Urgent), so the tenant decides
+    // which enum to interpret the id against. Non-Van / non-Truck sizes leave
+    // the legacy flags untouched.
+    private static void ApplySize(TucJob job, int sizeId, bool isUsTenant)
+    {
+        job.UcjbSize = sizeId;
+
+        var truckId = isUsTenant ? (int)VehicleType.Truck : (int)UrgentVehicleType.Truck;
+        var vanId = isUsTenant ? (int)VehicleType.Van : (int)UrgentVehicleType.Van;
+
+        if (sizeId == truckId)
+        {
+            job.Truck = true;
+            job.UcjbVan = false;
+        }
+        else if (sizeId == vanId)
+        {
+            job.UcjbVan = true;
+            job.Truck = false;
+        }
+    }
+
+    private static void UpdateArchiveJobSize(string value, TucJobArchive job, bool isUsTenant)
     {
         var sizeId = int.Parse(value);
         job.UcjbSize = sizeId;
 
-        switch (sizeId)
+        var truckId = isUsTenant ? (int)VehicleType.Truck : (int)UrgentVehicleType.Truck;
+        var vanId = isUsTenant ? (int)VehicleType.Van : (int)UrgentVehicleType.Van;
+
+        if (sizeId == truckId)
         {
-            case (int)VehicleType.Truck or (int)UrgentVehicleType.Truck:
-                job.Truck = true;
-                break;
-            case (int)VehicleType.Van or (int)UrgentVehicleType.Van:
-                job.UcjbVan = true;
-                break;
+            job.Truck = true;
+        }
+        else if (sizeId == vanId)
+        {
+            job.UcjbVan = true;
         }
     }
 
@@ -1106,6 +1137,9 @@ public partial class JobRepository
             JobProperty.ConNote => query.Include(j => j.Parent),
             JobProperty.AirportOnly => query.Include(j => j.TucJobNationwides),
             JobProperty.Weight => query.Include(j => j.Parent)
+                .ThenInclude(p => p.InverseParent)
+                .Include(j => j.InverseParent),
+            JobProperty.Size => query.Include(j => j.Parent)
                 .ThenInclude(p => p.InverseParent)
                 .Include(j => j.InverseParent),
             JobProperty.ClientID => query.Include(j => j.UcjbClient).Include(j => j.InverseParent),

@@ -102,4 +102,6 @@ public partial class TblContact
     public int? StaffId { get; set; }
 
     public string AccessCode { get; set; }
+
+    public int? RelationshipTypeId { get; set; }
 }

@@ -32,6 +32,7 @@ const config = {
         // ESM-only packages - mock for Jest compatibility
         '^react-markdown$': '<rootDir>/wwwroot/app/tests/mocks/reactMarkdownMock.tsx',
         '^remark-gfm$': '<rootDir>/wwwroot/app/tests/mocks/remarkGfmMock.ts',
+        '^react-resizable-panels$': '<rootDir>/wwwroot/app/tests/mocks/reactResizablePanelsMock.tsx',
     },
 
     setupFilesAfterEnv: [

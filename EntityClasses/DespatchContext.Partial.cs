@@ -219,18 +219,16 @@ public partial class DespatchContext
                 .Count(m => m.UcmmSendToStaffId == staffId && !m.Read)
         );
 
-
     private static readonly Func<DespatchContext, int, Task<TucNoteViewModel>> GetActiveNoteByIdCompiled =
         EF.CompileAsyncQuery((DespatchContext context, int noteId) =>
             context.TucNotes
-                .AsNoTracking()
                 .Where(x => x.NoteId == noteId)
                 .Select(NoteMappings.ActiveNoteMap)
                 .FirstOrDefault());
 
     private static readonly Func<DespatchContext, string, Task<bool>> JobNumberExistsAsyncCompiled =
         EF.CompileAsyncQuery((DespatchContext context, string jobNumber) =>
-            context.TucJobs.AsNoTracking().Any(j => j.UcjbNumber == jobNumber));
+            context.TucJobs.Any(j => j.UcjbNumber == jobNumber));
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

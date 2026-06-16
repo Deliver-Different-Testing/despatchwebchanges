@@ -188,7 +188,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
             ) {
                 return;
             }
-            setError(e instanceof Error ? e.message : 'Failed to generate DFRNT summary');
+            setError(e instanceof Error ? e.message : 'Failed to generate Auto-mate summary');
         } finally {
             if (abortRef.current === controller) {
                 setLoading(false);
@@ -371,7 +371,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                             size="small"
                             tabIndex={-1}
                             sx={{p: 0.5}}
-                            aria-label={expanded ? 'Collapse DFRNT briefing' : 'Expand DFRNT briefing'}
+                            aria-label={expanded ? 'Collapse Auto-mate briefing' : 'Expand Auto-mate briefing'}
                             onClick={(e) => {e.stopPropagation(); handleToggleExpanded();}}
                         >
                             {expanded ? <ExpandLessIcon sx={{fontSize: 20}} /> : <ExpandMoreIcon sx={{fontSize: 20}} />}

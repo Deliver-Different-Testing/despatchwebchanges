@@ -53,21 +53,13 @@ export const recurringJobsApi = {
     },
 
     /**
-     * Void (inactivate) a recurring job
-     * @param jobId - ID of the job to void
-     */
-    voidPrebookJob: async (jobId: number): Promise<void> => {
-        await apiClient.post('job/VoidPrebookJob', {jobId});
-    },
-
-    /**
      * Export recurring jobs to CSV
      * Downloads the file directly via blob
      * @param query - Query parameters to filter exported jobs
      */
     exportToCsv: async (query: RecurringJobQuery): Promise<void> => {
         const response = await apiClient.postForBlob('job/RecurringJobsExportCsv', query);
-        // Honour the three-state mode for the download filename suffix
+        // Honor the three-state mode for the download filename suffix
         // when present, falling back to the legacy active/inactive label.
         const modeLabel = query.recurringMode !== undefined
             ? RecurringMode[query.recurringMode].toLowerCase()

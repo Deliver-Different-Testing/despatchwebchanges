@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {act, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {act, fireEvent, render, screen, waitFor, waitForElementToBeRemoved} from '@testing-library/react';
 import {createTheme, ThemeProvider} from '@mui/material/styles';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {RecurringJobsPage} from './RecurringJobsPage';
@@ -35,20 +35,27 @@ jest.mock('../../hooks/useCourierApi', () => ({
 // Mock the API
 jest.mock('../../services/recurringJobsApi', () => ({
     recurringJobsApi: {
-        voidPrebookJob: jest.fn(),
         exportToCsv: jest.fn(),
     },
+}));
+
+// Deactivate routes through updateJobDetail (same path the context-menu
+// "Deactivate" already uses) — mock it so we can assert the call.
+jest.mock('../../services/jobListApi', () => ({
+    updateJobDetail: jest.fn(),
 }));
 
 import {useRecurringJobsList, useRouteList, useSpeedList} from '../../hooks/useRecurringJobsApi';
 import {useCourierSearch} from '../../hooks/useCourierApi';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
+import {updateJobDetail} from '../../services/jobListApi';
 
 const mockUseRecurringJobsList = useRecurringJobsList as jest.MockedFunction<typeof useRecurringJobsList>;
 const mockUseSpeedList = useSpeedList as jest.MockedFunction<typeof useSpeedList>;
 const mockUseRouteList = useRouteList as jest.MockedFunction<typeof useRouteList>;
 const mockUseCourierSearch = useCourierSearch as jest.MockedFunction<typeof useCourierSearch>;
 const mockRecurringJobsApi = recurringJobsApi as jest.Mocked<typeof recurringJobsApi>;
+const mockUpdateJobDetail = updateJobDetail as jest.MockedFunction<typeof updateJobDetail>;
 
 const theme = createTheme();
 
@@ -144,7 +151,7 @@ describe('RecurringJobsPage', () => {
             error: null,
         } as any);
 
-        mockRecurringJobsApi.voidPrebookJob.mockResolvedValue(undefined);
+        mockUpdateJobDetail.mockResolvedValue(undefined);
         mockRecurringJobsApi.exportToCsv.mockResolvedValue(undefined);
     });
 
@@ -244,34 +251,11 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText(/Job Details - Job #1/)).toBeInTheDocument();
     });
 
-    // ── Void job: open dialog + close with No (single render) ───────
-    it('opens void confirmation dialog and closes with No', async () => {
-        const jobs = [createMockJob(1)];
-        mockUseRecurringJobsList.mockReturnValue({
-            data: createMockResponse(jobs),
-            isLoading: false,
-            error: null,
-            refetch: jest.fn(),
-        } as any);
-
-        renderWithProviders(createDefaultProps());
-
-        const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-        fireEvent.click(deleteButton);
-
-        expect(screen.getByText('Inactivate Recurring Job')).toBeInTheDocument();
-        expect(screen.getByText(/this will inactivate this recurring job/i)).toBeInTheDocument();
-
-        // Close with No
-        fireEvent.click(screen.getByText('No'));
-
-        await waitFor(() => {
-            expect(screen.queryByText('Inactivate Recurring Job')).not.toBeInTheDocument();
-        });
-    });
-
-    // ── Void job: confirm with Yes ──────────────────────────────────
-    it('calls API and shows toast when void is confirmed', async () => {
+    // ── Deactivate: dialog open / cancel / confirm (single render) ──
+    // Confirm routes through updateJobDetail with JobProperty.RecurringMode
+    // = Inactive (0) — the same path the right-click context-menu
+    // "Deactivate" uses.
+    it('opens deactivate dialog, cancels with No, then on Yes calls updateJobDetail', async () => {
         const showToast = jest.fn();
         const refetch = jest.fn();
         const jobs = [createMockJob(1)];
@@ -284,22 +268,26 @@ describe('RecurringJobsPage', () => {
 
         renderWithProviders(createDefaultProps({showToast}));
 
-        const deleteButton = screen.getByRole('button', {name: /inactivate job/i});
-        fireEvent.click(deleteButton);
+        // Open dialog
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
+        expect(screen.getByText('Deactivate Recurring Job')).toBeInTheDocument();
+        expect(screen.getByText(/this will deactivate this recurring job/i)).toBeInTheDocument();
 
+        // Cancel with No → dialog closes
+        fireEvent.click(screen.getByText('No'));
+        await waitForElementToBeRemoved(() => screen.queryByText('Deactivate Recurring Job'));
+        expect(mockUpdateJobDetail).not.toHaveBeenCalled();
+
+        // Re-open and confirm with Yes
+        fireEvent.click(screen.getByRole('button', {name: 'Deactivate'}));
         fireEvent.click(screen.getByText('Yes'));
 
+        // Toast fires only after updateJobDetail resolves, so a single
+        // waitFor on the toast covers both — no double-poll needed.
         await waitFor(() => {
-            expect(mockRecurringJobsApi.voidPrebookJob).toHaveBeenCalledWith(1);
+            expect(showToast).toHaveBeenCalledWith('Mode changed to Inactive.', 'success');
         });
-
-        await waitFor(() => {
-            expect(showToast).toHaveBeenCalledWith(
-                'The recurring job has been successfully inactivated.',
-                'success'
-            );
-        });
-
+        expect(mockUpdateJobDetail).toHaveBeenCalledWith(1, 'RecurringMode', '0', true);
         expect(refetch).toHaveBeenCalled();
     });
 

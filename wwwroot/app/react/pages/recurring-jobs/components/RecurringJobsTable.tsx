@@ -20,7 +20,7 @@ import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import DeleteIcon from '@mui/icons-material/Delete';
+import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import type {Dayjs} from 'dayjs';
 import {AddressViewModel, PrebookListModel, RecurringJobColumn, RecurringJobSort,} from '../../../interfaces';
@@ -243,7 +243,7 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                 );
             case 'actions':
                 return (
-                    <Tooltip title="Inactivate job">
+                    <Tooltip title="Deactivate">
                         <IconButton
                             size="small"
                             onClick={(e) => {
@@ -252,10 +252,10 @@ export const RecurringJobsTable: React.FC<RecurringJobsTableProps> = ({
                             }}
                             sx={{
                                 color: 'text.secondary',
-                                '&:hover': {color: 'error.main'},
+                                '&:hover': {color: 'primary.main'},
                             }}
                         >
-                            <DeleteIcon fontSize="small"/>
+                            <PowerSettingsNewIcon fontSize="small"/>
                         </IconButton>
                     </Tooltip>
                 );
