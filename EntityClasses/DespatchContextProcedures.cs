@@ -1104,7 +1104,7 @@ namespace DespatchWeb.EntityClasses
             return _;
         }
 
-        public virtual async Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
+        public virtual async Task<List<UTL_stpJob_InsertFromTblBulkJobResult>> UTL_stpJob_InsertFromTblBulkJobAsync(int? bulkJobID, string runName, int? courierID, int? runStatus, int? jobBookingID, OutputParameter<int> returnValue = null, CancellationToken cancellationToken = default)
         {
             var parameterreturnValue = new SqlParameter
             {
@@ -1140,9 +1140,15 @@ namespace DespatchWeb.EntityClasses
                     Value = runStatus ?? Convert.DBNull,
                     SqlDbType = System.Data.SqlDbType.Int,
                 },
+                new SqlParameter
+                {
+                    ParameterName = "JobBookingID",
+                    Value = jobBookingID ?? Convert.DBNull,
+                    SqlDbType = System.Data.SqlDbType.Int,
+                },
                 parameterreturnValue,
             };
-            var _ = await _context.SqlQueryAsync<UTL_stpJob_InsertFromTblBulkJobResult>("EXEC @returnValue = [dbo].[UTL_stpJob_InsertFromTblBulkJob] @BulkJobID = @BulkJobID, @RunName = @RunName, @CourierID = @CourierID, @RunStatus = @RunStatus", sqlParameters, cancellationToken);
+            var _ = await _context.SqlQueryAsync<UTL_stpJob_InsertFromTblBulkJobResult>("EXEC @returnValue = [dbo].[UTL_stpJob_InsertFromTblBulkJob] @BulkJobID = @BulkJobID, @RunName = @RunName, @CourierID = @CourierID, @RunStatus = @RunStatus, @JobBookingID = @JobBookingID", sqlParameters, cancellationToken);
 
             returnValue?.SetValue(parameterreturnValue.Value);
 

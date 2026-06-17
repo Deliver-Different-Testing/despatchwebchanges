@@ -1,4 +1,5 @@
 using DespatchWeb.Enums;
+using DespatchWeb.Models;
 using DespatchWeb.Repositories;
 
 namespace DespatchWeb.Tests.Repositories;
@@ -123,5 +124,81 @@ public class JobRepositoryInterCourierChargeTests
         Assert.Equal((int)JobSource.DespatchWeb, job.SourceId);
         Assert.Equal((int)JobServiceType.AllServices, (int)job.UcjbType!.Value);
         Assert.Equal(9, job.UcjbOpId);
+    }
+
+    [Fact]
+    public void BuildIccJobPair_DebitsFromCourier_CreditsToCourier()
+    {
+        // The transfer moves $35 from courier #235 to courier #275, so the from-job must be
+        // NEGATIVE (#235 pays) and the to-job POSITIVE (#275 is paid). Regression for the bug
+        // where both jobs were created with the same positive amount.
+        var viewModel = new InterCourierChargeViewModel
+        {
+            FromCourierId = 235,
+            ToCourierId = 275,
+            ClientId = 42,
+            Reference = "ref",
+            Amount = 35m
+        };
+
+        var (fromJob, toJob) = JobRepository.BuildIccJobPair(
+            fromJobNumber: "ICC-FROM", toJobNumber: "ICC-TO",
+            viewModel: viewModel, currentTime: FixedTime, staffId: 9);
+
+        Assert.Equal(235, fromJob.UcjbCourierId);
+        Assert.Equal(-35m, fromJob.UcjbAmount);
+
+        Assert.Equal(275, toJob.UcjbCourierId);
+        Assert.Equal(35m, toJob.UcjbAmount);
+    }
+
+    [Fact]
+    public void BuildIccJobPair_NormalisesSign_EvenIfAmountSuppliedNegative()
+    {
+        // Defence in depth: regardless of the sign supplied, the from-job is always a debit and
+        // the to-job always a credit.
+        var viewModel = new InterCourierChargeViewModel
+        {
+            FromCourierId = 235,
+            ToCourierId = 275,
+            ClientId = 42,
+            Reference = "ref",
+            Amount = -35m
+        };
+
+        var (fromJob, toJob) = JobRepository.BuildIccJobPair(
+            fromJobNumber: "ICC-FROM", toJobNumber: "ICC-TO",
+            viewModel: viewModel, currentTime: FixedTime, staffId: 9);
+
+        Assert.Equal(-35m, fromJob.UcjbAmount);
+        Assert.Equal(35m, toJob.UcjbAmount);
+    }
+
+    [Fact]
+    public void BuildIccJobPair_PutsDirectionMarkersOnCorrectSides()
+    {
+        var viewModel = new InterCourierChargeViewModel
+        {
+            FromCourierId = 235,
+            ToCourierId = 275,
+            ClientId = 42,
+            Reference = "ref",
+            Amount = 35m
+        };
+
+        var (fromJob, toJob) = JobRepository.BuildIccJobPair(
+            fromJobNumber: "ICC-FROM", toJobNumber: "ICC-TO",
+            viewModel: viewModel, currentTime: FixedTime, staffId: 9);
+
+        Assert.Equal("ICC-FROM", fromJob.UcjbNumber);
+        Assert.Equal("To # 275", fromJob.UcjbClientRefb);
+        Assert.Equal("ICC", fromJob.UcjbOurRef);
+
+        Assert.Equal("ICC-TO", toJob.UcjbNumber);
+        Assert.Equal("From # 235", toJob.UcjbClientRefb);
+
+        // Both rows carry the same human-readable direction note in the pickup line.
+        Assert.Equal("From # 235 To # 275", fromJob.PickupAddressLine1);
+        Assert.Equal("From # 235 To # 275", toJob.PickupAddressLine1);
     }
 }

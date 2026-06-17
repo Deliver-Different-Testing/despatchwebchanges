@@ -8,6 +8,7 @@
 import type {SvgIconComponent} from '@mui/icons-material';
 import CircleIcon from '@mui/icons-material/Circle';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import AddCircleIcon from '@mui/icons-material/AddCircle';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import AirportShuttleIcon from '@mui/icons-material/AirportShuttle';
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
@@ -56,6 +57,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 const ICONS: Record<string, SvgIconComponent> = {
     account_balance_wallet: AccountBalanceWalletIcon,
     account_tree: AccountTreeIcon,
+    add_circle: AddCircleIcon,
     airport_shuttle: AirportShuttleIcon,
     attach_money: AttachMoneyIcon,
     business: BusinessIcon,
@@ -144,6 +146,7 @@ const TONE_BY_ICON: Record<string, EventColorTone> = {
     undo: 'warning',
 
     // info — dispatch operations: assignments, status changes, movement
+    add_circle: 'info',
     local_shipping: 'info',
     support_agent: 'info',
     flight: 'info',

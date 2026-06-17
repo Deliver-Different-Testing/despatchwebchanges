@@ -77,8 +77,7 @@ public class JobRepositoryEditCompletedTimeTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         _clock,
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        Mock.Of<IJobApiClient>()
+        _createJobServiceMock.Object
     );
 
     [Fact]

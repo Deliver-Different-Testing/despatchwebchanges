@@ -40,6 +40,7 @@ describe('getEventColorTone', () => {
         expect(getEventColorTone('published_with_changes')).toBe('info');
         expect(getEventColorTone('route')).toBe('info');
         expect(getEventColorTone('person')).toBe('info');
+        expect(getEventColorTone('add_circle')).toBe('info');
     });
 
     it('falls back to secondary for unknown / generic-edit / note / reference icons', () => {

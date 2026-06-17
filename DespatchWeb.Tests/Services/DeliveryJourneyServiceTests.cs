@@ -1,7 +1,6 @@
 ﻿using DespatchWeb.EntityClasses;
 using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
-using DespatchWeb.Models.Dto;
 using DespatchWeb.Services;
 using NSubstitute;
 
@@ -877,6 +876,66 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobCreated_ReturnsCreatedTitleSourceAndDate()
+    {
+        // Arrange - the tucJob_InsertJob trigger writes this row on insert.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "SYSTEM",
+            FieldName = "CreatedBySp",
+            NewValue = "uspPrebookSet",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Job Created", result[0].Title);
+        Assert.Equal("add_circle", result[0].Icon);
+        // Creator (the inserting SP) is surfaced, plus the creation date — the US
+        // tenant default formats as MM/dd/yyyy HH:mm.
+        Assert.Contains("Created by uspPrebookSet", result[0].Tags);
+        Assert.Contains("Created on 01/15/2024 14:00", result[0].Tags);
+        // The raw "CreatedBySp" field-tag style must not leak through.
+        Assert.DoesNotContain(result[0].Tags, t => t.Contains("Created By Sp"));
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithJobCreated_UnknownSourceRendersAsUnknown()
+    {
+        // Arrange - inserter SP didn't tag the session context, so the trigger
+        // stored the "(unknown)" fallback.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "SYSTEM",
+            FieldName = "CreatedBySp",
+            NewValue = "(unknown)",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Job Created", result[0].Title);
+        Assert.Contains("Created by Unknown", result[0].Tags);
+        Assert.Contains("Created on 01/15/2024 14:00", result[0].Tags);
+    }
+
+    [Fact]
     public async Task GetDeliveryJourneyForJobAsync_WithJobUpdate_FormatsCurrencyFields()
     {
         // Arrange
@@ -1434,6 +1493,34 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
         // Assert
         var pricingEvent = Assert.Single(result);
         Assert.Equal(60m, pricingEvent.GrandTotalAfter);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedJob_WithJobCreated_ReturnsCreatedTitleSourceAndDate()
+    {
+        // Arrange - archived job path: no TucJob row. The JobCreated row is
+        // carried over from the live table when the job is archived.
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobCreated",
+            UpdatedByType = "SYSTEM",
+            FieldName = "CreatedBySp",
+            NewValue = "uspPrebookSet",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Job Created", result[0].Title);
+        Assert.Equal("add_circle", result[0].Icon);
+        Assert.Contains("Created by uspPrebookSet", result[0].Tags);
+        Assert.Contains("Created on 01/15/2024 14:00", result[0].Tags);
     }
 
     [Fact]

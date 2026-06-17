@@ -1,5 +1,3 @@
-using DespatchWeb.Models.FlightStats;
-
 namespace DespatchWeb.Models;
 
 public sealed class FlightViewModel
@@ -36,10 +34,10 @@ public sealed class FlightSearchResponse
     public string Message { get; init; }
 }
 
-public sealed class FlightSegmentViewModel : ScheduledFlight
+public sealed class FlightSegmentViewModel
 {
-    public new DateTimeOffset DepartureTime { get; set; }
-    public new DateTimeOffset ArrivalTime { get; set; }
+    public DateTimeOffset DepartureTime { get; set; }
+    public DateTimeOffset ArrivalTime { get; set; }
     public int SegmentOrder { get; init; }
     public int StopsInSegment { get; init; }
     public int DepartureAirportId { get; init; }
@@ -57,12 +55,13 @@ public sealed class FlightSegmentViewModel : ScheduledFlight
     public string AircraftName { get; init; }
     public string AircraftType { get; init; }
     public string AirlineName { get; init; }
-    public new string CarrierFsCode { get; init; }
-    public new string FlightNumber { get; init; }
-    public new string DepartureAirportFsCode { get; init; }
-    public new string ArrivalAirportFsCode { get; init; }
-    public new string FlightEquipmentIataCode { get; init; }
-    public new int? ElapsedTime { get; init; }
-    public new string ArrivalTerminal { get; set; }
-    public new string DepartureTerminal { get; set; }
+    public string CarrierFsCode { get; init; }
+    public string FlightNumber { get; init; }
+    public string ServiceType { get; init; }
+    public string DepartureAirportFsCode { get; init; }
+    public string ArrivalAirportFsCode { get; init; }
+    public string FlightEquipmentIataCode { get; init; }
+    public int? ElapsedTime { get; init; }
+    public string ArrivalTerminal { get; set; }
+    public string DepartureTerminal { get; set; }
 }

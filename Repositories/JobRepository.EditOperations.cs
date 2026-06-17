@@ -653,12 +653,20 @@ public partial class JobRepository
             case JobProperty.Truck:
                 var isTruck = bool.Parse(value);
                 archive.Truck = isTruck;
-                if (isTruck) archive.UcjbVan = false; // Set van to false when truck is selected
+                if (isTruck)
+                {
+                    archive.UcjbVan = false; // Set van to false when truck is selected
+                }
+
                 break;
             case JobProperty.Van:
                 var isVan = bool.Parse(value);
                 archive.UcjbVan = isVan;
-                if (isVan) archive.Truck = false; // Set truck to false when a van is selected
+                if (isVan)
+                {
+                    archive.Truck = false; // Set truck to false when a van is selected
+                }
+
                 break;
             case JobProperty.VanOK:
                 archive.VanOk = bool.Parse(value);
@@ -1076,8 +1084,11 @@ public partial class JobRepository
         else
         {
             ApplySize(job, sizeId, isUsTenant);
-            if (job.InverseParent == null) return;
-            
+            if (job.InverseParent == null)
+            {
+                return;
+            }
+
             foreach (var child in job.InverseParent)
             {
                 ApplySize(child, sizeId, isUsTenant);

@@ -895,7 +895,7 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task PropagateUpdateToSplitChildrenAsync_Van_CallsUpdateForEachNonVoidChild()
+    public async Task PropagateUpdateToChildrenAsync_SplitParent_CallsUpdateForEachNonVoidChild()
     {
         // Bug guard: when a parent split job's Van flag is toggled, the propagation must
         // dispatch the same UpdateJobAsync(JobProperty.Van) call to every non-void child
@@ -943,7 +943,7 @@ public class SplitJobServiceTests : IAsyncDisposable
 
         var service = CreateService();
 
-        await service.PropagateUpdateToSplitChildrenAsync(100, JobProperty.Van, "true",
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Van, "true",
             TestContext.Current.CancellationToken);
 
         await _jobCommandRepositoryMock.Received(1).UpdateJobAsync(101, JobProperty.Van, "true");
@@ -952,19 +952,134 @@ public class SplitJobServiceTests : IAsyncDisposable
     }
 
     [Fact]
-    public async Task PropagateUpdateToSplitChildrenAsync_NotSplitParent_DoesNotPropagate()
+    public async Task PropagateUpdateToChildrenAsync_SingleJob_DoesNotPropagate()
     {
-        // A standalone job (no SplitParent relationship type) must never fan out updates —
-        // there are no children to update, and propagation would either no-op or
-        // accidentally hit unrelated rows.
+        // A standalone job (no Split/Multi relationship type) must never fan out updates or
+        // re-rate anything — the per-job reprice is handled by the frontend modal instead.
         SeedJob(jobId: 200, jobNumber: "JOB-200");
 
         var service = CreateService();
 
-        await service.PropagateUpdateToSplitChildrenAsync(200, JobProperty.Van, "true",
+        await service.PropagateUpdateToChildrenAsync(200, JobProperty.Van, "true",
             TestContext.Current.CancellationToken);
 
         await _jobCommandRepositoryMock.DidNotReceive()
             .UpdateJobAsync(Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string>());
+        await _rateJobServiceMock.DidNotReceive().RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+        await _rateJobServiceMock.DidNotReceive().RateJobUsAsync(Arg.Any<JobRatingDetailsDto>());
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_Multi_ReRatesParentAndEachNonVoidPart()
+    {
+        // Bug fix: a multi-drop parent's vehicle change must re-rate the parent AND every
+        // non-void part independently (each part is priced on its own), so the total moves
+        // with the new vehicle. The void part is skipped. NZ tenant -> NZ rating path.
+        SeedMultiPartJob();
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Size, "3",
+            TestContext.Current.CancellationToken);
+
+        // Parent (100) + two live children (101, 102) re-rated; void child (103) skipped.
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingNzAsync(100, Arg.Any<bool>());
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingNzAsync(101, Arg.Any<bool>());
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingNzAsync(102, Arg.Any<bool>());
+        await _jobRepositoryMock.DidNotReceive().GetJobDetailsForRatingNzAsync(103, Arg.Any<bool>());
+        await _rateJobServiceMock.Received(3).RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+
+        // Multi parts are priced independently, NOT redistributed via the split path.
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .UpdateJobAsync(Arg.Any<int>(), Arg.Any<JobProperty>(), Arg.Any<string>());
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_Multi_SkipsManuallyRatedPart()
+    {
+        // Manual price overrides must survive a vehicle change: a RatedManually part is left
+        // untouched while the rest re-rate.
+        SeedMultiPartJob(configureChild101: j => j.RatedManually = true);
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Size, "3",
+            TestContext.Current.CancellationToken);
+
+        await _jobRepositoryMock.DidNotReceive().GetJobDetailsForRatingNzAsync(101, Arg.Any<bool>());
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingNzAsync(100, Arg.Any<bool>());
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingNzAsync(102, Arg.Any<bool>());
+        await _rateJobServiceMock.Received(2).RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+    }
+
+    [Fact]
+    public async Task PropagateUpdateToChildrenAsync_Multi_UsTenant_UsesUsRatingPath()
+    {
+        // US tenants rate via the distance/stored-proc path, not the NZ DFRNT path.
+        _tenantInfoServiceMock.IsUsTenant().Returns(true);
+        SeedMultiPartJob();
+
+        var service = CreateService();
+
+        await service.PropagateUpdateToChildrenAsync(100, JobProperty.Size, "3",
+            TestContext.Current.CancellationToken);
+
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingAsync(100);
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingAsync(101);
+        await _jobRepositoryMock.Received(1).GetJobDetailsForRatingAsync(102);
+        await _rateJobServiceMock.Received(3).RateJobUsAsync(Arg.Any<JobRatingDetailsDto>());
+        await _rateJobServiceMock.DidNotReceive().RateJobNzAsync(Arg.Any<JobRatingDetailsDtoNz>());
+    }
+
+    /// <summary>
+    /// Seeds a Multi (multi-drop) parent job (100) with two live children (101, 102) and one
+    /// void child (103). <paramref name="configureChild101"/> lets a test tweak child 101.
+    /// </summary>
+    private void SeedMultiPartJob(Action<TucJob>? configureChild101 = null)
+    {
+        SeedJob(jobId: 100, jobNumber: "JOB-100", configure: j =>
+        {
+            j.JobRelationshipTypeId = (int)JobRelationshipTypes.Multi;
+            j.RootParentId = 100;
+        });
+
+        var child101 = new TucJob
+        {
+            UcjbId = 101,
+            UcjbNumber = "JOB-100A",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 1
+        };
+        configureChild101?.Invoke(child101);
+        _seedContext.TucJobs.Add(child101);
+
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 102,
+            UcjbNumber = "JOB-100B",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 2
+        });
+        _seedContext.TucJobs.Add(new TucJob
+        {
+            UcjbId = 103,
+            UcjbNumber = "JOB-100C",
+            UcjbSpeed = 1,
+            UcjbStatus = 3,
+            UcjbDate = new DateTime(2024, 1, 15),
+            ParentId = 100,
+            RootParentId = 100,
+            Sequence = 3,
+            UcjbVoid = true
+        });
+        _seedContext.SaveChanges();
     }
 }

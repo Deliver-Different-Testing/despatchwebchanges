@@ -30,7 +30,11 @@ public sealed class ScopeProvider(
     {
         get
         {
-            if (_resolved) return _scope!;
+            if (_resolved)
+            {
+                return _scope!;
+            }
+
             _scope = Resolve();
             return _scope;
         }
@@ -76,7 +80,10 @@ public sealed class ScopeProvider(
                 if (row != null)
                 {
                     clientTypeId = row.ClientTypeId;
-                    if (npAgentAbsent) npAgentId = row.NpAgentId;
+                    if (npAgentAbsent)
+                    {
+                        npAgentId = row.NpAgentId;
+                    }
                 }
             }
             catch (Exception ex)
@@ -90,7 +97,10 @@ public sealed class ScopeProvider(
         // Spec §3.3 — empty NpAgentId claim is "no NP linkage". Never substitute
         // a DB value here, even if the bootstrap branch found one (which it
         // shouldn't, given empty-string and absent are now distinct).
-        if (npAgentEmpty) npAgentId = null;
+        if (npAgentEmpty)
+        {
+            npAgentId = null;
+        }
 
         return _scope = new ScopeContext(clientTypeId, clientId, npAgentId);
     }

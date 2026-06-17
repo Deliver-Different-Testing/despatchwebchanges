@@ -30,15 +30,23 @@ public interface ISplitJobService
         CancellationToken ct = default);
 
     /// <summary>
-    /// After a field update on a split parent job, propagates the same field update
-    /// to all non-void child jobs and redistributes the parent's current amount
-    /// proportionally across the children based on recalculated rates.
+    /// After a rate-affecting field update on a parent job, re-prices its parts. Behaviour
+    /// depends on the parent's relationship type:
+    /// <list type="bullet">
+    /// <item><b>SplitParent</b> — propagates the field to all non-void children and redistributes
+    /// the parent's fixed total proportionally across them (one job's price divided across legs).</item>
+    /// <item><b>Multi</b> (multi-drop) — re-rates the parent and every non-void child independently,
+    /// so each part is priced for the new vehicle/speed/etc. (the total moves). Parts flagged
+    /// RatedManually are left untouched. The field value is assumed already written to every part by
+    /// the preceding entity update.</item>
+    /// <item>Any other type (e.g. a single job) — no-op; the per-job reprice is handled elsewhere.</item>
+    /// </list>
     /// </summary>
-    /// <param name="parentJobId">The split parent job ID that was just updated.</param>
+    /// <param name="parentJobId">The parent job ID that was just updated.</param>
     /// <param name="field">The field that was updated on the parent.</param>
     /// <param name="value">The new value that was set on the parent.</param>
     /// <param name="ct">Cancellation token.</param>
-    Task PropagateUpdateToSplitChildrenAsync(
+    Task PropagateUpdateToChildrenAsync(
         int parentJobId,
         JobProperty field,
         string value,

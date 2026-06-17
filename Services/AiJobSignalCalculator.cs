@@ -203,7 +203,11 @@ public static class AiJobSignalCalculator
 
     private static string FormatMinutes(int minutes)
     {
-        if (minutes < 60) return $"{minutes}m";
+        if (minutes < 60)
+        {
+            return $"{minutes}m";
+        }
+
         var hours = minutes / 60;
         var mins = minutes % 60;
         return mins == 0 ? $"{hours}h" : $"{hours}h {mins}m";

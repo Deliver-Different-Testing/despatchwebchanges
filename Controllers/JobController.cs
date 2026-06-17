@@ -1305,7 +1305,11 @@ public class JobController(
             }
 
             var staffInfo = await infoService.GetStaffInfoAsync();
-            if (staffInfo is null) throw new NullReferenceException("Staff Info Can Not be Null");
+            if (staffInfo is null)
+            {
+                throw new NullReferenceException("Staff Info Can Not be Null");
+            }
+
             var staffName = staffInfo.Text;
 
             await splitJobService.SplitJobAsync(
@@ -1632,7 +1636,7 @@ public class JobController(
         // Propagate field update and re-rate split children (best effort)
         try
         {
-            await splitJobService.PropagateUpdateToSplitChildrenAsync(jobId, field, value, ct);
+            await splitJobService.PropagateUpdateToChildrenAsync(jobId, field, value, ct);
         }
         catch (Exception e)
         {

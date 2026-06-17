@@ -209,7 +209,7 @@ public class SplitJobService(
     }
 
     /// <inheritdoc />
-    public async Task PropagateUpdateToSplitChildrenAsync(
+    public async Task PropagateUpdateToChildrenAsync(
         int parentJobId,
         JobProperty field,
         string value,
@@ -236,15 +236,39 @@ public class SplitJobService(
             return;
         }
 
-        if (parentInfo.JobRelationshipTypeId != (int)JobRelationshipTypes.SplitParent)
+        switch (parentInfo.JobRelationshipTypeId)
         {
-            Log.Information(
-                "Propagate skipped — parent {ParentJobId} relType={RelType} (not SplitParent=8), void={IsVoid}, field {Field}",
-                parentJobId, parentInfo.JobRelationshipTypeId, parentInfo.UcjbVoid, field);
-            return;
+            case (int)JobRelationshipTypes.SplitParent:
+                // Split job: one fixed total divided across the legs.
+                await PropagateUpdateToSplitChildrenAsync(
+                    context, parentJobId, parentInfo.RootParentId, parentInfo.UcjbAmount ?? 0m, field, value, ct);
+                break;
+            case (int)JobRelationshipTypes.Multi:
+                // Multi-drop: each part is priced on its own, so the total moves with the change.
+                await ReRateMultiPartsAsync(context, parentJobId, field, ct);
+                break;
+            default:
+                Log.Information(
+                    "Propagate skipped — parent {ParentJobId} relType={RelType} (not Split=8/Multi=7), void={IsVoid}, field {Field}",
+                    parentJobId, parentInfo.JobRelationshipTypeId, parentInfo.UcjbVoid, field);
+                break;
         }
+    }
 
-        var rootParentId = parentInfo.RootParentId ?? parentJobId;
+    /// <summary>
+    /// Split-job propagation: copies the field to every non-void child and redistributes the
+    /// parent's fixed total proportionally across the children based on recalculated rates.
+    /// </summary>
+    private async Task PropagateUpdateToSplitChildrenAsync(
+        DespatchContext context,
+        int parentJobId,
+        int? rootParentIdRaw,
+        decimal parentAmount,
+        JobProperty field,
+        string value,
+        CancellationToken ct)
+    {
+        var rootParentId = rootParentIdRaw ?? parentJobId;
 
         var childJobIds = await context.TucJobs
             .Where(j => j.RootParentId == rootParentId && j.UcjbId != rootParentId && !j.UcjbVoid)
@@ -284,8 +308,73 @@ public class SplitJobService(
             parentJobId, field, childJobIds.Count - failures, childJobIds.Count);
 
         // Redistribute the parent's current amount across its immediate children
-        var parentAmount = parentInfo.UcjbAmount ?? 0m;
         await ReRateSplitJobsAsync(context, parentJobId, parentAmount, ct);
+    }
+
+    /// <summary>
+    /// Re-rates every part of a Multi (multi-drop) job independently after a rate-affecting field
+    /// change on the parent. Unlike split jobs — where one fixed parent total is re-divided — each
+    /// multi-drop part is priced on its own, so the total moves with the new vehicle/speed/etc.
+    /// The field value is already written to every part by the preceding entity update (e.g.
+    /// <c>UpdateJobSize</c>), so we only need to recompute prices here. Parts flagged
+    /// <c>RatedManually</c> are left untouched so manual overrides are preserved.
+    /// </summary>
+    private async Task ReRateMultiPartsAsync(
+        DespatchContext context,
+        int parentJobId,
+        JobProperty field,
+        CancellationToken ct)
+    {
+        // The parent leg plus all its non-void children — every part is an independently priced job.
+        // Manually-rated parts are excluded so we never clobber a hand-set price.
+        var partIds = await context.TucJobs
+            .Where(j => (j.UcjbId == parentJobId || j.ParentId == parentJobId) && !j.UcjbVoid && !j.RatedManually)
+            .OrderBy(j => j.Sequence)
+            .Select(j => j.UcjbId)
+            .ToListAsync(ct);
+
+        if (partIds.Count == 0)
+        {
+            Log.Information(
+                "Re-rate skipped — multi parent {ParentJobId} has no rateable parts, field {Field}",
+                parentJobId, field);
+            return;
+        }
+
+        var isUs = tenantInfoService.IsUsTenant();
+        var succeeded = 0;
+
+        // Re-rate each part independently. A single part failing must not strand the others, but a
+        // mis-priced part is a real problem, so failures are logged loudly rather than swallowed.
+        foreach (var partId in partIds)
+        {
+            try
+            {
+                if (isUs)
+                {
+                    var details = await jobRepository.GetJobDetailsForRatingAsync(partId);
+                    await rateJobService.RateJobUsAsync(details);
+                }
+                else
+                {
+                    var isArchived = await jobRepository.IsJobArchived(partId);
+                    var details = await jobRepository.GetJobDetailsForRatingNzAsync(partId, isArchived);
+                    await rateJobService.RateJobNzAsync(details);
+                }
+
+                succeeded++;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex,
+                    "Failed to re-rate multi part {PartId} of parent {ParentJobId}, field {Field}",
+                    partId, parentJobId, field);
+            }
+        }
+
+        Log.Information(
+            "Re-rated multi parts of parent {ParentJobId}, field {Field}, {SuccessCount}/{PartCount} parts",
+            parentJobId, field, succeeded, partIds.Count);
     }
 
     /// <summary>

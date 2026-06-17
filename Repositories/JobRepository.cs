@@ -20,8 +20,7 @@ public partial class JobRepository(
     ITenantInfoService infoService,
     ITenantClock clock,
     IClearListEnvelopeService clearListEnvelopeService,
-    ICreateJobService createJobService,
-    IJobApiClient jobApiClient)
+    ICreateJobService createJobService)
     : BaseJobRepository(contextFactory, infoService, clock, clearListEnvelopeService), IJobQueryRepository,
         IJobCommandRepository
 {
@@ -1551,6 +1550,7 @@ public partial class JobRepository(
                         runName: runName,
                         courierID: null,
                         runStatus: null,
+                        jobBookingID: null,
                         returnValue: null,
                         cancellationToken: CancellationToken.None
                     );
@@ -1592,7 +1592,53 @@ public partial class JobRepository(
     {
         try
         {
-            return await jobApiClient.QuickCreateAsync(request);
+            var now = _clock.TenantNow;
+            var staffInfo = await _infoService.GetStaffInfoAsync();
+
+            // Generate request number
+            var jobNumber = await GenerateJobNumberAsync(staffInfo.Id, request.SpeedId);
+            var speed = await GetSpeedSuggestionBySpeedIdAsync(request.SpeedId);
+
+            var jobInput = new CreateMinimalTucJobInputModel
+            {
+                JobNumber = jobNumber,
+                FromAddress = request.PickUpAddress,
+                ToAddress = request.DeliveryAddress,
+                BookedBy = staffInfo.Text,
+                ClientId = request.ClientId,
+                AgentCourierId = null,
+                Speed = speed.Text,
+                SpeedId = speed.Id,
+                Amount = request.Charge,
+                Reference = request.RefA,
+                ReferenceB = request.RefB,
+                Notes = request.JobNotes,
+                TenantCurrentTime = now,
+                LoggedInContactId = staffInfo.Id,
+
+                // Additional properties specific to QuickAdd
+                FromContactName = request.FromContactName,
+                ToContactName = request.DeliverToContact,
+                PickupNotes = request.PickupNotes,
+                DeliveryNotes = request.DeliveryNotes,
+                PickUpLatitude = request.PickUpAddress?.Latitude,
+                PickUpLongitude = request.PickUpAddress?.Longitude,
+                DeliveryLatitude = request.DeliveryAddress?.Latitude,
+                DeliveryLongitude = request.DeliveryAddress?.Longitude,
+                Pickup = request.Date.DateTime,
+
+                // Set other properties as needed
+                Hold = false
+            };
+
+            // Call the reusable function
+            var result = await CreateMinimalTucJobAsync(jobInput);
+            if (!result.Success)
+            {
+                throw new Exception($"Failed to create quick add job: {result.Message}");
+            }
+
+            return result.JobId ?? throw new Exception("Failed to get job id from quick add job");
         }
         catch (Exception e)
         {
@@ -1614,7 +1660,6 @@ public partial class JobRepository(
         {
             var staffId = _infoService.GetStaffId();
             var currentTime = _clock.TenantNow;
-            var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
 
             // Parallel job-number generation requires separate contexts (stored proc per context).
             await using var fromJobNumberContext = await _contextFactory.CreateDbContextAsync();
@@ -1625,15 +1670,7 @@ public partial class JobRepository(
             var toJobNumber =
                 await GenerateJobNumberAsync(staffId, (int)JobServiceType.AllServices, toJobNumberContext);
 
-            var fromJob = CreateIccJobEntry(
-                fromJobNumber, viewModel.ClientId, viewModel.FromCourierId, viewModel.Amount,
-                viewModel.Reference, $"To # {viewModel.ToCourierId}", "ICC",
-                note, currentTime, staffId);
-
-            var toJob = CreateIccJobEntry(
-                toJobNumber, viewModel.ClientId, viewModel.ToCourierId, viewModel.Amount,
-                viewModel.Reference, $"From # {viewModel.FromCourierId}", string.Empty,
-                note, currentTime, staffId);
+            var (fromJob, toJob) = BuildIccJobPair(fromJobNumber, toJobNumber, viewModel, currentTime, staffId);
 
             await using var insertContext = await _contextFactory.CreateDbContextAsync();
             await createJobService.InsertJobRawAsync(insertContext, fromJob, CancellationToken.None);
@@ -1646,6 +1683,35 @@ public partial class JobRepository(
                     nameof(AddInterCourierChargeAsync)));
             throw;
         }
+    }
+
+    /// <summary>
+    /// Builds the paired phantom jobs for an inter-courier charge. The transfer moves money from
+    /// the "from" courier to the "to" courier, so the from-job carries a NEGATIVE amount (money
+    /// debited) and the to-job a POSITIVE amount (money credited). The dialog only ever submits a
+    /// non-negative amount, so the sign is decided here via <see cref="Math.Abs(decimal)"/>.
+    /// </summary>
+    internal static (TucJob fromJob, TucJob toJob) BuildIccJobPair(
+        string fromJobNumber,
+        string toJobNumber,
+        InterCourierChargeViewModel viewModel,
+        DateTime currentTime,
+        int staffId)
+    {
+        var amount = Math.Abs(viewModel.Amount);
+        var note = $"From # {viewModel.FromCourierId} To # {viewModel.ToCourierId}";
+
+        var fromJob = CreateIccJobEntry(
+            fromJobNumber, viewModel.ClientId, viewModel.FromCourierId, -amount,
+            viewModel.Reference, $"To # {viewModel.ToCourierId}", "ICC",
+            note, currentTime, staffId);
+
+        var toJob = CreateIccJobEntry(
+            toJobNumber, viewModel.ClientId, viewModel.ToCourierId, amount,
+            viewModel.Reference, $"From # {viewModel.FromCourierId}", string.Empty,
+            note, currentTime, staffId);
+
+        return (fromJob, toJob);
     }
 
     /// <summary>
@@ -5176,6 +5242,16 @@ public partial class JobRepository(
 
         return outputParam.Value ?? 0m;
     }
+
+    private async Task<Suggestion> GetSpeedSuggestionBySpeedIdAsync(int speedId) =>
+        await Context.TucJobTypes
+            .Where(s => s.UcjtId == speedId)
+            .Select(s => new Suggestion
+            {
+                Id = s.UcjtId,
+                Text = s.UcjtName
+            })
+            .FirstOrDefaultAsync();
 
     private async Task<string> GenerateJobNumberAsync(
         int staffId,

@@ -43,8 +43,7 @@ public class JobRepositoryEditVehicleTests : IAsyncDisposable
         _tenantInfoServiceMock,
         _clock,
         _clearListEnvelopeServiceMock,
-        _createJobServiceMock,
-        Substitute.For<IJobApiClient>()
+        _createJobServiceMock
     );
 
     [Fact]
