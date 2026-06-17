@@ -43,8 +43,7 @@ public class JobRepositoryPackageTests : IAsyncDisposable
         _tenantInfoServiceMock.Object,
         new FakeTenantClock(TestDates.Now),
         _clearListEnvelopeServiceMock.Object,
-        _createJobServiceMock.Object,
-        Mock.Of<IJobApiClient>()
+        _createJobServiceMock.Object
     );
 
     // ── UpdatePackagesForJobAsync ────────────────────────────────────

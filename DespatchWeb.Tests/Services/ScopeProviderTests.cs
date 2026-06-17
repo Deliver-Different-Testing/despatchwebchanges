@@ -4,7 +4,6 @@ using DespatchWeb.Enums;
 using DespatchWeb.Interfaces;
 using DespatchWeb.Services;
 using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
 using NSubstitute;
 
 namespace DespatchWeb.Tests.Services;

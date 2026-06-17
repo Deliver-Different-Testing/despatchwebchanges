@@ -3764,6 +3764,7 @@ public partial class DespatchContext : DbContext
             entity.Property(e => e.OpenforceApiKey).HasMaxLength(50);
             entity.Property(e => e.OpenforceClientGuid).HasMaxLength(50);
             entity.Property(e => e.OpenforceClientId).HasMaxLength(100);
+            entity.Property(e => e.OpenforceQboVendorId).HasMaxLength(50);
             entity.Property(e => e.ParentJobCourierId).HasColumnName("ParentJobCourierID");
             entity.Property(e => e.PpdAppliedDescription)
                 .IsRequired()
@@ -5606,6 +5607,8 @@ public partial class DespatchContext : DbContext
             entity.HasIndex(e => e.AgentId, "IX_tucJob_AgentID");
 
             entity.HasIndex(e => new { e.UcjbStatus, e.UcjbJobDone, e.UcjbVoid }, "IX_tucJob_Archive_Status");
+
+            entity.HasIndex(e => new { e.BookingParentId, e.UcjbDate }, "IX_tucJob_BookingParentID_ucjbDate");
 
             entity.HasIndex(e => new { e.UcjbJobDone, e.UcjbVoid, e.UcjbCourierId }, "IX_tucJob_CourierClearListBuild");
 

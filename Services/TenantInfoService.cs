@@ -172,7 +172,11 @@ public sealed class TenantInfoService(
     /// <inheritdoc />
     public int? GetClientTypeId()
     {
-        if (_clientTypeIdRead) return _cachedClientTypeId;
+        if (_clientTypeIdRead)
+        {
+            return _cachedClientTypeId;
+        }
+
         ReadClientTypeIdClaim();
         return _cachedClientTypeId;
     }
@@ -182,7 +186,11 @@ public sealed class TenantInfoService(
     {
         get
         {
-            if (!_clientTypeIdRead) ReadClientTypeIdClaim();
+            if (!_clientTypeIdRead)
+            {
+                ReadClientTypeIdClaim();
+            }
+
             return _clientTypeIdClaimAbsent;
         }
     }
@@ -204,7 +212,11 @@ public sealed class TenantInfoService(
     /// <inheritdoc />
     public int? GetNpAgentId()
     {
-        if (_npAgentIdRead) return _cachedNpAgentId;
+        if (_npAgentIdRead)
+        {
+            return _cachedNpAgentId;
+        }
+
         ReadNpAgentIdClaim();
         return _cachedNpAgentId;
     }
@@ -214,7 +226,11 @@ public sealed class TenantInfoService(
     {
         get
         {
-            if (!_npAgentIdRead) ReadNpAgentIdClaim();
+            if (!_npAgentIdRead)
+            {
+                ReadNpAgentIdClaim();
+            }
+
             return _npAgentIdClaimAbsent;
         }
     }
@@ -224,7 +240,11 @@ public sealed class TenantInfoService(
     {
         get
         {
-            if (!_npAgentIdRead) ReadNpAgentIdClaim();
+            if (!_npAgentIdRead)
+            {
+                ReadNpAgentIdClaim();
+            }
+
             return _npAgentIdClaimEmpty;
         }
     }
@@ -252,7 +272,11 @@ public sealed class TenantInfoService(
     /// <inheritdoc />
     public int? GetClientId()
     {
-        if (_clientIdRead) return _cachedClientId;
+        if (_clientIdRead)
+        {
+            return _cachedClientId;
+        }
+
         _clientIdRead = true;
         var raw = contextAccessor.HttpContext?.User.Claims
             .FirstOrDefault(x => x.Type == "ClientID")?.Value;

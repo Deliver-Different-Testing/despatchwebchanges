@@ -215,8 +215,16 @@ public sealed partial class DeliveryJourneyService(
         }
 
         var id = ucjbStatus.Value;
-        if (CompletedStatusIds.Contains(id)) return RecurringJourneyStatus.Completed;
-        if (VoidedStatusIds.Contains(id)) return RecurringJourneyStatus.Voided;
+        if (CompletedStatusIds.Contains(id))
+        {
+            return RecurringJourneyStatus.Completed;
+        }
+
+        if (VoidedStatusIds.Contains(id))
+        {
+            return RecurringJourneyStatus.Voided;
+        }
+
         return PendingStatusIds.Contains(id)
             ? RecurringJourneyStatus.Pending
             : RecurringJourneyStatus.InProgress;
@@ -553,16 +561,24 @@ public sealed partial class DeliveryJourneyService(
         }
 
         return orderedGroups
-            .Select(group => new DeliveryJourneyViewModel
+            .Select(group =>
             {
-                Id = Guid.NewGuid(),
-                JobId = jobId,
-                Date = infoService.ConvertUtcToTenantTimeZone(group.Key),
-                Title = GetTitle(group.First()),
-                Description = GetDescription(group.ToList()),
-                Icon = GetIcon(group.First().ChangeType, group.First().FieldName),
-                Tags = BuildTags(group).ToList(),
-                GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
+                var first = group.First();
+                var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
+                var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
+                var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
+
+                return new DeliveryJourneyViewModel
+                {
+                    Id = Guid.NewGuid(),
+                    JobId = jobId,
+                    Date = localDate,
+                    Title = GetTitle(first),
+                    Description = isCreation ? creation.Description : GetDescription(group.ToList()),
+                    Icon = GetIcon(first.ChangeType, first.FieldName),
+                    Tags = isCreation ? creation.Tags : BuildTags(group).ToList(),
+                    GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
+                };
             })
             .ToList();
     }
@@ -603,18 +619,47 @@ public sealed partial class DeliveryJourneyService(
         }
 
         return orderedGroups
-            .Select(group => new DeliveryJourneyViewModel
+            .Select(group =>
             {
-                Id = Guid.NewGuid(),
-                JobId = jobId,
-                Date = infoService.ConvertUtcToTenantTimeZone(group.Key),
-                Title = GetTitle(group.First()),
-                Description = GetDescription(group.ToList()),
-                Icon = GetIcon(group.First().ChangeType, group.First().FieldName),
-                Tags = BuildTags(group).ToList(),
-                GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
+                var first = group.First();
+                var localDate = infoService.ConvertUtcToTenantTimeZone(group.Key);
+                var isCreation = first.ChangeType == nameof(DeliveryJourneyChangeType.JobCreated);
+                var creation = isCreation ? BuildCreationDisplay(first.NewValue, localDate) : default;
+
+                return new DeliveryJourneyViewModel
+                {
+                    Id = Guid.NewGuid(),
+                    JobId = jobId,
+                    Date = localDate,
+                    Title = GetTitle(first),
+                    Description = isCreation ? creation.Description : GetDescription(group.ToList()),
+                    Icon = GetIcon(first.ChangeType, first.FieldName),
+                    Tags = isCreation ? creation.Tags : BuildTags(group).ToList(),
+                    GrandTotalAfter = grandTotalByTimestamp.TryGetValue(group.Key, out var total) ? total : null
+                };
             })
             .ToList();
+    }
+
+    /// <summary>
+    /// Builds the title-less display parts (description + tags) for a JobCreated
+    /// row. The trigger stores the inserting stored-procedure name in NewValue
+    /// (or "(unknown)"); we surface that as the creator alongside the creation
+    /// date so the bottom-of-journey card reads e.g. "Created by uspPrebookSet"
+    /// and "Created on 17/06/2026 12:58".
+    /// </summary>
+    private (string Description, List<string> Tags) BuildCreationDisplay(string createdBySp, DateTimeOffset localDate)
+    {
+        var source = string.IsNullOrWhiteSpace(createdBySp) || createdBySp == "(unknown)"
+            ? "Unknown"
+            : createdBySp;
+
+        var dateFormat = infoService.IsUsTenant() ? "MM/dd/yyyy HH:mm" : "dd/MM/yyyy HH:mm";
+        var createdOn = localDate.ToString(dateFormat);
+
+        return (
+            $"Created by {source} on {createdOn}",
+            [$"Created by {source}", $"Created on {createdOn}"]);
     }
 
     /// <summary>
@@ -740,6 +785,7 @@ public sealed partial class DeliveryJourneyService(
     private static string GetTitle(JobDeliveryJourneyDto dto) =>
         dto.ChangeType switch
         {
+            nameof(DeliveryJourneyChangeType.JobCreated) => "Job Created",
             nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
                 ? $"Status Changed to {dto.NewJobStatusName}"
                 : "Status Changed",
@@ -768,6 +814,7 @@ public sealed partial class DeliveryJourneyService(
     private static string GetTitle(JobDeliveryJourneyArchiveDto dto) =>
         dto.ChangeType switch
         {
+            nameof(DeliveryJourneyChangeType.JobCreated) => "Job Created",
             nameof(DeliveryJourneyChangeType.JobStatus) => !string.IsNullOrEmpty(dto.NewJobStatusName)
                 ? $"Status Changed to {dto.NewJobStatusName}"
                 : "Status Changed",
@@ -928,6 +975,7 @@ public sealed partial class DeliveryJourneyService(
     private static string GetIcon(string changeType, string fieldName = null) =>
         changeType switch
         {
+            nameof(DeliveryJourneyChangeType.JobCreated) => "add_circle",
             nameof(DeliveryJourneyChangeType.JobStatus) => "published_with_changes",
             nameof(DeliveryJourneyChangeType.InternalStatus) => "swap_horiz",
             nameof(DeliveryJourneyChangeType.CourierAssignment) => "local_shipping",
