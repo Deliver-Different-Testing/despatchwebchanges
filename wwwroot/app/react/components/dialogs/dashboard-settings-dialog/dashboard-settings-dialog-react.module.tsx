@@ -28,6 +28,7 @@ interface DialogState {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
+    jobSearchBetaEnabled?: boolean;
     resolve?: (value: DashboardSettingsResult | null) => void;
 }
 
@@ -102,7 +103,7 @@ function renderDialog(): void {
     dialogRoot.render(
         <ReactQueryProvider>
             <ThemeProvider theme={currentTheme}>
-                <CssBaseline />
+                <CssBaseline/>
                 <DashboardSettingsDialog
                     open={dialogState.open}
                     config={dialogState.config}
@@ -111,6 +112,7 @@ function renderDialog(): void {
                     selectedDriverLocationRefreshInterval={dialogState.selectedDriverLocationRefreshInterval}
                     refreshOptions={dialogState.refreshOptions}
                     aiEnabled={dialogState.aiEnabled}
+                    jobSearchBetaEnabled={dialogState.jobSearchBetaEnabled}
                     onClose={handleClose}
                     onSave={handleSave}
                 />
@@ -131,21 +133,13 @@ function initializeDialogRoot(): void {
     dialogRoot = createRoot(dialogContainer);
 }
 
-/**
- * Opens the dashboard settings dialog
- *
- * @param config - Dialog configuration (title, which sections to show)
- * @param boxes - Dashboard boxes with their visibility settings
- * @param selectedRefreshInterval - Currently selected job list refresh interval
- * @param selectedDriverLocationRefreshInterval - Currently selected driver location refresh interval
- * @returns Promise that resolves with the settings result, or null if cancelled
- */
 export function openDashboardSettingsDialog(
     config: DashboardSettingsConfig,
     boxes: Record<string, DashboardBox>,
     selectedRefreshInterval?: RefreshOption,
     selectedDriverLocationRefreshInterval?: RefreshOption,
-    aiEnabled?: boolean
+    aiEnabled?: boolean,
+    jobSearchBetaEnabled?: boolean,
 ): Promise<DashboardSettingsResult | null> {
     initializeDialogRoot();
 
@@ -164,6 +158,7 @@ export function openDashboardSettingsDialog(
             selectedDriverLocationRefreshInterval: selectedDriverLocationRefreshInterval ?? {id: 0, text: 'Disabled'},
             refreshOptions,
             aiEnabled,
+            jobSearchBetaEnabled,
             resolve,
         };
         renderDialog();

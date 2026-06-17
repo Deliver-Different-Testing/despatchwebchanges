@@ -12,7 +12,9 @@ public interface IFlightStatsService
         int? arrivalAirportId = null,
         string codeType = null,
         IReadOnlyList<string> extendedOptions = null,
-        int minimumLayoverMinutes = 60
+        int minimumLayoverMinutes = 60,
+        bool allowNearbyDepartures = false,
+        bool allowNearbyArrivals = false
     );
 
     Task<string> CreateFlightRuleByDepartureAsync(string completeFlightNumber, DateTimeOffset departureTime,

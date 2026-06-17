@@ -14,6 +14,7 @@ import Button from '@mui/material/Button';
 import dayjs from 'dayjs';
 import type {ISuggestion, DateRange} from '../OverviewPage.interfaces';
 import {useCourierSearch} from '../../../hooks/useOverviewApi';
+import {PanelHeader} from '../../../components/common/panel-header';
 
 interface FilterPanelProps {
     regions: ISuggestion[];
@@ -128,27 +129,10 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
 
     return (
         <Card variant="outlined">
-            {/* Card Header */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 2,
-                    py: 1,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    minHeight: 44,
-                }}
-            >
-                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                    tune
-                </span>
-                <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
-                    Quick Filters
-                </Typography>
-            </Box>
+            <PanelHeader
+                icon={<span className="material-symbols-outlined">tune</span>}
+                title="Quick Filters"
+            />
             {/* Date Range */}
             <ToolbarHeader icon="date_range" title="Date Range" />
             <Box sx={{p: 2}}>

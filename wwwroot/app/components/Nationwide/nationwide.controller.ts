@@ -225,6 +225,7 @@ class NationwideControl extends BaseController {
     // Flight Search
     flightSearchText: string = '';
     filteredFlightOptions?: IFlightViewModel[] = [];
+    includeNearbyAirports: boolean = false;
     private isHandlingJobChange: boolean = false;
     private reactNationwideMounted = new Set<string>();
 
@@ -1286,7 +1287,8 @@ class NationwideControl extends BaseController {
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
-                minimumLayoverMinutes
+                minimumLayoverMinutes,
+                this.includeNearbyAirports
             );
 
             const result = await this.flightListPromise;
@@ -1723,6 +1725,16 @@ class NationwideControl extends BaseController {
         this.lastDepartureTime = undefined;
 
         // Call loadFlights which will use the updated selected airline
+        await this.loadFlights();
+    }
+
+    async onToggleNearbyAirportsReact(value: boolean): Promise<void> {
+        if (!this.currentJob) return;
+
+        this.includeNearbyAirports = value;
+
+        // Reset search so the toggle re-queries from the start of the window
+        this.lastDepartureTime = undefined;
         await this.loadFlights();
     }
 

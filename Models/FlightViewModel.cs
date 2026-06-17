@@ -16,6 +16,9 @@ public sealed class FlightViewModel
     public string Aircraft { get; init; }
     public List<string> ServiceClasses { get; init; }
     public bool IsCodeShare { get; init; }
+    public string ServiceType { get; init; }
+    public bool IsCharter { get; init; }
+    public string ServiceTypeDescription { get; init; }
     public decimal Amount { get; set; }
     public string CodeShareAirline { get; init; }
     public bool IsMultiSegment { get; init; }

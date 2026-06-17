@@ -36,6 +36,8 @@ interface MapZoomViewControlsProps {
     showTraffic?: boolean;
     showIncidents?: boolean;
     showViewPicker?: boolean;
+    /** Which edge of the map the control rail anchors to. Defaults to 'right'. */
+    placement?: 'left' | 'right';
 }
 
 const VIEW_OPTIONS: ReadonlyArray<{value: ViewType; label: string; icon: React.ReactNode}> = [
@@ -97,7 +99,10 @@ export function MapZoomViewControls({
     showTraffic = true,
     showIncidents = true,
     showViewPicker = true,
+    placement = 'right',
 }: MapZoomViewControlsProps) {
+    const isLeft = placement === 'left';
+    const tooltipPlacement = isLeft ? 'right' : 'left';
     const [viewMenuAnchor, setViewMenuAnchor] = useState<HTMLElement | null>(null);
     const [activeView, setActiveView] = useState<ViewType>('roadmap');
     const [trafficEnabled, setTrafficEnabled] = useState(false);
@@ -161,7 +166,7 @@ export function MapZoomViewControls({
                 sx={{
                     position: 'absolute',
                     bottom: 20,
-                    right: 10,
+                    ...(isLeft ? { left: 10 } : { right: 10 }),
                     zIndex: 10,
                     display: 'flex',
                     flexDirection: 'column',
@@ -170,7 +175,7 @@ export function MapZoomViewControls({
                     bgcolor: 'background.paper',
                 }}
             >
-                <Tooltip title="Zoom in" placement="left">
+                <Tooltip title="Zoom in" placement={tooltipPlacement}>
                     <IconButton
                         size="small"
                         onClick={handleZoomIn}
@@ -181,7 +186,7 @@ export function MapZoomViewControls({
                     </IconButton>
                 </Tooltip>
                 <Divider/>
-                <Tooltip title="Zoom out" placement="left">
+                <Tooltip title="Zoom out" placement={tooltipPlacement}>
                     <IconButton
                         size="small"
                         onClick={handleZoomOut}
@@ -194,7 +199,7 @@ export function MapZoomViewControls({
                 {showTraffic && (
                     <>
                         <Divider/>
-                        <Tooltip title={trafficEnabled ? 'Hide traffic conditions' : 'Show traffic conditions'} placement="left">
+                        <Tooltip title={trafficEnabled ? 'Hide traffic conditions' : 'Show traffic conditions'} placement={tooltipPlacement}>
                             <IconButton
                                 size="small"
                                 onClick={handleToggleTraffic}
@@ -211,7 +216,7 @@ export function MapZoomViewControls({
                 {showIncidents && (
                     <>
                         <Divider/>
-                        <Tooltip title={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'} placement="left">
+                        <Tooltip title={incidentsEnabled ? 'Hide traffic incidents' : 'Show traffic incidents'} placement={tooltipPlacement}>
                             <IconButton
                                 size="small"
                                 onClick={handleToggleIncidents}
@@ -228,7 +233,7 @@ export function MapZoomViewControls({
                 {showViewPicker && (
                     <>
                         <Divider/>
-                        <Tooltip title="Choose view" placement="left">
+                        <Tooltip title="Choose view" placement={tooltipPlacement}>
                             <IconButton
                                 size="small"
                                 onClick={(e) => setViewMenuAnchor(e.currentTarget)}
@@ -245,8 +250,8 @@ export function MapZoomViewControls({
                 anchorEl={viewMenuAnchor}
                 open={Boolean(viewMenuAnchor)}
                 onClose={() => setViewMenuAnchor(null)}
-                anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                transformOrigin={{vertical: 'bottom', horizontal: 'right'}}
+                anchorOrigin={{vertical: 'top', horizontal: isLeft ? 'left' : 'right'}}
+                transformOrigin={{vertical: 'bottom', horizontal: isLeft ? 'left' : 'right'}}
             >
                 {VIEW_OPTIONS.map((opt) => (
                     <MenuItem

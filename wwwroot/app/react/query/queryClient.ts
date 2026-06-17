@@ -167,6 +167,8 @@ export const queryKeys = {
         all: ['jobSearch'] as const,
         pod: (params: JobListSearchParams) => ['jobSearch', 'pod', params] as const,
         bulk: (params: JobListSearchParams) => ['jobSearch', 'bulk', params] as const,
+        scanDetail: (jobId: number, isBulkJob: boolean) =>
+            ['jobSearch', 'scanDetail', jobId, isBulkJob] as const,
     },
     dispatch: {
         all: ['dispatch'] as const,

@@ -18,6 +18,7 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import Typography from '@mui/material/Typography';
 import dayjs from 'dayjs';
 import {formatMins} from '../../../utils/dateUtils';
+import {PanelHeader} from '../../../components/common/panel-header';
 import type {DriverViewModel, IOpenJobResponse, TableSort, ViewJob,} from '../OverviewPage.interfaces';
 import {ContactID} from "../../../../contants";
 
@@ -205,46 +206,32 @@ export const OpenJobsWidget: React.FC<OpenJobsWidgetProps> = ({openJobs, isLoadi
 
     return (
         <Card variant="outlined" sx={{mt: 2}}>
-            {/* Toolbar */}
-            <Box
-                sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    px: 2,
-                    py: 1,
-                    bgcolor: 'background.paper',
-                    color: 'text.primary',
-                    borderBottom: '1px solid',
-                    borderColor: 'divider',
-                    minHeight: 44,
-                }}
-            >
-                <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                    inventory_2
-                </span>
-                <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
-                    Open Jobs
-                </Typography>
+            <PanelHeader
+                icon={<span className="material-symbols-outlined">inventory_2</span>}
+                title="Open Jobs"
+                action={
+                    <>
+                        <Tooltip title={isTableView ? 'Card View' : 'Table View'}>
+                            <Box sx={{display: 'flex', alignItems: 'center'}}>
+                                <span className="material-symbols-outlined" style={{fontSize: 18, marginRight: 0.5}}>
+                                    {isTableView ? 'dashboard' : 'view_list'}
+                                </span>
+                                <Switch
+                                    checked={isTableView}
+                                    onChange={toggleViewMode}
+                                    size="small"
+                                />
+                            </Box>
+                        </Tooltip>
 
-                <Tooltip title={isTableView ? 'Card View' : 'Table View'}>
-                    <Box sx={{display: 'flex', alignItems: 'center'}}>
-                        <span className="material-symbols-outlined" style={{fontSize: 18, marginRight: 0.5}}>
-                            {isTableView ? 'dashboard' : 'view_list'}
-                        </span>
-                        <Switch
-                            checked={isTableView}
-                            onChange={toggleViewMode}
-                            size="small"
-                        />
-                    </Box>
-                </Tooltip>
-
-                <IconButton size="small" onClick={toggleCollapse} sx={{color: 'inherit'}}>
-                    <span className="material-symbols-outlined">
-                        {isCollapsed ? 'expand_more' : 'expand_less'}
-                    </span>
-                </IconButton>
-            </Box>
+                        <IconButton size="small" onClick={toggleCollapse} sx={{color: 'inherit'}}>
+                            <span className="material-symbols-outlined">
+                                {isCollapsed ? 'expand_more' : 'expand_less'}
+                            </span>
+                        </IconButton>
+                    </>
+                }
+            />
             <Collapse in={!isCollapsed}>
                 <Box sx={{p: 2}}>
                     {/* Empty state */}

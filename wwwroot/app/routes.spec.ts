@@ -163,6 +163,7 @@ describe('RouterConfig', () => {
                 'nw',
                 'cs',
                 'jobSearch',
+                'jobSearchV2',
                 'recurringJobs',
                 'overview',
                 'taskDashboard',
@@ -180,8 +181,10 @@ describe('RouterConfig', () => {
         });
 
         it('should register exactly the expected number of states', () => {
-            // 13 states total (excluding commented megaMap)
-            expect(registeredStates.size).toBe(13);
+            // 14 states total (excluding commented megaMap; jobSearchV2 added
+            // for Phase 3 of the AngularJS → React migration — see
+            // wwwroot/app/react/pages/job-search/MIGRATION_CHECKLIST.md).
+            expect(registeredStates.size).toBe(14);
         });
     });
 

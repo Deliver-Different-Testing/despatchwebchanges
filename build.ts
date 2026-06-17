@@ -45,7 +45,8 @@ type EntryPointName =
     | 'currentWorkJobListReact'
     | 'nationwideJobListReact'
     | 'jobSearchJobListReact'
-    | 'jobDetailsReact';
+    | 'jobDetailsReact'
+    | 'jobSearchReact';
 type EntryPoints = Record<EntryPointName, string>;
 
 // Configuration
@@ -97,6 +98,7 @@ const entryPoints: EntryPoints = {
     nationwideJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/nationwide-job-list-react.module.tsx"),
     jobSearchJobListReact: path.join(rootDir, "wwwroot/app/react/components/job-list/job-search-job-list-react.module.tsx"),
     jobDetailsReact: path.join(rootDir, "wwwroot/app/react/components/common/job-details/job-details-react.module.tsx"),
+    jobSearchReact: path.join(rootDir, "wwwroot/app/react/pages/job-search/job-search-react.module.tsx"),
 };
 
 // Lazy-load html-minifier-terser only when needed (production builds)

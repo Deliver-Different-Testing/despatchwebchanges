@@ -49,7 +49,9 @@ public sealed class FlightStatsService(
         int? arrivalAirportId = null,
         string codeType = null,
         IReadOnlyList<string> extendedOptions = null,
-        int minimumLayoverMinutes = 60
+        int minimumLayoverMinutes = 60,
+        bool allowNearbyDepartures = false,
+        bool allowNearbyArrivals = false
     )
     {
         var stopwatch = Stopwatch.StartNew();
@@ -87,9 +89,22 @@ public sealed class FlightStatsService(
         query["appKey"] = _appKey;
         query["maxResults"] = "80";
         query["includeCodeshares"] = "false";
+        query["includeCargo"] = "true"; // surface cargo/cargo-charter flights that are otherwise omitted
         query["maxConnections"] = "1"; //default is 2
         query["numHours"] = "24"; //How many hours flights after the dateTime to search default are 6
         query["minimumConnectTime"] = minimumLayoverMinutes.ToString();
+
+        // Optionally let Cirium include flights from nearby alternate airports. Useful for charters
+        // that operate out of secondary fields close to the selected departure/arrival airport.
+        if (allowNearbyDepartures)
+        {
+            query["allowNearbyDepartures"] = "true";
+        }
+
+        if (allowNearbyArrivals)
+        {
+            query["allowNearbyArrivals"] = "true";
+        }
 
         // Filter by specific airline if airlineId is provided
         if (airlineId is > 0)
@@ -193,6 +208,7 @@ public sealed class FlightStatsService(
                             SegmentOrder = index,
                             CarrierFsCode = segment.CarrierFsCode,
                             FlightNumber = segment.FlightNumber,
+                            ServiceType = segment.ServiceType,
                             DepartureTime = CalculateCorrectDateTimeOffset(segment.DepartureTime, depAirport),
                             ArrivalTime = CalculateCorrectDateTimeOffset(segment.ArrivalTime, arrAirport),
                             DepartureAirportId = departureAirport.AirportId,
@@ -248,6 +264,9 @@ public sealed class FlightStatsService(
                     Stops = conn.ScheduledFlight.Count - 1, // Number of connections equals number of flights minus 1
                     Aircraft = equipmentLookup.GetValueOrDefault(firstFlight.FlightEquipmentIataCode)?.Name,
                     ServiceClasses = firstFlight.ServiceClasses,
+                    ServiceType = firstFlight.ServiceType,
+                    IsCharter = conn.ScheduledFlight.Any(segment => FlightServiceType.IsCharter(segment.ServiceType)),
+                    ServiceTypeDescription = FlightServiceType.Describe(firstFlight.ServiceType),
                     IsCodeShare = firstFlight.IsCodeshare ?? false,
                     Amount = 0, // Will fill this in on the next step
                     CodeShareAirline = firstFlight.IsCodeshare ?? false ? firstFlight.CarrierFsCode : null,

@@ -13,7 +13,6 @@ import React, {useCallback, useState} from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
-import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import LinearProgress from '@mui/material/LinearProgress';
 import Typography from '@mui/material/Typography';
@@ -24,6 +23,7 @@ import EventBusyIcon from '@mui/icons-material/EventBusy';
 
 import {useRecurringJobDeliveryJourney} from '../../../hooks/useRecurringJobsApi';
 import {openJobInSearch} from '../../../services/navigationService';
+import {PanelHeader} from '../panel-header';
 import {RecurringJourneyBreakdown} from './RecurringJourneyBreakdown';
 import {RecurringJourneyInfoStrip} from './RecurringJourneyInfoStrip';
 import {RecurringJourneyRunList} from './RecurringJourneyRunList';
@@ -41,40 +41,9 @@ const cardSx = {
     minHeight: 0,
 } satisfies SxProps<Theme>;
 
-const headerSx = ((theme: Theme) => ({
-    background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-    color: 'white',
-    px: 2,
-    py: 1.25,
-    display: 'flex',
-    alignItems: 'center',
-    gap: 1.5,
-    flexShrink: 0,
-})) satisfies SxProps<Theme>;
-
-const iconBadgeSx = {
-    width: 36,
-    height: 36,
-    borderRadius: 1.5,
-    bgcolor: 'rgba(255,255,255,0.15)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-} satisfies SxProps<Theme>;
-
 const headerActionSx = {
-    color: 'white',
+    color: 'inherit',
     '&:hover': {bgcolor: 'rgba(255,255,255,0.15)'},
-} satisfies SxProps<Theme>;
-
-const recurringChipSx = {
-    color: 'white',
-    fontWeight: 700,
-    fontSize: 10,
-    letterSpacing: '0.6px',
-    bgcolor: 'rgba(255,255,255,0.18)',
-    border: 'none',
-    height: 20,
 } satisfies SxProps<Theme>;
 
 const bodySx = {
@@ -133,26 +102,22 @@ export const RecurringDeliveryJourney: React.FC<RecurringDeliveryJourneyProps> =
 
     return (
         <Card variant="outlined" sx={cardSx}>
-            <Box sx={headerSx}>
-                <Box sx={iconBadgeSx}>
-                    <HistoryEduIcon sx={{fontSize: 20}} />
-                </Box>
-                <Box sx={{flex: 1, display: 'flex', alignItems: 'center', gap: 1}}>
-                    <Typography variant="subtitle1" sx={{fontWeight: 600}}>
-                        Recurring Log
-                    </Typography>
-                    <Chip label="RECURRING" size="small" sx={recurringChipSx} />
-                </Box>
-                <IconButton
-                    size="small"
-                    onClick={() => refetch()}
-                    sx={headerActionSx}
-                    aria-label="Refresh recurring log"
-                    disabled={!bookingId || isFetching}
-                >
-                    <RefreshIcon fontSize="small" />
-                </IconButton>
-            </Box>
+            <PanelHeader
+                icon={<HistoryEduIcon />}
+                title="Recurring Log"
+                badge="RECURRING"
+                action={
+                    <IconButton
+                        size="small"
+                        onClick={() => refetch()}
+                        sx={headerActionSx}
+                        aria-label="Refresh recurring log"
+                        disabled={!bookingId || isFetching}
+                    >
+                        <RefreshIcon fontSize="small" />
+                    </IconButton>
+                }
+            />
 
             {isFetching && <LinearProgress />}
 

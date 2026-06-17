@@ -9,6 +9,7 @@ import React, {useCallback, useMemo, useState} from 'react';
 import {alpha, useTheme} from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Collapse from '@mui/material/Collapse';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -35,6 +36,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FlightIcon from '@mui/icons-material/Flight';
 import FlightLandIcon from '@mui/icons-material/FlightLand';
 import FlightTakeoffIcon from '@mui/icons-material/FlightTakeoff';
+import NearMeIcon from '@mui/icons-material/NearMe';
 import InfoIcon from '@mui/icons-material/Info';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
@@ -176,6 +178,19 @@ const ActionIcon: React.FC<{
         </Tooltip>
     );
 };
+
+// Charter indicator chip - extracted to module level (rerender-no-inline-components)
+const CharterChip: React.FC<{ description?: string }> = ({description}) => (
+    <Tooltip title={description || 'Charter flight'} arrow placement="top">
+        <Chip
+            label="Charter"
+            size="small"
+            color="warning"
+            variant="outlined"
+            sx={{height: 16, fontSize: 9, fontWeight: 600, '& .MuiChip-label': {px: 0.5}}}
+        />
+    </Tooltip>
+);
 
 // Airline chip component - extracted to module level (rerender-no-inline-components)
 const AirlineChip: React.FC<{
@@ -490,7 +505,9 @@ const FlightFilterBar: React.FC<{
     selectedInboundAirport: FlightAgentDataTableProps['selectedInboundAirport'];
     outboundAirportOptions: FlightAgentDataTableProps['outboundAirportOptions'];
     inboundAirportOptions: FlightAgentDataTableProps['inboundAirportOptions'];
+    includeNearbyAirports: FlightAgentDataTableProps['includeNearbyAirports'];
     onFilterFlightsByAirline: FlightAgentDataTableProps['onFilterFlightsByAirline'];
+    onToggleNearbyAirports: FlightAgentDataTableProps['onToggleNearbyAirports'];
     onOutboundAirportChange: FlightAgentDataTableProps['onOutboundAirportChange'];
     onInboundAirportChange: FlightAgentDataTableProps['onInboundAirportChange'];
     formatAirportCodeForDropdown: FlightAgentDataTableProps['formatAirportCodeForDropdown'];
@@ -501,7 +518,9 @@ const FlightFilterBar: React.FC<{
     selectedInboundAirport,
     outboundAirportOptions,
     inboundAirportOptions,
+    includeNearbyAirports,
     onFilterFlightsByAirline,
+    onToggleNearbyAirports,
     onOutboundAirportChange,
     onInboundAirportChange,
     formatAirportCodeForDropdown,
@@ -579,6 +598,30 @@ const FlightFilterBar: React.FC<{
                         {selectedInboundAirport ? formatAirportCodeForDropdown(selectedInboundAirport.text) : 'To'}
                     </Typography>
                 </Button>
+
+                {/* Nearby-airport toggle: lets Cirium include flights from alternate airports near
+                    the selected ones (useful for charters operating out of secondary fields). */}
+                <Tooltip title="Include flights from nearby alternate airports" arrow placement="top">
+                    <Button
+                        onClick={() => onToggleNearbyAirports(!includeNearbyAirports)}
+                        aria-pressed={includeNearbyAirports}
+                        sx={{
+                            height: 24,
+                            borderRadius: '12px',
+                            px: 1,
+                            ml: 0.5,
+                            textTransform: 'none',
+                            bgcolor: includeNearbyAirports ? theme.palette.primary.main : alpha(theme.palette.text.secondary, 0.1),
+                            color: includeNearbyAirports ? theme.palette.primary.contrastText : theme.palette.text.primary,
+                            '&:hover': {
+                                bgcolor: includeNearbyAirports ? theme.palette.primary.dark : alpha(theme.palette.text.secondary, 0.2),
+                            },
+                        }}
+                    >
+                        <NearMeIcon sx={{fontSize: 14, mr: 0.25}}/>
+                        <Typography sx={{fontSize: 11, fontWeight: 500}}>Nearby</Typography>
+                    </Button>
+                </Tooltip>
             </Box>
 
             {/* Airport menus */}
@@ -658,6 +701,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                                               agentMessage,
                                                                               activeAirlineOptions,
                                                                               selectedAirline,
+                                                                              includeNearbyAirports,
                                                                               outboundAirportOptions,
                                                                               inboundAirportOptions,
                                                                               selectedOutboundAirport,
@@ -674,6 +718,7 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                                               showAgentList,
                                                                               onFlightSearchChange,
                                                                               onFilterFlightsByAirline,
+                                                                              onToggleNearbyAirports,
                                                                               onOutboundAirportChange,
                                                                               onInboundAirportChange,
                                                                               onAddFlightToJob,
@@ -860,7 +905,9 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         selectedInboundAirport={selectedInboundAirport}
                         outboundAirportOptions={outboundAirportOptions}
                         inboundAirportOptions={inboundAirportOptions}
+                        includeNearbyAirports={includeNearbyAirports}
                         onFilterFlightsByAirline={onFilterFlightsByAirline}
+                        onToggleNearbyAirports={onToggleNearbyAirports}
                         onOutboundAirportChange={onOutboundAirportChange}
                         onInboundAirportChange={onInboundAirportChange}
                         formatAirportCodeForDropdown={formatAirportCodeForDropdown}
@@ -887,7 +934,9 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                         selectedInboundAirport={selectedInboundAirport}
                         outboundAirportOptions={outboundAirportOptions}
                         inboundAirportOptions={inboundAirportOptions}
+                        includeNearbyAirports={includeNearbyAirports}
                         onFilterFlightsByAirline={onFilterFlightsByAirline}
+                        onToggleNearbyAirports={onToggleNearbyAirports}
                         onOutboundAirportChange={onOutboundAirportChange}
                         onInboundAirportChange={onInboundAirportChange}
                         formatAirportCodeForDropdown={formatAirportCodeForDropdown}
@@ -1045,6 +1094,9 @@ export const FlightAgentDataTable: React.FC<FlightAgentDataTableProps> = ({
                                                         <Typography sx={flightNumberSx}>
                                                             {flight.flightNumber}
                                                         </Typography>
+                                                        {flight.isCharter && (
+                                                            <CharterChip description={flight.serviceTypeDescription}/>
+                                                        )}
                                                         {flight.isMultiSegment && (
                                                             <IconButton
                                                                 size="small"

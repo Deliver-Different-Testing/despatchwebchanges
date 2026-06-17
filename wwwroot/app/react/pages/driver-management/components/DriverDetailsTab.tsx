@@ -17,6 +17,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import InfoIcon from '@mui/icons-material/Info';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import SearchIcon from '@mui/icons-material/Search';
+import {PanelHeader} from '../../../components/common/panel-header';
 import {useDriverSearch, useCourierDetails} from '../../../hooks/useDriverManagementApi';
 import {FleetOption} from '../../../interfaces';
 import type {ShowToastFn} from '../../../services/toastService';
@@ -66,13 +67,7 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
 
     const InfoCard = ({icon, title, children}: { icon: React.ReactNode; title: string; children: React.ReactNode }) => (
         <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
-            <Toolbar
-                variant="dense"
-                sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
-            >
-                <Box sx={{mr: 1, display: 'flex', alignItems: 'center', '& .MuiSvgIcon-root': {fontSize: 20, color: 'inherit'}}}>{icon}</Box>
-                <Typography variant="subtitle2">{title}</Typography>
-            </Toolbar>
+            <PanelHeader icon={icon} title={title} />
             <CardContent>
                 {children}
             </CardContent>
@@ -83,14 +78,15 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
         <Box sx={{display: 'flex', flexDirection: 'column', gap: 2}}>
             {/* Search Section */}
             <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
-                <Toolbar
-                    variant="dense"
-                    sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44}}
-                >
-                    <SearchIcon sx={{mr: 1, fontSize: 20}} />
-                    <Typography variant="subtitle2">Driver Search</Typography>
-                    <Typography variant="caption" sx={{ml: 1, opacity: 0.8}}>Tip: This is a wildcard search!</Typography>
-                </Toolbar>
+                <PanelHeader
+                    icon={<SearchIcon />}
+                    title="Driver Search"
+                    action={
+                        <Typography variant="caption" sx={{opacity: 0.85, color: 'inherit'}}>
+                            Tip: This is a wildcard search!
+                        </Typography>
+                    }
+                />
                 <CardContent>
                     <Autocomplete
                         options={searchResults}
@@ -117,7 +113,12 @@ export const DriverDetailsTab: React.FC<DriverDetailsTabProps> = ({showToast: _s
                 <Card sx={{borderRadius: 1, overflow: 'hidden'}}>
                     <Toolbar
                         variant="dense"
-                        sx={{bgcolor: 'background.paper', color: 'text.primary', borderBottom: '1px solid', borderColor: 'divider', minHeight: 44, gap: 2}}
+                        sx={(theme) => ({
+                            background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+                            color: theme.palette.primary.contrastText,
+                            minHeight: 48,
+                            gap: 2,
+                        })}
                     >
                         <BadgeIcon sx={{fontSize: 20}} />
                         <Typography variant="subtitle2" sx={{fontWeight: 600}}>

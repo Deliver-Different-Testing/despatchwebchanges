@@ -6,9 +6,10 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { useTheme } from '@mui/material/styles';
 import type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 import type { UseCourierMapReturn } from './CourierMapPage.types';
-import { DEFAULT_ZOOM, OVERVIEW_ZOOM } from './CourierMapPage.types';
+import { DEFAULT_ZOOM, OVERVIEW_ZOOM, getMarkerColors } from './CourierMapPage.types';
 import { initPlatform, createMap } from '../../components/common/here-map/hereMapUtils';
 import { CourierMarkerManager } from './CourierMarkerManager';
 
@@ -23,9 +24,13 @@ export function useCourierMap({
     isUsCustomer,
     mapCenter,
 }: UseCourierMapOptions): UseCourierMapReturn {
+    const theme = useTheme();
+    const themeRef = useRef(theme);
+    themeRef.current = theme;
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapInstanceRef = useRef<any>(null);
     const platformRef = useRef<any>(null);
+    const defaultLayersRef = useRef<any>(null);
     const markerManagerRef = useRef<CourierMarkerManager | null>(null);
     const userZoomLevelRef = useRef<number | null>(null);
 
@@ -57,11 +62,20 @@ export function useCourierMap({
             }
 
             mapInstanceRef.current = mapResult.map;
+            defaultLayersRef.current = mapResult.defaultLayers;
 
-            // Create marker manager
+            // Strip HERE's native zoom/map-settings chrome; zoom and the layer
+            // picker are rendered as MUI controls (MapZoomViewControls) so the
+            // courier map matches the rest of the app — same as the dispatch map.
+            mapResult.ui?.removeControl('zoom');
+            mapResult.ui?.removeControl('mapsettings');
+
+            // Create marker manager with theme-derived status colors so map
+            // markers and the driver list stay in step with the palette.
             markerManagerRef.current = new CourierMarkerManager(
                 mapInstanceRef.current,
-                isUsCustomer
+                isUsCustomer,
+                getMarkerColors(themeRef.current)
             );
 
             // Track user zoom changes
@@ -85,6 +99,7 @@ export function useCourierMap({
                 mapInstanceRef.current = null;
             }
             platformRef.current = null;
+            defaultLayersRef.current = null;
             setIsInitialized(false);
         };
     }, [apiKey, isUsCustomer, mapCenter]);
@@ -138,6 +153,9 @@ export function useCourierMap({
     return {
         mapContainerRef,
         isInitialized,
+        map: mapInstanceRef.current,
+        platform: platformRef.current,
+        defaultLayers: defaultLayersRef.current,
         updateCouriers,
         centerOnCourier,
         returnToOverview,

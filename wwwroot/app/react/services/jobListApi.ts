@@ -70,6 +70,26 @@ export async function restoreJobs(jobIds: number[]): Promise<void> {
     await apiClient.post('job/RestoreJobs', {jobIds});
 }
 
+export async function restoreSplitJobs(jobIds: number[]): Promise<void> {
+    await apiClient.post('job/RestoreSplitJobs', {jobIds});
+}
+
+export async function addRestoreEvent(jobId: number): Promise<void> {
+    await apiClient.post('job/AddRestoreEvent', null, {params: {jobId}});
+}
+
+// ── Lock / Unlock ────────────────────────────────────────────────────
+
+export async function setJobLocked(jobId: number, locked: boolean, isRecurring: boolean): Promise<void> {
+    await updateJobDetail(jobId, 'Locked', locked, isRecurring);
+}
+
+// ── Un-Split ─────────────────────────────────────────────────────────
+
+export async function unSplitJob(jobId: number): Promise<string> {
+    return apiClient.post<string>('job/UnSplitJob', null, {params: {jobId}});
+}
+
 // ── First Job ────────────────────────────────────────────────────────
 
 export async function setFirstJob(jobId: number, courierId: number): Promise<void> {
@@ -222,6 +242,10 @@ export const jobListApi = {
     allocateJobs,
     reAllocateJobs,
     restoreJobs,
+    restoreSplitJobs,
+    addRestoreEvent,
+    setJobLocked,
+    unSplitJob,
     setFirstJob,
     releaseBulkJob,
     splitJob,

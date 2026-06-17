@@ -634,6 +634,166 @@ public class FlightStatsServiceTests
     }
 
     [Fact]
+    public async Task GetFlightsAsync_IncludesCargoParameter()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
+        _clock = new FakeTenantClock(TestDates.Now);
+
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("includeCargo=true", capturedUrl);
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_ByDefault_DoesNotIncludeNearbyAirportParameters()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
+        _clock = new FakeTenantClock(TestDates.Now);
+
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
+        var service = CreateService();
+
+        // Act - no nearby flags passed
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
+        Assert.NotNull(capturedUrl);
+        Assert.DoesNotContain("allowNearbyDepartures", capturedUrl);
+        Assert.DoesNotContain("allowNearbyArrivals", capturedUrl);
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_WhenNearbyAirportsEnabled_IncludesBothParameters()
+    {
+        // Arrange
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
+        _clock = new FakeTenantClock(TestDates.Now);
+
+        SetupHttpResponse(new FlightConnectionsRoot { Connections = null });
+        var service = CreateService();
+
+        // Act
+        await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2,
+            allowNearbyDepartures: true,
+            allowNearbyArrivals: true);
+
+        // Assert
+        var capturedUrl = _httpHandler.Requests[0].RequestUri?.ToString();
+        Assert.NotNull(capturedUrl);
+        Assert.Contains("allowNearbyDepartures=true", capturedUrl);
+        Assert.Contains("allowNearbyArrivals=true", capturedUrl);
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_CharterServiceType_MapsAndFlagsCharter()
+    {
+        // Arrange - a charter passenger flight (serviceType "C")
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
+        _clock = new FakeTenantClock(TestDates.Now);
+
+        var response = CreateFlightConnectionsResponse();
+        response.Connections[0].ScheduledFlight[0] = new ScheduledFlight
+        {
+            CarrierFsCode = "NZ",
+            FlightNumber = "9123",
+            DepartureTime = TestDates.Now.AddHours(3).ToString("O"),
+            ArrivalTime = TestDates.Now.AddHours(6).ToString("O"),
+            DepartureAirportFsCode = "AKL",
+            ArrivalAirportFsCode = "SYD",
+            FlightEquipmentIataCode = "787",
+            ElapsedTime = 180,
+            Stops = 0,
+            ServiceType = "C"
+        };
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        var flight = Assert.Single(result);
+        Assert.Equal("C", flight.ServiceType);
+        Assert.True(flight.IsCharter);
+        Assert.Equal("Charter (Passenger)", flight.ServiceTypeDescription);
+        Assert.Equal("C", flight.FlightSegments[0].ServiceType);
+    }
+
+    [Fact]
+    public async Task GetFlightsAsync_ScheduledServiceType_IsNotCharter()
+    {
+        // Arrange - a normal scheduled passenger flight (serviceType "J")
+        SetupAirportMocks(departureAirportExists: true, arrivalAirportExists: true);
+        _nationwideJobRepositoryMock.GetActiveAirlineCodesAsync()
+            .Returns(["NZ"]);
+        _clock = new FakeTenantClock(TestDates.Now);
+
+        var response = CreateFlightConnectionsResponse();
+        response.Connections[0].ScheduledFlight[0] = new ScheduledFlight
+        {
+            CarrierFsCode = "NZ",
+            FlightNumber = "123",
+            DepartureTime = TestDates.Now.AddHours(3).ToString("O"),
+            ArrivalTime = TestDates.Now.AddHours(6).ToString("O"),
+            DepartureAirportFsCode = "AKL",
+            ArrivalAirportFsCode = "SYD",
+            FlightEquipmentIataCode = "787",
+            ElapsedTime = 180,
+            Stops = 0,
+            ServiceType = "J"
+        };
+        SetupHttpResponse(response);
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetFlightsAsync(
+            jobId: 1,
+            departureDateTime: DateTimeOffset.Now.AddHours(2),
+            departureAirportId: 1,
+            arrivalAirportId: 2);
+
+        // Assert
+        var flight = Assert.Single(result);
+        Assert.Equal("J", flight.ServiceType);
+        Assert.False(flight.IsCharter);
+        Assert.Equal("Scheduled Passenger", flight.ServiceTypeDescription);
+    }
+
+    [Fact]
     public async Task GetFlightsAsync_DoesNotIncludePayloadTypeParameter()
     {
         // Arrange

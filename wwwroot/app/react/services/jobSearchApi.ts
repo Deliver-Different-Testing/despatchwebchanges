@@ -73,6 +73,28 @@ export async function fetchBulkJobs(
     return transformResult(dto);
 }
 
+// ── Scan Detail ──────────────────────────────────────────────────────
+
+export interface ScanDetailRecord {
+    bulkScanId: number;
+    scanDateTime: string;
+    scanDetail: string;
+    courier: string;
+}
+
+export async function fetchScanDetail(
+    runDate: unknown,
+    jobId: number,
+    isBulkJob: boolean,
+    options?: RequestOptions,
+): Promise<ScanDetailRecord[]> {
+    return apiClient.get<ScanDetailRecord[]>('/Job/ScanJobDetail', {
+        runDate: formatDate(runDate),
+        jobId,
+        isBulkJob,
+    }, options);
+}
+
 // ── Dispatch Jobs (Home page) ────────────────────────────────────────
 
 export async function fetchDispatchJobs(

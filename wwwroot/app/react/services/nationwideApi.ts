@@ -64,6 +64,9 @@ export interface FlightViewModelDto {
     aircraft: string;
     serviceClasses: string[];
     isCodeShare: boolean;
+    serviceType: string;
+    isCharter: boolean;
+    serviceTypeDescription: string;
     amount: number;
     codeShareAirline: string;
     airlineId: number;
@@ -113,6 +116,9 @@ export interface FlightViewModel {
     aircraft: string;
     serviceClasses: string[];
     isCodeShare: boolean;
+    serviceType: string;
+    isCharter: boolean;
+    serviceTypeDescription: string;
     amount: number;
     codeShareAirline: string;
     airlineId: number;
@@ -132,6 +138,7 @@ export interface GetFlightOptionsParams {
     departureAirportId?: number;
     arrivalAirportId?: number;
     minimumLayoverMinutes?: number;
+    includeNearbyAirports?: boolean;
 }
 
 interface FlightSearchResponseDto {
@@ -258,6 +265,7 @@ export class NationwideApiService {
                     ...(params.departureAirportId !== undefined && { departureAirportId: params.departureAirportId }),
                     ...(params.arrivalAirportId !== undefined && { arrivalAirportId: params.arrivalAirportId }),
                     minimumLayoverMinutes: params.minimumLayoverMinutes ?? 60,
+                    includeNearbyAirports: params.includeNearbyAirports ?? false,
                 }
             );
 

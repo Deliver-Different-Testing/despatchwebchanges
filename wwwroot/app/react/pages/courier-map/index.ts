@@ -32,7 +32,7 @@ export {
     DEFAULT_ZOOM,
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
-    AVATAR_COLORS,
     MARKER_COLORS,
+    getMarkerColors,
     getDriverStatus,
 } from './CourierMapPage.types';

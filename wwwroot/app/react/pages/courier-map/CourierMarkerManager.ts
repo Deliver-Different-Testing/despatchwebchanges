@@ -11,7 +11,7 @@
  */
 
 import type {IAvailableCourierPosition} from '../../../interfaces/courier.interface';
-import type {CourierMarker, DriverStatus} from './CourierMapPage.types';
+import type {CourierMarker, DriverStatus, MarkerColor} from './CourierMapPage.types';
 import {
     DRIVER_FOCUS_ZOOM,
     getDriverStatus,
@@ -30,10 +30,16 @@ export class CourierMarkerManager {
     private courierMarkers: Map<number, CourierMarker> = new Map();
     private iconCache: Map<string, any> = new Map();
     private readonly isUsCustomer: boolean;
+    private readonly statusColors: Record<DriverStatus, MarkerColor>;
 
-    constructor(map: any, isUsCustomer: boolean) {
+    constructor(
+        map: any,
+        isUsCustomer: boolean,
+        statusColors: Record<DriverStatus, MarkerColor> = MARKER_COLORS
+    ) {
         this.map = map;
         this.isUsCustomer = isUsCustomer;
+        this.statusColors = statusColors;
         this.markerGroup = new H.map.Group();
         this.map.addObject(this.markerGroup);
     }
@@ -234,7 +240,7 @@ export class CourierMarkerManager {
      * and a subtle pin stem anchoring it to the map.
      */
     private createPillSvg(displayName: string, status: DriverStatus): string {
-        const colors = MARKER_COLORS[status];
+        const colors = this.statusColors[status];
 
         const escapedName = displayName
             .replace(/&/g, '&amp;')

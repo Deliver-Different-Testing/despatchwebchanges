@@ -20,7 +20,6 @@ import Skeleton from '@mui/material/Skeleton';
 import TextField from '@mui/material/TextField';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
-import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import {useTheme} from '@mui/material/styles';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
@@ -45,6 +44,7 @@ import {TaskItem} from '../../components/common/task-item/TaskItem';
 import {TaskCalendarView} from '../../components/common/task-calendar-view/TaskCalendarView';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
+import {PanelHeader} from '../../components/common/panel-header';
 import {formatDateForApi} from '../../utils/dateUtils';
 import {
     useActiveStaff,
@@ -601,31 +601,15 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                 <Box sx={{flex: 11, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
                     <Card variant="outlined"
                           sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-                        <Toolbar
-                            variant="dense"
-                            sx={{
-                                bgcolor: 'background.paper',
-                                color: 'text.primary',
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                                minHeight: 44,
-                                flexShrink: 0,
-                            }}
-                        >
-                            {showFullCalendar ? (
-                                <>
-                                    <CalendarMonthIcon sx={{mr: 1}}/>
-                                    <Typography variant="subtitle1">Calendar</Typography>
-                                </>
-                            ) : (
-                                <>
-                                    <TaskAltIcon sx={{mr: 1}}/>
-                                    <Typography variant="subtitle1">
-                                        Tasks ({filteredTasks.length})
-                                    </Typography>
-                                </>
-                            )}
-                        </Toolbar>
+                        {showFullCalendar ? (
+                            <PanelHeader icon={<CalendarMonthIcon />} title="Calendar" />
+                        ) : (
+                            <PanelHeader
+                                icon={<TaskAltIcon />}
+                                title="Tasks"
+                                count={filteredTasks.length}
+                            />
+                        )}
 
                         {showFullCalendar ? (
                             <Box sx={{flex: 1, overflow: 'hidden'}}>
@@ -777,22 +761,10 @@ export const TaskDashboardPage: React.FC<TaskDashboardPageProps> = ({
                 <Box sx={{flex: 9, minWidth: 0, display: 'flex', flexDirection: 'column'}}>
                     <Card variant="outlined"
                           sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}>
-                        <Toolbar
-                            variant="dense"
-                            sx={{
-                                bgcolor: 'background.paper',
-                                color: 'text.primary',
-                                borderBottom: '1px solid',
-                                borderColor: 'divider',
-                                minHeight: 44,
-                                flexShrink: 0,
-                            }}
-                        >
-                            <InfoIcon sx={{mr: 1}}/>
-                            <Typography variant="subtitle1">
-                                Job Details{selectedTask ? ` - Job #${selectedTask.jobId}` : ''}
-                            </Typography>
-                        </Toolbar>
+                        <PanelHeader
+                            icon={<InfoIcon />}
+                            title={selectedTask ? `Job Details - Job #${selectedTask.jobId}` : 'Job Details'}
+                        />
                         <Box sx={{flex: 1, overflow: 'auto'}}>
                             <JobDetails
                                 config={{

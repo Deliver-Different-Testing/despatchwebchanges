@@ -23,6 +23,9 @@ jest.mock('./useCourierMap', () => ({
     useCourierMap: jest.fn(() => ({
         mapContainerRef: {current: document.createElement('div')},
         isInitialized: true,
+        map: null,
+        platform: null,
+        defaultLayers: null,
         updateCouriers: jest.fn(),
         centerOnCourier: jest.fn(),
         returnToOverview: jest.fn(),
@@ -135,6 +138,38 @@ describe('CourierMapPage Component', () => {
             // Should have fit-all and refresh buttons
             expect(screen.getByLabelText('Return to overview')).toBeInTheDocument();
             expect(screen.getByLabelText('Refresh data')).toBeInTheDocument();
+        });
+
+        it('has a single refresh control (no duplicate in the drivers panel)', () => {
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            // Refresh now lives only in the map controls; the drivers panel header
+            // no longer carries its own (previously duplicate) refresh button.
+            const refreshButtons = screen.getAllByRole('button', {name: /refresh/i});
+            expect(refreshButtons).toHaveLength(1);
+            expect(refreshButtons[0]).toHaveAccessibleName('Refresh data');
+        });
+
+        it('renders the shared zoom/layer rail once the map is ready', () => {
+            const useCourierMapMock = require('./useCourierMap').useCourierMap as jest.Mock;
+            useCourierMapMock.mockReturnValue({
+                mapContainerRef: {current: document.createElement('div')},
+                isInitialized: true,
+                map: {getZoom: jest.fn(() => 5), setZoom: jest.fn()},
+                platform: {},
+                defaultLayers: {},
+                updateCouriers: jest.fn(),
+                centerOnCourier: jest.fn(),
+                returnToOverview: jest.fn(),
+            });
+
+            const props = createDefaultProps();
+            renderWithProviders(<CourierMapPage {...props} />);
+
+            // MapZoomViewControls (shared with the dispatch map) provides MUI zoom buttons
+            expect(screen.getByLabelText('Zoom in')).toBeInTheDocument();
+            expect(screen.getByLabelText('Zoom out')).toBeInTheDocument();
         });
     });
 

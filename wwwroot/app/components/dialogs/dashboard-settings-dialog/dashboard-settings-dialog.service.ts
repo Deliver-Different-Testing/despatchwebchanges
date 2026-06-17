@@ -5,6 +5,9 @@ import IDashboardSettingsConfig from "./interfaces/IDashboardSettingsConfig";
 import ISettingsDialogResult from "./interfaces/IDashboardSettingsDialogResult";
 import isDefaultLayout from "../../../functions/isDefaultLayout";
 import {isAiEnabled} from "../../../functions/aiSettings";
+import {
+    getJobSearchBetaEnabled,
+} from "../../../react/pages/job-search/lib/betaPreference";
 import angular from 'angular';
 
 class DashboardSettingsDialogService implements angular.IServiceProvider {
@@ -86,7 +89,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
             showRefreshInterval: appPage === AppPage.Dispatch || appPage === AppPage.Domestic,
             showDriverLocationRefresh: appPage === AppPage.Dispatch,
             showDashboards: canShowDashboards,
-            showAiToggle: true
+            showAiToggle: true,
+            showJobSearchBetaToggle: appPage === AppPage.JobSearch,
         };
 
         if (!selectedRefreshInterval) {
@@ -111,7 +115,8 @@ class DashboardSettingsDialogService implements angular.IServiceProvider {
                 boxes,
                 selectedRefreshInterval,
                 selectedDriverLocationRefreshInterval,
-                isAiEnabled()
+                isAiEnabled(),
+                appPage === AppPage.JobSearch ? getJobSearchBetaEnabled() : undefined,
             );
 
             console.debug('DashboardSettingsDialogService: Dialog closed!');
