@@ -91,6 +91,7 @@ class NationwideService {
         departureAirportId?: number,
         arrivalAirportId?: number,
         minimumLayoverMinutes: number = 0,
+        includeNearbyAirports: boolean = false,
     ): Promise<IGetFlightOptionsResponse> {
         const formattedDate = formatDateForApiWithTzs(departureDate, timezone);
         const response = await this.$http.get<IFlightSearchResponseDto>("nationwideJob/GetScheduledFlightOptions", {
@@ -100,7 +101,8 @@ class NationwideService {
                 airlineId,
                 departureAirportId,
                 arrivalAirportId,
-                minimumLayoverMinutes
+                minimumLayoverMinutes,
+                includeNearbyAirports
             }
         });
 

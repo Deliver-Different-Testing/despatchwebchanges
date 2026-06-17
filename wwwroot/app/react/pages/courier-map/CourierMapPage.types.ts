@@ -6,6 +6,7 @@
 
 // Re-export from courier interface for convenience
 import React from "react";
+import type { Theme } from '@mui/material/styles';
 
 export type { IAvailableCourierPosition } from '../../../interfaces/courier.interface';
 
@@ -23,14 +24,39 @@ export function getDriverStatus(driver: import('../../../interfaces/courier.inte
     return 'idle';
 }
 
+/** Fill / border / text colors for one status pill marker */
+export interface MarkerColor {
+    bg: string;
+    border: string;
+    text: string;
+}
+
 /**
- * Color definitions for status-based map markers
+ * Fallback color definitions for status-based map markers.
+ *
+ * The live map derives its colors from the active MUI theme via
+ * {@link getMarkerColors} so the markers stay in step with the driver list
+ * (which colors rows from the same palette). This constant is only the
+ * default used when no theme-derived palette is supplied.
  */
-export const MARKER_COLORS: Record<DriverStatus, { bg: string; border: string; text: string }> = {
+export const MARKER_COLORS: Record<DriverStatus, MarkerColor> = {
     overdue: { bg: '#dc2626', border: '#991b1b', text: '#ffffff' },
     active:  { bg: '#2563eb', border: '#1e40af', text: '#ffffff' },
     idle:    { bg: '#475569', border: '#334155', text: '#ffffff' },
 };
+
+/**
+ * Builds the status → marker-color map from the active theme palette so that
+ * map markers and the driver-list rows use identical colors:
+ *   - overdue → error, active → primary, idle → success
+ */
+export function getMarkerColors(theme: Theme): Record<DriverStatus, MarkerColor> {
+    return {
+        overdue: { bg: theme.palette.error.main,   border: theme.palette.error.dark,   text: '#ffffff' },
+        active:  { bg: theme.palette.primary.main, border: theme.palette.primary.dark, text: '#ffffff' },
+        idle:    { bg: theme.palette.success.main, border: theme.palette.success.dark, text: '#ffffff' },
+    };
+}
 
 /**
  * Internal marker tracking state
@@ -90,8 +116,6 @@ export interface DriversPanelProps {
     onSearchChange: (term: string) => void;
     /** Callback when a driver is clicked */
     onDriverClick: (driver: import('../../../interfaces/courier.interface').IAvailableCourierPosition) => void;
-    /** Callback when refresh button is clicked */
-    onRefresh: () => void;
     /** Whether panel is hidden */
     isPanelHidden: boolean;
     /** Callback to toggle panel visibility */
@@ -136,6 +160,12 @@ export interface UseCourierMapReturn {
     mapContainerRef: React.RefObject<HTMLDivElement | null>;
     /** Whether the map is initialized */
     isInitialized: boolean;
+    /** The underlying HERE map instance (null until initialized) */
+    map: any | null;
+    /** The HERE platform instance (null until initialized) */
+    platform: any | null;
+    /** The HERE default layers (null until initialized) */
+    defaultLayers: any | null;
     /** Update courier markers on the map */
     updateCouriers: (couriers: import('../../../interfaces/courier.interface').IAvailableCourierPosition[]) => void;
     /** Center map on a specific courier */
@@ -209,19 +239,3 @@ export const OVERVIEW_ZOOM = {
     US: 4,
     NZ: 7,
 } as const;
-
-/**
- * Colors for driver avatars (10-color rotation)
- */
-export const AVATAR_COLORS = [
-    '#3b82f6', // blue
-    '#10b981', // emerald
-    '#8b5cf6', // violet
-    '#f59e0b', // amber
-    '#ef4444', // red
-    '#06b6d4', // cyan
-    '#ec4899', // pink
-    '#84cc16', // lime
-    '#6366f1', // indigo
-    '#14b8a6', // teal
-] as const;

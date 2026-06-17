@@ -14,8 +14,6 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import Toolbar from '@mui/material/Toolbar';
-import Typography from '@mui/material/Typography';
 import EventRepeatIcon from '@mui/icons-material/EventRepeat';
 import InfoIcon from '@mui/icons-material/Info';
 import TuneIcon from '@mui/icons-material/Tune';
@@ -24,6 +22,7 @@ import type {SxProps, Theme} from '@mui/material';
 import {Panel, PanelGroup, PanelResizeHandle} from 'react-resizable-panels';
 import {useRecurringJobsList} from '../../hooks/useRecurringJobsApi';
 import {JobDetails} from '../../components/common/job-details/JobDetails';
+import {PanelHeader} from '../../components/common/panel-header';
 import type {MountJobDetailsConfig} from '../../components/common/job-details/JobDetails.types';
 import {ErrorBoundary} from '../../components/common/error-boundary';
 import {recurringJobsApi} from '../../services/recurringJobsApi';
@@ -281,19 +280,7 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
             <Box sx={{height: '100%', display: 'flex', flexDirection: 'column', gap: 2, minHeight: 0, minWidth: 0}}>
                 {/* Filters Card */}
                 <Card variant="outlined" sx={{flexShrink: 0, overflow: 'hidden'}}>
-                    <Toolbar
-                        variant="dense"
-                        sx={{
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            minHeight: 44,
-                        }}
-                    >
-                        <TuneIcon sx={{mr: 1}} />
-                        <Typography variant="subtitle1">Filters</Typography>
-                    </Toolbar>
+                    <PanelHeader icon={<TuneIcon />} title="Filters" />
                     <RecurringJobsToolbar
                         searchText={query.searchText || ''}
                         recurringMode={query.recurringMode ?? (query.active ? RecurringMode.Active : RecurringMode.Inactive)}
@@ -325,22 +312,11 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                         minHeight: 0,
                     }}
                 >
-                    <Toolbar
-                        variant="dense"
-                        sx={{
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            minHeight: 44,
-                            flexShrink: 0,
-                        }}
-                    >
-                        <EventRepeatIcon sx={{mr: 1}} />
-                        <Typography variant="subtitle1">
-                            Recurring Jobs {data?.total ? `(${data.total})` : ''}
-                        </Typography>
-                    </Toolbar>
+                    <PanelHeader
+                        icon={<EventRepeatIcon />}
+                        title="Recurring Jobs"
+                        count={data?.total || undefined}
+                    />
                     <Box sx={{flex: 1, overflow: 'hidden'}}>
                         <RecurringJobsTable
                             jobs={data?.items || []}
@@ -374,22 +350,10 @@ export const RecurringJobsPage: React.FC<RecurringJobsPageProps> = ({
                     variant="outlined"
                     sx={{flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
                 >
-                    <Toolbar
-                        variant="dense"
-                        sx={{
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            minHeight: 44,
-                            flexShrink: 0,
-                        }}
-                    >
-                        <InfoIcon sx={{mr: 1}} />
-                        <Typography variant="subtitle1">
-                            Job Details{selectedJobId ? ` - Job #${selectedJobId}` : ''}
-                        </Typography>
-                    </Toolbar>
+                    <PanelHeader
+                        icon={<InfoIcon />}
+                        title={selectedJobId ? `Job Details - Job #${selectedJobId}` : 'Job Details'}
+                    />
                     <Box sx={{flex: 1, overflow: 'auto'}}>
                         <ErrorBoundary resetKey={selectedJobId ?? 'none'}>
                             <JobDetails

@@ -13,6 +13,9 @@ export interface IFlightViewModel {
     aircraft: string;
     serviceClasses: string[];
     isCodeShare: boolean;
+    serviceType: string;
+    isCharter: boolean;
+    serviceTypeDescription: string;
     amount: number;
     codeShareAirline: string;
     airlineId: number;
@@ -131,6 +134,9 @@ export interface IFlightViewModelDto {
     aircraft: string;
     serviceClasses: string[];
     isCodeShare: boolean;
+    serviceType: string;
+    isCharter: boolean;
+    serviceTypeDescription: string;
     amount: number;
     codeShareAirline: string;
     airlineId: number;

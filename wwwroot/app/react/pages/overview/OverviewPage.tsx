@@ -16,6 +16,7 @@ import {
     useOverviewOpenJobs,
 } from '../../hooks/useOverviewApi';
 import {isAiEnabled} from '../../../functions/aiSettings';
+import {PanelHeader} from '../../components/common/panel-header';
 import {FilterPanel} from './components/FilterPanel';
 import {StatsTabs} from './components/StatsTabs';
 import {DeliveriesTable} from './components/DeliveriesTable';
@@ -332,32 +333,17 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
             {/* Right Panel — Overview + Open Jobs */}
             <Box sx={{flex: 1, minWidth: 0}}>
                 <Card variant="outlined">
-                    {/* Card Header */}
-                    <Box
-                        sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            px: 2,
-                            py: 1,
-                            bgcolor: 'background.paper',
-                            color: 'text.primary',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            minHeight: 44,
-                        }}
-                    >
-                        <span className="material-symbols-outlined" style={{fontSize: 20}}>
-                            overview
-                        </span>
-                        <Typography variant="subtitle1" sx={{ml: 1, flex: 1, fontWeight: 500}}>
-                            Overview
-                        </Typography>
-                        <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
-                            <span className="material-symbols-outlined">
-                                {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
-                            </span>
-                        </IconButton>
-                    </Box>
+                    <PanelHeader
+                        icon={<span className="material-symbols-outlined">overview</span>}
+                        title="Overview"
+                        action={
+                            <IconButton size="small" onClick={handleToggleOverviewCard} sx={{color: 'inherit'}}>
+                                <span className="material-symbols-outlined">
+                                    {isOverviewCollapsed ? 'expand_more' : 'expand_less'}
+                                </span>
+                            </IconButton>
+                        }
+                    />
 
                     <Collapse in={!isOverviewCollapsed}>
                         <Box sx={{p: 2}}>

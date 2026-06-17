@@ -27,6 +27,7 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ScienceIcon from '@mui/icons-material/Science';
 import {aiAccentColor} from '../../../theme/designTokens';
 
 // Types that mirror the AngularJS interfaces
@@ -49,6 +50,8 @@ export interface DashboardSettingsConfig {
     showDriverLocationRefresh?: boolean;
     showDashboards?: boolean;
     showAiToggle?: boolean;
+    /** Show the "Try the React (BETA) Job Search" toggle. Job Search settings only. */
+    showJobSearchBetaToggle?: boolean;
 }
 
 export interface DashboardSettingsResult {
@@ -56,6 +59,8 @@ export interface DashboardSettingsResult {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     boxes?: Record<string, DashboardBox>;
     aiEnabled?: boolean;
+    /** Set when `showJobSearchBetaToggle` is true; the caller persists + redirects. */
+    jobSearchBetaEnabled?: boolean;
 }
 
 export interface DashboardSettingsDialogProps {
@@ -66,6 +71,7 @@ export interface DashboardSettingsDialogProps {
     selectedDriverLocationRefreshInterval?: RefreshOption;
     refreshOptions: RefreshOption[];
     aiEnabled?: boolean;
+    jobSearchBetaEnabled?: boolean;
     onClose: () => void;
     onSave: (result: DashboardSettingsResult) => void;
 }
@@ -78,6 +84,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
     selectedDriverLocationRefreshInterval: initialDriverInterval,
     refreshOptions,
     aiEnabled: initialAiEnabled,
+    jobSearchBetaEnabled: initialJobSearchBetaEnabled,
     onClose,
     onSave,
 }) => {
@@ -88,6 +95,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
         initialDriverInterval ?? {id: 0, text: 'Disabled'}
     );
     const [aiEnabled, setAiEnabled] = useState<boolean>(initialAiEnabled ?? false);
+    const [jobSearchBetaEnabled, setJobSearchBetaEnabled] = useState<boolean>(
+        initialJobSearchBetaEnabled ?? false,
+    );
     const [boxes, setBoxes] = useState<Record<string, DashboardBox>>(() => {
         // Deep clone the boxes
         const cloned: Record<string, DashboardBox> = {};
@@ -120,6 +130,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
             selectedDriverLocationRefreshInterval: driverLocationInterval,
             boxes,
             aiEnabled,
+            jobSearchBetaEnabled: config.showJobSearchBetaToggle ? jobSearchBetaEnabled : undefined,
         });
     };
 
@@ -420,6 +431,83 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                 )}
 
                 {config.showAiToggle && <Divider />}
+
+                {/* Job Search BETA toggle — opt-in for the React rebuild of /jobSearch.
+                    Only rendered when the caller (V1/V2 controller) sets
+                    `showJobSearchBetaToggle: true`. Caller persists localStorage
+                    and triggers the route redirect after Save. */}
+                {config.showJobSearchBetaToggle && (
+                    <Box sx={{p: 3}}>
+                        <Stack direction="row" spacing={1.5} sx={{alignItems: 'center', mb: 2}}>
+                            <Box
+                                sx={(theme) => ({
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 1.5,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                })}
+                            >
+                                <ScienceIcon color="primary" />
+                            </Box>
+                            <Typography variant="h6" sx={{fontWeight: 600}}>
+                                Try the new Job Search
+                            </Typography>
+                        </Stack>
+
+                        <Paper
+                            elevation={0}
+                            onClick={() => setJobSearchBetaEnabled((prev) => !prev)}
+                            sx={(theme) => ({
+                                p: 2,
+                                borderRadius: 2,
+                                border: `1px solid ${theme.palette.divider}`,
+                                bgcolor: 'white',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                '&:hover': {
+                                    borderColor: theme.palette.primary.main,
+                                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                                },
+                            })}
+                        >
+                            <Stack direction="row" sx={{alignItems: 'center', justifyContent: 'space-between'}}>
+                                <Box>
+                                    <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                        <Typography variant="subtitle2" sx={{fontWeight: 600}}>
+                                            React Job Search page
+                                        </Typography>
+                                        <Chip
+                                            label="BETA"
+                                            size="small"
+                                            sx={(theme) => ({
+                                                height: 18,
+                                                fontSize: '0.625rem',
+                                                fontWeight: 700,
+                                                bgcolor: theme.palette.primary.main,
+                                                color: '#fff',
+                                            })}
+                                        />
+                                    </Box>
+                                    <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                                        Off by default. When on, opening Job Search lands on the rebuilt React page
+                                        (faster filtering, lazier loads, modern dialogs). The classic page stays
+                                        available — turn this off any time to switch back. Applies to your account only.
+                                    </Typography>
+                                </Box>
+                                <Switch
+                                    checked={jobSearchBetaEnabled}
+                                    onClick={(e) => e.stopPropagation()}
+                                    onChange={() => setJobSearchBetaEnabled((prev) => !prev)}
+                                />
+                            </Stack>
+                        </Paper>
+                    </Box>
+                )}
+
+                {config.showJobSearchBetaToggle && <Divider />}
 
                 {/* Dashboard Panels Section */}
                 <Box sx={{p: 3}}>

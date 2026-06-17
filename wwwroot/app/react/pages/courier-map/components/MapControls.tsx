@@ -1,9 +1,10 @@
 /**
  * MapControls Component
  *
- * Left-edge map overlay with fit-all and refresh actions, matching the
+ * Top-left map overlay with fit-all and refresh actions, matching the
  * dispatch map's control style (see components/common/dispatch-map/
- * MapControlButtons.tsx + MapZoomViewControls.tsx).
+ * MapControlButtons.tsx + MapZoomViewControls.tsx). Sits opposite the
+ * bottom-left zoom/layer rail so the two never overlap.
  */
 
 import React from 'react';
@@ -25,7 +26,7 @@ export function MapControls({ onFitAll, onRefresh, isLoading }: MapControlsProps
             elevation={3}
             sx={{
                 position: 'absolute',
-                bottom: 20,
+                top: 16,
                 left: 10,
                 zIndex: 10,
                 display: 'flex',

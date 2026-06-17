@@ -32,6 +32,28 @@ import DashboardSettingsDialogService from "../dialogs/dashboard-settings-dialog
 import {setAiEnabled} from "../../functions/aiSettings";
 import {fetchPodJobs, fetchBulkJobs} from "../../react/services/jobSearchApi";
 import {queryKeys} from "../../react/query/queryClient";
+import {
+    filterCouriersForNumericSearch,
+    resolveDateRange,
+    toSelectedIds,
+} from "../../react/pages/job-search/lib/searchCriteria";
+import {
+    LayoutStorageKeys,
+    loadBoxVisibility,
+    loadLastActiveLayoutName,
+    loadLayouts,
+    saveBoxVisibility,
+    saveLastActiveLayoutName,
+    saveLayouts,
+} from "../../react/pages/job-search/lib/layoutPersistence";
+import {
+    createDefaultJobSearchLayout,
+    createJobSearchBoxes,
+} from "../../react/pages/job-search/lib/boxDefinitions";
+import {
+    getJobSearchBetaEnabled,
+    setJobSearchBetaEnabled,
+} from "../../react/pages/job-search/lib/betaPreference";
 import angular from 'angular';
 
 dayjs.extend(utc);
@@ -57,11 +79,14 @@ class JobSearchController extends BaseController {
         '$timeout',
         '$interval',
         '$stateParams',
+        '$state',
     ];
 
-    private readonly LayoutKey: string = `layoutsCS-${ContactID}`
-    private readonly LastActiveLayoutKey: string = `lastActiveLayoutCS-${ContactID}`
-    private readonly BoxVisibilityKey: string = `boxVisibility-${AppPage.JobSearch}-${ContactID}`
+    private readonly layoutStorageKeys: LayoutStorageKeys = {
+        layoutsKey: `layoutsCS-${ContactID}`,
+        lastActiveLayoutKey: `lastActiveLayoutCS-${ContactID}`,
+        boxVisibilityKeyBase: `boxVisibility-${AppPage.JobSearch}-${ContactID}`,
+    };
 
     readonly isAdmin: boolean;
 
@@ -124,6 +149,7 @@ class JobSearchController extends BaseController {
         $timeout: angular.ITimeoutService,
         $interval: angular.IIntervalService,
         private $stateParams: angular.ui.IStateParamsService,
+        private $state: angular.ui.IStateService,
     ) {
         super();
 
@@ -177,6 +203,18 @@ class JobSearchController extends BaseController {
     }
 
     $onInit(): void {
+        // Per-user opt-in for the React rebuild. When set, /jobSearch sends the
+        // operator over to /jobSearchV2 — preserving any deep-link jobId — and
+        // skips the rest of this controller's work. Toggled via the Job Search
+        // settings dialog (see `wwwroot/app/react/pages/job-search/lib/betaPreference.ts`).
+        if (getJobSearchBetaEnabled()) {
+            const params = this.$stateParams.jobId ? {jobId: this.$stateParams.jobId} : {};
+            this.$state.go('jobSearchV2', params).catch((err: unknown) => {
+                console.error('[JobSearch] Failed to redirect to beta route:', err);
+            });
+            return;
+        }
+
         this.mountReactJobList();
         this.mountReactBulkJobList();
 
@@ -356,65 +394,14 @@ class JobSearchController extends BaseController {
             angular.element('body').append('<div id="draggingItems"></div>');
         }
 
-        this.layouts = [];
-        this.defaultLayout = {
-            name: "Default",
-            layout: {
-                columns: [
-                    {
-                        id: "col1",
-                        width: "20%",
-                        boxes: [{name: JobSearchBoxes.SearchWidget, height: "100%"}],
-                    },
-                    {
-                        id: "col2",
-                        width: "25%",
-                        boxes: [
-                            {name: JobSearchBoxes.JobList, height: "50%"},
-                            {name: JobSearchBoxes.BulkJobList, height: "50%"}
-                        ],
-                    },
-                    {
-                        id: "col3",
-                        width: "35%",
-                        boxes: [
-                            {name: JobSearchBoxes.JobDetail, height: "40%"},
-                            {name: JobSearchBoxes.ScanList, height: "30%"},
-                            {name: JobSearchBoxes.Map, height: "30%"}
-                        ],
-                    },
-                    {
-                        id: "col4",
-                        width: "20%",
-                        boxes: [{name: JobSearchBoxes.DeliveryJourney, height: "100%"}],
-                    },
-                ],
-            },
-        };
+        this.defaultLayout = createDefaultJobSearchLayout();
+        this.layouts = loadLayouts(this.layoutStorageKeys, this.defaultLayout);
 
-        // Load saved layouts or use default
-        if (Modernizr.localstorage) {
-            try {
-                const storedLayouts: ILayout[] = JSON.parse(localStorage.getItem(this.LayoutKey) || '[]');
-                const lastActiveLayout = localStorage.getItem(this.LastActiveLayoutKey);
-
-                this.layouts = storedLayouts || [this.defaultLayout];
-                this.layouts[0] = this.defaultLayout; // Ensure default is always up to date
-
-                // Load last active layout or default
-                const layoutToLoad = lastActiveLayout
-                    ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
-                    : 0;
-                this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
-            } catch (error) {
-                console.error('Error loading stored layouts:', error);
-                this.layouts = [this.defaultLayout];
-                this.loadLayout(0);
-            }
-        } else {
-            this.layouts = [this.defaultLayout];
-            this.loadLayout(0);
-        }
+        const lastActiveLayout = loadLastActiveLayoutName(this.layoutStorageKeys);
+        const layoutToLoad = lastActiveLayout
+            ? this.layouts.findIndex((l: ILayout) => l.name === lastActiveLayout)
+            : 0;
+        this.loadLayout(layoutToLoad >= 0 ? layoutToLoad : 0);
 
         // Initialize box-sortable options
         this.boxSortableOptions = {
@@ -481,9 +468,7 @@ class JobSearchController extends BaseController {
         this.applyLayoutDimensions();
         this.loadBoxVisibility();
 
-        if (Modernizr.localstorage) {
-            localStorage.setItem(this.LastActiveLayoutKey, layout.name);
-        }
+        saveLastActiveLayoutName(this.layoutStorageKeys, layout.name);
 
         this.applyScope();
     }
@@ -518,10 +503,8 @@ class JobSearchController extends BaseController {
                 this.layouts.push(currentLayout);
                 this.currentLayoutName = name;
 
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
-                    localStorage.setItem(this.LastActiveLayoutKey, name);
-                }
+                saveLayouts(this.layoutStorageKeys, this.layouts);
+                saveLastActiveLayoutName(this.layoutStorageKeys, name);
 
                 this.toastrService.showSuccessToast("Layout saved successfully");
             });
@@ -539,9 +522,7 @@ class JobSearchController extends BaseController {
                 .cancel("Cancel"))
             .then(() => {
                 this.layouts.splice(index, 1);
-                if (Modernizr.localstorage) {
-                    localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
-                }
+                saveLayouts(this.layoutStorageKeys, this.layouts);
                 this.loadLayout(0);
                 this.toastrService.showSuccessToast("Layout deleted successfully");
             });
@@ -577,10 +558,7 @@ class JobSearchController extends BaseController {
             if (this.layout) {
                 this.layouts[index].layout = angular.copy(this.layout);
             }
-
-            if (Modernizr.localstorage) {
-                localStorage.setItem(this.LayoutKey, JSON.stringify(this.layouts));
-            }
+            saveLayouts(this.layoutStorageKeys, this.layouts);
         }
     }
 
@@ -603,125 +581,30 @@ class JobSearchController extends BaseController {
     }
 
     private initializeBoxes(): void {
-        this.boxes = {
-            [JobSearchBoxes.SearchWidget]: {
-                name: JobSearchBoxes.SearchWidget,
-                title: 'Filters',
-                icon: "filter_list",
-                templateUrl: "app/components/jobSearch/partials/pickDate.html",
-                showRefresh: false,
-                visible: true,
-                description: "Search filters and date range selection for job queries"
-            },
-            [JobSearchBoxes.JobList]: {
-                name: JobSearchBoxes.JobList,
-                title: 'Live Job Data',
-                icon: "list_alt",
-                templateUrl: "app/components/jobSearch/partials/jobList.html",
-                showRefresh: true,
-                visible: true,
-                description: "Real-time list of active jobs with current status"
-            },
-            [JobSearchBoxes.BulkJobList]: {
-                name: JobSearchBoxes.BulkJobList,
-                title: 'Bulk Job Data',
-                icon: "format_list_bulleted",
-                templateUrl: "app/components/jobSearch/partials/bulkJobList.html",
-                showRefresh: true,
-                visible: true,
-                description: "Aggregated view of multiple jobs for bulk operations"
-            },
-            [JobSearchBoxes.JobDetail]: {
-                name: JobSearchBoxes.JobDetail,
-                title: 'Detail',
-                icon: "assignment",
-                templateUrl: "app/components/jobSearch/partials/jobDetail.html",
-                showDetailButtons: true,
-                showRefresh: true,
-                visible: true,
-                description: "Comprehensive job information with action buttons"
-            },
-            [JobSearchBoxes.ScanList]: {
-                name: JobSearchBoxes.ScanList,
-                title: 'Scan Detail',
-                icon: "document_scanner",
-                templateUrl: "app/components/jobSearch/partials/scanList.html",
-                showRefresh: false,
-                visible: true,
-                description: "Detailed scan information and document history"
-            },
-            [JobSearchBoxes.Map]: {
-                name: JobSearchBoxes.Map,
-                title: 'Map',
-                icon: "pin_drop",
-                templateUrl: "app/components/jobSearch/partials/map.html",
-                showRefresh: false,
-                visible: true,
-                description: "Geographic visualization of job locations"
-            },
-            [JobSearchBoxes.DeliveryJourney]: {
-                name: JobSearchBoxes.DeliveryJourney,
-                title: 'Delivery Journey',
-                icon: "rocket_launch",
-                templateUrl: "app/components/jobSearch/partials/jobHistory.html",
-                showRefresh: false,
-                visible: true,
-                description: "Timeline and history of job delivery progress"
-            }
-        };
-    }
-
-    private getBoxVisibilityKey(layoutName: string): string {
-        return `${this.BoxVisibilityKey}-${layoutName}`;
+        this.boxes = createJobSearchBoxes();
     }
 
     private saveBoxVisibility(): void {
-        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
-
-        try {
-            const boxState: Record<string, { visible: boolean; collapsed: boolean }> = {};
-            Object.keys(this.boxes).forEach(boxName => {
-                boxState[boxName] = {
-                    visible: this.boxes![boxName].visible ?? true,
-                    collapsed: this.boxes![boxName].collapsed ?? false
-                };
-            });
-            const key = this.getBoxVisibilityKey(this.currentLayoutName);
-            localStorage.setItem(key, JSON.stringify(boxState));
-        } catch (error) {
-            console.error('Error saving box visibility to storage:', error);
-        }
+        if (!this.boxes || !this.currentLayoutName) return;
+        saveBoxVisibility(this.layoutStorageKeys, this.currentLayoutName, this.boxes);
     }
 
     private loadBoxVisibility(): void {
-        if (!Modernizr.localstorage || !this.boxes || !this.currentLayoutName) return;
+        if (!this.boxes || !this.currentLayoutName) return;
 
-        try {
-            const key = this.getBoxVisibilityKey(this.currentLayoutName);
-            const savedState = localStorage.getItem(key);
-            if (savedState) {
-                const boxState = JSON.parse(savedState);
-                Object.keys(boxState).forEach(boxName => {
-                    if (this.boxes && this.boxes[boxName]) {
-                        // Handle both old format (boolean) and new format (object)
-                        if (typeof boxState[boxName] === 'boolean') {
-                            this.boxes[boxName].visible = boxState[boxName];
-                            this.boxes[boxName].collapsed = false;
-                        } else {
-                            this.boxes[boxName].visible = boxState[boxName].visible ?? true;
-                            this.boxes[boxName].collapsed = boxState[boxName].collapsed ?? false;
-                        }
-                    }
-                });
-            } else {
-                // No saved state for this layout - reset all boxes to visible and expanded
-                Object.keys(this.boxes).forEach(boxName => {
-                    this.boxes![boxName].visible = true;
-                    this.boxes![boxName].collapsed = false;
-                });
+        const saved = loadBoxVisibility(this.layoutStorageKeys, this.currentLayoutName);
+        if (saved) {
+            for (const [boxName, state] of Object.entries(saved)) {
+                if (this.boxes[boxName]) {
+                    this.boxes[boxName].visible = state.visible;
+                    this.boxes[boxName].collapsed = state.collapsed;
+                }
             }
-        } catch (error) {
-            console.error('Error loading box visibility from storage:', error);
+        } else {
+            for (const boxName of Object.keys(this.boxes)) {
+                this.boxes[boxName].visible = true;
+                this.boxes[boxName].collapsed = false;
+            }
         }
     }
 
@@ -1186,72 +1069,32 @@ class JobSearchController extends BaseController {
 
         try {
             const results = await this.jobSearchService.getActiveCouriersSearch(searchText);
-
-            // If the search text is purely numeric (courier code), filter for exact matches only
-            const trimmedSearch = searchText.trim();
-            if (/^\d+$/.test(trimmedSearch)) {
-                // Filter results to only show exact courier code matches
-                const exactMatches = results.filter((r: any) => {
-                    if (!r.text) return false;
-                    // Extract the courier code (before space or parenthesis)
-                    const courierCode = r.text.split(/[\s(]/)[0];
-                    return courierCode === trimmedSearch;
-                });
-
-                // Return exact matches if found, otherwise return all results
-                return exactMatches.length > 0 ? exactMatches : results;
-            }
-
-            return results;
+            return filterCouriersForNumericSearch(results, searchText);
         } catch (error) {
             console.error('Error in courierQuerySearch:', error);
             return [];
         }
     }
 
-    // Helper methods to extract IDs from selected items
     private getClientIds(): number[] | undefined {
-        const ids = this.searchCriteria.clients?.map(c => c.id) || [];
-        return ids.length > 0 ? ids : undefined;
+        return toSelectedIds(this.searchCriteria.clients);
     }
 
     private getCourierIds(): number[] | undefined {
-        const ids = this.searchCriteria.couriers?.map(c => c.id) || [];
-        return ids.length > 0 ? ids : undefined;
+        return toSelectedIds(this.searchCriteria.couriers);
     }
 
     private getSpeedIds(): number[] | undefined {
-        const ids = this.searchCriteria.speeds?.map(s => s.id) || [];
-        return ids.length > 0 ? ids : undefined;
+        return toSelectedIds(this.searchCriteria.speeds);
     }
 
     onSearchRangeChange(dateRangeOption: JobSearchDateRange) {
         try {
             this.dateSearchRange = dateRangeOption;
-            const tenantTimezone = getIanaTimezone(this.timeZone);
-
-            const now = dayjs().tz(tenantTimezone);
-            const firstDayOfMonth = now.startOf('month');
-            const lastDayOfMonth = now.endOf('month');
-            const oneWeekAgo = now.subtract(7, 'day');
-            const oneWeekAhead = now.add(7, 'day');
-
-            switch (dateRangeOption) {
-                case JobSearchDateRange.Fortnight:
-                    this.searchCriteria.from_date = oneWeekAgo;
-                    this.searchCriteria.to_date = oneWeekAhead;
-                    break;
-                case JobSearchDateRange.Today:
-                    this.searchCriteria.from_date = now;
-                    this.searchCriteria.to_date = now;
-                    break;
-                case JobSearchDateRange.Month:
-                    this.searchCriteria.from_date = firstDayOfMonth;
-                    this.searchCriteria.to_date = lastDayOfMonth;
-                    break;
-                case JobSearchDateRange.Custom:
-                    // This option is empty as ng-if is used on the page to show custom date range options
-                    break;
+            const resolved = resolveDateRange(dateRangeOption, this.timeZone);
+            if (resolved) {
+                this.searchCriteria.from_date = resolved.from_date;
+                this.searchCriteria.to_date = resolved.to_date;
             }
         } catch (error) {
             console.log("Error: ", error);
@@ -1398,6 +1241,20 @@ class JobSearchController extends BaseController {
 
             if (result.aiEnabled !== undefined) {
                 setAiEnabled(result.aiEnabled);
+            }
+
+            // Beta opt-in changed: persist and (if turned on) flip to the new
+            // route immediately. Operators staying on V1 see a toast confirming
+            // the preference is saved.
+            if (result.jobSearchBetaEnabled !== undefined
+                && result.jobSearchBetaEnabled !== getJobSearchBetaEnabled()) {
+                setJobSearchBetaEnabled(result.jobSearchBetaEnabled);
+                if (result.jobSearchBetaEnabled) {
+                    this.$state.go('jobSearchV2').catch((err: unknown) => {
+                        console.error('[JobSearch] Failed to switch to beta route:', err);
+                    });
+                    return;
+                }
             }
 
             this.saveCurrentLayout();

@@ -16,7 +16,6 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import List from '@mui/material/List';
 import TextField from '@mui/material/TextField';
-import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import CheckBoxOutlineBlank from '@mui/icons-material/CheckBoxOutlineBlank';
 import CheckBoxIcon from '@mui/icons-material/CheckBox';
@@ -25,7 +24,6 @@ import Close from '@mui/icons-material/Close';
 import PersonOff from '@mui/icons-material/PersonOff';
 import Search from '@mui/icons-material/Search';
 import SearchOff from '@mui/icons-material/SearchOff';
-import Sync from '@mui/icons-material/Sync';
 import type { DriversPanelProps, FleetSelectorOption } from '../CourierMapPage.types';
 import { DriverListItem } from './DriverListItem';
 
@@ -100,7 +98,6 @@ export function DriversPanel({
     searchTerm,
     onSearchChange,
     onDriverClick,
-    onRefresh,
     isPanelHidden,
     onTogglePanel,
     fleetOptions,
@@ -147,7 +144,7 @@ export function DriversPanel({
                 flexDirection: 'column',
                 overflow: 'visible',
                 zIndex: 50,
-                bgcolor: 'rgba(255, 255, 255, 0.82)',
+                bgcolor: 'rgba(255, 255, 255, 0.92)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.45)',
@@ -174,7 +171,6 @@ export function DriversPanel({
                     sx={{
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
                         px: 2.5,
                         pt: 2,
                         pb: 1.5,
@@ -191,33 +187,6 @@ export function DriversPanel({
                     >
                         Drivers
                     </Typography>
-                    <Tooltip title="Refresh locations">
-                        <span>
-                            <IconButton
-                                size="small"
-                                onClick={onRefresh}
-                                disabled={isLoading}
-                                sx={{
-                                    color: 'text.secondary',
-                                    width: 30,
-                                    height: 30,
-                                }}
-                            >
-                                <Sync
-                                    sx={{
-                                        fontSize: 18,
-                                        ...(isLoading && {
-                                            animation: 'spin 1s linear infinite',
-                                            '@keyframes spin': {
-                                                from: { transform: 'rotate(0deg)' },
-                                                to: { transform: 'rotate(360deg)' },
-                                            },
-                                        }),
-                                    }}
-                                />
-                            </IconButton>
-                        </span>
-                    </Tooltip>
                 </Box>
 
                 {/* ── Stats summary ─────────────────── */}
@@ -513,15 +482,25 @@ export function DriversPanel({
                     width: 22,
                     height: 52,
                     borderRadius: '10px 0 0 10px',
-                    bgcolor: 'rgba(255, 255, 255, 0.82)',
+                    bgcolor: 'rgba(255, 255, 255, 0.92)',
                     backdropFilter: 'blur(20px)',
                     WebkitBackdropFilter: 'blur(20px)',
                     border: '1px solid rgba(255, 255, 255, 0.45)',
                     borderRight: 'none',
                     boxShadow: '-4px 0 12px rgba(0, 0, 0, 0.04)',
                     zIndex: 51,
+                    // Keep the visual sliver narrow but extend the touch target to
+                    // ≥44px in both axes (Material's accessibility minimum).
+                    '&::after': {
+                        content: '""',
+                        position: 'absolute',
+                        top: -4,
+                        bottom: -4,
+                        left: -14,
+                        right: -8,
+                    },
                     '&:hover': {
-                        bgcolor: 'rgba(255, 255, 255, 0.95)',
+                        bgcolor: 'rgba(255, 255, 255, 0.98)',
                     },
                     '&:active': {
                         transform: 'translateY(-50%) scale(0.95)',

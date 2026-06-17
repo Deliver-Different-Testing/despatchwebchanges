@@ -159,6 +159,7 @@ export interface DispatchJob {
     pickupFrom?: number;
     rootParentId?: number;
     displaySplitJobDetail?: boolean;
+    jobRelationshipTypeId?: number;
 
     // UI helper fields
     searchText?: string;

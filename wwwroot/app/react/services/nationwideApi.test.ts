@@ -150,6 +150,9 @@ describe('NationwideApiService', () => {
             aircraft: 'Boeing 787',
             serviceClasses: ['Economy', 'Business'],
             isCodeShare: false,
+            serviceType: 'J',
+            isCharter: false,
+            serviceTypeDescription: 'Scheduled Passenger',
             amount: 150.0,
             codeShareAirline: '',
             airlineId: 1,
@@ -202,6 +205,7 @@ describe('NationwideApiService', () => {
                     departureAirportId: 150,
                     arrivalAirportId: 96,
                     minimumLayoverMinutes: 60,
+                    includeNearbyAirports: false,
                 }
             );
         });
@@ -419,6 +423,9 @@ describe('NationwideApiService', () => {
             aircraft: 'Boeing 787',
             serviceClasses: ['Economy'],
             isCodeShare: false,
+            serviceType: 'J',
+            isCharter: false,
+            serviceTypeDescription: 'Scheduled Passenger',
             amount: 150.0,
             codeShareAirline: '',
             airlineId: 1,

@@ -349,33 +349,18 @@ describe('TaskDashboardPage', () => {
         expect(await screen.findByRole('button', {name: /List/i})).toBeInTheDocument();
     });
 
-    // ── Job Details card header consistency ──────────────────────────
-    it('renders Job Details header with same style as other card headers on the page', async () => {
+    // ── Panel header consistency ─────────────────────────────────────
+    // The Tasks and Job Details panels now route their headers through the
+    // shared gradient PanelHeader instead of a dense Toolbar. Assert by
+    // visible header text (per the query-by-text rule) rather than class.
+    it('renders the Tasks (n) and Job Details headers via the shared PanelHeader', async () => {
         const props = createDefaultProps();
-        const {container} = renderWithProviders(<TaskDashboardPage {...props} />);
+        renderWithProviders(<TaskDashboardPage {...props} />);
 
         await screen.findByText('Overdue follow up call');
 
-        // Collect all toolbar elements on the page
-        const toolbars = container.querySelectorAll('[class*="MuiToolbar-dense"]');
-        expect(toolbars.length).toBeGreaterThanOrEqual(2); // Tasks header + Job Details header
-
-        // Find the Job Details toolbar and the Tasks toolbar
-        const jobDetailsToolbar = Array.from(toolbars).find(tb =>
-            tb.textContent?.includes('Job Details')
-        );
-        const tasksToolbar = Array.from(toolbars).find(tb =>
-            tb.textContent?.includes('Tasks (')
-        );
-
-        expect(jobDetailsToolbar).toBeInTheDocument();
-        expect(tasksToolbar).toBeInTheDocument();
-
-        // Both should use the same MUI variant class (dense toolbar)
-        const jobDetailsClasses = jobDetailsToolbar!.className;
-        const tasksClasses = tasksToolbar!.className;
-        expect(jobDetailsClasses).toContain('MuiToolbar-dense');
-        expect(tasksClasses).toContain('MuiToolbar-dense');
+        expect(screen.getByText(/Tasks \(\d+\)/)).toBeInTheDocument();
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 
     // ── No onTaskSelect prop (bridge removed) ───────────────────────

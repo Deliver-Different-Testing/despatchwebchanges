@@ -19,6 +19,7 @@ import {
 import { useCourierMap } from './useCourierMap';
 import { DriversPanel } from './components/DriversPanel';
 import { MapControls } from './components/MapControls';
+import { MapZoomViewControls } from '../../components/common/dispatch-map/MapZoomViewControls';
 import { queryKeys } from '../../query';
 import { getAvailableCourierLocations, getAllFleetOptions } from '../../services/courierApi';
 
@@ -56,6 +57,9 @@ export function CourierMapPage({
     const {
         mapContainerRef,
         isInitialized,
+        map,
+        platform,
+        defaultLayers,
         updateCouriers,
         centerOnCourier,
         returnToOverview,
@@ -150,7 +154,6 @@ export function CourierMapPage({
                     searchTerm={debouncedSearchTerm}
                     onSearchChange={handleSearchChange}
                     onDriverClick={handleDriverClick}
-                    onRefresh={handleRefresh}
                     isPanelHidden={isPanelHidden}
                     onTogglePanel={handleTogglePanel}
                     fleetOptions={fleetOptions}
@@ -159,12 +162,22 @@ export function CourierMapPage({
                     onSelectedFleetIdsChange={setSelectedFleetIds}
                 />
 
-                {/* Map Controls */}
+                {/* Fit-all + refresh (top-left) */}
                 <MapControls
                     onFitAll={returnToOverview}
                     onRefresh={handleRefresh}
                     isLoading={isLoading}
                 />
+
+                {/* Zoom + layer/traffic rail (bottom-left), shared with the dispatch map */}
+                {isInitialized && map && (
+                    <MapZoomViewControls
+                        map={map}
+                        platform={platform}
+                        defaultLayers={defaultLayers}
+                        placement="left"
+                    />
+                )}
             </Box>
         </Box>
     );

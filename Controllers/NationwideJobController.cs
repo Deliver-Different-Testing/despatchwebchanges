@@ -108,7 +108,8 @@ public class NationwideJobController(
         int? airlineId,
         int? departureAirportId,
         int? arrivalAirportId,
-        int minimumLayoverMinutes = 60) //minimumLayover allowed
+        int minimumLayoverMinutes = 60, //minimumLayover allowed
+        bool includeNearbyAirports = false)
     {
         var stopwatch = Stopwatch.StartNew();
 
@@ -126,7 +127,9 @@ public class NationwideJobController(
                 arrivalAirportId,
                 codeType: "FS",
                 extendedOptions: null,
-                minimumLayoverMinutes: minimumLayoverMinutes);
+                minimumLayoverMinutes: minimumLayoverMinutes,
+                allowNearbyDepartures: includeNearbyAirports,
+                allowNearbyArrivals: includeNearbyAirports);
 
             if (flights is null || flights.Count == 0)
             {

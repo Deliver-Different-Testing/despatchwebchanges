@@ -409,9 +409,13 @@ describe('RecurringJobsPage', () => {
         expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 
-    // ── Job Details card header consistency ──────────────────────────
-    it('renders Job Details header with same style as other card headers on the page', () => {
-        const jobs = [createMockJob(1)];
+    // ── Panel header consistency ─────────────────────────────────────
+    // All panels now route their header through the shared gradient
+    // PanelHeader instead of the old dense Toolbar. Assert by visible header
+    // text (per the query-by-text rule) — every title rendering confirms each
+    // panel mounted a PanelHeader, and the "(n)" count proves the count prop.
+    it('renders all panel headers (Filters / Recurring Jobs (n) / Job Details) via PanelHeader', () => {
+        const jobs = [createMockJob(1), createMockJob(2)];
         mockUseRecurringJobsList.mockReturnValue({
             data: createMockResponse(jobs),
             isLoading: false,
@@ -419,25 +423,11 @@ describe('RecurringJobsPage', () => {
             refetch: jest.fn(),
         } as any);
 
-        const {container} = renderWithProviders(createDefaultProps());
+        renderWithProviders(createDefaultProps());
 
-        // Collect all dense toolbar elements
-        const toolbars = container.querySelectorAll('[class*="MuiToolbar-dense"]');
-        expect(toolbars.length).toBeGreaterThanOrEqual(3); // Filters + Recurring Jobs + Job Details
-
-        const jobDetailsToolbar = Array.from(toolbars).find(tb =>
-            tb.textContent?.includes('Job Details')
-        );
-        const filtersToolbar = Array.from(toolbars).find(tb =>
-            tb.textContent?.includes('Filters')
-        );
-
-        expect(jobDetailsToolbar).toBeInTheDocument();
-        expect(filtersToolbar).toBeInTheDocument();
-
-        // Both should use the same dense toolbar variant
-        expect(jobDetailsToolbar!.className).toContain('MuiToolbar-dense');
-        expect(filtersToolbar!.className).toContain('MuiToolbar-dense');
+        expect(screen.getByText('Filters')).toBeInTheDocument();
+        expect(screen.getByText('Recurring Jobs (2)')).toBeInTheDocument();
+        expect(screen.getByText('Job Details')).toBeInTheDocument();
     });
 
     // ── No onJobSelect prop (bridge removed) ────────────────────────

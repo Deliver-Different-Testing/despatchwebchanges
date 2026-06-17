@@ -45,6 +45,9 @@ export interface FlightOption {
     aircraft: string;
     serviceClasses: string[];
     isCodeShare: boolean;
+    serviceType: string;
+    isCharter: boolean;
+    serviceTypeDescription: string;
     amount: number;
     codeShareAirline: string;
     airlineId: number;
@@ -117,6 +120,9 @@ export interface FlightAgentDataTableProps {
     activeAirlineOptions: AirlineSuggestion[];
     selectedAirline?: AirlineSuggestion;
 
+    // Nearby-airport search (includes flights from alternate airports near the selected ones)
+    includeNearbyAirports: boolean;
+
     // Airport selection
     outboundAirportOptions: AirportSuggestion[];
     inboundAirportOptions: AirportSuggestion[];
@@ -140,6 +146,7 @@ export interface FlightAgentDataTableProps {
     // Callbacks
     onFlightSearchChange: (searchText: string) => void;
     onFilterFlightsByAirline: (airline: AirlineSuggestion | null) => void;
+    onToggleNearbyAirports: (value: boolean) => void;
     onOutboundAirportChange: (airport: AirportSuggestion | null) => void;
     onInboundAirportChange: (airport: AirportSuggestion | null) => void;
     onAddFlightToJob: (flight: FlightOption) => void;

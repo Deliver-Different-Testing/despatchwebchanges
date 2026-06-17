@@ -6,6 +6,8 @@ interface ISettingsDialogResult {
     selectedDriverLocationRefreshInterval?: ISuggestion;
     boxes?: Record<string, IBox>;
     aiEnabled?: boolean;
+    /** Present when the dialog was opened with `showJobSearchBetaToggle: true`. */
+    jobSearchBetaEnabled?: boolean;
 }
 
 export default ISettingsDialogResult;

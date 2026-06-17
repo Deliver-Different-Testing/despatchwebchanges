@@ -273,7 +273,8 @@ declare global {
                 boxes: Record<string, DashboardBox>,
                 selectedRefreshInterval?: RefreshOption,
                 selectedDriverLocationRefreshInterval?: RefreshOption,
-                aiEnabled?: boolean
+                aiEnabled?: boolean,
+                jobSearchBetaEnabled?: boolean
             ) => Promise<DashboardSettingsResult | null>;
         };
         ReactDateRangeDialog?: {

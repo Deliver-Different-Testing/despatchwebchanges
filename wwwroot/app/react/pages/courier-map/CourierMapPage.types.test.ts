@@ -5,6 +5,7 @@
  * Tests for the type definitions and constants used by the CourierMapPage component.
  */
 
+import { createTheme } from '@mui/material/styles';
 import {
     US_BOUNDS,
     NZ_BOUNDS,
@@ -16,7 +17,7 @@ import {
     DEFAULT_ZOOM,
     DRIVER_FOCUS_ZOOM,
     OVERVIEW_ZOOM,
-    AVATAR_COLORS,
+    getMarkerColors,
 } from './CourierMapPage.types';
 import type {
     CourierMarker,
@@ -182,29 +183,35 @@ describe('CourierMapPage Constants', () => {
         });
     });
 
-    describe('AVATAR_COLORS', () => {
-        it('should have 10 colors', () => {
-            expect(AVATAR_COLORS).toHaveLength(10);
-        });
-
-        it('should have all valid hex colors', () => {
-            const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
-            AVATAR_COLORS.forEach((color) => {
-                expect(color).toMatch(hexColorRegex);
+    describe('getMarkerColors', () => {
+        it('sources marker colors from the theme palette so map and list agree', () => {
+            const theme = createTheme({
+                palette: {
+                    error: { main: '#aa0000', dark: '#660000' },
+                    primary: { main: '#0000aa', dark: '#000066' },
+                    success: { main: '#00aa00', dark: '#006600' },
+                },
             });
+
+            const colors = getMarkerColors(theme);
+
+            // overdue → error, active → primary, idle → success
+            expect(colors.overdue.bg).toBe(theme.palette.error.main);
+            expect(colors.overdue.border).toBe(theme.palette.error.dark);
+            expect(colors.active.bg).toBe(theme.palette.primary.main);
+            expect(colors.active.border).toBe(theme.palette.primary.dark);
+            expect(colors.idle.bg).toBe(theme.palette.success.main);
+            expect(colors.idle.border).toBe(theme.palette.success.dark);
         });
 
-        it('should have unique colors', () => {
-            const uniqueColors = new Set(AVATAR_COLORS);
-            expect(uniqueColors.size).toBe(AVATAR_COLORS.length);
-        });
-
-        it('should include expected colors', () => {
-            expect(AVATAR_COLORS).toContain('#3b82f6'); // blue
-            expect(AVATAR_COLORS).toContain('#10b981'); // emerald
-            expect(AVATAR_COLORS).toContain('#ef4444'); // red
+        it('uses white label text for every status for contrast on the pill', () => {
+            const colors = getMarkerColors(createTheme());
+            expect(colors.overdue.text).toBe('#ffffff');
+            expect(colors.active.text).toBe('#ffffff');
+            expect(colors.idle.text).toBe('#ffffff');
         });
     });
+
 });
 
 describe('CourierMapPage Type Definitions', () => {
@@ -308,6 +315,9 @@ describe('CourierMapPage Type Definitions', () => {
             const returnValue: UseCourierMapReturn = {
                 mapContainerRef: {current: null as HTMLDivElement | null},
                 isInitialized: true,
+                map: null,
+                platform: null,
+                defaultLayers: null,
                 updateCouriers: jest.fn(),
                 centerOnCourier: jest.fn(),
                 returnToOverview: jest.fn(),
@@ -315,6 +325,9 @@ describe('CourierMapPage Type Definitions', () => {
 
             expect(returnValue).toHaveProperty('mapContainerRef');
             expect(returnValue).toHaveProperty('isInitialized');
+            expect(returnValue).toHaveProperty('map');
+            expect(returnValue).toHaveProperty('platform');
+            expect(returnValue).toHaveProperty('defaultLayers');
             expect(returnValue).toHaveProperty('updateCouriers');
             expect(returnValue).toHaveProperty('centerOnCourier');
             expect(returnValue).toHaveProperty('returnToOverview');

@@ -60,6 +60,9 @@ const mockFlight: FlightOption = {
     aircraft: 'Boeing 737-800',
     serviceClasses: ['Economy', 'Business'],
     isCodeShare: false,
+    serviceType: 'J',
+    isCharter: false,
+    serviceTypeDescription: 'Scheduled Passenger',
     amount: 250,
     codeShareAirline: '',
     airlineId: 1,
@@ -118,6 +121,7 @@ const createMockProps = (overrides: Partial<FlightAgentDataTableProps> = {}): Fl
     agentMessage: undefined,
     activeAirlineOptions: [{id: 1, text: 'AA', fullAirlineName: 'American Airlines'}],
     selectedAirline: undefined,
+    includeNearbyAirports: false,
     outboundAirportOptions: [{id: 1, text: 'LAX - Los Angeles'}],
     inboundAirportOptions: [{id: 2, text: 'JFK - New York'}],
     selectedOutboundAirport: {id: 1, text: 'LAX - Los Angeles'},
@@ -134,6 +138,7 @@ const createMockProps = (overrides: Partial<FlightAgentDataTableProps> = {}): Fl
     showAgentList: false,
     onFlightSearchChange: jest.fn(),
     onFilterFlightsByAirline: jest.fn(),
+    onToggleNearbyAirports: jest.fn(),
     onOutboundAirportChange: jest.fn(),
     onInboundAirportChange: jest.fn(),
     onAddFlightToJob: jest.fn(),
@@ -269,6 +274,40 @@ describe('FlightAgentDataTable', () => {
                 // Sortable headers
                 const sortLabels = screen.getAllByRole('button', {name: /airline|flight no|departure|arrival|duration|stops|rate|aircraft/i});
                 expect(sortLabels.length).toBeGreaterThan(0);
+            });
+
+            it('shows a Charter chip for charter flights and hides it for scheduled flights', () => {
+                // Scheduled flight (default mock) - no chip
+                const {unmount} = renderWithTheme(<FlightAgentDataTable {...createMockProps()} />);
+                expect(screen.queryByText('Charter')).not.toBeInTheDocument();
+                unmount();
+
+                // Charter flight - chip visible
+                renderWithTheme(
+                    <FlightAgentDataTable {...createMockProps({
+                        filteredFlightOptions: [{
+                            ...mockFlight,
+                            connectionId: 'conn-charter',
+                            serviceType: 'C',
+                            isCharter: true,
+                            serviceTypeDescription: 'Charter (Passenger)',
+                        }],
+                    })} />
+                );
+                expect(screen.getByText('Charter')).toBeInTheDocument();
+            });
+
+            it('toggles nearby-airport search when clicking the Nearby button', async () => {
+                const props = createMockProps();
+                renderWithTheme(<FlightAgentDataTable {...props} />);
+
+                await userEvent.click(screen.getByRole('button', {name: /nearby/i}));
+                expect(props.onToggleNearbyAirports).toHaveBeenCalledWith(true);
+            });
+
+            it('reflects active nearby-airport state via aria-pressed', () => {
+                renderWithTheme(<FlightAgentDataTable {...createMockProps({includeNearbyAirports: true})} />);
+                expect(screen.getByRole('button', {name: /nearby/i})).toHaveAttribute('aria-pressed', 'true');
             });
 
             it('shows stops label for connecting flights', () => {
