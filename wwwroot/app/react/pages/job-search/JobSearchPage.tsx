@@ -33,10 +33,16 @@ import {useBoxLayout} from './hooks/useBoxLayout';
 import {useDeepLinkJob} from './hooks/useDeepLinkJob';
 import {filterCouriersForNumericSearch} from './lib/searchCriteria';
 import type {LayoutStorageKeys} from './lib/layoutPersistence';
+import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
+import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
 
 export interface JobSearchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
     reloadFromStorage: () => void;
+    /** Opens the MUI "Save Layout" dialog and resolves with the entered name (or null if cancelled). */
+    promptSaveLayout: () => Promise<string | null>;
+    /** Opens the MUI "Delete Layout" confirmation and resolves true if confirmed. */
+    promptDeleteLayout: (layoutName: string) => Promise<boolean>;
 }
 
 export interface JobSearchPageProps {
@@ -72,6 +78,42 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [sortColumn, setSortColumn] = useState<string | undefined>();
     const [sortDirection, setSortDirection] = useState<string | undefined>();
 
+    // Save-layout dialog — opened imperatively via the layout bridge from the
+    // AngularJS toolbar. Resolves the pending promise with the entered name (or
+    // null on cancel) so `routes.ts` keeps owning persistence.
+    const [saveDialogOpen, setSaveDialogOpen] = useState(false);
+    const saveLayoutResolverRef = useRef<((name: string | null) => void) | null>(null);
+
+    const promptSaveLayout = useCallback((): Promise<string | null> => {
+        return new Promise<string | null>(resolve => {
+            saveLayoutResolverRef.current = resolve;
+            setSaveDialogOpen(true);
+        });
+    }, []);
+
+    const resolveSaveLayout = useCallback((name: string | null) => {
+        setSaveDialogOpen(false);
+        saveLayoutResolverRef.current?.(name);
+        saveLayoutResolverRef.current = null;
+    }, []);
+
+    // Delete-layout confirmation — same imperative bridge pattern as save.
+    const [deleteDialogName, setDeleteDialogName] = useState<string | null>(null);
+    const deleteLayoutResolverRef = useRef<((confirmed: boolean) => void) | null>(null);
+
+    const promptDeleteLayout = useCallback((layoutName: string): Promise<boolean> => {
+        return new Promise<boolean>(resolve => {
+            deleteLayoutResolverRef.current = resolve;
+            setDeleteDialogName(layoutName);
+        });
+    }, []);
+
+    const resolveDeleteLayout = useCallback((confirmed: boolean) => {
+        setDeleteDialogName(null);
+        deleteLayoutResolverRef.current?.(confirmed);
+        deleteLayoutResolverRef.current = null;
+    }, []);
+
     // Callbacks each JobListPanel hands back via `setUpdateSearchParamsCallback`.
     // We invoke these whenever the user clicks Search so the panel's
     // useJobListData picks up the new criteria (matches the V1 controller
@@ -100,8 +142,10 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         onLayoutBridgeReady?.({
             setCurrentLayoutName: boxLayout.setCurrentLayoutName,
             reloadFromStorage: boxLayout.reloadFromStorage,
+            promptSaveLayout,
+            promptDeleteLayout,
         });
-    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage]);
+    }, [onLayoutBridgeReady, boxLayout.setCurrentLayoutName, boxLayout.reloadFromStorage, promptSaveLayout, promptDeleteLayout]);
 
     const fetchConfigMain = useMemo(() => ({
         fetchFn: fetchPodJobs,
@@ -556,6 +600,18 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     <JobDetailFab currentJob={currentJob} onAction={fabAction} />
                 </Box>
             </Box>
+            <SaveLayoutDialog
+                open={saveDialogOpen}
+                existingNames={boxLayout.layouts.map(l => l.name)}
+                onClose={() => resolveSaveLayout(null)}
+                onConfirm={name => resolveSaveLayout(name)}
+            />
+            <DeleteLayoutDialog
+                open={deleteDialogName !== null}
+                layoutName={deleteDialogName ?? ''}
+                onClose={() => resolveDeleteLayout(false)}
+                onConfirm={() => resolveDeleteLayout(true)}
+            />
         </Box>
     );
 };

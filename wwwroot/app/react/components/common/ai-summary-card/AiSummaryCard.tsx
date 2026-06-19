@@ -20,7 +20,6 @@ import Skeleton from '@mui/material/Skeleton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutlined';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
@@ -38,6 +37,8 @@ import {
     TimelineItem,
     TimelineStatus,
 } from '../../../services/aiAssistantApi';
+import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
+import {formatRelativeTime} from '../../../utils/dateUtils';
 
 interface AiSummaryCardProps {
     title: string;
@@ -109,17 +110,6 @@ function timelineColor(status: TimelineStatus, theme: Theme): string {
         case 'Pending': return theme.palette.info.main;
         default: return theme.palette.success.main;
     }
-}
-
-function formatRelativeTime(date: Date): string {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 10) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
 }
 
 function buildPlainTextCopy(summary: StructuredSummaryResponse): string {
@@ -278,10 +268,7 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
                 <Stack direction="row" spacing={1} sx={{
                     alignItems: "center"
                 }}>
-                    <AutoAwesomeIcon sx={(theme) => {
-                        const v = summary ? severityVisuals(summary.severity, theme) : severityVisuals('Info', theme);
-                        return {fontSize: 20, color: v.color};
-                    }} />
+                    <AutoMateLogo size={24} />
                     <Typography
                         variant="subtitle2"
                         sx={{
@@ -383,6 +370,12 @@ export const AiSummaryCard: React.FC<AiSummaryCardProps> = ({title, fetchSummary
             <Box sx={{px: 2, py: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5}}>
                 {loading && !summary && (
                     <Box>
+                        <Stack direction="row" spacing={1} sx={{alignItems: 'center', mb: 1}}>
+                            <AutoMateLogo size={32} animated />
+                            <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                                Auto-mate is thinking…
+                            </Typography>
+                        </Stack>
                         <Skeleton variant="text" width="80%" height={28} />
                         <Skeleton variant="text" width="60%" />
                         <Skeleton variant="rectangular" height={48} sx={{mt: 1, borderRadius: 1}} />

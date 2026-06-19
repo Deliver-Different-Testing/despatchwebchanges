@@ -18,10 +18,6 @@ public sealed class FlightStatsService(
     ICiriumApiClient ciriumApiClient
 ) : IFlightStatsService
 {
-    // DespatchWeb still owns its webhook callback URL: it is passed to IM, which relays it verbatim
-    // to Cirium so the existing webhook receiver is untouched.
-    private readonly string _webhookUrl = Environment.GetEnvironmentVariable("FlightWebhook");
-
     /// <summary>
     /// Searches for available flights between airports via the Integration Manager Cirium gateway.
     /// </summary>
@@ -80,9 +76,9 @@ public sealed class FlightStatsService(
         ArgumentException.ThrowIfNullOrEmpty(completeFlightNumber);
         ArgumentException.ThrowIfNullOrEmpty(departureAirportCode);
 
-        // Dispatch still owns its webhook callback: mint its own token + deliverTo URL exactly as
-        // the legacy path did, and pass them to IM, which relays them verbatim to Cirium. The
-        // existing callback receiver and its token validation are therefore untouched.
+        // DespatchWeb mints the deliverTo token (it carries the tenant claims IM's webhook receiver
+        // validates). IM owns the callback URL — it fills deliverTo with its own webhook-receiver
+        // endpoint, so DespatchWeb no longer sends a URL.
         var connectionString =
             contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "Connection")?.Value;
         var tenantId = contextAccessor.HttpContext?.User.Claims.FirstOrDefault(x => x.Type == "CurrentTenantID")?.Value;
@@ -101,7 +97,6 @@ public sealed class FlightStatsService(
             CompleteFlightNumber = completeFlightNumber,
             DepartureTime = departureTime,
             DepartureAirportCode = departureAirportCode,
-            DeliverToUrl = _webhookUrl,
             DeliverToToken = requestToken,
             Events = events
         });

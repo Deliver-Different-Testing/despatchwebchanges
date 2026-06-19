@@ -112,7 +112,7 @@ describe('SideNav', () => {
         it('should highlight the current navigation item', () => {
             renderWithTheme(<SideNav {...defaultProps} currentState="home" />);
             const dashboardButton = screen.getByText('Dashboard').closest('div[role="button"]');
-            expect(dashboardButton).toHaveStyle({borderLeft: expect.stringContaining('4px solid')});
+            expect(dashboardButton).toHaveClass('Mui-selected');
         });
     });
 

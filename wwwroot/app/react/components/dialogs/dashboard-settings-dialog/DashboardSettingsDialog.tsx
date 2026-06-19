@@ -26,9 +26,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoIcon from '@mui/icons-material/Info';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ScienceIcon from '@mui/icons-material/Science';
 import {aiAccentColor} from '../../../theme/designTokens';
+import {AutoMateLogo} from '../../common/auto-mate-logo/AutoMateLogo';
 
 // Types that mirror the AngularJS interfaces
 export interface RefreshOption {
@@ -182,7 +182,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         {config.title}
                     </Typography>
                     <Typography variant="body2" sx={{opacity: 0.85, mt: 0.25}}>
-                        Configure your dashboard preferences
+                        Choose what appears on your dashboard and how often it updates
                     </Typography>
                 </Box>
                 <IconButton
@@ -223,7 +223,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             <Typography variant="h6" sx={{
                                 fontWeight: 600
                             }}>
-                                Auto-Refresh
+                                Auto-refresh
                             </Typography>
                         </Stack>
 
@@ -248,12 +248,12 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         <Typography variant="subtitle2" sx={{
                                             fontWeight: 600
                                         }}>
-                                            Job List
+                                            Job list
                                         </Typography>
                                         <Typography variant="body2" sx={{
                                             color: "text.secondary"
                                         }}>
-                                            How often the job list refreshes
+                                            How often the job list checks for new and updated jobs
                                         </Typography>
                                     </Box>
                                     <FormControl size="small" sx={{minWidth: 140}}>
@@ -297,12 +297,12 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                             <Typography variant="subtitle2" sx={{
                                                 fontWeight: 600
                                             }}>
-                                                Driver Locations
+                                                Driver locations
                                             </Typography>
                                             <Typography variant="body2" sx={{
                                                 color: "text.secondary"
                                             }}>
-                                                How often the map updates
+                                                How often driver positions update on the map
                                             </Typography>
                                         </Box>
                                         <FormControl size="small" sx={{minWidth: 140}}>
@@ -352,7 +352,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     justifyContent: 'center',
                                 }}
                             >
-                                <AutoAwesomeIcon sx={{color: aiAccentColor}} />
+                                <AutoMateLogo size={28} />
                             </Box>
                             <Typography variant="h6" sx={{
                                 fontWeight: 600
@@ -388,7 +388,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         <Typography variant="subtitle2" sx={{
                                             fontWeight: 600
                                         }}>
-                                            Show Auto-mate briefing cards
+                                            Show Auto-mate briefings
                                         </Typography>
                                         <Chip
                                             label="BETA"
@@ -405,10 +405,8 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     <Typography variant="body2" sx={{
                                         color: "text.secondary"
                                     }}>
-                                        Off by default. Turn on to surface Auto-mate-generated briefings on the
-                                        job details page, the task dashboard, the operations overview, and
-                                        the driver compliance tab. The briefing leads with a verdict, what
-                                        needs attention, and the key facts — no need to scroll the page.
+                                        Adds a short AI briefing — verdict, what needs attention, and key facts —
+                                        to the job details, task dashboard, operations, and driver compliance pages.
                                         Applies to your account only.
                                     </Typography>
                                 </Box>
@@ -477,7 +475,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                 <Box>
                                     <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
                                         <Typography variant="subtitle2" sx={{fontWeight: 600}}>
-                                            React Job Search page
+                                            Use the new Job Search
                                         </Typography>
                                         <Chip
                                             label="BETA"
@@ -492,9 +490,9 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                         />
                                     </Box>
                                     <Typography variant="body2" sx={{color: 'text.secondary'}}>
-                                        Off by default. When on, opening Job Search lands on the rebuilt React page
-                                        (faster filtering, lazier loads, modern dialogs). The classic page stays
-                                        available — turn this off any time to switch back. Applies to your account only.
+                                        Opens the rebuilt Job Search page — faster filtering, quicker loads, and
+                                        modern dialogs. Switch back to the classic page any time. Applies to your
+                                        account only.
                                     </Typography>
                                 </Box>
                                 <Switch
@@ -534,7 +532,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                         <Typography variant="h6" sx={{
                             fontWeight: 600
                         }}>
-                            Dashboard Panels
+                            Dashboard panels
                         </Typography>
                     </Stack>
 
@@ -547,7 +545,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     mb: 2,
                                     ml: 6
                                 }}>
-                                Toggle panels to show or hide them on your dashboard
+                                Choose which panels appear on your dashboard
                             </Typography>
 
                             <Stack spacing={1}>
@@ -652,7 +650,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                             <Typography variant="body1" sx={{
                                 color: "text.secondary"
                             }}>
-                                Panel visibility requires a custom layout.
+                                Panel visibility is only available with a custom layout.
                             </Typography>
                             <Typography
                                 variant="body2"
@@ -660,7 +658,7 @@ export const DashboardSettingsDialog: React.FC<DashboardSettingsDialogProps> = (
                                     color: "text.secondary",
                                     mt: 0.5
                                 }}>
-                                Create a custom layout to manage panel visibility.
+                                Create a custom layout to choose which panels appear.
                             </Typography>
                         </Paper>)
                     )}
