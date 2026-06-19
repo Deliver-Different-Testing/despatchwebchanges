@@ -142,9 +142,9 @@ public class FlightStatsServiceTests
     }
 
     [Fact]
-    public async Task CreateFlightRuleByDepartureAsync_PassesDispatchWebhookAndToken()
+    public async Task CreateFlightRuleByDepartureAsync_PassesTokenAndNoUrl()
     {
-        Environment.SetEnvironmentVariable("FlightWebhook", "https://despatch.example/webhook");
+        // IM owns the callback URL now — DespatchWeb sends only the deliverTo token.
         Environment.SetEnvironmentVariable("JWTSecretKey", "0123456789abcdef0123456789abcdef");
         Environment.SetEnvironmentVariable("ClaimsKey", Convert.ToBase64String(new byte[32]));
         Environment.SetEnvironmentVariable("Issuer", "test-issuer");
@@ -171,7 +171,7 @@ public class FlightStatsServiceTests
         Assert.NotNull(captured);
         Assert.Equal("NZ123", captured!.CompleteFlightNumber);
         Assert.Equal("AKL", captured.DepartureAirportCode);
-        Assert.Equal("https://despatch.example/webhook", captured.DeliverToUrl);
+        Assert.Null(captured.DeliverToUrl);
         Assert.Equal("all", captured.Events);
         Assert.False(string.IsNullOrEmpty(captured.DeliverToToken));
     }

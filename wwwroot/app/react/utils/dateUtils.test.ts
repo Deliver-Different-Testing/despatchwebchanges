@@ -24,6 +24,7 @@ import {
     formatShortDate,
     formatTime,
     formatRelativeDateTime,
+    formatRelativeTime,
     getTimezoneAbbreviation,
     getTimezoneName,
     formatDateForApiWithTzs,
@@ -332,6 +333,39 @@ describe('dateUtils', () => {
             const result = formatInfoLogDateTimeString(pdtString);
             expect(result).not.toBe('No date');
             expect(result).not.toBe('Invalid date');
+        });
+    });
+
+    describe('formatRelativeTime', () => {
+        // Fixed "now" so each branch is deterministic regardless of when the suite runs.
+        const now = new Date('2024-06-15T12:00:00Z');
+
+        beforeEach(() => {
+            jest.useFakeTimers().setSystemTime(now);
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        const ago = (ms: number) => new Date(now.getTime() - ms);
+
+        it.each([
+            ['just now under 10s', ago(5 * 1000), 'just now'],
+            ['seconds', ago(45 * 1000), '45s ago'],
+            ['minutes', ago(3 * 60 * 1000), '3m ago'],
+            ['hours', ago(5 * 60 * 60 * 1000), '5h ago'],
+            ['days', ago(2 * 24 * 60 * 60 * 1000), '2d ago'],
+        ])('formats %s as %s', (_, date, expected) => {
+            expect(formatRelativeTime(date)).toBe(expected);
+        });
+
+        it.each([
+            ['second/minute boundary (60s)', ago(60 * 1000), '1m ago'],
+            ['minute/hour boundary (60m)', ago(60 * 60 * 1000), '1h ago'],
+            ['hour/day boundary (24h)', ago(24 * 60 * 60 * 1000), '1d ago'],
+        ])('handles %s', (_, date, expected) => {
+            expect(formatRelativeTime(date)).toBe(expected);
         });
     });
 });

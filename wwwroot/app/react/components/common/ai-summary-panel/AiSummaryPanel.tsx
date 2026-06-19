@@ -18,14 +18,15 @@ import IconButton from '@mui/material/IconButton';
 import Skeleton from '@mui/material/Skeleton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import StopIcon from '@mui/icons-material/Stop';
 import {AiSummaryResponse} from '../../../services/aiAssistantApi';
 import {aiAccentColor} from '../../../theme/designTokens';
+import {formatRelativeTime} from '../../../utils/dateUtils';
 import {AiMarkdownRenderer} from './AiMarkdownRenderer';
+import {AutoMateLogo} from '../auto-mate-logo/AutoMateLogo';
 
 interface AiSummaryPanelProps {
     title: string;
@@ -34,17 +35,6 @@ interface AiSummaryPanelProps {
     autoFetch?: boolean;
     /** Accent color for the header stripe */
     accentColor?: string;
-}
-
-function formatRelativeTime(date: Date): string {
-    const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-    if (seconds < 10) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
 }
 
 export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
@@ -173,7 +163,7 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         alignItems: "center",
                         gap: 1
                     }}>
-                    <AutoAwesomeIcon sx={{fontSize: 20, color: accentColor}} />
+                    <AutoMateLogo size={24} />
                     <Typography
                         variant="subtitle2"
                         sx={{
@@ -244,6 +234,12 @@ export const AiSummaryPanel: React.FC<AiSummaryPanelProps> = ({
                         <Box sx={{
                             py: 1
                         }}>
+                            <Box sx={{display: 'flex', alignItems: 'center', gap: 1, mb: 1}}>
+                                <AutoMateLogo size={32} animated />
+                                <Typography variant="body2" sx={{color: 'text.secondary'}}>
+                                    Auto-mate is thinking…
+                                </Typography>
+                            </Box>
                             <Skeleton variant="text" width="90%" />
                             <Skeleton variant="text" width="75%" />
                             <Skeleton variant="text" width="60%" />

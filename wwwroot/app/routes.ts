@@ -6,6 +6,15 @@ import {
     getJobSearchBetaEnabled,
     setJobSearchBetaEnabled,
 } from './react/pages/job-search/lib/betaPreference';
+import {
+    loadLayouts,
+    saveLayouts,
+    loadLastActiveLayoutName,
+    saveLastActiveLayoutName,
+} from './react/pages/job-search/lib/layoutPersistence';
+import {createDefaultJobSearchLayout} from './react/pages/job-search/lib/boxDefinitions';
+import type {ILayout} from './interfaces/layout.interfaces';
+import {AppPage} from './enums/app-pages.enum';
 
 class RouterConfig {
     constructor(
@@ -297,33 +306,17 @@ class RouterConfig {
                     };
 
                     // ── Layout storage keys — must match useBoxLayout in JobSearchPage ──
-                    const LAYOUTS_KEY = `layoutsCS-${window.ContactID}`;
-                    const LAST_ACTIVE_KEY = `lastActiveLayoutCS-${window.ContactID}`;
+                    const layoutStorageKeys = {
+                        layoutsKey: `layoutsCS-${window.ContactID}`,
+                        lastActiveLayoutKey: `lastActiveLayoutCS-${window.ContactID}`,
+                        boxVisibilityKeyBase: `boxVisibility-${AppPage.JobSearch}-${window.ContactID}`,
+                    };
+                    const defaultLayout = createDefaultJobSearchLayout();
 
-                    interface ILayoutPayload {
-                        columns: Array<{
-                            id: string;
-                            width: string;
-                            boxes: Array<{name: string; height: string}>;
-                        }>;
-                    }
-                    interface ILayout {
-                        name: string;
-                        layout: ILayoutPayload;
-                    }
-
-                    function readLayouts(): ILayout[] {
-                        try {
-                            const raw = localStorage.getItem(LAYOUTS_KEY);
-                            const stored = raw ? (JSON.parse(raw) as ILayout[]) : [];
-                            return stored.length > 0 ? stored : [];
-                        } catch {
-                            return [];
-                        }
-                    }
-                    function writeLayouts(list: ILayout[]): void {
-                        localStorage.setItem(LAYOUTS_KEY, JSON.stringify(list));
-                    }
+                    // Read through the canonical loader so the toolbar's list is
+                    // identical to what React renders — Default is always present
+                    // at index 0, even when localStorage is empty.
+                    const readLayouts = (): ILayout[] => loadLayouts(layoutStorageKeys, defaultLayout);
 
                     const ctrl = {
                         layouts: [] as ILayout[],
@@ -437,17 +430,19 @@ class RouterConfig {
                             }
                         },
 
-                        saveLayout: () => {
-                            const name = window.prompt('Layout name?');
+                        saveLayout: async () => {
+                            const name = await window.ReactJobSearch?.promptSaveLayout();
                             if (!name) return;
                             const layouts = readLayouts();
                             const sourceLayout = layouts.find(l => l.name === ctrl.currentLayoutName);
-                            const payload = sourceLayout?.layout ?? {columns: []};
+                            const payload = sourceLayout?.layout ?? defaultLayout.layout;
                             const next: ILayout = {name, layout: JSON.parse(JSON.stringify(payload))};
+                            // `layouts` already carries Default at index 0, so the
+                            // persisted array stays aligned with React's loadLayouts.
                             const updated = [...layouts, next];
-                            writeLayouts(updated);
-                            localStorage.setItem(LAST_ACTIVE_KEY, name);
-                            ctrl.layouts = updated;
+                            saveLayouts(layoutStorageKeys, updated);
+                            saveLastActiveLayoutName(layoutStorageKeys, name);
+                            ctrl.layouts = readLayouts();
                             ctrl.currentLayoutName = name;
                             window.ReactJobSearch?.setCurrentLayoutName(name);
                             window.ReactJobSearch?.reloadLayoutsFromStorage();
@@ -458,24 +453,24 @@ class RouterConfig {
                             const layouts = readLayouts();
                             const target = layouts[index];
                             if (!target) return;
-                            localStorage.setItem(LAST_ACTIVE_KEY, target.name);
+                            saveLastActiveLayoutName(layoutStorageKeys, target.name);
                             ctrl.currentLayoutName = target.name;
                             window.ReactJobSearch?.setCurrentLayoutName(target.name);
                         },
 
-                        deleteLayout: (index: number) => {
+                        deleteLayout: async (index: number) => {
                             const layouts = readLayouts();
                             const target = layouts[index];
                             if (!target) return;
-                            // Default layout lives only in memory on the React
-                            // side; the persisted array starts with custom
-                            // layouts. Block index 0 only if it's named "Default".
+                            // Default always lives at index 0 (injected by
+                            // loadLayouts); never delete it.
                             if (target.name === 'Default') return;
-                            if (!window.confirm(`Delete layout "${target.name}"?`)) return;
+                            const confirmed = await window.ReactJobSearch?.promptDeleteLayout(target.name);
+                            if (!confirmed) return;
                             const updated = layouts.filter((_, i) => i !== index);
-                            writeLayouts(updated);
-                            localStorage.setItem(LAST_ACTIVE_KEY, 'Default');
-                            ctrl.layouts = updated;
+                            saveLayouts(layoutStorageKeys, updated);
+                            saveLastActiveLayoutName(layoutStorageKeys, 'Default');
+                            ctrl.layouts = readLayouts();
                             ctrl.currentLayoutName = 'Default';
                             window.ReactJobSearch?.setCurrentLayoutName('Default');
                             window.ReactJobSearch?.reloadLayoutsFromStorage();
@@ -483,9 +478,10 @@ class RouterConfig {
                         },
                     };
 
-                    // Seed the toolbar from localStorage on mount.
+                    // Seed the toolbar from localStorage on mount. `readLayouts`
+                    // guarantees Default at index 0, so it's always selectable.
                     ctrl.layouts = readLayouts();
-                    ctrl.currentLayoutName = localStorage.getItem(LAST_ACTIVE_KEY) ?? 'Default';
+                    ctrl.currentLayoutName = loadLastActiveLayoutName(layoutStorageKeys) ?? 'Default';
 
                     ($scope as angular.IScope & {ctrl: typeof ctrl}).ctrl = ctrl;
 

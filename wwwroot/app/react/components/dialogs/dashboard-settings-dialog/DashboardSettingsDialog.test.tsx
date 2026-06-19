@@ -64,27 +64,27 @@ describe('DashboardSettingsDialog', () => {
             // Dialog chrome
             expect(screen.getByRole('dialog')).toBeInTheDocument();
             expect(screen.getByText('Dashboard Settings')).toBeInTheDocument();
-            expect(screen.getByText('Configure your dashboard preferences')).toBeInTheDocument();
+            expect(screen.getByText('Choose what appears on your dashboard and how often it updates')).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /cancel/i})).toBeInTheDocument();
             expect(screen.getByRole('button', {name: /save/i})).toBeInTheDocument();
 
             // Auto-Refresh section
-            expect(screen.getByText('Auto-Refresh')).toBeInTheDocument();
-            expect(screen.getByText('Job List')).toBeInTheDocument();
-            expect(screen.getByText('How often the job list refreshes')).toBeInTheDocument();
+            expect(screen.getByText('Auto-refresh')).toBeInTheDocument();
+            expect(screen.getByText('Job list')).toBeInTheDocument();
+            expect(screen.getByText('How often the job list checks for new and updated jobs')).toBeInTheDocument();
             expect(screen.getByText('30 seconds')).toBeInTheDocument();
-            expect(screen.getByText('Driver Locations')).toBeInTheDocument();
-            expect(screen.getByText('How often the map updates')).toBeInTheDocument();
+            expect(screen.getByText('Driver locations')).toBeInTheDocument();
+            expect(screen.getByText('How often driver positions update on the map')).toBeInTheDocument();
 
             // Dashboard Panels section
-            expect(screen.getByText('Dashboard Panels')).toBeInTheDocument();
+            expect(screen.getByText('Dashboard panels')).toBeInTheDocument();
             expect(screen.getByText('Pending Jobs')).toBeInTheDocument();
             expect(screen.getByText('Active Jobs')).toBeInTheDocument();
             expect(screen.getByText('Completed Jobs')).toBeInTheDocument();
             expect(screen.getByText('Shows all pending jobs')).toBeInTheDocument();
             expect(screen.getByText('Shows active jobs in progress')).toBeInTheDocument();
             expect(screen.getByText('Shows completed jobs')).toBeInTheDocument();
-            expect(screen.getByText(/toggle panels to show or hide/i)).toBeInTheDocument();
+            expect(screen.getByText(/choose which panels appear/i)).toBeInTheDocument();
 
             // Switches
             const switches = screen.getAllByRole('switch');
@@ -118,7 +118,7 @@ describe('DashboardSettingsDialog', () => {
                     showRefreshInterval: false
                 }
             })} />);
-            expect(screen.queryByText('Auto-Refresh')).not.toBeInTheDocument();
+            expect(screen.queryByText('Auto-refresh')).not.toBeInTheDocument();
         });
 
         it('hides Driver Locations when showDriverLocationRefresh is false', () => {
@@ -128,7 +128,7 @@ describe('DashboardSettingsDialog', () => {
                     showDriverLocationRefresh: false
                 }
             })} />);
-            expect(screen.queryByText('Driver Locations')).not.toBeInTheDocument();
+            expect(screen.queryByText('Driver locations')).not.toBeInTheDocument();
         });
 
         it('shows empty state when showDashboards is false', () => {
@@ -138,7 +138,7 @@ describe('DashboardSettingsDialog', () => {
                     showDashboards: false
                 }
             })} />);
-            expect(screen.getByText(/panel visibility requires a custom layout/i)).toBeInTheDocument();
+            expect(screen.getByText(/panel visibility is only available/i)).toBeInTheDocument();
         });
     });
 
@@ -167,7 +167,7 @@ describe('DashboardSettingsDialog', () => {
             const user = userEvent.setup();
             renderWithTheme(<DashboardSettingsDialog {...createMockProps()} />);
 
-            const jobListSection = screen.getByText('Job List').closest('div');
+            const jobListSection = screen.getByText('Job list').closest('div');
             const select = within(jobListSection!.parentElement!).getByRole('combobox');
 
             await user.click(select);
@@ -224,7 +224,7 @@ describe('DashboardSettingsDialog', () => {
                 selectedDriverLocationRefreshInterval: undefined,
             })} />);
 
-            const driverSection = screen.getByText('Driver Locations').closest('div');
+            const driverSection = screen.getByText('Driver locations').closest('div');
             expect(within(driverSection!.parentElement!).getByText('Disabled')).toBeInTheDocument();
         });
     });
@@ -233,7 +233,7 @@ describe('DashboardSettingsDialog', () => {
     describe('Edge Cases', () => {
         it('renders without error when boxes is empty', () => {
             renderWithTheme(<DashboardSettingsDialog {...createMockProps({boxes: {}})} />);
-            expect(screen.getByText('Dashboard Panels')).toBeInTheDocument();
+            expect(screen.getByText('Dashboard panels')).toBeInTheDocument();
         });
 
         it('displays name when title is not provided', () => {

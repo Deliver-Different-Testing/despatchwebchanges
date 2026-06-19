@@ -99,6 +99,24 @@ export function reloadLayoutsFromStorage(): void {
     layoutBridge?.reloadFromStorage();
 }
 
+/**
+ * Open the React MUI "Save Layout" dialog and resolve with the entered name
+ * (or null if canceled / React not mounted). The AngularJS toolbar awaits
+ * this in place of the old native `window.prompt`.
+ */
+export function promptSaveLayout(): Promise<string | null> {
+    return layoutBridge?.promptSaveLayout() ?? Promise.resolve(null);
+}
+
+/**
+ * Open the React MUI "Delete Layout" confirmation and resolve true if the user
+ * confirms (false if cancelled / React not mounted). The AngularJS toolbar
+ * awaits this in place of the old native `window.confirm`.
+ */
+export function promptDeleteLayout(layoutName: string): Promise<boolean> {
+    return layoutBridge?.promptDeleteLayout(layoutName) ?? Promise.resolve(false);
+}
+
 // Expose globally for AngularJS access (typed via global.d.ts)
 declare global {
     interface Window {
@@ -107,6 +125,8 @@ declare global {
             unmount: typeof unmountJobSearchPage;
             setCurrentLayoutName: typeof setCurrentLayoutName;
             reloadLayoutsFromStorage: typeof reloadLayoutsFromStorage;
+            promptSaveLayout: typeof promptSaveLayout;
+            promptDeleteLayout: typeof promptDeleteLayout;
         };
     }
 }
@@ -116,6 +136,8 @@ window.ReactJobSearch = {
     unmount: unmountJobSearchPage,
     setCurrentLayoutName,
     reloadLayoutsFromStorage,
+    promptSaveLayout,
+    promptDeleteLayout,
 };
 
 // Register as AngularJS module (for ocLazyLoad compatibility)

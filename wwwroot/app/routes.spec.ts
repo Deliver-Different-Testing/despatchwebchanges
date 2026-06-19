@@ -323,3 +323,108 @@ describe('Base URL Behavior', () => {
         });
     });
 });
+
+describe('jobSearchV2 Layout Toolbar', () => {
+    const CONTACT_ID = 4242;
+    const LAYOUTS_KEY = `layoutsCS-${CONTACT_ID}`;
+    const LAST_ACTIVE_KEY = `lastActiveLayoutCS-${CONTACT_ID}`;
+
+    let reactJobSearch: {
+        mount: jest.Mock;
+        unmount: jest.Mock;
+        setCurrentLayoutName: jest.Mock;
+        reloadLayoutsFromStorage: jest.Mock;
+        promptSaveLayout: jest.Mock;
+        promptDeleteLayout: jest.Mock;
+    };
+
+    // Build the jobSearchV2 controller instance and return its `ctrl`.
+    function makeController() {
+        const registeredStates = new Map<string, any>();
+        const stateProvider: {state: jest.Mock} = {
+            state: jest.fn((name: string, config: any) => {
+                registeredStates.set(name, config);
+                return stateProvider;
+            }),
+        };
+        const urlRouterProvider = {when: jest.fn(), otherwise: jest.fn()};
+        new RouterConfig(urlRouterProvider as any, stateProvider as any);
+
+        const controllerArr = registeredStates.get('jobSearchV2').controller;
+        const controllerFn = controllerArr[controllerArr.length - 1];
+
+        const $scope: any = {$on: jest.fn()};
+        const $stateParams: any = {jobId: null};
+        const toastr = {
+            showSuccessToast: jest.fn(),
+            showWarningToast: jest.fn(),
+            showErrorToast: jest.fn(),
+            showInfoToast: jest.fn(),
+        };
+        controllerFn($scope, $stateParams, toastr, {US_Customer: false});
+        return {ctrl: $scope.ctrl, toastr};
+    }
+
+    beforeEach(() => {
+        localStorage.clear();
+        (window as any).ContactID = CONTACT_ID;
+        (window as any).TimeZone = 'New Zealand Standard Time';
+        reactJobSearch = {
+            mount: jest.fn(),
+            unmount: jest.fn(),
+            setCurrentLayoutName: jest.fn(),
+            reloadLayoutsFromStorage: jest.fn(),
+            promptSaveLayout: jest.fn().mockResolvedValue(null),
+            promptDeleteLayout: jest.fn().mockResolvedValue(false),
+        };
+        (window as any).ReactJobSearch = reactJobSearch;
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+        delete (window as any).ReactJobSearch;
+    });
+
+    it('always exposes a selectable "Default" layout at index 0 when storage is empty', () => {
+        const {ctrl} = makeController();
+        // The reported bug: with no saved layouts the toolbar dropdown had no
+        // Default entry, so users on a custom layout could not switch back.
+        expect(ctrl.layouts[0].name).toBe('Default');
+        expect(ctrl.currentLayoutName).toBe('Default');
+    });
+
+    it('keeps Default at index 0 when saving the first custom layout', async () => {
+        const {ctrl} = makeController();
+        reactJobSearch.promptSaveLayout.mockResolvedValue('My Layout');
+
+        await ctrl.saveLayout();
+
+        const persisted = JSON.parse(localStorage.getItem(LAYOUTS_KEY)!);
+        expect(persisted[0].name).toBe('Default');
+        expect(persisted[1].name).toBe('My Layout');
+        expect(ctrl.layouts.map((l: {name: string}) => l.name)).toEqual(['Default', 'My Layout']);
+        expect(reactJobSearch.setCurrentLayoutName).toHaveBeenCalledWith('My Layout');
+        expect(reactJobSearch.reloadLayoutsFromStorage).toHaveBeenCalled();
+    });
+
+    it('switches back to Default via loadLayout(0)', async () => {
+        const {ctrl} = makeController();
+        reactJobSearch.promptSaveLayout.mockResolvedValue('My Layout');
+        await ctrl.saveLayout();
+        reactJobSearch.setCurrentLayoutName.mockClear();
+
+        ctrl.loadLayout(0);
+
+        expect(ctrl.currentLayoutName).toBe('Default');
+        expect(localStorage.getItem(LAST_ACTIVE_KEY)).toBe('Default');
+        expect(reactJobSearch.setCurrentLayoutName).toHaveBeenCalledWith('Default');
+    });
+
+    it('never deletes the Default layout', () => {
+        const {ctrl} = makeController();
+        ctrl.deleteLayout(0);
+        // No confirm prompt, no storage write, Default stays put.
+        expect(ctrl.layouts[0].name).toBe('Default');
+        expect(reactJobSearch.reloadLayoutsFromStorage).not.toHaveBeenCalled();
+    });
+});
