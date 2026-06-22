@@ -10,6 +10,7 @@
 import {
     fetchPodJobs,
     fetchBulkJobs,
+    fetchDispatchBulkJobDetail,
     fetchDispatchJobs,
     fetchClearListJobs,
     fetchNationwideJobsNew,
@@ -200,6 +201,24 @@ describe('jobSearchApi', () => {
 
             expect(result.jobs).toHaveLength(3);
             expect(result.totalCount).toBe(3);
+        });
+    });
+
+    // ── fetchDispatchBulkJobDetail ───────────────────────────────────
+
+    describe('fetchDispatchBulkJobDetail', () => {
+        it('should GET /Job/DispatchBulkJobDetail with the bulkJobId and transform the result', async () => {
+            mockApiClient.get.mockResolvedValueOnce({id: 7, jobNo: 'BULK-7'});
+
+            const result = await fetchDispatchBulkJobDetail(7);
+
+            expect(mockApiClient.get).toHaveBeenCalledWith(
+                '/Job/DispatchBulkJobDetail',
+                {bulkJobId: 7},
+                undefined,
+            );
+            expect(result).toHaveProperty('_transformed', true);
+            expect(result).toHaveProperty('jobNo', 'BULK-7');
         });
     });
 

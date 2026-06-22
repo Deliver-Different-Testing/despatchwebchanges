@@ -638,6 +638,49 @@ public class JobRepositoryOperationsTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task AssignCourierToJobAsync_RecordsDispatcherFromCurrentUser()
+    {
+        // Arrange - fixture mocks GetStaffId() to return 1
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(CreateJob(100, "JOB001"));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignCourierToJobAsync([100], courierId: 5);
+
+        // Assert - the dispatching staff member is recorded
+        await using var verifyContext = CreateContext();
+        var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        Assert.Equal(1, updatedJob!.UcjbDispId);
+    }
+
+    [Fact]
+    public async Task AssignCourierToJobAsync_WithNoStaffClaim_LeavesDispatcherNull()
+    {
+        // Arrange - no staff claim, so GetStaffId() returns 0
+        _tenantInfoServiceMock.Setup(x => x.GetStaffId()).Returns(0);
+        await using (var context = CreateContext())
+        {
+            context.TucJobs.Add(CreateJob(100, "JOB001"));
+            await context.SaveChangesAsync(TestContext.Current.CancellationToken);
+        }
+
+        var repository = CreateRepository();
+
+        // Act
+        await repository.AssignCourierToJobAsync([100], courierId: 5);
+
+        // Assert - staff id 0 is not a valid dispatcher FK, so it is left null
+        await using var verifyContext = CreateContext();
+        var updatedJob = await verifyContext.TucJobs.FindAsync([100], TestContext.Current.CancellationToken);
+        Assert.Null(updatedJob!.UcjbDispId);
+    }
+
+    [Fact]
     public async Task SimpleRepriceJobManualAsync_RegularJob_FallsBackToArchive()
     {
         // Arrange - job exists only in archive, not in live table

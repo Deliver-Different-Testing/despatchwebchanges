@@ -482,6 +482,8 @@ public sealed partial class DeliveryJourneyService(
                 .TagWith("DeliveryJourney - Live Status Updates")
                 .ToListAsync();
 
+            statusUpdateTemps = await ResolveDispatcherNamesAsync(context, statusUpdateTemps);
+
             var currentBreakdownTotal = await context.PricingBreakdowns
                 .Where(p => p.JobId == jobId)
                 .TagWith("DeliveryJourney - Live PricingBreakdown Total")
@@ -517,6 +519,8 @@ public sealed partial class DeliveryJourneyService(
             .TagWith("DeliveryJourney - Archived Status Updates")
             .ToListAsync();
 
+        archivedStatusUpdateTemps = await ResolveDispatcherNamesAsync(context, archivedStatusUpdateTemps);
+
         var currentArchivedBreakdownTotal = await context.PricingBreakdownArchives
             .Where(p => p.JobId == jobId)
             .TagWith("DeliveryJourney - Archived PricingBreakdown Total")
@@ -524,6 +528,94 @@ public sealed partial class DeliveryJourneyService(
 
         return MapArchivedStatusUpdatesToViewModels(archivedStatusUpdateTemps, jobId, currentArchivedBreakdownTotal);
     }
+
+    // The dispatcher field (ucjbDispID) is journalled by the tucJob update
+    // trigger as a generic JobUpdate row whose Old/NewValue hold the tucStaff
+    // id as text. These helpers resolve those ids to "First Last" names so the
+    // timeline reads "Dispatcher: Jane Doe" rather than "Dispatcher: 5".
+    private const string DispatcherFieldName = "ucjbDispID";
+
+    private static bool IsDispatcherRow(string changeType, string fieldName) =>
+        changeType == nameof(DeliveryJourneyChangeType.JobUpdate) && fieldName == DispatcherFieldName;
+
+    private static async Task<List<JobDeliveryJourneyDto>> ResolveDispatcherNamesAsync(
+        DespatchContext context, List<JobDeliveryJourneyDto> rows)
+    {
+        var names = await ResolveStaffNamesAsync(
+            context,
+            rows.Where(r => IsDispatcherRow(r.ChangeType, r.FieldName))
+                .SelectMany(r => new[] { r.OldValue, r.NewValue }));
+
+        if (names.Count == 0)
+        {
+            return rows;
+        }
+
+        return rows
+            .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
+                ? r with
+                {
+                    OldValue = ResolveDispatcherValue(r.OldValue, names),
+                    NewValue = ResolveDispatcherValue(r.NewValue, names)
+                }
+                : r)
+            .ToList();
+    }
+
+    private async Task<List<JobDeliveryJourneyArchiveDto>> ResolveDispatcherNamesAsync(
+        DespatchContext context, List<JobDeliveryJourneyArchiveDto> rows)
+    {
+        var names = await ResolveStaffNamesAsync(
+            context,
+            rows.Where(r => IsDispatcherRow(r.ChangeType, r.FieldName))
+                .SelectMany(r => new[] { r.OldValue, r.NewValue }));
+
+        if (names.Count == 0)
+        {
+            return rows;
+        }
+
+        return rows
+            .Select(r => IsDispatcherRow(r.ChangeType, r.FieldName)
+                ? r with
+                {
+                    OldValue = ResolveDispatcherValue(r.OldValue, names),
+                    NewValue = ResolveDispatcherValue(r.NewValue, names)
+                }
+                : r)
+            .ToList();
+    }
+
+    private static async Task<Dictionary<int, string>> ResolveStaffNamesAsync(
+        DespatchContext context, IEnumerable<string> rawIds)
+    {
+        var ids = rawIds
+            .Where(v => int.TryParse(v, out _))
+            .Select(int.Parse)
+            .Distinct()
+            .ToList();
+
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        var staff = await context.TucStaffs
+            .Where(s => ids.Contains(s.UcstId))
+            .Select(s => new { s.UcstId, s.UcstFirstName, s.UcstLastName })
+            .TagWith("DeliveryJourney - Dispatcher names")
+            .ToListAsync();
+
+        return staff.ToDictionary(s => s.UcstId, s => $"{s.UcstFirstName} {s.UcstLastName}".Trim());
+    }
+
+    private static string ResolveDispatcherValue(string rawId, IReadOnlyDictionary<int, string> names) =>
+        !string.IsNullOrEmpty(rawId)
+        && int.TryParse(rawId, out var id)
+        && names.TryGetValue(id, out var name)
+        && !string.IsNullOrWhiteSpace(name)
+            ? name
+            : rawId;
 
     /// <summary>
     /// Maps live status update DTOs to view models, grouping by timestamp.

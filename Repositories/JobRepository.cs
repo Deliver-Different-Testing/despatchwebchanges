@@ -4210,9 +4210,8 @@ public partial class JobRepository(
     /// Retrieves a job by ID including its related family jobs, marking it as read.
     /// </summary>
     /// <param name="jobId">The job ID to retrieve.</param>
-    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Job group containing the job and related jobs.</returns>
-    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default)
+    public async Task<JobGroupViewModel> GetJobByIdAsync(int jobId)
     {
         try
         {
@@ -4457,6 +4456,18 @@ public partial class JobRepository(
 
         return isValid;
     }
+
+    /// <summary>
+    /// Resolves a job number to its canonical job id. Returns null when no job
+    /// with that number exists. Job numbers are unique per job; if more than one
+    /// row ever shares a number, the most recent (highest id) wins.
+    /// </summary>
+    public async Task<int?> GetJobIdByNumberAsync(string jobNumber) =>
+        await Context.TblJobs
+            .Where(j => j.Number == jobNumber)
+            .OrderByDescending(j => j.JobId)
+            .Select(j => (int?)j.JobId)
+            .FirstOrDefaultAsync();
 
     /// <summary>
     /// Calculates the total amount (including fuel surcharge) from a base amount using the database function.
@@ -5548,11 +5559,13 @@ public partial class JobRepository(
     private async Task<int> AssignCourierToJobsAsync(IEnumerable<int> jobIds, int courierId)
     {
         var tenantTime = _clock.TenantNow;
+        var dispatcherStaffId = _infoService.GetStaffId();
 
         return await Context.TucJobs
             .Where(j => jobIds.Contains(j.UcjbId))
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(j => j.UcjbCourierId, courierId)
+                .SetProperty(j => j.UcjbDispId, dispatcherStaffId > 0 ? dispatcherStaffId : (int?)null)
                 .SetProperty(j => j.DesCheck, false)
                 .SetProperty(j => j.FdcourierId, (int?)null)
                 .SetProperty(j => j.UcjbDispDate, tenantTime)

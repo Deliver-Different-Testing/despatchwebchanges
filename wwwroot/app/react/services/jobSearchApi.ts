@@ -9,8 +9,8 @@
 import {apiClient, RequestOptions} from './apiClient';
 import {transformDispatchJobDTO} from '../../functions/dtoMappings';
 import {formatDateForApiWithTzs} from '../utils/dateUtils';
-import type {IJobSearchResultDto} from '../../interfaces/job.interface';
-import type {JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
+import type {IJobSearchResultDto, IDispatchJobDto} from '../../interfaces/job.interface';
+import type {DispatchJob, JobListSearchParams, JobSearchResult} from '../interfaces/dispatchJob';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -93,6 +93,22 @@ export async function fetchScanDetail(
         jobId,
         isBulkJob,
     }, options);
+}
+
+// ── Bulk Job Detail (Job Search page) ────────────────────────────────
+
+/**
+ * Fetch the dispatch-shaped detail for a bulk job. Mirrors the V1
+ * JobSearchService.getDispatchBulkJobDetail so the selected bulk job carries
+ * the same fields (booked run date, lock/prebook flags, etc.) as a standard
+ * job fetched via dispatchExecutorApi.getDispatchJobDetail.
+ */
+export async function fetchDispatchBulkJobDetail(
+    bulkJobId: number,
+    options?: RequestOptions,
+): Promise<DispatchJob> {
+    const dto = await apiClient.get<IDispatchJobDto>('/Job/DispatchBulkJobDetail', {bulkJobId}, options);
+    return transformDispatchJobDTO(dto) as unknown as DispatchJob;
 }
 
 // ── Dispatch Jobs (Home page) ────────────────────────────────────────

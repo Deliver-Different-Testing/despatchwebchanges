@@ -852,6 +852,39 @@ public class JobController(
     public async Task<IActionResult> SwapPod(string job1, string job2)
     {
         await jobCommandRepository.SwapPodAsync(job1, job2);
+
+        // Mirror the legacy Job Search behaviour: after swapping the POD, push the
+        // corrected delivery data back out — re-send the second job, then
+        // re-assign + re-send the first job. Best-effort: the swap has already
+        // committed, so a downstream re-send/re-assign failure is logged, not fatal.
+        try
+        {
+            var firstJobId = await jobQueryRepository.GetJobIdByNumberAsync(job1);
+            var secondJobId = await jobQueryRepository.GetJobIdByNumberAsync(job2);
+
+            if (secondJobId is { } secondId)
+            {
+                await jobCommandRepository.ReSendSelectedJobsAsync([secondId]);
+            }
+
+            if (firstJobId is { } firstId)
+            {
+                // Don't re-assign a job dispatched to a partner — that would diverge
+                // from the partner-side view (see ReAssignSelected). Re-send is safe.
+                if (!await jobQueryRepository.IsOutboundPartnerJobAsync(firstId, infoService.GetCurrentTenantId()))
+                {
+                    await jobCommandRepository.ReAssignSelectedJobsAsync([firstId]);
+                }
+
+                await jobCommandRepository.ReSendSelectedJobsAsync([firstId]);
+            }
+        }
+        catch (Exception e)
+        {
+            Log.Error(e, "{Message}",
+                ErrorMessageStringFormatter.FormatForLogging(e, nameof(JobController), nameof(SwapPod)));
+        }
+
         return Ok();
     }
 

@@ -4,10 +4,11 @@ import dayjs from 'dayjs';
 import {AppPage} from '../../interfaces/dispatchJob';
 import {ContactID} from '../../../contants';
 import {AppPage as LegacyAppPage} from '../../../enums/app-pages.enum';
-import {fetchBulkJobs, fetchPodJobs} from '../../services/jobSearchApi';
+import {fetchBulkJobs, fetchDispatchBulkJobDetail, fetchPodJobs} from '../../services/jobSearchApi';
+import {getDispatchJobDetail} from '../../services/dispatchExecutorApi';
 import {queryClient, queryKeys} from '../../query/queryClient';
 import type {DispatchJob, JobListSearchParams} from '../../interfaces/dispatchJob';
-import {ISuggestion} from '../../../interfaces/job.interface';
+import {ISuggestion, IDispatchMapItem} from '../../../interfaces/job.interface';
 import type {ShowToastFn} from '../../services/toastService';
 import JobSearchBoxes from '../../../components/jobSearch/enums/jobSearchBoxes';
 import {searchActiveClients} from '../../services/jobApi';
@@ -15,8 +16,13 @@ import {searchActiveCouriers} from '../../services/courierApi';
 import {searchSpeedOptions} from '../../services/dispatchExecutorApi';
 import {
     addRestoreEvent,
+    allocateJobs,
+    getActivePartnerOptions,
+    getPartnerRateForJob,
+    reAllocateJobs,
     restoreJobs,
     restoreSplitJobs,
+    sendToPartner,
     setJobLocked,
     unSplitJob,
 } from '../../services/jobListApi';
@@ -35,6 +41,8 @@ import {filterCouriersForNumericSearch} from './lib/searchCriteria';
 import type {LayoutStorageKeys} from './lib/layoutPersistence';
 import {SaveLayoutDialog} from '../../components/dialogs/save-layout-dialog/SaveLayoutDialog';
 import {DeleteLayoutDialog} from '../../components/dialogs/delete-layout-dialog/DeleteLayoutDialog';
+import {DispatchDialog} from '../../components/dialogs/dispatch-dialog';
+import {DispatchMap} from '../../components/common/dispatch-map/DispatchMap';
 
 export interface JobSearchLayoutBridge {
     setCurrentLayoutName: (name: string) => void;
@@ -77,6 +85,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const [isBulkJob, setIsBulkJob] = useState(false);
     const [sortColumn, setSortColumn] = useState<string | undefined>();
     const [sortDirection, setSortDirection] = useState<string | undefined>();
+    const [dispatchDialogOpen, setDispatchDialogOpen] = useState(false);
 
     // Save-layout dialog — opened imperatively via the layout bridge from the
     // AngularJS toolbar. Resolves the pending promise with the entered name (or
@@ -121,20 +130,41 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
     const updateMainParamsRef = useRef<((p: Partial<JobListSearchParams>) => void) | null>(null);
     const updateBulkParamsRef = useRef<((p: Partial<JobListSearchParams>) => void) | null>(null);
 
+    // Tracks the currently-selected job id so async detail fetches only apply
+    // if the operator hasn't moved on to another job in the meantime.
+    const selectedIdRef = useRef<number | undefined>(undefined);
+
+    // Fetch the full dispatch-shaped job detail (matches V1 selectJobDetail /
+    // selectBulkJobDetail). FAB action availability and the ScanList run date
+    // rely on fields the list-row DTO may not carry, so we replace the optimistic
+    // row with the full record once it lands.
+    const loadFullDetail = useCallback((jobId: number, bulk: boolean) => {
+        const request = bulk ? fetchDispatchBulkJobDetail(jobId) : getDispatchJobDetail(jobId);
+        request
+            .then(full => {
+                if (full && selectedIdRef.current === jobId) setCurrentJob(full);
+            })
+            .catch(err => console.error('[JobSearchPage] Failed to load job detail:', err));
+    }, []);
+
     const selectJob = useCallback((job: DispatchJob, bulk: boolean) => {
-        setCurrentJob(job);
+        selectedIdRef.current = job.id;
+        setCurrentJob(job);          // optimistic: show the list row immediately
         setCurrentJobId(job.id);
         setIsBulkJob(bulk);
-    }, []);
+        loadFullDetail(job.id, bulk); // then upgrade to the full detail record
+    }, [loadFullDetail]);
 
     useDeepLinkJob({
         deepLinkJobId,
         onSelectJob: jobId => {
-            // For deep-link we only know the id — JobListPanel will populate
-            // the full job object once results land. Track the id so the
-            // job-detail panel mounts immediately.
+            // Deep-link gives us only the id. Fetch the full detail so the
+            // job-detail panel, FAB and ScanList (booked run date) have real
+            // data instead of waiting for the list results to land.
+            selectedIdRef.current = jobId;
             setCurrentJobId(jobId);
             setIsBulkJob(false);
+            loadFullDetail(jobId, false);
         },
     });
 
@@ -189,6 +219,14 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
         // Push the current criteria into each JobListPanel — they own their
         // own `params` state seeded from fetchConfig.initialParams and only
         // update via this callback (not by re-reading our `fetchConfig` prop).
+        //
+        // Single-ID isolation (matches V1 refreshAllData): a job-id search only
+        // makes sense against the main list, and a bulk-job-id search only
+        // against the bulk list — so disable the other panel to avoid a wasted
+        // query and stray results in the wrong box.
+        const byJobId = searchCriteria.criteria.jobId != null;
+        const byBulkJobId = searchCriteria.criteria.bulkJobId != null;
+
         const mainParams: Partial<JobListSearchParams> = {
             startDate: searchCriteria.criteria.from_date,
             endDate: searchCriteria.criteria.to_date,
@@ -198,6 +236,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             wild: searchCriteria.criteria.wild,
             job: searchCriteria.criteria.job,
             jobId: searchCriteria.criteria.jobId,
+            disabled: byBulkJobId,
             page: 0,
         };
         updateMainParamsRef.current?.(mainParams);
@@ -210,6 +249,7 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             wild: searchCriteria.criteria.wild,
             job: searchCriteria.criteria.job,
             bulkJobId: searchCriteria.criteria.bulkJobId,
+            disabled: byJobId,
             page: 0,
         });
     }, [searchCriteria]);
@@ -336,10 +376,9 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     return;
 
                 case 'dispatch':
-                    // Phase 3.5: the FAB dispatch flow opens the in-list DispatchDialog
-                    // from JobListContextMenu; for the FAB we surface a courier-id prompt
-                    // via the existing dispatch service. Tracked as a Phase 4 follow-up.
-                    showToast('Use the row context menu to dispatch — FAB dispatch is on the Phase 4 punch list.', 'info');
+                    // Open the same universal DispatchDialog the job-list context
+                    // menu uses (courier / agent / NP / partner picker).
+                    setDispatchDialogOpen(true);
                     return;
 
                 case 'restore':
@@ -403,6 +442,42 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
             showToast(`Failed to ${actionId}: ${error instanceof Error ? error.message : 'unknown error'}`, 'error');
         }
     }, [showToast]);
+
+    // ── FAB dispatch (DispatchDialog) ─────────────────────────────────
+    // Single-job dispatch from the job-detail FAB. Courier path allocates (or
+    // re-allocates if a courier is already assigned); partner path sends to a
+    // DFRNT partner. Mirrors JobListContextMenu's handlers.
+    const handleDispatchCourier = useCallback(async (
+        type: 'Courier' | 'Agent' | 'NP',
+        destination: ISuggestion,
+    ) => {
+        if (!currentJob) return;
+        if (type !== 'Courier') {
+            throw new Error(`${type} dispatch isn't wired from Job Search yet — use the job-list context menu.`);
+        }
+        if (currentJob.assignedCourier?.id) {
+            await reAllocateJobs(destination.id, [currentJob.id]);
+        } else {
+            await allocateJobs(destination.id, [currentJob.id]);
+        }
+        showToast(`Job ${currentJob.jobNo} dispatched to ${destination.text}`, 'success');
+        queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
+        queryClient.invalidateQueries({
+            queryKey: queryKeys.jobs.detail(currentJob.id, isBulkJob ? 'bulk' : 'standard'),
+        });
+        setDispatchDialogOpen(false);
+    }, [currentJob, isBulkJob, showToast]);
+
+    const handleSendToPartner = useCallback(async (partner: ISuggestion, agreedRate: number) => {
+        if (!currentJob) return;
+        const result = await sendToPartner(currentJob.id, partner.id, agreedRate);
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to send job to partner');
+        }
+        setDispatchDialogOpen(false);
+        showToast(`Job ${currentJob.jobNo} sent to ${partner.text} — tracking: ${result.trackingNumber}`, 'success');
+        queryClient.invalidateQueries({queryKey: queryKeys.jobSearch.all});
+    }, [currentJob, showToast]);
 
     const renderBoxContent = useCallback((boxName: string): React.ReactNode => {
         switch (boxName) {
@@ -489,12 +564,34 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                     />
                 );
 
-            case JobSearchBoxes.Map:
+            case JobSearchBoxes.Map: {
+                // Show the selected job on the map, centred on its pickup (matches
+                // V1 selectJobDetail's mapCenter behaviour). DispatchMap falls back
+                // to the tenant's default centre when no job is selected.
+                const pickup = currentJob?.pickupAddress;
+                const mapCenter = pickup?.latitude && pickup?.longitude
+                    ? {lat: pickup.latitude, lng: pickup.longitude}
+                    : undefined;
+                const mapItem: IDispatchMapItem | undefined = currentJob
+                    ? {
+                        jobId: currentJob.id,
+                        jobNo: currentJob.jobNo,
+                        pickupAddress: currentJob.pickupAddress,
+                        deliveryAddress: currentJob.deliveryAddress,
+                        assignedCourier: currentJob.assignedCourier,
+                    }
+                    : undefined;
                 return (
-                    <Box sx={{p: 3, color: 'text.secondary', textAlign: 'center'}}>
-                        Map integration will land in Phase 3 (reuse existing DispatchMap component).
+                    <Box sx={{height: '100%', minHeight: 0}}>
+                        <DispatchMap
+                            jobs={mapItem ? [mapItem] : []}
+                            currentJob={mapItem}
+                            mapCenter={mapCenter}
+                            mapZoom={12}
+                        />
                     </Box>
                 );
+            }
 
             case JobSearchBoxes.DeliveryJourney:
                 if (!currentJobId) {
@@ -612,6 +709,27 @@ export const JobSearchPage: React.FC<JobSearchPageProps> = ({
                 onClose={() => resolveDeleteLayout(false)}
                 onConfirm={() => resolveDeleteLayout(true)}
             />
+            {currentJob && (
+                <DispatchDialog
+                    open={dispatchDialogOpen}
+                    mode={{
+                        kind: 'single',
+                        jobId: currentJob.id,
+                        jobNo: currentJob.jobNo,
+                        flags: {
+                            isArchived: Boolean(currentJob.isArchived),
+                            isBulkJob: Boolean(currentJob.isBulkJob),
+                            preBook: Boolean(currentJob.preBook),
+                        },
+                    }}
+                    existingDestination={currentJob.assignedCourier}
+                    onClose={() => setDispatchDialogOpen(false)}
+                    onDispatchCourier={handleDispatchCourier}
+                    onSendToPartner={handleSendToPartner}
+                    fetchRate={getPartnerRateForJob}
+                    getPartnerOptions={getActivePartnerOptions}
+                />
+            )}
         </Box>
     );
 };

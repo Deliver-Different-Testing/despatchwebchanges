@@ -70,7 +70,7 @@ public interface IJobQueryRepository
 
     Task<IList<OpenJobResponse>> GetOpenJobsAsync(OpenJobsRequest parameters);
 
-    Task<JobGroupViewModel> GetJobByIdAsync(int jobId, CancellationToken cancellationToken = default);
+    Task<JobGroupViewModel> GetJobByIdAsync(int jobId);
     Task<JobViewModel?> GetSingleJobById(int jobId);
     Task<OverviewStatsViewModel> GetOverviewStatsAsync();
 
@@ -110,6 +110,7 @@ public interface IJobQueryRepository
 
     Task<IReadOnlyList<ScanDetailResult>> ScanList(DateTimeOffset? runDate, int jobId, bool isBulkJob);
     Task<bool> ValidatePodSwapAsync(string jobNumber);
+    Task<int?> GetJobIdByNumberAsync(string jobNumber);
     Task<string?> GetStaffNameAsync(int staffId);
     Task<decimal> GetTotalAmountFromBaseAsync(int jobId, decimal baseAmount);
     Task<decimal> GetJobRateUsAsync(RateJobUsDto dto);

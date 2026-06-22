@@ -1,16 +1,30 @@
-import React from 'react';
+import React, {act} from 'react';
 import {render, screen} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
 import {ThemeProvider, createTheme} from '@mui/material/styles';
 
+// Captures the panel callbacks so tests can drive the search flow. Names are
+// `mock`-prefixed so jest's hoisted factories may reference them.
+const mockPanel: {
+    onSearch?: () => void;
+    onCriteriaChange?: (field: string, value: unknown) => void;
+    updateParams: Record<string, jest.Mock>;
+} = {updateParams: {}};
+
 jest.mock('../../components/common/search-criteria-panel/SearchCriteriaPanel', () => ({
-    SearchCriteriaPanel: () => <div data-testid="mock-search-panel" />,
+    SearchCriteriaPanel: ({onSearch, onCriteriaChange}: {onSearch: () => void; onCriteriaChange: (f: string, v: unknown) => void}) => {
+        mockPanel.onSearch = onSearch;
+        mockPanel.onCriteriaChange = onCriteriaChange;
+        return <div data-testid="mock-search-panel" />;
+    },
 }));
 
 jest.mock('../../components/job-list/JobListPanel', () => ({
-    JobListPanel: ({storagePrefix}: {storagePrefix?: string}) => (
-        <div data-testid={`mock-job-list-${storagePrefix}`} />
-    ),
+    JobListPanel: ({storagePrefix, setUpdateSearchParamsCallback}: {storagePrefix: string; setUpdateSearchParamsCallback?: (cb: jest.Mock) => void}) => {
+        const fn = mockPanel.updateParams[storagePrefix] ?? (mockPanel.updateParams[storagePrefix] = jest.fn());
+        setUpdateSearchParamsCallback?.(fn);
+        return <div data-testid={`mock-job-list-${storagePrefix}`} />;
+    },
 }));
 
 jest.mock('../../components/common/task-history/TaskHistory', () => ({
@@ -19,6 +33,10 @@ jest.mock('../../components/common/task-history/TaskHistory', () => ({
 
 jest.mock('./components/ScanList', () => ({
     ScanList: () => <div data-testid="mock-scan-list" />,
+}));
+
+jest.mock('../../components/common/dispatch-map/DispatchMap', () => ({
+    DispatchMap: () => <div data-testid="mock-dispatch-map" />,
 }));
 
 jest.mock('./hooks/useScanDetail', () => ({
@@ -44,6 +62,12 @@ function renderPage(overrides: Partial<React.ComponentProps<typeof JobSearchPage
 }
 
 describe('JobSearchPage', () => {
+    beforeEach(() => {
+        mockPanel.onSearch = undefined;
+        mockPanel.onCriteriaChange = undefined;
+        mockPanel.updateParams = {};
+    });
+
     it('renders the search criteria panel, main job list, and bulk job list', () => {
         renderPage();
         expect(screen.getByTestId('mock-search-panel')).toBeInTheDocument();
@@ -57,9 +81,39 @@ describe('JobSearchPage', () => {
         expect(screen.getByText(/select a job to see its delivery journey/i)).toBeInTheDocument();
     });
 
-    it('shows a placeholder for the map box (Phase 3 will wire DispatchMap)', () => {
+    it('renders the DispatchMap in the map box', () => {
         renderPage();
-        expect(screen.getByText(/map integration will land in phase 3/i)).toBeInTheDocument();
+        expect(screen.getByTestId('mock-dispatch-map')).toBeInTheDocument();
+    });
+
+    it('disables the bulk list when searching by a specific job id', () => {
+        renderPage();
+        act(() => {
+            mockPanel.onCriteriaChange?.('jobId', 12345);
+        });
+        act(() => {
+            mockPanel.onSearch?.();
+        });
+
+        const mainCall = mockPanel.updateParams.jobSearchJobList.mock.calls.at(-1)?.[0];
+        const bulkCall = mockPanel.updateParams.jobSearchBulkList.mock.calls.at(-1)?.[0];
+        expect(mainCall).toMatchObject({jobId: 12345, disabled: false});
+        expect(bulkCall).toMatchObject({disabled: true});
+    });
+
+    it('disables the main list when searching by a specific bulk job id', () => {
+        renderPage();
+        act(() => {
+            mockPanel.onCriteriaChange?.('bulkJobId', 999);
+        });
+        act(() => {
+            mockPanel.onSearch?.();
+        });
+
+        const mainCall = mockPanel.updateParams.jobSearchJobList.mock.calls.at(-1)?.[0];
+        const bulkCall = mockPanel.updateParams.jobSearchBulkList.mock.calls.at(-1)?.[0];
+        expect(mainCall).toMatchObject({disabled: true});
+        expect(bulkCall).toMatchObject({bulkJobId: 999, disabled: false});
     });
 
     it('renders each default-layout box header with its title', () => {

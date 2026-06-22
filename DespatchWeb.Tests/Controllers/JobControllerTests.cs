@@ -550,7 +550,7 @@ public class JobControllerTests : IDisposable
             Job = new JobViewModel { Id = jobId, JobNo = "JOB001" }
         };
 
-        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>()).Returns(expectedJob);
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId).Returns(expectedJob);
 
         var controller = CreateController();
 
@@ -571,7 +571,7 @@ public class JobControllerTests : IDisposable
         // Arrange
         const int jobId = 999;
 
-        _jobQueryRepositoryMock.GetJobByIdAsync(jobId, Arg.Any<CancellationToken>())
+        _jobQueryRepositoryMock.GetJobByIdAsync(jobId)
             .ThrowsAsync(new Exception("Job not found"));
 
         var controller = CreateController();
@@ -2814,6 +2814,57 @@ public class JobControllerTests : IDisposable
 
         // Assert
         Assert.IsType<OkResult>(result);
+    }
+
+    [Fact]
+    public async Task SwapPod_AfterSwap_ReSendsSecondAndReAssignsAndReSendsFirst()
+    {
+        // After swapping the POD, the corrected delivery data must be pushed back
+        // out: re-send the second job, then re-assign + re-send the first job
+        // (mirrors the legacy Job Search controller chain).
+        const string job1 = "JOB001";
+        const string job2 = "JOB002";
+
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns((int?)10);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns((int?)20);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(false);
+
+        var controller = CreateController();
+
+        var result = await controller.SwapPod(job1, job2);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 20));
+        await _jobCommandRepositoryMock.Received(1)
+            .ReAssignSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 10));
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 10));
+    }
+
+    [Fact]
+    public async Task SwapPod_FirstJobIsOutboundPartnerJob_SkipsReAssignButStillReSends()
+    {
+        // Re-assigning a partner-dispatched job would diverge from the partner's
+        // view, so the first job's re-assign is skipped — but the re-sends still run.
+        const string job1 = "JOB001";
+        const string job2 = "JOB002";
+
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job1).Returns((int?)10);
+        _jobQueryRepositoryMock.GetJobIdByNumberAsync(job2).Returns((int?)20);
+        _jobQueryRepositoryMock.IsOutboundPartnerJobAsync(10, Arg.Any<string?>()).Returns(true);
+
+        var controller = CreateController();
+
+        var result = await controller.SwapPod(job1, job2);
+
+        Assert.IsType<OkResult>(result);
+        await _jobCommandRepositoryMock.DidNotReceive()
+            .ReAssignSelectedJobsAsync(Arg.Any<IReadOnlyList<int>>());
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 20));
+        await _jobCommandRepositoryMock.Received(1)
+            .ReSendSelectedJobsAsync(Arg.Is<IReadOnlyList<int>>(ids => ids.Count == 1 && ids[0] == 10));
     }
 
     [Fact]
