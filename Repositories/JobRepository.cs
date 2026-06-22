@@ -2635,6 +2635,12 @@ public partial class JobRepository(
             join cl in Context.TucClients on j.ClientId equals cl.UcclId into clientJoin
             from client in clientJoin.DefaultIfEmpty()
             where
+                // Hide routed schedule jobs (Steve, 2026-06-22): a tblBulkJob row is "routed"
+                // when its live job link (tblBulkJob.JobID = tucJob.ucjbID) points to a tucJob
+                // whose RouteId is set. Route-auto-assign stamps RouteId on tucJob at materialisation,
+                // so this predicate drops every routed schedule job from JobSearch Bulk Job Data.
+                !Context.TucJobs.Any(tj => tj.UcjbId == j.JobId && tj.RouteId != null)
+                && (
                 // When searching by specific bulk job ID, ignore all other filters
                 data.BulkJobIdSet
                     ? j.BulkJobId == data.BulkJobId
@@ -2685,6 +2691,7 @@ public partial class JobRepository(
                               wildSearch
                           )
                       )
+                )
             orderby j.BookDate, j.BookTime, j.JobId, j.BulkJobId
             select new DispatchJobViewModel
             {
