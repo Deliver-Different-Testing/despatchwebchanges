@@ -187,18 +187,22 @@ export function formatRelativeDateTime(dateTimeString: string): string {
     const parsed = parseDateFromApi(dateTimeString);
     if (!parsed.isValid()) return 'Invalid date';
 
-    const ianaTimeZone = getIanaTimezone();
-    const dateTime = parsed.tz(ianaTimeZone);
-    const now = dayjs().tz(ianaTimeZone);
-    const isToday = dateTime.isSame(now, 'day');
-    const isTomorrow = dateTime.isSame(now.add(1, 'day'), 'day');
+    // The API already returns this timestamp in the tenant's local wall-clock with its
+    // offset (DeliveryJourneyService converts UTC rows via ConvertUtcToTenantTimeZone and
+    // stamps local rows via SetDateTimeWithTimeZone). parseDateFromApi preserves that
+    // wall-clock + offset, so display it as-is — matching formatLongDateTime/formatTime.
+    // Do NOT re-project with .tz(window.TimeZone): that double-converts and flips the day
+    // when the offsets disagree (showed a 16:24 booking as "Tomorrow 04:24").
+    const now = dayjs().utcOffset(parsed.utcOffset());
+    const isToday = parsed.isSame(now, 'day');
+    const isTomorrow = parsed.isSame(now.add(1, 'day'), 'day');
 
     if (isToday) {
-        return formatTime(dateTime);
+        return formatTime(parsed);
     } else if (isTomorrow) {
-        return `Tomorrow ${formatTime(dateTime)}`;
+        return `Tomorrow ${formatTime(parsed)}`;
     } else {
-        return formatLongDateTime(dateTime);
+        return formatLongDateTime(parsed);
     }
 }
 

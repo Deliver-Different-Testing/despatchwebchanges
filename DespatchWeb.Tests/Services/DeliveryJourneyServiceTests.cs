@@ -1043,6 +1043,125 @@ public class DeliveryJourneyServiceTests : IAsyncDisposable
     }
 
     [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithDispatcherAssigned_ResolvesStaffName()
+    {
+        // Arrange - dispatch sets ucjbDispID null -> 5; the trigger journals the
+        // raw staff id, which the service should resolve to the staff name.
+        await SeedStaffAsync(new TucStaff
+        {
+            UcstId = 5, UcstFirstName = "Jane", UcstLastName = "Doe", CreatedBy = "test", LastModifiedBy = "test"
+        });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = null,
+            NewValue = "5",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Dispatcher Updated", result[0].Title);
+        Assert.Contains("Dispatcher: Jane Doe", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithDispatcherChanged_ResolvesBothStaffNames()
+    {
+        // Arrange - re-dispatch changes ucjbDispID 5 -> 8; both ids resolve to names.
+        await SeedStaffAsync(
+            new TucStaff { UcstId = 5, UcstFirstName = "Jane", UcstLastName = "Doe", CreatedBy = "test", LastModifiedBy = "test" },
+            new TucStaff { UcstId = 8, UcstFirstName = "John", UcstLastName = "Roe", CreatedBy = "test", LastModifiedBy = "test" });
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = "5",
+            NewValue = "8",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains("Dispatcher: Jane Doe → John Roe", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_WithUnknownDispatcherId_FallsBackToRawId()
+    {
+        // Arrange - staff id has no matching tucStaff row (e.g. deleted staff);
+        // the service should keep the raw id rather than dropping the value.
+        await SeedJobsAsync(new TucJob { UcjbId = 1 });
+        await SeedStatusUpdatesAsync(new JobDeliveryJourney
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = null,
+            NewValue = "999",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Contains("Dispatcher: 999", result[0].Tags);
+    }
+
+    [Fact]
+    public async Task GetDeliveryJourneyForJobAsync_ArchivedDispatcherAssigned_ResolvesStaffName()
+    {
+        // Arrange - no live job seeded, so the archived path runs; it must resolve
+        // the dispatcher id to a name the same way the live path does.
+        await SeedStaffAsync(new TucStaff
+        {
+            UcstId = 7, UcstFirstName = "Amy", UcstLastName = "Lee", CreatedBy = "test", LastModifiedBy = "test"
+        });
+        await SeedArchivedStatusUpdatesAsync(new JobDeliveryJourneyArchive
+        {
+            JourneyId = 1,
+            JobId = 1,
+            ChangeType = "JobUpdate",
+            UpdatedByType = "SYSTEM",
+            FieldName = "ucjbDispID",
+            OldValue = null,
+            NewValue = "7",
+            UpdatedAt = new DateTime(2024, 1, 15, 14, 0, 0)
+        });
+        var service = CreateService();
+
+        // Act
+        var result = await service.GetDeliveryJourneyForJobAsync(1);
+
+        // Assert
+        Assert.Single(result);
+        Assert.Equal("Dispatcher Updated", result[0].Title);
+        Assert.Contains("Dispatcher: Amy Lee", result[0].Tags);
+    }
+
+    [Fact]
     public async Task GetDeliveryJourneyForJobAsync_FiltersOutInternalStatusChanges()
     {
         // Arrange - InternalStatus should be filtered out

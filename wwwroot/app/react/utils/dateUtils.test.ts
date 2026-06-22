@@ -241,26 +241,26 @@ describe('dateUtils', () => {
             expect(formatRelativeDateTime(today)).toBe('14:30');
         });
 
-        it('with cross-TZ offset documents conversion behavior', () => {
-            // Known limitation: formatRelativeDateTime converts to tenant TZ before
-            // comparing to "today"/"tomorrow". When the input offset differs from tenant TZ,
-            // the converted time may land on a different day.
-            //
-            // Example: 09:37 PDT (-07:00) displayed to NZ tenant (UTC+12).
-            // dayjs parses this as 16:37 UTC, then .tz('Pacific/Auckland') = 04:37 next day.
-            // So "today's" delivery in PDT may show as "tomorrow" for the NZ tenant.
-            (window as any).TimeZone = 'New Zealand Standard Time';
+        // Regression: formatRelativeDateTime used to re-project the parsed value through
+        // window.TimeZone, so a 16:24 NZ (+12:00) booking viewed by a browser in a
+        // different zone flipped across midnight and rendered "Tomorrow 04:24". The
+        // wall-clock + offset the backend already stamped must win, regardless of
+        // window.TimeZone.
+        it.each([
+            ['UTC'],
+            ['Pacific Standard Time'],
+            ['New Zealand Standard Time'],
+        ])('shows the input-offset wall-clock for a same-day booking (window.TimeZone=%s)', (tz) => {
+            (window as any).TimeZone = tz;
+            // "Today" expressed in the +12:00 frame, at 16:24.
+            const input = dayjs().utcOffset(12 * 60).format('YYYY-MM-DD') + 'T16:24:00+12:00';
+            expect(formatRelativeDateTime(input)).toBe('16:24');
+        });
 
-            // Use a time that when converted from PDT to NZ crosses midnight
-            const now = dayjs().tz('America/Los_Angeles');
-            const pdtString = now.format('YYYY-MM-DD') + 'T09:00:00-07:00';
-
-            const result = formatRelativeDateTime(pdtString);
-            // The result will show the NZ-converted time, not the original PDT wall-clock.
-            // We don't assert a specific value since it depends on the current date,
-            // but verify it produces a valid formatted string (not an error).
-            expect(result).not.toBe('No date');
-            expect(result).not.toBe('Invalid date');
+        it('labels Tomorrow using the input-offset wall-clock, not window.TimeZone', () => {
+            (window as any).TimeZone = 'UTC';
+            const input = dayjs().utcOffset(12 * 60).add(1, 'day').format('YYYY-MM-DD') + 'T09:15:00+12:00';
+            expect(formatRelativeDateTime(input)).toBe('Tomorrow 09:15');
         });
     });
 
