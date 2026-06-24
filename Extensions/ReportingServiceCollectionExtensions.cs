@@ -10,6 +10,9 @@ public static class ReportingServiceCollectionExtensions
         services.AddScoped<IJobReportService, JobReportService>();
         services.AddScoped<ICourierReportService, CourierReportService>();
         services.AddScoped<IPodReportService, PodReportService>();
+        // Calls the Configurator's PDF Overlay render endpoint to produce a job's document from a
+        // customer template (falls back to the built-in report when no template applies).
+        services.AddHttpClient<IPdfOverlayClient, PdfOverlayClient>();
 
         return services;
     }

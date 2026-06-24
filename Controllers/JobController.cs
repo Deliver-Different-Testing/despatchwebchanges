@@ -35,6 +35,7 @@ public class JobController(
     IDeliveryJourneyService deliveryJourneyService,
     IPricingPermissionService pricingPermissionService,
     IPodReportService podReportService,
+    IPdfOverlayClient pdfOverlay,
     ISplitJobService splitJobService,
     ISendToPartnerService sendToPartnerService,
     IPartnerJobGate partnerJobGate
@@ -692,6 +693,15 @@ public class JobController(
     {
         try
         {
+            // Prefer the customer's PDF Overlay template if one is active for this client; otherwise
+            // fall back to the built-in report. The overlay call is safe-by-design — it returns null
+            // (never throws) for "no template" or any failure, so this can't break the existing button.
+            var overlayPdf = await pdfOverlay.TryRenderJobAsync(jobId, "ProofOfDelivery", HttpContext.RequestAborted);
+            if (overlayPdf is not null)
+            {
+                return File(overlayPdf, "application/pdf", $"POD-{jobId}.pdf");
+            }
+
             var (bytes, fileName) = await podReportService.GeneratePodReportAsync(jobId);
             return File(bytes, "application/pdf", fileName);
         }
